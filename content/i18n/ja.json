@@ -767,6 +767,8 @@
     "Rosy": "ばら色",
     "Tan": "小麦色",
     "Deep": "褐色",
+    "First come, first served": "早い者勝ち",
+    "In a fight, your side acts first, in the order everyone chose their move: choose quickly and you go before your friends, and your companion always goes right after you. The monsters go after your side, the faster ones earlier more often.": "バトルでは味方側が先に、それぞれが行動を選んだ順に動きます。早く選べばフレンドより先に動け、仲間はいつもあなたのすぐ後に動きます。モンスターは味方の後に動き、素早いものほど先に動きやすくなります。",
     "Your turn": "あなたの番",
     "In a fight, the ring under whoever you're choosing a move for (your hero, then your companion) lights up and glows, so it's clear whose turn it is.": "バトルで、行動を選んでいるキャラ（まずヒーロー、次に仲間）の足元の輪が光るので、誰の番かひと目でわかります。",
     "Road closed": "通行止め",
