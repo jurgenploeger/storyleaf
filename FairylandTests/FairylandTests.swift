@@ -1234,6 +1234,22 @@ struct RulesTests {
         #expect(raged)
     }
 
+    @Test func troublemakersOnlyPickFightsTheyCanWin() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.hero.level = 50
+        session.data.pets.removeAll()
+        func rival(_ level: Int, pet: String? = nil) -> Adventurer {
+            Adventurer(name: "Rook", raceID: "human", classID: "fighter", level: level, look: .standard, petSpecies: pet, hostile: true)
+        }
+        // About your level or stronger: they come for you.
+        #expect(session.dares(rival(50)))
+        #expect(session.dares(rival(45)))
+        // Much weaker: they leave you be.
+        #expect(!session.dares(rival(44)))
+        // Their companion counts on their side.
+        #expect(session.dares(rival(25, pet: "jelly")))
+    }
+
     @Test func friendsFightOnAfterYouFallAndWakeYou() {
         let content = Content.shared
         let jelly = content.monster("jelly")!
@@ -1343,9 +1359,9 @@ struct RulesTests {
         #expect(session.count(of: "moon_seal") == 1)
         battle.apply(.capture(actor: 0, target: 10, success: true, wobbles: 3, stone: "moon_seal"))
         #expect(session.count(of: "moon_seal") == 0)
-        // Only the Wishing Seal is left: Capture opens Items instead of throwing it.
+        // Only the Wishing Seal is left: Capture asks which stone instead of throwing it.
         battle.capture()
-        #expect(battle.phase == .items)
+        #expect(battle.phase == .stones)
         #expect(session.count(of: "wishing_seal") == 1)
     }
 

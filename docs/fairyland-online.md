@@ -355,7 +355,10 @@ your class (`GameSession.equipmentDrop`).
 visited, the Monster Book, monster cards, quests, bosses, companions, friends, rebirths, daily bounties and
 days played, and one is worn over your name; computer-run adventurers wear the level titles that fit them.
 Duels are with computer-run adventurers in 9 danger zones; a beaten adventurer drops everything they carry
-(the goods they'd sell you that day). Quests pay at least a bit more than a daily bounty for your level when
+(the goods they'd sell you that day). The red-named troublemakers only pick a fight with a side about as
+strong as theirs or weaker: their level plus their companion's at least nine tenths of yours, your companion's
+and your party's (`GameSession.dares`; our decision, 2026-10-11, at the playtester's request). Bosses never
+start a fight: you talk to them. Quests pay at least a bit more than a daily bounty for your level when
 you hand them in (`quests` in content/rewards.json; our decision, 2026-10-06, at the playtester's request).
 
 **Cards (since 0.3.69):** FO's card collection, our own way, since no source we could reach says what FO's

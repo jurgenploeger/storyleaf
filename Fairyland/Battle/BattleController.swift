@@ -43,7 +43,8 @@ struct BossStory {
 @Observable
 final class BattleController {
     enum Phase: Equatable {
-        case command, skills, items, target, animating, finished
+        /// `stones`: choosing which Seal Stone to throw (Capture, with more than one kind in the bag).
+        case command, skills, items, stones, target, animating, finished
     }
 
     private enum Pending {
@@ -597,16 +598,18 @@ final class BattleController {
         beginTargeting(.item(item), targets: aliveAllyIDs, prompt: L("Use {item} on…", ["item": item.name]))
     }
 
-    /// The Capture button: throws the plainest stone in the bag. A Wishing Seal is only ever thrown
-    /// from Items, chosen on purpose, so with nothing else left Capture opens the list.
+    /// The Capture button: with one kind of Seal Stone in the bag it's thrown; with more (a Moon
+    /// Seal, a Heart Seal...) you choose which. A Wishing Seal is never thrown without asking, so
+    /// with only those left you choose too.
     func capture() {
-        if let stone = stones.first(where: { $0.sure != true }) {
-            capture(with: stone)
-        } else if stones.isEmpty {
+        if stones.isEmpty {
             message = L("You need a Seal Stone. Trader Bo in Meadowbrook sells them.")
+        } else if stones.count == 1, let stone = stones.first, stone.sure != true {
+            capture(with: stone)
         } else {
-            openItems()
-            message = L("Only a Wishing Seal left: choose it from Items to throw it.")
+            guard phase == .command else { return }
+            clearTargets()
+            phase = .stones
         }
     }
 
@@ -756,7 +759,7 @@ final class BattleController {
     /// The monster you last went for: a timed-out attack goes for it again.
     @ObservationIgnored private var lastTarget: Int?
 
-    private var isChoosing: Bool { [.command, .skills, .items, .target].contains(phase) }
+    private var isChoosing: Bool { [.command, .skills, .items, .stones, .target].contains(phase) }
 
     /// Starts the clock for a turn: each new one, and the first once the battle is on screen.
     func startTurnClock() {

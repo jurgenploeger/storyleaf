@@ -89,7 +89,7 @@ struct BattleView: View {
     /// sits on top of it (with the commands it's the ring round the big button).
     private var commandArea: some View {
         VStack(alignment: .trailing, spacing: 10) {
-            if [.skills, .items, .target].contains(controller.phase),
+            if [.skills, .items, .stones, .target].contains(controller.phase),
                let deadline = controller.turnDeadline, let total = BattleController.turnSeconds {
                 TurnClockBar(deadline: deadline, total: total)
                     .transition(.opacity)
@@ -166,6 +166,21 @@ struct BattleView: View {
                                 .font(HUDStyle.font(10))
                                 .foregroundStyle(item.sure == true ? HUDStyle.gold : HUDStyle.frameDark)
                         }
+                    }
+                }
+            }
+            .transition(.scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity))
+        case .stones:
+            // Capture with more than one kind of Seal Stone: which to throw, with what each brings.
+            ChoiceCard(title: L("Seal Stones"), icon: .sealStone, onBack: controller.back) {
+                ForEach(controller.stones) { stone in
+                    ChoiceRow(action: { controller.capture(with: stone) }, enabled: controller.canCapture) {
+                        ItemIcon(item: stone, size: 26, count: controller.session.count(of: stone.id))
+                        Text(stone.name)
+                        Spacer()
+                        Text(stone.sure == true ? L("Never fails") : L("Odds ×{power}", ["power": (stone.sealPower ?? 1).formatted()]))
+                            .font(HUDStyle.font(10))
+                            .foregroundStyle(stone.sure == true ? HUDStyle.gold : HUDStyle.frameDark)
                     }
                 }
             }

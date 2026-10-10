@@ -33,6 +33,7 @@ import SpriteKit
 ///   orders         with battle: the hero picks Attack on the first monster, so your companion's turn shows
 ///   more           with battle: the More buttons are open (the commands behind it, Auto and the pace)
 ///   items          with battle: the Items list opens (potions, then Seal Stones)
+///   stones         with battle: Capture is pressed (with more than one kind of Seal Stone, it asks which)
 ///   aim=<stone>    with battle: the hero aims that Seal Stone (an item id), its odds over each monster
 ///   afflict        with battle: the first monster poisoned, the next one cursed, and the hero poisoned
 ///   herodown       with battle: the hero faints at once, and any friends fight on without them
@@ -202,6 +203,13 @@ enum DebugLaunch {
                 battle.openItems()
             }
         }
+        if flags["stones"] != nil, let battle = coordinator.battle {
+            Task {
+                try? await Task.sleep(for: .seconds(2))
+                for _ in 0..<40 where battle.phase != .command { try? await Task.sleep(for: .milliseconds(250)) }
+                battle.capture()
+            }
+        }
         // `skills`: once everyone is in, the hero's Skills list opens.
         if flags["skills"] != nil, let battle = coordinator.battle {
             Task {
@@ -329,7 +337,7 @@ enum DebugLaunch {
                     battle.attack()
                 } else if battle.canCapture, foes.count == 1, foe.hp * 5 <= foe.stats.hp {
                     // The last one, once it's weak: the odds are best then.
-                    battle.capture()
+                    if let stone = battle.stones.first(where: { $0.sure != true }) { battle.capture(with: stone) }
                 } else if let hero = battle.combatants.first(where: \.isHero),
                           case let spells = battle.skills.filter({ [.enemy, .allEnemies].contains($0.target) && battle.cost(of: $0) <= hero.mp }),
                           !spells.isEmpty, foes.count > 1 || foe.hp > foe.stats.hp / 2 {

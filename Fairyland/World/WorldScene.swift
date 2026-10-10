@@ -192,6 +192,7 @@ final class WorldScene: SKScene {
         crowd = Crowd(def: def, map: map, world: world, heroLevel: session.data.hero.level,
                       friends: session.friends.filter { !session.isInParty($0) }, market: market)
         crowd?.onChat = { [weak session] speaker, text, kind in session?.postChat(text, from: speaker, kind: kind) }
+        crowd?.dares = { [weak session] rival in session?.dares(rival) ?? false }
         crowd?.onChallenge = { [weak self] rival in
             guard let self, !self.isInputLocked else { return }
             self.startDuel(with: rival)

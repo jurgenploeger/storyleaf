@@ -11,8 +11,19 @@ struct ItemInfoCard: View {
     /// what you're wearing. Nil in shops and trades, where the card only tells.
     var onEquip: (() -> Void)? = nil
     var onUnequip: (() -> Void)? = nil
+    /// From the Bag: what you can do with it there (Use, Give, Hatch), under the details.
+    var action: Action? = nil
+    /// From the Bag, when there's nothing to do with it there: why (only in battle, no companions).
+    var note: String? = nil
 
-    private var choosing: Bool { onEquip != nil || onUnequip != nil }
+    struct Action {
+        let title: String
+        var icon: GameIcon?
+        var enabled = true
+        let run: () -> Void
+    }
+
+    private var choosing: Bool { onEquip != nil || onUnequip != nil || action != nil || note != nil }
 
     private var isGear: Bool { ItemType.equipmentSlots.contains(item.type) }
 
@@ -88,11 +99,25 @@ struct ItemInfoCard: View {
             if let issue {
                 Text(issue).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.orange)
             }
+            if let note {
+                Text(note).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+            }
             HStack(spacing: 10) {
                 Spacer(minLength: 0)
-                Button(L("Cancel"), action: onClose)
+                Button(action == nil && onEquip == nil && onUnequip == nil ? L("Close") : L("Cancel"), action: onClose)
                     .buttonStyle(PixelButtonStyle())
-                if let onUnequip {
+                if let action {
+                    Button(action: action.run) {
+                        if let icon = action.icon {
+                            Label(action.title, icon: icon)
+                        } else {
+                            Text(action.title)
+                        }
+                    }
+                    .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
+                    .disabled(!action.enabled)
+                    .opacity(action.enabled ? 1 : 0.5)
+                } else if let onUnequip {
                     Button(L("Unequip"), action: onUnequip)
                         .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
                 } else if let onEquip {
