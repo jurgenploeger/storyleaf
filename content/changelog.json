@@ -6,7 +6,8 @@
       "date": "2026-10-11",
       "title": "Tidy hero",
       "notes": [
-        "The Character screen's gear slots sit in a ring around your hero with more room between them. Your level and EXP moved into the Stats section, and Attack, Defense, Magic and Speed each have an icon, with all the numbers in one size."
+        "The Character screen's gear slots sit in a ring around your hero with more room between them. Your level and EXP moved into the Stats section, and Attack, Defense, Magic and Speed each have an icon, with all the numbers in one size.",
+        "On the Companions page, the companion you bring along comes first, laid out like your hero: big, with its level, EXP, HP and stats in the same Stats section. The others follow below."
       ]
     },
     {

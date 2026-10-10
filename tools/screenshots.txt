@@ -44,6 +44,7 @@ character_spare | newgame,bag=leather_gloves+shell_pendant,menu=character | 8
 character_title_bronze | newgame,level=12,title=apprentice,menu=character | 8
 character_title_legend | newgame,level=160,title=legend,menu=character | 8
 companions   | newgame,level=5,menu=companions   | 8
+companions_active | newgame,level=60,pet=jelly,menu=companions | 8
 landscape    | newgame,map=rainbow_city,landscape | 8
 rat_cavern   | newgame,map=rat_cavern            | 8
 cave_dark    | newgame,level=44,class=fighter,pet=pineapple,friends=2,map=rat_cavern | 15
