@@ -767,6 +767,8 @@
     "Rosy": "ばら色",
     "Tan": "小麦色",
     "Deep": "褐色",
+    "Your turn": "あなたの番",
+    "In a fight, the ring under whoever you're choosing a move for (your hero, then your companion) lights up and glows, so it's clear whose turn it is.": "バトルで、行動を選んでいるキャラ（まずヒーロー、次に仲間）の足元の輪が光るので、誰の番かひと目でわかります。",
     "Road closed": "通行止め",
     "A road a quest hasn't opened yet is fenced off with pickets that follow the line across it, like the town fences, instead of a jumble of upright fence pieces, and its “Closed” sign floats clear of a town's gate arch.": "クエストでまだ開いていない道は、町の柵と同じように道を横切る線に沿った柵でふさがれます。立てた柵がごちゃごちゃに並ぶことはもうありません。「通行止め」の札も町の門のアーチにかぶらず浮かびます。",
     "A skill's element badge in battle stays on one line, as wide as its name, instead of wrapping when the row is crowded.": "バトルでスキルの属性バッジが名前の幅で1行に収まり、行が混んでいても折り返さなくなりました。",

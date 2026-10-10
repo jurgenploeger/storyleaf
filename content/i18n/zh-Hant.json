@@ -767,6 +767,8 @@
     "Rosy": "紅潤",
     "Tan": "小麥",
     "Deep": "深色",
+    "Your turn": "輪到你了",
+    "In a fight, the ring under whoever you're choosing a move for (your hero, then your companion) lights up and glows, so it's clear whose turn it is.": "戰鬥中，正在為其選擇行動的角色（先是英雄，然後是夥伴）腳下的光圈會亮起發光，一眼就能看出輪到誰。",
     "Road closed": "道路封閉",
     "A road a quest hasn't opened yet is fenced off with pickets that follow the line across it, like the town fences, instead of a jumble of upright fence pieces, and its “Closed” sign floats clear of a town's gate arch.": "任務尚未開放的道路會用順著橫越道路的線排列的木柵欄封住，就像城鎮的圍欄，不再是一堆豎著的柵欄塊；「未開放」的牌子也會浮在城門拱頂上方，不再被擋住。",
     "A skill's element badge in battle stays on one line, as wide as its name, instead of wrapping when the row is crowded.": "戰鬥中技能的屬性徽章保持一行，寬度隨名稱而定，行內擁擠時也不再換行。",

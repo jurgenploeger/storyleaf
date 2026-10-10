@@ -767,6 +767,8 @@
     "Rosy": "발그레한 피부",
     "Tan": "구릿빛 피부",
     "Deep": "짙은 피부",
+    "Your turn": "내 차례",
+    "In a fight, the ring under whoever you're choosing a move for (your hero, then your companion) lights up and glows, so it's clear whose turn it is.": "전투에서 행동을 고르는 캐릭터(먼저 영웅, 다음은 동료) 발밑의 원이 빛나서 누구 차례인지 바로 알 수 있어요.",
     "Road closed": "길이 막혔어요",
     "A road a quest hasn't opened yet is fenced off with pickets that follow the line across it, like the town fences, instead of a jumble of upright fence pieces, and its “Closed” sign floats clear of a town's gate arch.": "퀘스트로 아직 열리지 않은 길은 마을 울타리처럼 길을 가로지르는 선을 따라 말뚝 울타리로 막혀요. 세워 놓은 울타리 조각이 뒤엉키지 않고, '닫힘' 표지판도 마을 성문 아치에 가리지 않게 떠 있어요.",
     "A skill's element badge in battle stays on one line, as wide as its name, instead of wrapping when the row is crowded.": "전투에서 스킬의 속성 배지가 이름 너비에 맞춰 한 줄로 표시되고, 줄이 붐벼도 줄바꿈되지 않아요.",

@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.3.94",
+      "date": "2026-10-10",
+      "title": "Your turn",
+      "notes": [
+        "In a fight, the ring under whoever you're choosing a move for (your hero, then your companion) lights up and glows, so it's clear whose turn it is."
+      ]
+    },
+    {
       "version": "0.3.93",
       "date": "2026-10-10",
       "title": "Road closed",

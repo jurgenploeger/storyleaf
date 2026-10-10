@@ -52,6 +52,20 @@ final class BattleScene: SKScene {
         enter()
     }
 
+    /// Whose move you're choosing, its ring lit: your hero, then your companion.
+    private var chooserID: Int?
+
+    override func update(_ currentTime: TimeInterval) {
+        // Checked each frame: the controller decides whose choice it is, and when.
+        let deciding: [BattleController.Phase] = [.command, .skills, .items, .target]
+        let chooser = controller.choosingForCompanion ? controller.companion : controller.hero
+        let choosing = controller.hasBegun && deciding.contains(controller.phase) && chooser?.isAlive == true ? chooser?.id : nil
+        guard choosing != chooserID else { return }
+        if let old = chooserID { actors[old]?.setChoosing(false) }
+        chooserID = choosing
+        if let choosing { actors[choosing]?.setChoosing(true) }
+    }
+
     /// How fast everything on the field plays (BattleController.speed: 1, or 2 with the 2× button).
     func setPace(_ value: Double) {
         speed = CGFloat(value)
@@ -1496,9 +1510,42 @@ final class BattleActor: SKNode {
         }
     }
 
+    /// A target you can pick: an orange ring.
+    private var targeted = false
+    /// Whose move you're choosing (your hero, then your companion): the white ring lit up, glowing
+    /// and breathing gently.
+    private var choosing = false
+
     func setHighlighted(_ highlighted: Bool) {
-        ring.strokeColor = highlighted ? UIColor(red: 1, green: 0.6, blue: 0.2, alpha: 0.95) : UIColor(white: 1, alpha: 0.55)
-        ring.lineWidth = highlighted ? 3 : 2
+        guard highlighted != targeted else { return }
+        targeted = highlighted
+        styleRing()
+    }
+
+    func setChoosing(_ choosing: Bool) {
+        guard choosing != self.choosing else { return }
+        self.choosing = choosing
+        styleRing()
+    }
+
+    private func styleRing() {
+        ring.removeAction(forKey: "choosing")
+        ring.alpha = 1
+        if targeted {
+            ring.strokeColor = UIColor(red: 1, green: 0.6, blue: 0.2, alpha: 0.95)
+            ring.lineWidth = 3
+            ring.glowWidth = 0
+        } else if choosing {
+            ring.strokeColor = .white
+            ring.lineWidth = 3
+            ring.glowWidth = 3
+            ring.run(.repeatForever(.sequence([.fadeAlpha(to: 0.6, duration: 0.6), .fadeAlpha(to: 1, duration: 0.6)])),
+                     withKey: "choosing")
+        } else {
+            ring.strokeColor = UIColor(white: 1, alpha: 0.55)
+            ring.lineWidth = 2
+            ring.glowWidth = 0
+        }
     }
 }
 

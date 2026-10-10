@@ -767,6 +767,8 @@
     "Rosy": "Румяная",
     "Tan": "Смуглая",
     "Deep": "Тёмная",
+    "Your turn": "Твой ход",
+    "In a fight, the ring under whoever you're choosing a move for (your hero, then your companion) lights up and glows, so it's clear whose turn it is.": "В бою круг под тем, кому вы выбираете действие (сначала герой, потом спутник), загорается и светится, чтобы было ясно, чей сейчас ход.",
     "Road closed": "Дорога закрыта",
     "A road a quest hasn't opened yet is fenced off with pickets that follow the line across it, like the town fences, instead of a jumble of upright fence pieces, and its “Closed” sign floats clear of a town's gate arch.": "Дорогу, которую задание ещё не открыло, перегораживает частокол, идущий поперёк неё, как городские заборы, а не груда стоящих кусков забора, и табличка «Закрыто» парит над аркой городских ворот.",
     "A skill's element badge in battle stays on one line, as wide as its name, instead of wrapping when the row is crowded.": "Значок стихии умения в бою остаётся в одну строку, шириной по названию, а не переносится, когда строка заполнена.",

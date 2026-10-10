@@ -74,7 +74,7 @@ final class BattleController {
     /// A boss you've never beaten: winning tells its story.
     @ObservationIgnored private var story: BossStory?
     /// The opening march is over and the first turn has started (`begin`).
-    @ObservationIgnored private var hasBegun = false
+    @ObservationIgnored private(set) var hasBegun = false
 
     init(engine: BattleEngine, session: GameSession, intro: String? = nil) {
         self.engine = engine
