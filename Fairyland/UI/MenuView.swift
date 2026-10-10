@@ -302,9 +302,6 @@ private struct CharacterTab: View {
                 Text("\(session.heroRace.name) · \(session.heroClass.name)")
                     .font(HUDStyle.font(12))
                     .foregroundStyle(HUDStyle.gold)
-                Text(session.rebirths > 0 ? L("Level {level} · Reborn ×{rebirths}", ["level": hero.level, "rebirths": session.rebirths]) : L("Level {level}", ["level": hero.level])).font(HUDStyle.font(12))
-                StatBar(label: L("EXP"), value: hero.exp, maximum: GameSession.expToNext(level: hero.level), color: HUDStyle.exp)
-                    .frame(width: 170)
                 if session.canChooseClass {
                     Text(L("Ready to choose a path! Visit a guild master in Meadowbrook."))
                         .font(HUDStyle.font(10))
@@ -317,22 +314,34 @@ private struct CharacterTab: View {
             .frame(maxWidth: .infinity)
 
             VStack(alignment: .leading, spacing: 10) {
-                SectionTitle(text: L("Stats"))
-                // Big and easy to read: the screen has the room.
+                HStack(alignment: .firstTextBaseline) {
+                    SectionTitle(text: L("Stats"))
+                    Spacer()
+                    Text(session.rebirths > 0 ? L("Level {level} · Reborn ×{rebirths}", ["level": hero.level, "rebirths": session.rebirths]) : L("Level {level}", ["level": hero.level]))
+                        .font(HUDStyle.font(15))
+                }
+                // Big and easy to read: the screen has the room. Every number in the same size.
+                StatBar(label: L("EXP"), value: hero.exp, maximum: GameSession.expToNext(level: hero.level), color: HUDStyle.exp,
+                        labelWidth: 36, height: 20, labelSize: 15, numberSize: Self.digits)
                 StatBar(label: L("HP"), value: hero.hp, maximum: stats.hp, color: HUDStyle.hp,
-                        labelWidth: 36, height: 20, labelSize: 15, numberSize: 12)
+                        labelWidth: 36, height: 20, labelSize: 15, numberSize: Self.digits)
                 StatBar(label: L("MP"), value: hero.mp, maximum: stats.mp, color: HUDStyle.mp,
-                        labelWidth: 36, height: 20, labelSize: 15, numberSize: 12)
+                        labelWidth: 36, height: 20, labelSize: 15, numberSize: Self.digits)
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: 8) {
-                    StatCell(name: L("Attack"), value: stats.attack, size: 17)
-                    StatCell(name: L("Defense"), value: stats.defense, size: 17)
-                    StatCell(name: L("Magic"), value: stats.magic, size: 17)
-                    StatCell(name: L("Speed"), value: stats.speed, size: 17)
+                    StatCell(name: L("Attack"), value: stats.attack, size: 13, icon: .sword, tint: Self.attackTint, digits: Self.digits)
+                    StatCell(name: L("Defense"), value: stats.defense, size: 13, icon: .shield, tint: HUDStyle.mp, digits: Self.digits)
+                    StatCell(name: L("Magic"), value: stats.magic, size: 13, icon: .sparkles, tint: Self.magicTint, digits: Self.digits)
+                    StatCell(name: L("Speed"), value: stats.speed, size: 13, icon: .wind, tint: HUDStyle.green, digits: Self.digits)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
+
+    /// The Stats section's numbers, all one size: EXP, HP and MP in their bars and the four below.
+    private static let digits: CGFloat = 13
+    private static let attackTint = Color(red: 1, green: 0.5, blue: 0.35)
+    private static let magicTint = Color(red: 0.78, green: 0.58, blue: 1)
 
     /// Skill points, what you know and can learn (SkillChoices), and what your class unlocks later:
     /// the next two, the rest a tap away.
@@ -395,13 +404,24 @@ struct StatCell: View {
     let value: Int
     /// The text size; the padding grows with it (bigger on the Character screen).
     var size: CGFloat = 12
+    /// The stat's icon before its name, in its colour (the Character screen).
+    var icon: GameIcon?
+    var tint: Color = HUDStyle.dim
+    /// The number in the HUD's digits at this size, to match the bars beside it.
+    var digits: CGFloat?
 
     var body: some View {
-        HStack {
+        HStack(spacing: size * 0.45) {
+            if let icon {
+                IconImage(icon, size: (size * 1.15).rounded()).foregroundStyle(tint)
+            }
             Text(name).foregroundStyle(HUDStyle.dim)
-            Spacer()
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: 4)
             Text("\(value)").foregroundStyle(.white)
                 .monospacedDigit()
+                .font(digits.map { HUDStyle.mono($0) } ?? HUDStyle.font(size))
         }
         .font(HUDStyle.font(size))
         .padding(.horizontal, size * 0.7)
@@ -410,31 +430,41 @@ struct StatCell: View {
     }
 }
 
-/// The hero in the middle with what they wear around them, like a paper doll: the body's slots
-/// down the left (necklace, armour, boots, top to bottom), the hands' down the right (weapon,
-/// gloves, accessory). A tap on a slot opens everything you have for it (EquipmentPicker).
+/// The hero in the middle with what they wear in a ring around them, like a paper doll: the body's
+/// slots round the left (necklace, armour, boots, top to bottom), the hands' round the right
+/// (weapon, gloves, accessory). A tap on a slot opens everything you have for it (EquipmentPicker).
 private struct PaperDoll: View {
     let session: GameSession
     let change: (ItemType) -> Void
 
-    private static let left: [ItemType] = [.necklace, .armor, .boots]
-    private static let right: [ItemType] = [.weapon, .gloves, .accessory]
+    /// Each slot and where it sits on the ring, in degrees clockwise from the right.
+    private static let ring: [(slot: ItemType, angle: Double)] = [
+        (.weapon, -55), (.gloves, 0), (.accessory, 55),
+        (.boots, 125), (.armor, 180), (.necklace, 235),
+    ]
+    /// The ring's radius (to each slot's middle), and the room a slot takes.
+    private static let radius: CGFloat = 112
+    private static let slot = CGSize(width: 62, height: 66)
 
     var body: some View {
-        HStack(alignment: .center, spacing: 8) {
-            column(Self.left)
+        let width = Self.radius * 2 + Self.slot.width
+        let height = Self.radius * 2 * CGFloat(sin(55 * Double.pi / 180)) + Self.slot.height
+        ZStack {
+            // A faint ring through the slots, and the hero on a soft disc in the middle.
+            Circle()
+                .strokeBorder(.white.opacity(0.08), lineWidth: 2)
+                .frame(width: Self.radius * 2, height: Self.radius * 2)
             WalkingSprite(art: GameSession.heroArt, size: 128, weapon: session.equipped(.weapon))
                 .background(Circle().fill(.white.opacity(0.06)))
-            column(Self.right)
-        }
-    }
-
-    private func column(_ slots: [ItemType]) -> some View {
-        VStack(spacing: 10) {
-            ForEach(slots, id: \.self) { slot in
-                DollSlot(session: session, slot: slot) { change(slot) }
+            ForEach(Self.ring, id: \.slot) { place in
+                let angle = place.angle * Double.pi / 180
+                DollSlot(session: session, slot: place.slot) { change(place.slot) }
+                    .frame(width: Self.slot.width, height: Self.slot.height)
+                    .offset(x: Self.radius * CGFloat(cos(angle)), y: Self.radius * CGFloat(sin(angle)))
             }
         }
+        .frame(width: width, height: height)
+        .padding(.vertical, 4)
     }
 }
 

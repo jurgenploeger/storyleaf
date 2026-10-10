@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.3.96",
+      "date": "2026-10-11",
+      "title": "Tidy hero",
+      "notes": [
+        "The Character screen's gear slots sit in a ring around your hero with more room between them. Your level and EXP moved into the Stats section, and Attack, Defense, Magic and Speed each have an icon, with all the numbers in one size."
+      ]
+    },
+    {
       "version": "0.3.95",
       "date": "2026-10-10",
       "title": "First come, first served",
