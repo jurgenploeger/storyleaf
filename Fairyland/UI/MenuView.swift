@@ -19,6 +19,8 @@ struct MenuView: View {
     @State private var characterPage: CharacterPage = DebugLaunch.subTab.flatMap(CharacterPage.init(rawValue:)) ?? .hero
     @State private var companionsPage: CompanionsPage = DebugLaunch.opensMonsterBook ? .book : .companions
     @State private var questsPage: QuestsPage = DebugLaunch.subTab.flatMap(QuestsPage.init(rawValue:)) ?? .quests
+    /// An egg to hatch, chosen on its card: the Bag plays the hatching.
+    @State private var hatchRequest: ItemDef?
     /// A tap on something in the Bag: its card, over the menu. Debug `inspect=<item>` opens one
     /// (unless it's for the gear grid, `change=`).
     @State private var inspecting: ItemDef? = DebugLaunch.changingSlot == nil ? DebugLaunch.inspectedItem.flatMap { Content.shared.item($0) } : nil
@@ -64,8 +66,7 @@ struct MenuView: View {
                         case .companions: CompanionsTab(session: session, page: $companionsPage)
                         case .friends: FriendsTab(session: session)
                         case .bag:
-                            BagTab(session: session, note: $bagNote,
-                                   onUse: { item in withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { picking = item } },
+                            BagTab(session: session, note: $bagNote, hatchRequest: $hatchRequest,
                                    onInspect: { item in withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { inspecting = item } })
                         case .quests: QuestsTab(session: session, page: $questsPage)
                         case .settings: SettingsView(session: session, onQuitToTitle: onQuitToTitle)
@@ -101,14 +102,48 @@ struct MenuView: View {
             }
 
             if let item = inspecting {
-                ItemInfoCard(session: session, item: item) {
-                    withAnimation(.easeOut(duration: 0.2)) { inspecting = nil }
-                }
+                let close = { withAnimation(.easeOut(duration: 0.2)) { inspecting = nil } }
+                // From the Bag: what you can do with it there, on its card.
+                let fromBag = tab == .bag
+                let wearable = fromBag && ItemType.equipmentSlots.contains(item.type) && session.count(of: item.id) > 0
+                let equip: (() -> Void)? = wearable ? { session.equip(item.id); close() } : nil
+                ItemInfoCard(session: session, item: item, onClose: close, onEquip: equip,
+                             action: fromBag ? bagAction(for: item, close: close) : nil,
+                             note: fromBag ? bagNote(for: item) : nil)
                 .transition(.opacity)
                 .zIndex(1)
             }
         }
         .foregroundStyle(HUDStyle.cream)
+    }
+}
+
+extension MenuView {
+    /// What an item in the Bag can do, on its card: drink it (or give it) to someone, give a toy to
+    /// a companion, fly home on a feather, or hatch an egg.
+    func bagAction(for item: ItemDef, close: @escaping () -> Void) -> ItemInfoCard.Action? {
+        let pick = { close(); withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { picking = item } }
+        if item.hatches != nil {
+            return ItemInfoCard.Action(title: L("Hatch"), icon: .egg) { close(); hatchRequest = item }
+        }
+        if (item.heal ?? 0) > 0 || (item.mp ?? 0) > 0 {
+            return ItemInfoCard.Action(title: L("Use"), run: pick)
+        }
+        if item.travel == true {
+            // Back to your checkpoint, like Bridge of Light (closes the menu).
+            return ItemInfoCard.Action(title: L("Use"), enabled: session.onTravel != nil) { close(); session.onTravel?(item) }
+        }
+        if item.toy == true, !session.data.pets.isEmpty {
+            return ItemInfoCard.Action(title: L("Give"), icon: .gift, run: pick)
+        }
+        return nil
+    }
+
+    /// Why an item in the Bag has nothing to do there.
+    func bagNote(for item: ItemDef) -> String? {
+        if item.capture == true { return L("For battle") }
+        if item.toy == true, session.data.pets.isEmpty { return L("No companions yet") }
+        return nil
     }
 }
 
@@ -967,15 +1002,21 @@ private struct CompanionCard: View {
 
 // MARK: - Bag
 
+/// Everything you carry in a grid of slots, like an adventurer's pack: potions and other things to
+/// use, spare gear, and materials, each with how many you have. A tap opens the item's card, with
+/// what it does and the button to use, give, hatch or wear it.
 private struct BagTab: View {
     let session: GameSession
     @Binding var note: String?
-    /// Use (a potion) or Give (a toy): MenuView asks who gets it.
-    let onUse: (ItemDef) -> Void
+    /// An egg chosen on its card: it hatches here.
+    @Binding var hatchRequest: ItemDef?
     /// A tap on an item: MenuView shows its card.
     let onInspect: (ItemDef) -> Void
     @State private var hatched: Pet?
     @State private var hatching = false
+
+    private static let slot: CGFloat = 52
+    private let columns = [GridItem(.adaptive(minimum: BagTab.slot + 6, maximum: BagTab.slot + 14), spacing: 8)]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -987,118 +1028,59 @@ private struct BagTab: View {
             }
             .font(HUDStyle.font(12))
 
+            if hatching, let pet = hatched {
+                HatchView(session: session, pet: pet) { hatching = false }
+            }
+
             SectionTitle(text: L("Items"))
             if session.consumables.isEmpty {
                 Text(L("No potions. Trader Bo in Meadowbrook sells them.")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
             }
-            ForEach(session.consumables) { item in
-                HStack(spacing: 10) {
-                    summary(item) {
-                        Text(item.name)
-                        if item.toy == true, let raise = item.stats {
-                            Text(L("For a companion: {bonus} for good", ["bonus": raise.bonusSummary]))
-                                .font(HUDStyle.font(10))
-                                .foregroundStyle(HUDStyle.green)
-                                .lineLimit(1)
-                        } else {
-                            Text(item.description ?? "").font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim).lineLimit(1)
-                        }
-                    }
-                    if item.hatches != nil {
-                        Button {
-                            hatching = true
-                            hatched = session.hatch(item.id)
-                            if hatched == nil, session.data.pets.count >= GameSession.maxPets {
-                                note = L("No room: you have {count} companions.", ["count": GameSession.maxPets])
-                            }
-                            session.save()
-                        } label: {
-                            Label(L("Hatch"), icon: .egg)
-                        }
-                        .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
-                    } else if (item.heal ?? 0) > 0 || (item.mp ?? 0) > 0 {
-                        Button(L("Use")) { onUse(item) }
-                            .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
-                    } else if item.travel == true {
-                        // Back to your checkpoint, like Bridge of Light (closes the menu).
-                        Button(L("Use")) { session.onTravel?(item) }
-                            .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
-                            .disabled(session.onTravel == nil)
-                    } else if item.capture == true {
-                        Text(L("For battle")).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim)
-                    } else if item.toy == true {
-                        // Any of your companions can have it.
-                        if session.data.pets.isEmpty {
-                            Text(L("No companions yet")).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim)
-                        } else {
-                            Button {
-                                onUse(item)
-                            } label: {
-                                Label(L("Give"), icon: .gift)
-                            }
-                            .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
-                        }
-                    }
-                }
-                .font(HUDStyle.font(12))
-            }
-
-            if hatching, let pet = hatched {
-                HatchView(session: session, pet: pet) { hatching = false }
-            }
+            grid(session.consumables)
 
             SectionTitle(text: L("Equipment"))
             if session.bagEquipment.isEmpty {
                 Text(L("Nothing spare. Equipped gear is on the Character tab.")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
             }
-            ForEach(session.bagEquipment) { item in
-                HStack(spacing: 10) {
-                    summary(item) {
-                        Text("\(item.name)  ·  \(item.type.displayName)")
-                        Text(item.stats?.bonusSummary ?? "").font(HUDStyle.font(10)).foregroundStyle(HUDStyle.green)
-                    }
-                    if let issue = session.equipIssue(item) {
-                        Text(issue).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim)
-                    } else {
-                        Button(L("Equip")) { session.equip(item.id) }
-                            .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
-                    }
-                }
-                .font(HUDStyle.font(12))
-            }
+            // Gear you can't wear yet (too low a level, another class's) is faded.
+            grid(session.bagEquipment) { session.equipIssue($0) == nil }
 
             SectionTitle(text: L("Materials"))
             if session.bagMaterials.isEmpty {
                 Text(L("Monsters drop wood, metal, gems and hides. A town smith forges them into weapons."))
                     .font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
             }
-            ForEach(session.bagMaterials) { item in
-                summary(item, size: 28) {
-                    Text(item.name)
-                    Text(item.description ?? "").font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim).lineLimit(1)
-                }
-                .font(HUDStyle.font(12))
+            grid(session.bagMaterials)
+        }
+        .onChange(of: hatchRequest?.id) { _, id in
+            guard let id else { return }
+            hatchRequest = nil
+            hatching = true
+            hatched = session.hatch(id)
+            if hatched == nil, session.data.pets.count >= GameSession.maxPets {
+                note = L("No room: you have {count} companions.", ["count": GameSession.maxPets])
             }
+            session.save()
         }
     }
 
-    /// An item's icon, name and a line about it. A tap opens its card (ItemInfoCard), with
-    /// everything else: what it does in full, who can use it, what it's worth.
-    private func summary<Lines: View>(_ item: ItemDef, size: CGFloat = 36, @ViewBuilder lines: () -> Lines) -> some View {
-        Button {
-            onInspect(item)
-        } label: {
-            HStack(spacing: 10) {
-                ItemIcon(item: item, size: size, count: session.count(of: item.id))
-                VStack(alignment: .leading, spacing: 1) {
-                    lines()
+    /// One slot per kind of item, its count in the corner from two up.
+    private func grid(_ items: [ItemDef], usable: @escaping (ItemDef) -> Bool = { _ in true }) -> some View {
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
+            ForEach(items) { item in
+                Button {
+                    onInspect(item)
+                } label: {
+                    ItemIcon(item: item, size: Self.slot, count: session.count(of: item.id))
+                        .opacity(usable(item) ? 1 : 0.45)
+                        .padding(.top, 5)
+                        .padding(.trailing, 5)
                 }
-                Spacer(minLength: 0)
+                .buttonStyle(PressScaleStyle())
+                .accessibilityLabel(session.count(of: item.id) > 1 ? L("{item}, {count}", ["item": item.name, "count": session.count(of: item.id)]) : item.name)
+                .accessibilityHint(L("Shows what it does and who can use it"))
             }
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityHint(L("Shows what it does and who can use it"))
     }
 }
 

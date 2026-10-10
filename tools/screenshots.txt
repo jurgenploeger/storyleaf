@@ -241,6 +241,7 @@ victory_cards     | newgame,level=5,map=sunny_meadow,battle=2,win,card       | 3
 # Toymaker's card quests, and Tilly in Prismhaven.
 toys_bag          | newgame,level=30,pet=jelly,bag=toy_soldier+toy_bear+toy_music_box,menu=bag | 8
 bag_card          | newgame,level=30,bag=potion+potion+seal_stone+bronze_ingot+iron_axe,menu=bag,inspect=seal_stone | 8
+bag_potion_card   | newgame,level=30,pet=jelly,bag=potion+potion+hi_potion+seal_stone+toy_soldier+iron_axe+bronze_ingot,menu=bag,inspect=potion | 8
 toys_companion    | newgame,level=30,pet=jelly,toys=4,bag=toy_ball,menu=companions | 8
 toy_info          | newgame,level=30,npc=rainbow_shop,info=toy_music_box     | 8
 bag_use           | newgame,level=30,pet=jelly,hp=0.4,bag=potion+potion+potion+ether,menu=bag,use=potion | 8
