@@ -1089,8 +1089,6 @@ struct RulesTests {
             let hero = Combatant(id: 0, side: .party, source: .hero, name: "Hero", art: "player_walk", level: 5, element: .neutral,
                                  stats: Stats(hp: 500, mp: 20, attack: 30, defense: 50, magic: 10, speed: 50), hp: 500, mp: 20,
                                  skills: [], captureRate: 0)
-            // Far faster than everyone (turn order is a shuffle weighted by speed), so it as good as
-            // always acts first.
             let pet = Combatant(id: 1, side: .party, source: .pet(UUID()), name: "Pet", art: jelly.art, level: 5, element: jelly.element,
                                 stats: Stats(hp: 500, mp: 0, attack: 30, defense: 50, magic: 10, speed: 10_000), hp: 500, mp: 0,
                                 skills: [], captureRate: 0)
@@ -1105,12 +1103,46 @@ struct RulesTests {
             return false
         }
         #expect(attacked)
-        // You throw one: it holds back.
-        let heldBack = play(.capture(target: 10)).contains { event in
-            if case .defend(let actor) = event { return actor == 1 }
+        // You throw one: it holds back (if the stone didn't already seal it).
+        let wentFor = play(.capture(target: 10)).contains { event in
+            if case .attack(let actor, _) = event { return actor == 1 }
             return false
         }
-        #expect(heldBack)
+        #expect(!wentFor)
+    }
+
+    @Test func yourSideGoesInTheOrderItChoseThenTheMonsters() {
+        let content = Content.shared
+        let jelly = content.monster("jelly")!
+        let sturdy = Stats(hp: 9_999, mp: 0, attack: 1, defense: 999, magic: 1, speed: 1)
+        let hero = Combatant(id: 0, side: .party, source: .hero, name: "Hero", art: "player_walk", level: 40, element: .neutral,
+                             stats: sturdy, hp: 9_999, mp: 0, skills: [], captureRate: 0)
+        var pet = Combatant(id: 1, side: .party, source: .pet(UUID()), name: "Pet", art: jelly.art, level: 40, element: .neutral,
+                            stats: sturdy, hp: 9_999, mp: 0, skills: [], captureRate: 0)
+        pet.ownerID = 0
+        let friend = Combatant(id: 2, side: .party, source: .ally(UUID()), name: "Maple", art: "player_walk", level: 40, element: .neutral,
+                               stats: sturdy, hp: 9_999, mp: 0, skills: [], captureRate: 0)
+        // Far faster than everyone, and it still waits for your side.
+        let foe = Combatant(id: 10, side: .enemies, source: .wild("jelly"), name: "Jelly", art: jelly.art, level: 40, element: jelly.element,
+                            stats: Stats(hp: 9_999, mp: 0, attack: 1, defense: 999, magic: 1, speed: 10_000), hp: 9_999, mp: 0,
+                            skills: [], captureRate: 0)
+        func actors(_ events: [BattleEvent]) -> [Int] {
+            events.compactMap { event in
+                switch event {
+                case .attack(let actor, _), .skill(let actor, _, _, _), .defend(let actor): actor
+                default: nil
+                }
+            }
+        }
+        let engine = BattleEngine(party: [hero, pet, friend], enemies: [foe], content: content, seed: 3)
+        // Chosen at once: you first, your companion right after you, the monster last.
+        let quick = actors(engine.resolveRound(heroAction: .attack(target: 10), heroChoseAt: 0))
+        #expect(Array(quick.prefix(2)) == [0, 1])
+        #expect(quick.last == 10)
+        // Chosen as the bell rings: your friend got in first.
+        let slow = actors(engine.resolveRound(heroAction: .attack(target: 10), heroChoseAt: 1))
+        #expect(slow.first == 2)
+        #expect(Array(slow.suffix(3)) == [0, 1, 10])
     }
 
     @Test func reviveWakesAFaintedCompanionAndBlessHelps() {

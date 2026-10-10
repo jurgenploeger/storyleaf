@@ -226,8 +226,8 @@ enum CaptureStatus: Equatable {
 }
 
 /// Fairyland-style turn-based battle rules, with no UI. Each round the player picks the hero's
-/// action and can give their companion orders; everyone else decides for themselves; everyone
-/// acts in speed order.
+/// action and can give their companion orders; everyone else decides for themselves. Your side
+/// acts in the order its moves were chosen, then the monsters by speed.
 final class BattleEngine {
     private(set) var combatants: [Combatant]
     private(set) var outcome: BattleOutcome = .ongoing
@@ -345,7 +345,9 @@ final class BattleEngine {
 
     /// `orders`: what the player told their companion to do, by fighter id (Fairyland let you
     /// command your pet each round). A companion without orders decides for itself.
-    func resolveRound(heroAction: BattleAction, orders: [Int: BattleAction] = [:]) -> [BattleEvent] {
+    /// `heroChoseAt`: how far into the time to choose you locked in your move (0 at once, 1 at the
+    /// bell), which sets your place among your friends this round.
+    func resolveRound(heroAction: BattleAction, orders: [Int: BattleAction] = [:], heroChoseAt: Double = 0) -> [BattleEvent] {
         guard outcome == .ongoing else { return [] }
         round += 1
         if case .capture(let target, _) = heroAction { sealTarget = target } else { sealTarget = nil }
@@ -363,16 +365,32 @@ final class BattleEngine {
             if case .defend = order { mutate(id) { $0.isDefending = true } }
         }
 
-        // Who goes when is shuffled anew every round, weighted by speed: anyone can go first, but
-        // the faster go earlier more often (one with twice the speed of another goes before it two
-        // rounds in three). Each fighter draws u^(1/speed) and the highest goes first; compared as
-        // log(u)/speed, the same order without underflow at high speeds.
+        // Your side goes first, in the order everyone chose their move: you when you locked yours in,
+        // each friend at a moment of their own somewhere in the time to choose (so choose quickly and
+        // you go before them), every companion right after whoever it came with.
+        let standing = combatants.filter(\.isAlive)
+        let yourSide = hero?.side ?? .party
+        var lockedIn: [(id: Int, at: Double)] = []
+        for fighter in standing where fighter.side == yourSide && fighter.ownerID == nil {
+            let at = fighter.isHero ? heroChoseAt : Double.random(in: 0..<1, using: &rng)
+            lockedIn.append((fighter.id, at))
+        }
+        var order: [Int] = []
+        for leader in lockedIn.sorted(by: { ($0.at, $0.id) < ($1.at, $1.id) }) {
+            order.append(leader.id)
+            order += standing.filter { $0.ownerID == leader.id }.map(\.id)
+        }
+        // A companion whose owner is down still fights, after the rest.
+        order += standing.filter { $0.side == yourSide && !order.contains($0.id) }.map(\.id)
+        // Then the monsters, shuffled anew every round and weighted by speed: the faster go earlier
+        // more often (twice the speed, first two rounds in three). Each draws u^(1/speed) and the
+        // highest goes first; compared as log(u)/speed, the same order without underflow.
         var initiative: [(id: Int, roll: Double)] = []
-        for fighter in combatants where fighter.isAlive {
+        for fighter in standing where fighter.side != yourSide {
             let draw = Double.random(in: Double.ulpOfOne..<1, using: &rng)
             initiative.append((fighter.id, log(draw) / max(1, fighter.speed)))
         }
-        let order = initiative.sorted { $0.roll > $1.roll }.map { $0.id }
+        order += initiative.sorted { $0.roll > $1.roll }.map { $0.id }
 
         var events: [BattleEvent] = []
         // Everyone already frozen sits this round out together at its start, so their shivers play

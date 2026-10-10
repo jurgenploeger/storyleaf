@@ -398,6 +398,10 @@ final class BattleController {
     private(set) var choosingForCompanion = false
     /// The hero's choice, waiting while you choose the companion's.
     @ObservationIgnored private var heroChoice: BattleAction?
+    /// When this round's time to choose began, and how far into it (0...1) you locked in your
+    /// hero's move: your place among your friends this round (`BattleEngine.resolveRound`).
+    @ObservationIgnored private var choosingSince: Date?
+    @ObservationIgnored private var heroChoseAt: Double = 0
 
     /// Its skills, for the Skills list on its turn.
     var companionSkills: [SkillDef] { companion?.skills.compactMap { session.content.skill($0) } ?? [] }
@@ -679,6 +683,11 @@ final class BattleController {
     private func submit(_ action: BattleAction, askCompanion: Bool = true) {
         stopTurnClock()
         clearTargets()
+        if !choosingForCompanion {
+            // Measured against the time to choose (ten seconds when there's no clock).
+            let window = Self.turnSeconds ?? 10
+            heroChoseAt = min(1, max(0, Date().timeIntervalSince(choosingSince ?? Date()) / window))
+        }
         if choosingForCompanion {
             choosingForCompanion = false
             resolve(heroChoice ?? .defend, orders: companion.map { [$0.id: action] } ?? [:])
@@ -710,8 +719,10 @@ final class BattleController {
     /// Plays the round with everyone's choices.
     private func resolve(_ heroAction: BattleAction, orders: [Int: BattleAction]) {
         heroChoice = nil
+        choosingSince = nil
         phase = .animating
-        let events = engine.resolveRound(heroAction: heroAction, orders: orders)
+        let events = engine.resolveRound(heroAction: heroAction, orders: orders, heroChoseAt: heroChoseAt)
+        heroChoseAt = 0
         Task {
             if let scene {
                 await scene.play(events)
@@ -749,6 +760,7 @@ final class BattleController {
 
     /// Starts the clock for a turn: each new one, and the first once the battle is on screen.
     func startTurnClock() {
+        if !choosingForCompanion, choosingSince == nil, isChoosing { choosingSince = Date() }
         guard let seconds = Self.turnSeconds, isChoosing, turnClock == nil, heldTime == nil else { return }
         if holds.isEmpty {
             runTurnClock(seconds)

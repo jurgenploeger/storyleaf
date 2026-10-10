@@ -166,9 +166,12 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
 - One equipment drop in three is a trinket (gloves, necklace, boots or accessory), any up to the monster's
   level (`GameSession.accessoryShare`): there are only a few of each next to dozens of weapons and armours, so
   by level alone they'd hardly drop.
-- Turn order is shuffled every round, weighted by SPD: each fighter draws u^(1/SPD) and the highest goes first,
-  so anyone can open a round but the faster go earlier more often (twice the SPD: first two rounds in three).
-  Our decision, 2026-10-09, at the playtester's request; it was SPD + a random 0–3, which fixed the order.
+- Turn order: your side goes first, in the order its moves were chosen, as players locking in their commands
+  would. You go when you chose (how far into the time to choose), each friend (a bot) at a random moment of
+  its own, every companion right after whoever it came with. Then the monsters, shuffled every round and
+  weighted by SPD (each draws u^(1/SPD), the highest first; twice the SPD goes first two rounds in three).
+  Our decision, 2026-10-10, at the playtester's request; before that the whole field was shuffled by SPD
+  (2026-10-09), and before that it was SPD + a random 0–3.
 - Nothing misses and nothing dodges.
 - Crits are a flat 8% for ×1.5, physical only.
 

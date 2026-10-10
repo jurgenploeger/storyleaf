@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.3.95",
+      "date": "2026-10-10",
+      "title": "First come, first served",
+      "notes": [
+        "In a fight, your side acts first, in the order everyone chose their move: choose quickly and you go before your friends, and your companion always goes right after you. The monsters go after your side, the faster ones earlier more often."
+      ]
+    },
+    {
       "version": "0.3.94",
       "date": "2026-10-10",
       "title": "Your turn",
