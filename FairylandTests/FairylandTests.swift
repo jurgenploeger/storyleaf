@@ -1359,9 +1359,9 @@ struct RulesTests {
         #expect(session.count(of: "moon_seal") == 1)
         battle.apply(.capture(actor: 0, target: 10, success: true, wobbles: 3, stone: "moon_seal"))
         #expect(session.count(of: "moon_seal") == 0)
-        // Only the Wishing Seal is left: Capture opens Items instead of throwing it.
+        // Only the Wishing Seal is left: Capture asks which stone instead of throwing it.
         battle.capture()
-        #expect(battle.phase == .items)
+        #expect(battle.phase == .stones)
         #expect(session.count(of: "wishing_seal") == 1)
     }
 

@@ -57,7 +57,7 @@ final class BattleScene: SKScene {
 
     override func update(_ currentTime: TimeInterval) {
         // Checked each frame: the controller decides whose choice it is, and when.
-        let deciding: [BattleController.Phase] = [.command, .skills, .items, .target]
+        let deciding: [BattleController.Phase] = [.command, .skills, .items, .stones, .target]
         let chooser = controller.choosingForCompanion ? controller.companion : controller.hero
         let choosing = controller.hasBegun && deciding.contains(controller.phase) && chooser?.isAlive == true ? chooser?.id : nil
         guard choosing != chooserID else { return }

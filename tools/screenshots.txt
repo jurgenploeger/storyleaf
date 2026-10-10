@@ -251,6 +251,7 @@ toymaker_town     | newgame,map=rainbow_city,at=-2_2,clean                   | 1
 # Seal Stones (0.3.70): every kind in the battle's Items list with its odds, aiming a Heart Seal (the odds
 # over each monster), a Heart Seal and a Wishing Seal on their way, and Larkspur's market selling them.
 seal_items        | newgame,level=12,map=sunny_meadow,battle=1,bag=seal_stone+moon_seal+heart_seal+star_seal+wishing_seal,items | 15
+seal_choice       | newgame,level=12,map=sunny_meadow,battle=1,bag=seal_stone+moon_seal+heart_seal+star_seal+wishing_seal,stones | 15
 seal_aim          | newgame,level=12,map=sunny_meadow,battle=2,bag=heart_seal,aim=heart_seal | 15
 seal_heart        | newgame,level=12,map=sunny_meadow,battle=1,seal=ok:heart_seal,fxstop=0.6 | 14
 seal_wishing      | newgame,level=12,map=sunny_meadow,battle=1,seal=ok:wishing_seal,fxstop=1.45 | 18
