@@ -55,6 +55,8 @@ final class Crowd {
     var onChat: ((String, String, GameSession.ChatLine.Kind) -> Void)?
     /// A red-named adventurer in a danger zone walks up and picks a fight.
     var onChallenge: ((Adventurer) -> Void)?
+    /// Whether a troublemaker dares take you on (`GameSession.dares`): the weaker ones leave you be.
+    var dares: ((Adventurer) -> Bool)?
 
     private let map: WorldMap
     private var members: [Member] = []
@@ -278,7 +280,7 @@ final class Crowd {
             if let profile = member.profile, profile.hostile {
                 member.calm -= dt
                 let distance = walker.position.distance(to: player)
-                if member.calm <= 0, distance < 170 {
+                if member.calm <= 0, distance < 170, dares?(profile) != false {
                     member.calm = 25
                     walker.path = []
                     walker.setWalking(false)

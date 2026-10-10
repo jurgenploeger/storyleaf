@@ -622,6 +622,26 @@ final class GameSession {
     /// them: they walk and fight beside you.
     var friendsAtYourSide: [Adventurer] { partyMembers.filter { $0.waitingAt == nil } }
 
+    /// How strong your side is in a fight, as the levels of everyone who'd stand with you added up:
+    /// you, your companion while it's up, and the friends at your side with theirs (a step below
+    /// their own level, as they fight).
+    var partyStrength: Int {
+        let companion = activePet.map { $0.hp > 0 ? $0.level : 0 } ?? 0
+        return data.hero.level + companion + friendsAtYourSide.map(Self.strength).reduce(0, +)
+    }
+
+    /// An adventurer's strength with their companion, the same way.
+    static func strength(of adventurer: Adventurer) -> Int {
+        adventurer.level + (adventurer.petSpecies == nil ? 0 : max(1, adventurer.level - 1))
+    }
+
+    /// Whether a red-named troublemaker dares pick a fight with you: only one about as strong as
+    /// your side or stronger (nine tenths of it, with their companion). Much stronger, or with a
+    /// party that's more than a match together, and they leave you be.
+    func dares(_ rival: Adventurer) -> Bool {
+        Self.strength(of: rival) * 10 >= partyStrength * 9
+    }
+
     func isFriend(_ adventurer: Adventurer) -> Bool { friends.contains { $0.id == adventurer.id } }
     func isInParty(_ adventurer: Adventurer) -> Bool { data.partyIDs?.contains(adventurer.id) == true }
 

@@ -773,6 +773,7 @@
     "The Character screen's gear slots sit in a ring around your hero with more room between them. Your level and EXP moved into the Stats section, and Attack, Defense, Magic and Speed each have an icon, with all the numbers in one size.": "キャラクター画面の装備スロットがヒーローを囲む輪の形に並び、間隔も広くなりました。レベルとEXPは能力欄に移り、こうげき・ぼうぎょ・まりょく・すばやさにはそれぞれアイコンが付いて、数字の大きさもそろいました。",
     "On the Companions page, the companion you bring along comes first, laid out like your hero: big, with its level, EXP, HP and stats in the same Stats section. The others follow below.": "なかまページでは、連れているなかまがヒーローと同じように一番上に大きく表示され、レベル、EXP、HP、能力が同じ能力欄に並びます。ほかのなかまはその下に続きます。",
     "The Bag is a grid of slots, like an adventurer's pack, each with how many you have. Tap one for its card, with the button to use, give, hatch or wear it.": "バッグがぼうけん者の荷物のようなマス目になり、それぞれ持っている数が表示されます。マスをタップするとカードが開き、使う・あげる・ふ化させる・装備するボタンがあります。",
+    "Red-named troublemakers only pick a fight with you when they're about your match or stronger. If you're much stronger, or your party is together, they leave you be.": "赤い名前のならず者は、あなたと同じくらいかそれ以上に強いときだけ勝負を仕掛けてきます。あなたがずっと強いか、パーティー全体で上回っていれば手を出してきません。",
     "First come, first served": "早い者勝ち",
     "In a fight, your side acts first, in the order everyone chose their move: choose quickly and you go before your friends, and your companion always goes right after you. The monsters go after your side, the faster ones earlier more often.": "バトルでは味方側が先に、それぞれが行動を選んだ順に動きます。早く選べばフレンドより先に動け、仲間はいつもあなたのすぐ後に動きます。モンスターは味方の後に動き、素早いものほど先に動きやすくなります。",
     "Your turn": "あなたの番",

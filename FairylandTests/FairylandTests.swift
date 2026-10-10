@@ -1234,6 +1234,22 @@ struct RulesTests {
         #expect(raged)
     }
 
+    @Test func troublemakersOnlyPickFightsTheyCanWin() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.hero.level = 50
+        session.data.pets.removeAll()
+        func rival(_ level: Int, pet: String? = nil) -> Adventurer {
+            Adventurer(name: "Rook", raceID: "human", classID: "fighter", level: level, look: .standard, petSpecies: pet, hostile: true)
+        }
+        // About your level or stronger: they come for you.
+        #expect(session.dares(rival(50)))
+        #expect(session.dares(rival(45)))
+        // Much weaker: they leave you be.
+        #expect(!session.dares(rival(44)))
+        // Their companion counts on their side.
+        #expect(session.dares(rival(25, pet: "jelly")))
+    }
+
     @Test func friendsFightOnAfterYouFallAndWakeYou() {
         let content = Content.shared
         let jelly = content.monster("jelly")!
