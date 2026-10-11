@@ -859,7 +859,7 @@ final class WorldMap {
 
     /// Where a road leads into a cave, a range of rocky hills rises along that side of the map, so
     /// you can see from afar that the way on goes into the mountain: summits one after another along
-    /// the edge, their feet 1 to 4 cells in from it, one round the road with its foot 5.5 cells in
+    /// the edge, their feet 2 to 4 cells in from it, one round the road with its foot 5.5 cells in
     /// (the road climbs to the cave's mouth, about 40 points up its side), and taller ones behind,
     /// rising on past the edge into the mist. The mouth is in its side where the road meets the edge
     /// (`Hill.Mouth`). A summit that would cover anything already set down is left out. Nil if no
@@ -904,18 +904,19 @@ final class WorldMap {
             }
             return true
         }
-        // Along the edge and a little past its ends, a summit every 7 to 12 cells.
+        // Along the edge and a little past its ends, a summit every 5 to 9 cells.
         var a = -8.0
         while a < Double(length) + 8 {
             let reach = Double.random(in: 7...10, using: &rng)
             let depth = Double.random(in: 11...15, using: &rng)
             let peak = Double.random(in: 80...115, using: &rng)
-            let foot = abs(a - middle) < reach ? 3 : Double.random(in: 1...4, using: &rng)
+            let foot = abs(a - middle) < reach ? 3 : Double.random(in: 2...4, using: &rng)
             let centre = point(a, depth - foot)
             let lobe = Hill.Lobe(x: centre.x, y: centre.y, along: reach, across: depth,
                                  angle: angle + Double.random(in: -0.15...0.15, using: &rng), peak: peak, steepness: steepness)
             if clear(lobe) { lobes.append(lobe) }
-            a += reach * Double.random(in: 0.9...1.2, using: &rng)
+            // Close enough that it rises all along the edge, not in humps with flats between.
+            a += reach * Double.random(in: 0.7...0.95, using: &rng)
         }
         // A summit round the road, its foot 5.5 cells in, so the road climbs to the mouth partway up
         // its side (the long summits along the edge rise too slowly across to stand high there).

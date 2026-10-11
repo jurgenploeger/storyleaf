@@ -156,7 +156,7 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   show from afar, a mountain or rock formation on that side): where a road leads into a cave (Shiverdell
   and Lotus Land into the Rat Cavern, Windswept Downs into Gooey Grotto, Moonwhisper and Emerald Road into
   Whispering Hollow), a range of rocky hills rises along that side of the map (`WorldMap.raiseCrags`, a
-  `Hill` with a `mouth`): summits one after another along the edge, their feet 1 to 4 cells in, 80 to
+  `Hill` with a `mouth`): summits one after another along the edge, every 5 to 9 cells, their feet 2 to 4 cells in, 80 to
   115 points high, one round the road with its foot 5.5 cells in (so the road climbs to the mouth,
   about 40 points up its side; the long summits rise too slowly across to stand high there), and taller
   ones behind (110 to 150),
