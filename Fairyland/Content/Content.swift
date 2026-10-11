@@ -464,7 +464,8 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
 
         nonisolated struct Mountains: Decodable, Sendable {
             let count: Int
-            /// How high a mountain's top stands, in points.
+            /// How high a mountain's top stands, in points: as asked where there's room for one that
+            /// wide, else as high as the roomiest place allows.
             let height: Double
         }
     }

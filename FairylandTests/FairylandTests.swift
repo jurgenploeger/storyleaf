@@ -141,10 +141,15 @@ struct ContentTests {
             #expect(!map.hills.isEmpty, "map \(def.id) has no hills")
             #expect(map.hills.contains { hill in hill.cells.contains { map.isFreeForScenery($0) } },
                     "map \(def.id): nothing can grow on its hills")
+            // What each map raised, for the log (the tests job lists these lines).
+            let ranges = map.hills.map { "\(Int($0.peak)) high \($0.size.columns)×\($0.size.rows) \($0.trails.count) trails" }
+            print("⛰ \(def.id): rocky \(map.rockiness), " + ranges.joined(separator: "; "))
             // Ranges stretch across the land, not a hump each; and a map with mountains has one.
             #expect(map.hills.contains { $0.size.columns >= 24 || $0.size.rows >= 24 }, "map \(def.id): only small hills")
-            if let mountains = def.theme.hills?.mountains {
-                #expect(map.hills.contains { Double($0.peak) >= mountains.height * 0.75 }, "map \(def.id) has no mountain")
+            if def.theme.hills?.mountains != nil {
+                // As tall as there's room for: at least far taller than its hills.
+                let hills = def.theme.hills?.height ?? 44
+                #expect(map.hills.contains { Double($0.peak) >= hills * 1.4 }, "map \(def.id) has no mountain")
             }
             for hill in map.hills {
                 func height(_ point: CGPoint) -> CGFloat { map.height(atGrid: CGPoint(x: point.x * tile, y: point.y * tile)) }

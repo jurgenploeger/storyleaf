@@ -124,8 +124,12 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   the land and some rise to a mountain): each hill is a range, a chain of summits (`chain`, 2 to 4 by default)
   along a wandering line, each with its own height, blended so where two meet stands a little fuller (the
   fourth root of their heights' fourth powers) and their tops often join into a ridge you can walk along.
-  `mountains` (count, height up to 128) adds ranges with one summit far taller and wider than the rest; a
-  summit is only as tall as its width lets it be at that steepness. The first trail climbs from the ground in
+  `mountains` (count, height up to 128) adds ranges with one summit far taller and wider than the rest, at
+  least 13 points a cell steep whatever the land; a summit is only as tall as its width lets it be at that
+  steepness, so a mountain is as tall as asked where there's room, else as tall as the roomiest place allows.
+  Since 0.4.5 ranges go where every summit has room round it (`clearance`: how far each cell is from a road,
+  water, a building or another hill), picked at random among the places they fit; before, random spots
+  tried 120 times often found nowhere on crowded maps (Gumdrop Peaks had no mountain). The first trail climbs from the ground in
   front; the mountain gets one of its own where there's room (front, front left or front right), never
   steeper than a comfortable walk and clear of the other. Too big
   to draw or sort as one picture, a range is drawn in squares of 16 cells, each shown in strips two cells
@@ -134,7 +138,8 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
 - Footpaths (ours, since 0.4.3, asked for in playtesting 2026-10-11: the trails as new ways to explore):
   from each trail that starts on the ground a cell-wide road winds across the fields to the nearest road or
   footpath, the cheapest way round what's in the way with a little seeded unevenness so it wanders
-  (`WorldMap.layFootpaths`). The minimap shows them like roads, the hills' trails, and the hills as raised
+  (`WorldMap.layFootpaths`); over a hill only where it must, dearer the higher (a trail can start in a nook
+  between two summits, which shut some footpaths in before 0.4.5). The minimap shows them like roads, the hills' trails, and the hills as raised
   ground in flat tones (since 0.4.5; the height gradient read as a staircase of shades at a pixel a cell):
   a lighter tint, the edge facing the light lit and the far edge shaded, a cell of shadow on the ground past
   it, and a mountain's upper slopes lighter still.
