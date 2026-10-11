@@ -1338,7 +1338,7 @@ final class WorldMap {
             return value
         }
         let theme = def.theme
-        let highest = max(1, hills.map(\.peak).max() ?? 1)
+        func onHill(_ col: Int, _ row: Int) -> Bool { hillOf[GridPoint(col: col, row: row)] != nil }
         var canvas = PixelCanvas(width: columns, height: rows)
         for row in 0..<rows {
             for col in 0..<columns {
@@ -1355,11 +1355,22 @@ final class WorldMap {
                 } else if trailCells.contains(cell) {
                     pixel = tileColor == nil && theme.path == "tile_path" ? PixelColor(0xE8C98C) : color(forTile: theme.path).shaded(1.15)
                 } else if let index = hillOf[cell] {
-                    // Hills in relief: lighter the higher they stand, mountains lightest.
-                    let rise = hills[index].height(atCells: Double(col) + 0.5, Double(row) + 0.5) / highest
-                    pixel = pixel.shaded(0.82 + 0.3 * Double(rise))
+                    // Raised ground in a few flat tones, like the rest of the map, not a gradient
+                    // (a pixel a cell made it a staircase of shades): a hill a shade lighter, its edge
+                    // lit where it faces the light (up the map and left, as the trees' shadows say)
+                    // and shaded where it faces away, and a mountain's upper slopes, higher than any
+                    // hill stands, lighter still.
+                    let lit = !onHill(col - 1, row) || !onHill(col, row + 1)
+                    let away = !onHill(col + 1, row) || !onHill(col, row - 1)
+                    var tone: Double = hills[index].height(atCells: Double(col) + 0.5, Double(row) + 0.5) >= 66 ? 1.2 : 1.1
+                    if lit, !away { tone = 1.24 } else if away, !lit { tone = 0.8 }
+                    pixel = pixel.shaded(tone)
                 } else if blocked.contains(cell), ground[row][col] != .water {
                     pixel = pixel.shaded(0.55)
+                }
+                // The ground just past a hill's shaded edge lies in its shadow.
+                if hillOf[cell] == nil, !rock.contains(cell), onHill(col - 1, row) || onHill(col, row + 1) {
+                    pixel = pixel.shaded(0.88)
                 }
                 // PixelCanvas is top-down; the map is bottom-up.
                 canvas[col, rows - 1 - row] = pixel

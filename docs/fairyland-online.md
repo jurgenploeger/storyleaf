@@ -127,8 +127,10 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
 - Footpaths (ours, since 0.4.3, asked for in playtesting 2026-10-11: the trails as new ways to explore):
   from each trail that starts on the ground a cell-wide road winds across the fields to the nearest road or
   footpath, the cheapest way round what's in the way with a little seeded unevenness so it wanders
-  (`WorldMap.layFootpaths`). The minimap shows them like roads, the hills' trails, and the hills in relief,
-  lighter the higher, mountains lightest.
+  (`WorldMap.layFootpaths`). The minimap shows them like roads, the hills' trails, and the hills as raised
+  ground in flat tones (since 0.4.5; the height gradient read as a staircase of shades at a pixel a cell):
+  a lighter tint, the edge facing the light lit and the far edge shaded, a cell of shadow on the ground past
+  it, and a mountain's upper slopes lighter still.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake
