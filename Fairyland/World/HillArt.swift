@@ -15,14 +15,26 @@ import SpriteKit
 enum HillArt {
     struct Look {
         /// The ground's tile pictures by cell, as the map has them.
-        let ground: (GridPoint) -> CGImage?
+        var ground: (GridPoint) -> CGImage?
         /// The trail's tile pictures by cell (the map's road).
         let trail: (GridPoint) -> CGImage?
         /// The rock (or sand, or chocolate) showing through on its slopes, by cell, if any.
-        let bank: ((GridPoint) -> CGImage?)?
+        var bank: ((GridPoint) -> CGImage?)?
         /// How rocky the map's hills are (`WorldMap.rockiness`): the rockier, the more of the bank
         /// shows, further down the slopes, and the deeper the shade.
-        let rocky: Double
+        var rocky: Double
+        /// Bare rock all over from this far up its slopes (0 at the foot, 1 where its top begins), if
+        /// set: a mountain of rock with only its foot grassy.
+        var rockAbove: Double? = nil
+        /// How lit slopes facing away from the sun still are (0.45 less a tenth for rocky, if unset):
+        /// lower for deeper shade, so a mountain's shape shows.
+        var ambient: Double? = nil
+        /// How much brighter than the flat its sunniest slopes go: only a shade on matte ground,
+        /// more on bare rock, so the sides of a mountain stand out from the ground past it.
+        var brightest = 1.06
+        /// Ledges across its steep bare rock, if set: a darker band every this many points up, a
+        /// lighter lip over each, so it reads as layered rock rather than a smooth mound.
+        var strata: Double? = nil
         /// The soft colour patches over the map's whole ground: a pixel a cell, north at the top.
         let variation: CGImage?
         let mapSize: (columns: Int, rows: Int)
@@ -77,7 +89,7 @@ enum HillArt {
         let up = 36 * Double.pi / 180
         let toward = (x: -0.6, y: 1.0), length = (0.36 + 1.0).squareRoot()
         let sun = (x: toward.x / length * cos(up), y: toward.y / length * cos(up), z: sin(up))
-        let ambient = 0.45 - 0.1 * look.rocky
+        let ambient = look.ambient ?? (0.45 - 0.1 * look.rocky)
         let flat = ambient + (1 - ambient) * sun.z
         let deepest = max(look.shadow.r, look.shadow.g, look.shadow.b, 0.01)
         let tint = (look.shadow.r / deepest, look.shadow.g / deepest, look.shadow.b / deepest)
@@ -135,8 +147,22 @@ enum HillArt {
                 let from = 0.75 - 0.45 * look.rocky, solid = 0.75 + 0.25 * look.rocky
                 let sheer = slope / hill.steepness + ragged * (0.15 + 0.15 * look.rocky)
                 var amount = min(1, max(0, (sheer - from) / 0.12)) * solid
+                if let above = look.rockAbove { amount = max(amount, min(1, max(0, (s - above + ragged * 0.1) / 0.12))) }
                 if amount > 0 { amount *= min(1, max(0, (trailDistance - 0.55) / 0.3)) }
                 for channel in 0..<4 { bare[index + channel] = UInt8(amount * 255) }
+                // Ledges: on bare rock from a gentle slope up (a cell's rise over its width, as the
+                // light has it, past 0.15), banded by height with a ragged edge.
+                if let strata = look.strata, amount > 0.5 {
+                    let steep = min(1, max(0, ((hx * hx + hy * hy).squareRoot() - 0.15) / 0.2))
+                    let level = (h00 + h10 + h01 + h11) / 4 + ragged * 6
+                    let band = level / strata - (level / strata).rounded(.down)
+                    if band < 0.18 {
+                        shade *= 1 - 0.3 * steep
+                    } else if band < 0.28 {
+                        shade *= 1 + 0.1 * steep
+                    }
+                    light[j * sw + i] = Float(shade)
+                }
             }
         }
         let patches = look.bank == nil ? nil : image(bare, width: sw, height: sh)
@@ -186,6 +212,10 @@ enum HillArt {
         func rect(_ cell: GridPoint) -> CGRect {
             CGRect(x: CGFloat(cell.col - low.col) * scale, y: CGFloat(cell.row - low.row) * scale, width: scale, height: scale)
         }
+        /// A point in cells, in the range's own pixels.
+        func spot(_ point: CGPoint) -> CGPoint {
+            CGPoint(x: (point.x - CGFloat(low.col)) * scale, y: (point.y - CGFloat(low.row)) * scale)
+        }
         let side = square * px
         func paint(_ corner: GridPoint) -> CGImage? {
             guard let context = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
@@ -195,9 +225,11 @@ enum HillArt {
             context.translateBy(x: -CGFloat(offset.x), y: -CGFloat(offset.y))
             context.clip(to: whole)
             // The square's cells within the range's area and the map.
-            let firstColumn = max(corner.col, low.col, 0), firstRow = max(corner.row, low.row, 0)
-            let endColumn = min(corner.col + square, low.col + columns, look.mapSize.columns)
-            let endRow = min(corner.row + square, low.row + rows, look.mapSize.rows)
+            // (A range where a road leads into a cave goes on past the map's edge; `ground` has
+            // pictures for the land out there too.)
+            let firstColumn = max(corner.col, low.col), firstRow = max(corner.row, low.row)
+            let endColumn = min(corner.col + square, low.col + columns)
+            let endRow = min(corner.row + square, low.row + rows)
             var area: [GridPoint] = []
             if firstColumn < endColumn, firstRow < endRow {
                 for row in firstRow..<endRow {
@@ -241,7 +273,9 @@ enum HillArt {
                 context.draw(variation, in: CGRect(x: -CGFloat(low.col) * scale, y: -CGFloat(low.row) * scale,
                                                    width: CGFloat(look.mapSize.columns) * scale, height: CGFloat(look.mapSize.rows) * scale))
             }
-            shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint)
+            shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint,
+                  brightest: Float(look.brightest))
+            if let mouth = hill.mouth { Self.cave(mouth, in: context, at: { spot($0) }) }
             if let outline {
                 context.setBlendMode(.destinationIn)
                 context.draw(outline, in: whole)
@@ -488,13 +522,75 @@ enum HillArt {
         return Double(value & 0xffff) / 65535
     }
 
+    /// A cave's mouth in a hill's side (`WorldMap.Hill.Mouth`), painted on its ground so it rises
+    /// and leans with the slope: a rough arch from the foot up into the hill, dark and darkest deep
+    /// in, a shadow round its rim and light catching its lip, and its darkness spilling a little way
+    /// out over the ground in front. `at`: a point in cells in the picture's pixels.
+    private static func cave(_ mouth: WorldMap.Hill.Mouth, in context: CGContext, at: (CGPoint) -> CGPoint) {
+        func point(_ across: Double, _ inward: Double) -> CGPoint {
+            at(CGPoint(x: mouth.x + mouth.along.x * across + mouth.into.x * inward,
+                       y: mouth.y + mouth.along.y * across + mouth.into.y * inward))
+        }
+        let space = CGColorSpaceCreateDeviceRGB()
+        // The spill: dark at the mouth, gone a cell and a half out.
+        let spill = CGMutablePath()
+        spill.addLines(between: [point(-mouth.half - 0.4, 0), point(mouth.half + 0.4, 0),
+                                 point(mouth.half + 0.9, -1.5), point(-mouth.half - 0.9, -1.5)])
+        spill.closeSubpath()
+        let fade = [UIColor(white: 0, alpha: 0.45).cgColor, UIColor(white: 0, alpha: 0).cgColor] as CFArray
+        if let gradient = CGGradient(colorsSpace: space, colors: fade, locations: [0, 1]) {
+            context.saveGState()
+            context.addPath(spill)
+            context.clip()
+            context.drawLinearGradient(gradient, start: point(0, 0), end: point(0, -1.5), options: [])
+            context.restoreGState()
+        }
+        // The arch: straight sides a little way up, then a rough round top.
+        let arch = CGMutablePath()
+        arch.move(to: point(-mouth.half, -0.1))
+        let steps = 14
+        var lip: [CGPoint] = []
+        for k in 0...steps {
+            let t = Double(k) / Double(steps)
+            let across = (2 * t - 1) * mouth.half
+            let bulge = max(0, 1 - (2 * t - 1) * (2 * t - 1)).squareRoot()
+            let rough = k == 0 || k == steps ? 0 : 0.08 * sin(Double(k) * 2.3 + 0.7)
+            let inward = mouth.depth * (0.4 + 0.6 * bulge) + rough
+            arch.addLine(to: point(across, inward))
+            lip.append(point(across * 1.06, inward + 0.12))
+        }
+        arch.addLine(to: point(mouth.half, -0.1))
+        arch.closeSubpath()
+        let deep = [UIColor(red: 0.06, green: 0.05, blue: 0.07, alpha: 0.88).cgColor,
+                    UIColor(red: 0.02, green: 0.02, blue: 0.03, alpha: 0.98).cgColor] as CFArray
+        context.saveGState()
+        context.addPath(arch)
+        context.clip()
+        if let gradient = CGGradient(colorsSpace: space, colors: deep, locations: [0, 1]) {
+            context.drawLinearGradient(gradient, start: point(0, 0), end: point(0, mouth.depth),
+                                       options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+        }
+        context.restoreGState()
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+        context.addPath(arch)
+        context.setStrokeColor(UIColor(white: 0, alpha: 0.5).cgColor)
+        context.setLineWidth(3)
+        context.strokePath()
+        context.addLines(between: lip)
+        context.setStrokeColor(UIColor(white: 1, alpha: 0.28).cgColor)
+        context.setLineWidth(2)
+        context.strokePath()
+    }
+
     /// Lights a square's picture a pixel (a tile's pixel) at a time: how lit the slope is there, in
     /// steps of 6%, with a 4×4 ordered dither where one step gives way to the next, the way pixel art
     /// shades a hill in a few flat tones. A smooth gradient over pixel-art ground read as gloss.
     /// Shade leans toward the map's shadow colour (`tint`, its channels over its brightest).
     /// `offset`: where the square's corner is in the range's pixels, which `light` covers.
+    /// `brightest`: no sunny slope lighter than this (`Look.brightest`).
     private static func shade(_ context: CGContext, light: [Float], samples: (columns: Int, rows: Int), perSample: Float,
-                              offset: (x: Int, y: Int), tint: (Double, Double, Double)) {
+                              offset: (x: Int, y: Int), tint: (Double, Double, Double), brightest: Float) {
         guard let data = context.data else { return }
         let width = context.width, height = context.height, rowBytes = context.bytesPerRow
         let bytes = data.bindMemory(to: UInt8.self, capacity: rowBytes * height)
@@ -522,7 +618,7 @@ enum HillArt {
                     let lit = near + (far - near) * ty
                     let steps = ((lit - 1) / step + dither[(y % 4) * 4 + x % 4]).rounded()
                     guard steps != 0 else { continue }
-                    let s = min(1 + step, 1 + steps * step)
+                    let s = min(brightest, 1 + steps * step)
                     if s < 1 {
                         let toward = (1 - s) * 0.4
                         bytes[index] = UInt8(min(255, Float(bytes[index]) * s * (1 - toward * lean.0)))

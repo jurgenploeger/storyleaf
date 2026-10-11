@@ -125,26 +125,46 @@ struct ContentTests {
         }
     }
 
-    @Test func roadsIntoCavesRunIntoRock() throws {
-        // Where a road leads into a cave, the cave's rock rises along that side of the map, and the
-        // road runs through it to the cave's mouth at the edge.
+    @Test func roadsIntoCavesRunIntoAMountain() throws {
+        // Where a road leads into a cave, a range of rocky hills rises along that side of the map
+        // and on past its edge, the road climbing a little to the cave's mouth in its side.
+        let tile = WorldMap.tileSize
         for def in content.maps where def.theme.cave == nil && def.town == nil {
             let map = WorldMap(def: def)
             for exit in def.exits where content.map(exit.to)?.theme.cave != nil {
                 let crag = map.crags.first { $0.edge == exit.edge }
-                #expect(crag != nil, "map \(def.id): no rock where its road leads into \(exit.to)")
+                #expect(crag != nil, "map \(def.id): no range where its road leads into \(exit.to)")
                 guard let crag else { continue }
+                let hill = map.hills[crag.hill]
+                let mouth = try #require(hill.mouth)
+                func height(out: Double) -> CGFloat {
+                    hill.height(atCells: mouth.x + mouth.into.x * out, mouth.y + mouth.into.y * out)
+                }
+                print("⛰ \(def.id) crag: \(Int(hill.highest)) high, mouth at \(Int(height(out: 0))), 5 out \(Int(height(out: 5)))")
+                #expect(height(out: 5) > 50, "map \(def.id): no mountain behind the cave's mouth")
+                // The road reaches the mouth, climbing only a little, and you can walk it.
+                let last = GridPoint(col: Int((mouth.x - mouth.into.x * 0.5).rounded(.down)),
+                                     row: Int((mouth.y - mouth.into.y * 0.5).rounded(.down)))
+                #expect(map.ground[last.row][last.col] == .path && map.isWalkable(last), "map \(def.id): the road doesn't reach the cave's mouth")
+                // Partway up a slope, so it shows: not up in the air, and the hill rising behind it.
+                #expect(height(out: 0) < 70, "map \(def.id): the cave's mouth stands \(height(out: 0)) up")
+                #expect(height(out: mouth.depth) - height(out: 0) > 10, "map \(def.id): the cave's mouth is on the flat")
+                // It runs along the whole side: the ground just past the edge rises nearly all along it.
                 let length = exit.edge == .north || exit.edge == .south ? map.columns : map.rows
-                let rocky = (0..<length).filter { map.isCrag(map.cell(on: exit.edge, along: $0, inward: 0)) }.count
-                #expect(rocky * 3 > length * 2, "map \(def.id): only \(rocky) of the \(length) cells along its \(exit.edge) edge are rock")
-                // Rock out past the edge too, but not in front of a mouth that looks your way.
-                let outside = map.cell(on: exit.edge, along: crag.mouth.lowerBound - 2, inward: -2)
-                #expect(map.isCrag(outside), "map \(def.id): no rock out past its \(exit.edge) edge")
-                let mouth = crag.mouth.map { map.cell(on: exit.edge, along: $0, inward: 0) }
-                #expect(mouth.contains { map.ground[$0.row][$0.col] == .path && map.isWalkable($0) },
-                        "map \(def.id): the road doesn't reach the cave's mouth")
-                let cleft = map.cell(on: exit.edge, along: (crag.mouth.lowerBound + crag.mouth.upperBound) / 2, inward: -2)
-                #expect(map.isCrag(cleft) != crag.opensTowardYou, "map \(def.id): the cave's mouth is the wrong way round")
+                let spots = Array(stride(from: 0, to: length, by: 3))
+                let raised = spots.filter { along in
+                    let cell = map.cell(on: exit.edge, along: along, inward: -3)
+                    return hill.height(atCells: Double(cell.col) + 0.5, Double(cell.row) + 0.5) > 10
+                }
+                #expect(raised.count * 5 >= spots.count * 4, "map \(def.id): only \(raised.count) of \(spots.count) spots along its edge rise")
+                // You can walk on its foot in the map, and it never leans out of sight, in the map
+                // or past it.
+                #expect(hill.cells.filter { map.contains($0) }.allSatisfy { map.isWalkable($0) }, "map \(def.id): part of its range you can't walk on")
+                for cell in hill.cells where (cell.col + cell.row) % 3 == 0 {
+                    let x = Double(cell.col) + 0.5, y = Double(cell.row) + 0.5, e = 0.1
+                    let drop = (hill.height(atCells: x + e, y + e) - hill.height(atCells: x - e, y - e)) / (2 * e * tile)
+                    #expect(drop > -0.65, "map \(def.id): its range folds over at \(cell)")
+                }
             }
         }
         // Nowhere else: no road from the meadow leads into a cave.
@@ -164,20 +184,22 @@ struct ContentTests {
         let tile = WorldMap.tileSize
         for def in content.maps where def.theme.hills != nil {
             let map = WorldMap(def: def)
-            #expect(!map.hills.isEmpty, "map \(def.id) has no hills")
-            #expect(map.hills.contains { hill in hill.cells.contains { map.isFreeForScenery($0) } },
+            // Its own hills, not a range where a road leads into a cave (`roadsIntoCavesRunIntoAMountain`).
+            let fields = map.hills.filter { !$0.isCrag }
+            #expect(!fields.isEmpty, "map \(def.id) has no hills")
+            #expect(fields.contains { hill in hill.cells.contains { map.isFreeForScenery($0) } },
                     "map \(def.id): nothing can grow on its hills")
             // What each map raised, for the log (the tests job lists these lines).
-            let ranges = map.hills.map { "\(Int($0.peak)) high \($0.size.columns)×\($0.size.rows) \($0.trails.count) trails" }
+            let ranges = fields.map { "\(Int($0.peak)) high \($0.size.columns)×\($0.size.rows) \($0.trails.count) trails" }
             print("⛰ \(def.id): rocky \(map.rockiness), " + ranges.joined(separator: "; "))
             // Ranges stretch across the land, not a hump each; and a map with mountains has one.
-            #expect(map.hills.contains { $0.size.columns >= 24 || $0.size.rows >= 24 }, "map \(def.id): only small hills")
+            #expect(fields.contains { $0.size.columns >= 24 || $0.size.rows >= 24 }, "map \(def.id): only small hills")
             if def.theme.hills?.mountains != nil {
                 // As tall as there's room for: at least far taller than its hills.
                 let hills = def.theme.hills?.height ?? 44
-                #expect(map.hills.contains { Double($0.peak) >= hills * 1.4 }, "map \(def.id) has no mountain")
+                #expect(fields.contains { Double($0.peak) >= hills * 1.4 }, "map \(def.id) has no mountain")
             }
-            for hill in map.hills {
+            for hill in fields {
                 func height(_ point: CGPoint) -> CGFloat { map.height(atGrid: CGPoint(x: point.x * tile, y: point.y * tile)) }
                 func cell(_ point: CGPoint) -> GridPoint { GridPoint(col: Int(point.x.rounded(.down)), row: Int(point.y.rounded(.down))) }
                 // Its first trail starts on the ground; every trail comes out on its summit's top, every

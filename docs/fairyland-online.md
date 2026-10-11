@@ -155,13 +155,27 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
 - Cave entrances (ours, since 0.4.5, asked for in playtesting 2026-10-11: a map's way into a cave should
   show from afar, a mountain or rock formation on that side): where a road leads into a cave (Shiverdell
   and Lotus Land into the Rat Cavern, Windswept Downs into Gooey Grotto, Moonwhisper and Emerald Road into
-  Whispering Hollow), the cave's own rock rises along that side of the map, 64 points tall (its walls
-  inside are 32 to 36): a band 2 to 5 cells in from the edge, its front wandering, and 6 to 10 cells more
-  out past it, rounding off past the corners (`WorldMap.raiseCrags`, `isCrag`; drawn by `CaveWalls`). The
-  road runs through it with a cell clear either side. On the north and east sides the rock's face at the
-  edge looks your way and the road ends at a dark arch in it; on the south and west that face looks away,
-  so the road runs on under an arch of rock into a dark cleft (`CaveMouth`). How FO showed its cave
-  entrances isn't in any source reachable from a cloud session.
+  Whispering Hollow), a range of rocky hills rises along that side of the map (`WorldMap.raiseCrags`, a
+  `Hill` with a `mouth`): summits of all sizes (65 to 125 points) every 3 to 10 cells along the edge,
+  their feet 2 to 4 cells in, and one round the road whose side the cave's mouth is in, the road climbing
+  to it about 40 to 55 points up. Their sides facing you climb faster, up to 2.8 times at the foot
+  (`Hill.Lobe.steepSide`; ground facing you can be as steep as you like, ground facing away no steeper
+  than the view, so the folds stay at about -0.51 against -0.65). On the north and east that's the side
+  toward the map: a mountain face over the mouth, taller summits (110 to 150) behind it. On the south and
+  west it's the far side: a ridge whose face you see beyond it, its back rising gently from the map to
+  the mouth (5.5 cells of climb), with no taller row (it would stand in front of the ridge). It's drawn
+  like the hills (`HillArt`, past the map's edge too): scree from a fifth of the way up (`Look.rockAbove`),
+  its foot grassy, deeper shade (`Look.ambient` 0.25) and sunny slopes up to 30% brighter than the flat
+  (`Look.brightest`; other hills go only 6%, or a ridge's sunlit side looked like the flat rock past it),
+  ledges across its steep rock every 14 points up (`Look.strata`), stones strewn over it but not its
+  mouth, and the ground past that edge rock as well. Mist thickens over it from 14 cells out (13 past a ridge) to all mist 8 further, at
+  about the ground's height there, so no grass shows past it. The mouth is painted into its ground, so it
+  rises and leans with the slope: a rough arch, darker deep in, a shadow round its rim, light on its lip,
+  its darkness spilling over the road. You can walk its foot in the map; nothing grows there. 0.4.5 drew
+  it as the cave's own rock in flat-topped walls (`CaveWalls`) with a dark arch in the face, or on the
+  south and west a cleft under an arch; playtesting (2026-10-11) asked for a slope instead of flat tops
+  and walls, and for no grass past it. How FO showed its cave entrances isn't in any source reachable
+  from a cloud session.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake
