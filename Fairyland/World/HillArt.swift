@@ -2,7 +2,11 @@ import SpriteKit
 
 /// Draws a hill (`WorldMap.Hill`): the ground it rises over as one picture (the map's own tiles,
 /// bare patches on its steepest slopes, its trail painted up it), lit from the upper left like the
-/// trees' shadows say, then lifted off the map by its heights (`SKWarpGeometryGrid`).
+/// trees' shadows say, then lifted off the map by its heights. The lifting is a small shader on a
+/// flat sprite over where the hill shows on screen: each pixel finds the ground point that rises to
+/// it (`WorldMap.groundPoint`'s halving, against the same heights walkers stand on) and shows the
+/// picture there. A warped sprite (`SKWarpGeometryGrid`) did the same, but SpriteKit crashed
+/// subdividing grids that size.
 enum HillArt {
     struct Look {
         /// The ground's tile pictures by cell, as the map has them.
@@ -19,16 +23,16 @@ enum HillArt {
         let highlight: (r: Double, g: Double, b: Double)
     }
 
-    /// The hill as a sprite in grid space (for the projected ground layer), or nil if it can't be drawn.
+    /// The hill as a sprite in the map's own space (put it straight in the world), or nil if it
+    /// can't be drawn.
     static func sprite(for hill: WorldMap.Hill, look: Look) -> SKSpriteNode? {
         guard let first = hill.cells.first, let sample = look.ground(first) else { return nil }
         let tile = WorldMap.tileSize
         let px = sample.width
         let scale = CGFloat(px)
         let low = hill.origin
-        // Its samples' area, and room above and to the right for it to rise into.
-        let lift = Int((hill.peak * CGFloat(2).squareRoot() / tile).rounded(.up)) + 1
-        let columns = hill.size.columns + lift, rows = hill.size.rows + lift
+        // Its samples' area.
+        let columns = hill.size.columns, rows = hill.size.rows
         let width = columns * px, height = rows * px
         guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
                                       space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
@@ -173,24 +177,74 @@ enum HillArt {
 
         let texture = SKTexture(cgImage: picture)
         texture.filteringMode = .nearest
-        let sprite = SKSpriteNode(texture: texture, size: CGSize(width: CGFloat(columns) * tile, height: CGFloat(rows) * tile))
-        sprite.anchorPoint = .zero
-        sprite.position = CGPoint(x: CGFloat(low.col) * tile, y: CGFloat(low.row) * tile)
-        // Lifted by its heights, two points a cell: up the screen is up the map and right at once in
-        // the ground's grid, `height × √2` along each.
-        let gridColumns = columns * 2, gridRows = rows * 2
-        var source: [SIMD2<Float>] = [], destination: [SIMD2<Float>] = []
-        for j in 0...gridRows {
-            for i in 0...gridColumns {
-                let u = Float(i) / Float(gridColumns), v = Float(j) / Float(gridRows)
-                let rise = hill.height(atCells: Double(low.col) + Double(i) / 2, Double(low.row) + Double(j) / 2) * CGFloat(2).squareRoot()
-                source.append(SIMD2(u, v))
-                destination.append(SIMD2(u + Float(rise / sprite.size.width), v + Float(rise / sprite.size.height)))
+        // Its heights, as a picture the shader reads (smoothly between samples, like
+        // `Hill.height(atCells:_:)`): 255ths of its peak in red, and what's left over in green.
+        let width2 = hill.size.columns * samples + 1, depth2 = hill.size.rows * samples + 1
+        var levels = [UInt8](repeating: 0, count: width2 * depth2 * 4)
+        for j in 0..<depth2 {
+            for i in 0..<width2 {
+                let value = Double(hill.heights[j * width2 + i]) / Double(max(hill.peak, 1)) * 255
+                let units = min(255, max(0, value.rounded(.down)))
+                let index = ((depth2 - 1 - j) * width2 + i) * 4
+                levels[index] = UInt8(units)
+                levels[index + 1] = UInt8(min(255, max(0, ((value - units) * 255).rounded())))
+                levels[index + 3] = 255
             }
         }
-        sprite.warpGeometry = SKWarpGeometryGrid(columns: gridColumns, rows: gridRows, sourcePositions: source, destinationPositions: destination)
+        guard let heightImage = image(levels, width: width2, height: depth2) else { return nil }
+        let heights = SKTexture(cgImage: heightImage)
+        heights.filteringMode = .linear
+        // Where it shows on screen: its area's corners on the ground, and up to its peak above.
+        let corners = [(0, 0), (columns, 0), (0, rows), (columns, rows)].map {
+            WorldMap.project(CGPoint(x: CGFloat(low.col + $0.0) * tile, y: CGFloat(low.row + $0.1) * tile))
+        }
+        let left = corners.map(\.x).min()!, right = corners.map(\.x).max()!
+        let bottom = corners.map(\.y).min()!, top = corners.map(\.y).max()! + hill.peak + 2
+        let sprite = SKSpriteNode(texture: texture, size: CGSize(width: right - left, height: top - bottom))
+        sprite.anchorPoint = .zero
+        sprite.position = CGPoint(x: left, y: bottom)
+        let shader = SKShader(source: Self.lifting)
+        shader.uniforms = [
+            SKUniform(name: "u_box", vectorFloat4: SIMD4(Float(left), Float(bottom), Float(right - left), Float(top - bottom))),
+            SKUniform(name: "u_area", vectorFloat4: SIMD4(Float(low.col), Float(low.row), Float(columns), Float(rows))),
+            SKUniform(name: "u_peak", float: Float(hill.peak)),
+            SKUniform(name: "u_heights", texture: heights),
+            SKUniform(name: "u_samples", vectorFloat4: SIMD4(Float(low.col), Float(low.row), Float(samples), 0)),
+            SKUniform(name: "u_sampleSize", vectorFloat2: SIMD2(Float(width2), Float(depth2))),
+        ]
+        sprite.shader = shader
         return sprite
     }
+
+    /// Each pixel of the sprite over the hill's place on screen: the ground point that rises to it,
+    /// found by halving (the ground under a spot only ever rises going up the screen, as a hill is
+    /// never steeper than the view), then the hill's picture there. `WorldMap.project` and
+    /// `unproject` in reverse; `tileSize` is 44.
+    private static let lifting = """
+    void main() {
+        vec2 spot = u_box.xy + v_tex_coord * u_box.zw;
+        float low = spot.y - u_peak - 1.0;
+        float high = spot.y;
+        float across = spot.x / 0.70710678;
+        for (int i = 0; i < 16; i++) {
+            float middle = 0.5 * (low + high);
+            float along = middle / 0.35355339;
+            vec2 cell = vec2(along + across, along - across) * (0.5 / 44.0);
+            vec2 at = ((cell - u_samples.xy) * u_samples.z + 0.5) / u_sampleSize;
+            vec4 level = texture2D(u_heights, at);
+            float lift = (level.r * 255.0 + level.g) / 255.0 * u_peak;
+            if (middle + lift > spot.y) { high = middle; } else { low = middle; }
+        }
+        float along = 0.5 * (low + high) / 0.35355339;
+        vec2 cell = vec2(along + across, along - across) * (0.5 / 44.0);
+        vec2 uv = (cell - u_area.xy) / u_area.zw;
+        if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) {
+            gl_FragColor = vec4(0.0);
+        } else {
+            gl_FragColor = texture2D(u_texture, uv);
+        }
+    }
+    """
 
     /// Premultiplied RGBA bytes, top row first, as an image.
     private static func image(_ bytes: [UInt8], width: Int, height: Int) -> CGImage? {

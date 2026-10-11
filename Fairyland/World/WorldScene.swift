@@ -395,13 +395,11 @@ final class WorldScene: SKScene {
                 mapSize: (map.columns, map.rows),
                 shadow: Lighting.rgb(palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
                 highlight: Lighting.rgb(palette?.highlight) ?? (r: 1, g: 0.95, b: 0.8))
+            // Already where it shows on screen (it lifts itself), so straight into the world.
             raisedHills = map.hills.compactMap { hill in
                 guard let sprite = HillArt.sprite(for: hill, look: look) else { return nil }
-                let grid = SKNode()
-                grid.addChild(sprite)
-                let layer = projected(grid)
-                layer.zPosition = Self.topZ(of: hill.cells)
-                return layer
+                sprite.zPosition = Self.topZ(of: hill.cells)
+                return sprite
             }
         }
         let ground = projected(grid)

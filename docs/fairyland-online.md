@@ -103,8 +103,9 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   playtesting found too square. Since 0.4.1 they're heightfield hills, as isometric games draw terrain: a few
   ellipses melted together (`WorldMap.Hill`), rising on a smoothstep from foot to top, drawn as one picture of
   the map's own ground lit from the upper left (shady sides lean to the palette's shadow colour, the foot a
-  touch darker, the shoulder lighter) and lifted by its heights with a warp grid (`HillArt`). Never steeper
-  than 15 points a cell halfway up, so ground facing away never leans out of sight and a tap finds one spot.
+  touch darker, the shoulder lighter) and lifted by its heights in a small shader (`HillArt`; a warp grid
+  crashed SpriteKit at that size). Never steeper than 15 points a cell halfway up, so ground facing away never
+  leans out of sight and a tap finds one spot.
   Their sides are too steep to walk; a switchback trail (two or three legs across the side facing you, cut
   into the slope with a shadow above and a lip below) is the way up. A `bank` tile shows through in ragged
   patches where they're steepest.
