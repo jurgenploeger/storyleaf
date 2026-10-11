@@ -41,12 +41,18 @@ struct ItemIcon: View {
     var size: CGFloat = 32
     /// How many there are: from two up, a blue badge in the top-right corner says so.
     var count = 1
+    /// Better than what the hero has on in its slot (`GameSession.isUpgrade`): the gold arrow in the
+    /// top-left corner.
+    var upgrade = false
 
     var body: some View {
         IconTile(icon: item.icon.flatMap(GameIcon.init) ?? .gift, tint: tint, size: size,
                  picture: item.art.flatMap(ArtLibrary.shared.artImage))
             .overlay(alignment: .topTrailing) {
                 if count > 1 { CountBadge(count: count).offset(x: 5, y: -5) }
+            }
+            .overlay(alignment: .topLeading) {
+                if upgrade { UpgradeBadge().offset(x: -5, y: -5) }
             }
     }
 
@@ -61,6 +67,21 @@ struct ItemIcon: View {
         case .accessory: Color(red: 0.62, green: 0.4, blue: 0.85)
         case .material: Color(red: 0.55, green: 0.6, blue: 0.4)
         }
+    }
+}
+
+/// Something better to wear: a gold arrow pointing up, on a badge like `CountBadge`.
+struct UpgradeBadge: View {
+    var size: CGFloat = 17
+
+    var body: some View {
+        IconImage(.arrowUp, size: size * 0.62)
+            .foregroundStyle(HUDStyle.ink)
+            .frame(width: size, height: size)
+            .background(Circle().fill(HUDStyle.gold))
+            .overlay(Circle().strokeBorder(.white, lineWidth: 1.5))
+            .shadow(color: .black.opacity(0.35), radius: 1, x: 0, y: 1)
+            .accessibilityLabel(L("Better than yours"))
     }
 }
 

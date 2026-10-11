@@ -170,6 +170,11 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   defence, each in five tiers from level 1 to 92 for every class. Speed Boots moved from accessory to boots, and
   saves that wore them as an accessory move them on load (`GameSession.moveGearToItsSlot`). The Character
   screen shows the hero in the middle with the slots around them like a paper doll.
+- Better gear (ours, since 0.4.0, asked for in playtesting 2026-10-11): a slot whose bag holds something better
+  that the hero can put on now gets a gold arrow, as does the piece in the Bag and the slot's list. Better means
+  worth more to the hero's class (`GameSession.gearValue`): each bonus weighted by the class's growth in that
+  stat next to a novice's, and by how big that stat's numbers run. The Bag and the slot's list have search,
+  sort (best for you, level, name, price, how many) and filters (the Bag's kinds; only what you can wear).
 - One equipment drop in three is a trinket (gloves, necklace, boots or accessory), any up to the monster's
   level (`GameSession.accessoryShare`): there are only a few of each next to dozens of weapons and armours, so
   by level alone they'd hardly drop.

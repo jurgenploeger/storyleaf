@@ -1070,6 +1070,36 @@ final class GameSession {
         return nil
     }
 
+    /// What a piece of gear is worth to the hero, to tell a better one from a worse: each bonus
+    /// weighted by how much their class leans on that stat (its growth next to a novice's: a
+    /// fighter's Attack, a mage's Magic), and by how big that stat's numbers run (a point of HP is
+    /// worth less than a point of Attack, as a novice gains 9 HP a level and 2 Attack).
+    func gearValue(_ item: ItemDef) -> Double {
+        guard let bonus = item.stats else { return 0 }
+        let lean = heroClass.growth, plain = content.classDef("novice").growth
+        let stats: [KeyPath<Stats, Int>] = [\.hp, \.mp, \.attack, \.defense, \.magic, \.speed]
+        return stats.reduce(0) { total, stat in
+            let scale = Double(max(1, plain[keyPath: stat]))
+            return total + Double(bonus[keyPath: stat]) * Double(lean[keyPath: stat]) / (scale * scale)
+        }
+    }
+
+    /// Whether `item` (in the bag) would be an upgrade: the hero can wear it now, and it's worth
+    /// more to them than what they have on in its slot, or the slot is empty.
+    func isUpgrade(_ item: ItemDef) -> Bool {
+        guard ItemType.equipmentSlots.contains(item.type), equipIssue(item) == nil else { return false }
+        guard let worn = equipped(item.type) else { return true }
+        return gearValue(item) > gearValue(worn) + 0.001
+    }
+
+    /// The best upgrade in the bag for `slot`, if there is one: the Character screen marks the slot.
+    func upgrade(for slot: ItemType) -> ItemDef? {
+        bagEquipment.filter { $0.type == slot && isUpgrade($0) }.max { gearValue($0) < gearValue($1) }
+    }
+
+    /// Something in the bag would be better than what the hero wears somewhere.
+    var hasGearUpgrade: Bool { bagEquipment.contains { isUpgrade($0) } }
+
     func equip(_ id: String) {
         guard let item = content.item(id), ItemType.equipmentSlots.contains(item.type), equipIssue(item) == nil, removeItem(id) else { return }
         SoundEffects.shared.play(.equip)

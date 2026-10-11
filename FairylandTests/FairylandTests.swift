@@ -1423,6 +1423,35 @@ struct RulesTests {
         #expect(session.count(of: "wishing_seal") == 1)
     }
 
+    /// The Character screen's upgrade arrow: gear the hero can wear that's worth more to their class
+    /// than what's on. Not another class's, not one above their level, not a worse one. And the
+    /// Bag's search and Best for you.
+    @Test func betterGearIsMarkedAndFound() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.hero.classID = "fighter"
+        session.data.hero.level = 40
+        session.data.hero.equipment[.weapon] = "bronze_broadsword"
+        session.data.inventory = [:]
+        session.addItem("wooden_sword")
+        session.addItem("luna_axe")
+        session.addItem("luna_staff")
+        #expect(session.upgrade(for: .weapon) == nil, "worse, too high a level, or a mage's")
+        #expect(!session.hasGearUpgrade)
+        session.addItem("silver_sword")
+        #expect(session.upgrade(for: .weapon)?.id == "silver_sword")
+        #expect(session.hasGearUpgrade)
+        // An empty slot takes anything you can wear.
+        session.data.hero.equipment[.armor] = nil
+        session.addItem("cloth_tunic")
+        #expect(session.upgrade(for: .armor)?.id == "cloth_tunic")
+        // Best for you puts the strongest for a fighter first, whatever its level.
+        let weapons = session.bagEquipment.filter { $0.type == .weapon }
+        #expect(ItemFinder.arrange(weapons, search: "", sort: .best, session: session).first?.id == "luna_axe")
+        // Search finds a name or a kind.
+        #expect(ItemFinder.arrange(session.bagEquipment, search: "armor", sort: .standard, session: session).map(\.id) == ["cloth_tunic"])
+        #expect(ItemFinder.arrange(weapons, search: "luna", sort: .name, session: session).map(\.id) == ["luna_axe", "luna_staff"])
+    }
+
     /// A friend's throw uses up one of their own Seal Stones, never one from your bag. Counting
     /// theirs used to trip Swift's exclusivity check and crash the fight.
     @Test func aFriendsThrowUsesTheirOwnStone() throws {

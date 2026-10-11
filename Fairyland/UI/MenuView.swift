@@ -317,7 +317,7 @@ private struct CharacterTab: View {
     /// A path to choose (at a guild master), or a skill point to spend.
     private func waiting(on tab: CharacterPage) -> Bool {
         switch tab {
-        case .hero: return session.canChooseClass
+        case .hero: return session.canChooseClass || session.hasGearUpgrade
         case .skills: return session.canSpendSkillPoint
         case .titles: return false
         }
@@ -521,7 +521,8 @@ private struct PaperDoll: View {
 }
 
 /// One slot on the paper doll: what's worn there, or the slot's shape faded when it's empty, with
-/// the slot's name under it. An empty slot you have something for gets the HUD's gold dot.
+/// the slot's name under it. When the bag holds something better for it that you can wear (or
+/// anything you can wear for an empty slot), the gold upgrade arrow says so.
 private struct DollSlot: View {
     let session: GameSession
     let slot: ItemType
@@ -537,7 +538,7 @@ private struct DollSlot: View {
 
     var body: some View {
         let worn = session.equipped(slot)
-        let spare = worn == nil && session.bagEquipment.contains { $0.type == slot }
+        let better = session.upgrade(for: slot)
         Button(action: change) {
             VStack(spacing: 3) {
                 Group {
@@ -550,11 +551,7 @@ private struct DollSlot: View {
                     }
                 }
                 .overlay(alignment: .topTrailing) {
-                    if spare {
-                        Circle().fill(HUDStyle.gold).frame(width: 11, height: 11)
-                            .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
-                            .offset(x: 3, y: -3)
-                    }
+                    if better != nil { UpgradeBadge().offset(x: 6, y: -6) }
                 }
                 Text(slot.displayName)
                     .font(HUDStyle.font(9))
@@ -566,8 +563,9 @@ private struct DollSlot: View {
         }
         .buttonStyle(PressScaleStyle())
         .accessibilityLabel(slot.displayName)
-        .accessibilityValue(worn.map { [$0.name, $0.stats?.bonusSummary ?? ""].filter { !$0.isEmpty }.joined(separator: ", ") }
-                            ?? (spare ? L("Empty, something to wear in your bag") : L("Empty")))
+        .accessibilityValue([worn.map { [$0.name, $0.stats?.bonusSummary ?? ""].filter { !$0.isEmpty }.joined(separator: ", ") } ?? L("Empty"),
+                             better.map { L("{item} in your bag is better", ["item": $0.name]) } ?? ""]
+                            .filter { !$0.isEmpty }.joined(separator: ". "))
         .accessibilityHint(L("Change"))
     }
 }
@@ -1004,7 +1002,8 @@ private struct CompanionCard: View {
 
 /// Everything you carry in a grid of slots, like an adventurer's pack: potions and other things to
 /// use, spare gear, and materials, each with how many you have. A tap opens the item's card, with
-/// what it does and the button to use, give, hatch or wear it.
+/// what it does and the button to use, give, hatch or wear it. Search, sort and pick the kinds to
+/// show at the top; gear better than what you wear has the gold upgrade arrow.
 private struct BagTab: View {
     let session: GameSession
     @Binding var note: String?
@@ -1014,6 +1013,25 @@ private struct BagTab: View {
     let onInspect: (ItemDef) -> Void
     @State private var hatched: Pet?
     @State private var hatching = false
+    @State private var search = ""
+    @AppStorage("bagSort") private var sort: ItemSort = .standard
+    @State private var shelf: Shelf = .all
+    /// Only the gear you can put on now (your class's, at your level).
+    @AppStorage("bagWearableOnly") private var wearableOnly = false
+
+    /// Which kinds of thing the Bag shows. Nonisolated like the other enums in a `ForEach(id: \.self)`.
+    private nonisolated enum Shelf: String, CaseIterable {
+        case all, items, gear, materials
+
+        var title: String {
+            switch self {
+            case .all: L("All")
+            case .items: L("Items")
+            case .gear: L("Gear")
+            case .materials: L("Materials")
+            }
+        }
+    }
 
     private static let slot: CGFloat = 52
     private let columns = [GridItem(.adaptive(minimum: BagTab.slot + 6, maximum: BagTab.slot + 14), spacing: 8)]
@@ -1032,25 +1050,44 @@ private struct BagTab: View {
                 HatchView(session: session, pet: pet) { hatching = false }
             }
 
-            SectionTitle(text: L("Items"))
-            if session.consumables.isEmpty {
-                Text(L("No potions. Trader Bo in Meadowbrook sells them.")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
-            }
-            grid(session.consumables)
+            finder
+            // While you look for something, a kind with nothing that fits is left out, and its
+            // where-to-get-some line with it.
+            let narrowed = !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || wearableOnly
+            let items = wearableOnly ? [] : arranged(session.consumables)
+            let gear = arranged(session.bagEquipment.filter { !wearableOnly || session.equipIssue($0) == nil })
+            let materials = wearableOnly ? [] : arranged(session.bagMaterials)
 
-            SectionTitle(text: L("Equipment"))
-            if session.bagEquipment.isEmpty {
-                Text(L("Nothing spare. Equipped gear is on the Character tab.")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+            if shows(.items), !(narrowed && items.isEmpty) {
+                SectionTitle(text: L("Items"))
+                if items.isEmpty {
+                    Text(L("No potions. Trader Bo in Meadowbrook sells them.")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+                }
+                grid(items)
             }
-            // Gear you can't wear yet (too low a level, another class's) is faded.
-            grid(session.bagEquipment) { session.equipIssue($0) == nil }
 
-            SectionTitle(text: L("Materials"))
-            if session.bagMaterials.isEmpty {
-                Text(L("Monsters drop wood, metal, gems and hides. A town smith forges them into weapons."))
-                    .font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+            if shows(.gear), !(narrowed && gear.isEmpty) {
+                SectionTitle(text: L("Equipment"))
+                if gear.isEmpty {
+                    Text(L("Nothing spare. Equipped gear is on the Character tab.")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+                }
+                // Gear you can't wear yet (too low a level, another class's) is faded.
+                grid(gear) { session.equipIssue($0) == nil }
             }
-            grid(session.bagMaterials)
+
+            if shows(.materials), !(narrowed && materials.isEmpty) {
+                SectionTitle(text: L("Materials"))
+                if materials.isEmpty {
+                    Text(L("Monsters drop wood, metal, gems and hides. A town smith forges them into weapons."))
+                        .font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+                }
+                grid(materials)
+            }
+
+            if narrowed, [shows(.items) ? items : [], shows(.gear) ? gear : [], shows(.materials) ? materials : []].allSatisfy(\.isEmpty) {
+                EmptyNote(L("Nothing in your bag matches."), size: 11)
+                    .padding(.vertical, 12)
+            }
         }
         .onChange(of: hatchRequest?.id) { _, id in
             guard let id else { return }
@@ -1064,14 +1101,39 @@ private struct BagTab: View {
         }
     }
 
-    /// One slot per kind of item, its count in the corner from two up.
+    /// Search, sort, and the kinds to show (and only gear you can wear).
+    private var finder: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                ItemSearchField(text: $search)
+                ItemSortMenu(sort: $sort, options: ItemSort.allCases)
+            }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(Shelf.allCases, id: \.self) { kind in
+                        FilterChip(title: kind.title, on: shelf == kind) { shelf = kind }
+                    }
+                    FilterChip(title: L("Can wear"), on: wearableOnly) { wearableOnly.toggle() }
+                }
+            }
+        }
+    }
+
+    private func shows(_ kind: Shelf) -> Bool { shelf == .all || shelf == kind }
+
+    private func arranged(_ items: [ItemDef]) -> [ItemDef] {
+        ItemFinder.arrange(items, search: search, sort: sort, session: session)
+    }
+
+    /// One slot per kind of item, its count in the corner from two up, and the upgrade arrow on gear
+    /// better than what you wear.
     private func grid(_ items: [ItemDef], usable: @escaping (ItemDef) -> Bool = { _ in true }) -> some View {
         LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
             ForEach(items) { item in
                 Button {
                     onInspect(item)
                 } label: {
-                    ItemIcon(item: item, size: Self.slot, count: session.count(of: item.id))
+                    ItemIcon(item: item, size: Self.slot, count: session.count(of: item.id), upgrade: session.isUpgrade(item))
                         .opacity(usable(item) ? 1 : 0.45)
                         .padding(.top, 5)
                         .padding(.trailing, 5)
