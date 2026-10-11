@@ -111,16 +111,31 @@ final class Lighting {
 
     /// A soft shadow on the ground under a tree or rock, a little toward the lower right as if lit
     /// from the upper left. Drawn under everything that stands, so it never covers a character; on
-    /// a hill, `above` is the hill's depth, so it lies on the hill instead of under it.
-    static func shadow(under node: SKSpriteNode, in world: SKNode, above ground: CGFloat? = nil) {
+    /// a hill, `above` is the depth of the strip it stands on (`HillArt.strip(at:)`), so it lies on
+    /// the hill instead of under it, and `front` where the strip in front begins on screen and its
+    /// depth.
+    static func shadow(under node: SKSpriteNode, in world: SKNode, above ground: CGFloat? = nil,
+                       front: (line: CGFloat, z: CGFloat)? = nil) {
         let width = node.size.width * 0.8
-        let shadow = SKSpriteNode(texture: SoftTextures.glow, size: CGSize(width: width, height: width * 0.36))
-        shadow.color = .black
-        shadow.colorBlendFactor = 1
-        shadow.alpha = 0.3
-        shadow.position = node.position + CGVector(dx: width * 0.12, dy: -1)
-        shadow.zPosition = ground.map { $0 + 0.1 } ?? -99_300
-        world.addChild(shadow)
+        let size = CGSize(width: width, height: width * 0.36)
+        let middle = node.position + CGVector(dx: width * 0.12, dy: -1)
+        // Raised ground in front may start under it (`front`, from its line on screen down): the part
+        // below that lies on it, so it's sorted with it.
+        let bottom = middle.y - size.height / 2
+        let cut = front.map { min(1, max(0, ($0.line - bottom) / size.height)) } ?? 0
+        let parts: [(from: CGFloat, to: CGFloat, z: CGFloat)] = [(0, cut, front?.z ?? 0), (cut, 1, ground ?? -99_300.1)]
+        for part in parts where part.to > part.from {
+            let texture = part.from == 0 && part.to == 1
+                ? SoftTextures.glow : SKTexture(rect: CGRect(x: 0, y: part.from, width: 1, height: part.to - part.from), in: SoftTextures.glow)
+            let shadow = SKSpriteNode(texture: texture, size: CGSize(width: width, height: size.height * (part.to - part.from)))
+            shadow.anchorPoint = CGPoint(x: 0.5, y: 0)
+            shadow.color = .black
+            shadow.colorBlendFactor = 1
+            shadow.alpha = 0.3
+            shadow.position = CGPoint(x: middle.x, y: bottom + size.height * part.from)
+            shadow.zPosition = part.z + 0.1
+            world.addChild(shadow)
+        }
     }
 
     // MARK: Ground colour

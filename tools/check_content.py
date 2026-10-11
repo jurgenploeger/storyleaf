@@ -274,13 +274,25 @@ for map_def in maps.values():
     if "hills" in theme:
         hills = theme["hills"]
         where = f"map {map_def['id']} hills"
-        check(set(hills) <= {"count", "size", "height", "bank"}, f"{where} → unknown keys {set(hills) - {'count', 'size', 'height', 'bank'}}")
+        known = {"count", "size", "chain", "height", "mountains", "bank"}
+        check(set(hills) <= known, f"{where} → unknown keys {set(hills) - known}")
         check(not map_def.get("town") and "cave" not in theme, f"{where} → only out in the fields (not towns or caves)")
         check(isinstance(hills.get("count"), int) and 1 <= hills["count"] <= 20, f"{where} → count must be a whole number from 1 to 20")
         size = hills.get("size", [3, 6])
         check(isinstance(size, list) and len(size) == 2 and all(isinstance(v, int) for v in size) and 2 <= size[0] <= size[1] <= 12,
               f"{where} → size must be [smallest, biggest] radius in cells, 2 to 12")
         check(isinstance(hills.get("height", 44), (int, float)) and 16 <= hills.get("height", 44) <= 64, f"{where} → height must be 16 to 64 points")
+        chain = hills.get("chain", [2, 4])
+        check(isinstance(chain, list) and len(chain) == 2 and all(isinstance(v, int) for v in chain) and 1 <= chain[0] <= chain[1] <= 6,
+              f"{where} → chain must be [fewest, most] summits a range, 1 to 6")
+        if "mountains" in hills:
+            mountains = hills["mountains"]
+            check(isinstance(mountains, dict) and set(mountains) == {"count", "height"}, f"{where} → mountains must be {{count, height}}")
+            if isinstance(mountains, dict):
+                check(isinstance(mountains.get("count"), int) and 1 <= mountains.get("count", 0) <= 4, f"{where} → mountains count must be 1 to 4")
+                height = mountains.get("height")
+                check(isinstance(height, (int, float)) and max(64, hills.get("height", 44)) < height <= 128,
+                      f"{where} → a mountain's height must be over the hills' and over 64, up to 128 points")
         if "bank" in hills:
             tiles.append(hills["bank"])
     props = [p["art"] for p in theme["props"]] + town.get("lots", []) + list(town.get("streetDecor", {}))

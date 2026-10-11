@@ -137,6 +137,10 @@ hill_top       | newgame,map=sunny_meadow,hill=0,ontop            | 8
 hill_candy     | newgame,level=60,map=candy_mountain,hill=1       | 8
 hill_desert    | newgame,level=60,map=genie_desert,hill=0         | 8
 hill_crystal   | newgame,level=90,map=crystal_mountain,hill=0     | 8
+hill_mountain  | newgame,level=90,map=crystal_mountain,hill=tallest | 8
+hill_peak      | newgame,level=90,map=crystal_mountain,hill=tallest,ontop | 8
+hill_snow      | newgame,level=40,map=snow_white_forest,hill=tallest | 8
+hill_range_land | newgame,map=sunny_meadow,hill=0,landscape        | 8
 twilight     | newgame,level=40,map=twilight_woods                 | 15
 battle_big   | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,hp=0.3,map=genie_desert,battle=10 | 15
 battle_arrange | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,map=genie_desert,battle=10,arrange | 15

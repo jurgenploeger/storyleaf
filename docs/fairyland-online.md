@@ -106,15 +106,28 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   grid crashed SpriteKit at that size). Since 0.4.3 the light is matte, as pixel art shades a hill: a few
   steps of 6% with a 4×4 ordered dither between them, sides away from the sun a few shades darker (leaning to
   the palette's shadow colour) and sides facing it only one lighter; the first smooth, brighter gradient
-  read as gloss in playtesting. Never steeper than 15 points a cell halfway up, so ground facing away never
-  leans out of sight and a tap finds one spot. Their sides are too steep to walk, but scenery grows there
-  like anywhere (since 0.4.3; tree shadows lie on the hill); a switchback trail (two or three legs across the
-  side facing you, cut into the slope with a shadow above and a lip below) is the way up, kept clear a cell
-  either side. A `bank` tile shows through in ragged patches where they're steepest.
+  read as gloss in playtesting. Never steeper than 13 points a cell halfway up (15 before 0.4.4), so ground
+  facing away never leans out of sight and a tap finds one spot. Their sides are too steep to walk, but
+  scenery grows there like anywhere (since 0.4.3; tree shadows lie on the hill); a switchback trail (a leg
+  across the side facing you for every couple of cells up, cut into the slope with a shadow above and a lip
+  below) is the way up, kept clear a cell either side. A `bank` tile shows through in ragged patches where
+  they're steepest.
+- Ranges and mountains (ours, since 0.4.4, asked for in playtesting 2026-10-11: hills should stretch across
+  the land and some rise to a mountain): each hill is a range, a chain of summits (`chain`, 2 to 4 by default)
+  along a wandering line, each with its own height, blended so where two meet stands a little fuller (the
+  fourth root of their heights' fourth powers) and their tops often join into a ridge you can walk along.
+  `mountains` (count, height up to 128) adds ranges with one summit far taller and wider than the rest; a
+  summit is only as tall as its width lets it be at that steepness. The first trail climbs from the ground in
+  front; the mountain and any top still out of reach get trails of their own (front, front left or front
+  right), each from somewhere you can walk to, never steeper than you could walk, clear of the others. Too big
+  to draw or sort as one picture, a range is drawn in squares of 16 cells, each shown in strips two cells
+  deep up the screen, sorted just behind their back edge (`HillArt.strip(at:)`), so trees and walkers behind
+  a summit are hidden by it; tree shadows are split where the strip in front begins.
 - Footpaths (ours, since 0.4.3, asked for in playtesting 2026-10-11: the trails as new ways to explore):
-  from each hill's trail a cell-wide road winds across the fields to the nearest road or footpath, the
-  cheapest way round what's in the way with a little seeded unevenness so it wanders (`WorldMap.layFootpaths`).
-  The minimap shows them like roads, the hills' trails, and the hills in relief, lighter the higher.
+  from each trail that starts on the ground a cell-wide road winds across the fields to the nearest road or
+  footpath, the cheapest way round what's in the way with a little seeded unevenness so it wanders
+  (`WorldMap.layFootpaths`). The minimap shows them like roads, the hills' trails, and the hills in relief,
+  lighter the higher, mountains lightest.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake

@@ -1043,10 +1043,14 @@
           "art": "mushroom"
         },
         "hills": {
-          "count": 6,
+          "count": 4,
           "size": [
-            3,
-            6
+            6,
+            11
+          ],
+          "chain": [
+            2,
+            4
           ]
         },
         "props": [
@@ -3745,11 +3749,19 @@
         "water": "tile_ice",
         "ponds": 9,
         "hills": {
-          "count": 4,
+          "count": 3,
           "size": [
-            3,
-            6
-          ]
+            6,
+            11
+          ],
+          "chain": [
+            2,
+            4
+          ],
+          "mountains": {
+            "count": 1,
+            "height": 96
+          }
         },
         "props": [
           {
@@ -5823,10 +5835,14 @@
         "water": "tile_water",
         "ponds": 9,
         "hills": {
-          "count": 5,
+          "count": 4,
           "size": [
-            4,
-            7
+            6,
+            12
+          ],
+          "chain": [
+            3,
+            5
           ],
           "height": 32,
           "bank": "tile_sand"
@@ -6200,12 +6216,20 @@
         "accent": "tile_cave_floor",
         "accentPatches": 68,
         "hills": {
-          "count": 6,
+          "count": 3,
           "size": [
-            4,
-            7
+            7,
+            12
+          ],
+          "chain": [
+            2,
+            4
           ],
           "height": 56,
+          "mountains": {
+            "count": 2,
+            "height": 112
+          },
           "bank": "tile_cave_rock"
         },
         "props": [
@@ -6896,10 +6920,14 @@
           "art": "mushroom"
         },
         "hills": {
-          "count": 5,
+          "count": 3,
           "size": [
-            3,
-            6
+            6,
+            10
+          ],
+          "chain": [
+            2,
+            4
           ]
         },
         "props": [
@@ -7617,12 +7645,20 @@
           "art": "mushroom"
         },
         "hills": {
-          "count": 6,
+          "count": 2,
           "size": [
-            3,
-            7
+            6,
+            10
+          ],
+          "chain": [
+            2,
+            4
           ],
           "height": 48,
+          "mountains": {
+            "count": 1,
+            "height": 96
+          },
           "bank": "tile_chocolate"
         },
         "props": [
@@ -9128,11 +9164,16 @@
           "art": "mushroom"
         },
         "hills": {
-          "count": 3,
+          "count": 2,
           "size": [
-            3,
-            5
-          ]
+            5,
+            9
+          ],
+          "chain": [
+            2,
+            3
+          ],
+          "height": 40
         },
         "props": [
           {
@@ -9893,11 +9934,19 @@
         "accent": "tile_scree",
         "accentPatches": 30,
         "hills": {
-          "count": 5,
+          "count": 2,
           "size": [
-            3,
-            6
-          ]
+            6,
+            10
+          ],
+          "chain": [
+            2,
+            4
+          ],
+          "mountains": {
+            "count": 1,
+            "height": 88
+          }
         },
         "props": [
           {
@@ -10830,10 +10879,14 @@
         "water": "tile_water",
         "ponds": 4,
         "hills": {
-          "count": 3,
+          "count": 2,
           "size": [
+            6,
+            11
+          ],
+          "chain": [
             3,
-            6
+            5
           ],
           "height": 32,
           "bank": "tile_sand"

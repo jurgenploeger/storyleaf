@@ -10,8 +10,9 @@ import SpriteKit
 ///   hp=0.2         start with this fraction of HP left
 ///   map=<id>       start on a map from content/maps.json
 ///   at=x_y         start at this offset from the map's centre (e.g. at=0_14)
-///   hill=n         start at the foot of the trail up the map's nth hill (0 first); with `ontop`,
-///                  where it comes out on the top
+///   hill=n         start at the foot of the first trail up the map's nth range of hills (0 first);
+///                  `hill=tallest` the range with the highest top, up its highest trail; `trail=k`
+///                  its kth trail instead; with `ontop`, where the trail comes out on the top
 ///   equip=a+b      start wearing these items (ids from content/items.json, joined with +)
 ///   bag=a+b        put these items in the bag
 ///   done=a+b       these quests (ids from content/quests.json) already handed in (their treasures
@@ -525,11 +526,19 @@ enum DebugLaunch {
                 session.playerPosition = grid.center(of: grid.offset(parts[0], parts[1]))
             }
         }
-        if let index = flags["hill"].flatMap({ Int($0) }), let def = Content.shared.map(session.data.mapID) {
+        if let pick = flags["hill"], let def = Content.shared.map(session.data.mapID) {
             let grid = WorldMap(def: def)
-            if grid.hills.indices.contains(index), let foot = grid.hills[index].trail.first, let top = grid.hills[index].trail.last {
-                let spot = flags["ontop"] != nil ? top : foot
-                session.playerPosition = WorldMap.project(CGPoint(x: spot.x * WorldMap.tileSize, y: spot.y * WorldMap.tileSize))
+            // A range by its place, or `tallest`: the one with the highest top, up its highest trail.
+            let tallest = Int(pick) == nil
+            let index = Int(pick) ?? grid.hills.indices.max { grid.hills[$0].peak < grid.hills[$1].peak }
+            if let index, grid.hills.indices.contains(index) {
+                let hill = grid.hills[index]
+                let highest = hill.trails.indices.max { hill.lobes[hill.trails[$0].lobe].peak < hill.lobes[hill.trails[$1].lobe].peak }
+                let which = flags["trail"].flatMap { Int($0) } ?? (tallest ? highest ?? 0 : 0)
+                if hill.trails.indices.contains(which), let foot = hill.trails[which].points.first, let top = hill.trails[which].points.last {
+                    let spot = flags["ontop"] != nil ? top : foot
+                    session.playerPosition = WorldMap.project(CGPoint(x: spot.x * WorldMap.tileSize, y: spot.y * WorldMap.tileSize))
+                }
             }
         }
         if let id = flags["title"], Content.shared.title(id) != nil {

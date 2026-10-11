@@ -2,6 +2,15 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.4.4",
+      "date": "2026-10-11",
+      "title": "Ranges and mountains",
+      "notes": [
+        "Hills come in ranges now: summits one after another across the land, some reaching a good part of the way over the map. Once you're up, walk along the top from one summit to the next, and where a top is out of reach, look for another trail up.",
+        "Some lands rise to a mountain, far taller than the hills around it, with a trail that winds back and forth all the way to the top: on Crystal Mountain, the Gumdrop Peaks, Marionette Rise and in Snow White Forest."
+      ]
+    },
+    {
       "version": "0.4.3",
       "date": "2026-10-11",
       "title": "Footpaths",

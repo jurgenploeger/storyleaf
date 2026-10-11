@@ -395,12 +395,9 @@ final class WorldScene: SKScene {
                 mapSize: (map.columns, map.rows),
                 shadow: Lighting.rgb(palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
                 highlight: Lighting.rgb(palette?.highlight) ?? (r: 1, g: 0.95, b: 0.8))
-            // Already where it shows on screen (it lifts itself), so straight into the world.
-            raisedHills = map.hills.compactMap { hill in
-                guard let sprite = HillArt.sprite(for: hill, look: look) else { return nil }
-                sprite.zPosition = Self.topZ(of: hill.cells)
-                return sprite
-            }
+            // Already where they show on screen (they lift themselves) and sorted, so straight into
+            // the world.
+            raisedHills = map.hills.flatMap { HillArt.sprites(for: $0, look: look) }
         }
         let ground = projected(grid)
         ground.zPosition = -100_000
@@ -616,7 +613,7 @@ final class WorldScene: SKScene {
         return -back - 0.75
     }
 
-    /// Raised ground: the hills (drawn whole by `HillArt`), and a town's terraces (WorldMap.plateaus),
+    /// Raised ground: the hills (drawn in strips by `HillArt`), and a town's terraces (WorldMap.plateaus),
     /// each top drawn its height up, a stone wall under the edges that face you, and stone steps
     /// climbing from the ground in front to the top.
     private func placePlateaus() {
@@ -817,7 +814,15 @@ final class WorldScene: SKScene {
                         node.run(.repeatForever(.sequence([rise, rise.reversed()])), withKey: "bob")
                     }
                     if placement.shadow == true {
-                        Lighting.shadow(under: node, in: world, above: map.hillIndex(at: cell).map { Self.topZ(of: map.hills[$0].cells) })
+                        if map.hillIndex(at: cell) != nil {
+                            // On a hill, over the strip it stands on, and over the one in front where
+                            // it reaches that (`HillArt.strip(at:)`).
+                            let strip = HillArt.strip(at: -node.zPosition)
+                            let line = strip.start + map.height(at: CGPoint(x: node.position.x, y: strip.start))
+                            Lighting.shadow(under: node, in: world, above: strip.z, front: (line: line, z: strip.z + HillArt.stripHeight))
+                        } else {
+                            Lighting.shadow(under: node, in: world)
+                        }
                     }
                     if let hex = placement.glow, let color = UIColor(hex: hex) {
                         Lighting.glow(behind: node, color: color, in: world, rng: &rng)
