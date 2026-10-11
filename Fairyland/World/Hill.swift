@@ -4,8 +4,8 @@ import Foundation
 extension WorldMap {
     /// Raised ground out in the fields (`theme.hills`): a range of summits melted into one another,
     /// each rising smoothly from its foot to a rounded top of its own height, so a long ridge of hills
-    /// or a mountain among its foothills. Its sides are too steep to walk but for its trails, which
-    /// zig-zag up the sides that face you (switchbacks) and onto the tops.
+    /// or a mountain among its foothills. You can walk up it anywhere; its trails, the easy way up,
+    /// wind up round its sides from the side that faces you and onto the tops.
     /// Points here are in cells (grid space divided by `WorldMap.tileSize`).
     nonisolated struct Hill {
         /// One of its summits: an ellipse (its middle, and its reach along and across, turned by
@@ -18,14 +18,15 @@ extension WorldMap {
             let band: Double
             private let cosine, sine: Double
 
-            init(x: Double, y: Double, along: Double, across: Double, angle: Double, peak: Double) {
+            /// `steepness`: its range's (`Hill.steepness`).
+            init(x: Double, y: Double, along: Double, across: Double, angle: Double, peak: Double, steepness: Double) {
                 self.x = x
                 self.y = y
                 self.along = along
                 self.across = across
                 self.angle = angle
                 self.peak = peak
-                band = max(3, 1.5 * peak / Hill.steepest)
+                band = max(3, 1.5 * peak / steepness)
                 cosine = cos(angle)
                 sine = sin(angle)
             }
@@ -48,7 +49,13 @@ extension WorldMap {
         let ripples: [(fx: Double, px: Double, fy: Double, py: Double)]
         /// How high its highest top stands, in points.
         let peak: CGFloat
-        /// Its trails: the first from the ground in front, the others to tops it doesn't reach.
+        /// How high the ground really stands at its highest, from its samples: where two summits'
+        /// tops meet it can stand up to a fifth over `peak`.
+        var highest: CGFloat = 0
+        /// How steep its summits' sides get halfway up, at most, in points a cell
+        /// (`steepness(rockiness:)`).
+        let steepness: Double
+        /// Its trails: the first from the ground in front, then one up its mountain.
         var trails: [Trail] = []
         /// The cells it rises over.
         var cells: Set<GridPoint> = []
@@ -58,14 +65,19 @@ extension WorldMap {
         var size = (columns: 0, rows: 0)
         var heights: [Float] = []
         static let samples = 4
-        /// How steep a summit's sides get halfway up, at most, in points a cell. The view looks down
-        /// at 30°, so ground facing away from you would drop out of sight past about 22 points a cell
-        /// (going diagonally); this leaves room for the ripples and where summits meet.
-        static let steepest: Double = 13
 
-        init(lobes: [Lobe], ripples: [(fx: Double, px: Double, fy: Double, py: Double)]) {
+        /// How steep a range's sides get halfway up, at most, in points a cell: gentle slopes on the
+        /// easiest maps (10), steep and rocky on the most dangerous (14). The view looks down at 30°,
+        /// so ground facing away from you would drop out of sight past about 22 points a cell (going
+        /// diagonally); this leaves room for the ripples and where summits meet.
+        static func steepness(rockiness: Double) -> Double {
+            10 + 4 * min(1, max(0, rockiness))
+        }
+
+        init(lobes: [Lobe], ripples: [(fx: Double, px: Double, fy: Double, py: Double)], steepness: Double) {
             self.lobes = lobes
             self.ripples = ripples
+            self.steepness = steepness
             peak = CGFloat(lobes.map(\.peak).max() ?? 0)
         }
 
@@ -134,24 +146,18 @@ extension WorldMap {
             return CGFloat(bottom + (top - bottom) * ty)
         }
 
-        /// A trail up summit `index` on the side facing `front` (an angle in grid space; toward the
-        /// bottom of the screen is 225°): from its foot, legs back and forth across that side, each a
-        /// little further up (an even share of the way to the top) and turning about 45° either side of
-        /// `front`, then up onto the top. Nil if it doesn't get there.
-        func traceTrail(on index: Int, front: Double, startingLeft: Bool) -> [CGPoint]? {
+        /// A trail up summit `index` as a path would wind up it, not zig-zagging: from its foot at
+        /// angle `start` (grid space; toward the bottom of the screen is 225°), round its side one way
+        /// (`way`, 1 or -1), climbing evenly as it goes and far enough round that halfway up it's no
+        /// steeper than an easy walk (`stretch`, 1 or more, takes it further), bending gently in and
+        /// out (`bends` times, from `phase`), then onto the top. Low hills get a curve; a mountain it
+        /// sweeps round, and one it would take most of the way round turns back once (a hairpin).
+        /// Nil if it doesn't get there.
+        func traceTrail(on index: Int, from start: Double, way: Double, stretch: Double, phase: Double, bends: Int) -> [CGPoint]? {
             let lobe = lobes[index]
             let cx = lobe.x, cy = lobe.y
-            let spread = Double.pi / 4
-            func turned(_ x: Double, _ y: Double) -> Double {
-                var angle = atan2(y - cy, x - cx) - front
-                while angle > .pi { angle -= 2 * .pi }
-                while angle < -.pi { angle += 2 * .pi }
-                return angle
-            }
             func risen(_ x: Double, _ y: Double) -> Double { rise(of: index, x, y) }
-            var way: Double = startingLeft ? 1 : -1
-            // The foot, where the first leg starts.
-            let start = front - spread * way
+            // The foot, where it starts.
             let out = (x: cos(start), y: sin(start))
             var reach = 0.0
             while reach < 80 {
@@ -164,30 +170,43 @@ extension WorldMap {
             let up = uphill(of: index, x, y)
             var points = stride(from: 5, through: 1, by: -1).map { CGPoint(x: x - up.x * 0.12 * Double($0), y: y - up.y * 0.12 * Double($0)) }
             points.append(CGPoint(x: x, y: y))
+            // How far round: halfway up, about 5 points a cell.
+            let middle = max(2, reach - lobe.band / 2)
+            let sweep = min(max(1.5 * lobe.peak / (5 * middle) * stretch, 1.2), 3.2 * Double.pi)
+            let legs = sweep <= 1.6 * Double.pi ? 1 : 2
+            let each = sweep / Double(legs)
+            // Bends of up to about a cell either way.
+            let bend = min(0.12, 0.8 / lobe.band)
             let step = 0.15
-            // A leg for every couple of cells up: a mountain winds up and up.
-            let legs = max(2, Int((lobe.band / 2.2).rounded()))
+            var turn = way
             for leg in 0..<legs {
                 let from = risen(x, y), to = Double(leg + 1) / Double(legs)
-                let first = turned(x, y), last = spread * way
-                let span = max(abs(last - first), 0.01)
-                for _ in 0..<1000 {
+                var gone = 0.0, last = atan2(y - cy, x - cx)
+                for _ in 0..<4000 {
                     let n = uphill(of: index, x, y)
-                    // Across the slope, the way this leg goes round.
+                    // Across the slope, the way it goes round.
                     var tx = n.y, ty = -n.x
-                    if ((x - cx) * ty - (y - cy) * tx) * way < 0 { tx = -tx; ty = -ty }
-                    let progress = min(1, abs(turned(x + step * tx, y + step * ty) - first) / span)
-                    let want = from + (to - from) * progress
+                    if ((x - cx) * ty - (y - cy) * tx) * turn < 0 { tx = -tx; ty = -ty }
+                    let progress = min(1, gone / each)
+                    let swing: Double = sin(progress * Double.pi * Double(bends) + phase)
+                    let wave: Double = bend * swing * sin(progress * Double.pi)
+                    let want = from + (to - from) * progress + wave
                     let gain = n.growth / lobe.band * step
-                    let climb = min(1, max(0, (want - risen(x, y)) / max(gain, 1e-9)))
-                    let across = (1 - climb * climb).squareRoot()
+                    let climb = min(1, max(-0.5, (want - risen(x, y)) / max(gain, 1e-9)))
+                    let across = max(0, 1 - climb * climb).squareRoot()
                     x += step * (across * tx + climb * n.x)
                     y += step * (across * ty + climb * n.y)
                     points.append(CGPoint(x: x, y: y))
+                    let now = atan2(y - cy, x - cx)
+                    var turned = now - last
+                    while turned > .pi { turned -= 2 * .pi }
+                    while turned < -.pi { turned += 2 * .pi }
+                    gone += turned * turn
+                    last = now
                     if leg == legs - 1, risen(x, y) >= 0.999 { break }
-                    if (turned(x, y) - last) * way >= 0 { break }
+                    if gone >= each { break }
                 }
-                way = -way
+                turn = -turn
             }
             // On up onto the top, and a little way across it.
             var onTop = 0
@@ -216,11 +235,6 @@ extension WorldMap {
                 worst = max(worst, abs(heights[j] - heights[i]) / (walked[j] - walked[i]))
             }
             return worst
-        }
-
-        /// How far a point is from the nearest trail's middle, in cells.
-        func distanceToTrails(_ x: Double, _ y: Double) -> Double {
-            trails.map { Self.distance(x, y, to: $0.points) }.min() ?? .infinity
         }
 
         /// How far a point is from a line's middle, in cells.

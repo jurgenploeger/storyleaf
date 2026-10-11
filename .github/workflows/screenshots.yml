@@ -43,8 +43,8 @@ jobs:
           status=0
           xcodebuild test -project Fairyland.xcodeproj -scheme Fairyland -destination "id=$UDID" \
             -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO > build/tests.log 2>&1 || status=$?
-          # How long each map takes to build (PerformanceTests), pass or fail.
-          grep '⏱' build/tests.log || true
+          # How long each map takes to build (PerformanceTests) and the hills each raised, pass or fail.
+          grep -E '⏱|⛰' build/tests.log || true
           if [ "$status" -ne 0 ]; then
             grep -E '✘|↳|Fatal error|error:' build/tests.log | sort -u | head -60 | while IFS= read -r line; do echo "::error::$line"; done
             tools/ci_errors.sh build/tests.log; exit 1

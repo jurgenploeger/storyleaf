@@ -125,6 +125,32 @@ struct ContentTests {
         }
     }
 
+    @Test func roadsIntoCavesRunIntoRock() throws {
+        // Where a road leads into a cave, the cave's rock rises along that side of the map, and the
+        // road runs through it to the cave's mouth at the edge.
+        for def in content.maps where def.theme.cave == nil && def.town == nil {
+            let map = WorldMap(def: def)
+            for exit in def.exits where content.map(exit.to)?.theme.cave != nil {
+                let crag = map.crags.first { $0.edge == exit.edge }
+                #expect(crag != nil, "map \(def.id): no rock where its road leads into \(exit.to)")
+                guard let crag else { continue }
+                let length = exit.edge == .north || exit.edge == .south ? map.columns : map.rows
+                let rocky = (0..<length).filter { map.isCrag(map.cell(on: exit.edge, along: $0, inward: 0)) }.count
+                #expect(rocky * 3 > length * 2, "map \(def.id): only \(rocky) of the \(length) cells along its \(exit.edge) edge are rock")
+                // Rock out past the edge too, but not in front of a mouth that looks your way.
+                let outside = map.cell(on: exit.edge, along: crag.mouth.lowerBound - 2, inward: -2)
+                #expect(map.isCrag(outside), "map \(def.id): no rock out past its \(exit.edge) edge")
+                let mouth = crag.mouth.map { map.cell(on: exit.edge, along: $0, inward: 0) }
+                #expect(mouth.contains { map.ground[$0.row][$0.col] == .path && map.isWalkable($0) },
+                        "map \(def.id): the road doesn't reach the cave's mouth")
+                let cleft = map.cell(on: exit.edge, along: (crag.mouth.lowerBound + crag.mouth.upperBound) / 2, inward: -2)
+                #expect(map.isCrag(cleft) != crag.opensTowardYou, "map \(def.id): the cave's mouth is the wrong way round")
+            }
+        }
+        // Nowhere else: no road from the meadow leads into a cave.
+        #expect(WorldMap(def: try #require(content.map("sunny_meadow"))).crags.isEmpty)
+    }
+
     @Test func everyMapHasRoomToWalk() {
         for def in content.maps {
             let map = WorldMap(def: def)
@@ -134,17 +160,22 @@ struct ContentTests {
         }
     }
 
-    @Test func hillsRiseWithATrailUp() {
+    @Test func hillsRiseWithATrailUp() throws {
         let tile = WorldMap.tileSize
         for def in content.maps where def.theme.hills != nil {
             let map = WorldMap(def: def)
             #expect(!map.hills.isEmpty, "map \(def.id) has no hills")
-            #expect(map.hills.contains { hill in hill.cells.contains { !map.isWalkable($0) && map.isFreeForScenery($0) } },
+            #expect(map.hills.contains { hill in hill.cells.contains { map.isFreeForScenery($0) } },
                     "map \(def.id): nothing can grow on its hills")
+            // What each map raised, for the log (the tests job lists these lines).
+            let ranges = map.hills.map { "\(Int($0.peak)) high \($0.size.columns)×\($0.size.rows) \($0.trails.count) trails" }
+            print("⛰ \(def.id): rocky \(map.rockiness), " + ranges.joined(separator: "; "))
             // Ranges stretch across the land, not a hump each; and a map with mountains has one.
             #expect(map.hills.contains { $0.size.columns >= 24 || $0.size.rows >= 24 }, "map \(def.id): only small hills")
-            if let mountains = def.theme.hills?.mountains {
-                #expect(map.hills.contains { Double($0.peak) >= mountains.height * 0.75 }, "map \(def.id) has no mountain")
+            if def.theme.hills?.mountains != nil {
+                // As tall as there's room for: at least far taller than its hills.
+                let hills = def.theme.hills?.height ?? 44
+                #expect(map.hills.contains { Double($0.peak) >= hills * 1.4 }, "map \(def.id) has no mountain")
             }
             for hill in map.hills {
                 func height(_ point: CGPoint) -> CGFloat { map.height(atGrid: CGPoint(x: point.x * tile, y: point.y * tile)) }
@@ -164,11 +195,13 @@ struct ContentTests {
                     guard height(foot) < 1 else { continue }
                     // A footpath leads from a trail on the ground to the roads, and road goes on to
                     // the map's edge.
+                    // Step by step as walkers go, diagonals too: a footpath can join one of the
+                    // narrower side trails, whose cells often only meet corner to corner.
                     var seen: Set<GridPoint> = [cell(foot)]
                     var queue = [cell(foot)]
                     var outside = false
                     while let at = queue.popLast(), !outside {
-                        for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                        for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)] {
                             let next = GridPoint(col: at.col + dc, row: at.row + dr)
                             guard map.contains(next), map.ground[next.row][next.col] == .path, seen.insert(next).inserted else { continue }
                             if next.col == 0 || next.row == 0 || next.col == map.columns - 1 || next.row == map.rows - 1 { outside = true }
@@ -177,8 +210,8 @@ struct ContentTests {
                     }
                     #expect(outside, "map \(def.id): no footpath from the trail at \(cell(foot)) to the roads")
                 }
-                // Its sides are too steep to walk (but trees and flowers grow there, above).
-                #expect(hill.cells.contains { !map.isWalkable($0) }, "map \(def.id): a hill you can walk straight up")
+                // You can walk up it anywhere, its steepest sides too (nothing grows on it yet).
+                #expect(hill.cells.allSatisfy { map.isWalkable($0) }, "map \(def.id): part of a hill you can't walk on")
                 // Never so steep that ground facing away from you would lean out of sight: going up
                 // the map and right at once (up the screen), it never drops faster than the view.
                 for cell in hill.cells {
@@ -191,6 +224,12 @@ struct ContentTests {
                 }
             }
         }
+        // The more dangerous the map, the rockier and steeper its hills: grassy slopes in the meadow,
+        // crags where the monsters are strongest.
+        let meadow = WorldMap(def: try #require(content.map("sunny_meadow")))
+        let steppe = WorldMap(def: try #require(content.map("secret_plain")))
+        #expect(meadow.rockiness == 0 && steppe.rockiness == 1)
+        #expect(meadow.hills.allSatisfy { $0.steepness < steppe.hills.first?.steepness ?? 0 })
         // A town's terraces stand up too, their stairs climbing to the top.
         for def in content.maps where def.town?.terraces?.isEmpty == false {
             let map = WorldMap(def: def)
@@ -334,6 +373,18 @@ struct LookTests {
     init() {
         // Belt and braces: never touch the real save from tests.
         SaveStore.fileName = "fairyland-tests-save.json"
+    }
+
+    @Test func singlePicturesTurnTheWayTheyWalk() {
+        let art = ArtLibrary.shared
+        // A monster is one picture, mirrored to walk the other way; a walk sheet has side views.
+        #expect(art.walkCycle("monster_jelly").mirrors)
+        #expect(!art.walkCycle("monster_jelly").facesRight)
+        #expect(!art.walkCycle("player_walk").mirrors)
+        #expect(!art.walkCycle("pet_walk").mirrors)
+        // Most look left or at you; a few look right, and a copy looks the way its base does.
+        #expect(art.walkCycle("npc_ugly_duckling").facesRight)
+        #expect(art.walkCycle("monster_tree_snake_sunny").facesRight)
     }
 
     @Test func derivedSpritesHaveABase() throws {

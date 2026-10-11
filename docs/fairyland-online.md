@@ -107,27 +107,61 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   steps of 6% with a 4×4 ordered dither between them, sides away from the sun a few shades darker (leaning to
   the palette's shadow colour) and sides facing it only one lighter; the first smooth, brighter gradient
   read as gloss in playtesting. Never steeper than 13 points a cell halfway up (15 before 0.4.4), so ground
-  facing away never leans out of sight and a tap finds one spot. Their sides are too steep to walk, but
-  scenery grows there like anywhere (since 0.4.3; tree shadows lie on the hill); a switchback trail (a leg
-  across the side facing you for every couple of cells up, cut into the slope with a shadow above and a lip
-  below) is the way up, kept clear a cell either side. A `bank` tile shows through in ragged patches where
-  they're steepest.
+  facing away never leans out of sight and a tap finds one spot. Scenery grows on them like anywhere
+  (since 0.4.3; tree shadows lie on the hill). Since 0.4.5 you can walk up them anywhere, straight up the
+  side too (asked for in playtesting 2026-10-11; 0.4.1 to 0.4.4 kept the steep sides blocked but for the
+  trail); a trail cut into the slope (a shadow above, a lip below) is the easy way up, kept clear a cell
+  either side. Since 0.4.5 it winds up round the side as a path would (asked for in playtesting 2026-10-11:
+  not necessarily zig-zag, more like RuneScape's): from its foot on the side facing you, round one way,
+  climbing evenly and far enough round that halfway up it climbs about 5 points a cell, bending gently in
+  and out; a curve up a low hill, a sweep half round a mountain, and a single hairpin where it would go
+  most of the way round. Each range has its own aim, way round, stretch and bends (`Hill.traceTrail`);
+  0.4.1 to 0.4.4 zig-zagged in switchbacks. Since 0.4.5 it's drawn worn in (asked for in playtesting
+  2026-10-11: more natural, not so smooth): stamped along its line every eighth of a cell, wandering a
+  little either side and narrowing and widening as it goes, with a ragged edge two pixels at a time, a tuft
+  of grass here and there, and the shadow and lip only where it's cut into a slope (`HillArt.stamps`,
+  `wear`); 0.4.1 to 0.4.4 stroked it as a smooth band of even width. A `bank` tile shows through in ragged
+  patches where they're steepest.
+- Rocky or grassy by danger (ours, since 0.4.5, asked for in playtesting 2026-10-11: rocky mountains on
+  dangerous maps, slopes on easy ones): `WorldMap.rockiness`, 0 to 1 from the middle of the map's
+  encounter levels ((mid − 15) / 70; Sunny Meadow 0, Swan Lake 0.3, Crystal Mountain 0.9, Hidden Steppe
+  1), or `theme.hills.rocky`. It sets how steep summits get halfway up (10 points a cell on grassy hills,
+  14 on rocky ones, so gentle maps' hills spread wider for their height), how far the bank shows down the
+  slopes and how solid (from 0.2 up scree when the map names none), how deep the shade, and boulders on
+  the steeper slopes from 0.3 up (the map's own boulder and rock props, 8% of steep cells at the rockiest).
 - Ranges and mountains (ours, since 0.4.4, asked for in playtesting 2026-10-11: hills should stretch across
   the land and some rise to a mountain): each hill is a range, a chain of summits (`chain`, 2 to 4 by default)
   along a wandering line, each with its own height, blended so where two meet stands a little fuller (the
   fourth root of their heights' fourth powers) and their tops often join into a ridge you can walk along.
-  `mountains` (count, height up to 128) adds ranges with one summit far taller and wider than the rest; a
-  summit is only as tall as its width lets it be at that steepness. The first trail climbs from the ground in
-  front; the mountain and any top still out of reach get trails of their own (front, front left or front
-  right), each from somewhere you can walk to, never steeper than you could walk, clear of the others. Too big
+  `mountains` (count, height up to 128) adds ranges with one summit far taller and wider than the rest, at
+  least 13 points a cell steep whatever the land; a summit is only as tall as its width lets it be at that
+  steepness, so a mountain is as tall as asked where there's room, else as tall as the roomiest place allows.
+  Since 0.4.5 ranges go where every summit has room round it (`clearance`: how far each cell is from a road,
+  water, a building or another hill), picked at random among the places they fit; before, random spots
+  tried 120 times often found nowhere on crowded maps (Gumdrop Peaks had no mountain). The first trail climbs from the ground in
+  front; the mountain gets one of its own where there's room, never steeper than a comfortable walk and
+  clear of the other. Too big
   to draw or sort as one picture, a range is drawn in squares of 16 cells, each shown in strips two cells
   deep up the screen, sorted just behind their back edge (`HillArt.strip(at:)`), so trees and walkers behind
   a summit are hidden by it; tree shadows are split where the strip in front begins.
 - Footpaths (ours, since 0.4.3, asked for in playtesting 2026-10-11: the trails as new ways to explore):
   from each trail that starts on the ground a cell-wide road winds across the fields to the nearest road or
   footpath, the cheapest way round what's in the way with a little seeded unevenness so it wanders
-  (`WorldMap.layFootpaths`). The minimap shows them like roads, the hills' trails, and the hills in relief,
-  lighter the higher, mountains lightest.
+  (`WorldMap.layFootpaths`); over a hill only where it must, dearer the higher (a trail can start in a nook
+  between two summits, which shut some footpaths in before 0.4.5). The minimap shows them like roads, the hills' trails, and the hills as raised
+  ground in flat tones (since 0.4.5; the height gradient read as a staircase of shades at a pixel a cell):
+  a lighter tint, the edge facing the light lit and the far edge shaded, a cell of shadow on the ground past
+  it, and a mountain's upper slopes lighter still.
+- Cave entrances (ours, since 0.4.5, asked for in playtesting 2026-10-11: a map's way into a cave should
+  show from afar, a mountain or rock formation on that side): where a road leads into a cave (Shiverdell
+  and Lotus Land into the Rat Cavern, Windswept Downs into Gooey Grotto, Moonwhisper and Emerald Road into
+  Whispering Hollow), the cave's own rock rises along that side of the map, 64 points tall (its walls
+  inside are 32 to 36): a band 2 to 5 cells in from the edge, its front wandering, and 6 to 10 cells more
+  out past it, rounding off past the corners (`WorldMap.raiseCrags`, `isCrag`; drawn by `CaveWalls`). The
+  road runs through it with a cell clear either side. On the north and east sides the rock's face at the
+  edge looks your way and the road ends at a dark arch in it; on the south and west that face looks away,
+  so the road runs on under an arch of rock into a dark cleft (`CaveMouth`). How FO showed its cave
+  entrances isn't in any source reachable from a cloud session.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake
@@ -345,6 +379,9 @@ Full Heal.
 **Us:**
 - Up to 5 companions; only the one you bring along follows you, fights and earns EXP (50%, or 100% for a
   Beast Tamer).
+- A companion drawn as one picture (most monsters) is mirrored to face the way it walks, left or right
+  (since 0.4.5, asked for in playtesting 2026-10-11; `WalkCycle.mirrors`). Most pictures look left or at
+  you; the few that look right say so in art/assets.json (`faces`), and palette swaps inherit it.
 - Seal Stones are thrown with Capture (the plainest one you have) or from Items (any kind). Since 0.3.70
   (asked for in playtesting, 2026-10-07) there are five, the same crystal in five colours, and every throw
   uses the stone up, held or not (before, only when it worked): the teal Seal Stone (60 gold), the blue Moon

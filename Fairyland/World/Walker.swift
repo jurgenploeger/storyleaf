@@ -55,6 +55,11 @@ final class Walker: SKNode {
     /// Everything you see of it, raised with the ground it stands on (a hilltop, a terrace).
     /// Children added to the walker go in here.
     private let body = SKNode()
+    /// Holds the sprite, mirrored for a single picture walking the other way (`WalkCycle.mirrors`).
+    /// Apart from the sprite, so its idle squish and stretch don't undo it.
+    private let turn = SKNode()
+    /// Which way a single picture last went across the screen; kept while it walks up or down.
+    private var goingRight = false
     /// How high the ground under it stands (`WorldScene.groundHeight(at:)`).
     private(set) var lift: CGFloat = 0
 
@@ -82,7 +87,10 @@ final class Walker: SKNode {
         super.init()
         super.addChild(body)
         addChild(Nodes.shadow(width: cycle.size.width * 0.5))
-        addChild(sprite)
+        addChild(turn)
+        turn.addChild(sprite)
+        // It starts out looking the way its picture does.
+        goingRight = cycle.facesRight
         Self.lit(sprite)
         if let label {
             let tag = NameTag(label, color: labelColor, size: 11, badge: badge)
@@ -97,7 +105,19 @@ final class Walker: SKNode {
     func setCycle(_ cycle: WalkCycle) {
         self.cycle = cycle
         sprite.size = cycle.size
+        mirror()
         animate()
+    }
+
+    /// Turns a single picture to look the way it's going across the screen (`dx`, ignored when it
+    /// goes mostly up or down), mirrored when that's not the way the picture looks.
+    private func lean(_ dx: CGFloat, of length: CGFloat) {
+        if abs(dx) > length * 0.3 { goingRight = dx > 0 }
+        mirror()
+    }
+
+    private func mirror() {
+        turn.xScale = cycle.mirrors && goingRight != cycle.facesRight ? -1 : 1
     }
 
     /// Shows the weapon in hand and an accessory's sparkle.
@@ -276,6 +296,7 @@ final class Walker: SKNode {
             }
             position = next
             face(Direction(offset, current: facing))
+            lean(offset.dx, of: distance)
             setWalking(true)
         } else {
             setWalking(false)
@@ -319,11 +340,13 @@ final class Walker: SKNode {
         } else {
             position = position + offset * (step / distance)
             face(Direction(offset, current: facing))
+            lean(offset.dx, of: distance)
         }
         return !path.isEmpty
     }
 
     func face(_ direction: Direction) {
+        if direction == .left || direction == .right { lean(direction == .right ? 1 : -1, of: 1) }
         guard direction != facing else { return }
         facing = direction
         animate()

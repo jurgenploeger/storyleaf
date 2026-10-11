@@ -439,8 +439,8 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let hills: Hills?
     }
 
-    /// Ranges of rounded hills of the map's own ground (`WorldMap.Hill`), too steep to walk up but
-    /// for the trails zig-zagging up the sides facing you.
+    /// Ranges of rounded hills of the map's own ground (`WorldMap.Hill`), to walk up anywhere, with
+    /// trails winding up round their sides from the side facing you.
     nonisolated struct Hills: Decodable, Sendable {
         /// How many ranges, besides the mountains.
         let count: Int
@@ -454,12 +454,18 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let height: Double?
         /// Ranges that each rise to a mountain: one summit far taller and wider than the rest.
         let mountains: Mountains?
-        /// The tile showing through in patches on their steepest slopes (none when not given).
+        /// How rocky they are, 0 (grassy slopes) to 1 (steep, rock showing all over them and boulders on
+        /// their sides). Without it, from the levels of the monsters met there: the more dangerous
+        /// the map, the rockier.
+        let rocky: Double?
+        /// The tile showing through on their slopes, the more the rockier they are (scree when not
+        /// given, and none on grassy ones).
         let bank: String?
 
         nonisolated struct Mountains: Decodable, Sendable {
             let count: Int
-            /// How high a mountain's top stands, in points.
+            /// How high a mountain's top stands, in points: as asked where there's room for one that
+            /// wide, else as high as the roomiest place allows.
             let height: Double
         }
     }

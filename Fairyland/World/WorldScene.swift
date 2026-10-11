@@ -178,6 +178,9 @@ final class WorldScene: SKScene {
         if let cave = def.theme.cave {
             caveWalls = CaveWalls(map: map, cave: cave, world: world, art: art, margin: Self.surroundingsMargin)
             await reached(0.55, progress)
+        } else if !map.crags.isEmpty {
+            placeCrags()
+            await reached(0.55, progress)
         }
         placeLilyPads()
         placeFence()
@@ -199,6 +202,7 @@ final class WorldScene: SKScene {
             self.startDuel(with: rival)
         }
         placeFairyRings()
+        placeOutcrops()
         placeProps()
         placeSignposts()
         placeBarricades()
@@ -384,13 +388,16 @@ final class WorldScene: SKScene {
                 { cell in picture("\(id)#\(Self.variant(of: cell))") { self.art.tileVariant(id, Self.variant(of: cell)) } }
             }
             let palette = theme.palette
+            // Rock shows on the slopes of all but the gentlest hills: the map's own bank, or scree.
+            let rock: String? = theme.hills?.bank ?? (map.rockiness >= 0.2 ? "tile_scree" : nil)
             let look = HillArt.Look(
                 ground: { cell in
                     let pick = picks[cell.row * self.map.columns + cell.col]
                     return picture("\(ObjectIdentifier(pick.group).hashValue)") { pictures[ObjectIdentifier(pick.group)] }
                 },
                 trail: tiles(theme.path),
-                bank: theme.hills?.bank.map(tiles),
+                bank: rock.map(tiles),
+                rocky: map.rockiness,
                 variation: variation?.texture?.cgImage(),
                 mapSize: (map.columns, map.rows),
                 shadow: Lighting.rgb(palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
@@ -489,8 +496,30 @@ final class WorldScene: SKScene {
                 guard outside, Double.random(in: 0..<1, using: &decorRNG) < 0.14 else { continue }
                 let nearRoad = (-1...1).contains { dc in (-1...1).contains { dr in roadCells.contains(GridPoint(col: col + dc, row: row + dr)) } }
                 guard !nearRoad else { continue }
+                // Nor on or against the rock where a road leads into a cave.
+                let nearCrag = !map.crags.isEmpty && (-1...1).contains { dc in (-1...1).contains { dr in map.isCrag(GridPoint(col: col + dc, row: row + dr)) } }
+                guard !nearCrag else { continue }
                 addScenery(sprite, at: GridPoint(col: col, row: row))
             }
+        }
+    }
+
+    /// Where a road leads into a cave: the cave's rock along that side of the map and out past its
+    /// edge, and the cave's mouth where the road meets it (`WorldMap.Crag`, `CaveMouth`).
+    private func placeCrags() {
+        let margin = Self.surroundingsMargin
+        let rows = map.rows, columns = map.columns
+        for crag in map.crags {
+            // Only that side of the map and past it holds any of its rock.
+            let reach: (rows: Range<Int>, columns: Range<Int>) = switch crag.edge {
+            case .north: (rows - 8..<rows + margin, -margin..<columns + margin)
+            case .south: (-margin..<8, -margin..<columns + margin)
+            case .east: (-margin..<rows + margin, columns - 8..<columns + margin)
+            case .west: (-margin..<rows + margin, -margin..<8)
+            }
+            _ = CaveWalls(map: map, rock: crag.cave.rock, height: CaveMouth.height, topShade: CaveMouth.topShade,
+                          world: world, art: art, margin: margin, rows: reach.rows, columns: reach.columns, isRock: map.isCrag)
+            for sprite in CaveMouth.sprites(for: crag, map: map, art: art) { world.addChild(sprite) }
         }
     }
 
@@ -775,6 +804,26 @@ final class WorldScene: SKScene {
             npcs.append((npc, node, marker))
         }
         updateNotices()
+    }
+
+    /// Boulders on the slopes of rocky hills (`WorldMap.rockiness`), the more the rockier: the
+    /// map's own rocks (its props named for a boulder or rock), on the steeper cells, off the trails.
+    /// Grassy hills on the gentlest maps get none.
+    private func placeOutcrops() {
+        let rocky = map.rockiness
+        guard rocky >= 0.3, !map.hills.isEmpty else { return }
+        var kinds = def.theme.props.map(\.art).filter { $0.contains("boulder") || $0.hasSuffix("rock") }
+        if kinds.isEmpty { kinds = ["boulder", "small_boulder"] }
+        var rocks = SeededRandom(text: def.id + "/outcrops")
+        for hill in map.hills {
+            for cell in hill.cells.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }) {
+                guard map.rise(across: cell) >= 6, map.isFreeForScenery(cell),
+                      Double.random(in: 0..<1, using: &rocks) < 0.08 * rocky else { continue }
+                let sprite = art.sprite(kinds[Int.random(in: 0..<kinds.count, using: &rocks)])
+                map.occupy(cell, blocking: true)
+                addScenery(sprite, at: cell, jitter: true, scale: CGFloat.random(in: 0.7...1.1, using: &rocks))
+            }
+        }
     }
 
     /// Scenery from the theme. Props with `cluster` grow in groves around a random centre.
@@ -1578,6 +1627,15 @@ final class WorldScene: SKScene {
 
         player.zPosition = -player.position.y
         if let follower { follower.zPosition = -follower.position.y }
+        // Up onto the ground under them: their spot is set before they join the map, and a walker
+        // only rises with the ground as it moves on it, so one starting on a hill stood sunk in it
+        // (behind its slope) till it took a step. Cheap when nothing's changed.
+        player.settle()
+        follower?.settle()
+        for ally in allies {
+            ally.node.settle()
+            ally.pet?.settle()
+        }
         lantern?.follow(player.position)
         if let sky {
             sky.update(dt)

@@ -141,6 +141,12 @@ hill_mountain  | newgame,level=90,map=crystal_mountain,hill=tallest | 8
 hill_peak      | newgame,level=90,map=crystal_mountain,hill=tallest,ontop | 8
 hill_snow      | newgame,level=40,map=snow_white_forest,hill=tallest | 8
 hill_range_land | newgame,map=sunny_meadow,hill=0,landscape        | 8
+# Where a road leads into a cave its rock rises along that side of the map, the road running into a
+# dark mouth (north and east) or under an arch into a dark cleft (south and west).
+crag_east      | newgame,level=30,map=valley_of_fear,at=70_-24    | 8
+crag_south     | newgame,level=40,map=lotus_land,at=0_-32         | 8
+crag_north_land | newgame,level=190,map=emerald_road,at=0_35,landscape | 8
+crag_west_land | newgame,level=12,map=northern_grassland,at=-51_0,landscape | 8
 twilight     | newgame,level=40,map=twilight_woods                 | 15
 battle_big   | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,hp=0.3,map=genie_desert,battle=10 | 15
 battle_arrange | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,map=genie_desert,battle=10,arrange | 15

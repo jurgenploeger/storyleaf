@@ -72,6 +72,24 @@ final class WorldMap {
     /// The hill rising over `cell`, if any (an index into `hills`).
     func hillIndex(at cell: GridPoint) -> Int? { hillOf[cell] }
 
+    /// How rocky its hills are, from 0, grassy slopes on the gentlest maps, to 1, steep and rocky on
+    /// the most dangerous: `theme.hills.rocky`, or from the levels of the monsters met there.
+    var rockiness: Double {
+        if let rocky = def.theme.hills?.rocky { return min(1, max(0, rocky)) }
+        guard let levels = def.encounters?.levels, let low = levels.first, let high = levels.last else { return 0 }
+        return min(1, max(0, (Double(low + high) / 2 - 15) / 70))
+    }
+
+    /// How much the ground rises across `cell`, in points (0 off the hills).
+    func rise(across cell: GridPoint) -> CGFloat {
+        guard let index = hillOf[cell] else { return 0 }
+        let hill = hills[index]
+        let corners = [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.5, 0.5)].map {
+            hill.height(atCells: Double(cell.col) + $0.0, Double(cell.row) + $0.1)
+        }
+        return (corners.max() ?? 0) - (corners.min() ?? 0)
+    }
+
     nonisolated struct Plateau {
         /// Which way a ramp faces, down its slope: toward the row in front (south) or the column in
         /// front (west), the two sides that face you. It climbs from the ground there to the top.
@@ -85,8 +103,23 @@ final class WorldMap {
              GridPoint(col: cells.map(\.col).max() ?? 0, row: cells.map(\.row).max() ?? 0))
         }
     }
-    /// Cave rock: solid cells drawn as raised walls (only on maps with a `cave` theme).
+    /// Cave rock: solid cells drawn as raised walls (on maps with a `cave` theme, and along the side
+    /// of a map where a road leads into a cave, `crags`).
     private(set) var rock: Set<GridPoint> = []
+    /// Where a road leads into a cave, the cave's rock rises along that side of the map
+    /// (`raiseCrags`): which side, the cave (its rock and how tall), and the cells along the edge
+    /// (columns for north and south, rows for east and west) where the road goes in.
+    nonisolated struct Crag {
+        let edge: Edge
+        let cave: MapDef.Cave
+        let mouth: ClosedRange<Int>
+        /// How its rock out past the edge wanders (`isCrag`).
+        let phases: [Double]
+        /// On the sides that face you (south and west) the rock's face at the edge looks away, so the
+        /// way in is a cleft out past the edge under an arch of rock instead (`CaveMouth`).
+        var opensTowardYou: Bool { edge == .south || edge == .west }
+    }
+    private(set) var crags: [Crag] = []
     /// The middles of a cave's galleries and tunnels, kept clear of scenery so they stay open.
     private var passages: Set<GridPoint> = []
     private var occupied: Set<GridPoint> = []
@@ -102,7 +135,8 @@ final class WorldMap {
         return CGRect(x: xs.min()!, y: ys.min()!, width: xs.max()! - xs.min()!, height: ys.max()! - ys.min()!)
     }
 
-    init(def: MapDef) {
+    /// `caveOf`: the cave a map is, if it is one (by its id), for the roads that lead into caves.
+    init(def: MapDef, caveOf: (String) -> MapDef.Cave? = { Content.shared.map($0)?.theme.cave }) {
         self.def = def
         columns = def.width
         rows = def.height
@@ -130,6 +164,13 @@ final class WorldMap {
         } else {
             placeOwnBuildings()
             keepNPCsInView()
+        }
+        if def.theme.cave == nil, def.town == nil {
+            // Its own random numbers, so the rest of the map comes out as it did before.
+            var cragRNG = SeededRandom(text: def.id + "/crags")
+            for exit in def.exits {
+                if let cave = caveOf(exit.to) { raiseCrags(along: exit.edge, cave: cave, &cragRNG) }
+            }
         }
         if def.theme.cave == nil, let ponds { digPonds(ponds, &rng) }
         if def.town == nil, def.theme.cave == nil, let hills = def.theme.hills {
@@ -184,7 +225,7 @@ final class WorldMap {
         if !hills.isEmpty {
             // A hill is never steeper than the view (`Hill.Lobe.band`), so going up the screen the ground
             // under it only ever rises: exactly one ground point lands on the spot. Found by halving.
-            var low = point.y - (hills.map(\.peak).max() ?? 0) - 1, high = point.y
+            var low = point.y - (hills.map(\.highest).max() ?? 0) - 1, high = point.y
             for _ in 0..<24 {
                 let middle = (low + high) / 2
                 if middle + height(at: CGPoint(x: point.x, y: middle)) > point.y { high = middle } else { low = middle }
@@ -289,13 +330,6 @@ final class WorldMap {
     }
 
     // MARK: Placement
-
-    /// Too steep or too solid to walk, but scenery may still stand there (a hill's sides).
-    func block(_ cell: GridPoint) {
-        guard contains(cell), !blocked.contains(cell), let node = graph.node(atGridPosition: cell.vector) else { return }
-        graph.remove([node])
-        blocked.insert(cell)
-    }
 
     /// Reserves a cell; blocking things also take it out of the walk graph.
     func occupy(_ cell: GridPoint, blocking: Bool) {
@@ -798,6 +832,91 @@ final class WorldMap {
         passages = passages.filter { !rock.contains($0) }
     }
 
+    /// The cell `inward` cells in from `edge` (0 on the edge, below 0 out past it), `along` it
+    /// (the column on the north and south edges, the row on the east and west).
+    func cell(on edge: Edge, along: Int, inward: Int) -> GridPoint {
+        switch edge {
+        case .north: GridPoint(col: along, row: rows - 1 - inward)
+        case .south: GridPoint(col: along, row: inward)
+        case .east: GridPoint(col: columns - 1 - inward, row: along)
+        case .west: GridPoint(col: inward, row: along)
+        }
+    }
+
+    /// Where a cell is from `edge`: how far along it and how far in (`cell(on:along:inward:)`).
+    func spot(of cell: GridPoint, from edge: Edge) -> (along: Int, inward: Int) {
+        switch edge {
+        case .north: (cell.col, rows - 1 - cell.row)
+        case .south: (cell.col, cell.row)
+        case .east: (cell.row, columns - 1 - cell.col)
+        case .west: (cell.row, cell.col)
+        }
+    }
+
+    /// Where a road leads into a cave, the cave's rock rises along that side of the map, so you can
+    /// see from afar that the way on goes underground: a band of it 2 to 5 cells in from the edge, its
+    /// front wandering in and out, and more of it out past the edge (`isCrag`). The road runs through
+    /// it to the cave's mouth at the edge, with a cell clear either side; nothing already set down
+    /// is buried.
+    private func raiseCrags(along edge: Edge, cave: MapDef.Cave, _ rng: inout SeededRandom) {
+        let length = edge == .north || edge == .south ? columns : rows
+        let phases = (0..<6).map { _ in Double.random(in: 0..<(2 * Double.pi), using: &rng) }
+        func nearRoad(_ cell: GridPoint) -> Bool {
+            for dr in -1...1 {
+                for dc in -1...1 {
+                    let near = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                    if contains(near), ground[near.row][near.col] == .path { return true }
+                }
+            }
+            return false
+        }
+        for along in 0..<length {
+            let t = Double(along)
+            let slow: Double = sin(0.23 * t + phases[0])
+            let quick: Double = 0.6 * sin(0.61 * t + phases[1]) + 0.3 * sin(1.37 * t + phases[2])
+            let depth = max(1, Int((3.5 + slow + quick).rounded()))
+            for inward in 0..<depth {
+                let cell = self.cell(on: edge, along: along, inward: inward)
+                guard ground[cell.row][cell.col] != .water, !occupied.contains(cell), !nearRoad(cell) else { continue }
+                rock.insert(cell)
+                occupy(cell, blocking: true)
+            }
+        }
+        // The way in: the open cells along the edge round the road's middle there.
+        let road = (0..<length).filter { along in
+            let cell = self.cell(on: edge, along: along, inward: 0)
+            return ground[cell.row][cell.col] == .path
+        }
+        guard !road.isEmpty else { return }
+        var low = road[road.count / 2], high = low
+        while low > 0, !rock.contains(cell(on: edge, along: low - 1, inward: 0)) { low -= 1 }
+        while high < length - 1, !rock.contains(cell(on: edge, along: high + 1, inward: 0)) { high += 1 }
+        crags.append(Crag(edge: edge, cave: cave, mouth: low...high, phases: Array(phases[3...])))
+    }
+
+    /// Whether the cave's rock stands at a cell: in the map, its `rock`; out past an edge where a road
+    /// leads into a cave, 6 to 10 cells of it, rounding off just past the map's corners, but for a
+    /// cleft in front of the cave's mouth on the sides that face you (`Crag.opensTowardYou`).
+    func isCrag(_ cell: GridPoint) -> Bool {
+        if contains(cell) { return rock.contains(cell) }
+        for crag in crags {
+            let place = spot(of: cell, from: crag.edge)
+            let out = -place.inward
+            guard out >= 1 else { continue }
+            let length = crag.edge == .north || crag.edge == .south ? columns : rows
+            let t = Double(place.along)
+            let slow: Double = 1.2 * sin(0.19 * t + crag.phases[0])
+            let quick: Double = 0.7 * sin(0.53 * t + crag.phases[1]) + 0.4 * sin(1.21 * t + crag.phases[2])
+            // Past the map's corners it rounds off within 6 cells.
+            let past = Double(max(0, -place.along, place.along - (length - 1))) / 6
+            let reach = (7.5 + slow + quick) * max(0, 1 - past * past).squareRoot()
+            guard Double(out) <= reach else { continue }
+            if crag.opensTowardYou, crag.mouth.contains(place.along), out <= 3 { return false }
+            return true
+        }
+        return false
+    }
+
     // MARK: Town planning
 
     private func planTown(_ town: MapDef.Town, _ rng: inout SeededRandom) {
@@ -967,22 +1086,37 @@ final class WorldMap {
         plateaus.append(plateau)
     }
 
+    /// How a range's trails wind (`Hill.traceTrail`): the angle their feet aim at (round the front),
+    /// which way round they go first, how much further round than they need, and how they bend.
+    private struct Winding {
+        let aim, way, stretch, phase: Double
+        let bends: Int
+    }
+
     /// Ranges of grassy hills out in the fields (`theme.hills`, `Hill`): summits one after another
     /// along a wandering line, melted together, off the roads and water and clear of buildings,
     /// people, the arrivals and each other. Mountains first, each the tallest and widest summit of
-    /// its range. Their sides are too steep to walk but for the trails zig-zagging up the sides
-    /// facing you; on top the scenery grows like anywhere else.
+    /// its range. You can walk up them anywhere, and trails wind up round their sides from the side
+    /// facing you, the easy way up; scenery grows on them like anywhere else.
     private func raiseHills(_ hills: MapDef.Hills, _ rng: inout SeededRandom) {
         let sizes = hills.size ?? [3, 6]
         let smallest = Double(max(2, sizes.first ?? 3)), biggest = Double(max(sizes.first ?? 3, sizes.last ?? 6))
         let fewest = max(1, hills.chain?.first ?? 2), most = max(fewest, hills.chain?.last ?? 4)
         let tallest = hills.height ?? 44
+        let steep = Hill.steepness(rockiness: rockiness)
+        // A mountain is steep whatever the land, or it'd need more room than a map has.
+        let mountainSteep = max(steep, 13)
         let mountains = [Double?](repeating: hills.mountains?.height, count: hills.mountains?.count ?? 0)
         var claimed: Set<GridPoint> = []
         for mountain in mountains + [Double?](repeating: nil, count: hills.count) {
-            for attempt in 0..<120 {
-                // Where one doesn't fit, a shorter range (and in the end a lower mountain) might.
-                let summits = max(1, Int.random(in: fewest...most, using: &rng) - attempt / 40)
+            let room = clearance(claimed: claimed)
+            // The widest a summit could be anywhere on the map now, in cells; and the cells to try
+            // it at, in a random order.
+            let widest = ((room.max() ?? 0) - 3.01) / 1.05
+            let order = (0..<(columns * rows)).shuffled(using: &rng)
+            for attempt in 0..<60 {
+                // Where one doesn't fit, a shorter range might.
+                let summits = max(1, Int.random(in: fewest...most, using: &rng) - attempt / 20)
                 let tall: Int? = mountain == nil ? nil : Int.random(in: 0..<summits, using: &rng)
                 var heading = Double.random(in: 0..<(2 * Double.pi), using: &rng)
                 var lobes: [Hill.Lobe] = []
@@ -990,16 +1124,18 @@ final class WorldMap {
                     var along = Double.random(in: smallest...biggest, using: &rng) + 1
                     var across = max(min(along, 4), along * Double.random(in: 0.6...0.95, using: &rng))
                     var peak = tallest * Double.random(in: 0.8...1.15, using: &rng)
+                    let steepness = index == tall ? mountainSteep : steep
                     if index == tall, let mountain {
-                        let lower: Double = attempt < 80 ? 1 : 0.85
-                        peak = mountain * Double.random(in: 0.92...1.08, using: &rng) * lower
-                        // Wide enough to climb that high and still have a top.
-                        let need = 1.5 * peak / Hill.steepest / 0.75 + 1
-                        along = max(along, need * Double.random(in: 1...1.2, using: &rng))
+                        // As tall as asked, if anywhere has room for one that wide (it needs the
+                        // width to climb that high and still have a top); else as tall as fits.
+                        let fits = (widest - 1) * 0.75 * steepness / 1.5
+                        peak = max(tallest, min(mountain * Double.random(in: 0.92...1.08, using: &rng), fits))
+                        let need = 1.5 * peak / steepness / 0.75 + 1
+                        along = max(along, min(max(widest, need), need * Double.random(in: 1...1.2, using: &rng)))
                         across = max(across, need)
                     } else {
                         // A narrow one stands lower, so it still has a top.
-                        peak = min(peak, min(along, across) * 0.75 * Hill.steepest / 1.5)
+                        peak = min(peak, min(along, across) * 0.75 * steepness / 1.5)
                     }
                     var x = 0.0, y = 0.0
                     if let previous = lobes.last {
@@ -1010,27 +1146,27 @@ final class WorldMap {
                         y = previous.y + step * sin(heading)
                     }
                     lobes.append(Hill.Lobe(x: x, y: y, along: along, across: across,
-                                           angle: heading + Double.random(in: -0.3...0.3, using: &rng), peak: peak))
+                                           angle: heading + Double.random(in: -0.3...0.3, using: &rng), peak: peak, steepness: steepness))
                 }
-                // Somewhere on the map it fits inside the edge, if it fits at all.
-                let margin = 5.0
-                let left = lobes.map { $0.x - max($0.along, $0.across) }.min() ?? 0
-                let right = lobes.map { $0.x + max($0.along, $0.across) }.max() ?? 0
-                let bottom = lobes.map { $0.y - max($0.along, $0.across) }.min() ?? 0
-                let top = lobes.map { $0.y + max($0.along, $0.across) }.max() ?? 0
-                guard right - left < Double(columns) - 2 * margin, top - bottom < Double(rows) - 2 * margin else { continue }
-                let dx = Double.random(in: (margin - left)...(Double(columns) - margin - right), using: &rng)
-                let dy = Double.random(in: (margin - bottom)...(Double(rows) - margin - top), using: &rng)
+                // Somewhere every summit has room around it, if anywhere.
+                guard let spot = place(lobes, in: room, trying: order) else { continue }
                 for index in lobes.indices {
-                    lobes[index].x += dx
-                    lobes[index].y += dy
+                    lobes[index].x += spot.x
+                    lobes[index].y += spot.y
                 }
                 let ripples = (0..<3).map { _ in
                     (fx: Double.random(in: 0.4...1, using: &rng), px: Double.random(in: 0..<6.3, using: &rng),
                      fy: Double.random(in: 0.4...1, using: &rng), py: Double.random(in: 0..<6.3, using: &rng))
                 }
-                var hill = Hill(lobes: lobes, ripples: ripples)
-                guard shapeHill(&hill, mountain: tall, startingLeft: Bool.random(using: &rng), claimed: claimed) else { continue }
+                var hill = Hill(lobes: lobes, ripples: ripples, steepness: steep)
+                // How its trails wind: from where on its front, which way round, how far and how
+                // they bend, its own.
+                let winding = Winding(aim: 1.25 * Double.pi + Double.random(in: -0.35...0.35, using: &rng),
+                                      way: Bool.random(using: &rng) ? 1 : -1,
+                                      stretch: Double.random(in: 1...1.3, using: &rng),
+                                      phase: Double.random(in: 0..<(2 * Double.pi), using: &rng),
+                                      bends: Int.random(in: 2...3, using: &rng))
+                guard shapeHill(&hill, mountain: tall, winding: winding, claimed: claimed) else { continue }
                 let index = self.hills.count
                 for cell in hill.cells { hillOf[cell] = index }
                 self.hills.append(hill)
@@ -1042,11 +1178,71 @@ final class WorldMap {
         }
     }
 
+    /// How far each cell (row by row) is from the nearest one a hill can't cover, in cells, roughly:
+    /// roads, water, buildings, people and the arrivals (`isFreeForScenery`), the hills already
+    /// raised and a little round them (`claimed`), and the map's edge with three cells to spare.
+    private func clearance(claimed: Set<GridPoint>) -> [Double] {
+        let far = Double(columns + rows)
+        var room = [Double](repeating: 0, count: columns * rows)
+        for row in 3..<max(3, rows - 3) {
+            for col in 3..<max(3, columns - 3) {
+                let cell = GridPoint(col: col, row: row)
+                if isFreeForScenery(cell), !claimed.contains(cell) { room[row * columns + col] = far }
+            }
+        }
+        // Twice over the grid, each cell taking the nearest of what its neighbours have, a step
+        // across or along a diagonal away: first from above and left, then from below and right.
+        let diagonal = 2.0.squareRoot()
+        for row in 0..<rows {
+            for col in 0..<columns where room[row * columns + col] > 0 {
+                var best = room[row * columns + col]
+                if col > 0 { best = min(best, room[row * columns + col - 1] + 1) }
+                if row > 0 {
+                    best = min(best, room[(row - 1) * columns + col] + 1)
+                    if col > 0 { best = min(best, room[(row - 1) * columns + col - 1] + diagonal) }
+                    if col < columns - 1 { best = min(best, room[(row - 1) * columns + col + 1] + diagonal) }
+                }
+                room[row * columns + col] = best
+            }
+        }
+        for row in stride(from: rows - 1, through: 0, by: -1) {
+            for col in stride(from: columns - 1, through: 0, by: -1) where room[row * columns + col] > 0 {
+                var best = room[row * columns + col]
+                if col < columns - 1 { best = min(best, room[row * columns + col + 1] + 1) }
+                if row < rows - 1 {
+                    best = min(best, room[(row + 1) * columns + col] + 1)
+                    if col < columns - 1 { best = min(best, room[(row + 1) * columns + col + 1] + diagonal) }
+                    if col > 0 { best = min(best, room[(row + 1) * columns + col - 1] + diagonal) }
+                }
+                room[row * columns + col] = best
+            }
+        }
+        return room
+    }
+
+    /// Where a range of `lobes` can go so each summit has room round it (`room`, from `clearance`):
+    /// how far to move them, its first summit in the first of the cells `order` lists (a random
+    /// order) where they all fit, or nil if they fit nowhere.
+    private func place(_ lobes: [Hill.Lobe], in room: [Double], trying order: [Int]) -> (x: Double, y: Double)? {
+        guard let first = lobes.first else { return nil }
+        // Its reach, its ripples, the cell to spare round it, and a little for the rough measure.
+        let needs = lobes.map { max($0.along, $0.across) * 1.05 + 3 }
+        for index in order where room[index] >= needs[0] {
+            let dx = Double(index % columns) + 0.5 - first.x, dy = Double(index / columns) + 0.5 - first.y
+            let fits = zip(lobes, needs).allSatisfy { lobe, need in
+                let col = Int((lobe.x + dx).rounded(.down)), row = Int((lobe.y + dy).rounded(.down))
+                return col >= 0 && row >= 0 && col < columns && row < rows && room[row * columns + col] >= need
+            }
+            if fits { return (dx, dy) }
+        }
+        return nil
+    }
+
     /// Lays `hill` on the map if there's room: the cells it covers (all clear ground, a cell to spare
-    /// all round, well inside the map's edge and off the other hills), its heights, its trails, and
-    /// which of its cells are too steep to walk. False if it doesn't fit, there's no way up from the
-    /// ground in front, or none up its mountain (`mountain`, a summit's index).
-    private func shapeHill(_ hill: inout Hill, mountain: Int?, startingLeft: Bool, claimed: Set<GridPoint>) -> Bool {
+    /// all round, well inside the map's edge and off the other hills), its heights and its trails
+    /// (one up its mountain, `mountain`, a summit's index, where there's room). False if it doesn't
+    /// fit or there's no trail up from the ground in front.
+    private func shapeHill(_ hill: inout Hill, mountain: Int?, winding: Winding, claimed: Set<GridPoint>) -> Bool {
         // The cells any summit reaches into, with a cell to spare for the ripples.
         let reach = hill.lobes.map { max($0.along, $0.across) + 1 }
         let low = GridPoint(col: Int(zip(hill.lobes, reach).map { $0.x - $1 }.min()!.rounded(.down)),
@@ -1094,40 +1290,14 @@ final class WorldMap {
                 hill.heights[j * width + i] = Float(hill.shape(Double(low.col) + Double(i) / Double(samples), Double(low.row) + Double(j) / Double(samples)))
             }
         }
-        // Too steep to walk: where the ground in a cell rises more than 8 points.
-        var steep: Set<GridPoint> = []
-        for cell in cells {
-            let i0 = (cell.col - low.col) * samples, j0 = (cell.row - low.row) * samples
-            var least = Float.infinity, most = -Float.infinity
-            for dj in 0...samples {
-                for di in 0...samples {
-                    let height = hill.heights[(j0 + dj) * width + i0 + di]
-                    least = min(least, height)
-                    most = max(most, height)
-                }
-            }
-            if most - least > 8 { steep.insert(cell) }
-        }
-        /// Where you can walk from around it: over its gentle ground, and up `trails`.
-        func reached(_ trails: Set<GridPoint>) -> Set<GridPoint> {
-            var seen = ring.subtracting(cells)
-            var queue = Array(seen)
-            while let cell = queue.popLast() {
-                for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
-                    let next = GridPoint(col: cell.col + dc, row: cell.row + dr)
-                    guard cells.contains(next), trails.contains(next) || !steep.contains(next), seen.insert(next).inserted else { continue }
-                    queue.append(next)
-                }
-            }
-            return seen
-        }
-
-        // Its trails: from the ground in front up the nearest summit with room for one, then up the
-        // mountain if that wasn't it, then up any top still out of reach. Each starts somewhere you
-        // can get to, is never steeper than you could walk, and keeps clear of the others. They face
-        // you: up the front, or the front left or right.
+        hill.highest = CGFloat(hill.heights.max() ?? 0)
+        // Its trails, the easy way up (you can climb it anywhere): from the ground in front up the
+        // nearest summit with room for one, and up the mountain too if that wasn't it, winding round
+        // their sides (`Hill.traceTrail`). Each is never steeper than a comfortable walk and keeps
+        // clear of the other. They start on the side facing you, round either way.
         let order = hill.lobes.indices.sorted { hill.lobes[$0].x + hill.lobes[$0].y < hill.lobes[$1].x + hill.lobes[$1].y }
-        let fronts = [1.25 * Double.pi, Double.pi, 1.5 * Double.pi]
+        let starts: [(offset: Double, way: Double)] = [(0, winding.way), (0, -winding.way), (-0.5, winding.way),
+                                                      (0.5, -winding.way), (-0.9, -winding.way), (0.9, winding.way)]
         var trails: [Hill.Trail] = []
         var onTrails: Set<GridPoint> = []
         /// Whether a line comes within a cell and a half of a trail already laid.
@@ -1140,39 +1310,26 @@ final class WorldMap {
             }
         }
         func climb(_ index: Int, fromGround: Bool) -> Bool {
-            let open = reached(onTrails)
-            for front in fronts {
-                for left in [startingLeft, !startingLeft] {
-                    guard let points = hill.traceTrail(on: index, front: front, startingLeft: left) else { continue }
-                    let path = Self.cells(along: points)
-                    guard let foot = path.first, open.contains(foot), path.allSatisfy({ ring.contains($0) }),
-                          !fromGround || hill.shape(Double(points[0].x), Double(points[0].y)) < 1,
-                          hill.steepestClimb(along: points) <= 8, !crowds(points)
-                    else { continue }
-                    trails.append(Hill.Trail(lobe: index, points: points))
-                    onTrails.formUnion(path)
-                    return true
-                }
+            for start in starts {
+                guard let points = hill.traceTrail(on: index, from: winding.aim + start.offset, way: start.way,
+                                                   stretch: winding.stretch, phase: winding.phase, bends: winding.bends)
+                else { continue }
+                let path = Self.cells(along: points)
+                // From the ground: by the heights walkers stand on (not `shape`, a hair off them),
+                // with room to spare, so everything that asks agrees it starts there.
+                guard path.allSatisfy({ ring.contains($0) }),
+                      !fromGround || hill.height(atCells: Double(points[0].x), Double(points[0].y)) < 0.5,
+                      hill.steepestClimb(along: points) <= 8, !crowds(points)
+                else { continue }
+                trails.append(Hill.Trail(lobe: index, points: points))
+                onTrails.formUnion(path)
+                return true
             }
             return false
         }
         guard order.contains(where: { climb($0, fromGround: true) }) else { return false }
-        if let mountain, !trails.contains(where: { $0.lobe == mountain }) {
-            guard climb(mountain, fromGround: false) else { return false }
-        }
-        for index in order where !trails.contains(where: { $0.lobe == index }) {
-            let top = GridPoint(col: Int(hill.lobes[index].x.rounded(.down)), row: Int(hill.lobes[index].y.rounded(.down)))
-            if !reached(onTrails).contains(top) { _ = climb(index, fromGround: false) }
-        }
+        if let mountain, !trails.contains(where: { $0.lobe == mountain }) { _ = climb(mountain, fromGround: false) }
         hill.trails = trails
-
-        // Ground you could only reach over the steep sides (a top no trail climbs) is out of reach,
-        // so it's steep too: what's left walkable is reached from around it or up its trails.
-        steep.subtract(onTrails)
-        let open = reached(onTrails)
-        for cell in cells where !steep.contains(cell) && !open.contains(cell) { steep.insert(cell) }
-        // Too steep to walk, but trees and flowers grow on its sides like anywhere else.
-        for cell in steep { block(cell) }
         // Nothing grows on the trails or beside them, so the ways up stay open and in sight.
         for cell in onTrails {
             for dr in -1...1 {
@@ -1216,19 +1373,20 @@ final class WorldMap {
             hash ^= hash >> 31
             return Double(hash % 1000) / 1000
         }
-        // Never over a hill, but at its very foot (where a trail may start in a nook between two summits).
-        func lowland(_ cell: GridPoint) -> Bool {
-            !hillCells.contains(cell)
-                || height(atGrid: CGPoint(x: (CGFloat(cell.col) + 0.5) * Self.tileSize, y: (CGFloat(cell.row) + 0.5) * Self.tileSize)) < 2
-        }
         func open(_ cell: GridPoint) -> Bool {
             cell.col > 0 && cell.row > 0 && cell.col < columns - 1 && cell.row < rows - 1 && isWalkable(cell)
-                && ground[cell.row][cell.col] != .water && lowland(cell)
+                && ground[cell.row][cell.col] != .water
         }
-        // From each trail that starts on the ground (others start up on the range).
-        let feet = hills.flatMap { hill in
-            hill.trails.compactMap(\.points.first).filter { hill.shape(Double($0.x), Double($0.y)) < 1 }
+        // Over a hill only where it must (a trail can start in a nook between two summits), and
+        // the dearer the higher, so it goes round.
+        func climb(_ cell: GridPoint) -> Double {
+            guard hillCells.contains(cell) else { return 0 }
+            return 2 + Double(height(atGrid: CGPoint(x: (CGFloat(cell.col) + 0.5) * Self.tileSize, y: (CGFloat(cell.row) + 0.5) * Self.tileSize))) / 4
         }
+        // From each trail that starts on the ground (others start up on the range), by the heights
+        // walkers stand on.
+        let feet = hills.flatMap { $0.trails.compactMap(\.points.first) }
+            .filter { height(atGrid: CGPoint(x: $0.x * Self.tileSize, y: $0.y * Self.tileSize)) < 1 }
         for foot in feet {
             let start = GridPoint(col: Int(foot.x.rounded(.down)), row: Int(foot.y.rounded(.down)))
             guard contains(start), ground[start.row][start.col] != .path else { continue }
@@ -1248,7 +1406,7 @@ final class WorldMap {
                     let crowded = [(1, 0), (-1, 0), (0, 1), (0, -1)].contains { !isWalkable(GridPoint(col: step.col + $0.0, row: step.row + $0.1)) }
                     var price = spent + 1 + rough(step) * 1.5
                     if crowded { price += 2 }
-                    if hillCells.contains(step) { price += 4 }
+                    price += climb(step)
                     if price < cost[step] ?? .infinity {
                         cost[step] = price
                         from[step] = cell
@@ -1388,7 +1546,7 @@ final class WorldMap {
             return value
         }
         let theme = def.theme
-        let highest = max(1, hills.map(\.peak).max() ?? 1)
+        func onHill(_ col: Int, _ row: Int) -> Bool { hillOf[GridPoint(col: col, row: row)] != nil }
         var canvas = PixelCanvas(width: columns, height: rows)
         for row in 0..<rows {
             for col in 0..<columns {
@@ -1405,11 +1563,22 @@ final class WorldMap {
                 } else if trailCells.contains(cell) {
                     pixel = tileColor == nil && theme.path == "tile_path" ? PixelColor(0xE8C98C) : color(forTile: theme.path).shaded(1.15)
                 } else if let index = hillOf[cell] {
-                    // Hills in relief: lighter the higher they stand, mountains lightest.
-                    let rise = hills[index].height(atCells: Double(col) + 0.5, Double(row) + 0.5) / highest
-                    pixel = pixel.shaded(0.82 + 0.3 * Double(rise))
+                    // Raised ground in a few flat tones, like the rest of the map, not a gradient
+                    // (a pixel a cell made it a staircase of shades): a hill a shade lighter, its edge
+                    // lit where it faces the light (up the map and left, as the trees' shadows say)
+                    // and shaded where it faces away, and a mountain's upper slopes, higher than any
+                    // hill stands, lighter still.
+                    let lit = !onHill(col - 1, row) || !onHill(col, row + 1)
+                    let away = !onHill(col + 1, row) || !onHill(col, row - 1)
+                    var tone: Double = hills[index].height(atCells: Double(col) + 0.5, Double(row) + 0.5) >= 66 ? 1.2 : 1.1
+                    if lit, !away { tone = 1.24 } else if away, !lit { tone = 0.8 }
+                    pixel = pixel.shaded(tone)
                 } else if blocked.contains(cell), ground[row][col] != .water {
                     pixel = pixel.shaded(0.55)
+                }
+                // The ground just past a hill's shaded edge lies in its shadow.
+                if hillOf[cell] == nil, !rock.contains(cell), onHill(col - 1, row) || onHill(col, row + 1) {
+                    pixel = pixel.shaded(0.88)
                 }
                 // PixelCanvas is top-down; the map is bottom-up.
                 canvas[col, rows - 1 - row] = pixel
