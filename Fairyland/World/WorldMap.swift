@@ -897,10 +897,13 @@ final class WorldMap {
     /// How many tiers of the cave's rock stand at a cell, 0 where there's none (`raiseCrags`): in the
     /// map one, its `rock`. Out past an edge where a road leads into a cave it goes on out of sight,
     /// its front wandering on past the map's corners, but for a cleft in front of the cave's mouth on
-    /// the sides that face you (`Crag.opensTowardYou`). On the sides away from you it climbs a tier
-    /// and then another further out, a mountain behind the mouth. On the sides that face you a
-    /// mountain would hide the way in and the land in front of it, so a ridge a tier higher stands
-    /// well out instead, about 11 to 16 cells past the edge.
+    /// the sides that face you (`Crag.opensTowardYou`), and lumpy, so its tops aren't one flat slab.
+    /// On the sides away from you it climbs a tier just past the edge and rises in knobs and peaks to
+    /// a third further out: a mountain behind the mouth. On the sides that face you a high tier hides
+    /// the ground behind it (a tier `h` points up covers what's `h` / 31 cells nearer the map and as
+    /// far along the edge), so a ridge a tier higher, its crest higher still in places, stands 2.5
+    /// cells out at the nearest, hiding only rock, and round the mouth it stands back to 6.5 cells
+    /// out, its crest to 8.5, so it never hides the way in.
     func cragTiers(_ cell: GridPoint) -> Int {
         if contains(cell) { return rock.contains(cell) ? 1 : 0 }
         for crag in crags {
@@ -916,16 +919,38 @@ final class WorldMap {
             if crag.opensTowardYou, crag.mouth.contains(place.along), out <= 3 { return 0 }
             let a: Double = sin(0.21 * t + p[2]) + 0.5 * sin(0.57 * t + p[3])
             let b: Double = sin(0.29 * t + p[4]) + 0.5 * sin(0.77 * t + p[5])
-            let c: Double = 0.6 * sin(0.43 * t + p[6]) + 0.4 * sin(1.13 * t + p[7])
-            if crag.opensTowardYou {
-                let low = 11 + 0.8 * a, high = 16 + 1.2 * b
-                return out >= low && out <= high ? 2 : 1
+            let lumps = Self.lumps(t / 3.5, out / 3.5, seed: p[6])
+            if !crag.opensTowardYou {
+                let second = max(1.5, 2.8 + a)
+                guard out >= second else { return 1 }
+                return out > 15 || (out >= second + 1 && lumps + 0.05 * (out - 6) > 0.6) ? 3 : 2
             }
-            let second = max(1.5, 2.8 + a)
-            guard out >= second else { return 1 }
-            return out >= second + 3.5 + b + c ? 3 : 2
+            // Round the mouth the ridge stands back.
+            let past = Double(max(0, crag.mouth.lowerBound - place.along, place.along - crag.mouth.upperBound))
+            let fade = min(1, max(0, (past - 4) / 8))
+            let open = 1 - fade * fade * (3 - 2 * fade)
+            let low = (2.5 + max(0, 0.8 * a)) * (1 - open) + 6.5 * open
+            let high = min(14.5, max(low + 3, (low + 4.5 + b) * (1 - open) + 11.5 * open))
+            let lumpy = out <= 15 && out >= (open > 0.05 ? 6.5 : 2.5) && lumps > 0.66
+            guard (out >= low && out <= high) || lumpy else { return 1 }
+            let crest = out >= max(5, low + 2) && out <= high - 1 && Self.lumps(t / 2.5, out / 2.5, seed: p[7]) > 0.45
+            return crest ? 3 : 2
         }
         return 0
+    }
+
+    /// Smooth lumps from 0 to 1, about a unit across (value noise): the same for the same spot and seed.
+    private static func lumps(_ x: Double, _ y: Double, seed: Double) -> Double {
+        let i = x.rounded(.down), j = y.rounded(.down)
+        func corner(_ u: Double, _ v: Double) -> Double {
+            let wave = sin(u * 127.1 + v * 311.7 + seed * 17.3) * 43_758.5453
+            return wave - wave.rounded(.down)
+        }
+        let fx = x - i, fy = y - j
+        let sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy)
+        let near = corner(i, j) + (corner(i + 1, j) - corner(i, j)) * sx
+        let far = corner(i, j + 1) + (corner(i + 1, j + 1) - corner(i, j + 1)) * sx
+        return near + (far - near) * sy
     }
 
     /// Whether the cave's rock stands at a cell (`cragTiers`).

@@ -152,7 +152,10 @@ struct ContentTests {
                 let tiers = (1...17).map { map.cragTiers(map.cell(on: exit.edge, along: middle, inward: -$0)) }
                 if crag.opensTowardYou {
                     #expect(tiers.contains(2), "map \(def.id): no ridge out past the cave's mouth")
-                    #expect(tiers.prefix(9).allSatisfy { $0 < 2 }, "map \(def.id): the ridge stands close enough to hide the cave's mouth")
+                    // A tier `h` points up hides the ground `h` / 31 cells nearer: the ridge (100) from
+                    // 6.5 cells out and its crest (144) from 8.5 stay clear of the cleft, 3 cells deep.
+                    #expect(tiers.prefix(6).allSatisfy { $0 < 2 } && tiers.prefix(8).allSatisfy { $0 < 3 },
+                            "map \(def.id): the ridge stands close enough to hide the cave's mouth")
                 } else {
                     #expect(tiers.contains(3), "map \(def.id): no mountain behind the cave's mouth")
                 }

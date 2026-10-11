@@ -530,13 +530,14 @@ final class WorldScene: SKScene {
             case .east: (-margin..<rows + margin, columns - 8..<columns + margin)
             case .west: (-margin..<rows + margin, -margin..<8)
             }
-            // Each tier on the one under it; a ridge has one over the rest, a mountain two. A ridge
-            // stands in front of lower rock, so its blocks reach as far in as its top stands high.
+            // Each tier on the one under it. A ridge stands in front of lower rock, so its blocks
+            // reach as far in as its top hides: a tier `h` points up covers the ground `h` / 31 cells
+            // nearer the map and as far along the edge.
             var lift: CGFloat = 0
-            let depthStep = WorldMap.project(CGPoint(x: WorldMap.tileSize, y: 0)).y
-            for index in 0..<(crag.opensTowardYou ? 2 : 3) {
+            let across = 2 * WorldMap.project(CGPoint(x: WorldMap.tileSize, y: 0)).y
+            for index in 0..<CaveMouth.heights.count {
                 let height = CaveMouth.heights[index]
-                let deepFrom = crag.opensTowardYou ? Int(((lift + height) / depthStep).rounded(.up)) - 1 : nil
+                let deepFrom = crag.opensTowardYou ? Int(((lift + height) / across).rounded(.up)) + 1 : nil
                 _ = CaveWalls(map: map, rock: crag.cave.rock, height: height, topShade: CaveMouth.topShades[index],
                               world: world, art: art, margin: margin, lift: lift, layer: index, deepFrom: deepFrom, craggy: true,
                               rows: reach.rows, columns: reach.columns, isRock: { tier($0) > index })

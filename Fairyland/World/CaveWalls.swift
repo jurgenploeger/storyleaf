@@ -273,15 +273,21 @@ final class CaveWalls {
             context.drawLinearGradient(lipShine, start: CGPoint(x: 0, y: height - 7), end: CGPoint(x: 0, y: height), options: [])
             if let cracks {
                 func scatter(_ n: Int) -> CGFloat { CaveWalls.scatter(cracks, n) }
+                // Streaks down it, darker and lighter, like rock split along its grain.
+                for streak in 0..<3 {
+                    let x = length * scatter(10 + streak), wide = 2 + 5 * scatter(20 + streak)
+                    context.setFillColor(UIColor(white: streak == 2 ? 1 : 0, alpha: streak == 2 ? 0.07 : 0.13).cgColor)
+                    context.fill(CGRect(x: x, y: 0, width: wide, height: height))
+                }
                 context.setLineCap(.butt)
                 context.setLineWidth(1)
-                if scatter(0) < 0.7 {
+                if scatter(0) < 0.85 {
                     // A crack up from the foot, wandering a little.
                     let x = length * (0.2 + 0.6 * scatter(1)), reach = height * (0.35 + 0.55 * scatter(2))
                     context.move(to: CGPoint(x: x, y: 0))
                     context.addLine(to: CGPoint(x: x + (scatter(3) - 0.5) * 4, y: reach * 0.5))
                     context.addLine(to: CGPoint(x: x + (scatter(4) - 0.5) * 6, y: reach))
-                    context.setStrokeColor(UIColor(white: 0, alpha: 0.35).cgColor)
+                    context.setStrokeColor(UIColor(white: 0, alpha: 0.5).cgColor)
                     context.strokePath()
                 }
                 if scatter(5) < 0.6 {

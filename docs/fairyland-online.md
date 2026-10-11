@@ -160,12 +160,15 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   like the land past the other edges (`WorldMap.raiseCrags`, `cragTiers`; drawn by `CaveWalls`). The road
   runs through it with a cell clear either side. On the north and east sides the rock's face at the edge
   looks your way and the road ends at a dark arch in it, and behind it the rock climbs in tiers (56, then
-  44 and 44 points more) into a mountain; on the south and west that face looks away, so the road runs on
-  under an arch of rock into a dark cleft (`CaveMouth`), and a ridge a tier higher stands 11 to 16 cells
-  out, far enough not to hide the mouth. In 0.4.5 it was one flat 64-point tier with rounded corners,
-  ending 6 to 10 cells out with grass beyond; playtesting (2026-10-11) found it too flat and rounded, so
-  since 0.4.6 it has cut corners, cracks and ledges in its faces and boulders strewn over its tops. Its
-  walls inside caves are 32 to 36 points. How FO showed its cave entrances isn't in any source reachable
+  44 and 44 points more), rising in knobs and peaks into a mountain; on the south and west that face
+  looks away, so the road runs on under an arch of rock into a dark cleft (`CaveMouth`), and a ridge a
+  tier higher, its crest higher still in places, stands from 2.5 cells out, hiding only rock. A tier `h`
+  points up covers the ground `h` / 31 cells nearer the map and as far along the edge, so round the mouth
+  the ridge stands back to 6.5 cells and its crest to 8.5, clear of the cleft. Lumps (value noise) raise
+  knobs over the tops so they aren't one slab. In 0.4.5 it was one flat 64-point tier with rounded
+  corners, ending 6 to 10 cells out with grass beyond; playtesting (2026-10-11) found it too flat and
+  rounded, so since 0.4.6 it also has cut corners, streaks, cracks and ledges in its faces and boulders
+  strewn over its tops. Its walls inside caves are 32 to 36 points. How FO showed its cave entrances isn't in any source reachable
   from a cloud session.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
