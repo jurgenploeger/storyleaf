@@ -139,6 +139,8 @@ struct ContentTests {
         for def in content.maps where def.theme.hills != nil {
             let map = WorldMap(def: def)
             #expect(!map.hills.isEmpty, "map \(def.id) has no hills")
+            #expect(map.hills.contains { hill in hill.cells.contains { !map.isWalkable($0) && map.isFreeForScenery($0) } },
+                    "map \(def.id): nothing can grow on its hills")
             for hill in map.hills {
                 func height(_ point: CGPoint) -> CGFloat { map.height(atGrid: CGPoint(x: point.x * tile, y: point.y * tile)) }
                 func cell(_ point: CGPoint) -> GridPoint { GridPoint(col: Int(point.x.rounded(.down)), row: Int(point.y.rounded(.down))) }
@@ -151,8 +153,21 @@ struct ContentTests {
                 #expect(abs(height(top) - hill.peak) < 1, "map \(def.id): the trail stops short of the top")
                 #expect(hill.trail.allSatisfy { map.isWalkable(cell($0)) }, "map \(def.id): the trail is blocked")
                 #expect(!map.path(from: map.center(of: cell(foot)), to: map.center(of: cell(top))).isEmpty, "map \(def.id): no way up")
-                // Its sides are too steep to walk.
+                // Its sides are too steep to walk (but trees and flowers grow there, above).
                 #expect(hill.cells.contains { !map.isWalkable($0) }, "map \(def.id): a hill you can walk straight up")
+                // A footpath leads from the trail's foot to the roads, and road goes on to the map's edge.
+                var seen: Set<GridPoint> = [cell(foot)]
+                var queue = [cell(foot)]
+                var outside = false
+                while let at = queue.popLast(), !outside {
+                    for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                        let next = GridPoint(col: at.col + dc, row: at.row + dr)
+                        guard map.contains(next), map.ground[next.row][next.col] == .path, seen.insert(next).inserted else { continue }
+                        if next.col == 0 || next.row == 0 || next.col == map.columns - 1 || next.row == map.rows - 1 { outside = true }
+                        queue.append(next)
+                    }
+                }
+                #expect(outside, "map \(def.id): no footpath from the hill at \(cell(foot)) to the roads")
                 // Never so steep that ground facing away from you would lean out of sight: going up
                 // the map and right at once (up the screen), it never drops faster than the view.
                 for cell in hill.cells {

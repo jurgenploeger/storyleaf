@@ -66,6 +66,11 @@ final class WorldMap {
     private(set) var hills: [Hill] = []
     /// Which hill each cell it rises over belongs to.
     private var hillOf: [GridPoint: Int] = [:]
+    /// The cells the hills' trails run over (for the minimap).
+    private(set) var trailCells: Set<GridPoint> = []
+
+    /// The hill rising over `cell`, if any (an index into `hills`).
+    func hillIndex(at cell: GridPoint) -> Int? { hillOf[cell] }
 
     nonisolated struct Plateau {
         /// Which way a ramp faces, down its slope: toward the row in front (south) or the column in
@@ -127,7 +132,10 @@ final class WorldMap {
             keepNPCsInView()
         }
         if def.theme.cave == nil, let ponds { digPonds(ponds, &rng) }
-        if def.town == nil, def.theme.cave == nil, let hills = def.theme.hills { raiseHills(hills, &rng) }
+        if def.town == nil, def.theme.cave == nil, let hills = def.theme.hills {
+            raiseHills(hills, &rng)
+            layFootpaths()
+        }
         if def.theme.accent != nil {
             if let patches = def.theme.accentPatches {
                 paintAccentPatches(patches, &rng)
@@ -281,6 +289,13 @@ final class WorldMap {
     }
 
     // MARK: Placement
+
+    /// Too steep or too solid to walk, but scenery may still stand there (a hill's sides).
+    func block(_ cell: GridPoint) {
+        guard contains(cell), !blocked.contains(cell), let node = graph.node(atGridPosition: cell.vector) else { return }
+        graph.remove([node])
+        blocked.insert(cell)
+    }
 
     /// Reserves a cell; blocking things also take it out of the walk graph.
     func occupy(_ cell: GridPoint, blocking: Bool) {
@@ -1079,17 +1094,100 @@ final class WorldMap {
             }
         }
         for cell in cells where !steep.contains(cell) && !reached.contains(cell) { steep.insert(cell) }
-        for cell in steep { occupy(cell, blocking: true) }
-        // Nothing grows on the trail or where it meets the ground and the top, so the way stays open.
-        for cell in trailCells { occupy(cell, blocking: false) }
-        for end in [path.first, path.last].compactMap({ $0 }) {
+        // Too steep to walk, but trees and flowers grow on its sides like anywhere else.
+        for cell in steep { block(cell) }
+        // Nothing grows on the trail or beside it, so the way up stays open and in sight.
+        for cell in trailCells {
             for dr in -1...1 {
-                for dc in -1...1 where !steep.contains(GridPoint(col: end.col + dc, row: end.row + dr)) {
-                    occupy(GridPoint(col: end.col + dc, row: end.row + dr), blocking: false)
-                }
+                for dc in -1...1 { occupy(GridPoint(col: cell.col + dc, row: cell.row + dr), blocking: false) }
             }
         }
+        self.trailCells.formUnion(trailCells)
         return true
+    }
+
+    /// Footpaths from each hill's trail to the nearest road (or a footpath laid before it): worn
+    /// paths across the fields, winding a little round whatever's in the way, so the hills are
+    /// somewhere to go and the minimap shows the way there. Road cells like the rest, a cell wide.
+    private func layFootpaths() {
+        let hillCells = Set(hills.flatMap(\.cells))
+        // A little unevenness in each cell's cost, the same every visit, so paths wander.
+        func rough(_ cell: GridPoint) -> Double {
+            var hash = UInt64(bitPattern: Int64(cell.col &* 73_856_093 ^ cell.row &* 19_349_663)) &+ 0x9E37_79B9_7F4A_7C15
+            hash = (hash ^ (hash >> 30)) &* 0xBF58_476D_1CE4_E5B9
+            hash ^= hash >> 31
+            return Double(hash % 1000) / 1000
+        }
+        func open(_ cell: GridPoint) -> Bool {
+            cell.col > 0 && cell.row > 0 && cell.col < columns - 1 && cell.row < rows - 1 && isWalkable(cell)
+                && ground[cell.row][cell.col] != .water && !hillCells.contains(cell)
+        }
+        for hill in hills {
+            guard let foot = hill.trail.first else { continue }
+            let start = GridPoint(col: Int(foot.x.rounded(.down)), row: Int(foot.y.rounded(.down)))
+            guard contains(start), ground[start.row][start.col] != .path else { continue }
+            // The cheapest way to a road (Dijkstra), dearer beside anything in the way.
+            var cost: [GridPoint: Double] = [start: 0]
+            var from: [GridPoint: GridPoint] = [:]
+            var queue = CostQueue()
+            queue.push(start, 0)
+            var reached: GridPoint?
+            while let next = queue.pop() {
+                let (cell, spent) = next
+                guard spent <= cost[cell] ?? .infinity else { continue }
+                if cell != start, ground[cell.row][cell.col] == .path { reached = cell; break }
+                for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                    let step = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                    guard open(step) else { continue }
+                    let crowded = [(1, 0), (-1, 0), (0, 1), (0, -1)].contains { !isWalkable(GridPoint(col: step.col + $0.0, row: step.row + $0.1)) }
+                    let price = spent + 1 + rough(step) * 1.5 + (crowded ? 2 : 0)
+                    if price < cost[step] ?? .infinity {
+                        cost[step] = price
+                        from[step] = cell
+                        queue.push(step, price)
+                    }
+                }
+            }
+            guard var cell = reached else { continue }
+            while let back = from[cell] {
+                cell = back
+                ground[cell.row][cell.col] = .path
+                occupy(cell, blocking: false)
+            }
+        }
+    }
+
+    /// The cheapest cell first (a binary heap), for `layFootpaths`.
+    private struct CostQueue {
+        private var heap: [(cell: GridPoint, cost: Double)] = []
+
+        mutating func push(_ cell: GridPoint, _ cost: Double) {
+            heap.append((cell, cost))
+            var child = heap.count - 1
+            while child > 0 {
+                let parent = (child - 1) / 2
+                guard heap[child].cost < heap[parent].cost else { break }
+                heap.swapAt(child, parent)
+                child = parent
+            }
+        }
+
+        mutating func pop() -> (GridPoint, Double)? {
+            guard !heap.isEmpty else { return nil }
+            heap.swapAt(0, heap.count - 1)
+            let top = heap.removeLast()
+            var parent = 0
+            while true {
+                let left = parent * 2 + 1, right = left + 1
+                var least = parent
+                if left < heap.count, heap[left].cost < heap[least].cost { least = left }
+                if right < heap.count, heap[right].cost < heap[least].cost { least = right }
+                guard least != parent else { break }
+                heap.swapAt(parent, least)
+                parent = least
+            }
+            return (top.cell, top.cost)
+        }
     }
 
     private func scatterAccents(_ rng: inout SeededRandom) {
@@ -1195,6 +1293,13 @@ final class WorldMap {
                 }
                 if rock.contains(cell) {
                     pixel = color(forTile: theme.cave?.rock ?? "cave_rock").shaded(0.5)
+                } else if trailCells.contains(cell) {
+                    pixel = tileColor == nil && theme.path == "tile_path" ? PixelColor(0xE8C98C) : color(forTile: theme.path).shaded(1.15)
+                } else if let index = hillOf[cell] {
+                    // A hill in relief: lighter the higher it stands.
+                    let hill = hills[index]
+                    let rise = hill.height(atCells: Double(col) + 0.5, Double(row) + 0.5) / max(1, hill.peak)
+                    pixel = pixel.shaded(0.82 + 0.3 * Double(rise))
                 } else if blocked.contains(cell), ground[row][col] != .water {
                     pixel = pixel.shaded(0.55)
                 }

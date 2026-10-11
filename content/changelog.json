@@ -2,6 +2,15 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.4.3",
+      "date": "2026-10-11",
+      "title": "Footpaths",
+      "notes": [
+        "Hills are shaded in a few soft tones now, like the rest of the ground, instead of a glossy sheen. Trees and flowers grow on their slopes, and the trail up stays clear.",
+        "Footpaths wind across the fields from the roads to every hill's trail: new ways to explore. The minimap shows them, the trails up the hills and the hills themselves."
+      ]
+    },
+    {
       "version": "0.4.2",
       "date": "2026-10-11",
       "title": "Quest treasures",

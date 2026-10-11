@@ -110,15 +110,16 @@ final class Lighting {
     }
 
     /// A soft shadow on the ground under a tree or rock, a little toward the lower right as if lit
-    /// from the upper left. Drawn under everything that stands, so it never covers a character.
-    static func shadow(under node: SKSpriteNode, in world: SKNode) {
+    /// from the upper left. Drawn under everything that stands, so it never covers a character; on
+    /// a hill, `above` is the hill's depth, so it lies on the hill instead of under it.
+    static func shadow(under node: SKSpriteNode, in world: SKNode, above ground: CGFloat? = nil) {
         let width = node.size.width * 0.8
         let shadow = SKSpriteNode(texture: SoftTextures.glow, size: CGSize(width: width, height: width * 0.36))
         shadow.color = .black
         shadow.colorBlendFactor = 1
         shadow.alpha = 0.3
         shadow.position = node.position + CGVector(dx: width * 0.12, dy: -1)
-        shadow.zPosition = -99_300
+        shadow.zPosition = ground.map { $0 + 0.1 } ?? -99_300
         world.addChild(shadow)
     }
 

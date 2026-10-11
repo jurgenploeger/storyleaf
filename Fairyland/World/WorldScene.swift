@@ -816,7 +816,9 @@ final class WorldScene: SKScene {
                         rise.timingMode = .easeInEaseOut
                         node.run(.repeatForever(.sequence([rise, rise.reversed()])), withKey: "bob")
                     }
-                    if placement.shadow == true { Lighting.shadow(under: node, in: world) }
+                    if placement.shadow == true {
+                        Lighting.shadow(under: node, in: world, above: map.hillIndex(at: cell).map { Self.topZ(of: map.hills[$0].cells) })
+                    }
                     if let hex = placement.glow, let color = UIColor(hex: hex) {
                         Lighting.glow(behind: node, color: color, in: world, rng: &rng)
                         lantern?.glint(at: node.position + CGVector(dx: 0, dy: node.size.height * 0.4), color: color, width: node.size.width * 1.6)

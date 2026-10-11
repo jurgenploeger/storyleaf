@@ -57,16 +57,17 @@ enum HillArt {
         let samples = WorldMap.Hill.samples
         let sw = columns * samples, sh = rows * samples
         var bare = [UInt8](repeating: 0, count: sw * sh * 4)
-        var multiply = [UInt8](repeating: 255, count: sw * sh * 4)
-        var screen = [UInt8](repeating: 0, count: sw * sh * 4)
         var mask = [UInt8](repeating: 0, count: sw * sh * 4)
-        for index in stride(from: 3, to: screen.count, by: 4) { screen[index] = 255 }
-        // Sunlight from the upper left of the screen (up the map and to the left), 36° up.
+        // How bright each sample is lit, 1 on the flat (bottom row first, like the heights).
+        var light = [Float](repeating: 1, count: sw * sh)
+        // Sunlight from the upper left of the screen (up the map and to the left), 36° up. Soft: the
+        // sides away from it go a few shades darker, the sides facing it only a shade lighter, so
+        // the hill reads as matte ground rather than something glossy.
         let up = 36 * Double.pi / 180
         let toward = (x: -0.6, y: 1.0), length = (0.36 + 1.0).squareRoot()
-        let light = (x: toward.x / length * cos(up), y: toward.y / length * cos(up), z: sin(up))
-        let ambient = 0.25
-        let flat = ambient + (1 - ambient) * light.z
+        let sun = (x: toward.x / length * cos(up), y: toward.y / length * cos(up), z: sin(up))
+        let ambient = 0.45
+        let flat = ambient + (1 - ambient) * sun.z
         let deepest = max(look.shadow.r, look.shadow.g, look.shadow.b, 0.01)
         let tint = (look.shadow.r / deepest, look.shadow.g / deepest, look.shadow.b / deepest)
         let steepest = 1.5 * Double(hill.peak) / hill.band
@@ -86,24 +87,12 @@ enum HillArt {
                 let e = 0.05
                 let hx = Double(hill.shape(x + e, y) - hill.shape(x - e, y)) / (2 * e) / Double(tile) / 0.866
                 let hy = Double(hill.shape(x, y + e) - hill.shape(x, y - e)) / (2 * e) / Double(tile) / 0.866
-                let lambert = (-hx * light.x - hy * light.y + light.z) / (hx * hx + hy * hy + 1).squareRoot()
+                let lambert = (-hx * sun.x - hy * sun.y + sun.z) / (hx * hx + hy * hy + 1).squareRoot()
                 var shade = (ambient + (1 - ambient) * max(0, lambert)) / flat
                 let s = hill.rise(x, y)
-                shade *= 1 + 0.07 * Double(hill.shape(x, y) / hill.peak)
-                // The foot tucked in a little darker, the shoulder catching a little more light.
-                if s < 0.3 { shade *= 1 - 0.1 * sin(Double.pi * s / 0.3) }
-                if s > 0.7 { shade *= 1 + 0.06 * sin(Double.pi * (s - 0.7) / 0.3) }
-                if shade < 1 {
-                    let lean = (1 - shade) * 0.6
-                    multiply[index] = UInt8(min(255, max(0, shade * (1 - lean * (1 - tint.0)) * 255)))
-                    multiply[index + 1] = UInt8(min(255, max(0, shade * (1 - lean * (1 - tint.1)) * 255)))
-                    multiply[index + 2] = UInt8(min(255, max(0, shade * (1 - lean * (1 - tint.2)) * 255)))
-                } else {
-                    let glow = min(1, shade - 1)
-                    screen[index] = UInt8(min(255, look.highlight.r * glow * 255))
-                    screen[index + 1] = UInt8(min(255, look.highlight.g * glow * 255))
-                    screen[index + 2] = UInt8(min(255, look.highlight.b * glow * 255))
-                }
+                // The foot tucked in a little darker.
+                if s < 0.3 { shade *= 1 - 0.08 * sin(Double.pi * s / 0.3) }
+                light[j * sw + i] = Float(shade)
                 // The bank shows through in ragged patches where it's steepest, but not by the trail.
                 guard look.bank != nil, s > 0, s < 1 else { continue }
                 let slope = Double(hill.peak) * 6 * s * (1 - s) * hill.uphill(x, y).growth / hill.band
@@ -145,7 +134,7 @@ enum HillArt {
         context.setStrokeColor(UIColor(white: 0, alpha: 0.3).cgColor)
         context.addPath(line(0.12))
         context.strokePath()
-        context.setStrokeColor(UIColor(white: 1, alpha: 0.16).cgColor)
+        context.setStrokeColor(UIColor(white: 1, alpha: 0.1).cgColor)
         context.addPath(line(-0.12))
         context.strokePath()
         context.addPath(line(0))
@@ -163,12 +152,8 @@ enum HillArt {
             context.draw(variation, in: CGRect(x: -CGFloat(low.col) * scale, y: -CGFloat(low.row) * scale,
                                                width: CGFloat(look.mapSize.columns) * scale, height: CGFloat(look.mapSize.rows) * scale))
         }
-        if let shading = image(multiply, width: sw, height: sh), let glow = image(screen, width: sw, height: sh),
-           let outline = image(mask, width: sw, height: sh) {
-            context.setBlendMode(.multiply)
-            context.draw(shading, in: whole)
-            context.setBlendMode(.screen)
-            context.draw(glow, in: whole)
+        shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), tint: tint)
+        if let outline = image(mask, width: sw, height: sh) {
             context.setBlendMode(.destinationIn)
             context.draw(outline, in: whole)
             context.setBlendMode(.normal)
@@ -245,6 +230,52 @@ enum HillArt {
         }
     }
     """
+
+    /// Lights the picture a pixel (a tile's pixel) at a time: how lit the slope is there, in steps
+    /// of 6%, with a 4×4 ordered dither where one step gives way to the next, the way pixel art
+    /// shades a hill in a few flat tones. A smooth gradient over pixel-art ground read as gloss.
+    /// Shade leans toward the map's shadow colour (`tint`, its channels over its brightest).
+    private static func shade(_ context: CGContext, light: [Float], samples: (columns: Int, rows: Int), perSample: Float,
+                              tint: (Double, Double, Double)) {
+        guard let data = context.data else { return }
+        let width = context.width, height = context.height, rowBytes = context.bytesPerRow
+        let bytes = data.bindMemory(to: UInt8.self, capacity: rowBytes * height)
+        let dither: [Float] = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map { ($0 + 0.5) / 16 - 0.5 }
+        let step: Float = 0.06
+        let lean = (Float(1 - tint.0), Float(1 - tint.1), Float(1 - tint.2))
+        let sw = samples.columns, sh = samples.rows
+        for y in 0..<height {
+            // Memory rows run top down; samples bottom up.
+            let fy = (Float(height - 1 - y) + 0.5) / perSample - 0.5
+            let j = max(0, min(sh - 2, Int(fy.rounded(.down))))
+            let ty = min(1, max(0, fy - Float(j)))
+            for x in 0..<width {
+                let fx = (Float(x) + 0.5) / perSample - 0.5
+                let i = max(0, min(sw - 2, Int(fx.rounded(.down))))
+                let tx = min(1, max(0, fx - Float(i)))
+                let a = light[j * sw + i], b = light[j * sw + i + 1]
+                let c = light[(j + 1) * sw + i], d = light[(j + 1) * sw + i + 1]
+                let near = a + (b - a) * tx, far = c + (d - c) * tx
+                let lit = near + (far - near) * ty
+                let steps = ((lit - 1) / step + dither[(y % 4) * 4 + x % 4]).rounded()
+                guard steps != 0 else { continue }
+                let s = min(1 + step, 1 + steps * step)
+                let index = y * rowBytes + x * 4
+                if s < 1 {
+                    let toward = (1 - s) * 0.4
+                    bytes[index] = UInt8(min(255, Float(bytes[index]) * s * (1 - toward * lean.0)))
+                    bytes[index + 1] = UInt8(min(255, Float(bytes[index + 1]) * s * (1 - toward * lean.1)))
+                    bytes[index + 2] = UInt8(min(255, Float(bytes[index + 2]) * s * (1 - toward * lean.2)))
+                } else {
+                    // Premultiplied: no channel brighter than the pixel is opaque.
+                    let alpha = Float(bytes[index + 3])
+                    bytes[index] = UInt8(min(alpha, Float(bytes[index]) * s))
+                    bytes[index + 1] = UInt8(min(alpha, Float(bytes[index + 1]) * s))
+                    bytes[index + 2] = UInt8(min(alpha, Float(bytes[index + 2]) * s))
+                }
+            }
+        }
+    }
 
     /// Premultiplied RGBA bytes, top row first, as an image.
     private static func image(_ bytes: [UInt8], width: Int, height: Int) -> CGImage? {

@@ -102,13 +102,19 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   Hills (`theme.hills`: count, size, height, bank tile) were blocks with a ramp in 0.3.97–0.3.99, which
   playtesting found too square. Since 0.4.1 they're heightfield hills, as isometric games draw terrain: a few
   ellipses melted together (`WorldMap.Hill`), rising on a smoothstep from foot to top, drawn as one picture of
-  the map's own ground lit from the upper left (shady sides lean to the palette's shadow colour, the foot a
-  touch darker, the shoulder lighter) and lifted by its heights in a small shader (`HillArt`; a warp grid
-  crashed SpriteKit at that size). Never steeper than 15 points a cell halfway up, so ground facing away never
-  leans out of sight and a tap finds one spot.
-  Their sides are too steep to walk; a switchback trail (two or three legs across the side facing you, cut
-  into the slope with a shadow above and a lip below) is the way up. A `bank` tile shows through in ragged
-  patches where they're steepest.
+  the map's own ground lit from the upper left and lifted by its heights in a small shader (`HillArt`; a warp
+  grid crashed SpriteKit at that size). Since 0.4.3 the light is matte, as pixel art shades a hill: a few
+  steps of 6% with a 4×4 ordered dither between them, sides away from the sun a few shades darker (leaning to
+  the palette's shadow colour) and sides facing it only one lighter; the first smooth, brighter gradient
+  read as gloss in playtesting. Never steeper than 15 points a cell halfway up, so ground facing away never
+  leans out of sight and a tap finds one spot. Their sides are too steep to walk, but scenery grows there
+  like anywhere (since 0.4.3; tree shadows lie on the hill); a switchback trail (two or three legs across the
+  side facing you, cut into the slope with a shadow above and a lip below) is the way up, kept clear a cell
+  either side. A `bank` tile shows through in ragged patches where they're steepest.
+- Footpaths (ours, since 0.4.3, asked for in playtesting 2026-10-11: the trails as new ways to explore):
+  from each hill's trail a cell-wide road winds across the fields to the nearest road or footpath, the
+  cheapest way round what's in the way with a little seeded unevenness so it wanders (`WorldMap.layFootpaths`).
+  The minimap shows them like roads, the hills' trails, and the hills in relief, lighter the higher.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake
