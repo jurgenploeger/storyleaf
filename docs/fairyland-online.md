@@ -96,6 +96,11 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   Since 0.3.65 the planner keeps each townsperson's spot and the cells just in front of it clear, so no
   house, lamp or tree hides them (before, every town's healer and shop stood inside or behind a house), and
   Larkspur, which had felt empty in playtesting (2026-10-07), has two rings of streets like the others.
+- Raised ground (since 0.3.97, asked for in playtesting 2026-10-11): a town's terraces and hills out in the
+  fields (`theme.hills`: count, size, height, bank tile) really stand up. The top is drawn its height higher,
+  a bank (stone wall, or earth) hangs under the edges facing you, and ramps (a terrace's stairs, a trodden
+  slope up a hill) climb to the top; whoever walks up rises with it (`WorldMap.height(at:)`, `Walker.settle`),
+  and trees on a hilltop stand up there too. A hill's rim is a bank you can't walk but at its ramps.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake

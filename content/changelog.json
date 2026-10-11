@@ -2,6 +2,15 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.3.97",
+      "date": "2026-10-11",
+      "title": "Ups and downs",
+      "notes": [
+        "Town terraces really stand up now: their tops are raised over a stone wall, and you climb their stairs to walk up on top.",
+        "Hills rise out of the fields of Sunny Meadow, Windswept Downs, Gumdrop Peaks, the mountains, the snowy woods and the deserts. Walk up their slopes to the top, where the trees and flowers grow too."
+      ]
+    },
+    {
       "version": "0.3.96",
       "date": "2026-10-11",
       "title": "Tidy hero",

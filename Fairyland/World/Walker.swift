@@ -52,12 +52,35 @@ final class Walker: SKNode {
     /// The current map's light, cast softly on everyone standing in it (`theme.palette.light`).
     static var light: (color: UIColor, strength: CGFloat)?
 
+    /// Everything you see of it, raised with the ground it stands on (a hilltop, a terrace).
+    /// Children added to the walker go in here.
+    private let body = SKNode()
+    /// How high the ground under it stands (`WorldScene.groundHeight(at:)`).
+    private(set) var lift: CGFloat = 0
+
+    override var position: CGPoint {
+        didSet { settle() }
+    }
+
+    /// Up onto the ground under its spot: as it walks, and once it's on the map.
+    func settle() {
+        let height = (scene as? WorldScene)?.groundHeight(at: position) ?? 0
+        guard height != lift else { return }
+        lift = height
+        body.position.y = height
+    }
+
+    override func addChild(_ node: SKNode) {
+        if node === body { super.addChild(node) } else { body.addChild(node) }
+    }
+
     /// `badge`: BOT after the name.
     init(cycle: WalkCycle, label: String?, labelColor: UIColor = .white, badge: PlayerBadge? = nil) {
         self.cycle = cycle
         sprite = SKSpriteNode(texture: cycle.frames(.down).first, size: cycle.size)
         sprite.anchorPoint = CGPoint(x: 0.5, y: 0.08)
         super.init()
+        super.addChild(body)
         addChild(Nodes.shadow(width: cycle.size.width * 0.5))
         addChild(sprite)
         Self.lit(sprite)
@@ -80,7 +103,7 @@ final class Walker: SKNode {
     /// Shows the weapon in hand and an accessory's sparkle.
     func setGear(weapon: ItemDef?, accessory: ItemDef?) {
         sprite.childNode(withName: "weapon")?.removeFromParent()
-        childNode(withName: "aura")?.removeFromParent()
+        body.childNode(withName: "aura")?.removeFromParent()
         if let weapon, let node = GearArt.weapon(weapon, height: cycle.size.height) {
             Self.lit(node)
             sprite.addChild(node)

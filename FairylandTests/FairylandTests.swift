@@ -134,6 +134,32 @@ struct ContentTests {
         }
     }
 
+    @Test func hillsStandUpWithAWayUp() {
+        for def in content.maps where def.theme.hills != nil {
+            let map = WorldMap(def: def)
+            let hills = map.plateaus.filter { $0.kind == .hill }
+            #expect(!hills.isEmpty, "map \(def.id) has no hills")
+            for hill in hills {
+                #expect(!hill.ramps.isEmpty, "map \(def.id): a hill with no way up")
+                for (cell, ramp) in hill.ramps {
+                    let foot = ramp == .south ? GridPoint(col: cell.col, row: cell.row - 1) : GridPoint(col: cell.col - 1, row: cell.row)
+                    let head = ramp == .south ? GridPoint(col: cell.col, row: cell.row + 1) : GridPoint(col: cell.col + 1, row: cell.row)
+                    // Up from the ground at its foot, over the slope, to the top.
+                    #expect(map.isWalkable(foot) && map.isWalkable(cell) && map.isWalkable(head), "map \(def.id): the ramp at \(cell) is blocked")
+                    #expect(map.height(at: map.center(of: foot)) == 0)
+                    #expect(map.height(at: map.center(of: head)) == hill.height)
+                    let halfway = map.height(at: map.center(of: cell))
+                    #expect(halfway > 0 && halfway < hill.height)
+                }
+            }
+        }
+        // A town's terraces stand up too, their stairs climbing to the top.
+        for def in content.maps where def.town?.terraces?.isEmpty == false {
+            let map = WorldMap(def: def)
+            #expect(map.plateaus.contains { $0.kind == .terrace && $0.height == WorldMap.terraceHeight }, "map \(def.id): terraces lie flat")
+        }
+    }
+
     @Test func housesStandOffTheRoads() {
         for def in content.maps {
             let map = WorldMap(def: def)

@@ -238,9 +238,11 @@ final class Crowd {
         // come spread over that, so the chat is lively from the start without a burst.
         member.chat = .random(in: 5...(45 * pace * (member.trades ? 2.5 : 1)))
         world.addChild(member.walker)
+        member.walker.settle()
         if let pet = member.pet {
             pet.position = member.walker.position + CGVector(dx: -30, dy: 0)
             world.addChild(pet)
+            pet.settle()
         }
         members.append(member)
     }

@@ -253,6 +253,17 @@ for map_def in maps.values():
             check(isinstance(cave.get(key, 0), int) and 0 <= cave.get(key, 0) <= 40, f"{where} → {key} must be a whole number from 0 to 40")
         check(isinstance(cave.get("maze", 8), int) and 4 <= cave.get("maze", 8) <= 30, f"{where} → maze must be a junction spacing from 4 to 30")
         check(map_def["width"] >= 24 and map_def["height"] >= 24, f"{where} → cave maps must be at least 24×24")
+    if "hills" in theme:
+        hills = theme["hills"]
+        where = f"map {map_def['id']} hills"
+        check(set(hills) <= {"count", "size", "height", "bank"}, f"{where} → unknown keys {set(hills) - {'count', 'size', 'height', 'bank'}}")
+        check(not map_def.get("town") and "cave" not in theme, f"{where} → only out in the fields (not towns or caves)")
+        check(isinstance(hills.get("count"), int) and 1 <= hills["count"] <= 20, f"{where} → count must be a whole number from 1 to 20")
+        size = hills.get("size", [3, 6])
+        check(isinstance(size, list) and len(size) == 2 and all(isinstance(v, int) for v in size) and 2 <= size[0] <= size[1] <= 12,
+              f"{where} → size must be [smallest, biggest] radius in cells, 2 to 12")
+        check(isinstance(hills.get("height", 22), (int, float)) and 10 <= hills.get("height", 22) <= 48, f"{where} → height must be 10 to 48 points")
+        tiles.append(hills.get("bank", "tile_scree"))
     props = [p["art"] for p in theme["props"]] + town.get("lots", []) + list(town.get("streetDecor", {}))
     props += [b["art"] for b in map_def.get("buildings", [])] + [d["art"] for d in map_def.get("decor", [])]
     for art_id in tiles + props:

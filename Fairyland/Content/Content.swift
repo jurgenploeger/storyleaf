@@ -435,6 +435,20 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let palette: MapPalette?
         /// Caves are solid rock with tunnels and chambers dug out of it.
         let cave: Cave?
+        /// Grassy hills to climb, out in the fields (not towns or caves).
+        let hills: Hills?
+    }
+
+    /// Raised ground you walk up a ramp to: a bank along the sides facing you, the top like the
+    /// ground around it.
+    nonisolated struct Hills: Decodable, Sendable {
+        let count: Int
+        /// Radius in cells, [smallest, biggest] (3 to 6 when not given).
+        let size: [Int]?
+        /// How high they stand, in points (22 when not given).
+        let height: Double?
+        /// The tile their banks are drawn in (tile_scree when not given).
+        let bank: String?
     }
 
     /// Solid rock everywhere except galleries along the roads and trails, chambers off them and

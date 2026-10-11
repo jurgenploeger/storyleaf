@@ -171,6 +171,7 @@ final class WorldScene: SKScene {
         await reached(0.05, progress)
 
         world.addChild(makeGround())
+        placePlateaus()
         await reached(0.3, progress)
         placeSurroundings()
         await reached(0.45, progress)
@@ -201,6 +202,8 @@ final class WorldScene: SKScene {
         placeProps()
         placeSignposts()
         placeBarricades()
+        // Everyone set down before they were on the map stands up on the ground under them.
+        for case let walker as Walker in world.children { walker.settle() }
         await reached(0.9, progress)
 
         world.addChild(player)
@@ -332,10 +335,29 @@ final class WorldScene: SKScene {
                 picks.append((col, row, chosen))
             }
         }
-        let tileMap = SKTileMapNode(tileSet: SKTileSet(tileGroups: Array(groups.values)), columns: map.columns, rows: map.rows, tileSize: tileSize)
+        let tileSet = SKTileSet(tileGroups: Array(groups.values))
+        let tileMap = SKTileMapNode(tileSet: tileSet, columns: map.columns, rows: map.rows, tileSize: tileSize)
         tileMap.anchorPoint = .zero
         for pick in picks {
             tileMap.setTileGroup(pick.group, forColumn: pick.col, row: pick.row)
+        }
+        // Raised ground (a terrace, a hill): its own tiles again, drawn its height up
+        // (`placePlateaus` sets them down). The ramps are drawn as slopes instead.
+        raisedTops = map.plateaus.map { plateau in
+            let (low, high) = plateau.bounds
+            let top = SKTileMapNode(tileSet: tileSet, columns: high.col - low.col + 1, rows: high.row - low.row + 1, tileSize: tileSize)
+            top.anchorPoint = .zero
+            for pick in picks {
+                let cell = GridPoint(col: pick.col, row: pick.row)
+                guard plateau.cells.contains(cell), plateau.ramps[cell] == nil else { continue }
+                top.setTileGroup(pick.group, forColumn: pick.col - low.col, row: pick.row - low.row)
+            }
+            top.position = CGPoint(x: CGFloat(low.col) * WorldMap.tileSize, y: CGFloat(low.row) * WorldMap.tileSize)
+            let grid = SKNode()
+            grid.addChild(top)
+            let layer = projected(grid)
+            layer.position.y = plateau.height
+            return layer
         }
         // Soft patches of colour over the whole ground, so it isn't one flat colour.
         let grid = SKNode()
@@ -541,84 +563,161 @@ final class WorldScene: SKScene {
         }
     }
 
-    /// Layered stone terraces like Fairyland's: the paved top sits behind a stone wall face
-    /// on the two edges facing you, balustrades run along every edge, pillars stand on the
-    /// corners, and stairs break the front wall where you can climb up.
+    /// How high the ground stands under a point on the map (a hilltop, a terrace): walkers there are
+    /// drawn that much higher (`Walker.settle`).
+    func groundHeight(at point: CGPoint) -> CGFloat { map.height(at: point) }
+
+    /// Raised tops from `makeGround`, one per plateau, until `placePlateaus` sets them down.
+    private var raisedTops: [SKNode] = []
+
+    /// How deep a plateau's top is drawn: just behind the back of it, so everything standing on it
+    /// (or in front) is drawn over it and whoever stands just behind it is hidden by it.
+    private static func topZ(of plateau: WorldMap.Plateau) -> CGFloat {
+        let tile = WorldMap.tileSize
+        let back = plateau.cells.map { WorldMap.project(CGPoint(x: CGFloat($0.col + 1) * tile, y: CGFloat($0.row + 1) * tile)).y }.max() ?? 0
+        return -back - 0.75
+    }
+
+    /// Raised ground (WorldMap.plateaus): each top drawn its height up, a bank (a terrace's stone
+    /// wall, a hill's earth) under the edges that face you, and ramps (stone steps up a terrace, a
+    /// trodden slope up a hill) climbing from the ground in front to the top. The banks sit under
+    /// the tops, so at a hill's nooks the top in front hides the bank behind it.
+    private func placePlateaus() {
+        let tile = WorldMap.tileSize
+        let stone = art.tileTexture(def.theme.accent ?? "tile_scree")
+        let bank = art.tileTexture(def.theme.hills?.bank ?? "tile_scree")
+        let trodden = art.tileTexture(def.theme.path)
+        let grass = Self.averageColor(of: art.tileTexture(def.theme.ground))
+        let grassLip = UIColor(red: min(1, grass.0 * 1.2), green: min(1, grass.1 * 1.2), blue: min(1, grass.2 * 1.2), alpha: 1)
+        func corner(_ col: Int, _ row: Int) -> CGPoint { WorldMap.project(CGPoint(x: CGFloat(col) * tile, y: CGFloat(row) * tile)) }
+        // Lines are gathered into one shape per colour, a draw each instead of one per edge.
+        func stroke(_ path: CGPath, color: UIColor, width: CGFloat, z: CGFloat) {
+            guard !path.isEmpty else { return }
+            let node = SKShapeNode(path: path)
+            node.strokeColor = color
+            node.lineWidth = width
+            node.lineCap = .round
+            node.zPosition = z
+            world.addChild(node)
+        }
+        for (index, plateau) in map.plateaus.enumerated() {
+            let terrace = plateau.kind == .terrace
+            let rise = plateau.height
+            let topZ = Self.topZ(of: plateau)
+            let lips = CGMutablePath(), shadows = CGMutablePath(), creases = CGMutablePath(), treads = CGMutablePath()
+            func line(_ path: CGMutablePath, _ from: CGPoint, _ to: CGPoint) {
+                path.move(to: from)
+                path.addLine(to: to)
+            }
+            if index < raisedTops.count {
+                raisedTops[index].zPosition = topZ
+                world.addChild(raisedTops[index])
+            }
+            // Banks: under each edge of the top facing you (front, left) where the ground beyond is
+            // lower, down to it (along a ramp, down to the slope: a triangle).
+            for cell in plateau.cells.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }) where plateau.ramps[cell] == nil {
+                for front in [true, false] {
+                    let beyond = front ? GridPoint(col: cell.col, row: cell.row - 1) : GridPoint(col: cell.col - 1, row: cell.row)
+                    if plateau.cells.contains(beyond), plateau.ramps[beyond] == nil { continue }
+                    let a = CGPoint(x: CGFloat(cell.col) * tile, y: CGFloat(cell.row) * tile)
+                    let b = front ? CGPoint(x: a.x + tile, y: a.y) : CGPoint(x: a.x, y: a.y + tile)
+                    // Just over the edge, at each end.
+                    let nudge: CGFloat = 0.5
+                    let lowA = map.height(atGrid: front ? CGPoint(x: a.x + nudge, y: a.y - nudge) : CGPoint(x: a.x - nudge, y: a.y + nudge))
+                    let lowB = map.height(atGrid: CGPoint(x: b.x - nudge, y: b.y - nudge))
+                    guard min(lowA, lowB) < rise - 0.5 else { continue }
+                    let pa = WorldMap.project(a), pb = WorldMap.project(b)
+                    let path = CGMutablePath()
+                    path.move(to: pa + CGVector(dx: 0, dy: rise))
+                    path.addLine(to: pb + CGVector(dx: 0, dy: rise))
+                    path.addLine(to: pb + CGVector(dx: 0, dy: min(rise, lowB)))
+                    path.addLine(to: pa + CGVector(dx: 0, dy: min(rise, lowA)))
+                    path.closeSubpath()
+                    let face = SKShapeNode(path: path)
+                    face.fillTexture = terrace ? stone : bank
+                    // Lit from the front: the side facing left a shade darker.
+                    face.fillColor = UIColor(white: front ? 0.82 : 0.64, alpha: 1)
+                    face.strokeColor = .clear
+                    face.lineWidth = 0
+                    face.zPosition = topZ - 0.5
+                    world.addChild(face)
+                    // A lip along the top (pale stone on a terrace, the grass's edge on a hill) and a
+                    // soft shadow where the bank meets the ground.
+                    line(lips, pa + CGVector(dx: 0, dy: rise), pb + CGVector(dx: 0, dy: rise))
+                    line(shadows, pa + CGVector(dx: 0, dy: min(rise, lowA)), pb + CGVector(dx: 0, dy: min(rise, lowB)))
+                }
+            }
+            // Ramps: the foot on the ground in front, the head up at the top.
+            for (cell, ramp) in plateau.ramps {
+                let c = cell.col, r = cell.row
+                let corners: [(CGPoint, CGFloat)] = ramp == .south
+                    ? [(corner(c, r), 0), (corner(c + 1, r), 0), (corner(c + 1, r + 1), rise), (corner(c, r + 1), rise)]
+                    : [(corner(c, r + 1), 0), (corner(c, r), 0), (corner(c + 1, r), rise), (corner(c + 1, r + 1), rise)]
+                let points = corners.map { $0.0 + CGVector(dx: 0, dy: $0.1) }
+                let path = CGMutablePath()
+                path.addLines(between: points)
+                path.closeSubpath()
+                let slope = SKShapeNode(path: path)
+                slope.fillTexture = terrace ? stone : trodden
+                slope.fillColor = UIColor(white: 0.95, alpha: 1)
+                slope.strokeColor = UIColor(white: 0, alpha: 0.22)
+                slope.lineWidth = 1
+                // Under the top: where the top beside it stands in front of it, the top shows.
+                slope.zPosition = topZ - 0.25
+                world.addChild(slope)
+                guard terrace else { continue }
+                // Steps across a terrace's stairs, foot to head.
+                let steps = 5
+                for step in 1..<steps {
+                    let t = CGFloat(step) / CGFloat(steps)
+                    let left = points[0] + (points[3] - points[0]) * t
+                    let right = points[1] + (points[2] - points[1]) * t
+                    line(creases, left, right)
+                    line(treads, left + CGVector(dx: 0, dy: 1.5), right + CGVector(dx: 0, dy: 1.5))
+                }
+            }
+            stroke(lips, color: terrace ? UIColor(white: 1, alpha: 0.55) : grassLip, width: terrace ? 2 : 3, z: topZ + 0.1)
+            stroke(shadows, color: UIColor(white: 0, alpha: 0.28), width: 2, z: topZ - 0.45)
+            stroke(creases, color: UIColor(white: 0, alpha: 0.3), width: 1.5, z: topZ - 0.2)
+            stroke(treads, color: UIColor(white: 1, alpha: 0.35), width: 1, z: topZ - 0.2)
+        }
+    }
+
+    /// Layered stone terraces like Fairyland's, raised (`placePlateaus` draws the top, its walls
+    /// and stairs): balustrades run along every edge of the top and pillars stand on its corners.
     private func placeTerraces() {
-        let rail = art.sprite("stone_balustrade"), pillar = art.sprite("wall_pillar"), steps = art.sprite("stone_stairs")
+        let rail = art.sprite("stone_balustrade"), pillar = art.sprite("wall_pillar")
         // The balustrade picture is face on: set down a cell at a time, it stepped along a slanted
         // edge like stairs, so it's slanted to follow the edge. Its posts sit 11% and 89% across it.
         let picture = rail.texture.cgImage()
         let rising = TownFence.railing(picture, posts: (0.108, 0.912), height: 16, alongColumns: true)
         let falling = TownFence.railing(picture, posts: (0.108, 0.912), height: 16, alongColumns: false)
-        let stone = art.tileTexture(def.theme.accent ?? "tile_scree")
-        let tile = WorldMap.tileSize
-        let wallHeight: CGFloat = 22
+        let up = CGVector(dx: 0, dy: WorldMap.terraceHeight)
         for terrace in map.terraces {
             let o = terrace.origin
             let last = GridPoint(col: o.col + terrace.width - 1, row: o.row + terrace.height - 1)
-            // The wall face hangs under the inner edge of the border ring (the border cells block).
-            let south = (row: CGFloat(o.row + 1) * tile, from: CGFloat(o.col + 1) * tile, to: CGFloat(last.col) * tile)
-            let west = (col: CGFloat(o.col + 1) * tile, from: CGFloat(o.row + 1) * tile, to: CGFloat(last.row) * tile)
-            let stairsSouth = terrace.stairs.first { $0.row == o.row }.map { (CGFloat($0.col) * tile, CGFloat($0.col + 1) * tile) }
-            let stairsWest = terrace.stairs.first { $0.col == o.col }.map { (CGFloat($0.row) * tile, CGFloat($0.row + 1) * tile) }
-            var faces: [(CGPoint, CGPoint)] = []
-            func span(_ a: CGFloat, _ b: CGFloat, gap: (CGFloat, CGFloat)?, point: (CGFloat) -> CGPoint) {
-                if let gap, gap.0 > a, gap.1 < b {
-                    faces.append((point(a), point(gap.0)))
-                    faces.append((point(gap.1), point(b)))
-                } else {
-                    faces.append((point(a), point(b)))
-                }
-            }
-            span(south.from, south.to, gap: stairsSouth) { WorldMap.project(CGPoint(x: $0, y: south.row)) }
-            span(west.from, west.to, gap: stairsWest) { WorldMap.project(CGPoint(x: west.col, y: $0)) }
-            for (a, b) in faces {
-                let path = CGMutablePath()
-                path.move(to: a)
-                path.addLine(to: b)
-                path.addLine(to: b + CGVector(dx: 0, dy: -wallHeight))
-                path.addLine(to: a + CGVector(dx: 0, dy: -wallHeight))
-                path.closeSubpath()
-                let face = SKShapeNode(path: path)
-                face.fillTexture = stone
-                face.fillColor = UIColor(white: 0.78, alpha: 1)
-                face.strokeColor = UIColor(white: 0.25, alpha: 0.9)
-                face.lineWidth = 1.5
-                // Behind everything standing in front of any part of the wall: its far (top) end. Taking
-                // the near end drew the wall over trees, lamps and walkers along the rest of it.
-                // Nothing behind the wall overlaps it on screen, since the face hangs below its top edge.
-                face.zPosition = -max(a.y, b.y) - 0.5
-                world.addChild(face)
-                // A lighter lip along the top edge.
-                let lip = SKShapeNode(path: { let p = CGMutablePath(); p.move(to: a); p.addLine(to: b); return p }())
-                lip.strokeColor = UIColor(white: 1, alpha: 0.55)
-                lip.lineWidth = 2
-                lip.zPosition = face.zPosition + 0.25
-                world.addChild(lip)
-            }
-            // Railings, pillars and stairs on the border ring.
+            // Railings and pillars on the border ring, up on the top; the stairs stay open.
             for col in o.col...last.col {
                 for row in o.row...last.row {
                     let cell = GridPoint(col: col, row: row)
-                    guard col == o.col || row == o.row || col == last.col || row == last.row else { continue }
+                    guard col == o.col || row == o.row || col == last.col || row == last.row,
+                          !terrace.stairs.contains(cell) else { continue }
                     let corner = (col == o.col || col == last.col) && (row == o.row || row == last.row)
-                    if !corner, !terrace.stairs.contains(cell),
-                       let slanted = row == o.row || row == last.row ? rising : falling {
+                    if !corner, let slanted = row == o.row || row == last.row ? rising : falling {
                         let node = SKSpriteNode(texture: slanted.texture, size: slanted.size)
                         node.anchorPoint = slanted.anchor
-                        node.position = map.center(of: cell)
-                        node.zPosition = -node.position.y
+                        node.position = map.center(of: cell) + up
+                        node.zPosition = -map.center(of: cell).y
                         world.addChild(node)
                         continue
                     }
-                    let sprite = terrace.stairs.contains(cell) ? steps : corner ? pillar : rail
+                    let sprite = corner ? pillar : rail
                     let node = SKSpriteNode(texture: sprite.texture, size: sprite.size * (corner ? 0.6 : 0.7))
                     node.anchorPoint = CGPoint(x: 0.5, y: 0.1)
-                    node.position = map.base(of: cell)
+                    node.position = map.base(of: cell) + up
                     // Railings follow the edge they're on.
                     if !corner, col == o.col || col == last.col { node.xScale = -1 }
-                    node.zPosition = -node.position.y
+                    node.zPosition = -map.base(of: cell).y
                     world.addChild(node)
                 }
             }
@@ -723,7 +822,7 @@ final class WorldScene: SKScene {
             for _ in 0..<30 {
                 guard let middle = map.randomFreeCell(using: &rng) else { break }
                 let area = (-2...2).flatMap { dr in (-2...2).map { dc in GridPoint(col: middle.col + dc, row: middle.row + dr) } }
-                guard area.allSatisfy({ map.isFreeForScenery($0) }) else { continue }
+                guard area.allSatisfy({ map.isFreeForScenery($0) && map.height(at: map.center(of: $0)) == 0 }) else { continue }
                 area.forEach { map.occupy($0, blocking: false) }
                 let origin = map.center(of: middle)
                 for index in 0..<9 {
@@ -884,8 +983,11 @@ final class WorldScene: SKScene {
             position.x += .random(in: -7...7, using: &rng)
             position.y += .random(in: -5...5, using: &rng)
         }
+        // Standing on raised ground (a hilltop, a terrace) it's drawn up there, sorted by its spot.
+        let ground = position.y
+        position.y += map.height(at: map.center(of: cell))
         node.position = position
-        node.zPosition = -node.position.y
+        node.zPosition = -ground
         if sway {
             let duration = TimeInterval.random(in: 1.8...2.8, using: &rng)
             let lean = CGFloat.random(in: 0.018...0.03, using: &rng)
@@ -1082,7 +1184,7 @@ final class WorldScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard isBuilt, !isInputLocked, let point = touches.first?.location(in: world) else { return }
         // A boss you've just beaten has gone (hidden) and doesn't answer taps.
-        if let npc = npcs.first(where: { !$0.node.isHidden && ($0.node.position + CGVector(dx: 0, dy: 24)).distance(to: point) < 34 }) {
+        if let npc = npcs.first(where: { !$0.node.isHidden && ($0.node.position + CGVector(dx: 0, dy: 24 + $0.node.lift)).distance(to: point) < 34 }) {
             talkTarget = npc.def.id
             npc.node.revealTag()
             player.path = map.path(from: player.position, to: npc.node.position)
@@ -1106,9 +1208,10 @@ final class WorldScene: SKScene {
             signTarget = index
         }
         crowd?.greet(at: point, from: player.position)
-        player.path = map.path(from: player.position, to: point)
+        // A tap on a hilltop means the top, not the ground it hides.
+        player.path = map.path(from: player.position, to: map.groundPoint(under: point))
         if let destination = player.path.last {
-            Effects.tapMarker(at: destination, in: world)
+            Effects.tapMarker(at: destination + CGVector(dx: 0, dy: map.height(at: destination)), in: world)
         }
     }
 
