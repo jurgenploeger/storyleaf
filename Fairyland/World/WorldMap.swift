@@ -72,6 +72,24 @@ final class WorldMap {
     /// The hill rising over `cell`, if any (an index into `hills`).
     func hillIndex(at cell: GridPoint) -> Int? { hillOf[cell] }
 
+    /// How rocky its hills are, from 0, grassy slopes on the gentlest maps, to 1, steep and rocky on
+    /// the most dangerous: `theme.hills.rocky`, or from the levels of the monsters met there.
+    var rockiness: Double {
+        if let rocky = def.theme.hills?.rocky { return min(1, max(0, rocky)) }
+        guard let levels = def.encounters?.levels, let low = levels.first, let high = levels.last else { return 0 }
+        return min(1, max(0, (Double(low + high) / 2 - 15) / 70))
+    }
+
+    /// How much the ground rises across `cell`, in points (0 off the hills).
+    func rise(across cell: GridPoint) -> CGFloat {
+        guard let index = hillOf[cell] else { return 0 }
+        let hill = hills[index]
+        let corners = [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.5, 0.5)].map {
+            hill.height(atCells: Double(cell.col) + $0.0, Double(cell.row) + $0.1)
+        }
+        return (corners.max() ?? 0) - (corners.min() ?? 0)
+    }
+
     nonisolated struct Plateau {
         /// Which way a ramp faces, down its slope: toward the row in front (south) or the column in
         /// front (west), the two sides that face you. It climbs from the ground there to the top.
@@ -970,6 +988,7 @@ final class WorldMap {
         let smallest = Double(max(2, sizes.first ?? 3)), biggest = Double(max(sizes.first ?? 3, sizes.last ?? 6))
         let fewest = max(1, hills.chain?.first ?? 2), most = max(fewest, hills.chain?.last ?? 4)
         let tallest = hills.height ?? 44
+        let steep = Hill.steepness(rockiness: rockiness)
         let mountains = [Double?](repeating: hills.mountains?.height, count: hills.mountains?.count ?? 0)
         var claimed: Set<GridPoint> = []
         for mountain in mountains + [Double?](repeating: nil, count: hills.count) {
@@ -987,12 +1006,12 @@ final class WorldMap {
                         let lower: Double = attempt < 80 ? 1 : 0.85
                         peak = mountain * Double.random(in: 0.92...1.08, using: &rng) * lower
                         // Wide enough to climb that high and still have a top.
-                        let need = 1.5 * peak / Hill.steepest / 0.75 + 1
+                        let need = 1.5 * peak / steep / 0.75 + 1
                         along = max(along, need * Double.random(in: 1...1.2, using: &rng))
                         across = max(across, need)
                     } else {
                         // A narrow one stands lower, so it still has a top.
-                        peak = min(peak, min(along, across) * 0.75 * Hill.steepest / 1.5)
+                        peak = min(peak, min(along, across) * 0.75 * steep / 1.5)
                     }
                     var x = 0.0, y = 0.0
                     if let previous = lobes.last {
@@ -1003,7 +1022,7 @@ final class WorldMap {
                         y = previous.y + step * sin(heading)
                     }
                     lobes.append(Hill.Lobe(x: x, y: y, along: along, across: across,
-                                           angle: heading + Double.random(in: -0.3...0.3, using: &rng), peak: peak))
+                                           angle: heading + Double.random(in: -0.3...0.3, using: &rng), peak: peak, steepness: steep))
                 }
                 // Somewhere on the map it fits inside the edge, if it fits at all.
                 let margin = 5.0
@@ -1022,7 +1041,7 @@ final class WorldMap {
                     (fx: Double.random(in: 0.4...1, using: &rng), px: Double.random(in: 0..<6.3, using: &rng),
                      fy: Double.random(in: 0.4...1, using: &rng), py: Double.random(in: 0..<6.3, using: &rng))
                 }
-                var hill = Hill(lobes: lobes, ripples: ripples)
+                var hill = Hill(lobes: lobes, ripples: ripples, steepness: steep)
                 guard shapeHill(&hill, mountain: tall, startingLeft: Bool.random(using: &rng), claimed: claimed) else { continue }
                 let index = self.hills.count
                 for cell in hill.cells { hillOf[cell] = index }

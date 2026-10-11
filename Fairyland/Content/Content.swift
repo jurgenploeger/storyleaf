@@ -454,7 +454,12 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let height: Double?
         /// Ranges that each rise to a mountain: one summit far taller and wider than the rest.
         let mountains: Mountains?
-        /// The tile showing through in patches on their steepest slopes (none when not given).
+        /// How rocky they are, 0 (grassy slopes) to 1 (steep, rock showing all over them and boulders on
+        /// their sides). Without it, from the levels of the monsters met there: the more dangerous
+        /// the map, the rockier.
+        let rocky: Double?
+        /// The tile showing through on their slopes, the more the rockier they are (scree when not
+        /// given, and none on grassy ones).
         let bank: String?
 
         nonisolated struct Mountains: Decodable, Sendable {

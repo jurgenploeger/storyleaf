@@ -274,7 +274,7 @@ for map_def in maps.values():
     if "hills" in theme:
         hills = theme["hills"]
         where = f"map {map_def['id']} hills"
-        known = {"count", "size", "chain", "height", "mountains", "bank"}
+        known = {"count", "size", "chain", "height", "mountains", "rocky", "bank"}
         check(set(hills) <= known, f"{where} → unknown keys {set(hills) - known}")
         check(not map_def.get("town") and "cave" not in theme, f"{where} → only out in the fields (not towns or caves)")
         check(isinstance(hills.get("count"), int) and 1 <= hills["count"] <= 20, f"{where} → count must be a whole number from 1 to 20")
@@ -282,6 +282,7 @@ for map_def in maps.values():
         check(isinstance(size, list) and len(size) == 2 and all(isinstance(v, int) for v in size) and 2 <= size[0] <= size[1] <= 12,
               f"{where} → size must be [smallest, biggest] radius in cells, 2 to 12")
         check(isinstance(hills.get("height", 44), (int, float)) and 16 <= hills.get("height", 44) <= 64, f"{where} → height must be 16 to 64 points")
+        check(isinstance(hills.get("rocky", 0), (int, float)) and 0 <= hills.get("rocky", 0) <= 1, f"{where} → rocky must be 0 to 1")
         chain = hills.get("chain", [2, 4])
         check(isinstance(chain, list) and len(chain) == 2 and all(isinstance(v, int) for v in chain) and 1 <= chain[0] <= chain[1] <= 6,
               f"{where} → chain must be [fewest, most] summits a range, 1 to 6")

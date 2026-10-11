@@ -134,7 +134,7 @@ struct ContentTests {
         }
     }
 
-    @Test func hillsRiseWithATrailUp() {
+    @Test func hillsRiseWithATrailUp() throws {
         let tile = WorldMap.tileSize
         for def in content.maps where def.theme.hills != nil {
             let map = WorldMap(def: def)
@@ -191,6 +191,12 @@ struct ContentTests {
                 }
             }
         }
+        // The more dangerous the map, the rockier and steeper its hills: grassy slopes in the meadow,
+        // crags where the monsters are strongest.
+        let meadow = WorldMap(def: try #require(content.map("sunny_meadow")))
+        let steppe = WorldMap(def: try #require(content.map("secret_plain")))
+        #expect(meadow.rockiness == 0 && steppe.rockiness == 1)
+        #expect(meadow.hills.allSatisfy { $0.steepness < steppe.hills.first?.steepness ?? 0 })
         // A town's terraces stand up too, their stairs climbing to the top.
         for def in content.maps where def.town?.terraces?.isEmpty == false {
             let map = WorldMap(def: def)

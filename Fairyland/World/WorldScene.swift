@@ -199,6 +199,7 @@ final class WorldScene: SKScene {
             self.startDuel(with: rival)
         }
         placeFairyRings()
+        placeOutcrops()
         placeProps()
         placeSignposts()
         placeBarricades()
@@ -384,13 +385,16 @@ final class WorldScene: SKScene {
                 { cell in picture("\(id)#\(Self.variant(of: cell))") { self.art.tileVariant(id, Self.variant(of: cell)) } }
             }
             let palette = theme.palette
+            // Rock shows on the slopes of all but the gentlest hills: the map's own bank, or scree.
+            let rock: String? = theme.hills?.bank ?? (map.rockiness >= 0.2 ? "tile_scree" : nil)
             let look = HillArt.Look(
                 ground: { cell in
                     let pick = picks[cell.row * self.map.columns + cell.col]
                     return picture("\(ObjectIdentifier(pick.group).hashValue)") { pictures[ObjectIdentifier(pick.group)] }
                 },
                 trail: tiles(theme.path),
-                bank: theme.hills?.bank.map(tiles),
+                bank: rock.map(tiles),
+                rocky: map.rockiness,
                 variation: variation?.texture?.cgImage(),
                 mapSize: (map.columns, map.rows),
                 shadow: Lighting.rgb(palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
@@ -775,6 +779,26 @@ final class WorldScene: SKScene {
             npcs.append((npc, node, marker))
         }
         updateNotices()
+    }
+
+    /// Boulders on the slopes of rocky hills (`WorldMap.rockiness`), the more the rockier: the
+    /// map's own rocks (its props named for a boulder or rock), on the steeper cells, off the trails.
+    /// Grassy hills on the gentlest maps get none.
+    private func placeOutcrops() {
+        let rocky = map.rockiness
+        guard rocky >= 0.3, !map.hills.isEmpty else { return }
+        var kinds = def.theme.props.map(\.art).filter { $0.contains("boulder") || $0.hasSuffix("rock") }
+        if kinds.isEmpty { kinds = ["boulder", "small_boulder"] }
+        var rocks = SeededRandom(text: def.id + "/outcrops")
+        for hill in map.hills {
+            for cell in hill.cells.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }) {
+                guard map.rise(across: cell) >= 6, map.isFreeForScenery(cell),
+                      Double.random(in: 0..<1, using: &rocks) < 0.08 * rocky else { continue }
+                let sprite = art.sprite(kinds[Int.random(in: 0..<kinds.count, using: &rocks)])
+                map.occupy(cell, blocking: true)
+                addScenery(sprite, at: cell, jitter: true, scale: CGFloat.random(in: 0.7...1.1, using: &rocks))
+            }
+        }
     }
 
     /// Scenery from the theme. Props with `cluster` grow in groves around a random centre.

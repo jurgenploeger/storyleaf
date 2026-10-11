@@ -18,8 +18,11 @@ enum HillArt {
         let ground: (GridPoint) -> CGImage?
         /// The trail's tile pictures by cell (the map's road).
         let trail: (GridPoint) -> CGImage?
-        /// What shows through on its steepest slopes, by cell (none when the map doesn't say).
+        /// The rock (or sand, or chocolate) showing through on its slopes, by cell, if any.
         let bank: ((GridPoint) -> CGImage?)?
+        /// How rocky the map's hills are (`WorldMap.rockiness`): the rockier, the more of the bank
+        /// shows, further down the slopes, and the deeper the shade.
+        let rocky: Double
         /// The soft colour patches over the map's whole ground: a pixel a cell, north at the top.
         let variation: CGImage?
         let mapSize: (columns: Int, rows: Int)
@@ -74,7 +77,7 @@ enum HillArt {
         let up = 36 * Double.pi / 180
         let toward = (x: -0.6, y: 1.0), length = (0.36 + 1.0).squareRoot()
         let sun = (x: toward.x / length * cos(up), y: toward.y / length * cos(up), z: sin(up))
-        let ambient = 0.45
+        let ambient = 0.45 - 0.1 * look.rocky
         let flat = ambient + (1 - ambient) * sun.z
         let deepest = max(look.shadow.r, look.shadow.g, look.shadow.b, 0.01)
         let tint = (look.shadow.r / deepest, look.shadow.g / deepest, look.shadow.b / deepest)
@@ -113,11 +116,14 @@ enum HillArt {
                 // The foot tucked in a little darker.
                 if s < 0.3 { shade *= 1 - 0.08 * sin(Double.pi * s / 0.3) }
                 light[j * sw + i] = Float(shade)
-                // The bank shows through in ragged patches where it's steepest, but not by a trail.
+                // The bank shows through in ragged patches where it's steepest, but not by a trail: on
+                // gentle hills only at the steepest, on rocky ones down most of the slope and solid.
                 guard look.bank != nil, s > 0 else { continue }
                 let slope = (gx * gx + gy * gy).squareRoot()
                 let ragged = sin(x * 2.3 + 1.1) * sin(y * 1.9 + 0.3) * 0.5 + sin(x * 5.1) * sin(y * 4.7 + 2) * 0.3
-                var amount = min(1, max(0, (slope / WorldMap.Hill.steepest - 0.72 + ragged * 0.15) / 0.12)) * 0.75
+                let from = 0.75 - 0.45 * look.rocky, solid = 0.75 + 0.25 * look.rocky
+                let sheer = slope / hill.steepness + ragged * (0.15 + 0.15 * look.rocky)
+                var amount = min(1, max(0, (sheer - from) / 0.12)) * solid
                 if amount > 0 { amount *= min(1, max(0, (trailDistance - 0.55) / 0.3)) }
                 for channel in 0..<4 { bare[index + channel] = UInt8(amount * 255) }
             }

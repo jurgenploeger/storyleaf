@@ -18,14 +18,15 @@ extension WorldMap {
             let band: Double
             private let cosine, sine: Double
 
-            init(x: Double, y: Double, along: Double, across: Double, angle: Double, peak: Double) {
+            /// `steepness`: its range's (`Hill.steepness`).
+            init(x: Double, y: Double, along: Double, across: Double, angle: Double, peak: Double, steepness: Double) {
                 self.x = x
                 self.y = y
                 self.along = along
                 self.across = across
                 self.angle = angle
                 self.peak = peak
-                band = max(3, 1.5 * peak / Hill.steepest)
+                band = max(3, 1.5 * peak / steepness)
                 cosine = cos(angle)
                 sine = sin(angle)
             }
@@ -48,6 +49,9 @@ extension WorldMap {
         let ripples: [(fx: Double, px: Double, fy: Double, py: Double)]
         /// How high its highest top stands, in points.
         let peak: CGFloat
+        /// How steep its summits' sides get halfway up, at most, in points a cell
+        /// (`steepness(rockiness:)`).
+        let steepness: Double
         /// Its trails: the first from the ground in front, then one up its mountain.
         var trails: [Trail] = []
         /// The cells it rises over.
@@ -58,14 +62,19 @@ extension WorldMap {
         var size = (columns: 0, rows: 0)
         var heights: [Float] = []
         static let samples = 4
-        /// How steep a summit's sides get halfway up, at most, in points a cell. The view looks down
-        /// at 30°, so ground facing away from you would drop out of sight past about 22 points a cell
-        /// (going diagonally); this leaves room for the ripples and where summits meet.
-        static let steepest: Double = 13
 
-        init(lobes: [Lobe], ripples: [(fx: Double, px: Double, fy: Double, py: Double)]) {
+        /// How steep a range's sides get halfway up, at most, in points a cell: gentle slopes on the
+        /// easiest maps (10), steep and rocky on the most dangerous (14). The view looks down at 30°,
+        /// so ground facing away from you would drop out of sight past about 22 points a cell (going
+        /// diagonally); this leaves room for the ripples and where summits meet.
+        static func steepness(rockiness: Double) -> Double {
+            10 + 4 * min(1, max(0, rockiness))
+        }
+
+        init(lobes: [Lobe], ripples: [(fx: Double, px: Double, fy: Double, py: Double)], steepness: Double) {
             self.lobes = lobes
             self.ripples = ripples
+            self.steepness = steepness
             peak = CGFloat(lobes.map(\.peak).max() ?? 0)
         }
 
