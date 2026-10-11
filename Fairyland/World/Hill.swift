@@ -49,6 +49,9 @@ extension WorldMap {
         let ripples: [(fx: Double, px: Double, fy: Double, py: Double)]
         /// How high its highest top stands, in points.
         let peak: CGFloat
+        /// How high the ground really stands at its highest, from its samples: where two summits'
+        /// tops meet it can stand up to a fifth over `peak`.
+        var highest: CGFloat = 0
         /// How steep its summits' sides get halfway up, at most, in points a cell
         /// (`steepness(rockiness:)`).
         let steepness: Double

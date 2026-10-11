@@ -202,7 +202,7 @@ final class WorldMap {
         if !hills.isEmpty {
             // A hill is never steeper than the view (`Hill.Lobe.band`), so going up the screen the ground
             // under it only ever rises: exactly one ground point lands on the spot. Found by halving.
-            var low = point.y - (hills.map(\.peak).max() ?? 0) - 1, high = point.y
+            var low = point.y - (hills.map(\.highest).max() ?? 0) - 1, high = point.y
             for _ in 0..<24 {
                 let middle = (low + high) / 2
                 if middle + height(at: CGPoint(x: point.x, y: middle)) > point.y { high = middle } else { low = middle }
@@ -1168,6 +1168,7 @@ final class WorldMap {
                 hill.heights[j * width + i] = Float(hill.shape(Double(low.col) + Double(i) / Double(samples), Double(low.row) + Double(j) / Double(samples)))
             }
         }
+        hill.highest = CGFloat(hill.heights.max() ?? 0)
         // Its trails, the easy way up (you can climb it anywhere): from the ground in front up the
         // nearest summit with room for one, and up the mountain too if that wasn't it. Each is never
         // steeper than a comfortable walk and keeps clear of the other. They face you: up the front,

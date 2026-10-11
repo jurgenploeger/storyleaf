@@ -225,8 +225,9 @@ enum HillArt {
         }
 
         // Its heights, as a picture the shader reads (smoothly between samples, like
-        // `Hill.height(atCells:_:)`): 255ths of its peak in red, and what's left over in green.
-        let peak = max(hill.peak, 1)
+        // `Hill.height(atCells:_:)`): 255ths of its highest in red, and what's left over in green.
+        // Not of its peak: where summits meet the ground stands higher, and would be cut off.
+        let peak = max(hill.highest, 1)
         var levels = [UInt8](repeating: 0, count: lattice.columns * lattice.rows * 4)
         for j in 0..<lattice.rows {
             for i in 0..<lattice.columns {

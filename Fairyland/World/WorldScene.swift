@@ -1602,6 +1602,15 @@ final class WorldScene: SKScene {
 
         player.zPosition = -player.position.y
         if let follower { follower.zPosition = -follower.position.y }
+        // Up onto the ground under them: their spot is set before they join the map, and a walker
+        // only rises with the ground as it moves on it, so one starting on a hill stood sunk in it
+        // (behind its slope) till it took a step. Cheap when nothing's changed.
+        player.settle()
+        follower?.settle()
+        for ally in allies {
+            ally.node.settle()
+            ally.pet?.settle()
+        }
         lantern?.follow(player.position)
         if let sky {
             sky.update(dt)
