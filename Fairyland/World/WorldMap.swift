@@ -978,11 +978,18 @@ final class WorldMap {
         plateaus.append(plateau)
     }
 
+    /// How a range's trails wind (`Hill.traceTrail`): the angle their feet aim at (round the front),
+    /// which way round they go first, how much further round than they need, and how they bend.
+    private struct Winding {
+        let aim, way, stretch, phase: Double
+        let bends: Int
+    }
+
     /// Ranges of grassy hills out in the fields (`theme.hills`, `Hill`): summits one after another
     /// along a wandering line, melted together, off the roads and water and clear of buildings,
     /// people, the arrivals and each other. Mountains first, each the tallest and widest summit of
-    /// its range. You can walk up them anywhere, and trails zig-zag up the sides facing you, the easy
-    /// way up; scenery grows on them like anywhere else.
+    /// its range. You can walk up them anywhere, and trails wind up round their sides from the side
+    /// facing you, the easy way up; scenery grows on them like anywhere else.
     private func raiseHills(_ hills: MapDef.Hills, _ rng: inout SeededRandom) {
         let sizes = hills.size ?? [3, 6]
         let smallest = Double(max(2, sizes.first ?? 3)), biggest = Double(max(sizes.first ?? 3, sizes.last ?? 6))
@@ -1044,7 +1051,14 @@ final class WorldMap {
                      fy: Double.random(in: 0.4...1, using: &rng), py: Double.random(in: 0..<6.3, using: &rng))
                 }
                 var hill = Hill(lobes: lobes, ripples: ripples, steepness: steep)
-                guard shapeHill(&hill, mountain: tall, startingLeft: Bool.random(using: &rng), claimed: claimed) else { continue }
+                // How its trails wind: from where on its front, which way round, how far and how
+                // they bend, its own.
+                let winding = Winding(aim: 1.25 * Double.pi + Double.random(in: -0.35...0.35, using: &rng),
+                                      way: Bool.random(using: &rng) ? 1 : -1,
+                                      stretch: Double.random(in: 1...1.3, using: &rng),
+                                      phase: Double.random(in: 0..<(2 * Double.pi), using: &rng),
+                                      bends: Int.random(in: 2...3, using: &rng))
+                guard shapeHill(&hill, mountain: tall, winding: winding, claimed: claimed) else { continue }
                 let index = self.hills.count
                 for cell in hill.cells { hillOf[cell] = index }
                 self.hills.append(hill)
@@ -1120,7 +1134,7 @@ final class WorldMap {
     /// all round, well inside the map's edge and off the other hills), its heights and its trails
     /// (one up its mountain, `mountain`, a summit's index, where there's room). False if it doesn't
     /// fit or there's no trail up from the ground in front.
-    private func shapeHill(_ hill: inout Hill, mountain: Int?, startingLeft: Bool, claimed: Set<GridPoint>) -> Bool {
+    private func shapeHill(_ hill: inout Hill, mountain: Int?, winding: Winding, claimed: Set<GridPoint>) -> Bool {
         // The cells any summit reaches into, with a cell to spare for the ripples.
         let reach = hill.lobes.map { max($0.along, $0.across) + 1 }
         let low = GridPoint(col: Int(zip(hill.lobes, reach).map { $0.x - $1 }.min()!.rounded(.down)),
@@ -1170,11 +1184,12 @@ final class WorldMap {
         }
         hill.highest = CGFloat(hill.heights.max() ?? 0)
         // Its trails, the easy way up (you can climb it anywhere): from the ground in front up the
-        // nearest summit with room for one, and up the mountain too if that wasn't it. Each is never
-        // steeper than a comfortable walk and keeps clear of the other. They face you: up the front,
-        // or the front left or right.
+        // nearest summit with room for one, and up the mountain too if that wasn't it, winding round
+        // their sides (`Hill.traceTrail`). Each is never steeper than a comfortable walk and keeps
+        // clear of the other. They start on the side facing you, round either way.
         let order = hill.lobes.indices.sorted { hill.lobes[$0].x + hill.lobes[$0].y < hill.lobes[$1].x + hill.lobes[$1].y }
-        let fronts = [1.25 * Double.pi, Double.pi, 1.5 * Double.pi]
+        let starts: [(offset: Double, way: Double)] = [(0, winding.way), (0, -winding.way), (-0.5, winding.way),
+                                                      (0.5, -winding.way), (-0.9, -winding.way), (0.9, winding.way)]
         var trails: [Hill.Trail] = []
         var onTrails: Set<GridPoint> = []
         /// Whether a line comes within a cell and a half of a trail already laid.
@@ -1187,20 +1202,20 @@ final class WorldMap {
             }
         }
         func climb(_ index: Int, fromGround: Bool) -> Bool {
-            for front in fronts {
-                for left in [startingLeft, !startingLeft] {
-                    guard let points = hill.traceTrail(on: index, front: front, startingLeft: left) else { continue }
-                    let path = Self.cells(along: points)
-                    // From the ground: by the heights walkers stand on (not `shape`, a hair off them),
-                    // with room to spare, so everything that asks agrees it starts there.
-                    guard path.allSatisfy({ ring.contains($0) }),
-                          !fromGround || hill.height(atCells: Double(points[0].x), Double(points[0].y)) < 0.5,
-                          hill.steepestClimb(along: points) <= 8, !crowds(points)
-                    else { continue }
-                    trails.append(Hill.Trail(lobe: index, points: points))
-                    onTrails.formUnion(path)
-                    return true
-                }
+            for start in starts {
+                guard let points = hill.traceTrail(on: index, from: winding.aim + start.offset, way: start.way,
+                                                   stretch: winding.stretch, phase: winding.phase, bends: winding.bends)
+                else { continue }
+                let path = Self.cells(along: points)
+                // From the ground: by the heights walkers stand on (not `shape`, a hair off them),
+                // with room to spare, so everything that asks agrees it starts there.
+                guard path.allSatisfy({ ring.contains($0) }),
+                      !fromGround || hill.height(atCells: Double(points[0].x), Double(points[0].y)) < 0.5,
+                      hill.steepestClimb(along: points) <= 8, !crowds(points)
+                else { continue }
+                trails.append(Hill.Trail(lobe: index, points: points))
+                onTrails.formUnion(path)
+                return true
             }
             return false
         }

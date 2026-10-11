@@ -440,7 +440,7 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
     }
 
     /// Ranges of rounded hills of the map's own ground (`WorldMap.Hill`), to walk up anywhere, with
-    /// trails zig-zagging up the sides facing you.
+    /// trails winding up round their sides from the side facing you.
     nonisolated struct Hills: Decodable, Sendable {
         /// How many ranges, besides the mountains.
         let count: Int

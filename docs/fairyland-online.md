@@ -110,9 +110,14 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   facing away never leans out of sight and a tap finds one spot. Scenery grows on them like anywhere
   (since 0.4.3; tree shadows lie on the hill). Since 0.4.5 you can walk up them anywhere, straight up the
   side too (asked for in playtesting 2026-10-11; 0.4.1 to 0.4.4 kept the steep sides blocked but for the
-  trail); a switchback trail (a leg across the side facing you for every couple of cells up, cut into the
-  slope with a shadow above and a lip below) is the easy way up, kept clear a cell either side. A `bank`
-  tile shows through in ragged patches where they're steepest.
+  trail); a trail cut into the slope (a shadow above, a lip below) is the easy way up, kept clear a cell
+  either side. Since 0.4.5 it winds up round the side as a path would (asked for in playtesting 2026-10-11:
+  not necessarily zig-zag, more like RuneScape's): from its foot on the side facing you, round one way,
+  climbing evenly and far enough round that halfway up it climbs about 5 points a cell, bending gently in
+  and out; a curve up a low hill, a sweep half round a mountain, and a single hairpin where it would go
+  most of the way round. Each range has its own aim, way round, stretch and bends (`Hill.traceTrail`);
+  0.4.1 to 0.4.4 zig-zagged in switchbacks. A `bank` tile shows through in ragged patches where they're
+  steepest.
 - Rocky or grassy by danger (ours, since 0.4.5, asked for in playtesting 2026-10-11: rocky mountains on
   dangerous maps, slopes on easy ones): `WorldMap.rockiness`, 0 to 1 from the middle of the map's
   encounter levels ((mid − 15) / 70; Sunny Meadow 0, Swan Lake 0.3, Crystal Mountain 0.9, Hidden Steppe
@@ -130,8 +135,8 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   Since 0.4.5 ranges go where every summit has room round it (`clearance`: how far each cell is from a road,
   water, a building or another hill), picked at random among the places they fit; before, random spots
   tried 120 times often found nowhere on crowded maps (Gumdrop Peaks had no mountain). The first trail climbs from the ground in
-  front; the mountain gets one of its own where there's room (front, front left or front right), never
-  steeper than a comfortable walk and clear of the other. Too big
+  front; the mountain gets one of its own where there's room, never steeper than a comfortable walk and
+  clear of the other. Too big
   to draw or sort as one picture, a range is drawn in squares of 16 cells, each shown in strips two cells
   deep up the screen, sorted just behind their back edge (`HillArt.strip(at:)`), so trees and walkers behind
   a summit are hidden by it; tree shadows are split where the strip in front begins.
