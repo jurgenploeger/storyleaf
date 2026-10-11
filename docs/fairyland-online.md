@@ -168,10 +168,17 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   its foot grassy, deeper shade (`Look.ambient` 0.25) and sunny slopes up to 30% brighter than the flat
   (`Look.brightest`; other hills go only 6%, or a ridge's sunlit side looked like the flat rock past it),
   ledges across its steep rock every 14 points up (`Look.strata`), stones strewn over it but not its
-  mouth, and the ground past that edge rock as well. Mist thickens over it from 14 cells out (13 past a ridge) to all mist 8 further, at
-  about the ground's height there, so no grass shows past it. The mouth is painted into its ground, so it
-  rises and leans with the slope: a rough arch, darker deep in, a shadow round its rim, light on its lip,
-  its darkness spilling over the road. You can walk its foot in the map; nothing grows there. 0.4.5 drew
+  mouth, and the ground past that edge rock as well. Mist thickens over it from 14 cells out (13 past a
+  ridge) to all mist 8 further, at about the ground's height there, so no grass shows past it. The mouth
+  is a doorway in the rock as wide as the road (`HillArt.doorway`): upright on the screen like a door in
+  an isometric wall, its sides straight up and its arched top leaning along the edge, 30 points tall and
+  14 more for each cell of its half-width, black inside, a rim of lighter rock edged dark round it with
+  light on its top. It's painted into the ground, each point where the ground shows that far up the
+  screen, so it stays upright whichever way the slope leans (0.4.6 painted it leaning with the slope, a
+  skewed dark patch that playtesting called weird). On the south and west it faces you too, though a
+  real one would face away up there. You can walk its foot in the map; nothing grows there; and the only
+  way out on that side is through the mouth (`WorldMap.exit(at:)`, since 0.4.7: before, any cell along
+  that edge led into the cave, even on the mountain's foot). 0.4.5 drew
   it as the cave's own rock in flat-topped walls (`CaveWalls`) with a dark arch in the face, or on the
   south and west a cleft under an arch; playtesting (2026-10-11) asked for a slope instead of flat tops
   and walls, and for no grass past it. How FO showed its cave entrances isn't in any source reachable

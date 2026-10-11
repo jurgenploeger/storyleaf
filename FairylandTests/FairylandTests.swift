@@ -146,11 +146,15 @@ struct ContentTests {
                 let last = GridPoint(col: Int((mouth.x - mouth.into.x * 0.5).rounded(.down)),
                                      row: Int((mouth.y - mouth.into.y * 0.5).rounded(.down)))
                 #expect(map.ground[last.row][last.col] == .path && map.isWalkable(last), "map \(def.id): the road doesn't reach the cave's mouth")
+                // The only way out on that side is through the mouth: the rest of the edge is the mountain.
+                let length = exit.edge == .north || exit.edge == .south ? map.columns : map.rows
+                #expect(map.exit(at: last)?.to == exit.to, "map \(def.id): the cave's mouth doesn't lead into \(exit.to)")
+                let ways = (0..<length).filter { map.exit(at: map.cell(on: exit.edge, along: $0, inward: 0))?.to == exit.to }
+                #expect(ways.count <= Int(2 * mouth.half) + 1, "map \(def.id): \(ways.count) cells along its edge lead into \(exit.to)")
                 // Partway up a slope, so it shows: not up in the air, and the hill rising behind it.
                 #expect(height(out: 0) < 70, "map \(def.id): the cave's mouth stands \(height(out: 0)) up")
                 #expect(height(out: mouth.depth) - height(out: 0) > 10, "map \(def.id): the cave's mouth is on the flat")
                 // It runs along the whole side: the ground just past the edge rises nearly all along it.
-                let length = exit.edge == .north || exit.edge == .south ? map.columns : map.rows
                 let spots = Array(stride(from: 0, to: length, by: 3))
                 let raised = spots.filter { along in
                     let cell = map.cell(on: exit.edge, along: along, inward: -3)

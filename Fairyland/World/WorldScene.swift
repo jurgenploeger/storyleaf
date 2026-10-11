@@ -1890,14 +1890,14 @@ final class WorldScene: SKScene {
         }
     }
 
-    /// The last few steps toward an open road out fade to black.
+    /// The last few steps toward an open road out fade to black (into a cave, only toward its mouth).
     private func updateEdgeFade(_ dt: TimeInterval) {
         let cell = map.cell(at: player.position)
         let fadeCells = 4
         var target: CGFloat = 0
         for exit in def.exits where session.canTravel(exit) {
             let distance = map.distance(from: cell, to: exit.edge)
-            guard distance < fadeCells else { continue }
+            guard distance < fadeCells, map.isBeforeWayOut(cell, through: exit.edge, give: 1) else { continue }
             target = max(target, CGFloat(fadeCells - distance) / CGFloat(fadeCells) * 0.75)
         }
         if hasLeft { target = 0.85 }

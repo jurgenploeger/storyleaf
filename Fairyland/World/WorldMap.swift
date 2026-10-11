@@ -281,16 +281,26 @@ final class WorldMap {
 
     // MARK: Exits
 
-    /// The exit edge `cell` touches, if any — step on the outermost row of an exit to leave.
+    /// The exit edge `cell` touches, if any — step on the outermost row of an exit to leave. Where
+    /// a road leads into a cave, only in its mouth: the rest of that edge is the mountain.
     func exit(at cell: GridPoint) -> MapDef.Exit? {
         def.exits.first { exit in
-            switch exit.edge {
+            let onEdge = switch exit.edge {
             case .north: cell.row == rows - 1
             case .south: cell.row == 0
             case .east: cell.col == columns - 1
             case .west: cell.col == 0
             }
+            return onEdge && isBeforeWayOut(cell, through: exit.edge)
         }
+    }
+
+    /// Whether `cell` is across from the way out through `edge`, give or take `give` cells along
+    /// it: anywhere along most edges, but where a road leads into a cave, only before its mouth.
+    func isBeforeWayOut(_ cell: GridPoint, through edge: Edge, give: Double = 0) -> Bool {
+        guard let crag = crags.first(where: { $0.edge == edge }), let mouth = hills[crag.hill].mouth else { return true }
+        let dx = Double(cell.col) + 0.5 - mouth.x, dy = Double(cell.row) + 0.5 - mouth.y
+        return abs(dx * mouth.along.x + dy * mouth.along.y) < mouth.half + give
     }
 
     /// How many cells `cell` is from the edge of `exit` (0 = standing on the way out).
@@ -981,7 +991,7 @@ final class WorldMap {
         }
         hill.highest = CGFloat(hill.heights.max() ?? 0)
         let mouth = point(middle, 0)
-        hill.mouth = Hill.Mouth(x: mouth.x, y: mouth.y, along: along, into: out, half: Double(road.count) / 2 + 0.7, depth: 2)
+        hill.mouth = Hill.Mouth(x: mouth.x, y: mouth.y, along: along, into: out, half: Double(road.count) / 2 + 0.3, depth: 2)
         // Nothing grows on its foot in the map, and no pond or other hill goes there.
         for cell in cells where contains(cell) {
             occupy(cell, blocking: false)

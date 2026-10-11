@@ -206,6 +206,9 @@ enum HillArt {
             for dr in -1...1 { for dc in -1...1 { worn.insert(GridPoint(col: cell.col + dc, row: cell.row + dr)) } }
         }
 
+        // A cave's mouth, standing upright on the screen however its slope leans.
+        let doorway = hill.mouth.map { mouth in Self.doorway(mouth, height: { x, y in Double(hill.height(atCells: x, y)) }) }
+
         // The pictures, a square of cells at a time, all drawn in the range's own pixels (from its
         // corner, `low`).
         let whole = CGRect(x: 0, y: 0, width: CGFloat(columns) * scale, height: CGFloat(rows) * scale)
@@ -275,7 +278,7 @@ enum HillArt {
             }
             shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint,
                   brightest: Float(look.brightest))
-            if let mouth = hill.mouth { Self.cave(mouth, in: context, at: { spot($0) }) }
+            if let doorway { Self.cave(doorway, in: context, at: { spot($0) }) }
             if let outline {
                 context.setBlendMode(.destinationIn)
                 context.draw(outline, in: whole)
@@ -522,63 +525,99 @@ enum HillArt {
         return Double(value & 0xffff) / 65535
     }
 
-    /// A cave's mouth in a hill's side (`WorldMap.Hill.Mouth`), painted on its ground so it rises
-    /// and leans with the slope: a rough arch from the foot up into the hill, dark and darkest deep
-    /// in, a shadow round its rim and light catching its lip, and its darkness spilling a little way
-    /// out over the ground in front. `at`: a point in cells in the picture's pixels.
-    private static func cave(_ mouth: WorldMap.Hill.Mouth, in context: CGContext, at: (CGPoint) -> CGPoint) {
-        func point(_ across: Double, _ inward: Double) -> CGPoint {
-            at(CGPoint(x: mouth.x + mouth.along.x * across + mouth.into.x * inward,
-                       y: mouth.y + mouth.along.y * across + mouth.into.y * inward))
+    /// A cave's mouth (`WorldMap.Hill.Mouth`) as a doorway in the rock: its opening and the rim of
+    /// rock round it, each a rough arch over the mouth's foot, in cells.
+    struct Doorway {
+        let opening: [CGPoint]
+        let rim: [CGPoint]
+        /// Where light catches the rim's top, just inside its edge.
+        let lip: [CGPoint]
+        /// The middle of its floor and of its top, for the shade inside.
+        let floor: CGPoint
+        let top: CGPoint
+    }
+
+    /// The mouth's doorway, upright on the screen like a door in a wall, however the slope it's in
+    /// leans: its sides straight up from its foot and its top an arch leaning along the edge, the
+    /// way the map's diagonals do. The opening is 30 points tall and 14 more for each cell of its
+    /// half-width (55 over a road 3 cells wide). Painted on the ground, each point of it is where
+    /// the ground shows that far up the screen over its foot: up the map's diagonal (a cell of it
+    /// is 31 points up the screen), plus however much the ground rises or falls on the way.
+    static func doorway(_ mouth: WorldMap.Hill.Mouth, height: (Double, Double) -> Double) -> Doorway {
+        let climb = 2 * Double(WorldMap.project(CGPoint(x: WorldMap.tileSize, y: 0)).y)
+        /// The ground `up` points up the screen over the foot, `across` cells along from its middle.
+        func point(_ across: Double, _ up: Double) -> CGPoint {
+            let x = mouth.x + mouth.along.x * across, y = mouth.y + mouth.along.y * across
+            let foot = height(x, y)
+            // Ground up the screen never folds back under itself, so this only climbs.
+            var low = 0.0, high = 8.0
+            for _ in 0..<24 {
+                let t = (low + high) / 2
+                if climb * t + height(x + t, y + t) - foot < up { low = t } else { high = t }
+            }
+            let t = (low + high) / 2
+            return CGPoint(x: x + t, y: y + t)
         }
-        let space = CGColorSpaceCreateDeviceRGB()
-        // The spill: dark at the mouth, gone a cell and a half out.
-        let spill = CGMutablePath()
-        spill.addLines(between: [point(-mouth.half - 0.4, 0), point(mouth.half + 0.4, 0),
-                                 point(mouth.half + 0.9, -1.5), point(-mouth.half - 0.9, -1.5)])
-        spill.closeSubpath()
-        let fade = [UIColor(white: 0, alpha: 0.45).cgColor, UIColor(white: 0, alpha: 0).cgColor] as CFArray
-        if let gradient = CGGradient(colorsSpace: space, colors: fade, locations: [0, 1]) {
-            context.saveGState()
-            context.addPath(spill)
-            context.clip()
-            context.drawLinearGradient(gradient, start: point(0, 0), end: point(0, -1.5), options: [])
-            context.restoreGState()
+        let tall = 30 + 14 * mouth.half
+        /// Feet first, then up one side, over the top and down the other.
+        func arch(_ half: Double, _ top: Double, rough: Double) -> [CGPoint] {
+            let steps = 20, side = 0.38 * top
+            var points = [point(-half, 0)]
+            for k in 0...steps {
+                let u = Double(k) / Double(steps)
+                let bulge = max(0, 1 - (2 * u - 1) * (2 * u - 1)).squareRoot()
+                let wobble = k == 0 || k == steps ? 0 : rough * sin(Double(k) * 2.3 + 0.7)
+                points.append(point((2 * u - 1) * half, side + (top - side) * bulge + wobble))
+            }
+            points.append(point(half, 0))
+            return points
         }
-        // The arch: straight sides a little way up, then a rough round top.
-        let arch = CGMutablePath()
-        arch.move(to: point(-mouth.half, -0.1))
-        let steps = 14
-        var lip: [CGPoint] = []
-        for k in 0...steps {
-            let t = Double(k) / Double(steps)
-            let across = (2 * t - 1) * mouth.half
-            let bulge = max(0, 1 - (2 * t - 1) * (2 * t - 1)).squareRoot()
-            let rough = k == 0 || k == steps ? 0 : 0.08 * sin(Double(k) * 2.3 + 0.7)
-            let inward = mouth.depth * (0.4 + 0.6 * bulge) + rough
-            arch.addLine(to: point(across, inward))
-            lip.append(point(across * 1.06, inward + 0.12))
+        let lip = arch(mouth.half + 0.32, tall + 6.5, rough: 2.5)
+        return Doorway(opening: arch(mouth.half, tall, rough: 1), rim: arch(mouth.half + 0.45, tall + 9, rough: 2.5),
+                       lip: Array(lip[3..<(lip.count - 3)]), floor: point(0, 0), top: point(0, tall))
+    }
+
+    /// Paints a cave's doorway on a hill's ground: the rock round it a little lighter, edged dark,
+    /// light catching its top; the opening black up under its top and a little lighter at its
+    /// floor, where the road goes in. `at`: a point in cells in the picture's pixels.
+    private static func cave(_ doorway: Doorway, in context: CGContext, at: (CGPoint) -> CGPoint) {
+        func shape(_ points: [CGPoint]) -> CGPath {
+            let path = CGMutablePath()
+            path.addLines(between: points.map(at))
+            path.closeSubpath()
+            return path
         }
-        arch.addLine(to: point(mouth.half, -0.1))
-        arch.closeSubpath()
-        let deep = [UIColor(red: 0.06, green: 0.05, blue: 0.07, alpha: 0.88).cgColor,
-                    UIColor(red: 0.02, green: 0.02, blue: 0.03, alpha: 0.98).cgColor] as CFArray
+        /// Its outline over the top, not along the floor.
+        func line(_ points: [CGPoint]) -> CGPath {
+            let path = CGMutablePath()
+            path.addLines(between: points.map(at))
+            return path
+        }
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+        context.addPath(shape(doorway.rim))
+        context.setFillColor(UIColor(white: 1, alpha: 0.14).cgColor)
+        context.fillPath()
+        context.addPath(line(doorway.rim))
+        context.setStrokeColor(UIColor(white: 0, alpha: 0.45).cgColor)
+        context.setLineWidth(3)
+        context.strokePath()
+        context.addPath(line(doorway.lip))
+        context.setStrokeColor(UIColor(white: 1, alpha: 0.3).cgColor)
+        context.setLineWidth(1.5)
+        context.strokePath()
+        let inside = [UIColor(red: 0.13, green: 0.11, blue: 0.14, alpha: 1).cgColor,
+                      UIColor(red: 0.02, green: 0.02, blue: 0.03, alpha: 1).cgColor] as CFArray
         context.saveGState()
-        context.addPath(arch)
+        context.addPath(shape(doorway.opening))
         context.clip()
-        if let gradient = CGGradient(colorsSpace: space, colors: deep, locations: [0, 1]) {
-            context.drawLinearGradient(gradient, start: point(0, 0), end: point(0, mouth.depth),
+        if let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: inside, locations: [0, 0.6]) {
+            context.drawLinearGradient(gradient, start: at(doorway.floor), end: at(doorway.top),
                                        options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
         }
         context.restoreGState()
-        context.setLineCap(.round)
-        context.setLineJoin(.round)
-        context.addPath(arch)
-        context.setStrokeColor(UIColor(white: 0, alpha: 0.5).cgColor)
-        context.setLineWidth(3)
-        context.strokePath()
-        context.addLines(between: lip)
-        context.setStrokeColor(UIColor(white: 1, alpha: 0.28).cgColor)
+        context.addPath(line(doorway.opening))
+        context.setStrokeColor(UIColor(white: 0, alpha: 0.7).cgColor)
         context.setLineWidth(2)
         context.strokePath()
     }

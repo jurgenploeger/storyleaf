@@ -69,7 +69,8 @@ extension WorldMap {
         var trails: [Trail] = []
         /// A cave's mouth in its side, where a road leads into a cave (`WorldMap.raiseCrags`): its
         /// middle at the foot (in cells), which way is along the edge it's on and which way into
-        /// the hill (unit), and how far across either side and how far in it reaches (cells).
+        /// the hill (unit), how far across either side it opens (cells; the way out of the map is
+        /// only there, `WorldMap.exit(at:)`), and how far in the mountain over it stands (cells).
         nonisolated struct Mouth {
             let x, y: Double
             let along: (x: Double, y: Double)
