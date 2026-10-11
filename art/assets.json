@@ -6913,6 +6913,46 @@
       }
     },
     {
+      "id": "npc_old_ox",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_red_bull",
+        "recolor": [
+          {
+            "hue": [
+              290,
+              40
+            ],
+            "minSaturation": 0.2,
+            "to": 28,
+            "spread": 0.6,
+            "saturation": 0.55,
+            "value": 0.85
+          }
+        ]
+      }
+    },
+    {
+      "id": "npc_little_crab",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_wood_crab",
+        "recolor": [
+          {
+            "hue": [
+              60,
+              170
+            ],
+            "minSaturation": 0.2,
+            "to": 200,
+            "spread": 0.6,
+            "saturation": 0.7,
+            "value": 1.05
+          }
+        ]
+      }
+    },
+    {
       "id": "skill_bash",
       "kind": "icon"
     },

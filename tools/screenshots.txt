@@ -90,6 +90,10 @@ equip_locked | newgame,class=fighter,level=16,equip=leather_vest,bag=cloth_tunic
 gear_upgrade | newgame,class=fighter,level=40,equip=bronze_broadsword,bag=silver_sword+luna_axe+wooden_sword+cloth_tunic,menu=character | 8
 gear_find    | newgame,class=fighter,level=40,equip=bronze_broadsword,bag=silver_sword+luna_axe+wooden_sword+luna_staff+battle_axe+bronze_sword,menu=character,change=weapon | 8
 bag_find     | newgame,class=fighter,level=40,equip=bronze_broadsword,bag=silver_sword+luna_axe+wooden_sword+cloth_tunic+potion+seal_stone,menu=bag | 8
+# A quest giver with nothing left says why and points to work elsewhere; the high-level quest givers.
+quest_giver_done | newgame,class=fighter,level=103,map=swan_lake,done=wishes_of_a_duckling,npc=swan_keeper | 8
+quest_old_ox     | newgame,class=fighter,level=103,map=secret_plain,npc=old_ox | 8
+quest_little_crab | newgame,class=fighter,level=125,map=hachoo_island,npc=little_crab | 8
 skills       | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,menu=character,sub=skills | 8
 skills_learn | newgame,level=20,class=mage,menu=character,sub=skills             | 8
 boss_oak     | newgame,level=28,map=smiling_forest,at=-7_-11,npc=oak_grove    | 15

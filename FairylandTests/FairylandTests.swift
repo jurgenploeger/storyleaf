@@ -1455,6 +1455,30 @@ struct RulesTests {
         #expect(ItemFinder.arrange(weapons, search: "luna", sort: .name, session: session).map(\.id) == ["luna_axe", "luna_staff"])
     }
 
+    /// A quest giver with nothing for you says why, and where there's work: a level to reach,
+    /// someone else's quest to finish first, or all done, with who needs someone like you.
+    @Test func questGiversSayWhyAndWhereNext() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        // Too low a level for the Old Ox's first quest.
+        session.data.hero.level = 90
+        #expect(session.quests(from: "old_ox").isEmpty)
+        #expect(session.questGiverNote("old_ox") == "Come back at level 100, and I'll have something for you.")
+        // Mayor Poppy's work waits on Elder Oak's Monkey Business.
+        session.data.hero.level = 30
+        #expect(session.questGiverNote("mayor") == "Finish “Monkey Business” for Elder Oak in Meadowbrook first, and come back to me.")
+        // All the Swan Keeper had is done: the quest open to you that suits your level best is the
+        // Old Ox's, from level 100.
+        session.data.hero.level = 103
+        session.data.quests["wishes_of_a_duckling"] = QuestProgress(state: .completed, count: 0)
+        #expect(session.quests(from: "swan_keeper").isEmpty)
+        #expect(session.questGiverNote("swan_keeper") == "That's all I had for you. Thank you! Old Ox in Hidden Steppe has work for someone like you.")
+        // Every quest at the hero's level everywhere is done: the next one to open.
+        for quest in Content.shared.quests where (quest.minLevel ?? 1) <= 103 {
+            session.data.quests[quest.id] = QuestProgress(state: .completed, count: 0)
+        }
+        #expect(session.questGiverNote("swan_keeper") == "That's all I had for you. Thank you! Old Ox in Hidden Steppe will have work for you at level 106.")
+    }
+
     /// A friend's throw uses up one of their own Seal Stones, never one from your bag. Counting
     /// theirs used to trip Swift's exclusivity check and crash the fight.
     @Test func aFriendsThrowUsesTheirOwnStone() throws {

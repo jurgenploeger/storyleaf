@@ -377,6 +377,12 @@ strong as theirs or weaker: their level plus their companion's at least nine ten
 and your party's (`GameSession.dares`; our decision, 2026-10-11, at the playtester's request). Bosses never
 start a fight: you talk to them. Quests pay at least a bit more than a daily bounty for your level when
 you hand them in (`quests` in content/rewards.json; our decision, 2026-10-06, at the playtester's request).
+A quest giver with nothing for you says why (a level to reach, someone else's quest first, or all done) and
+points to the quest open to you that suits your level best, or the next to open (`GameSession.questGiverNote`,
+since 0.4.0, at the playtester's request, 2026-10-11: a level-103 hero was told to come back stronger). The
+same day closed a gap with nothing new between levels 96 and 109: the Old Ox on the Hidden Steppe (Aesop's
+four oxen and the lion; 100, 106, 114) and the Little Crab on Sneezle Isle (the Japanese tale of the monkey
+and the crab; 124, 130), both ours.
 
 **Cards (since 0.3.69):** FO's card collection, our own way, since no source we could reach says what FO's
 cards did. Every monster has one. A beaten monster leaves its card 3% of the time (rare 15%, boss 25%;

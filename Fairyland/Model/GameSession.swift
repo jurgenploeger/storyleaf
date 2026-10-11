@@ -1404,6 +1404,34 @@ final class GameSession {
         content.quests.filter { $0.giver == giver && status(of: $0) != .locked }
     }
 
+    /// What a quest giver with nothing for the hero says: why (a level to reach, someone else's
+    /// quest to finish first, or nothing left at all), and once they're all done, who has work
+    /// instead: the quest open to you now that suits your level best, or else the next to open.
+    func questGiverNote(_ giver: String) -> String {
+        let locked = content.quests.filter { $0.giver == giver && status(of: $0) == .locked }
+        let done = { (id: String) in self.data.quests[id]?.state == .completed }
+        if let level = locked.filter({ ($0.requires ?? []).allSatisfy(done) }).map({ $0.minLevel ?? 1 }).min() {
+            return L("Come back at level {level}, and I'll have something for you.", ["level": level])
+        }
+        if let first = locked.flatMap({ $0.requires ?? [] }).compactMap(content.quest).first(where: { !done($0.id) }),
+           let who = content.npc(first.giver), let place = content.home(ofNPC: first.giver) {
+            return L("Finish “{quest}” for {giver} in {place} first, and come back to me.",
+                     ["quest": first.title, "giver": who.name, "place": place.name])
+        }
+        var note = L("That's all I had for you. Thank you!")
+        let elsewhere = content.quests.filter { $0.giver != giver }
+        let opensAt = { (quest: QuestDef) in quest.minLevel ?? 1 }
+        if let now = elsewhere.filter({ status(of: $0) == .available }).max(by: { opensAt($0) < opensAt($1) }),
+           let who = content.npc(now.giver), let place = content.home(ofNPC: now.giver) {
+            note += " " + L("{giver} in {place} has work for someone like you.", ["giver": who.name, "place": place.name])
+        } else if let later = elsewhere.filter({ status(of: $0) == .locked && opensAt($0) > data.hero.level }).min(by: { opensAt($0) < opensAt($1) }),
+                  let who = content.npc(later.giver), let place = content.home(ofNPC: later.giver) {
+            note += " " + L("{giver} in {place} will have work for you at level {level}.",
+                            ["giver": who.name, "place": place.name, "level": opensAt(later)])
+        }
+        return note
+    }
+
     var activeQuests: [QuestDef] {
         content.quests.filter { data.quests[$0.id]?.state == .active }
     }
