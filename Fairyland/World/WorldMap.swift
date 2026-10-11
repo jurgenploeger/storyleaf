@@ -991,7 +991,8 @@ final class WorldMap {
                     var across = max(min(along, 4), along * Double.random(in: 0.6...0.95, using: &rng))
                     var peak = tallest * Double.random(in: 0.8...1.15, using: &rng)
                     if index == tall, let mountain {
-                        peak = mountain * Double.random(in: 0.92...1.08, using: &rng) * (attempt < 80 ? 1 : 0.85)
+                        let lower: Double = attempt < 80 ? 1 : 0.85
+                        peak = mountain * Double.random(in: 0.92...1.08, using: &rng) * lower
                         // Wide enough to climb that high and still have a top.
                         let need = 1.5 * peak / Hill.steepest / 0.75 + 1
                         along = max(along, need * Double.random(in: 1...1.2, using: &rng))
@@ -1057,9 +1058,11 @@ final class WorldMap {
         // A quick look first, before the work of sampling it all: each summit's middle and halfway
         // out, then every cell whose middle it rises over.
         for lobe in hill.lobes {
+            let turn: (cos: Double, sin: Double) = (cos(lobe.angle), sin(lobe.angle))
             for (u, v) in [(0.0, 0.0), (0.5, 0.0), (-0.5, 0.0), (0.0, 0.5), (0.0, -0.5)] {
-                let x = lobe.x + u * lobe.along * cos(lobe.angle) - v * lobe.across * sin(lobe.angle)
-                let y = lobe.y + u * lobe.along * sin(lobe.angle) + v * lobe.across * cos(lobe.angle)
+                let a: Double = u * lobe.along, b: Double = v * lobe.across
+                let x: Double = lobe.x + a * turn.cos - b * turn.sin
+                let y: Double = lobe.y + a * turn.sin + b * turn.cos
                 guard free(GridPoint(col: Int(x.rounded(.down)), row: Int(y.rounded(.down)))) else { return false }
             }
         }
@@ -1131,7 +1134,8 @@ final class WorldMap {
         func crowds(_ line: [CGPoint]) -> Bool {
             trails.contains { other in
                 let xs = other.points.map(\.x), ys = other.points.map(\.y)
-                let near = CGRect(x: xs.min()! - 1.5, y: ys.min()! - 1.5, width: xs.max()! - xs.min()! + 3, height: ys.max()! - ys.min()! + 3)
+                let left: CGFloat = xs.min()! - 1.5, bottom: CGFloat = ys.min()! - 1.5
+                let near = CGRect(x: left, y: bottom, width: xs.max()! + 1.5 - left, height: ys.max()! + 1.5 - bottom)
                 return line.contains { near.contains($0) && Hill.distance(Double($0.x), Double($0.y), to: other.points) < 1.5 }
             }
         }
@@ -1213,12 +1217,13 @@ final class WorldMap {
             return Double(hash % 1000) / 1000
         }
         // Never over a hill, but at its very foot (where a trail may start in a nook between two summits).
+        func lowland(_ cell: GridPoint) -> Bool {
+            !hillCells.contains(cell)
+                || height(atGrid: CGPoint(x: (CGFloat(cell.col) + 0.5) * Self.tileSize, y: (CGFloat(cell.row) + 0.5) * Self.tileSize)) < 2
+        }
         func open(_ cell: GridPoint) -> Bool {
             cell.col > 0 && cell.row > 0 && cell.col < columns - 1 && cell.row < rows - 1 && isWalkable(cell)
-                && ground[cell.row][cell.col] != .water && (!hillCells.contains(cell) || foot(cell))
-        }
-        func foot(_ cell: GridPoint) -> Bool {
-            height(atGrid: CGPoint(x: (CGFloat(cell.col) + 0.5) * Self.tileSize, y: (CGFloat(cell.row) + 0.5) * Self.tileSize)) < 2
+                && ground[cell.row][cell.col] != .water && lowland(cell)
         }
         // From each trail that starts on the ground (others start up on the range).
         let feet = hills.flatMap { hill in
@@ -1241,7 +1246,9 @@ final class WorldMap {
                     let step = GridPoint(col: cell.col + dc, row: cell.row + dr)
                     guard open(step) else { continue }
                     let crowded = [(1, 0), (-1, 0), (0, 1), (0, -1)].contains { !isWalkable(GridPoint(col: step.col + $0.0, row: step.row + $0.1)) }
-                    let price = spent + 1 + rough(step) * 1.5 + (crowded ? 2 : 0) + (hillCells.contains(step) ? 4 : 0)
+                    var price = spent + 1 + rough(step) * 1.5
+                    if crowded { price += 2 }
+                    if hillCells.contains(step) { price += 4 }
                     if price < cost[step] ?? .infinity {
                         cost[step] = price
                         from[step] = cell

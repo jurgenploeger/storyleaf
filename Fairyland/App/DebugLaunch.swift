@@ -534,7 +534,8 @@ enum DebugLaunch {
             if let index, grid.hills.indices.contains(index) {
                 let hill = grid.hills[index]
                 let highest = hill.trails.indices.max { hill.lobes[hill.trails[$0].lobe].peak < hill.lobes[hill.trails[$1].lobe].peak }
-                let which = flags["trail"].flatMap { Int($0) } ?? (tallest ? highest ?? 0 : 0)
+                let chosen: Int = tallest ? (highest ?? 0) : 0
+                let which = flags["trail"].flatMap { Int($0) } ?? chosen
                 if hill.trails.indices.contains(which), let foot = hill.trails[which].points.first, let top = hill.trails[which].points.last {
                     let spot = flags["ontop"] != nil ? top : foot
                     session.playerPosition = WorldMap.project(CGPoint(x: spot.x * WorldMap.tileSize, y: spot.y * WorldMap.tileSize))

@@ -154,9 +154,16 @@ enum HillArt {
             let offset = (x: (corner.col - low.col) * px, y: (corner.row - low.row) * px)
             context.translateBy(x: -CGFloat(offset.x), y: -CGFloat(offset.y))
             context.clip(to: whole)
-            let area = (corner.row..<(corner.row + square)).flatMap { row in (corner.col..<(corner.col + square)).map { GridPoint(col: $0, row: row) } }
-                .filter { $0.col >= low.col && $0.row >= low.row && $0.col < low.col + columns && $0.row < low.row + rows }
-                .filter { $0.col >= 0 && $0.row >= 0 && $0.col < look.mapSize.columns && $0.row < look.mapSize.rows }
+            // The square's cells within the range's area and the map.
+            let firstColumn = max(corner.col, low.col, 0), firstRow = max(corner.row, low.row, 0)
+            let endColumn = min(corner.col + square, low.col + columns, look.mapSize.columns)
+            let endRow = min(corner.row + square, low.row + rows, look.mapSize.rows)
+            var area: [GridPoint] = []
+            if firstColumn < endColumn, firstRow < endRow {
+                for row in firstRow..<endRow {
+                    for col in firstColumn..<endColumn { area.append(GridPoint(col: col, row: row)) }
+                }
+            }
 
             // The ground, tile by tile as the map has it.
             context.interpolationQuality = .none
@@ -250,7 +257,10 @@ enum HillArt {
         for top in stride(from: low.row, to: low.row + rows, by: square) {
             for left in stride(from: low.col, to: low.col + columns, by: square) {
                 let corner = GridPoint(col: left, row: top)
-                let own = shown.filter { $0.col >= corner.col && $0.row >= corner.row && $0.col < corner.col + square && $0.row < corner.row + square }
+                let own = shown.filter { cell in
+                    let dc = cell.col - corner.col, dr = cell.row - corner.row
+                    return dc >= 0 && dr >= 0 && dc < square && dr < square
+                }
                 guard !own.isEmpty, let picture = paint(corner) else { continue }
                 let texture = SKTexture(cgImage: picture)
                 texture.filteringMode = .nearest
@@ -304,9 +314,8 @@ enum HillArt {
                                     forAttribute: "a_box")
                     sprite.setValue(SKAttributeValue(vectorFloat4: SIMD4(Float(corner.col), Float(corner.row), Float(square), Float(square))),
                                     forAttribute: "a_area")
-                    sprite.setValue(SKAttributeValue(vectorFloat4: SIMD4(Float(CGFloat(from) * depthStep), Float(CGFloat(to) * depthStep),
-                                                                         lift.low - 0.5, lift.high + 0.5)),
-                                    forAttribute: "a_band")
+                    let reach: SIMD4<Float> = [Float(CGFloat(from) * depthStep), Float(CGFloat(to) * depthStep), lift.low - 0.5, lift.high + 0.5]
+                    sprite.setValue(SKAttributeValue(vectorFloat4: reach), forAttribute: "a_band")
                     sprites.append(sprite)
                 }
             }

@@ -152,10 +152,14 @@ extension WorldMap {
             var way: Double = startingLeft ? 1 : -1
             // The foot, where the first leg starts.
             let start = front - spread * way
+            let out = (x: cos(start), y: sin(start))
             var reach = 0.0
-            while lobe.depth(cx + reach * cos(start), cy + reach * sin(start)) + ripple(cx + reach * cos(start), cy + reach * sin(start)) > 0.02,
-                  reach < 80 { reach += 0.05 }
-            var x = cx + reach * cos(start), y = cy + reach * sin(start)
+            while reach < 80 {
+                let px = cx + reach * out.x, py = cy + reach * out.y
+                guard lobe.depth(px, py) + ripple(px, py) > 0.02 else { break }
+                reach += 0.05
+            }
+            var x = cx + reach * out.x, y = cy + reach * out.y
             // A short way in from the ground, straight up the slope.
             let up = uphill(of: index, x, y)
             var points = stride(from: 5, through: 1, by: -1).map { CGPoint(x: x - up.x * 0.12 * Double($0), y: y - up.y * 0.12 * Double($0)) }
