@@ -3693,6 +3693,618 @@
       "wear": "vest",
       "pattern": "pockets",
       "accent": "#F2C230"
+    },
+    {
+      "id": "flame_fleece_vest",
+      "icon": "shield-heart",
+      "art": "item_flame_fleece_vest",
+      "name": "Flame-Fleece Vest",
+      "type": "armor",
+      "price": 520,
+      "stats": {
+        "defense": 10,
+        "hp": 30,
+        "magic": 2
+      },
+      "level": 21,
+      "description": "Spun from the flame sheep's fleece. Warm as toast, and it never catches fire.",
+      "wear": "vest",
+      "pattern": "fur",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 24,
+          "saturation": 0.9,
+          "value": 1.05
+        }
+      ],
+      "accent": "#FFD27A"
+    },
+    {
+      "id": "howlmaster_mantle",
+      "icon": "shield-heart",
+      "art": "item_howlmaster_mantle",
+      "name": "Howlmaster's Mantle",
+      "type": "armor",
+      "price": 900,
+      "stats": {
+        "defense": 15,
+        "hp": 30,
+        "speed": 3
+      },
+      "level": 32,
+      "description": "The Howlmaster's silver-grey pelt. Wolves still lower their heads to it.",
+      "wear": "cloak",
+      "sheets": {
+        "human": "armor_ranger_cloak_human",
+        "elf": "armor_ranger_cloak_elf",
+        "dwarf": "armor_ranger_cloak_dwarf"
+      },
+      "pattern": "fur",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 220,
+          "saturation": 0.2,
+          "value": 0.8
+        }
+      ],
+      "tint": [
+        {
+          "hue": [
+            70,
+            170
+          ],
+          "minSaturation": 0.2,
+          "to": 220,
+          "saturation": 0.25,
+          "value": 0.95
+        }
+      ],
+      "accent": "#C0C8D8"
+    },
+    {
+      "id": "puppeteers_coat",
+      "icon": "shield-plus",
+      "art": "item_puppeteers_coat",
+      "name": "Puppeteer's Coat",
+      "type": "armor",
+      "price": 2300,
+      "stats": {
+        "defense": 24,
+        "hp": 50,
+        "speed": 4
+      },
+      "level": 56,
+      "description": "Cut from the Marionette King's stage curtains. Light on the shoulders, and no strings attached.",
+      "wear": "mail",
+      "pattern": "runes",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 300,
+          "saturation": 0.6,
+          "value": 0.8
+        }
+      ],
+      "accent": "#F2C230"
+    },
+    {
+      "id": "briar_rose_robe",
+      "icon": "shield-star",
+      "art": "item_briar_rose_robe",
+      "name": "Briar Rose Robe",
+      "type": "armor",
+      "price": 3300,
+      "stats": {
+        "defense": 24,
+        "magic": 12,
+        "mp": 18
+      },
+      "level": 72,
+      "description": "Woven with the roses that grew round the sleeping castle. It still smells of summer.",
+      "wear": "robe",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 340,
+          "saturation": 0.7,
+          "value": 1.05
+        }
+      ],
+      "accent": "#7FD07F"
+    },
+    {
+      "id": "woodcutters_coat",
+      "icon": "shield-heart",
+      "art": "item_woodcutters_coat",
+      "name": "Woodcutter's Coat",
+      "type": "armor",
+      "price": 3900,
+      "stats": {
+        "defense": 34,
+        "hp": 80
+      },
+      "level": 82,
+      "description": "The woodcutter's own red coat, patched at the elbows. It has seen off a wolf or two.",
+      "wear": "vest",
+      "pattern": "pockets",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 356,
+          "saturation": 0.85,
+          "value": 0.7
+        }
+      ],
+      "accent": "#E8C04A"
+    },
+    {
+      "id": "oxhide_mail",
+      "icon": "shield-plus",
+      "art": "item_oxhide_mail",
+      "name": "Oxhide Mail",
+      "type": "armor",
+      "price": 6000,
+      "stats": {
+        "defense": 38,
+        "hp": 100,
+        "attack": 4
+      },
+      "level": 100,
+      "description": "Four oxen's worth of courage, hammered into plates. Stand together and no lion can touch you.",
+      "wear": "plate",
+      "sheets": {
+        "human": "armor_iron_plate_human",
+        "elf": "armor_iron_plate_elf",
+        "dwarf": "armor_iron_plate_dwarf"
+      },
+      "pattern": "engraved",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 26,
+          "saturation": 0.55,
+          "value": 0.7
+        }
+      ],
+      "tint": [
+        {
+          "hue": [
+            170,
+            250
+          ],
+          "minSaturation": 0.05,
+          "to": 26,
+          "saturation": 2.2,
+          "value": 0.85
+        }
+      ],
+      "accent": "#E8C04A"
+    },
+    {
+      "id": "lioras_veil",
+      "icon": "shield-star",
+      "art": "item_lioras_veil",
+      "name": "Liora's Veil",
+      "type": "armor",
+      "price": 7200,
+      "stats": {
+        "defense": 32,
+        "magic": 18,
+        "mp": 24
+      },
+      "level": 110,
+      "description": "A goddess's veil from the deepest vault of her ruins. The runes on its hem still glow.",
+      "wear": "robe",
+      "pattern": "runes",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 48,
+          "saturation": 0.35,
+          "value": 1.25
+        }
+      ],
+      "accent": "#9AD8FF"
+    },
+    {
+      "id": "wavecrest_scale_mail",
+      "icon": "shield-plus",
+      "art": "item_wavecrest_scale_mail",
+      "name": "Wavecrest Scale Mail",
+      "type": "armor",
+      "price": 12500,
+      "stats": {
+        "defense": 48,
+        "hp": 130,
+        "speed": 5
+      },
+      "level": 155,
+      "description": "Scales the Wavecrest Dragon shed, cool and shimmering like the sea at dawn.",
+      "wear": "plate",
+      "sheets": {
+        "human": "armor_dragon_mail_human",
+        "elf": "armor_dragon_mail_elf",
+        "dwarf": "armor_dragon_mail_dwarf"
+      },
+      "pattern": "scales",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 184,
+          "saturation": 0.95,
+          "value": 0.8
+        }
+      ],
+      "tint": [
+        {
+          "hue": [
+            335,
+            20
+          ],
+          "minSaturation": 0.55,
+          "to": 184,
+          "value": 1.05
+        }
+      ],
+      "accent": "#E8F6FF"
+    },
+    {
+      "id": "emerald_dragon_mail",
+      "icon": "shield-plus",
+      "art": "item_emerald_dragon_mail",
+      "name": "Emerald Dragon Mail",
+      "type": "armor",
+      "price": 18000,
+      "stats": {
+        "defense": 56,
+        "hp": 160,
+        "attack": 8,
+        "magic": 8
+      },
+      "level": 190,
+      "description": "Forged from the Emerald Dragon's scales at the end of the road. There is none finer.",
+      "wear": "plate",
+      "sheets": {
+        "human": "armor_dragon_mail_human",
+        "elf": "armor_dragon_mail_elf",
+        "dwarf": "armor_dragon_mail_dwarf"
+      },
+      "pattern": "scales",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 140,
+          "saturation": 0.95,
+          "value": 0.75
+        }
+      ],
+      "tint": [
+        {
+          "hue": [
+            335,
+            20
+          ],
+          "minSaturation": 0.55,
+          "to": 140
+        }
+      ],
+      "accent": "#F2C230"
+    },
+    {
+      "id": "bunny_hop_boots",
+      "icon": "wind",
+      "art": "item_bunny_hop_boots",
+      "name": "Bunny-Hop Boots",
+      "type": "boots",
+      "price": 300,
+      "stats": {
+        "speed": 4,
+        "defense": 3
+      },
+      "level": 14,
+      "description": "Soft and springy, like the Bouncy Buns you chased off. Every step is a little hop."
+    },
+    {
+      "id": "marquis_boots",
+      "icon": "wind",
+      "art": "item_marquis_boots",
+      "name": "Marquis's Boots",
+      "type": "boots",
+      "price": 2000,
+      "stats": {
+        "speed": 9,
+        "defense": 5
+      },
+      "level": 55,
+      "description": "Puss's second-best pair, fit for a marquis. Tall, proud and very quick."
+    },
+    {
+      "id": "moonbeam_slippers",
+      "icon": "wind",
+      "art": "item_moonbeam_slippers",
+      "name": "Moonbeam Slippers",
+      "type": "boots",
+      "price": 5600,
+      "stats": {
+        "speed": 12,
+        "defense": 8,
+        "mp": 6
+      },
+      "level": 95,
+      "description": "The moon rabbits' dancing slippers. They hardly touch the ground."
+    },
+    {
+      "id": "silverfang_boots",
+      "icon": "wind",
+      "art": "item_silverfang_boots",
+      "name": "Silverfang Boots",
+      "type": "boots",
+      "price": 15000,
+      "stats": {
+        "speed": 19,
+        "defense": 14,
+        "hp": 30
+      },
+      "level": 170,
+      "description": "Shod in the Silverfang Warden's own steel. They ring like bells on stone."
+    },
+    {
+      "id": "bricklayers_gloves",
+      "icon": "sword",
+      "art": "item_bricklayers_gloves",
+      "name": "Bricklayer's Gloves",
+      "type": "gloves",
+      "price": 280,
+      "stats": {
+        "attack": 4,
+        "defense": 5
+      },
+      "level": 14,
+      "description": "The third little pig's work gloves. Built to last, like a house of bricks."
+    },
+    {
+      "id": "netcutter_gloves",
+      "icon": "sword",
+      "art": "item_netcutter_gloves",
+      "name": "Netcutter Gloves",
+      "type": "gloves",
+      "price": 800,
+      "stats": {
+        "attack": 8,
+        "speed": 3
+      },
+      "level": 35,
+      "description": "Light, nimble gloves from the brave little mouse. Quick enough to slip any net."
+    },
+    {
+      "id": "craghulk_gauntlets",
+      "icon": "sword",
+      "art": "item_craghulk_gauntlets",
+      "name": "Craghulk Gauntlets",
+      "type": "gloves",
+      "price": 4200,
+      "stats": {
+        "attack": 15,
+        "defense": 10,
+        "hp": 30
+      },
+      "level": 80,
+      "description": "Carved from the Craghulk's own stone fists. Heavy, and very hard to argue with."
+    },
+    {
+      "id": "sneezle_ore_gauntlets",
+      "icon": "sword",
+      "art": "item_sneezle_ore_gauntlets",
+      "name": "Sneezle-Ore Gauntlets",
+      "type": "gloves",
+      "price": 9000,
+      "stats": {
+        "attack": 20,
+        "defense": 13,
+        "hp": 40
+      },
+      "level": 120,
+      "description": "Hammered from the rarest ore on Sneezle Isle. They tingle, like a sneeze on its way."
+    },
+    {
+      "id": "wisp_light_pendant",
+      "icon": "gem",
+      "art": "item_wisp_light_pendant",
+      "name": "Wisp-Light Pendant",
+      "type": "necklace",
+      "price": 420,
+      "stats": {
+        "magic": 4,
+        "mp": 10,
+        "hp": 10
+      },
+      "level": 18,
+      "description": "A little wisp-light caught in glass. Willow says it'll always find the way home."
+    },
+    {
+      "id": "swallow_feather_necklace",
+      "icon": "gem",
+      "art": "item_swallow_feather_necklace",
+      "name": "Swallow-Feather Necklace",
+      "type": "necklace",
+      "price": 1200,
+      "stats": {
+        "magic": 8,
+        "mp": 15,
+        "speed": 2
+      },
+      "level": 40,
+      "description": "A feather from the swallow that carried Thumbelina south. Wear it and you feel lighter."
+    },
+    {
+      "id": "crystal_heart_pendant",
+      "icon": "gem",
+      "art": "item_crystal_heart_pendant",
+      "name": "Crystal Heart Pendant",
+      "type": "necklace",
+      "price": 3200,
+      "stats": {
+        "magic": 12,
+        "hp": 50,
+        "mp": 12
+      },
+      "level": 71,
+      "description": "A crystal heart from deep in the mines, warm to the touch."
+    },
+    {
+      "id": "temple_bell_amulet",
+      "icon": "gem",
+      "art": "item_temple_bell_amulet",
+      "name": "Temple Bell Amulet",
+      "type": "necklace",
+      "price": 10500,
+      "stats": {
+        "magic": 18,
+        "hp": 80,
+        "mp": 20
+      },
+      "level": 135,
+      "description": "A tiny bell from the temple below. Its chime calms the waves."
+    },
+    {
+      "id": "widow_silk_necklace",
+      "icon": "gem",
+      "art": "item_widow_silk_necklace",
+      "name": "Widow-Silk Necklace",
+      "type": "necklace",
+      "price": 14000,
+      "stats": {
+        "magic": 22,
+        "mp": 36,
+        "hp": 60
+      },
+      "level": 165,
+      "description": "Spun from crystal widow silk, stronger than steel and fine as frost."
+    },
+    {
+      "id": "golden_ball_charm",
+      "icon": "gem",
+      "art": "item_golden_ball_charm",
+      "name": "Golden Ball Charm",
+      "type": "accessory",
+      "price": 480,
+      "stats": {
+        "magic": 6,
+        "speed": 3
+      },
+      "level": 21,
+      "description": "A little golden ball, like the one the princess lost in the well. The Frog Prince says it's lucky."
+    },
+    {
+      "id": "pipers_ring",
+      "icon": "ring",
+      "art": "item_pipers_ring",
+      "name": "Piper's Ring",
+      "type": "accessory",
+      "price": 1500,
+      "stats": {
+        "attack": 9,
+        "speed": 4
+      },
+      "level": 45,
+      "description": "A piper's ring, plum and gold. Rats scatter at the sight of it."
+    },
+    {
+      "id": "dragon_tooth_charm",
+      "icon": "gem",
+      "art": "item_dragon_tooth_charm",
+      "name": "Dragon-Tooth Charm",
+      "type": "accessory",
+      "price": 2400,
+      "stats": {
+        "attack": 13,
+        "defense": 6,
+        "hp": 20
+      },
+      "level": 65,
+      "description": "A tooth the dragon lost the morning after. It's very sorry about the mess."
+    },
+    {
+      "id": "stardust_ring",
+      "icon": "gem",
+      "art": "item_stardust_ring",
+      "name": "Stardust Ring",
+      "type": "accessory",
+      "price": 4500,
+      "stats": {
+        "magic": 15,
+        "mp": 21
+      },
+      "level": 85,
+      "description": "Stardust's thank-you: a ring that holds a pinch of the night sky."
+    },
+    {
+      "id": "persimmon_charm",
+      "icon": "gem",
+      "art": "item_persimmon_charm",
+      "name": "Persimmon Charm",
+      "type": "accessory",
+      "price": 9800,
+      "stats": {
+        "attack": 14,
+        "magic": 14,
+        "hp": 60
+      },
+      "level": 130,
+      "description": "A persimmon seed set in gold. The Little Crab says it will grow into something wonderful."
+    },
+    {
+      "id": "emerald_heart_ring",
+      "icon": "gem",
+      "art": "item_emerald_heart_ring",
+      "name": "Emerald Heart Ring",
+      "type": "accessory",
+      "price": 20000,
+      "stats": {
+        "attack": 20,
+        "magic": 20,
+        "speed": 8
+      },
+      "level": 190,
+      "description": "The Emerald Dragon's heart-stone, set in a ring. Only one was ever made."
     }
   ]
 }

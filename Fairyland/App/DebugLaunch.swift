@@ -10,10 +10,13 @@ import SpriteKit
 ///   hp=0.2         start with this fraction of HP left
 ///   map=<id>       start on a map from content/maps.json
 ///   at=x_y         start at this offset from the map's centre (e.g. at=0_14)
-///   hill=n         start at the foot of the map's nth raised ground's ramp (0 first); with
-///                  `ontop`, at its head, up on the top
+///   hill=n         start at the foot of the first trail up the map's nth range of hills (0 first);
+///                  `hill=tallest` the range with the highest top, up its highest trail; `trail=k`
+///                  its kth trail instead; with `ontop`, where the trail comes out on the top
 ///   equip=a+b      start wearing these items (ids from content/items.json, joined with +)
 ///   bag=a+b        put these items in the bag
+///   done=a+b       these quests (ids from content/quests.json) already handed in (their treasures
+///                  come by post, as for a save from before they gave them)
 ///   pet=<species>  a companion of that species (content/monsters.json), out with you
 ///   friends=n      that many friends (up to GameSession.maxAllies) travelling in your party
 ///   away=n         with friends: the first n of them wait for you a few steps east of where you start
@@ -446,6 +449,11 @@ enum DebugLaunch {
         for id in flags["bag"]?.split(separator: "+").map(String.init) ?? [] where Content.shared.item(id) != nil {
             session.addItem(id)
         }
+        for id in flags["done"]?.split(separator: "+").map(String.init) ?? [] where Content.shared.quest(id) != nil {
+            session.data.quests[id] = QuestProgress(state: .completed, count: 0)
+        }
+        // Like a save from before those quests gave their treasures: they come by post.
+        if flags["done"] != nil { session.deliverQuestTreasures() }
         if let species = flags["pet"], let pet = session.makePet(species: species, level: max(1, session.data.hero.level - 15)) {
             session.addPet(pet, countsForQuests: false)
             session.data.activePetID = pet.id
@@ -518,14 +526,20 @@ enum DebugLaunch {
                 session.playerPosition = grid.center(of: grid.offset(parts[0], parts[1]))
             }
         }
-        if let index = flags["hill"].flatMap({ Int($0) }), let def = Content.shared.map(session.data.mapID) {
+        if let pick = flags["hill"], let def = Content.shared.map(session.data.mapID) {
             let grid = WorldMap(def: def)
-            if grid.plateaus.indices.contains(index),
-               let ramp = grid.plateaus[index].ramps.min(by: { ($0.key.row, $0.key.col) < ($1.key.row, $1.key.col) }) {
-                let step = flags["ontop"] != nil ? 1 : -1
-                let cell = ramp.value == .south ? GridPoint(col: ramp.key.col, row: ramp.key.row + step)
-                                                : GridPoint(col: ramp.key.col + step, row: ramp.key.row)
-                session.playerPosition = grid.center(of: cell)
+            // A range by its place, or `tallest`: the one with the highest top, up its highest trail.
+            let tallest = Int(pick) == nil
+            let index = Int(pick) ?? grid.hills.indices.max { grid.hills[$0].peak < grid.hills[$1].peak }
+            if let index, grid.hills.indices.contains(index) {
+                let hill = grid.hills[index]
+                let highest = hill.trails.indices.max { hill.lobes[hill.trails[$0].lobe].peak < hill.lobes[hill.trails[$1].lobe].peak }
+                let chosen: Int = tallest ? (highest ?? 0) : 0
+                let which = flags["trail"].flatMap { Int($0) } ?? chosen
+                if hill.trails.indices.contains(which), let foot = hill.trails[which].points.first, let top = hill.trails[which].points.last {
+                    let spot = flags["ontop"] != nil ? top : foot
+                    session.playerPosition = WorldMap.project(CGPoint(x: spot.x * WorldMap.tileSize, y: spot.y * WorldMap.tileSize))
+                }
             }
         }
         if let id = flags["title"], Content.shared.title(id) != nil {

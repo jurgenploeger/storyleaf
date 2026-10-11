@@ -340,7 +340,9 @@ private struct QuestGiverPanel: View {
         let quests = session.quests(from: giver).filter { session.status(of: $0) != .completed }
         VStack(alignment: .leading, spacing: 8) {
             if quests.isEmpty {
-                Text(L("Nothing for now. Come back when you're stronger!")).font(HUDStyle.font(12)).foregroundStyle(HUDStyle.dim)
+                // Why there's nothing, and where there's work instead.
+                Text(session.questGiverNote(giver)).font(HUDStyle.font(12)).foregroundStyle(HUDStyle.dim)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             ForEach(quests) { quest in
                 VStack(alignment: .leading, spacing: 6) {

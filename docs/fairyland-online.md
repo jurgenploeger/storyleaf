@@ -97,12 +97,37 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   house, lamp or tree hides them (before, every town's healer and shop stood inside or behind a house), and
   Larkspur, which had felt empty in playtesting (2026-10-07), has two rings of streets like the others.
 - Raised ground (since 0.3.97, asked for in playtesting 2026-10-11): a town's terraces and hills out in the
-  fields (`theme.hills`: count, size, height, bank tile) really stand up. The top is drawn its height higher,
-  a bank (stone wall, or earth) hangs under the edges facing you, and ramps (a terrace's stairs, a trodden
-  slope up a hill) climb to the top; whoever walks up rises with it (`WorldMap.height(at:)`, `Walker.settle`),
-  and trees on a hilltop stand up there too. A hill's rim is a bank you can't walk but at its ramps. Since
-  0.3.99 hills are flat-topped blocks edged along the grid, like the terraces: round ones came out as zig-zag
-  steps. Their tops are a shade lighter, with a thin shade along the far edges.
+  fields really stand up, and whoever walks up rises with them (`WorldMap.height(at:)`, `Walker.settle`), trees
+  on top too. A terrace's top is drawn its height higher over a stone wall, with stairs up its front and side.
+  Hills (`theme.hills`: count, size, height, bank tile) were blocks with a ramp in 0.3.97–0.3.99, which
+  playtesting found too square. Since 0.4.1 they're heightfield hills, as isometric games draw terrain: a few
+  ellipses melted together (`WorldMap.Hill`), rising on a smoothstep from foot to top, drawn as one picture of
+  the map's own ground lit from the upper left and lifted by its heights in a small shader (`HillArt`; a warp
+  grid crashed SpriteKit at that size). Since 0.4.3 the light is matte, as pixel art shades a hill: a few
+  steps of 6% with a 4×4 ordered dither between them, sides away from the sun a few shades darker (leaning to
+  the palette's shadow colour) and sides facing it only one lighter; the first smooth, brighter gradient
+  read as gloss in playtesting. Never steeper than 13 points a cell halfway up (15 before 0.4.4), so ground
+  facing away never leans out of sight and a tap finds one spot. Their sides are too steep to walk, but
+  scenery grows there like anywhere (since 0.4.3; tree shadows lie on the hill); a switchback trail (a leg
+  across the side facing you for every couple of cells up, cut into the slope with a shadow above and a lip
+  below) is the way up, kept clear a cell either side. A `bank` tile shows through in ragged patches where
+  they're steepest.
+- Ranges and mountains (ours, since 0.4.4, asked for in playtesting 2026-10-11: hills should stretch across
+  the land and some rise to a mountain): each hill is a range, a chain of summits (`chain`, 2 to 4 by default)
+  along a wandering line, each with its own height, blended so where two meet stands a little fuller (the
+  fourth root of their heights' fourth powers) and their tops often join into a ridge you can walk along.
+  `mountains` (count, height up to 128) adds ranges with one summit far taller and wider than the rest; a
+  summit is only as tall as its width lets it be at that steepness. The first trail climbs from the ground in
+  front; the mountain and any top still out of reach get trails of their own (front, front left or front
+  right), each from somewhere you can walk to, never steeper than you could walk, clear of the others. Too big
+  to draw or sort as one picture, a range is drawn in squares of 16 cells, each shown in strips two cells
+  deep up the screen, sorted just behind their back edge (`HillArt.strip(at:)`), so trees and walkers behind
+  a summit are hidden by it; tree shadows are split where the strip in front begins.
+- Footpaths (ours, since 0.4.3, asked for in playtesting 2026-10-11: the trails as new ways to explore):
+  from each trail that starts on the ground a cell-wide road winds across the fields to the nearest road or
+  footpath, the cheapest way round what's in the way with a little seeded unevenness so it wanders
+  (`WorldMap.layFootpaths`). The minimap shows them like roads, the hills' trails, and the hills in relief,
+  lighter the higher, mountains lightest.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake
@@ -170,6 +195,11 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   defence, each in five tiers from level 1 to 92 for every class. Speed Boots moved from accessory to boots, and
   saves that wore them as an accessory move them on load (`GameSession.moveGearToItsSlot`). The Character
   screen shows the hero in the middle with the slots around them like a paper doll.
+- Better gear (ours, since 0.4.0, asked for in playtesting 2026-10-11): a slot whose bag holds something better
+  that the hero can put on now gets a gold arrow, as does the piece in the Bag and the slot's list. Better means
+  worth more to the hero's class (`GameSession.gearValue`): each bonus weighted by the class's growth in that
+  stat next to a novice's, and by how big that stat's numbers run. The Bag and the slot's list have search,
+  sort (best for you, level, name, price, how many) and filters (the Bag's kinds; only what you can wear).
 - One equipment drop in three is a trinket (gloves, necklace, boots or accessory), any up to the monster's
   level (`GameSession.accessoryShare`): there are only a few of each next to dozens of weapons and armours, so
   by level alone they'd hardly drop.
@@ -353,7 +383,7 @@ Full Heal.
 **Us:** monsters drop wood, metal, hide and gems, and three town smiths forge weapons from them. There's no
 gathering and no crafting level, and forging always works. Monsters also drop equipment from up to their own
 level (6% a monster at your level, up to 16% above it, 2% well below; rares 35%, bosses always), mostly for
-your class (`GameSession.equipmentDrop`).
+your class (`GameSession.equipmentDrop`), never a boss's own rare drop or a quest treasure.
 
 ## Titles, fame and PvP
 
@@ -372,6 +402,23 @@ strong as theirs or weaker: their level plus their companion's at least nine ten
 and your party's (`GameSession.dares`; our decision, 2026-10-11, at the playtester's request). Bosses never
 start a fight: you talk to them. Quests pay at least a bit more than a daily bounty for your level when
 you hand them in (`quests` in content/rewards.json; our decision, 2026-10-06, at the playtester's request).
+A quest giver with nothing for you says why (a level to reach, someone else's quest first, or all done) and
+points to the quest open to you that suits your level best, or the next to open (`GameSession.questGiverNote`,
+since 0.4.0, at the playtester's request, 2026-10-11: a level-103 hero was told to come back stronger). The
+same day closed a gap with nothing new between levels 96 and 109: the Old Ox on the Hidden Steppe (Aesop's
+four oxen and the lion; 100, 106, 114) and the Little Crab on Sneezle Isle (the Japanese tale of the monkey
+and the crab; 124, 130), both ours.
+Quest treasures (ours, since 0.4.2, asked for in playtesting 2026-10-11: quests should give rare items and
+armour you don't get from fights; no source we could reach says what FO's quests paid in gear): 28 pieces of
+armour, boots, gloves, necklaces and rings, each from one story quest between levels 14 and 190 and themed on
+it (Oxhide Mail from the Old Ox, the Woodcutter's Coat for the Big Bad Wolf, Liora's Veil from her ruins). A
+treasure is gear a quest gives that no shop sells (`Content.questGiving`); no monster drops one, no trader
+carries one and no adventurer wears one, and tools/check_content.py keeps each to one quest, off the bosses'
+drops and the smiths' recipes, and wearable at the quest's own level. They sit about a quarter above shop
+gear of their level (by `GameSession.gearValue`'s weights) with a stat mix of their own, and carry armour
+past the shops' last at level 78. Icons are free palette swaps with a gold frame and a sparkle; the item card
+names the quest, and the quest list shows each one's stats before you start. A save that finished a quest
+before it gave its treasure gets it by post once (`GameSession.deliverQuestTreasures`).
 
 **Cards (since 0.3.69):** FO's card collection, our own way, since no source we could reach says what FO's
 cards did. Every monster has one. A beaten monster leaves its card 3% of the time (rare 15%, boss 25%;

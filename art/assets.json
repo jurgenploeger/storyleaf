@@ -6913,6 +6913,46 @@
       }
     },
     {
+      "id": "npc_old_ox",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_red_bull",
+        "recolor": [
+          {
+            "hue": [
+              290,
+              40
+            ],
+            "minSaturation": 0.2,
+            "to": 28,
+            "spread": 0.6,
+            "saturation": 0.55,
+            "value": 0.85
+          }
+        ]
+      }
+    },
+    {
+      "id": "npc_little_crab",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_wood_crab",
+        "recolor": [
+          {
+            "hue": [
+              60,
+              170
+            ],
+            "minSaturation": 0.2,
+            "to": 200,
+            "spread": 0.6,
+            "saturation": 0.7,
+            "value": 1.05
+          }
+        ]
+      }
+    },
+    {
       "id": "skill_bash",
       "kind": "icon"
     },
@@ -7806,6 +7846,580 @@
         "width": 64,
         "height": 64,
         "remove_bg": true
+      }
+    },
+    {
+      "id": "item_flame_fleece_vest",
+      "kind": "item",
+      "derive": {
+        "from": "item_leather_vest",
+        "recolor": [
+          {
+            "hue": [
+              5,
+              45
+            ],
+            "minSaturation": 0.2,
+            "to": 26,
+            "spread": 0.5,
+            "saturation": 1.4,
+            "value": 1.3
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_howlmaster_mantle",
+      "kind": "item",
+      "derive": {
+        "from": "item_ranger_cloak",
+        "recolor": [
+          {
+            "hue": [
+              90,
+              135
+            ],
+            "minSaturation": 0.2,
+            "to": 220,
+            "spread": 0.3,
+            "saturation": 0.25,
+            "value": 1.05
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_puppeteers_coat",
+      "kind": "item",
+      "derive": {
+        "from": "item_tamer_jacket",
+        "recolor": [
+          {
+            "hue": [
+              10,
+              40
+            ],
+            "minSaturation": 0.2,
+            "to": 300,
+            "spread": 0.5,
+            "saturation": 0.85,
+            "value": 0.95
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_briar_rose_robe",
+      "kind": "item",
+      "derive": {
+        "from": "item_mage_robe",
+        "recolor": [
+          {
+            "hue": [
+              205,
+              240
+            ],
+            "minSaturation": 0.2,
+            "to": 340,
+            "spread": 0.5,
+            "saturation": 0.8,
+            "value": 1.15
+          },
+          {
+            "hue": [
+              25,
+              55
+            ],
+            "minSaturation": 0.2,
+            "to": 110,
+            "saturation": 0.8
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_woodcutters_coat",
+      "kind": "item",
+      "derive": {
+        "from": "item_leather_vest",
+        "recolor": [
+          {
+            "hue": [
+              5,
+              45
+            ],
+            "minSaturation": 0.2,
+            "to": 356,
+            "spread": 0.4,
+            "saturation": 1.25,
+            "value": 0.78
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_oxhide_mail",
+      "kind": "item",
+      "derive": {
+        "from": "item_iron_plate",
+        "recolor": [
+          {
+            "hue": [
+              195,
+              225
+            ],
+            "minSaturation": 0.1,
+            "to": 26,
+            "spread": 0.3,
+            "saturation": 3.2,
+            "value": 0.62
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_lioras_veil",
+      "kind": "item",
+      "derive": {
+        "from": "item_silk_robe",
+        "recolor": [
+          {
+            "hue": [
+              250,
+              285
+            ],
+            "minSaturation": 0.2,
+            "minValue": 0.3,
+            "to": 48,
+            "spread": 0.3,
+            "saturation": 0.45,
+            "value": 1.25
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_wavecrest_scale_mail",
+      "kind": "item",
+      "derive": {
+        "from": "item_dragon_mail",
+        "recolor": [
+          {
+            "hue": [
+              340,
+              20
+            ],
+            "minSaturation": 0.3,
+            "to": 184,
+            "spread": 0.5,
+            "value": 1.05
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_emerald_dragon_mail",
+      "kind": "item",
+      "derive": {
+        "from": "item_dragon_mail",
+        "recolor": [
+          {
+            "hue": [
+              340,
+              20
+            ],
+            "minSaturation": 0.3,
+            "to": 140,
+            "spread": 0.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_bunny_hop_boots",
+      "kind": "item",
+      "derive": {
+        "from": "item_leather_boots",
+        "recolor": [
+          {
+            "hue": [
+              5,
+              35
+            ],
+            "minSaturation": 0.2,
+            "to": 335,
+            "spread": 0.4,
+            "saturation": 0.55,
+            "value": 1.35
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_marquis_boots",
+      "kind": "item",
+      "derive": {
+        "from": "item_leather_boots",
+        "recolor": [
+          {
+            "hue": [
+              5,
+              35
+            ],
+            "minSaturation": 0.2,
+            "to": 280,
+            "spread": 0.4,
+            "saturation": 0.7,
+            "value": 0.85
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_moonbeam_slippers",
+      "kind": "item",
+      "derive": {
+        "from": "item_speed_boots",
+        "recolor": [
+          {
+            "hue": [
+              195,
+              225
+            ],
+            "minSaturation": 0.2,
+            "to": 52,
+            "spread": 0.3,
+            "saturation": 0.45,
+            "value": 1.2
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_silverfang_boots",
+      "kind": "item",
+      "derive": {
+        "from": "item_cloudstep_boots",
+        "recolor": [
+          {
+            "hue": [
+              190,
+              235
+            ],
+            "minSaturation": 0.15,
+            "to": 215,
+            "spread": 0.2,
+            "saturation": 0.2,
+            "value": 1.05
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_bricklayers_gloves",
+      "kind": "item",
+      "derive": {
+        "from": "item_leather_gloves",
+        "recolor": [
+          {
+            "hue": [
+              10,
+              30
+            ],
+            "minSaturation": 0.2,
+            "to": 8,
+            "spread": 0.4,
+            "saturation": 1.2,
+            "value": 0.9
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_netcutter_gloves",
+      "kind": "item",
+      "derive": {
+        "from": "item_falcon_gloves",
+        "recolor": [
+          {
+            "hue": [
+              10,
+              45
+            ],
+            "minSaturation": 0.2,
+            "to": 30,
+            "spread": 0.4,
+            "saturation": 0.35,
+            "value": 0.85
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_craghulk_gauntlets",
+      "kind": "item",
+      "derive": {
+        "from": "item_dragonhide_gauntlets",
+        "recolor": [
+          {
+            "hue": [
+              340,
+              20
+            ],
+            "minSaturation": 0.2,
+            "to": 30,
+            "spread": 0.3,
+            "saturation": 0.25,
+            "value": 0.75
+          },
+          {
+            "hue": [
+              25,
+              60
+            ],
+            "minSaturation": 0.2,
+            "to": 160,
+            "saturation": 0.6
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_sneezle_ore_gauntlets",
+      "kind": "item",
+      "derive": {
+        "from": "item_dragonhide_gauntlets",
+        "recolor": [
+          {
+            "hue": [
+              340,
+              20
+            ],
+            "minSaturation": 0.2,
+            "to": 265,
+            "spread": 0.4,
+            "saturation": 0.7
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_wisp_light_pendant",
+      "kind": "item",
+      "derive": {
+        "from": "item_moonstone_pendant",
+        "recolor": [
+          {
+            "hue": [
+              195,
+              235
+            ],
+            "minSaturation": 0.15,
+            "to": 165,
+            "spread": 0.4,
+            "saturation": 1.3,
+            "value": 1.15
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_swallow_feather_necklace",
+      "kind": "item",
+      "derive": {
+        "from": "item_shell_pendant",
+        "recolor": [
+          {
+            "hue": [
+              330,
+              30
+            ],
+            "minSaturation": 0.15,
+            "to": 205,
+            "spread": 0.4,
+            "saturation": 0.9
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_crystal_heart_pendant",
+      "kind": "item",
+      "derive": {
+        "from": "item_phoenix_amulet",
+        "recolor": [
+          {
+            "hue": [
+              345,
+              20
+            ],
+            "minSaturation": 0.2,
+            "to": 190,
+            "spread": 0.4,
+            "saturation": 0.7,
+            "value": 1.2
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_temple_bell_amulet",
+      "kind": "item",
+      "derive": {
+        "from": "item_amber_amulet",
+        "recolor": [
+          {
+            "hue": [
+              20,
+              60
+            ],
+            "minSaturation": 0.2,
+            "to": 165,
+            "spread": 0.4,
+            "saturation": 0.8
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_widow_silk_necklace",
+      "kind": "item",
+      "derive": {
+        "from": "item_starlight_necklace",
+        "recolor": [
+          {
+            "hue": [
+              20,
+              60
+            ],
+            "minSaturation": 0.2,
+            "to": 285,
+            "spread": 0.4,
+            "saturation": 0.7,
+            "value": 1.1
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_golden_ball_charm",
+      "kind": "item",
+      "derive": {
+        "from": "item_ruby_ring",
+        "recolor": [
+          {
+            "hue": [
+              340,
+              10
+            ],
+            "minSaturation": 0.2,
+            "to": 50,
+            "value": 1.25
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_pipers_ring",
+      "kind": "item",
+      "derive": {
+        "from": "item_power_band",
+        "recolor": [
+          {
+            "hue": [
+              335,
+              15
+            ],
+            "minSaturation": 0.2,
+            "to": 290,
+            "spread": 0.4,
+            "saturation": 0.85
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_dragon_tooth_charm",
+      "kind": "item",
+      "derive": {
+        "from": "item_star_charm",
+        "recolor": [
+          {
+            "hue": [
+              20,
+              60
+            ],
+            "minSaturation": 0.2,
+            "to": 38,
+            "saturation": 0.25,
+            "value": 1.25
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_stardust_ring",
+      "kind": "item",
+      "derive": {
+        "from": "item_ruby_ring",
+        "recolor": [
+          {
+            "hue": [
+              340,
+              10
+            ],
+            "minSaturation": 0.2,
+            "to": 230,
+            "value": 1.1
+          },
+          {
+            "hue": [
+              20,
+              60
+            ],
+            "minSaturation": 0.2,
+            "to": 215,
+            "saturation": 0.15,
+            "value": 1.2
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_persimmon_charm",
+      "kind": "item",
+      "derive": {
+        "from": "item_star_charm",
+        "recolor": [
+          {
+            "hue": [
+              20,
+              60
+            ],
+            "minSaturation": 0.2,
+            "to": 22,
+            "spread": 0.4,
+            "saturation": 1.2,
+            "value": 1.05
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_emerald_heart_ring",
+      "kind": "item",
+      "derive": {
+        "from": "item_ruby_ring",
+        "recolor": [
+          {
+            "hue": [
+              340,
+              10
+            ],
+            "minSaturation": 0.2,
+            "to": 140
+          }
+        ]
       }
     }
   ]

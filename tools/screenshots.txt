@@ -85,6 +85,21 @@ item_info_material | newgame,npc=shop,info=bronze_ingot                         
 equip_change | newgame,class=fighter,level=16,equip=leather_vest,bag=cloth_tunic+chain_mail+silk_robe+mossy_leather_vest+dragon_mail,menu=character,change=armor | 8
 equip_detail | newgame,class=fighter,level=16,equip=leather_vest,bag=cloth_tunic+chain_mail+silk_robe+dragon_mail,menu=character,change=armor,inspect=chain_mail | 8
 equip_locked | newgame,class=fighter,level=16,equip=leather_vest,bag=cloth_tunic+chain_mail+silk_robe+dragon_mail,menu=character,change=armor,inspect=dragon_mail | 8
+# Better gear in the bag: the gold upgrade arrow on its slot, and in the gear list (sorted Best for
+# you, with search and Can wear) and the Bag (search, sort, kinds).
+gear_upgrade | newgame,class=fighter,level=40,equip=bronze_broadsword,bag=silver_sword+luna_axe+wooden_sword+cloth_tunic,menu=character | 8
+gear_find    | newgame,class=fighter,level=40,equip=bronze_broadsword,bag=silver_sword+luna_axe+wooden_sword+luna_staff+battle_axe+bronze_sword,menu=character,change=weapon | 8
+bag_find     | newgame,class=fighter,level=40,equip=bronze_broadsword,bag=silver_sword+luna_axe+wooden_sword+cloth_tunic+potion+seal_stone,menu=bag | 8
+# A quest giver with nothing left says why and points to work elsewhere; the high-level quest givers.
+quest_giver_done | newgame,class=fighter,level=103,map=swan_lake,done=wishes_of_a_duckling,npc=swan_keeper | 8
+quest_old_ox     | newgame,class=fighter,level=103,map=secret_plain,npc=old_ox | 8
+quest_little_crab | newgame,class=fighter,level=125,map=hachoo_island,npc=little_crab | 8
+# Quest treasures: gear only a quest gives. Its card (gold frame, where it comes from), the treasures
+# a save that finished those quests gets by post, in the Bag and on the map, and one on offer.
+treasure_card    | newgame,class=fighter,level=100,menu=bag,bag=oxhide_mail,inspect=oxhide_mail | 8
+treasure_bag     | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king+rat_king+puss_in_boots+crystal_hearts,menu=bag | 8
+treasure_post    | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king | 8
+treasure_offer   | newgame,class=fighter,level=72,map=sleepy_town,npc=thomas | 8
 skills       | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,menu=character,sub=skills | 8
 skills_learn | newgame,level=20,class=mage,menu=character,sub=skills             | 8
 boss_oak     | newgame,level=28,map=smiling_forest,at=-7_-11,npc=oak_grove    | 15
@@ -122,6 +137,10 @@ hill_top       | newgame,map=sunny_meadow,hill=0,ontop            | 8
 hill_candy     | newgame,level=60,map=candy_mountain,hill=1       | 8
 hill_desert    | newgame,level=60,map=genie_desert,hill=0         | 8
 hill_crystal   | newgame,level=90,map=crystal_mountain,hill=0     | 8
+hill_mountain  | newgame,level=90,map=crystal_mountain,hill=tallest | 8
+hill_peak      | newgame,level=90,map=crystal_mountain,hill=tallest,ontop | 8
+hill_snow      | newgame,level=40,map=snow_white_forest,hill=tallest | 8
+hill_range_land | newgame,map=sunny_meadow,hill=0,landscape        | 8
 twilight     | newgame,level=40,map=twilight_woods                 | 15
 battle_big   | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,hp=0.3,map=genie_desert,battle=10 | 15
 battle_arrange | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,map=genie_desert,battle=10,arrange | 15

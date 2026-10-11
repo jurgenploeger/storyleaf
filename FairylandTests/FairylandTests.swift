@@ -134,29 +134,67 @@ struct ContentTests {
         }
     }
 
-    @Test func hillsStandUpWithAWayUp() {
+    @Test func hillsRiseWithATrailUp() {
+        let tile = WorldMap.tileSize
         for def in content.maps where def.theme.hills != nil {
             let map = WorldMap(def: def)
-            let hills = map.plateaus.filter { $0.kind == .hill }
-            #expect(!hills.isEmpty, "map \(def.id) has no hills")
-            for hill in hills {
-                #expect(!hill.ramps.isEmpty, "map \(def.id): a hill with no way up")
-                for (cell, ramp) in hill.ramps {
-                    let foot = ramp == .south ? GridPoint(col: cell.col, row: cell.row - 1) : GridPoint(col: cell.col - 1, row: cell.row)
-                    let head = ramp == .south ? GridPoint(col: cell.col, row: cell.row + 1) : GridPoint(col: cell.col + 1, row: cell.row)
-                    // Up from the ground at its foot, over the slope, to the top.
-                    #expect(map.isWalkable(foot) && map.isWalkable(cell) && map.isWalkable(head), "map \(def.id): the ramp at \(cell) is blocked")
-                    #expect(map.height(at: map.center(of: foot)) == 0)
-                    #expect(map.height(at: map.center(of: head)) == hill.height)
-                    let halfway = map.height(at: map.center(of: cell))
-                    #expect(halfway > 0 && halfway < hill.height)
+            #expect(!map.hills.isEmpty, "map \(def.id) has no hills")
+            #expect(map.hills.contains { hill in hill.cells.contains { !map.isWalkable($0) && map.isFreeForScenery($0) } },
+                    "map \(def.id): nothing can grow on its hills")
+            // Ranges stretch across the land, not a hump each; and a map with mountains has one.
+            #expect(map.hills.contains { $0.size.columns >= 24 || $0.size.rows >= 24 }, "map \(def.id): only small hills")
+            if let mountains = def.theme.hills?.mountains {
+                #expect(map.hills.contains { Double($0.peak) >= mountains.height * 0.75 }, "map \(def.id) has no mountain")
+            }
+            for hill in map.hills {
+                func height(_ point: CGPoint) -> CGFloat { map.height(atGrid: CGPoint(x: point.x * tile, y: point.y * tile)) }
+                func cell(_ point: CGPoint) -> GridPoint { GridPoint(col: Int(point.x.rounded(.down)), row: Int(point.y.rounded(.down))) }
+                // Its first trail starts on the ground; every trail comes out on its summit's top, every
+                // step of it walkable, and you can walk from the first trail's foot to the top of each.
+                guard let main = hill.trails.first?.points, let start = main.first else {
+                    Issue.record("map \(def.id): a range with no trail")
+                    continue
+                }
+                #expect(height(start) < 1, "map \(def.id): the first trail starts up in the air")
+                for trail in hill.trails {
+                    guard let foot = trail.points.first, let top = trail.points.last else { continue }
+                    #expect(height(top) >= CGFloat(hill.lobes[trail.lobe].peak) - 1, "map \(def.id): a trail stops short of the top")
+                    #expect(trail.points.allSatisfy { map.isWalkable(cell($0)) }, "map \(def.id): a trail is blocked")
+                    #expect(!map.path(from: map.center(of: cell(start)), to: map.center(of: cell(top))).isEmpty, "map \(def.id): no way up")
+                    guard height(foot) < 1 else { continue }
+                    // A footpath leads from a trail on the ground to the roads, and road goes on to
+                    // the map's edge.
+                    var seen: Set<GridPoint> = [cell(foot)]
+                    var queue = [cell(foot)]
+                    var outside = false
+                    while let at = queue.popLast(), !outside {
+                        for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                            let next = GridPoint(col: at.col + dc, row: at.row + dr)
+                            guard map.contains(next), map.ground[next.row][next.col] == .path, seen.insert(next).inserted else { continue }
+                            if next.col == 0 || next.row == 0 || next.col == map.columns - 1 || next.row == map.rows - 1 { outside = true }
+                            queue.append(next)
+                        }
+                    }
+                    #expect(outside, "map \(def.id): no footpath from the trail at \(cell(foot)) to the roads")
+                }
+                // Its sides are too steep to walk (but trees and flowers grow there, above).
+                #expect(hill.cells.contains { !map.isWalkable($0) }, "map \(def.id): a hill you can walk straight up")
+                // Never so steep that ground facing away from you would lean out of sight: going up
+                // the map and right at once (up the screen), it never drops faster than the view.
+                for cell in hill.cells {
+                    for (dx, dy) in [(0.25, 0.25), (0.75, 0.25), (0.25, 0.75), (0.75, 0.75)] {
+                        let point = CGPoint(x: CGFloat(cell.col) + dx, y: CGFloat(cell.row) + dy)
+                        let e: CGFloat = 0.1
+                        let drop = (height(CGPoint(x: point.x + e, y: point.y + e)) - height(CGPoint(x: point.x - e, y: point.y - e))) / (2 * e * tile)
+                        #expect(drop > -0.65, "map \(def.id): a hill folds over at \(point)")
+                    }
                 }
             }
         }
         // A town's terraces stand up too, their stairs climbing to the top.
         for def in content.maps where def.town?.terraces?.isEmpty == false {
             let map = WorldMap(def: def)
-            #expect(map.plateaus.contains { $0.kind == .terrace && $0.height == WorldMap.terraceHeight }, "map \(def.id): terraces lie flat")
+            #expect(map.plateaus.contains { $0.height == WorldMap.terraceHeight }, "map \(def.id): terraces lie flat")
         }
     }
 
@@ -676,8 +714,10 @@ struct RulesTests {
             let best = try #require(session.equipmentDrop(level: 40, best: true))
             if !best.type.isTrinket { #expect((35...40).contains(best.level ?? 1)) }
         }
-        // Past the best gear there is, weapons and armour come from the top (trinkets from anywhere).
-        let top = try #require(Content.shared.items.compactMap(\.level).max())
+        // Past the best gear monsters drop, weapons and armour come from the top (trinkets from
+        // anywhere). Quest treasures go higher, but no monster drops them.
+        let droppable = Content.shared.items.filter { !bossDrops.contains($0.id) && !Content.shared.isQuestTreasure($0.id) }
+        let top = try #require(droppable.compactMap(\.level).max())
         let beyond = (0..<30).compactMap { _ in session.equipmentDrop(level: top + 50) }.filter { !$0.type.isTrinket }
         #expect(!beyond.isEmpty)
         for gear in beyond { #expect((gear.level ?? 1) > top - 12, "\(gear.id) is level \(gear.level ?? 1)") }
@@ -1421,6 +1461,106 @@ struct RulesTests {
         battle.capture()
         #expect(battle.phase == .stones)
         #expect(session.count(of: "wishing_seal") == 1)
+    }
+
+    /// The Character screen's upgrade arrow: gear the hero can wear that's worth more to their class
+    /// than what's on. Not another class's, not one above their level, not a worse one. And the
+    /// Bag's search and Best for you.
+    @Test func betterGearIsMarkedAndFound() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.hero.classID = "fighter"
+        session.data.hero.level = 40
+        session.data.hero.equipment[.weapon] = "bronze_broadsword"
+        session.data.inventory = [:]
+        session.addItem("wooden_sword")
+        session.addItem("luna_axe")
+        session.addItem("luna_staff")
+        #expect(session.upgrade(for: .weapon) == nil, "worse, too high a level, or a mage's")
+        #expect(!session.hasGearUpgrade)
+        session.addItem("silver_sword")
+        #expect(session.upgrade(for: .weapon)?.id == "silver_sword")
+        #expect(session.hasGearUpgrade)
+        // An empty slot takes anything you can wear.
+        session.data.hero.equipment[.armor] = nil
+        session.addItem("cloth_tunic")
+        #expect(session.upgrade(for: .armor)?.id == "cloth_tunic")
+        // Best for you puts what the fighter can wear first, the strongest of it first; then the rest
+        // (the Luna Axe is stronger still, but needs level 100).
+        let weapons = session.bagEquipment.filter { $0.type == .weapon }
+        let best = ItemFinder.arrange(weapons, search: "", sort: .best, session: session).map(\.id)
+        #expect(best.first == "silver_sword")
+        #expect(best.firstIndex(of: "luna_axe")! > best.firstIndex(of: "wooden_sword")!)
+        // Search finds a name or a kind.
+        #expect(ItemFinder.arrange(session.bagEquipment, search: "armor", sort: .standard, session: session).map(\.id) == ["cloth_tunic"])
+        #expect(ItemFinder.arrange(weapons, search: "luna", sort: .name, session: session).map(\.id) == ["luna_axe", "luna_staff"])
+    }
+
+    /// Quest treasures (gear a quest gives that no shop sells) come only from their quest: no monster
+    /// drops one, no trader carries one and no adventurer wears one. A save that finished the quest
+    /// before it gave its treasure gets it once, by post.
+    @Test func questTreasuresComeOnlyFromQuests() throws {
+        let content = Content.shared
+        #expect(content.items.filter { content.isQuestTreasure($0.id) }.count >= 20)
+        #expect(content.questGiving("oxhide_mail")?.id == "four_oxen")
+        // Shop gear a quest gives isn't one (the Leather Vest for choosing your path).
+        #expect(!content.isQuestTreasure("leather_vest"))
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.hero.classID = "fighter"
+        for level in stride(from: 10, through: 200, by: 10) {
+            for draw in 0..<40 {
+                if let drop = session.equipmentDrop(level: level, best: draw % 2 == 0) {
+                    #expect(!content.isQuestTreasure(drop.id), "a level-\(level) monster dropped \(drop.id)")
+                }
+            }
+            for classID in ["fighter", "mage", "tamer"] {
+                let adventurer = Adventurer(name: "Momo", raceID: "elf", classID: classID, level: level, look: .standard)
+                if let armor = GameSession.armor(for: adventurer) {
+                    #expect(!content.isQuestTreasure(armor.id), "a level-\(level) \(classID) wears \(armor.id)")
+                }
+                for offer in session.tradeOffers(with: adventurer) {
+                    #expect(!content.isQuestTreasure(offer.item.id), "a level-\(level) trader sells \(offer.item.id)")
+                }
+            }
+        }
+        // Handing the quest in gives it.
+        session.data.hero.level = 100
+        session.data.quests["four_oxen"] = QuestProgress(state: .active, count: 8)
+        session.turnInQuest("four_oxen")
+        #expect(session.count(of: "oxhide_mail") == 1)
+        #expect(session.deliverQuestTreasures().isEmpty)
+        // A quest finished before it gave its treasure: it comes when the game loads, and only once.
+        var older = session.data
+        older.quests["wolf_hunt"] = QuestProgress(state: .completed, count: 0)
+        older.questTreasuresGiven = ["oxhide_mail"]
+        let loaded = GameSession(data: older)
+        #expect(loaded.count(of: "woodcutters_coat") == 1)
+        #expect(loaded.count(of: "oxhide_mail") == 1)
+        #expect(GameSession(data: loaded.data).count(of: "woodcutters_coat") == 1)
+    }
+
+    /// A quest giver with nothing for you says why, and where there's work: a level to reach,
+    /// someone else's quest to finish first, or all done, with who needs someone like you.
+    @Test func questGiversSayWhyAndWhereNext() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        // Too low a level for the Old Ox's first quest.
+        session.data.hero.level = 90
+        #expect(session.quests(from: "old_ox").isEmpty)
+        #expect(session.questGiverNote("old_ox") == "Come back at level 100, and I'll have something for you.")
+        // Mayor Poppy's work waits on Elder Oak's Monkey Business.
+        session.data.hero.level = 30
+        #expect(session.questGiverNote("mayor") == "Finish “Monkey Business” for Elder Oak in Meadowbrook first, and come back to me.")
+        // All the Swan Keeper had is done: the quest open to you that suits your level best is the
+        // Old Ox's, from level 100.
+        session.data.hero.level = 103
+        session.data.quests["wishes_of_a_duckling"] = QuestProgress(state: .completed, count: 0)
+        // (quests(from:) still lists what's handed in; the dialog leaves those out.)
+        #expect(session.quests(from: "swan_keeper").allSatisfy { session.status(of: $0) == .completed })
+        #expect(session.questGiverNote("swan_keeper") == "That's all I had for you. Thank you! Old Ox in Hidden Steppe has work for someone like you.")
+        // Every quest at the hero's level everywhere is done: the next one to open.
+        for quest in Content.shared.quests where (quest.minLevel ?? 1) <= 103 {
+            session.data.quests[quest.id] = QuestProgress(state: .completed, count: 0)
+        }
+        #expect(session.questGiverNote("swan_keeper") == "That's all I had for you. Thank you! Old Ox in Hidden Steppe will have work for you at level 106.")
     }
 
     /// A friend's throw uses up one of their own Seal Stones, never one from your bag. Counting

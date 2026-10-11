@@ -256,10 +256,14 @@ final class WorldScene: SKScene {
         let waterID = theme.water ?? "tile_water"
         let water = SKTileGroup(tileDefinition: SKTileDefinition(textures: art.waterFrames(waterID), size: tileSize, timePerFrame: 0.9))
         var groups: [String: SKTileGroup] = ["water": water]
+        // Each group's picture, for drawing hills (`HillArt`).
+        var pictures: [ObjectIdentifier: SKTexture] = [ObjectIdentifier(water): art.waterFrames(waterID).first ?? SKTexture()]
         func group(_ key: String, _ texture: () -> SKTexture) -> SKTileGroup {
             if let known = groups[key] { return known }
-            let made = SKTileGroup(tileDefinition: SKTileDefinition(texture: texture(), size: tileSize))
+            let picture = texture()
+            let made = SKTileGroup(tileDefinition: SKTileDefinition(texture: picture, size: tileSize))
             groups[key] = made
+            pictures[ObjectIdentifier(made)] = picture
             return made
         }
         // Accent patches (flower meadows, moss) blend in as soft blobs. Not in towns, where the
@@ -341,8 +345,8 @@ final class WorldScene: SKScene {
         for pick in picks {
             tileMap.setTileGroup(pick.group, forColumn: pick.col, row: pick.row)
         }
-        // Raised ground (a terrace, a hill): its own tiles again, drawn its height up
-        // (`placePlateaus` sets them down). The ramps are drawn as slopes instead.
+        // A raised terrace: its own tiles again, drawn its height up (`placePlateaus` sets them
+        // down). The stairs are drawn as slopes instead.
         raisedTops = map.plateaus.map { plateau in
             let (low, high) = plateau.bounds
             let top = SKTileMapNode(tileSet: tileSet, columns: high.col - low.col + 1, rows: high.row - low.row + 1, tileSize: tileSize)
@@ -353,11 +357,6 @@ final class WorldScene: SKScene {
                 top.setTileGroup(pick.group, forColumn: pick.col - low.col, row: pick.row - low.row)
             }
             top.position = CGPoint(x: CGFloat(low.col) * WorldMap.tileSize, y: CGFloat(low.row) * WorldMap.tileSize)
-            // A hilltop catches a little more light than the ground around it, so it stands apart.
-            if plateau.kind == .hill {
-                top.color = .white
-                top.colorBlendFactor = 0.08
-            }
             let grid = SKNode()
             grid.addChild(top)
             let layer = projected(grid)
@@ -367,9 +366,38 @@ final class WorldScene: SKScene {
         // Soft patches of colour over the whole ground, so it isn't one flat colour.
         let grid = SKNode()
         grid.addChild(tileMap)
-        if let variation = Lighting.groundVariation(columns: map.columns, rows: map.rows, tile: WorldMap.tileSize, palette: theme.palette, seed: def.id) {
+        let variation = Lighting.groundVariation(columns: map.columns, rows: map.rows, tile: WorldMap.tileSize, palette: theme.palette, seed: def.id)
+        if let variation {
             variation.zPosition = 1
             grid.addChild(variation)
+        }
+        // Hills: the same ground again, lit and lifted (`HillArt`; `placePlateaus` sets them down).
+        if !map.hills.isEmpty {
+            var images: [String: CGImage] = [:]
+            func picture(_ key: String, _ texture: () -> SKTexture?) -> CGImage? {
+                if let known = images[key] { return known }
+                let made = texture()?.cgImage()
+                images[key] = made
+                return made
+            }
+            func tiles(_ id: String) -> (GridPoint) -> CGImage? {
+                { cell in picture("\(id)#\(Self.variant(of: cell))") { self.art.tileVariant(id, Self.variant(of: cell)) } }
+            }
+            let palette = theme.palette
+            let look = HillArt.Look(
+                ground: { cell in
+                    let pick = picks[cell.row * self.map.columns + cell.col]
+                    return picture("\(ObjectIdentifier(pick.group).hashValue)") { pictures[ObjectIdentifier(pick.group)] }
+                },
+                trail: tiles(theme.path),
+                bank: theme.hills?.bank.map(tiles),
+                variation: variation?.texture?.cgImage(),
+                mapSize: (map.columns, map.rows),
+                shadow: Lighting.rgb(palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
+                highlight: Lighting.rgb(palette?.highlight) ?? (r: 1, g: 0.95, b: 0.8))
+            // Already where they show on screen (they lift themselves) and sorted, so straight into
+            // the world.
+            raisedHills = map.hills.flatMap { HillArt.sprites(for: $0, look: look) }
         }
         let ground = projected(grid)
         ground.zPosition = -100_000
@@ -574,26 +602,24 @@ final class WorldScene: SKScene {
 
     /// Raised tops from `makeGround`, one per plateau, until `placePlateaus` sets them down.
     private var raisedTops: [SKNode] = []
+    /// Hills from `makeGround`, until `placePlateaus` sets them down.
+    private var raisedHills: [SKNode] = []
 
-    /// How deep a plateau's top is drawn: just behind the back of it, so everything standing on it
-    /// (or in front) is drawn over it and whoever stands just behind it is hidden by it.
-    private static func topZ(of plateau: WorldMap.Plateau) -> CGFloat {
+    /// How deep raised ground over `cells` is drawn: just behind the back of it, so everything
+    /// standing on it (or in front) is drawn over it and whoever stands just behind it is hidden by it.
+    private static func topZ(of cells: Set<GridPoint>) -> CGFloat {
         let tile = WorldMap.tileSize
-        let back = plateau.cells.map { WorldMap.project(CGPoint(x: CGFloat($0.col + 1) * tile, y: CGFloat($0.row + 1) * tile)).y }.max() ?? 0
+        let back = cells.map { WorldMap.project(CGPoint(x: CGFloat($0.col + 1) * tile, y: CGFloat($0.row + 1) * tile)).y }.max() ?? 0
         return -back - 0.75
     }
 
-    /// Raised ground (WorldMap.plateaus): each top drawn its height up, a bank (a terrace's stone
-    /// wall, a hill's earth) under the edges that face you, and ramps (stone steps up a terrace, a
-    /// trodden slope up a hill) climbing from the ground in front to the top. The banks sit under
-    /// the tops, so at a hill's nooks the top in front hides the bank behind it.
+    /// Raised ground: the hills (drawn in strips by `HillArt`), and a town's terraces (WorldMap.plateaus),
+    /// each top drawn its height up, a stone wall under the edges that face you, and stone steps
+    /// climbing from the ground in front to the top.
     private func placePlateaus() {
+        for hill in raisedHills { world.addChild(hill) }
         let tile = WorldMap.tileSize
         let stone = art.tileTexture(def.theme.accent ?? "tile_scree")
-        let bank = art.tileTexture(def.theme.hills?.bank ?? "tile_scree")
-        let trodden = art.tileTexture(def.theme.path)
-        let grass = Self.averageColor(of: art.tileTexture(def.theme.ground))
-        let grassLip = UIColor(red: min(1, grass.0 * 1.2), green: min(1, grass.1 * 1.2), blue: min(1, grass.2 * 1.2), alpha: 1)
         func corner(_ col: Int, _ row: Int) -> CGPoint { WorldMap.project(CGPoint(x: CGFloat(col) * tile, y: CGFloat(row) * tile)) }
         // Lines are gathered into one shape per colour, a draw each instead of one per edge.
         func stroke(_ path: CGPath, color: UIColor, width: CGFloat, z: CGFloat) {
@@ -606,12 +632,9 @@ final class WorldScene: SKScene {
             world.addChild(node)
         }
         for (index, plateau) in map.plateaus.enumerated() {
-            let terrace = plateau.kind == .terrace
             let rise = plateau.height
-            let topZ = Self.topZ(of: plateau)
+            let topZ = Self.topZ(of: plateau.cells)
             let lips = CGMutablePath(), shadows = CGMutablePath(), creases = CGMutablePath(), treads = CGMutablePath()
-            let crests = CGMutablePath()
-            let up = CGVector(dx: 0, dy: rise)
             func line(_ path: CGMutablePath, _ from: CGPoint, _ to: CGPoint) {
                 path.move(to: from)
                 path.addLine(to: to)
@@ -620,8 +643,8 @@ final class WorldScene: SKScene {
                 raisedTops[index].zPosition = topZ
                 world.addChild(raisedTops[index])
             }
-            // Banks: under each edge of the top facing you (front, left) where the ground beyond is
-            // lower, down to it (along a ramp, down to the slope: a triangle).
+            // Walls: under each edge of the top facing you (front, left) where the ground beyond is
+            // lower, down to it (beside the stairs, down to their slope: a triangle).
             for cell in plateau.cells.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }) where plateau.ramps[cell] == nil {
                 for front in [true, false] {
                     let beyond = front ? GridPoint(col: cell.col, row: cell.row - 1) : GridPoint(col: cell.col - 1, row: cell.row)
@@ -641,30 +664,19 @@ final class WorldScene: SKScene {
                     path.addLine(to: pa + CGVector(dx: 0, dy: min(rise, lowA)))
                     path.closeSubpath()
                     let face = SKShapeNode(path: path)
-                    face.fillTexture = terrace ? stone : bank
+                    face.fillTexture = stone
                     // Lit from the front: the side facing left a shade darker.
                     face.fillColor = UIColor(white: front ? 0.82 : 0.64, alpha: 1)
                     face.strokeColor = .clear
                     face.lineWidth = 0
                     face.zPosition = topZ - 0.5
                     world.addChild(face)
-                    // A lip along the top (pale stone on a terrace, the grass's edge on a hill) and a
-                    // soft shadow where the bank meets the ground.
+                    // A pale stone lip along the top and a soft shadow where the wall meets the ground.
                     line(lips, pa + CGVector(dx: 0, dy: rise), pb + CGVector(dx: 0, dy: rise))
                     line(shadows, pa + CGVector(dx: 0, dy: min(rise, lowA)), pb + CGVector(dx: 0, dy: min(rise, lowB)))
                 }
-                // A hill's far edges (back and right), where the top drops away out of sight: a thin
-                // shade along them, so its outline reads against the ground behind. A terrace has its
-                // railings there.
-                guard !terrace else { continue }
-                if !plateau.cells.contains(GridPoint(col: cell.col, row: cell.row + 1)) {
-                    line(crests, corner(cell.col, cell.row + 1) + up, corner(cell.col + 1, cell.row + 1) + up)
-                }
-                if !plateau.cells.contains(GridPoint(col: cell.col + 1, row: cell.row)) {
-                    line(crests, corner(cell.col + 1, cell.row) + up, corner(cell.col + 1, cell.row + 1) + up)
-                }
             }
-            // Ramps: the foot on the ground in front, the head up at the top.
+            // Stairs: the foot on the ground in front, the head up at the top.
             for (cell, ramp) in plateau.ramps {
                 let c = cell.col, r = cell.row
                 let corners: [(CGPoint, CGFloat)] = ramp == .south
@@ -675,15 +687,14 @@ final class WorldScene: SKScene {
                 path.addLines(between: points)
                 path.closeSubpath()
                 let slope = SKShapeNode(path: path)
-                slope.fillTexture = terrace ? stone : trodden
+                slope.fillTexture = stone
                 slope.fillColor = UIColor(white: 0.95, alpha: 1)
                 slope.strokeColor = UIColor(white: 0, alpha: 0.22)
                 slope.lineWidth = 1
                 // Under the top: where the top beside it stands in front of it, the top shows.
                 slope.zPosition = topZ - 0.25
                 world.addChild(slope)
-                guard terrace else { continue }
-                // Steps across a terrace's stairs, foot to head.
+                // Steps across them, foot to head.
                 let steps = 5
                 for step in 1..<steps {
                     let t = CGFloat(step) / CGFloat(steps)
@@ -693,9 +704,8 @@ final class WorldScene: SKScene {
                     line(treads, left + CGVector(dx: 0, dy: 1.5), right + CGVector(dx: 0, dy: 1.5))
                 }
             }
-            stroke(lips, color: terrace ? UIColor(white: 1, alpha: 0.55) : grassLip, width: terrace ? 2 : 3, z: topZ + 0.1)
+            stroke(lips, color: UIColor(white: 1, alpha: 0.55), width: 2, z: topZ + 0.1)
             stroke(shadows, color: UIColor(white: 0, alpha: 0.28), width: 2, z: topZ - 0.45)
-            stroke(crests, color: UIColor(white: 0, alpha: 0.2), width: 2, z: topZ + 0.1)
             stroke(creases, color: UIColor(white: 0, alpha: 0.3), width: 1.5, z: topZ - 0.2)
             stroke(treads, color: UIColor(white: 1, alpha: 0.35), width: 1, z: topZ - 0.2)
         }
@@ -803,7 +813,17 @@ final class WorldScene: SKScene {
                         rise.timingMode = .easeInEaseOut
                         node.run(.repeatForever(.sequence([rise, rise.reversed()])), withKey: "bob")
                     }
-                    if placement.shadow == true { Lighting.shadow(under: node, in: world) }
+                    if placement.shadow == true {
+                        if map.hillIndex(at: cell) != nil {
+                            // On a hill, over the strip it stands on, and over the one in front where
+                            // it reaches that (`HillArt.strip(at:)`).
+                            let strip = HillArt.strip(at: -node.zPosition)
+                            let line = strip.start + map.height(at: CGPoint(x: node.position.x, y: strip.start))
+                            Lighting.shadow(under: node, in: world, above: strip.z, front: (line: line, z: strip.z + HillArt.stripHeight))
+                        } else {
+                            Lighting.shadow(under: node, in: world)
+                        }
+                    }
                     if let hex = placement.glow, let color = UIColor(hex: hex) {
                         Lighting.glow(behind: node, color: color, in: world, rng: &rng)
                         lantern?.glint(at: node.position + CGVector(dx: 0, dy: node.size.height * 0.4), color: color, width: node.size.width * 1.6)

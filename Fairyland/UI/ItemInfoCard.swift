@@ -43,6 +43,14 @@ struct ItemInfoCard: View {
                                 .foregroundStyle(HUDStyle.cream)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
+                        if let quest = session.content.questGiving(item.id) {
+                            section(L("Quest treasure")) {
+                                Text(origin(of: quest))
+                                    .font(HUDStyle.font(12))
+                                    .foregroundStyle(HUDStyle.cream)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
                         if isGear {
                             requirements
                             if let stats = item.stats, !Self.parts(of: stats).isEmpty {
@@ -130,6 +138,17 @@ struct ItemInfoCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
         .padding(.top, 4)
+    }
+
+    /// Where a quest treasure comes from: the quest, who gives it and where they live.
+    private func origin(of quest: QuestDef) -> String {
+        let content = session.content
+        let giver = content.npc(quest.giver)?.name ?? quest.giver
+        if let place = content.home(ofNPC: quest.giver)?.name {
+            return L("Only from the quest “{quest}”, from {giver} in {place}. No monster drops it and no shop sells it.",
+                     ["quest": quest.title, "giver": giver, "place": place])
+        }
+        return L("Only from the quest “{quest}”, from {giver}. No monster drops it and no shop sells it.", ["quest": quest.title, "giver": giver])
     }
 
     /// "Weapon", "Material · Metal", "Egg"…
@@ -253,7 +272,10 @@ struct ItemInfoCard: View {
             lines.append(worn ? L("You have {count} in your bag, and one on", ["count": owned]) : L("You have {count}", ["count": owned]))
         }
         if item.price > 0 {
-            lines.append(L("Shops sell it for {price}g and pay {gold}g", ["price": item.price, "gold": GameSession.sellPrice(of: item)]))
+            // No shop sells a quest treasure, but they'll buy one.
+            lines.append(session.content.isQuestTreasure(item.id)
+                         ? L("Shops pay {gold}g for it", ["gold": GameSession.sellPrice(of: item)])
+                         : L("Shops sell it for {price}g and pay {gold}g", ["price": item.price, "gold": GameSession.sellPrice(of: item)]))
         }
         return VStack(alignment: .leading, spacing: 3) {
             ForEach(lines, id: \.self) { line in
@@ -289,6 +311,12 @@ struct ItemInfoCard: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
             .background(Capsule().fill(.white.opacity(0.08)))
+    }
+
+    /// A piece of gear in one line: "Lv 100 · DEF +38 · HP +100".
+    static func summary(of item: ItemDef) -> String {
+        let stats = Self.parts(of: item.stats ?? Stats.zero).map { "\($0.label) \($0.value >= 0 ? "+" : "−")\(abs($0.value))" }
+        return ((item.level.map { [L("Lv {level}", ["level": $0])] } ?? []) + stats).joined(separator: " · ")
     }
 
     /// The stats that aren't zero, in the Character tab's order.

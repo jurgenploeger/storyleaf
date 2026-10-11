@@ -96,7 +96,7 @@ struct WorldHUD: View {
 
     private func badge(for tab: MenuTab) -> Bool {
         switch tab {
-        case .character: session.canChooseClass || session.canSpendSkillPoint
+        case .character: session.canChooseClass || session.canSpendSkillPoint || session.hasGearUpgrade
         case .quests: session.activeQuests.contains { session.status(of: $0) == .ready }
         case .bag: session.count(of: "pet_egg") > 0
         case .companions, .friends, .settings: false
