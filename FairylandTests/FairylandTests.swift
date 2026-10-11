@@ -140,8 +140,8 @@ struct ContentTests {
                 func height(out: Double) -> CGFloat {
                     hill.height(atCells: mouth.x + mouth.into.x * out, mouth.y + mouth.into.y * out)
                 }
-                print("⛰ \(def.id) crag: \(Int(hill.highest)) high, mouth at \(Int(height(out: 0))), 10 out \(Int(height(out: 10)))")
-                #expect(height(out: 10) > 40, "map \(def.id): no mountain behind the cave's mouth")
+                print("⛰ \(def.id) crag: \(Int(hill.highest)) high, mouth at \(Int(height(out: 0))), 5 out \(Int(height(out: 5)))")
+                #expect(height(out: 5) > 50, "map \(def.id): no mountain behind the cave's mouth")
                 // The road reaches the mouth, climbing only a little, and you can walk it.
                 let last = GridPoint(col: Int((mouth.x - mouth.into.x * 0.5).rounded(.down)),
                                      row: Int((mouth.y - mouth.into.y * 0.5).rounded(.down)))

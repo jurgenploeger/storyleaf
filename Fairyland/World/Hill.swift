@@ -17,6 +17,11 @@ extension WorldMap {
             /// would lean back out of sight, which keeps the ground under every spot on screen one place.
             let band: Double
             private let cosine, sine: Double
+            /// Which way a steeper side faces, if it has one (unit, in the grid), and how much faster
+            /// it climbs there at its foot (`depth`). Only ever toward you: ground facing you can be as
+            /// steep as you like, ground facing away no steeper than the view.
+            var steepSide: (x: Double, y: Double)?
+            var steepening = 0.0
 
             /// `steepness`: its range's (`Hill.steepness`).
             init(x: Double, y: Double, along: Double, across: Double, angle: Double, peak: Double, steepness: Double) {
@@ -32,11 +37,16 @@ extension WorldMap {
             }
 
             /// How far inside its ellipse a point is: about the cells in from its edge, below 0 outside.
+            /// On a steeper side it grows faster from the edge, up to `1 + steepening` times as fast at
+            /// the edge itself and its usual pace by the middle, so the outline stays where it was.
             func depth(_ x: Double, _ y: Double) -> Double {
                 let dx = x - self.x, dy = y - self.y
                 let u = (dx * cosine + dy * sine) / along
                 let v = (dy * cosine - dx * sine) / across
-                return (1 - (u * u + v * v).squareRoot()) * min(along, across)
+                let inside = (1 - (u * u + v * v).squareRoot()) * min(along, across)
+                guard let side = steepSide, inside > 0 else { return inside }
+                let toward = min(1, max(0, (dx * side.x + dy * side.y) / across))
+                return inside * (1 + steepening * toward * toward)
             }
         }
         /// A trail up one of its summits (`lobe`): its middle, from its foot to the top.

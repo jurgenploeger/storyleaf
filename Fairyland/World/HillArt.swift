@@ -15,7 +15,7 @@ import SpriteKit
 enum HillArt {
     struct Look {
         /// The ground's tile pictures by cell, as the map has them.
-        let ground: (GridPoint) -> CGImage?
+        var ground: (GridPoint) -> CGImage?
         /// The trail's tile pictures by cell (the map's road).
         let trail: (GridPoint) -> CGImage?
         /// The rock (or sand, or chocolate) showing through on its slopes, by cell, if any.
@@ -26,6 +26,9 @@ enum HillArt {
         /// Bare rock all over from this far up its slopes (0 at the foot, 1 where its top begins), if
         /// set: a mountain of rock with only its foot grassy.
         var rockAbove: Double? = nil
+        /// How lit slopes facing away from the sun still are (0.45 less a tenth for rocky, if unset):
+        /// lower for deeper shade, so a mountain's shape shows.
+        var ambient: Double? = nil
         /// The soft colour patches over the map's whole ground: a pixel a cell, north at the top.
         let variation: CGImage?
         let mapSize: (columns: Int, rows: Int)
@@ -80,7 +83,7 @@ enum HillArt {
         let up = 36 * Double.pi / 180
         let toward = (x: -0.6, y: 1.0), length = (0.36 + 1.0).squareRoot()
         let sun = (x: toward.x / length * cos(up), y: toward.y / length * cos(up), z: sin(up))
-        let ambient = 0.45 - 0.1 * look.rocky
+        let ambient = look.ambient ?? (0.45 - 0.1 * look.rocky)
         let flat = ambient + (1 - ambient) * sun.z
         let deepest = max(look.shadow.r, look.shadow.g, look.shadow.b, 0.01)
         let tint = (look.shadow.r / deepest, look.shadow.g / deepest, look.shadow.b / deepest)

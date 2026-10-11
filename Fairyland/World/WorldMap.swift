@@ -858,12 +858,14 @@ final class WorldMap {
     }
 
     /// Where a road leads into a cave, a range of rocky hills rises along that side of the map, so
-    /// you can see from afar that the way on goes into the mountain: summits one after another along
-    /// the edge, their feet 2 to 4 cells in from it, one round the road with its foot 5.5 cells in
-    /// (the road climbs to the cave's mouth, about 40 points up its side), and taller ones behind,
-    /// rising on past the edge into the mist. The mouth is in its side where the road meets the edge
-    /// (`Hill.Mouth`). A summit that would cover anything already set down is left out. Nil if no
-    /// road reaches that edge.
+    /// you can see from afar that the way on goes into the mountain: summits of all sizes one after
+    /// another along the edge, their feet 2 to 4 cells in from it, and one round the road whose side
+    /// the cave's mouth is in (`Hill.Mouth`), the road climbing to it. Their sides facing you are
+    /// steeper, as much as 2.8 times at the foot: on the north and east that's the side toward the
+    /// map, the mountain's face over the mouth, with taller summits behind it out past the edge; on
+    /// the south and west it's the far side, so the range is a ridge whose face you see beyond it, its
+    /// back rising gently from the map to the mouth. A summit that would cover anything already set
+    /// down is left out. Nil if no road reaches that edge.
     private func raiseCrags(along edge: Edge, _ rng: inout SeededRandom) -> Hill? {
         let length = edge == .north || edge == .south ? columns : rows
         let road = (0..<length).filter { along in
@@ -889,8 +891,19 @@ final class WorldMap {
         func point(_ a: Double, _ o: Double) -> (x: Double, y: Double) {
             (start.x + along.x * a + out.x * o, start.y + along.y * a + out.y * o)
         }
+        // Down the screen is toward -x and -y: on the north and east the side toward the map faces
+        // you, on the south and west the side away from it.
+        let facesYou = out.x + out.y > 0
+        let toward: (x: Double, y: Double) = facesYou ? (x: -out.x, y: -out.y) : out
         let angle = edge == .north || edge == .south ? 0.0 : Double.pi / 2
         let steepness = Hill.steepness(rockiness: 1)
+        func summit(_ a: Double, _ o: Double, along reach: Double, across depth: Double, turn: Double, peak: Double) -> Hill.Lobe {
+            let centre = point(a, o)
+            var lobe = Hill.Lobe(x: centre.x, y: centre.y, along: reach, across: depth, angle: angle + turn, peak: peak, steepness: steepness)
+            lobe.steepSide = toward
+            lobe.steepening = 1.8
+            return lobe
+        }
         var lobes: [Hill.Lobe] = []
         /// Whether a summit keeps clear of anything already on the map.
         func clear(_ lobe: Hill.Lobe) -> Bool {
@@ -904,36 +917,35 @@ final class WorldMap {
             }
             return true
         }
-        // Along the edge and a little past its ends, a summit every 5 to 9 cells.
+        // Along the edge and a little past its ends, summits of all sizes, close enough that it
+        // rises all along the edge, not in humps with flats between.
         var a = -8.0
         while a < Double(length) + 8 {
-            let reach = Double.random(in: 7...10, using: &rng)
-            let depth = Double.random(in: 11...15, using: &rng)
-            let peak = Double.random(in: 80...115, using: &rng)
+            let reach = Double.random(in: 5...11, using: &rng)
+            let depth = facesYou ? Double.random(in: 9...16, using: &rng) : Double.random(in: 6...10, using: &rng)
+            let peak = Double.random(in: 65...125, using: &rng)
             let foot = abs(a - middle) < reach ? 3 : Double.random(in: 2...4, using: &rng)
-            let centre = point(a, depth - foot)
-            let lobe = Hill.Lobe(x: centre.x, y: centre.y, along: reach, across: depth,
-                                 angle: angle + Double.random(in: -0.15...0.15, using: &rng), peak: peak, steepness: steepness)
+            let lobe = summit(a, depth - foot, along: reach, across: depth, turn: Double.random(in: -0.15...0.15, using: &rng), peak: peak)
             if clear(lobe) { lobes.append(lobe) }
-            // Close enough that it rises all along the edge, not in humps with flats between.
-            a += reach * Double.random(in: 0.7...0.95, using: &rng)
+            a += reach * Double.random(in: 0.6...0.95, using: &rng)
         }
-        // A summit round the road, its foot 5.5 cells in, so the road climbs to the mouth partway up
-        // its side (the long summits along the edge rise too slowly across to stand high there).
-        let summit = point(middle, 9 - 5.5)
-        let over = Hill.Lobe(x: summit.x, y: summit.y, along: 8, across: 9, angle: angle,
-                             peak: Double.random(in: 95...110, using: &rng), steepness: steepness)
+        // A summit round the road, the mouth partway up its side: the long ones along the edge rise
+        // too slowly across to stand high there. On the face toward you its foot is 3 cells in; on
+        // a gentle back, 5.5.
+        let over = summit(middle, 9 - (facesYou ? 3 : 5.5), along: 8, across: 9, turn: 0, peak: Double.random(in: 95...110, using: &rng))
         if clear(over) { lobes.append(over) }
-        // Taller ones behind, out past the edge.
-        a = -4
-        while a < Double(length) + 4 {
-            let reach = Double.random(in: 9...13, using: &rng)
-            let depth = Double.random(in: 12...16, using: &rng)
-            let peak = Double.random(in: 110...150, using: &rng)
-            let centre = point(a, depth + Double.random(in: 2...6, using: &rng))
-            lobes.append(Hill.Lobe(x: centre.x, y: centre.y, along: reach, across: depth,
-                                   angle: angle + Double.random(in: -0.2...0.2, using: &rng), peak: peak, steepness: steepness))
-            a += reach * Double.random(in: 1.1...1.6, using: &rng)
+        // Taller ones behind the face, out past the edge (a ridge facing away has none: they'd stand
+        // in front of it).
+        if facesYou {
+            a = -4
+            while a < Double(length) + 4 {
+                let reach = Double.random(in: 9...13, using: &rng)
+                let depth = Double.random(in: 12...16, using: &rng)
+                let peak = Double.random(in: 110...150, using: &rng)
+                lobes.append(summit(a, depth + Double.random(in: 2...6, using: &rng), along: reach, across: depth,
+                                    turn: Double.random(in: -0.2...0.2, using: &rng), peak: peak))
+                a += reach * Double.random(in: 1.1...1.6, using: &rng)
+            }
         }
         guard !lobes.isEmpty else { return nil }
         let ripples = (0..<3).map { _ in
@@ -941,9 +953,10 @@ final class WorldMap {
              fy: Double.random(in: 0.4...1, using: &rng), py: Double.random(in: 0..<6.3, using: &rng))
         }
         var hill = Hill(lobes: lobes, ripples: ripples, steepness: steepness)
-        // Where it's drawn: past the map's corners and out past its edge as far as the mist hides
-        // it (the scene's surroundings reach 18 cells out; past them it's all mist).
-        let corners = [point(-20, -5), point(Double(length) + 20, -5), point(-20, 22), point(Double(length) + 20, 22)]
+        // Where it's drawn: past the map's corners and out past its edge till the mist hides it
+        // (`WorldScene.placeCrags`: from 14 cells out, or 13 past a ridge, and all mist 8 further).
+        let far = facesYou ? 30.0 : 24.0
+        let corners = [point(-20, -6), point(Double(length) + 20, -6), point(-20, far), point(Double(length) + 20, far)]
         let xs = corners.map { $0.x }, ys = corners.map { $0.y }
         let low = GridPoint(col: Int(xs.min()!.rounded(.down)), row: Int(ys.min()!.rounded(.down)))
         let high = GridPoint(col: Int(xs.max()!.rounded(.up)), row: Int(ys.max()!.rounded(.up)))
@@ -968,7 +981,7 @@ final class WorldMap {
         }
         hill.highest = CGFloat(hill.heights.max() ?? 0)
         let mouth = point(middle, 0)
-        hill.mouth = Hill.Mouth(x: mouth.x, y: mouth.y, along: along, into: out, half: Double(road.count) / 2 + 0.4, depth: 1.7)
+        hill.mouth = Hill.Mouth(x: mouth.x, y: mouth.y, along: along, into: out, half: Double(road.count) / 2 + 0.7, depth: 2)
         // Nothing grows on its foot in the map, and no pond or other hill goes there.
         for cell in cells where contains(cell) {
             occupy(cell, blocking: false)
@@ -978,9 +991,12 @@ final class WorldMap {
     }
 
     /// Whether a cell is under or against a range where a road leads into a cave, in the map or
-    /// out past its edge.
+    /// out past its edge, or anywhere past that edge (where the ground is its rock).
     func nearCrag(_ cell: GridPoint) -> Bool {
-        crags.contains { hills[$0.hill].field(Double(cell.col) + 0.5, Double(cell.row) + 0.5) > -1.5 }
+        crags.contains { crag in
+            spot(of: cell, from: crag.edge).inward < 0
+                || hills[crag.hill].field(Double(cell.col) + 0.5, Double(cell.row) + 0.5) > -1.5
+        }
     }
 
     // MARK: Town planning

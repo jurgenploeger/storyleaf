@@ -404,11 +404,15 @@ final class WorldScene: SKScene {
                 mapSize: (map.columns, map.rows),
                 shadow: Lighting.rgb(palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
                 highlight: Lighting.rgb(palette?.highlight) ?? (r: 1, g: 0.95, b: 0.8))
-            // A range where a road leads into a cave is a mountain of rock, its foot grassy.
+            // A range where a road leads into a cave is a mountain of rock, its foot grassy, in
+            // deeper shade; out past the map's edge the ground is rock too.
+            let scree = tiles(theme.hills?.bank ?? "tile_scree")
             var crag = look
-            crag.bank = tiles(theme.hills?.bank ?? "tile_scree")
+            crag.ground = { cell in self.map.contains(cell) ? look.ground(cell) : scree(cell) }
+            crag.bank = scree
             crag.rocky = 1
             crag.rockAbove = 0.2
+            crag.ambient = 0.25
             // Already where they show on screen (they lift themselves) and sorted, so straight into
             // the world.
             raisedHills = map.hills.flatMap { HillArt.sprites(for: $0, look: $0.isCrag ? crag : look) }
@@ -454,9 +458,11 @@ final class WorldScene: SKScene {
         let theme = def.theme
         let fill = SKTileGroup(tileDefinition: SKTileDefinition(texture: art.tileTexture(theme.border ?? theme.ground), size: tileSize))
         let road = SKTileGroup(tileDefinition: SKTileDefinition(texture: art.tileTexture(theme.path), size: tileSize))
+        // Past an edge where a road leads into a cave, the range's rock.
+        let rock = SKTileGroup(tileDefinition: SKTileDefinition(texture: art.tileTexture(theme.hills?.bank ?? "tile_scree"), size: tileSize))
         let columns = map.columns + margin * 2
         let rows = map.rows + margin * 2
-        let surroundings = SKTileMapNode(tileSet: SKTileSet(tileGroups: [fill, road]), columns: columns, rows: rows, tileSize: tileSize, fillWith: fill)
+        let surroundings = SKTileMapNode(tileSet: SKTileSet(tileGroups: [fill, road, rock]), columns: columns, rows: rows, tileSize: tileSize, fillWith: fill)
         surroundings.anchorPoint = .zero
         surroundings.position = CGPoint(x: -CGFloat(margin) * tile, y: -CGFloat(margin) * tile)
         let fog = Self.fogColor(from: art.tileTexture(theme.border ?? theme.ground), cave: theme.cave != nil)
@@ -490,6 +496,13 @@ final class WorldScene: SKScene {
         for cell in roadCells {
             surroundings.setTileGroup(road, forColumn: cell.col + margin, row: cell.row + margin)
         }
+        for crag in map.crags {
+            for row in -margin..<(map.rows + margin) {
+                for col in -margin..<(map.columns + margin) where map.spot(of: GridPoint(col: col, row: row), from: crag.edge).inward < 0 {
+                    surroundings.setTileGroup(rock, forColumn: col + margin, row: row + margin)
+                }
+            }
+        }
 
         // A loose treeline, keeping the roads clear (caves have rock walls instead), and stopping
         // where the fog begins so no tree pokes out of it.
@@ -511,36 +524,46 @@ final class WorldScene: SKScene {
     }
 
     /// Where a road leads into a cave: stones strewn over its range out past the map's edge, and
-    /// mist over its far reaches, up where its slopes are, as over the land past the other edges.
+    /// mist over its far reaches, from 14 cells out (13 past a ridge) to all mist 8 further, up at
+    /// about the height of the ground there, as over the land past the other edges.
     /// (The range itself is drawn with the hills, `HillArt`, its cave's mouth in its side.)
     private func placeCrags() {
-        let margin = Self.surroundingsMargin
-        let tile = WorldMap.tileSize, far = CGFloat(margin) * tile
-        let rows = CGFloat(map.rows) * tile, columns = CGFloat(map.columns) * tile
+        let tile = WorldMap.tileSize
         let colour = Self.fogColor(from: art.tileTexture(def.theme.border ?? def.theme.ground), cave: false)
         for crag in map.crags {
             let hill = map.hills[crag.hill]
             strewStones(on: hill)
-            let strip: CGRect = switch crag.edge {
-            case .north: CGRect(x: -far, y: rows, width: columns + 2 * far, height: far)
-            case .south: CGRect(x: -far, y: -far, width: columns + 2 * far, height: far)
-            case .east: CGRect(x: columns, y: -far, width: far, height: rows + 2 * far)
-            case .west: CGRect(x: -far, y: -far, width: far, height: rows + 2 * far)
+            let length = crag.edge == .north || crag.edge == .south ? map.columns : map.rows
+            let facesYou = crag.edge == .north || crag.edge == .east
+            let from: CGFloat = facesYou ? 14 : 13
+            // The ground's height where the mist thickens, on average along the edge.
+            let heights = stride(from: 0, to: length, by: 4).map { along -> CGFloat in
+                let cell = map.cell(on: crag.edge, along: along, inward: -Int(from) - 4)
+                return hill.height(atCells: Double(cell.col) + 0.5, Double(cell.row) + 0.5)
             }
+            let lift = heights.reduce(0, +) / CGFloat(max(1, heights.count))
+            // In the ground's own terms: `from` cells past the edge to all mist 8 further, and on.
+            let wide = (CGFloat(length) + 80) * tile, deep = 8 * tile, beyond = 60 * tile
             let fog = SKNode()
-            addFog(colour, around: strip, in: fog, except: crag.edge.opposite)
-            // And all mist past it, where the range goes on out of sight.
-            let beyond: CGRect = switch crag.edge {
-            case .north: CGRect(x: strip.minX - far, y: strip.maxY, width: strip.width + 2 * far, height: 2 * far)
-            case .south: CGRect(x: strip.minX - far, y: strip.minY - 2 * far, width: strip.width + 2 * far, height: 2 * far)
-            case .east: CGRect(x: strip.maxX, y: strip.minY - far, width: 2 * far, height: strip.height + 2 * far)
-            case .west: CGRect(x: strip.minX - 2 * far, y: strip.minY - far, width: 2 * far, height: strip.height + 2 * far)
+            let band = SKSpriteNode(texture: Self.fogTexture, color: colour, size: CGSize(width: wide, height: deep))
+            band.colorBlendFactor = 1
+            let mist = SKSpriteNode(color: colour, size: CGSize(width: wide, height: beyond))
+            // Laid out for the north edge, then turned to the crag's.
+            band.position = CGPoint(x: 0, y: (from + 4) * tile)
+            mist.position = CGPoint(x: 0, y: (from + 8) * tile + beyond / 2)
+            let turned = SKNode()
+            turned.addChild(band)
+            turned.addChild(mist)
+            let middle = CGFloat(length) / 2 * tile
+            switch crag.edge {
+            case .north: turned.position = CGPoint(x: middle, y: CGFloat(map.rows) * tile)
+            case .south: turned.position = CGPoint(x: middle, y: 0); turned.zRotation = .pi
+            case .east: turned.position = CGPoint(x: CGFloat(map.columns) * tile, y: middle); turned.zRotation = -.pi / 2
+            case .west: turned.position = CGPoint(x: 0, y: middle); turned.zRotation = .pi / 2
             }
-            let mist = SKSpriteNode(color: colour, size: beyond.size)
-            mist.position = CGPoint(x: beyond.midX, y: beyond.midY)
-            fog.addChild(mist)
+            fog.addChild(turned)
             let raised = projected(fog)
-            raised.position.y = hill.highest * 0.8
+            raised.position.y = lift
             raised.zPosition = 15_000
             world.addChild(raised)
         }
