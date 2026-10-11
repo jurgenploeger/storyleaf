@@ -57,6 +57,19 @@ extension WorldMap {
         let steepness: Double
         /// Its trails: the first from the ground in front, then one up its mountain.
         var trails: [Trail] = []
+        /// A cave's mouth in its side, where a road leads into a cave (`WorldMap.raiseCrags`): its
+        /// middle at the foot (in cells), which way is along the edge it's on and which way into
+        /// the hill (unit), and how far across either side and how far in it reaches (cells).
+        nonisolated struct Mouth {
+            let x, y: Double
+            let along: (x: Double, y: Double)
+            let into: (x: Double, y: Double)
+            let half, depth: Double
+        }
+        var mouth: Mouth?
+        /// A range along a map's edge with a cave's mouth in it, rising on past the edge, rather than
+        /// hills out in the fields.
+        var isCrag: Bool { mouth != nil }
         /// The cells it rises over.
         var cells: Set<GridPoint> = []
         /// Its height sampled `samples` times a cell from `origin` over `size` cells, for walkers

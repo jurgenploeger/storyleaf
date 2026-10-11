@@ -44,13 +44,7 @@ final class CaveWalls {
     /// Walls of `rock` (a tile) `height` points tall wherever `isRock` says, in the map and out past
     /// its edge to `margin` cells, their tops `topShade` darker than the rock. `rows` and `columns`
     /// narrow where to look, if the rock is all in one part of that.
-    /// A tier of rock on top of another stands `lift` points up, its floor the top of the one under
-    /// it, and `layer` (its tier) sorts it over that one where they meet. `deepFrom`: how many cells
-    /// from its floor its rock can be the flat layer, if the default (about its height) isn't far
-    /// enough, as when a high tier stands in front of lower ground. `craggy` rock, out in the open,
-    /// has cut corners instead of rounded ones and cracks and ledges in its faces.
     init(map: WorldMap, rock: String, height: CGFloat, topShade: CGFloat, world: SKNode, art: ArtLibrary, margin: Int,
-         lift: CGFloat = 0, layer: Int = 0, deepFrom: Int? = nil, craggy: Bool = false,
          rows: Range<Int>? = nil, columns: Range<Int>? = nil, isRock: (GridPoint) -> Bool) {
         let tile = WorldMap.tileSize
         // Every top uses the same tile, lined up with the flat layer, so they meet seamlessly.
@@ -69,7 +63,7 @@ final class CaveWalls {
         // Rock this far from the floor is hidden behind the blocks in front of it, so it can be the
         // flat layer: about as many cells as the walls are tall, up the screen.
         let depthStep = WorldMap.project(CGPoint(x: tile, y: 0)).y
-        let near = max(2, deepFrom ?? Int((height / depthStep).rounded(.up)) - 1)
+        let near = max(2, Int((height / depthStep).rounded(.up)) - 1)
 
         // Which blocks go where. A rock cell's block shows all of its rock; a floor cell in a
         // corner between walls gets a sliver of rock in that corner, sorted by where it sits.
@@ -82,13 +76,11 @@ final class CaveWalls {
                     for dc in -1...1 where isRock(GridPoint(col: col + dc, row: row + dr)) { mask |= 1 << ((dr + 1) * 3 + dc + 1) }
                 }
                 let center = WorldMap.project(CGPoint(x: (CGFloat(col) + 0.5) * tile, y: (CGFloat(row) + 0.5) * tile))
-                // Craggy rock's blocks come in three versions, their cracks in different places.
-                let variant = craggy ? Self.variant(col, row) << 12 : 0
                 if isRock(cell) {
                     // Only rock near the floor needs its own block; the rest is the flat layer.
                     let nearFloor = (-near...near).contains { dr in (-near...near).contains { dc in !isRock(GridPoint(col: col + dc, row: row + dr)) } }
                     if nearFloor {
-                        pending.append((cell, mask | variant, -center.y))
+                        pending.append((cell, mask, -center.y))
                     } else {
                         deep.setTileGroup(group, forColumn: col + margin, row: row + margin)
                     }
@@ -96,14 +88,14 @@ final class CaveWalls {
                     for corner in 0..<4 where Self.fills(mask: mask, corner: corner) {
                         let quarter = WorldMap.project(CGPoint(x: (CGFloat(col) + 0.25 + 0.5 * CGFloat(corner & 1)) * tile,
                                                                y: (CGFloat(row) + 0.25 + 0.5 * CGFloat(corner >> 1)) * tile))
-                        pending.append((cell, mask | (corner + 1) << 9 | variant, -quarter.y))
+                        pending.append((cell, mask | (corner + 1) << 9, -quarter.y))
                     }
                 }
             }
         }
 
         let keys = Array(Set(pending.map(\.key))).sorted()
-        let (textures, blockSize) = Self.atlas(keys: keys, top: top, side: side, height: height, topShade: topShade, craggy: craggy)
+        let (textures, blockSize) = Self.atlas(keys: keys, top: top, side: side, height: height, topShade: topShade)
         guard textures.count == keys.count else { return }
         let index = Dictionary(uniqueKeysWithValues: keys.enumerated().map { ($1, $0) })
         let half = WorldMap.project(CGPoint(x: tile, y: tile)).y / 2
@@ -112,8 +104,8 @@ final class CaveWalls {
             let node = SKSpriteNode(texture: textures[i], size: blockSize)
             let center = WorldMap.project(CGPoint(x: (CGFloat(block.cell.col) + 0.5) * tile, y: (CGFloat(block.cell.row) + 0.5) * tile))
             node.anchorPoint = CGPoint(x: 0.5, y: Self.pad / blockSize.height)
-            node.position = center + CGVector(dx: 0, dy: lift - half)
-            node.zPosition = block.z + CGFloat(layer) * 0.01
+            node.position = center + CGVector(dx: 0, dy: -half)
+            node.zPosition = block.z
             world.addChild(node)
         }
 
@@ -123,8 +115,8 @@ final class CaveWalls {
         turn.zRotation = .pi / 4
         squash.addChild(turn)
         turn.addChild(deep)
-        squash.position.y = lift + height
-        squash.zPosition = -99_000 + CGFloat(layer)
+        squash.position.y = height
+        squash.zPosition = -99_000
         world.addChild(squash)
     }
 
@@ -154,11 +146,10 @@ final class CaveWalls {
     /// corner rounded: a quarter circle around the cell's middle, bulging out where the rock
     /// sticks out and hollowed where it goes in. Neighbouring arcs and straight walls meet
     /// without a kink, so walls that would zig-zag become gentle waves. Key: the 3×3 rock mask,
-    /// plus (for a floor cell's corner sliver) `(corner + 1) << 9`, plus a craggy block's version
-    /// `<< 12`. `steps`: straight pieces a corner, 1 cutting it off straight.
-    private static func shape(for key: Int, steps arcSteps: Int) -> Shape {
+    /// plus (for a floor cell's corner sliver) `(corner + 1) << 9`.
+    private static func shape(for key: Int) -> Shape {
         let mask = key & 511
-        let only = ((key >> 9) & 7) - 1
+        let only = (key >> 9) - 1
         var result = Shape()
         for corner in 0..<4 where only < 0 || corner == only {
             let x = corner & 1 == 1 ? 1 : -1, y = corner >> 1 == 1 ? 1 : -1
@@ -194,26 +185,11 @@ final class CaveWalls {
         return result
     }
 
-    /// Which of three versions a craggy block at a cell is: a hash, so neighbours differ.
-    private static func variant(_ col: Int, _ row: Int) -> Int {
-        Int(scatter(col &* 92_821 ^ row, 0) * 2.999)
-    }
-
-    /// A steady scatter from 0 to 1 for a seed and a number.
-    private static func scatter(_ seed: Int, _ number: Int) -> CGFloat {
-        var value = UInt32(truncatingIfNeeded: (seed &* 7_919) ^ (number &* 104_729))
-        value = (value ^ (value >> 15)) &* 0x2C1B_3C6D
-        value = (value ^ (value >> 12)) &* 0x297A_2D39
-        value ^= value >> 15
-        return CGFloat(value & 0xFFFF) / 65_535
-    }
-
     // MARK: Drawing
 
     /// Every block that's needed, in one texture so they draw together, in the order of `keys`.
     /// Also returns a block's size in points.
-    private static func atlas(keys: [Int], top: CGImage, side: CGImage, height: CGFloat, topShade: CGFloat,
-                              craggy: Bool) -> ([SKTexture], CGSize) {
+    private static func atlas(keys: [Int], top: CGImage, side: CGImage, height: CGFloat, topShade: CGFloat) -> ([SKTexture], CGSize) {
         let tile = WorldMap.tileSize
         let c = CGFloat(0.5).squareRoot()
         let width = 2 * tile * c
@@ -251,8 +227,8 @@ final class CaveWalls {
         }
         /// A wall face from `a` to `b` along the floor (`length` in grid points), up to the top:
         /// the rock texture sheared onto it, shaded darker toward the floor, with light rounding
-        /// over the lip; craggy, a crack and a ledge here and there (where `cracks` says).
-        func face(_ a: CGPoint, _ b: CGPoint, length: CGFloat, start: CGFloat, shade: CGFloat, cracks: Int?) {
+        /// over the lip.
+        func face(_ a: CGPoint, _ b: CGPoint, length: CGFloat, start: CGFloat, shade: CGFloat) {
             guard length > 0 else { return }
             context.saveGState()
             context.concatenate(CGAffineTransform(a: (b.x - a.x) / length, b: (b.y - a.y) / length, c: 0, d: 1, tx: a.x, ty: a.y))
@@ -271,39 +247,6 @@ final class CaveWalls {
             context.fill(rect)
             context.drawLinearGradient(darkToFloor, start: .zero, end: CGPoint(x: 0, y: height * 0.7), options: [])
             context.drawLinearGradient(lipShine, start: CGPoint(x: 0, y: height - 7), end: CGPoint(x: 0, y: height), options: [])
-            if let cracks {
-                func scatter(_ n: Int) -> CGFloat { CaveWalls.scatter(cracks, n) }
-                // Streaks down it, darker and lighter, like rock split along its grain.
-                for streak in 0..<3 {
-                    let x = length * scatter(10 + streak), wide = 2 + 5 * scatter(20 + streak)
-                    context.setFillColor(UIColor(white: streak == 2 ? 1 : 0, alpha: streak == 2 ? 0.07 : 0.13).cgColor)
-                    context.fill(CGRect(x: x, y: 0, width: wide, height: height))
-                }
-                context.setLineCap(.butt)
-                context.setLineWidth(1)
-                if scatter(0) < 0.85 {
-                    // A crack up from the foot, wandering a little.
-                    let x = length * (0.2 + 0.6 * scatter(1)), reach = height * (0.35 + 0.55 * scatter(2))
-                    context.move(to: CGPoint(x: x, y: 0))
-                    context.addLine(to: CGPoint(x: x + (scatter(3) - 0.5) * 4, y: reach * 0.5))
-                    context.addLine(to: CGPoint(x: x + (scatter(4) - 0.5) * 6, y: reach))
-                    context.setStrokeColor(UIColor(white: 0, alpha: 0.5).cgColor)
-                    context.strokePath()
-                }
-                if scatter(5) < 0.6 {
-                    // A ledge: light along its top, its shadow under it.
-                    let y = height * (0.3 + 0.5 * scatter(6))
-                    let from = length * 0.6 * scatter(7), to = min(length, from + length * (0.3 + 0.4 * scatter(8)))
-                    context.move(to: CGPoint(x: from, y: y))
-                    context.addLine(to: CGPoint(x: to, y: y))
-                    context.setStrokeColor(UIColor(white: 1, alpha: 0.16).cgColor)
-                    context.strokePath()
-                    context.move(to: CGPoint(x: from, y: y - 1))
-                    context.addLine(to: CGPoint(x: to, y: y - 1))
-                    context.setStrokeColor(UIColor(white: 0, alpha: 0.22).cgColor)
-                    context.strokePath()
-                }
-            }
             context.restoreGState()
         }
         /// A soft shadow on the floor in front of a face (`out` points away from the wall).
@@ -321,7 +264,7 @@ final class CaveWalls {
 
         var textures: [SKTexture] = []
         for (index, key) in keys.enumerated() {
-            let piece = Self.shape(for: key, steps: craggy ? 1 : arcSteps)
+            let piece = Self.shape(for: key)
             let origin = CGPoint(x: CGFloat((index % columns) * cellPixels.w + 1), y: CGFloat((index / columns) * cellPixels.h + 1))
             context.saveGState()
             context.translateBy(x: origin.x, y: origin.y)
@@ -336,12 +279,11 @@ final class CaveWalls {
                 let out = CGVector(dx: (n.dx - n.dy) * c / length * pad * 0.9, dy: (n.dx + n.dy) * c / 2 / length * pad * 0.9)
                 floorShadow(floor(edge.a), floor(edge.b), out: out)
             }
-            for (number, edge) in front.enumerated() {
+            for edge in front {
                 let n = edge.normal, length = (n.dx * n.dx + n.dy * n.dy).squareRoot()
                 // Lit from the left: faces turned west are brightest, faces turned south darkest.
                 let shade = 0.22 + 0.1 * (n.dx - n.dy) / length
-                face(floor(edge.a), floor(edge.b), length: edge.a.distance(to: edge.b) * tile, start: edge.along * tile, shade: shade,
-                     cracks: craggy ? key * 8 + number : nil)
+                face(floor(edge.a), floor(edge.b), length: edge.a.distance(to: edge.b) * tile, start: edge.along * tile, shade: shade)
             }
 
             // The top: the rock tile laid over the lifted outline, a hair bigger than the cell so

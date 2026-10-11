@@ -103,23 +103,20 @@ final class WorldMap {
              GridPoint(col: cells.map(\.col).max() ?? 0, row: cells.map(\.row).max() ?? 0))
         }
     }
-    /// Cave rock: solid cells drawn as raised walls (on maps with a `cave` theme, and along the side
-    /// of a map where a road leads into a cave, `crags`).
+    /// Cave rock: solid cells drawn as raised walls (only on maps with a `cave` theme).
     private(set) var rock: Set<GridPoint> = []
-    /// Where a road leads into a cave, the cave's rock rises along that side of the map
-    /// (`raiseCrags`): which side, the cave (its rock and how tall), and the cells along the edge
-    /// (columns for north and south, rows for east and west) where the road goes in.
+    /// Where a road leads into a cave, a range of rocky hills rises along that side of the map and
+    /// on out past its edge, the cave's mouth in its side (`raiseCrags`): which side, the cave, and
+    /// the range (an index into `hills`).
     nonisolated struct Crag {
         let edge: Edge
         let cave: MapDef.Cave
-        let mouth: ClosedRange<Int>
-        /// How its rock out past the edge wanders (`cragTiers`).
-        let phases: [Double]
-        /// On the sides that face you (south and west) the rock's face at the edge looks away, so the
-        /// way in is a cleft out past the edge under an arch of rock instead (`CaveMouth`).
-        var opensTowardYou: Bool { edge == .south || edge == .west }
+        let hill: Int
     }
     private(set) var crags: [Crag] = []
+    /// The map's cells a crag's range rises over, kept clear of ponds (and, taken, of scenery and
+    /// the other hills).
+    private var cragGround: Set<GridPoint> = []
     /// The middles of a cave's galleries and tunnels, kept clear of scenery so they stay open.
     private var passages: Set<GridPoint> = []
     private var occupied: Set<GridPoint> = []
@@ -165,18 +162,25 @@ final class WorldMap {
             placeOwnBuildings()
             keepNPCsInView()
         }
+        var ranges: [(edge: Edge, cave: MapDef.Cave, hill: Hill)] = []
         if def.theme.cave == nil, def.town == nil {
             // Its own random numbers, so the rest of the map comes out as it did before.
             var cragRNG = SeededRandom(text: def.id + "/crags")
             for exit in def.exits {
-                if let cave = caveOf(exit.to) { raiseCrags(along: exit.edge, cave: cave, &cragRNG) }
+                guard let cave = caveOf(exit.to), let range = raiseCrags(along: exit.edge, &cragRNG) else { continue }
+                ranges.append((exit.edge, cave, range))
             }
         }
         if def.theme.cave == nil, let ponds { digPonds(ponds, &rng) }
-        if def.town == nil, def.theme.cave == nil, let hills = def.theme.hills {
-            raiseHills(hills, &rng)
-            layFootpaths()
+        if def.town == nil, def.theme.cave == nil, let hills = def.theme.hills { raiseHills(hills, &rng) }
+        // The ranges where roads lead into caves join the hills after them, so the hills keep their
+        // places in the list.
+        for range in ranges {
+            for cell in range.hill.cells where contains(cell) { hillOf[cell] = self.hills.count }
+            crags.append(Crag(edge: range.edge, cave: range.cave, hill: self.hills.count))
+            self.hills.append(range.hill)
         }
+        if def.town == nil, def.theme.cave == nil, def.theme.hills != nil { layFootpaths() }
         if def.theme.accent != nil {
             if let patches = def.theme.accentPatches {
                 paintAccentPatches(patches, &rng)
@@ -853,108 +857,130 @@ final class WorldMap {
         }
     }
 
-    /// Where a road leads into a cave, the cave's rock rises along that side of the map, so you can
-    /// see from afar that the way on goes underground: a band of it 2 to 5 cells in from the edge, its
-    /// front wandering in and out, and more of it out past the edge (`cragTiers`). The road runs
-    /// through it to the cave's mouth at the edge, with a cell clear either side; nothing already set
-    /// down is buried.
-    private func raiseCrags(along edge: Edge, cave: MapDef.Cave, _ rng: inout SeededRandom) {
+    /// Where a road leads into a cave, a range of rocky hills rises along that side of the map, so
+    /// you can see from afar that the way on goes into the mountain: summits one after another along
+    /// the edge, their feet 1 to 4 cells in from it, one round the road with its foot 5.5 cells in
+    /// (the road climbs to the cave's mouth, about 40 points up its side), and taller ones behind,
+    /// rising on past the edge into the mist. The mouth is in its side where the road meets the edge
+    /// (`Hill.Mouth`). A summit that would cover anything already set down is left out. Nil if no
+    /// road reaches that edge.
+    private func raiseCrags(along edge: Edge, _ rng: inout SeededRandom) -> Hill? {
         let length = edge == .north || edge == .south ? columns : rows
-        let phases = (0..<11).map { _ in Double.random(in: 0..<(2 * Double.pi), using: &rng) }
-        func nearRoad(_ cell: GridPoint) -> Bool {
-            for dr in -1...1 {
-                for dc in -1...1 {
-                    let near = GridPoint(col: cell.col + dc, row: cell.row + dr)
-                    if contains(near), ground[near.row][near.col] == .path { return true }
-                }
-            }
-            return false
-        }
-        for along in 0..<length {
-            let t = Double(along)
-            let slow: Double = sin(0.23 * t + phases[0])
-            let quick: Double = 0.6 * sin(0.61 * t + phases[1]) + 0.3 * sin(1.37 * t + phases[2])
-            let depth = max(1, Int((3.5 + slow + quick).rounded()))
-            for inward in 0..<depth {
-                let cell = self.cell(on: edge, along: along, inward: inward)
-                guard ground[cell.row][cell.col] != .water, !occupied.contains(cell), !nearRoad(cell) else { continue }
-                rock.insert(cell)
-                occupy(cell, blocking: true)
-            }
-        }
-        // The way in: the open cells along the edge round the road's middle there.
         let road = (0..<length).filter { along in
             let cell = self.cell(on: edge, along: along, inward: 0)
             return ground[cell.row][cell.col] == .path
         }
-        guard !road.isEmpty else { return }
-        var low = road[road.count / 2], high = low
-        while low > 0, !rock.contains(cell(on: edge, along: low - 1, inward: 0)) { low -= 1 }
-        while high < length - 1, !rock.contains(cell(on: edge, along: high + 1, inward: 0)) { high += 1 }
-        crags.append(Crag(edge: edge, cave: cave, mouth: low...high, phases: Array(phases[3...])))
-    }
-
-    /// How many tiers of the cave's rock stand at a cell, 0 where there's none (`raiseCrags`): in the
-    /// map one, its `rock`. Out past an edge where a road leads into a cave it goes on out of sight,
-    /// its front wandering on past the map's corners, but for a cleft in front of the cave's mouth on
-    /// the sides that face you (`Crag.opensTowardYou`), and lumpy, so its tops aren't one flat slab.
-    /// On the sides away from you it climbs a tier just past the edge and rises in knobs and peaks to
-    /// a third further out: a mountain behind the mouth. On the sides that face you a high tier hides
-    /// the ground behind it (a tier `h` points up covers what's `h` / 31 cells nearer the map and as
-    /// far along the edge), so a ridge a tier higher, its crest higher still in places, stands 2.5
-    /// cells out at the nearest, hiding only rock, and round the mouth it stands back to 6.5 cells
-    /// out, its crest to 8.5, so it never hides the way in.
-    func cragTiers(_ cell: GridPoint) -> Int {
-        if contains(cell) { return rock.contains(cell) ? 1 : 0 }
-        for crag in crags {
-            let place = spot(of: cell, from: crag.edge)
-            let out = Double(-place.inward)
-            guard out >= 1 else { continue }
-            let length = crag.edge == .north || crag.edge == .south ? columns : rows
-            let t = Double(place.along), p = crag.phases
-            if place.along < 0 || place.along >= length {
-                let front: Double = 2 + sin(0.37 * t + p[0]) + 0.5 * sin(0.83 * t + p[1])
-                guard out >= front else { continue }
-            }
-            if crag.opensTowardYou, crag.mouth.contains(place.along), out <= 3 { return 0 }
-            let a: Double = sin(0.21 * t + p[2]) + 0.5 * sin(0.57 * t + p[3])
-            let b: Double = sin(0.29 * t + p[4]) + 0.5 * sin(0.77 * t + p[5])
-            let lumps = Self.lumps(t / 3.5, out / 3.5, seed: p[6])
-            if !crag.opensTowardYou {
-                let second = max(1.5, 2.8 + a)
-                guard out >= second else { return 1 }
-                return out > 15 || (out >= second + 1 && lumps + 0.05 * (out - 6) > 0.6) ? 3 : 2
-            }
-            // Round the mouth the ridge stands back.
-            let past = Double(max(0, crag.mouth.lowerBound - place.along, place.along - crag.mouth.upperBound))
-            let fade = min(1, max(0, (past - 4) / 8))
-            let open = 1 - fade * fade * (3 - 2 * fade)
-            let low = (2.5 + max(0, 0.8 * a)) * (1 - open) + 6.5 * open
-            let high = min(14.5, max(low + 3, (low + 4.5 + b) * (1 - open) + 11.5 * open))
-            let lumpy = out <= 15 && out >= (open > 0.05 ? 6.5 : 2.5) && lumps > 0.66
-            guard (out >= low && out <= high) || lumpy else { return 1 }
-            let crest = out >= max(5, low + 2) && out <= high - 1 && Self.lumps(t / 2.5, out / 2.5, seed: p[7]) > 0.45
-            return crest ? 3 : 2
+        guard !road.isEmpty else { return nil }
+        let middle = Double(road[road.count / 2]) + 0.5
+        // Grid directions along the edge and out past it, and where the edge begins.
+        let along: (x: Double, y: Double) = edge == .north || edge == .south ? (1, 0) : (0, 1)
+        let out: (x: Double, y: Double) = switch edge {
+        case .north: (0, 1)
+        case .south: (0, -1)
+        case .east: (1, 0)
+        case .west: (-1, 0)
         }
-        return 0
-    }
-
-    /// Smooth lumps from 0 to 1, about a unit across (value noise): the same for the same spot and seed.
-    private static func lumps(_ x: Double, _ y: Double, seed: Double) -> Double {
-        let i = x.rounded(.down), j = y.rounded(.down)
-        func corner(_ u: Double, _ v: Double) -> Double {
-            let wave = sin(u * 127.1 + v * 311.7 + seed * 17.3) * 43_758.5453
-            return wave - wave.rounded(.down)
+        let start: (x: Double, y: Double) = switch edge {
+        case .north: (0, Double(rows))
+        case .east: (Double(columns), 0)
+        case .south, .west: (0, 0)
         }
-        let fx = x - i, fy = y - j
-        let sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy)
-        let near = corner(i, j) + (corner(i + 1, j) - corner(i, j)) * sx
-        let far = corner(i, j + 1) + (corner(i + 1, j + 1) - corner(i, j + 1)) * sx
-        return near + (far - near) * sy
+        /// The point `a` cells along the edge and `o` cells out past it.
+        func point(_ a: Double, _ o: Double) -> (x: Double, y: Double) {
+            (start.x + along.x * a + out.x * o, start.y + along.y * a + out.y * o)
+        }
+        let angle = edge == .north || edge == .south ? 0.0 : Double.pi / 2
+        let steepness = Hill.steepness(rockiness: 1)
+        var lobes: [Hill.Lobe] = []
+        /// Whether a summit keeps clear of anything already on the map.
+        func clear(_ lobe: Hill.Lobe) -> Bool {
+            let reach = Int(max(lobe.along, lobe.across).rounded(.up)) + 1
+            for dr in -reach...reach {
+                for dc in -reach...reach {
+                    let cell = GridPoint(col: Int(lobe.x.rounded(.down)) + dc, row: Int(lobe.y.rounded(.down)) + dr)
+                    guard contains(cell), lobe.depth(Double(cell.col) + 0.5, Double(cell.row) + 0.5) > -1 else { continue }
+                    if occupied.contains(cell) || ground[cell.row][cell.col] == .water { return false }
+                }
+            }
+            return true
+        }
+        // Along the edge and a little past its ends, a summit every 7 to 12 cells.
+        var a = -8.0
+        while a < Double(length) + 8 {
+            let reach = Double.random(in: 7...10, using: &rng)
+            let depth = Double.random(in: 11...15, using: &rng)
+            let peak = Double.random(in: 80...115, using: &rng)
+            let foot = abs(a - middle) < reach ? 3 : Double.random(in: 1...4, using: &rng)
+            let centre = point(a, depth - foot)
+            let lobe = Hill.Lobe(x: centre.x, y: centre.y, along: reach, across: depth,
+                                 angle: angle + Double.random(in: -0.15...0.15, using: &rng), peak: peak, steepness: steepness)
+            if clear(lobe) { lobes.append(lobe) }
+            a += reach * Double.random(in: 0.9...1.2, using: &rng)
+        }
+        // A summit round the road, its foot 5.5 cells in, so the road climbs to the mouth partway up
+        // its side (the long summits along the edge rise too slowly across to stand high there).
+        let summit = point(middle, 9 - 5.5)
+        let over = Hill.Lobe(x: summit.x, y: summit.y, along: 8, across: 9, angle: angle,
+                             peak: Double.random(in: 95...110, using: &rng), steepness: steepness)
+        if clear(over) { lobes.append(over) }
+        // Taller ones behind, out past the edge.
+        a = -4
+        while a < Double(length) + 4 {
+            let reach = Double.random(in: 9...13, using: &rng)
+            let depth = Double.random(in: 12...16, using: &rng)
+            let peak = Double.random(in: 110...150, using: &rng)
+            let centre = point(a, depth + Double.random(in: 2...6, using: &rng))
+            lobes.append(Hill.Lobe(x: centre.x, y: centre.y, along: reach, across: depth,
+                                   angle: angle + Double.random(in: -0.2...0.2, using: &rng), peak: peak, steepness: steepness))
+            a += reach * Double.random(in: 1.1...1.6, using: &rng)
+        }
+        guard !lobes.isEmpty else { return nil }
+        let ripples = (0..<3).map { _ in
+            (fx: Double.random(in: 0.4...1, using: &rng), px: Double.random(in: 0..<6.3, using: &rng),
+             fy: Double.random(in: 0.4...1, using: &rng), py: Double.random(in: 0..<6.3, using: &rng))
+        }
+        var hill = Hill(lobes: lobes, ripples: ripples, steepness: steepness)
+        // Where it's drawn: past the map's corners and out past its edge as far as the mist hides
+        // it (the scene's surroundings reach 18 cells out; past them it's all mist).
+        let corners = [point(-20, -5), point(Double(length) + 20, -5), point(-20, 22), point(Double(length) + 20, 22)]
+        let xs = corners.map { $0.x }, ys = corners.map { $0.y }
+        let low = GridPoint(col: Int(xs.min()!.rounded(.down)), row: Int(ys.min()!.rounded(.down)))
+        let high = GridPoint(col: Int(xs.max()!.rounded(.up)), row: Int(ys.max()!.rounded(.up)))
+        var cells: Set<GridPoint> = []
+        let spots = [(0.0, 0.0), (0.5, 0.0), (1.0, 0.0), (0.0, 0.5), (0.5, 0.5), (1.0, 0.5), (0.0, 1.0), (0.5, 1.0), (1.0, 1.0)]
+        for row in low.row..<high.row {
+            for col in low.col..<high.col where spots.contains(where: { hill.field(Double(col) + $0.0, Double(row) + $0.1) > 0 }) {
+                cells.insert(GridPoint(col: col, row: row))
+            }
+        }
+        guard !cells.isEmpty else { return nil }
+        hill.cells = cells
+        let samples = Hill.samples
+        hill.origin = low
+        hill.size = (high.col - low.col, high.row - low.row)
+        let width = hill.size.columns * samples + 1, deep = hill.size.rows * samples + 1
+        hill.heights = [Float](repeating: 0, count: width * deep)
+        for j in 0..<deep {
+            for i in 0..<width {
+                hill.heights[j * width + i] = Float(hill.shape(Double(low.col) + Double(i) / Double(samples), Double(low.row) + Double(j) / Double(samples)))
+            }
+        }
+        hill.highest = CGFloat(hill.heights.max() ?? 0)
+        let mouth = point(middle, 0)
+        hill.mouth = Hill.Mouth(x: mouth.x, y: mouth.y, along: along, into: out, half: Double(road.count) / 2 + 0.4, depth: 1.7)
+        // Nothing grows on its foot in the map, and no pond or other hill goes there.
+        for cell in cells where contains(cell) {
+            occupy(cell, blocking: false)
+            cragGround.insert(cell)
+        }
+        return hill
     }
 
-    /// Whether the cave's rock stands at a cell (`cragTiers`).
-    func isCrag(_ cell: GridPoint) -> Bool { cragTiers(cell) > 0 }
+    /// Whether a cell is under or against a range where a road leads into a cave, in the map or
+    /// out past its edge.
+    func nearCrag(_ cell: GridPoint) -> Bool {
+        crags.contains { hills[$0.hill].field(Double(cell.col) + 0.5, Double(cell.row) + 0.5) > -1.5 }
+    }
 
     // MARK: Town planning
 
@@ -1540,7 +1566,8 @@ final class WorldMap {
                     }
                 }
                 let clear = cells.allSatisfy { cell in
-                    contains(cell) && !rock.contains(cell) && !isNear(cell, within: 2) { $0 == .path || $0 == .water }
+                    contains(cell) && !rock.contains(cell) && !cragGround.contains(cell)
+                        && !isNear(cell, within: 2) { $0 == .path || $0 == .water }
                 }
                 guard clear, !cells.isEmpty else { continue }
                 for cell in cells {

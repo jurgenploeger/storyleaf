@@ -530,7 +530,7 @@ enum DebugLaunch {
             let grid = WorldMap(def: def)
             // A range by its place, or `tallest`: the one with the highest top, up its highest trail.
             let tallest = Int(pick) == nil
-            let index = Int(pick) ?? grid.hills.indices.max { grid.hills[$0].peak < grid.hills[$1].peak }
+            let index = Int(pick) ?? grid.hills.indices.filter { !grid.hills[$0].isCrag }.max { grid.hills[$0].peak < grid.hills[$1].peak }
             if let index, grid.hills.indices.contains(index) {
                 let hill = grid.hills[index]
                 let highest = hill.trails.indices.max { hill.lobes[hill.trails[$0].lobe].peak < hill.lobes[hill.trails[$1].lobe].peak }

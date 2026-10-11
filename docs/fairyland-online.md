@@ -155,21 +155,21 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
 - Cave entrances (ours, since 0.4.5, asked for in playtesting 2026-10-11: a map's way into a cave should
   show from afar, a mountain or rock formation on that side): where a road leads into a cave (Shiverdell
   and Lotus Land into the Rat Cavern, Windswept Downs into Gooey Grotto, Moonwhisper and Emerald Road into
-  Whispering Hollow), the cave's own rock rises along that side of the map: a band 2 to 5 cells in from
-  the edge, its front wandering, and out past the edge on into the fog, with fog over its far reaches
-  like the land past the other edges (`WorldMap.raiseCrags`, `cragTiers`; drawn by `CaveWalls`). The road
-  runs through it with a cell clear either side. On the north and east sides the rock's face at the edge
-  looks your way and the road ends at a dark arch in it, and behind it the rock climbs in tiers (56, then
-  44 and 44 points more), rising in knobs and peaks into a mountain; on the south and west that face
-  looks away, so the road runs on under an arch of rock into a dark cleft (`CaveMouth`), and a ridge a
-  tier higher, its crest higher still in places, stands from 2.5 cells out, hiding only rock. A tier `h`
-  points up covers the ground `h` / 31 cells nearer the map and as far along the edge, so round the mouth
-  the ridge stands back to 6.5 cells and its crest to 8.5, clear of the cleft. Lumps (value noise) raise
-  knobs over the tops so they aren't one slab. In 0.4.5 it was one flat 64-point tier with rounded
-  corners, ending 6 to 10 cells out with grass beyond; playtesting (2026-10-11) found it too flat and
-  rounded, so since 0.4.6 it also has cut corners, streaks, cracks and ledges in its faces and boulders
-  strewn over its tops. Its walls inside caves are 32 to 36 points. How FO showed its cave entrances isn't in any source reachable
-  from a cloud session.
+  Whispering Hollow), a range of rocky hills rises along that side of the map (`WorldMap.raiseCrags`, a
+  `Hill` with a `mouth`): summits one after another along the edge, their feet 1 to 4 cells in, 80 to
+  115 points high, one round the road with its foot 5.5 cells in (so the road climbs to the mouth,
+  about 40 points up its side; the long summits rise too slowly across to stand high there), and taller
+  ones behind (110 to 150),
+  on out past the edge into the mist, with mist over its far reaches and all of it beyond, like the land
+  past the other edges. It's drawn like the hills (`HillArt`, past the map's edge too): scree on its
+  slopes from a fifth of the way up (`Look.rockAbove`), its foot grassy, and stones strewn over it past
+  the edge. The cave's mouth is painted into its side where the road meets the edge, so it rises and
+  leans with the slope: a rough arch, dark and darker deep in, a shadow round its rim, light on its lip,
+  its darkness spilling a little way out over the road. You can walk its foot in the map; nothing grows
+  there. 0.4.5 drew it as the cave's own rock in flat-topped walls (`CaveWalls`) with a dark arch in the
+  face, or on the south and west a cleft under an arch; a first 0.4.6 try stacked tiers of those walls.
+  Playtesting (2026-10-11) asked for a slope instead of flat tops and walls, and for no grass past it.
+  How FO showed its cave entrances isn't in any source reachable from a cloud session.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake

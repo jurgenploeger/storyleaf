@@ -19,10 +19,13 @@ enum HillArt {
         /// The trail's tile pictures by cell (the map's road).
         let trail: (GridPoint) -> CGImage?
         /// The rock (or sand, or chocolate) showing through on its slopes, by cell, if any.
-        let bank: ((GridPoint) -> CGImage?)?
+        var bank: ((GridPoint) -> CGImage?)?
         /// How rocky the map's hills are (`WorldMap.rockiness`): the rockier, the more of the bank
         /// shows, further down the slopes, and the deeper the shade.
-        let rocky: Double
+        var rocky: Double
+        /// Bare rock all over from this far up its slopes (0 at the foot, 1 where its top begins), if
+        /// set: a mountain of rock with only its foot grassy.
+        var rockAbove: Double? = nil
         /// The soft colour patches over the map's whole ground: a pixel a cell, north at the top.
         let variation: CGImage?
         let mapSize: (columns: Int, rows: Int)
@@ -135,6 +138,7 @@ enum HillArt {
                 let from = 0.75 - 0.45 * look.rocky, solid = 0.75 + 0.25 * look.rocky
                 let sheer = slope / hill.steepness + ragged * (0.15 + 0.15 * look.rocky)
                 var amount = min(1, max(0, (sheer - from) / 0.12)) * solid
+                if let above = look.rockAbove { amount = max(amount, min(1, max(0, (s - above + ragged * 0.1) / 0.12))) }
                 if amount > 0 { amount *= min(1, max(0, (trailDistance - 0.55) / 0.3)) }
                 for channel in 0..<4 { bare[index + channel] = UInt8(amount * 255) }
             }
@@ -186,6 +190,10 @@ enum HillArt {
         func rect(_ cell: GridPoint) -> CGRect {
             CGRect(x: CGFloat(cell.col - low.col) * scale, y: CGFloat(cell.row - low.row) * scale, width: scale, height: scale)
         }
+        /// A point in cells, in the range's own pixels.
+        func spot(_ point: CGPoint) -> CGPoint {
+            CGPoint(x: (point.x - CGFloat(low.col)) * scale, y: (point.y - CGFloat(low.row)) * scale)
+        }
         let side = square * px
         func paint(_ corner: GridPoint) -> CGImage? {
             guard let context = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
@@ -195,9 +203,11 @@ enum HillArt {
             context.translateBy(x: -CGFloat(offset.x), y: -CGFloat(offset.y))
             context.clip(to: whole)
             // The square's cells within the range's area and the map.
-            let firstColumn = max(corner.col, low.col, 0), firstRow = max(corner.row, low.row, 0)
-            let endColumn = min(corner.col + square, low.col + columns, look.mapSize.columns)
-            let endRow = min(corner.row + square, low.row + rows, look.mapSize.rows)
+            // (A range where a road leads into a cave goes on past the map's edge; `ground` has
+            // pictures for the land out there too.)
+            let firstColumn = max(corner.col, low.col), firstRow = max(corner.row, low.row)
+            let endColumn = min(corner.col + square, low.col + columns)
+            let endRow = min(corner.row + square, low.row + rows)
             var area: [GridPoint] = []
             if firstColumn < endColumn, firstRow < endRow {
                 for row in firstRow..<endRow {
@@ -242,6 +252,7 @@ enum HillArt {
                                                    width: CGFloat(look.mapSize.columns) * scale, height: CGFloat(look.mapSize.rows) * scale))
             }
             shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint)
+            if let mouth = hill.mouth { Self.cave(mouth, in: context, at: { spot($0) }) }
             if let outline {
                 context.setBlendMode(.destinationIn)
                 context.draw(outline, in: whole)
@@ -486,6 +497,67 @@ enum HillArt {
         value = (value ^ (value >> 13)) &* 0x5bd1_e995
         value ^= value >> 15
         return Double(value & 0xffff) / 65535
+    }
+
+    /// A cave's mouth in a hill's side (`WorldMap.Hill.Mouth`), painted on its ground so it rises
+    /// and leans with the slope: a rough arch from the foot up into the hill, dark and darkest deep
+    /// in, a shadow round its rim and light catching its lip, and its darkness spilling a little way
+    /// out over the ground in front. `at`: a point in cells in the picture's pixels.
+    private static func cave(_ mouth: WorldMap.Hill.Mouth, in context: CGContext, at: (CGPoint) -> CGPoint) {
+        func point(_ across: Double, _ inward: Double) -> CGPoint {
+            at(CGPoint(x: mouth.x + mouth.along.x * across + mouth.into.x * inward,
+                       y: mouth.y + mouth.along.y * across + mouth.into.y * inward))
+        }
+        let space = CGColorSpaceCreateDeviceRGB()
+        // The spill: dark at the mouth, gone a cell and a half out.
+        let spill = CGMutablePath()
+        spill.addLines(between: [point(-mouth.half - 0.4, 0), point(mouth.half + 0.4, 0),
+                                 point(mouth.half + 0.9, -1.5), point(-mouth.half - 0.9, -1.5)])
+        spill.closeSubpath()
+        let fade = [UIColor(white: 0, alpha: 0.45).cgColor, UIColor(white: 0, alpha: 0).cgColor] as CFArray
+        if let gradient = CGGradient(colorsSpace: space, colors: fade, locations: [0, 1]) {
+            context.saveGState()
+            context.addPath(spill)
+            context.clip()
+            context.drawLinearGradient(gradient, start: point(0, 0), end: point(0, -1.5), options: [])
+            context.restoreGState()
+        }
+        // The arch: straight sides a little way up, then a rough round top.
+        let arch = CGMutablePath()
+        arch.move(to: point(-mouth.half, -0.1))
+        let steps = 14
+        var lip: [CGPoint] = []
+        for k in 0...steps {
+            let t = Double(k) / Double(steps)
+            let across = (2 * t - 1) * mouth.half
+            let bulge = max(0, 1 - (2 * t - 1) * (2 * t - 1)).squareRoot()
+            let rough = k == 0 || k == steps ? 0 : 0.08 * sin(Double(k) * 2.3 + 0.7)
+            let inward = mouth.depth * (0.4 + 0.6 * bulge) + rough
+            arch.addLine(to: point(across, inward))
+            lip.append(point(across * 1.06, inward + 0.12))
+        }
+        arch.addLine(to: point(mouth.half, -0.1))
+        arch.closeSubpath()
+        let deep = [UIColor(red: 0.06, green: 0.05, blue: 0.07, alpha: 0.88).cgColor,
+                    UIColor(red: 0.02, green: 0.02, blue: 0.03, alpha: 0.98).cgColor] as CFArray
+        context.saveGState()
+        context.addPath(arch)
+        context.clip()
+        if let gradient = CGGradient(colorsSpace: space, colors: deep, locations: [0, 1]) {
+            context.drawLinearGradient(gradient, start: point(0, 0), end: point(0, mouth.depth),
+                                       options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+        }
+        context.restoreGState()
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+        context.addPath(arch)
+        context.setStrokeColor(UIColor(white: 0, alpha: 0.5).cgColor)
+        context.setLineWidth(3)
+        context.strokePath()
+        context.addLines(between: lip)
+        context.setStrokeColor(UIColor(white: 1, alpha: 0.28).cgColor)
+        context.setLineWidth(2)
+        context.strokePath()
     }
 
     /// Lights a square's picture a pixel (a tile's pixel) at a time: how lit the slope is there, in
