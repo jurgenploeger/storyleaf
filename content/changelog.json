@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.3.98",
+      "date": "2026-10-11",
+      "title": "Steady hands",
+      "notes": [
+        "The game no longer crashes when a friend throws a Seal Stone in a fight."
+      ]
+    },
+    {
       "version": "0.3.97",
       "date": "2026-10-11",
       "title": "Ups and downs",

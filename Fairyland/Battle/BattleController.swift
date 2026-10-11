@@ -880,7 +880,10 @@ final class BattleController {
             let stone = stoneID.flatMap(session.content.item) ?? (thrower?.isHero == true ? stones.first : nil)
             if case .ally(let friendID)? = thrower?.source,
                let index = session.data.friends?.firstIndex(where: { $0.id == friendID }) {
-                session.data.friends?[index].sealStones = max(0, (session.data.friends?[index].stonesLeft ?? 1) - 1)
+                // Counted first: an optional-chained write starts changing `session.data` before its
+                // right-hand side runs, so reading it there too is a simultaneous access, and a crash.
+                let left = max(0, (session.data.friends?[index].stonesLeft ?? 1) - 1)
+                session.data.friends?[index].sealStones = left
             } else if let stone {
                 session.removeItem(stone.id)
             }

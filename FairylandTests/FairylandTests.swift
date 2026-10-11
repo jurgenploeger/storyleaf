@@ -1423,6 +1423,29 @@ struct RulesTests {
         #expect(session.count(of: "wishing_seal") == 1)
     }
 
+    /// A friend's throw uses up one of their own Seal Stones, never one from your bag. Counting
+    /// theirs used to trip Swift's exclusivity check and crash the fight.
+    @Test func aFriendsThrowUsesTheirOwnStone() throws {
+        let content = Content.shared
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let momo = Adventurer(name: "Momo", raceID: "elf", classID: "mage", level: 5, look: .standard)
+        session.data.friends = [momo]
+        session.addItem("seal_stone")
+        let jelly = try #require(content.monster("jelly"))
+        let stats = Stats(hp: 60, attack: 10, defense: 8, speed: 10)
+        let hero = Combatant(id: 0, side: .party, source: .hero, name: "Hero", art: "player_walk", level: 5, element: .neutral,
+                             stats: stats, hp: 60, mp: 0, skills: [], captureRate: 0)
+        var ally = Combatant(id: 2, side: .party, source: .ally(momo.id), name: "Momo", art: "player_walk", level: 5, element: .neutral,
+                             stats: stats, hp: 60, mp: 0, skills: [], captureRate: 0)
+        ally.sealStones = momo.stonesLeft
+        let enemy = Combatant(id: 10, side: .enemies, source: .wild("jelly"), name: "Jelly", art: jelly.art, level: 1, element: jelly.element,
+                              stats: jelly.stats(at: 1), hp: 1, mp: 0, skills: [], captureRate: jelly.captureRate)
+        let battle = BattleController(engine: BattleEngine(party: [hero, ally], enemies: [enemy], content: content), session: session)
+        battle.apply(.capture(actor: 2, target: 10, success: false, wobbles: 1))
+        #expect(session.friends.first?.sealStones == momo.stonesLeft - 1)
+        #expect(session.count(of: "seal_stone") == 1)
+    }
+
     /// With one monster there's no choosing which: Attack goes straight for it. With two, you pick.
     @Test func aLoneTargetNeedsNoPicking() throws {
         let content = Content.shared
