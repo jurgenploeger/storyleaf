@@ -1122,6 +1122,117 @@
           "toy_bubbles"
         ]
       }
+    },
+    {
+      "id": "four_oxen",
+      "title": "Four Oxen and a Lion",
+      "giver": "old_ox",
+      "description": "My three friends and I stood tail to tail, and no lion could reach us. Then we quarrelled and went our own ways, and the Earth Lions have picked us off ever since. Drive off 8 of them.",
+      "objective": {
+        "type": "defeat",
+        "target": "earth_lion",
+        "count": 8
+      },
+      "reward": {
+        "gold": 3200,
+        "exp": 10500,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      },
+      "minLevel": 100
+    },
+    {
+      "id": "thunder_on_the_steppe",
+      "title": "Thunder on the Steppe",
+      "giver": "old_ox",
+      "description": "Golden Clouds roll over the steppe, and their thunder sends the wild bulls stampeding through the herd. Chase off 5 of them so we can graze in peace.",
+      "objective": {
+        "type": "defeat",
+        "target": "golden_cloud",
+        "count": 5
+      },
+      "reward": {
+        "gold": 4200,
+        "exp": 15000,
+        "items": [
+          "hi_ether",
+          "hi_potion"
+        ]
+      },
+      "minLevel": 106,
+      "requires": [
+        "four_oxen"
+      ]
+    },
+    {
+      "id": "the_waterhole",
+      "title": "The Waterhole",
+      "giver": "old_ox",
+      "description": "Black Bulls have taken the waterhole and let no one else drink. Drive off 10 of them, and tell my friends we'll stand together again.",
+      "objective": {
+        "type": "defeat",
+        "target": "black_bull",
+        "count": 10
+      },
+      "reward": {
+        "gold": 6000,
+        "exp": 22000,
+        "items": [
+          "hi_potion",
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "minLevel": 114,
+      "requires": [
+        "thunder_on_the_steppe"
+      ]
+    },
+    {
+      "id": "monkey_and_crab",
+      "title": "The Monkey and the Crab",
+      "giver": "little_crab",
+      "description": "A Wood Monkey traded me a seed for my rice ball. I grew it into a persimmon tree, and the monkeys climbed it and pelted me with the hard green fruit! Teach 10 Wood Monkeys some manners.",
+      "objective": {
+        "type": "defeat",
+        "target": "wood_monkey",
+        "count": 10
+      },
+      "reward": {
+        "gold": 9500,
+        "exp": 34000,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "minLevel": 124
+    },
+    {
+      "id": "persimmons_for_all",
+      "title": "Persimmons for Everyone",
+      "giver": "little_crab",
+      "description": "Now the Mint Shadow Apes come down from the hills for the ripe ones. Drive off 6, and the whole island can share the harvest.",
+      "objective": {
+        "type": "defeat",
+        "target": "mint_black_kong",
+        "count": 6
+      },
+      "reward": {
+        "gold": 12500,
+        "exp": 46000,
+        "items": [
+          "hi_potion",
+          "hi_potion",
+          "star_charm"
+        ]
+      },
+      "minLevel": 130,
+      "requires": [
+        "monkey_and_crab"
+      ]
     }
   ]
 }

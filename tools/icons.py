@@ -68,6 +68,8 @@ ICONS = {
     "egg": ("food/egg", "solid"),
     "edit": ("essential/edit", "solid"),
     "lock": ("essential/lock", "solid"),
+    "search": ("essential/search", "solid"),
+    "sort": ("arrows/arrows-up-down", "solid"),
     # Items
     "potion": ("gaming/health-potion", "solid"),
     "flask": ("education/flask", "solid"),

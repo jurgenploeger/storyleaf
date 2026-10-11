@@ -1,12 +1,18 @@
 import SwiftUI
 
 /// Change (Character → Equipment): every piece you have for that slot in a grid, what you're
-/// wearing first and trimmed in gold, what you can't use yet faded. A tap opens the piece's card
-/// (`ItemInfoCard`) with Cancel and Equip, or Unequip for what you're wearing.
+/// wearing first and trimmed in gold, what you can't use yet faded, and the gold upgrade arrow on
+/// anything better. With a handful to choose from, search, sort (the best for you first) and show
+/// only what you can wear. A tap opens the piece's card (`ItemInfoCard`) with Cancel and Equip, or
+/// Unequip for what you're wearing.
 struct EquipmentPicker: View {
     let session: GameSession
     let slot: ItemType
     let onClose: () -> Void
+    @State private var search = ""
+    @AppStorage("gearSort") private var sort: ItemSort = .best
+    /// Only what you can put on now (your class's, at your level).
+    @AppStorage("gearWearableOnly") private var wearableOnly = false
     /// The piece whose card is open. Debug `inspect=<item>` opens one from the bag.
     @State private var open: Pick? = DebugLaunch.inspectedItem.flatMap { Content.shared.item($0) }.map { Pick(item: $0, worn: false) }
 
@@ -18,6 +24,14 @@ struct EquipmentPicker: View {
 
     private var worn: ItemDef? { session.equipped(slot) }
     private var spares: [ItemDef] { session.bagEquipment.filter { $0.type == slot } }
+    /// The spares you're looking for, in the order you chose.
+    private var shown: [ItemDef] {
+        ItemFinder.arrange(spares.filter { !wearableOnly || session.equipIssue($0) == nil },
+                           search: search, sort: sort, session: session)
+    }
+    /// Enough to look through that search and sort earn their room.
+    private var findable: Bool { spares.count > 3 }
+    private static let sorts: [ItemSort] = [.best, .level, .name, .price, .standard]
 
     var body: some View {
         ZStack {
@@ -26,16 +40,33 @@ struct EquipmentPicker: View {
                 .onTapGesture(perform: onClose)
             VStack(spacing: 0) {
                 FLTitleBar(title: slot.displayName, icon: Self.icon(of: slot), onClose: onClose)
+                if findable {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
+                            ItemSearchField(text: $search)
+                            ItemSortMenu(sort: $sort, options: Self.sorts)
+                        }
+                        FilterChip(title: L("Can wear"), on: wearableOnly) { wearableOnly.toggle() }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.top, 12)
+                }
                 ScrollView {
                     if worn == nil && spares.isEmpty {
                         EmptyNote(L("Nothing for this slot yet. Shops, smiths and monsters have more."), size: 11)
                             .padding(14)
                     } else {
+                        let found = findable ? shown : spares
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 8)], spacing: 8) {
                             if let worn { tile(worn, wearing: true) }
-                            ForEach(spares) { tile($0, wearing: false) }
+                            ForEach(found) { tile($0, wearing: false) }
                         }
                         .padding(14)
+                        if found.isEmpty && !spares.isEmpty {
+                            EmptyNote(L("Nothing in your bag matches."), size: 11)
+                                .padding(.horizontal, 14)
+                                .padding(.bottom, 14)
+                        }
                     }
                 }
                 .scrollBounceBehavior(.basedOnSize)
@@ -75,7 +106,8 @@ struct EquipmentPicker: View {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { open = Pick(item: item, worn: wearing) }
         } label: {
             VStack(spacing: 4) {
-                ItemIcon(item: item, size: 44, count: wearing ? 1 : session.count(of: item.id))
+                ItemIcon(item: item, size: 44, count: wearing ? 1 : session.count(of: item.id),
+                         upgrade: !wearing && session.isUpgrade(item))
                 Text(item.name)
                     .font(HUDStyle.font(11))
                     .multilineTextAlignment(.center)

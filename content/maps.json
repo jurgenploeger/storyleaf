@@ -11133,6 +11133,15 @@
               "Where it stood, Dreamstone glows in the earth, bright as a golem's heart. Ambrose the Wise will want to hear, but the ore's trail runs on, south to Sneezle Isle."
             ]
           }
+        },
+        {
+          "id": "old_ox",
+          "name": "Old Ox",
+          "role": "quests",
+          "art": "npc_old_ox",
+          "x": 4,
+          "y": 3,
+          "greeting": "Moo... there were four of us once, and no lion dared come near."
         }
       ],
       "world": [
@@ -11389,6 +11398,17 @@
       "world": [
         3,
         -4
+      ],
+      "npcs": [
+        {
+          "id": "little_crab",
+          "name": "Little Crab",
+          "role": "quests",
+          "art": "npc_little_crab",
+          "x": -3,
+          "y": 3,
+          "greeting": "Oh! Mind the persimmons, they fall hard around here."
+        }
       ]
     },
     {
