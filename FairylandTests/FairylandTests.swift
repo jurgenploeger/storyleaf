@@ -688,8 +688,10 @@ struct RulesTests {
             let best = try #require(session.equipmentDrop(level: 40, best: true))
             if !best.type.isTrinket { #expect((35...40).contains(best.level ?? 1)) }
         }
-        // Past the best gear there is, weapons and armour come from the top (trinkets from anywhere).
-        let top = try #require(Content.shared.items.compactMap(\.level).max())
+        // Past the best gear monsters drop, weapons and armour come from the top (trinkets from
+        // anywhere). Quest treasures go higher, but no monster drops them.
+        let droppable = Content.shared.items.filter { !bossDrops.contains($0.id) && !Content.shared.isQuestTreasure($0.id) }
+        let top = try #require(droppable.compactMap(\.level).max())
         let beyond = (0..<30).compactMap { _ in session.equipmentDrop(level: top + 50) }.filter { !$0.type.isTrinket }
         #expect(!beyond.isEmpty)
         for gear in beyond { #expect((gear.level ?? 1) > top - 12, "\(gear.id) is level \(gear.level ?? 1)") }

@@ -1334,9 +1334,9 @@ final class GameSession {
     /// class can use. Bosses' own rare drops aren't in it, nor are quest treasures; those stay theirs.
     func equipmentDrop(level: Int, best: Bool = false) -> ItemDef? {
         let span = best ? 6 : 12
-        // Past the best gear there is, a monster drops from the top.
-        let top = min(level, content.items.compactMap(\.level).max() ?? level)
         let kept = Set(content.monsters.flatMap { $0.drops ?? [] }.map(\.item)).union(content.items.map(\.id).filter(content.isQuestTreasure))
+        // Past the best gear a monster can drop, it drops from the top (quest treasures go higher).
+        let top = min(level, content.items.filter { !kept.contains($0.id) }.compactMap(\.level).max() ?? level)
         let accessories = content.items.filter {
             $0.type.isTrinket && !kept.contains($0.id) && ($0.level ?? 1) <= top
         }
