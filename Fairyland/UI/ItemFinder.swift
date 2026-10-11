@@ -5,7 +5,8 @@ import SwiftUI
 nonisolated enum ItemSort: String, CaseIterable {
     /// As the game lists them (content/items.json): kind by kind, plainest first.
     case standard
-    /// Gear by what it's worth to you (`GameSession.gearValue`), the best first; the rest as they come.
+    /// What you can wear now before what you can't, each by what it's worth to you
+    /// (`GameSession.gearValue`), the best first; the rest as they come.
     case best
     case name, level, price, count
 
@@ -33,7 +34,8 @@ enum ItemFinder {
         switch sort {
         case .standard: return found
         case .name: return found.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-        case .best: value = { session.gearValue($0) }
+        // What you can wear comes first, however good the rest is: no gear is worth anywhere near this.
+        case .best: value = { (session.equipIssue($0) == nil ? 1_000_000 : 0) + session.gearValue($0) }
         case .level: value = { Double($0.level ?? 0) }
         case .price: value = { Double($0.price) }
         case .count: value = { Double(session.count(of: $0.id)) }
@@ -54,7 +56,8 @@ struct ItemSearchField: View {
         HStack(spacing: 6) {
             IconImage(.search, size: 14)
                 .foregroundStyle(HUDStyle.dim)
-            TextField(L("Search"), text: $text)
+            // The prompt in the HUD's dim cream: the system's grey hardly shows on the window's blue.
+            TextField("", text: $text, prompt: Text(L("Search")).foregroundStyle(HUDStyle.dim))
                 .font(HUDStyle.font(12))
                 .foregroundStyle(HUDStyle.cream)
                 .textInputAutocapitalization(.never)

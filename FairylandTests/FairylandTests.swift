@@ -1444,9 +1444,12 @@ struct RulesTests {
         session.data.hero.equipment[.armor] = nil
         session.addItem("cloth_tunic")
         #expect(session.upgrade(for: .armor)?.id == "cloth_tunic")
-        // Best for you puts the strongest for a fighter first, whatever its level.
+        // Best for you puts what the fighter can wear first, the strongest of it first; then the rest
+        // (the Luna Axe is stronger still, but needs level 100).
         let weapons = session.bagEquipment.filter { $0.type == .weapon }
-        #expect(ItemFinder.arrange(weapons, search: "", sort: .best, session: session).first?.id == "luna_axe")
+        let best = ItemFinder.arrange(weapons, search: "", sort: .best, session: session).map(\.id)
+        #expect(best.first == "silver_sword")
+        #expect(best.firstIndex(of: "luna_axe")! > best.firstIndex(of: "wooden_sword")!)
         // Search finds a name or a kind.
         #expect(ItemFinder.arrange(session.bagEquipment, search: "armor", sort: .standard, session: session).map(\.id) == ["cloth_tunic"])
         #expect(ItemFinder.arrange(weapons, search: "luna", sort: .name, session: session).map(\.id) == ["luna_axe", "luna_staff"])
