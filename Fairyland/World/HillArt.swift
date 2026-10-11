@@ -1,7 +1,7 @@
 import SpriteKit
 
 /// Draws a range of hills (`WorldMap.Hill`): the ground it rises over as pictures (the map's own
-/// tiles, bare patches on its steepest slopes, its trails painted up it), lit from the upper left like
+/// tiles, bare patches on its steepest slopes, its trails worn into it), lit from the upper left like
 /// the trees' shadows say, then lifted off the map by its heights. The lifting is a small shader on
 /// flat sprites over where it shows on screen: each pixel finds the ground point that rises to it
 /// (`WorldMap.groundPoint`'s halving, against the same heights walkers stand on) and shows the
@@ -81,12 +81,24 @@ enum HillArt {
         let flat = ambient + (1 - ambient) * sun.z
         let deepest = max(look.shadow.r, look.shadow.g, look.shadow.b, 0.01)
         let tint = (look.shadow.r / deepest, look.shadow.g / deepest, look.shadow.b / deepest)
-        // Only near a trail is it worth working out how near.
-        var nearTrails: Set<GridPoint> = []
-        for trail in hill.trails {
-            for point in trail.points {
-                let cell = GridPoint(col: Int(point.x.rounded(.down)), row: Int(point.y.rounded(.down)))
-                for dr in -1...1 { for dc in -1...1 { nearTrails.insert(GridPoint(col: cell.col + dc, row: cell.row + dr)) } }
+        // The trails as worn paths (`stamps(of:)`), and how near each sample is to one: from its
+        // edge, as if it reached an even 0.3 cells either side of its middle.
+        let stamps = Self.stamps(of: hill)
+        var nearness = [Float](repeating: .infinity, count: sw * sh)
+        let around = Int(1.2 * Double(samples)) + 1
+        for stamp in stamps {
+            let fx = (stamp.x - Double(low.col)) * Double(samples) - 0.5
+            let fy = (stamp.y - Double(low.row)) * Double(samples) - 0.5
+            let ci = Int(fx.rounded(.down)), cj = Int(fy.rounded(.down))
+            let i0 = max(0, ci - around), i1 = min(sw - 1, ci + around)
+            let j0 = max(0, cj - around), j1 = min(sh - 1, cj + around)
+            guard i0 <= i1, j0 <= j1 else { continue }
+            for j in j0...j1 {
+                for i in i0...i1 {
+                    let dx = (Double(i) - fx) / Double(samples), dy = (Double(j) - fy) / Double(samples)
+                    let distance = Float((dx * dx + dy * dy).squareRoot() - (stamp.width - 0.3))
+                    nearness[j * sw + i] = min(nearness[j * sw + i], distance)
+                }
             }
         }
         for j in 0..<sh {
@@ -96,11 +108,10 @@ enum HillArt {
                 // Image rows run top down.
                 let index = ((sh - 1 - j) * sw + i) * 4
                 let field = hill.field(x, y)
-                let near = nearTrails.contains(GridPoint(col: low.col + i / samples, row: low.row + j / samples))
-                let trailDistance = near ? hill.distanceToTrails(x, y) : .infinity
+                let trailDistance = Double(nearness[j * sw + i])
                 // Its outline, softened, and its trails' starts out on the ground in front.
                 var edge = min(1, max(0, (field + 0.06) / 0.25))
-                if field < 0.2 { edge = max(edge, min(1, max(0, (0.45 - trailDistance) / 0.1))) }
+                if field < 0.2 { edge = max(edge, min(1, max(0, (0.5 - trailDistance) / 0.1))) }
                 for channel in 0..<4 { mask[index + channel] = UInt8(edge * 255) }
                 guard field > 0 else { continue }
                 // How the slope faces the sun, from the heights walkers stand on (points a cell).
@@ -131,26 +142,49 @@ enum HillArt {
         let patches = look.bank == nil ? nil : image(bare, width: sw, height: sh)
         let outline = image(mask, width: sw, height: sh)
 
+        // The trails' pixels over the range's own (bottom row first): 3 the trail, 2 the shadow along
+        // its uphill edge where it's cut into the slope, 1 the lighter lip along its downhill edge.
+        // Each stamp a round with a ragged edge, a pixel pair at a time.
+        let wide = columns * px, high = rows * px
+        let pixels = Double(px)
+        var marks = [UInt8](repeating: 0, count: stamps.isEmpty ? 0 : wide * high)
+        var worn: Set<GridPoint> = []
+        for stamp in stamps {
+            let cx = (stamp.x - Double(low.col)) * pixels, cy = (stamp.y - Double(low.row)) * pixels
+            let half = stamp.width * pixels, band = 2.5 * stamp.cut
+            let inner = half * 0.85, outer = half * 1.15 + band
+            let reach = Int(outer.rounded(.up)) + 1
+            let x0 = max(0, Int(cx) - reach), x1 = min(wide - 1, Int(cx) + reach)
+            let y0 = max(0, Int(cy) - reach), y1 = min(high - 1, Int(cy) + reach)
+            guard x0 <= x1, y0 <= y1 else { continue }
+            for y in y0...y1 {
+                for x in x0...x1 {
+                    let ex = Double(x) + 0.5 - cx, ey = Double(y) + 0.5 - cy
+                    let distance = (ex * ex + ey * ey).squareRoot()
+                    guard distance < outer else { continue }
+                    let index = y * wide + x
+                    if distance < inner {
+                        marks[index] = 3
+                        continue
+                    }
+                    let edge = half * (0.85 + 0.3 * noise(x >> 1, y >> 1, 0))
+                    if distance < edge {
+                        marks[index] = 3
+                    } else if distance < edge + band {
+                        let mark: UInt8 = ex * stamp.upX + ey * stamp.upY > 0 ? 2 : 1
+                        marks[index] = max(marks[index], mark)
+                    }
+                }
+            }
+            let cell = GridPoint(col: Int(stamp.x.rounded(.down)), row: Int(stamp.y.rounded(.down)))
+            for dr in -1...1 { for dc in -1...1 { worn.insert(GridPoint(col: cell.col + dc, row: cell.row + dr)) } }
+        }
+
         // The pictures, a square of cells at a time, all drawn in the range's own pixels (from its
         // corner, `low`).
         let whole = CGRect(x: 0, y: 0, width: CGFloat(columns) * scale, height: CGFloat(rows) * scale)
         func rect(_ cell: GridPoint) -> CGRect {
             CGRect(x: CGFloat(cell.col - low.col) * scale, y: CGFloat(cell.row - low.row) * scale, width: scale, height: scale)
-        }
-        func spot(_ point: CGPoint) -> CGPoint {
-            CGPoint(x: (point.x - CGFloat(low.col)) * scale, y: (point.y - CGFloat(low.row)) * scale)
-        }
-        // The trails, cut into the slope: a shadow along the uphill edge, a lighter lip along the
-        // downhill one, and the trail itself in the map's road.
-        func lines(_ shift: Double) -> CGPath {
-            let path = CGMutablePath()
-            for trail in hill.trails {
-                path.addLines(between: trail.points.map { point in
-                    let up = hill.uphill(of: trail.lobe, Double(point.x), Double(point.y))
-                    return spot(CGPoint(x: Double(point.x) + up.x * shift, y: Double(point.y) + up.y * shift))
-                })
-            }
-            return path
         }
         let side = square * px
         func paint(_ corner: GridPoint) -> CGImage? {
@@ -189,25 +223,17 @@ enum HillArt {
                 context.endTransparencyLayer()
                 context.restoreGState()
             }
-            if !hill.trails.isEmpty {
-                context.saveGState()
-                context.setLineCap(.round)
-                context.setLineJoin(.round)
-                context.setLineWidth(0.6 * scale)
-                context.setStrokeColor(UIColor(white: 0, alpha: 0.3).cgColor)
-                context.addPath(lines(0.12))
-                context.strokePath()
-                context.setStrokeColor(UIColor(white: 1, alpha: 0.1).cgColor)
-                context.addPath(lines(-0.12))
-                context.strokePath()
-                context.addPath(lines(0))
-                context.replacePathWithStrokedPath()
-                context.clip()
-                context.interpolationQuality = .none
-                for cell in area {
-                    if let picture = look.trail(cell) { context.draw(picture, in: rect(cell)) }
+            // The trails, worn into it in the map's road.
+            if !stamps.isEmpty, area.contains(where: { worn.contains($0) }),
+               let road = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
+                                    space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) {
+                road.translateBy(x: -CGFloat(offset.x), y: -CGFloat(offset.y))
+                road.clip(to: whole)
+                road.interpolationQuality = .none
+                for cell in area where worn.contains(cell) {
+                    if let picture = look.trail(cell) { road.draw(picture, in: rect(cell)) }
                 }
-                context.restoreGState()
+                wear(context, road: road, marks: marks, wide: wide, offset: offset)
             }
             // The colour patches the rest of the ground has, then the light, then its outline.
             context.interpolationQuality = .medium
@@ -365,6 +391,102 @@ enum HillArt {
         }
     }
     """
+
+    /// A spot along a trail's middle (in cells): how far the trail reaches either side of it (in
+    /// cells), which way is uphill, and how far it's cut into the slope (0 on the flat at its foot and
+    /// on the top, 1 on the slope).
+    private struct Stamp {
+        let x, y, width, upX, upY, cut: Double
+    }
+
+    /// A range's trails as stamps every eighth of a cell or so: worn paths that wander a little either
+    /// side of their lines and narrow and widen as they go, each its own way. A smooth band of even
+    /// width read as drawn on, not walked in.
+    private static func stamps(of hill: WorldMap.Hill) -> [Stamp] {
+        var stamps: [Stamp] = []
+        for (number, trail) in hill.trails.enumerated() {
+            let seed = Double(number * 7 + trail.lobe * 3)
+            let phases: (Double, Double, Double, Double) = (seed * 1.31 + 0.4, seed * 2.17 + 1.9, seed * 0.73 + 2.6, seed * 1.91 + 0.8)
+            var walked = 0.0
+            let last = trail.points.count - 2
+            for index in 0..<max(0, last + 1) {
+                let from = trail.points[index], to = trail.points[index + 1]
+                let ax = Double(from.x), ay = Double(from.y)
+                let dx = Double(to.x) - ax, dy = Double(to.y) - ay
+                let length = (dx * dx + dy * dy).squareRoot()
+                guard length > 1e-9 else { continue }
+                let count = max(1, Int((length / 0.12).rounded(.up)))
+                for k in 0..<(index == last ? count + 1 : count) {
+                    let f = Double(k) / Double(count)
+                    let s = walked + length * f
+                    let wide: Double = 0.07 * sin(0.9 * s + phases.0)
+                    let wider: Double = 0.05 * sin(2.3 * s + phases.1)
+                    let drift: Double = 0.08 * sin(1.7 * s + phases.2)
+                    let wobble: Double = 0.05 * sin(4.1 * s + phases.3)
+                    let shift = drift + wobble
+                    let x = ax + dx * f - dy / length * shift
+                    let y = ay + dy * f + dx / length * shift
+                    let up = hill.uphill(of: trail.lobe, x, y)
+                    let rise = hill.rise(of: trail.lobe, x, y)
+                    stamps.append(Stamp(x: x, y: y, width: 0.3 + wide + wider, upX: up.x, upY: up.y, cut: min(1, 6 * rise * (1 - rise))))
+                }
+                walked += length
+            }
+        }
+        return stamps
+    }
+
+    /// Wears the trails into a square's picture (`marks`, over the range's pixels `wide` across, bottom
+    /// row first): the trail's pixels from `road` but for a few where the grass grows through, its
+    /// uphill edge in shadow and its downhill edge a little lighter.
+    /// `offset`: where the square's corner is in the range's pixels.
+    private static func wear(_ context: CGContext, road: CGContext, marks: [UInt8], wide: Int, offset: (x: Int, y: Int)) {
+        guard let data = context.data, let paved = road.data, wide > 0 else { return }
+        let width = context.width, height = context.height
+        let rowBytes = context.bytesPerRow, roadRowBytes = road.bytesPerRow
+        let bytes = data.bindMemory(to: UInt8.self, capacity: rowBytes * height)
+        let paving = paved.bindMemory(to: UInt8.self, capacity: roadRowBytes * height)
+        let high = marks.count / wide
+        marks.withUnsafeBufferPointer { marks in
+            for y in 0..<height {
+                // Memory rows run top down; marks bottom up.
+                let row = height - 1 - y + offset.y
+                guard row >= 0, row < high else { continue }
+                for x in 0..<width {
+                    let column = x + offset.x
+                    guard column < wide else { break }
+                    let mark = marks[row * wide + column]
+                    guard mark > 0 else { continue }
+                    let index = y * rowBytes + x * 4
+                    guard bytes[index + 3] > 0 else { continue }
+                    if mark == 3 {
+                        // A tuft of grass here and there.
+                        guard noise(column >> 1, row >> 1, 7) < 0.97 else { continue }
+                        let from = y * roadRowBytes + x * 4
+                        let cover = 1 - Float(paving[from + 3]) / 255
+                        for channel in 0..<4 {
+                            bytes[index + channel] = UInt8(min(255, Float(paving[from + channel]) + Float(bytes[index + channel]) * cover))
+                        }
+                    } else if mark == 2 {
+                        for channel in 0..<3 { bytes[index + channel] = UInt8(Float(bytes[index + channel]) * 0.75) }
+                    } else {
+                        // Premultiplied: no channel brighter than the pixel is opaque.
+                        let alpha = Float(bytes[index + 3])
+                        for channel in 0..<3 { bytes[index + channel] = UInt8(min(alpha, Float(bytes[index + channel]) * 1.1)) }
+                    }
+                }
+            }
+        }
+    }
+
+    /// A steady scatter from 0 to 1 for a spot (`x`, `y`), a different one for each `kind`.
+    private static func noise(_ x: Int, _ y: Int, _ kind: Int) -> Double {
+        let mixed: Int = (x &* 73_856_093) ^ (y &* 19_349_663) ^ (kind &* 83_492_791)
+        var value = UInt32(truncatingIfNeeded: mixed)
+        value = (value ^ (value >> 13)) &* 0x5bd1_e995
+        value ^= value >> 15
+        return Double(value & 0xffff) / 65535
+    }
 
     /// Lights a square's picture a pixel (a tile's pixel) at a time: how lit the slope is there, in
     /// steps of 6%, with a 4×4 ordered dither where one step gives way to the next, the way pixel art

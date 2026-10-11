@@ -237,11 +237,6 @@ extension WorldMap {
             return worst
         }
 
-        /// How far a point is from the nearest trail's middle, in cells.
-        func distanceToTrails(_ x: Double, _ y: Double) -> Double {
-            trails.map { Self.distance(x, y, to: $0.points) }.min() ?? .infinity
-        }
-
         /// How far a point is from a line's middle, in cells.
         static func distance(_ x: Double, _ y: Double, to line: [CGPoint]) -> Double {
             var best = Double.infinity

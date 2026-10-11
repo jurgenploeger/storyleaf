@@ -116,8 +116,12 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   climbing evenly and far enough round that halfway up it climbs about 5 points a cell, bending gently in
   and out; a curve up a low hill, a sweep half round a mountain, and a single hairpin where it would go
   most of the way round. Each range has its own aim, way round, stretch and bends (`Hill.traceTrail`);
-  0.4.1 to 0.4.4 zig-zagged in switchbacks. A `bank` tile shows through in ragged patches where they're
-  steepest.
+  0.4.1 to 0.4.4 zig-zagged in switchbacks. Since 0.4.5 it's drawn worn in (asked for in playtesting
+  2026-10-11: more natural, not so smooth): stamped along its line every eighth of a cell, wandering a
+  little either side and narrowing and widening as it goes, with a ragged edge two pixels at a time, a tuft
+  of grass here and there, and the shadow and lip only where it's cut into a slope (`HillArt.stamps`,
+  `wear`); 0.4.1 to 0.4.4 stroked it as a smooth band of even width. A `bank` tile shows through in ragged
+  patches where they're steepest.
 - Rocky or grassy by danger (ours, since 0.4.5, asked for in playtesting 2026-10-11: rocky mountains on
   dangerous maps, slopes on easy ones): `WorldMap.rockiness`, 0 to 1 from the middle of the map's
   encounter levels ((mid − 15) / 70; Sunny Meadow 0, Swan Lake 0.3, Crystal Mountain 0.9, Hidden Steppe
