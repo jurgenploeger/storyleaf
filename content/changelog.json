@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.4.6",
+      "date": "2026-10-11",
+      "title": "Into the mountain",
+      "notes": [
+        "The rock where a road leads into a cave looks like rock now, not paving: it climbs in steps into a mountain behind the cave's mouth, or a ridge out beyond it, with sharp edges, cracked cliffs and boulders on top. It runs on into the mist, so you no longer see grass past it."
+      ]
+    },
+    {
       "version": "0.4.5",
       "date": "2026-10-11",
       "title": "Climb anywhere",

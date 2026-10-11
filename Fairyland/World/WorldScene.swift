@@ -505,10 +505,23 @@ final class WorldScene: SKScene {
     }
 
     /// Where a road leads into a cave: the cave's rock along that side of the map and out past its
-    /// edge, and the cave's mouth where the road meets it (`WorldMap.Crag`, `CaveMouth`).
+    /// edge into the fog, in tiers (`WorldMap.cragTiers`), stones strewn over its tops, and the cave's
+    /// mouth where the road meets it (`WorldMap.Crag`, `CaveMouth`).
     private func placeCrags() {
         let margin = Self.surroundingsMargin
         let rows = map.rows, columns = map.columns
+        // How many tiers stand at each cell, worked out once: the walls ask after each cell many times.
+        let low = (col: -margin - 10, row: -margin - 10)
+        let wide = columns + 2 * margin + 20, high = rows + 2 * margin + 20
+        var tiers = [Int8](repeating: 0, count: wide * high)
+        for row in 0..<high {
+            for col in 0..<wide { tiers[row * wide + col] = Int8(map.cragTiers(GridPoint(col: col + low.col, row: row + low.row))) }
+        }
+        func tier(_ cell: GridPoint) -> Int {
+            let col = cell.col - low.col, row = cell.row - low.row
+            guard col >= 0, row >= 0, col < wide, row < high else { return map.cragTiers(cell) }
+            return Int(tiers[row * wide + col])
+        }
         for crag in map.crags {
             // Only that side of the map and past it holds any of its rock.
             let reach: (rows: Range<Int>, columns: Range<Int>) = switch crag.edge {
@@ -517,25 +530,70 @@ final class WorldScene: SKScene {
             case .east: (-margin..<rows + margin, columns - 8..<columns + margin)
             case .west: (-margin..<rows + margin, -margin..<8)
             }
-            _ = CaveWalls(map: map, rock: crag.cave.rock, height: CaveMouth.height, topShade: CaveMouth.topShade,
-                          world: world, art: art, margin: margin, rows: reach.rows, columns: reach.columns, isRock: map.isCrag)
+            // Each tier on the one under it; a ridge has one over the rest, a mountain two. A ridge
+            // stands in front of lower rock, so its blocks reach as far in as its top stands high.
+            var lift: CGFloat = 0
+            let depthStep = WorldMap.project(CGPoint(x: WorldMap.tileSize, y: 0)).y
+            for index in 0..<(crag.opensTowardYou ? 2 : 3) {
+                let height = CaveMouth.heights[index]
+                let deepFrom = crag.opensTowardYou ? Int(((lift + height) / depthStep).rounded(.up)) - 1 : nil
+                _ = CaveWalls(map: map, rock: crag.cave.rock, height: height, topShade: CaveMouth.topShades[index],
+                              world: world, art: art, margin: margin, lift: lift, layer: index, deepFrom: deepFrom, craggy: true,
+                              rows: reach.rows, columns: reach.columns, isRock: { tier($0) > index })
+                lift += height
+            }
             for sprite in CaveMouth.sprites(for: crag, map: map, art: art) { world.addChild(sprite) }
+            strewStones(over: reach, tier: tier)
+            // Fog over its far reaches, as over the land past the other edges, up where its tops are.
+            let tile = WorldMap.tileSize, far = CGFloat(margin) * tile
+            let wideStrip = (CGFloat(columns) + 2 * CGFloat(margin)) * tile, tallStrip = (CGFloat(rows) + 2 * CGFloat(margin)) * tile
+            let strip: CGRect = switch crag.edge {
+            case .north: CGRect(x: -far, y: CGFloat(rows) * tile, width: wideStrip, height: far)
+            case .south: CGRect(x: -far, y: -far, width: wideStrip, height: far)
+            case .east: CGRect(x: CGFloat(columns) * tile, y: -far, width: far, height: tallStrip)
+            case .west: CGRect(x: -far, y: -far, width: far, height: tallStrip)
+            }
+            let fog = SKNode()
+            addFog(Self.fogColor(from: art.tileTexture(def.theme.border ?? def.theme.ground), cave: false), around: strip, in: fog,
+                   except: crag.edge.opposite)
+            let raised = projected(fog)
+            raised.position.y = crag.opensTowardYou ? CaveMouth.heights[0] : CaveMouth.heights.reduce(0, +)
+            raised.zPosition = 15_000
+            world.addChild(raised)
+        }
+    }
+
+    /// Boulders and stones strewn over the tops of the rock where a road leads into a cave, so it
+    /// reads as rough, broken rock, not paving; never at an edge, where they'd hang over the drop.
+    private func strewStones(over reach: (rows: Range<Int>, columns: Range<Int>), tier: (GridPoint) -> Int) {
+        var random = SeededRandom(text: def.id + "/crag stones")
+        for row in reach.rows {
+            for col in reach.columns {
+                let level = tier(GridPoint(col: col, row: row))
+                guard level > 0, Double.random(in: 0..<1, using: &random) < 0.08 else { continue }
+                let inner = (-1...1).allSatisfy { dr in (-1...1).allSatisfy { dc in tier(GridPoint(col: col + dc, row: row + dr)) == level } }
+                guard inner else { continue }
+                let big = Bool.random(using: &random)
+                let size = CGFloat.random(in: 0.55...0.85, using: &random)
+                let stone = addScenery(art.sprite(big ? "boulder" : "rock"), at: GridPoint(col: col, row: row), scale: big ? size : size * 1.4)
+                stone.position.y += CaveMouth.heights.prefix(level).reduce(0, +)
+            }
         }
     }
 
     /// Soft bands along the inside of `rect` (in unprojected ground space), clear on the map side
-    /// and solid fog at the edge, where the background takes over.
-    private func addFog(_ color: UIColor, around rect: CGRect, in parent: SKNode) {
+    /// and solid fog at the edge, where the background takes over; none along its `except` side.
+    private func addFog(_ color: UIColor, around rect: CGRect, in parent: SKNode, except: Edge? = nil) {
         let depth = CGFloat(Self.fogBand) * WorldMap.tileSize
         let texture = Self.fogTexture
-        // (centre, length along the edge, rotation): the texture is solid at its top edge.
-        let bands: [(CGPoint, CGFloat, CGFloat)] = [
-            (CGPoint(x: rect.midX, y: rect.maxY - depth / 2), rect.width, 0),
-            (CGPoint(x: rect.midX, y: rect.minY + depth / 2), rect.width, .pi),
-            (CGPoint(x: rect.minX + depth / 2, y: rect.midY), rect.height, .pi / 2),
-            (CGPoint(x: rect.maxX - depth / 2, y: rect.midY), rect.height, -.pi / 2),
+        // (side, centre, length along the edge, rotation): the texture is solid at its top edge.
+        let bands: [(Edge, CGPoint, CGFloat, CGFloat)] = [
+            (.north, CGPoint(x: rect.midX, y: rect.maxY - depth / 2), rect.width, 0),
+            (.south, CGPoint(x: rect.midX, y: rect.minY + depth / 2), rect.width, .pi),
+            (.west, CGPoint(x: rect.minX + depth / 2, y: rect.midY), rect.height, .pi / 2),
+            (.east, CGPoint(x: rect.maxX - depth / 2, y: rect.midY), rect.height, -.pi / 2),
         ]
-        for (center, length, angle) in bands {
+        for (side, center, length, angle) in bands where side != except {
             let band = SKSpriteNode(texture: texture, color: color, size: CGSize(width: length, height: depth))
             band.colorBlendFactor = 1
             band.position = center

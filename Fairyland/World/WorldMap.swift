@@ -113,7 +113,7 @@ final class WorldMap {
         let edge: Edge
         let cave: MapDef.Cave
         let mouth: ClosedRange<Int>
-        /// How its rock out past the edge wanders (`isCrag`).
+        /// How its rock out past the edge wanders (`cragTiers`).
         let phases: [Double]
         /// On the sides that face you (south and west) the rock's face at the edge looks away, so the
         /// way in is a cleft out past the edge under an arch of rock instead (`CaveMouth`).
@@ -855,12 +855,12 @@ final class WorldMap {
 
     /// Where a road leads into a cave, the cave's rock rises along that side of the map, so you can
     /// see from afar that the way on goes underground: a band of it 2 to 5 cells in from the edge, its
-    /// front wandering in and out, and more of it out past the edge (`isCrag`). The road runs through
-    /// it to the cave's mouth at the edge, with a cell clear either side; nothing already set down
-    /// is buried.
+    /// front wandering in and out, and more of it out past the edge (`cragTiers`). The road runs
+    /// through it to the cave's mouth at the edge, with a cell clear either side; nothing already set
+    /// down is buried.
     private func raiseCrags(along edge: Edge, cave: MapDef.Cave, _ rng: inout SeededRandom) {
         let length = edge == .north || edge == .south ? columns : rows
-        let phases = (0..<6).map { _ in Double.random(in: 0..<(2 * Double.pi), using: &rng) }
+        let phases = (0..<11).map { _ in Double.random(in: 0..<(2 * Double.pi), using: &rng) }
         func nearRoad(_ cell: GridPoint) -> Bool {
             for dr in -1...1 {
                 for dc in -1...1 {
@@ -894,28 +894,42 @@ final class WorldMap {
         crags.append(Crag(edge: edge, cave: cave, mouth: low...high, phases: Array(phases[3...])))
     }
 
-    /// Whether the cave's rock stands at a cell: in the map, its `rock`; out past an edge where a road
-    /// leads into a cave, 6 to 10 cells of it, rounding off just past the map's corners, but for a
-    /// cleft in front of the cave's mouth on the sides that face you (`Crag.opensTowardYou`).
-    func isCrag(_ cell: GridPoint) -> Bool {
-        if contains(cell) { return rock.contains(cell) }
+    /// How many tiers of the cave's rock stand at a cell, 0 where there's none (`raiseCrags`): in the
+    /// map one, its `rock`. Out past an edge where a road leads into a cave it goes on out of sight,
+    /// its front wandering on past the map's corners, but for a cleft in front of the cave's mouth on
+    /// the sides that face you (`Crag.opensTowardYou`). On the sides away from you it climbs a tier
+    /// and then another further out, a mountain behind the mouth. On the sides that face you a
+    /// mountain would hide the way in and the land in front of it, so a ridge a tier higher stands
+    /// well out instead, about 11 to 16 cells past the edge.
+    func cragTiers(_ cell: GridPoint) -> Int {
+        if contains(cell) { return rock.contains(cell) ? 1 : 0 }
         for crag in crags {
             let place = spot(of: cell, from: crag.edge)
-            let out = -place.inward
+            let out = Double(-place.inward)
             guard out >= 1 else { continue }
             let length = crag.edge == .north || crag.edge == .south ? columns : rows
-            let t = Double(place.along)
-            let slow: Double = 1.2 * sin(0.19 * t + crag.phases[0])
-            let quick: Double = 0.7 * sin(0.53 * t + crag.phases[1]) + 0.4 * sin(1.21 * t + crag.phases[2])
-            // Past the map's corners it rounds off within 6 cells.
-            let past = Double(max(0, -place.along, place.along - (length - 1))) / 6
-            let reach = (7.5 + slow + quick) * max(0, 1 - past * past).squareRoot()
-            guard Double(out) <= reach else { continue }
-            if crag.opensTowardYou, crag.mouth.contains(place.along), out <= 3 { return false }
-            return true
+            let t = Double(place.along), p = crag.phases
+            if place.along < 0 || place.along >= length {
+                let front: Double = 2 + sin(0.37 * t + p[0]) + 0.5 * sin(0.83 * t + p[1])
+                guard out >= front else { continue }
+            }
+            if crag.opensTowardYou, crag.mouth.contains(place.along), out <= 3 { return 0 }
+            let a: Double = sin(0.21 * t + p[2]) + 0.5 * sin(0.57 * t + p[3])
+            let b: Double = sin(0.29 * t + p[4]) + 0.5 * sin(0.77 * t + p[5])
+            let c: Double = 0.6 * sin(0.43 * t + p[6]) + 0.4 * sin(1.13 * t + p[7])
+            if crag.opensTowardYou {
+                let low = 11 + 0.8 * a, high = 16 + 1.2 * b
+                return out >= low && out <= high ? 2 : 1
+            }
+            let second = max(1.5, 2.8 + a)
+            guard out >= second else { return 1 }
+            return out >= second + 3.5 + b + c ? 3 : 2
         }
-        return false
+        return 0
     }
+
+    /// Whether the cave's rock stands at a cell (`cragTiers`).
+    func isCrag(_ cell: GridPoint) -> Bool { cragTiers(cell) > 0 }
 
     // MARK: Town planning
 

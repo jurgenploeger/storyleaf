@@ -7,11 +7,15 @@ import SpriteKit
 /// under an arch of rock into a dark cleft instead. Either way the cave's darkness spills a little
 /// way out over the road.
 enum CaveMouth {
-    /// How tall the rock stands where a road leads into a cave: well over a cave's own walls, so
-    /// from afar it reads as the mountain the cave is in.
-    static let height: CGFloat = 64
-    /// Its tops a little darker than its rock, like a cave's, but out in the daylight.
-    static let topShade: CGFloat = 0.3
+    /// How tall each tier of the rock stands where a road leads into a cave (`WorldMap.cragTiers`):
+    /// the first well over a cave's own walls, the mountain or ridge beyond in two more steps.
+    static let heights: [CGFloat] = [56, 44, 44]
+    /// Their tops a little darker than their rock, like a cave's, but out in the daylight; the
+    /// higher, the lighter, so each step stands apart from the one below.
+    static let topShades: [CGFloat] = [0.32, 0.25, 0.18]
+    /// The mouth is in the first tier.
+    static var height: CGFloat { heights[0] }
+    static var topShade: CGFloat { topShades[0] }
     /// Pixels per point in its pictures, like the walls' blocks.
     private static let scale: CGFloat = 2
 

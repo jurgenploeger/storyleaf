@@ -143,8 +143,19 @@ struct ContentTests {
                 let mouth = crag.mouth.map { map.cell(on: exit.edge, along: $0, inward: 0) }
                 #expect(mouth.contains { map.ground[$0.row][$0.col] == .path && map.isWalkable($0) },
                         "map \(def.id): the road doesn't reach the cave's mouth")
-                let cleft = map.cell(on: exit.edge, along: (crag.mouth.lowerBound + crag.mouth.upperBound) / 2, inward: -2)
+                let middle = (crag.mouth.lowerBound + crag.mouth.upperBound) / 2
+                let cleft = map.cell(on: exit.edge, along: middle, inward: -2)
                 #expect(map.isCrag(cleft) != crag.opensTowardYou, "map \(def.id): the cave's mouth is the wrong way round")
+                // It goes on out of sight past the edge, in tiers: a mountain behind a mouth that
+                // looks your way, a ridge well out in front of one that doesn't, never hiding it.
+                #expect(map.isCrag(map.cell(on: exit.edge, along: middle, inward: -17)), "map \(def.id): the rock stops short of the fog")
+                let tiers = (1...17).map { map.cragTiers(map.cell(on: exit.edge, along: middle, inward: -$0)) }
+                if crag.opensTowardYou {
+                    #expect(tiers.contains(2), "map \(def.id): no ridge out past the cave's mouth")
+                    #expect(tiers.prefix(9).allSatisfy { $0 < 2 }, "map \(def.id): the ridge stands close enough to hide the cave's mouth")
+                } else {
+                    #expect(tiers.contains(3), "map \(def.id): no mountain behind the cave's mouth")
+                }
             }
         }
         // Nowhere else: no road from the meadow leads into a cave.
