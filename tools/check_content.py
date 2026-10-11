@@ -219,6 +219,24 @@ for quest in quests.values():
     for required in quest.get("requires", []):
         check(required in quests, f"quest {quest['id']} → unknown quest {required}")
 
+# Quest treasures (Content.questGiving): gear a quest gives that no shop sells. Only that quest gives
+# it (no boss drops it, no smith forges it, no other quest), and you can wear it the moment it's yours.
+GEAR = {"weapon", "armor", "gloves", "boots", "necklace", "accessory"}
+stocked = {item for npc in npcs.values() for item in npc.get("stock", [])}
+givers = {}
+for quest in quests.values():
+    for item in set(quest["reward"].get("items", [])):
+        if item in items and items[item]["type"] in GEAR and item not in stocked:
+            givers.setdefault(item, []).append(quest["id"])
+boss_drops = {drop["item"] for monster in monsters.values() for drop in monster.get("drops", [])}
+for item, given_by in givers.items():
+    check(len(given_by) == 1, f"quest treasure {item} → given by more than one quest: {', '.join(sorted(given_by))}")
+    check(item not in boss_drops, f"quest treasure {item} → a boss drops it too")
+    check("recipe" not in items[item], f"quest treasure {item} → a smith forges it too")
+    quest = quests[given_by[0]]
+    check(items[item].get("level", 1) <= quest.get("minLevel", 1),
+          f"quest treasure {item} (Lv {items[item].get('level', 1)}) → above its quest {quest['id']}'s level {quest.get('minLevel', 1)}")
+
 check(maps_file["start"] in maps, f"start map {maps_file['start']} doesn't exist")
 opposite = {"north": "south", "south": "north", "east": "west", "west": "east"}
 for map_def in maps.values():

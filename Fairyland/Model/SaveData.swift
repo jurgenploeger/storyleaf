@@ -159,6 +159,9 @@ nonisolated struct SaveData: Codable, Sendable {
     /// many days it's been given (its place in the round).
     var giftDay: String?
     var giftDays: Int?
+    /// Quest treasures already handed over (`GameSession.deliverQuestTreasures`): a quest finished
+    /// before it gave one sends it once.
+    var questTreasuresGiven: [String]?
 }
 
 /// A day's bounties (the Quests tab): a few small jobs, new each calendar day.

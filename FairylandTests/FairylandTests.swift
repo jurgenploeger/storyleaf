@@ -1467,6 +1467,49 @@ struct RulesTests {
         #expect(ItemFinder.arrange(weapons, search: "luna", sort: .name, session: session).map(\.id) == ["luna_axe", "luna_staff"])
     }
 
+    /// Quest treasures (gear a quest gives that no shop sells) come only from their quest: no monster
+    /// drops one, no trader carries one and no adventurer wears one. A save that finished the quest
+    /// before it gave its treasure gets it once, by post.
+    @Test func questTreasuresComeOnlyFromQuests() throws {
+        let content = Content.shared
+        #expect(content.items.filter { content.isQuestTreasure($0.id) }.count >= 20)
+        #expect(content.questGiving("oxhide_mail")?.id == "four_oxen")
+        // Shop gear a quest gives isn't one (the Leather Vest for choosing your path).
+        #expect(!content.isQuestTreasure("leather_vest"))
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.hero.classID = "fighter"
+        for level in stride(from: 10, through: 200, by: 10) {
+            for draw in 0..<40 {
+                if let drop = session.equipmentDrop(level: level, best: draw % 2 == 0) {
+                    #expect(!content.isQuestTreasure(drop.id), "a level-\(level) monster dropped \(drop.id)")
+                }
+            }
+            for classID in ["fighter", "mage", "tamer"] {
+                let adventurer = Adventurer(name: "Momo", raceID: "elf", classID: classID, level: level, look: .standard)
+                if let armor = GameSession.armor(for: adventurer) {
+                    #expect(!content.isQuestTreasure(armor.id), "a level-\(level) \(classID) wears \(armor.id)")
+                }
+                for offer in session.tradeOffers(with: adventurer) {
+                    #expect(!content.isQuestTreasure(offer.item.id), "a level-\(level) trader sells \(offer.item.id)")
+                }
+            }
+        }
+        // Handing the quest in gives it.
+        session.data.hero.level = 100
+        session.data.quests["four_oxen"] = QuestProgress(state: .active, count: 8)
+        session.turnInQuest("four_oxen")
+        #expect(session.count(of: "oxhide_mail") == 1)
+        #expect(session.deliverQuestTreasures().isEmpty)
+        // A quest finished before it gave its treasure: it comes when the game loads, and only once.
+        var older = session.data
+        older.quests["wolf_hunt"] = QuestProgress(state: .completed, count: 0)
+        older.questTreasuresGiven = ["oxhide_mail"]
+        let loaded = GameSession(data: older)
+        #expect(loaded.count(of: "woodcutters_coat") == 1)
+        #expect(loaded.count(of: "oxhide_mail") == 1)
+        #expect(GameSession(data: loaded.data).count(of: "woodcutters_coat") == 1)
+    }
+
     /// A quest giver with nothing for you says why, and where there's work: a level to reach,
     /// someone else's quest to finish first, or all done, with who needs someone like you.
     @Test func questGiversSayWhyAndWhereNext() {

@@ -46,8 +46,22 @@ struct ItemIcon: View {
     var upgrade = false
 
     var body: some View {
+        // A quest treasure (`Content.questGiving`) has a gold frame, and a sparkle once there's room.
+        let treasure = Content.shared.isQuestTreasure(item.id)
         IconTile(icon: item.icon.flatMap(GameIcon.init) ?? .gift, tint: tint, size: size,
                  picture: item.art.flatMap(ArtLibrary.shared.artImage))
+            .overlay {
+                if treasure {
+                    RoundedRectangle(cornerRadius: size * 0.26)
+                        .strokeBorder(LinearGradient(colors: [HUDStyle.gold, Color(red: 1, green: 0.6, blue: 0.85), HUDStyle.gold],
+                                                     startPoint: .topLeading, endPoint: .bottomTrailing),
+                                      lineWidth: max(1.5, size * 0.07))
+                        .shadow(color: HUDStyle.gold.opacity(0.6), radius: size * 0.08)
+                }
+            }
+            .overlay(alignment: .bottomLeading) {
+                if treasure && size >= 28 { TreasureBadge(size: min(17, size * 0.36)).offset(x: -4, y: 4) }
+            }
             .overlay(alignment: .topTrailing) {
                 if count > 1 { CountBadge(count: count).offset(x: 5, y: -5) }
             }
@@ -82,6 +96,21 @@ struct UpgradeBadge: View {
             .overlay(Circle().strokeBorder(.white, lineWidth: 1.5))
             .shadow(color: .black.opacity(0.35), radius: 1, x: 0, y: 1)
             .accessibilityLabel(L("Better than yours"))
+    }
+}
+
+/// A quest treasure (`Content.questGiving`): sparkles on a rose badge, like `UpgradeBadge`.
+struct TreasureBadge: View {
+    var size: CGFloat = 17
+
+    var body: some View {
+        IconImage(.sparkles, size: size * 0.62)
+            .foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(Circle().fill(Color(red: 0.86, green: 0.36, blue: 0.62)))
+            .overlay(Circle().strokeBorder(HUDStyle.gold, lineWidth: 1.5))
+            .shadow(color: .black.opacity(0.35), radius: 1, x: 0, y: 1)
+            .accessibilityLabel(L("Quest treasure"))
     }
 }
 

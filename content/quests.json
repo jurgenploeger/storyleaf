@@ -164,7 +164,7 @@
         "gold": 150,
         "exp": 120,
         "items": [
-          "lucky_clover"
+          "bunny_hop_boots"
         ]
       }
     },
@@ -230,7 +230,7 @@
         "gold": 200,
         "exp": 220,
         "items": [
-          "star_charm"
+          "flame_fleece_vest"
         ]
       },
       "minLevel": 21
@@ -275,7 +275,7 @@
         "gold": 500,
         "exp": 900,
         "items": [
-          "power_band"
+          "pipers_ring"
         ]
       },
       "minLevel": 45
@@ -297,7 +297,7 @@
         "gold": 900,
         "exp": 1800,
         "items": [
-          "dragon_mail"
+          "dragon_tooth_charm"
         ]
       },
       "minLevel": 65
@@ -319,7 +319,7 @@
         "gold": 700,
         "exp": 1600,
         "items": [
-          "speed_boots"
+          "crystal_heart_pendant"
         ]
       },
       "minLevel": 71
@@ -341,7 +341,7 @@
         "gold": 1500,
         "exp": 3000,
         "items": [
-          "snow_cloak"
+          "woodcutters_coat"
         ]
       },
       "minLevel": 82
@@ -399,6 +399,7 @@
         "gold": 110,
         "exp": 160,
         "items": [
+          "bricklayers_gloves",
           "ether"
         ]
       },
@@ -418,6 +419,7 @@
         "gold": 120,
         "exp": 180,
         "items": [
+          "wisp_light_pendant",
           "hi_ether"
         ]
       },
@@ -437,7 +439,7 @@
         "gold": 150,
         "exp": 230,
         "items": [
-          "ruby_ring"
+          "golden_ball_charm"
         ]
       },
       "minLevel": 21
@@ -476,6 +478,7 @@
         "gold": 240,
         "exp": 420,
         "items": [
+          "netcutter_gloves",
           "moon_seal",
           "hi_potion"
         ]
@@ -496,6 +499,7 @@
         "gold": 600,
         "exp": 1400,
         "items": [
+          "marquis_boots",
           "hi_potion",
           "hi_potion",
           "hi_ether"
@@ -557,7 +561,7 @@
         "gold": 1000,
         "exp": 2600,
         "items": [
-          "star_charm"
+          "stardust_ring"
         ]
       },
       "minLevel": 85
@@ -616,7 +620,7 @@
         "gold": 1469,
         "exp": 4608,
         "items": [
-          "power_band"
+          "howlmaster_mantle"
         ]
       },
       "minLevel": 32,
@@ -638,7 +642,8 @@
         "gold": 963,
         "exp": 2912,
         "items": [
-          "ruby_ring"
+          "hi_potion",
+          "hi_ether"
         ]
       },
       "minLevel": 22
@@ -677,9 +682,9 @@
         "gold": 2245,
         "exp": 7268,
         "items": [
+          "swallow_feather_necklace",
           "hi_potion",
-          "hi_potion",
-          "star_charm"
+          "hi_potion"
         ]
       },
       "minLevel": 40
@@ -718,7 +723,7 @@
         "gold": 3819,
         "exp": 12772,
         "items": [
-          "speed_boots"
+          "puppeteers_coat"
         ]
       },
       "minLevel": 56,
@@ -760,7 +765,7 @@
         "gold": 14000,
         "exp": 49375,
         "items": [
-          "dragon_mail",
+          "lioras_veil",
           "hi_potion",
           "hi_potion"
         ]
@@ -784,6 +789,7 @@
         "gold": 5533,
         "exp": 18848,
         "items": [
+          "briar_rose_robe",
           "hi_potion",
           "hi_potion",
           "hi_ether"
@@ -805,7 +811,7 @@
         "gold": 6949,
         "exp": 23908,
         "items": [
-          "power_band"
+          "craghulk_gauntlets"
         ]
       },
       "minLevel": 80,
@@ -827,9 +833,9 @@
         "gold": 15080,
         "exp": 53300,
         "items": [
+          "sneezle_ore_gauntlets",
           "hi_ether",
-          "hi_ether",
-          "star_charm"
+          "hi_ether"
         ]
       },
       "minLevel": 120,
@@ -851,6 +857,7 @@
         "gold": 18560,
         "exp": 65975,
         "items": [
+          "temple_bell_amulet",
           "hi_potion",
           "hi_potion",
           "hi_ether"
@@ -872,7 +879,7 @@
         "gold": 25160,
         "exp": 90100,
         "items": [
-          "dragon_mail"
+          "wavecrest_scale_mail"
         ]
       },
       "minLevel": 155,
@@ -894,7 +901,7 @@
         "gold": 29600,
         "exp": 106375,
         "items": [
-          "speed_boots",
+          "silverfang_boots",
           "hi_ether"
         ]
       },
@@ -914,6 +921,7 @@
         "gold": 26600,
         "exp": 95375,
         "items": [
+          "widow_silk_necklace",
           "hi_potion",
           "hi_potion",
           "hi_potion"
@@ -935,9 +943,8 @@
         "gold": 34400,
         "exp": 124000,
         "items": [
-          "dragon_mail",
-          "star_charm",
-          "power_band"
+          "emerald_dragon_mail",
+          "emerald_heart_ring"
         ]
       },
       "minLevel": 190,
@@ -1007,6 +1014,7 @@
         "gold": 2600,
         "exp": 5200,
         "items": [
+          "moonbeam_slippers",
           "hi_potion",
           "hi_potion",
           "hi_potion"
@@ -1137,6 +1145,7 @@
         "gold": 3200,
         "exp": 10500,
         "items": [
+          "oxhide_mail",
           "hi_potion",
           "hi_potion"
         ]
@@ -1224,9 +1233,9 @@
         "gold": 12500,
         "exp": 46000,
         "items": [
+          "persimmon_charm",
           "hi_potion",
-          "hi_potion",
-          "star_charm"
+          "hi_potion"
         ]
       },
       "minLevel": 130,

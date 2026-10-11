@@ -94,6 +94,12 @@ bag_find     | newgame,class=fighter,level=40,equip=bronze_broadsword,bag=silver
 quest_giver_done | newgame,class=fighter,level=103,map=swan_lake,done=wishes_of_a_duckling,npc=swan_keeper | 8
 quest_old_ox     | newgame,class=fighter,level=103,map=secret_plain,npc=old_ox | 8
 quest_little_crab | newgame,class=fighter,level=125,map=hachoo_island,npc=little_crab | 8
+# Quest treasures: gear only a quest gives. Its card (gold frame, where it comes from), the treasures
+# a save that finished those quests gets by post, in the Bag and on the map, and one on offer.
+treasure_card    | newgame,class=fighter,level=100,menu=bag,bag=oxhide_mail,inspect=oxhide_mail | 8
+treasure_bag     | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king+rat_king+puss_in_boots+crystal_hearts,menu=bag | 8
+treasure_post    | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king | 8
+treasure_offer   | newgame,class=fighter,level=72,map=sleepy_town,npc=thomas | 8
 skills       | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,menu=character,sub=skills | 8
 skills_learn | newgame,level=20,class=mage,menu=character,sub=skills             | 8
 boss_oak     | newgame,level=28,map=smiling_forest,at=-7_-11,npc=oak_grove    | 15

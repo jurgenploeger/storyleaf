@@ -946,6 +946,8 @@ final class Content {
         let rewards: RewardsDef
         /// Each monster's card level (`cardLevel`), worked out once.
         let cardLevels: [String: Int]
+        /// Quest treasures (`questGiving`): each one's quest.
+        let questTreasures: [String: String]
     }
 
     private let bundle: Bundle
@@ -1006,14 +1008,25 @@ final class Content {
                 if let id = npc.monster, let level = npc.level { cardLevels[id] = min(cardLevels[id] ?? .max, level) }
             }
         }
+        // Quest treasures: gear a quest gives that no shop sells.
+        let items = (load("items") as ItemsFile).items
+        let quests = (load("quests") as QuestsFile).quests
+        let stocked = Set(mapFile.maps.flatMap { ($0.npcs ?? []).flatMap { $0.stock ?? [] } })
+        let gear = Set(items.filter { ItemType.equipmentSlots.contains($0.type) }.map(\.id))
+        var questTreasures: [String: String] = [:]
+        for quest in quests {
+            for id in quest.reward.items ?? [] where gear.contains(id) && !stocked.contains(id) && questTreasures[id] == nil {
+                questTreasures[id] = quest.id
+            }
+        }
         return Loaded(
             classChoiceLevel: classFile.classChoiceLevel,
             races: classFile.races,
             classes: classFile.classes,
             skills: (load("skills") as SkillsFile).skills,
             monsters: (load("monsters") as MonstersFile).monsters,
-            items: (load("items") as ItemsFile).items,
-            quests: (load("quests") as QuestsFile).quests,
+            items: items,
+            quests: quests,
             maps: mapFile.maps,
             startMap: mapFile.start,
             songs: musicFile.songs,
@@ -1024,7 +1037,8 @@ final class Content {
             releases: (load("changelog") as ChangelogFile).releases,
             titles: (load("titles") as TitlesFile).titles,
             rewards: load("rewards"),
-            cardLevels: cardLevels
+            cardLevels: cardLevels,
+            questTreasures: questTreasures
         )
     }
 
@@ -1102,6 +1116,14 @@ final class Content {
     func home(ofNPC id: String) -> MapDef? {
         maps.first { $0.npcs?.contains { $0.id == id } == true }
     }
+
+    /// The quest that gives a quest treasure: gear only that quest gives, that no shop sells, no
+    /// monster drops, no smith forges and no adventurer carries (content/quests.json rewards).
+    func questGiving(_ itemID: String) -> QuestDef? {
+        loaded.questTreasures[itemID].flatMap(quest)
+    }
+
+    func isQuestTreasure(_ itemID: String) -> Bool { loaded.questTreasures[itemID] != nil }
 
     /// The level a monster's card is worth (`RewardsDef.Cards`): the middle of the gentlest band
     /// of levels it lives in, or a boss's own level; 1 for one that lives nowhere.

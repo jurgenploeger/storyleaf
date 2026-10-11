@@ -2,6 +2,16 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.4.2",
+      "date": "2026-10-11",
+      "title": "Quest treasures",
+      "notes": [
+        "Quests give treasures now: 28 pieces of armour, boots, gloves, necklaces and rings that no monster drops and no shop sells. Each comes from one quest and is the best of its kind for its level. They wear a gold frame, and the quest list shows what each one is before you start.",
+        "Armour now goes all the way to level 190, with treasures from the Old Ox, Ambrose the Wise, the Temple Keeper and the Emerald Guard.",
+        "Quests you've already finished send you their treasures the next time you play."
+      ]
+    },
+    {
       "version": "0.4.1",
       "date": "2026-10-11",
       "title": "Rolling hills",

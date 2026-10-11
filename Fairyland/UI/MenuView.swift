@@ -1426,9 +1426,18 @@ struct QuestRewardsView: View {
             ForEach(items) { entry in
                 HStack(spacing: 6) {
                     ItemIcon(item: entry.item, size: 22)
-                    Text(entry.count > 1 ? "\(entry.item.name) ×\(entry.count)" : entry.item.name)
-                        .font(HUDStyle.font(11))
-                        .foregroundStyle(HUDStyle.cream)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(entry.count > 1 ? "\(entry.item.name) ×\(entry.count)" : entry.item.name)
+                            .font(HUDStyle.font(11))
+                            .foregroundStyle(HUDStyle.cream)
+                        // A quest treasure: what it is, since you can't see one anywhere else first.
+                        if session.content.isQuestTreasure(entry.item.id) {
+                            Text(L("Quest treasure") + " · " + ItemInfoCard.summary(of: entry.item))
+                                .font(HUDStyle.font(9))
+                                .foregroundStyle(HUDStyle.gold)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 }
             }
             ForEach(roads, id: \.self) { road in

@@ -363,7 +363,7 @@ Full Heal.
 **Us:** monsters drop wood, metal, hide and gems, and three town smiths forge weapons from them. There's no
 gathering and no crafting level, and forging always works. Monsters also drop equipment from up to their own
 level (6% a monster at your level, up to 16% above it, 2% well below; rares 35%, bosses always), mostly for
-your class (`GameSession.equipmentDrop`).
+your class (`GameSession.equipmentDrop`), never a boss's own rare drop or a quest treasure.
 
 ## Titles, fame and PvP
 
@@ -388,6 +388,17 @@ since 0.4.0, at the playtester's request, 2026-10-11: a level-103 hero was told 
 same day closed a gap with nothing new between levels 96 and 109: the Old Ox on the Hidden Steppe (Aesop's
 four oxen and the lion; 100, 106, 114) and the Little Crab on Sneezle Isle (the Japanese tale of the monkey
 and the crab; 124, 130), both ours.
+Quest treasures (ours, since 0.4.2, asked for in playtesting 2026-10-11: quests should give rare items and
+armour you don't get from fights; no source we could reach says what FO's quests paid in gear): 28 pieces of
+armour, boots, gloves, necklaces and rings, each from one story quest between levels 14 and 190 and themed on
+it (Oxhide Mail from the Old Ox, the Woodcutter's Coat for the Big Bad Wolf, Liora's Veil from her ruins). A
+treasure is gear a quest gives that no shop sells (`Content.questGiving`); no monster drops one, no trader
+carries one and no adventurer wears one, and tools/check_content.py keeps each to one quest, off the bosses'
+drops and the smiths' recipes, and wearable at the quest's own level. They sit about a quarter above shop
+gear of their level (by `GameSession.gearValue`'s weights) with a stat mix of their own, and carry armour
+past the shops' last at level 78. Icons are free palette swaps with a gold frame and a sparkle; the item card
+names the quest, and the quest list shows each one's stats before you start. A save that finished a quest
+before it gave its treasure gets it by post once (`GameSession.deliverQuestTreasures`).
 
 **Cards (since 0.3.69):** FO's card collection, our own way, since no source we could reach says what FO's
 cards did. Every monster has one. A beaten monster leaves its card 3% of the time (rare 15%, boss 25%;

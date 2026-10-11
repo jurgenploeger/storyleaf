@@ -139,7 +139,28 @@ final class GameSession {
             self.data.hero.bonusSkillPoints = legacy.count
         }
         Self.moveGearToItsSlot(&self.data)
+        deliverQuestTreasures()
         applyLook()
+    }
+
+    /// Quest treasures you're owed: a quest finished before it gave its treasure (an older save)
+    /// sends it now, once, with a note from whoever gave the quest. What came.
+    @discardableResult
+    func deliverQuestTreasures() -> [ItemDef] {
+        var given = Set(data.questTreasuresGiven ?? [])
+        var sent: [ItemDef] = []
+        for quest in content.quests where data.quests[quest.id]?.state == .completed {
+            for id in quest.reward.items ?? [] where content.isQuestTreasure(id) && !given.contains(id) {
+                given.insert(id)
+                guard let item = content.item(id) else { continue }
+                addItem(id)
+                sent.append(item)
+                let giver = content.npc(quest.giver)?.name ?? quest.giver
+                post(L("{giver} sends you {item}, for “{quest}”.", ["giver": giver, "item": item.name, "quest": quest.title]), .reward)
+            }
+        }
+        data.questTreasuresGiven = given.sorted()
+        return sent
     }
 
     /// Gear worn in a slot that isn't its own goes where it belongs: Speed Boots were an accessory
@@ -742,8 +763,10 @@ final class GameSession {
     /// level, mostly of the best kind (a third of the time the kind before it). Novices wear tunics
     /// and leather vests. The same adventurer always picks the same, until they outgrow it.
     static func armor(for adventurer: Adventurer) -> ItemDef? {
+        // Never a quest treasure: those are yours alone.
         let wearable = Content.shared.items.filter {
             $0.type == .armor && ($0.level ?? 1) <= adventurer.level && ($0.classes?.contains(adventurer.classID) ?? true)
+                && !Content.shared.isQuestTreasure($0.id)
         }
         let tiers = Set(wearable.map { $0.level ?? 1 }).sorted(by: >)
         guard let best = tiers.first else { return nil }
@@ -759,6 +782,7 @@ final class GameSession {
     static func weapon(for adventurer: Adventurer) -> ItemDef? {
         let usable = Content.shared.items.filter {
             $0.type == .weapon && ($0.level ?? 1) <= adventurer.level && ($0.classes?.contains(adventurer.classID) ?? true)
+                && !Content.shared.isQuestTreasure($0.id)
         }
         let tiers = Set(usable.map { $0.level ?? 1 }).sorted(by: >)
         guard let best = tiers.first else { return nil }
@@ -1175,7 +1199,7 @@ final class GameSession {
         // And they carry a few things around their level.
         let level = adventurer.level
         let goods = content.items.filter { item in
-            item.price > 0 && item.capture != true && item.hatches == nil
+            item.price > 0 && item.capture != true && item.hatches == nil && !content.isQuestTreasure(item.id)
                 && (item.type == .consumable || item.type == .material || abs((item.level ?? 1) - level) <= 12)
         }
         let carried = Array(goods.shuffled(using: &rng).prefix(3))
@@ -1307,14 +1331,14 @@ final class GameSession {
     /// (`accessoryShare`) a trinket: any up to its level, the stronger ones more often.
     /// Otherwise a weapon or armour from the twelve levels up to its own (the top six from a rare
     /// monster or a boss), the higher ones more often, and three times in four something your
-    /// class can use. Bosses' own rare drops aren't in it; those stay theirs.
+    /// class can use. Bosses' own rare drops aren't in it, nor are quest treasures; those stay theirs.
     func equipmentDrop(level: Int, best: Bool = false) -> ItemDef? {
         let span = best ? 6 : 12
         // Past the best gear there is, a monster drops from the top.
         let top = min(level, content.items.compactMap(\.level).max() ?? level)
-        let bossDrops = Set(content.monsters.flatMap { $0.drops ?? [] }.map(\.item))
+        let kept = Set(content.monsters.flatMap { $0.drops ?? [] }.map(\.item)).union(content.items.map(\.id).filter(content.isQuestTreasure))
         let accessories = content.items.filter {
-            $0.type.isTrinket && !bossDrops.contains($0.id) && ($0.level ?? 1) <= top
+            $0.type.isTrinket && !kept.contains($0.id) && ($0.level ?? 1) <= top
         }
         if !accessories.isEmpty, Double.random(in: 0..<1) < Self.accessoryShare {
             let weights = accessories.map { Double($0.level ?? 1) + 10 }
@@ -1326,7 +1350,7 @@ final class GameSession {
             return accessories.last
         }
         let pool = content.items.filter {
-            ($0.type == .weapon || $0.type == .armor) && !bossDrops.contains($0.id)
+            ($0.type == .weapon || $0.type == .armor) && !kept.contains($0.id)
                 && ($0.level ?? 1) <= top && ($0.level ?? 1) > top - span
         }
         let yours = pool.filter { $0.classes?.contains(data.hero.classID) ?? true }
@@ -1599,6 +1623,7 @@ final class GameSession {
         for itemID in quest.reward.items ?? [] {
             addItem(itemID)
             lines.append(L("Got {item}", ["item": content.item(itemID)?.name ?? itemID]))
+            if content.isQuestTreasure(itemID) { data.questTreasuresGiven = (data.questTreasuresGiven ?? []) + [itemID] }
         }
         for map in content.maps {
             for exit in map.exits where exit.requires == id {
