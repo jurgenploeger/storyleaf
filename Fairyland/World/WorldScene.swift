@@ -415,6 +415,8 @@ final class WorldScene: SKScene {
             crag.ambient = 0.25
             crag.brightest = 1.3
             crag.strata = 14
+            // Its road stays a road all the way up to the cave's mouth.
+            crag.road = { cell in self.map.contains(cell) && self.map.ground[cell.row][cell.col] == .path }
             // Already where they show on screen (they lift themselves) and sorted, so straight into
             // the world.
             raisedHills = map.hills.flatMap { HillArt.sprites(for: $0, look: $0.isCrag ? crag : look) }

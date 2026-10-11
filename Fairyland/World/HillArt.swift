@@ -35,6 +35,8 @@ enum HillArt {
         /// Ledges across its steep bare rock, if set: a darker band every this many points up, a
         /// lighter lip over each, so it reads as layered rock rather than a smooth mound.
         var strata: Double? = nil
+        /// The map's road, if bare rock should leave it showing (a road up into a cave's mouth).
+        var road: ((GridPoint) -> Bool)? = nil
         /// The soft colour patches over the map's whole ground: a pixel a cell, north at the top.
         let variation: CGImage?
         let mapSize: (columns: Int, rows: Int)
@@ -149,6 +151,7 @@ enum HillArt {
                 var amount = min(1, max(0, (sheer - from) / 0.12)) * solid
                 if let above = look.rockAbove { amount = max(amount, min(1, max(0, (s - above + ragged * 0.1) / 0.12))) }
                 if amount > 0 { amount *= min(1, max(0, (trailDistance - 0.55) / 0.3)) }
+                if amount > 0, let road = look.road, road(GridPoint(col: Int(x.rounded(.down)), row: Int(y.rounded(.down)))) { amount = 0 }
                 for channel in 0..<4 { bare[index + channel] = UInt8(amount * 255) }
                 // Ledges: on bare rock from a gentle slope up (a cell's rise over its width, as the
                 // light has it, past 0.15), banded by height with a ragged edge.
