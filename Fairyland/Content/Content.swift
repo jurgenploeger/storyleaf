@@ -443,7 +443,8 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
     /// ground around it.
     nonisolated struct Hills: Decodable, Sendable {
         let count: Int
-        /// Radius in cells, [smallest, biggest] (3 to 6 when not given).
+        /// How far its main block reaches from its middle, across and deep, in cells: [smallest,
+        /// biggest] (3 to 6 when not given).
         let size: [Int]?
         /// How high they stand, in points (22 when not given).
         let height: Double?

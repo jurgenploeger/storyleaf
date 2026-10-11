@@ -6205,7 +6205,8 @@
             4,
             7
           ],
-          "height": 28
+          "height": 28,
+          "bank": "tile_cave_rock"
         },
         "props": [
           {

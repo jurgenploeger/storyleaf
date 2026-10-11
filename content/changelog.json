@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.3.99",
+      "date": "2026-10-11",
+      "title": "Smoother slopes",
+      "notes": [
+        "Hills are broad, flat-topped rises with straight edges now, like the town terraces, instead of zig-zag steps. Their tops catch a little more light, a thin shade marks their far edges, and Crystal Mountain's stand out in dark rock."
+      ]
+    },
+    {
       "version": "0.3.98",
       "date": "2026-10-11",
       "title": "Steady hands",

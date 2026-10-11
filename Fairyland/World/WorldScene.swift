@@ -353,6 +353,11 @@ final class WorldScene: SKScene {
                 top.setTileGroup(pick.group, forColumn: pick.col - low.col, row: pick.row - low.row)
             }
             top.position = CGPoint(x: CGFloat(low.col) * WorldMap.tileSize, y: CGFloat(low.row) * WorldMap.tileSize)
+            // A hilltop catches a little more light than the ground around it, so it stands apart.
+            if plateau.kind == .hill {
+                top.color = .white
+                top.colorBlendFactor = 0.08
+            }
             let grid = SKNode()
             grid.addChild(top)
             let layer = projected(grid)
@@ -605,6 +610,8 @@ final class WorldScene: SKScene {
             let rise = plateau.height
             let topZ = Self.topZ(of: plateau)
             let lips = CGMutablePath(), shadows = CGMutablePath(), creases = CGMutablePath(), treads = CGMutablePath()
+            let crests = CGMutablePath()
+            let up = CGVector(dx: 0, dy: rise)
             func line(_ path: CGMutablePath, _ from: CGPoint, _ to: CGPoint) {
                 path.move(to: from)
                 path.addLine(to: to)
@@ -646,6 +653,16 @@ final class WorldScene: SKScene {
                     line(lips, pa + CGVector(dx: 0, dy: rise), pb + CGVector(dx: 0, dy: rise))
                     line(shadows, pa + CGVector(dx: 0, dy: min(rise, lowA)), pb + CGVector(dx: 0, dy: min(rise, lowB)))
                 }
+                // A hill's far edges (back and right), where the top drops away out of sight: a thin
+                // shade along them, so its outline reads against the ground behind. A terrace has its
+                // railings there.
+                guard !terrace else { continue }
+                if !plateau.cells.contains(GridPoint(col: cell.col, row: cell.row + 1)) {
+                    line(crests, corner(cell.col, cell.row + 1) + up, corner(cell.col + 1, cell.row + 1) + up)
+                }
+                if !plateau.cells.contains(GridPoint(col: cell.col + 1, row: cell.row)) {
+                    line(crests, corner(cell.col + 1, cell.row) + up, corner(cell.col + 1, cell.row + 1) + up)
+                }
             }
             // Ramps: the foot on the ground in front, the head up at the top.
             for (cell, ramp) in plateau.ramps {
@@ -678,6 +695,7 @@ final class WorldScene: SKScene {
             }
             stroke(lips, color: terrace ? UIColor(white: 1, alpha: 0.55) : grassLip, width: terrace ? 2 : 3, z: topZ + 0.1)
             stroke(shadows, color: UIColor(white: 0, alpha: 0.28), width: 2, z: topZ - 0.45)
+            stroke(crests, color: UIColor(white: 0, alpha: 0.2), width: 2, z: topZ + 0.1)
             stroke(creases, color: UIColor(white: 0, alpha: 0.3), width: 1.5, z: topZ - 0.2)
             stroke(treads, color: UIColor(white: 1, alpha: 0.35), width: 1, z: topZ - 0.2)
         }

@@ -100,7 +100,9 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   fields (`theme.hills`: count, size, height, bank tile) really stand up. The top is drawn its height higher,
   a bank (stone wall, or earth) hangs under the edges facing you, and ramps (a terrace's stairs, a trodden
   slope up a hill) climb to the top; whoever walks up rises with it (`WorldMap.height(at:)`, `Walker.settle`),
-  and trees on a hilltop stand up there too. A hill's rim is a bank you can't walk but at its ramps.
+  and trees on a hilltop stand up there too. A hill's rim is a bank you can't walk but at its ramps. Since
+  0.3.99 hills are flat-topped blocks edged along the grid, like the terraces: round ones came out as zig-zag
+  steps. Their tops are a shade lighter, with a thin shade along the far edges.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake
