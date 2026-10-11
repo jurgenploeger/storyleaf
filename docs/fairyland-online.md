@@ -165,8 +165,10 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   west it's the far side: a ridge whose face you see beyond it, its back rising gently from the map to
   the mouth (5.5 cells of climb), with no taller row (it would stand in front of the ridge). It's drawn
   like the hills (`HillArt`, past the map's edge too): scree from a fifth of the way up (`Look.rockAbove`),
-  its foot grassy, deeper shade (`Look.ambient` 0.25), stones strewn over it, and the ground past that
-  edge rock as well. Mist thickens over it from 14 cells out (13 past a ridge) to all mist 8 further, at
+  its foot grassy, deeper shade (`Look.ambient` 0.25) and sunny slopes up to 30% brighter than the flat
+  (`Look.brightest`; other hills go only 6%, or a ridge's sunlit side looked like the flat rock past it),
+  ledges across its steep rock every 14 points up (`Look.strata`), stones strewn over it but not its
+  mouth, and the ground past that edge rock as well. Mist thickens over it from 14 cells out (13 past a ridge) to all mist 8 further, at
   about the ground's height there, so no grass shows past it. The mouth is painted into its ground, so it
   rises and leans with the slope: a rough arch, darker deep in, a shadow round its rim, light on its lip,
   its darkness spilling over the road. You can walk its foot in the map; nothing grows there. 0.4.5 drew

@@ -404,8 +404,8 @@ final class WorldScene: SKScene {
                 mapSize: (map.columns, map.rows),
                 shadow: Lighting.rgb(palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
                 highlight: Lighting.rgb(palette?.highlight) ?? (r: 1, g: 0.95, b: 0.8))
-            // A range where a road leads into a cave is a mountain of rock, its foot grassy, in
-            // deeper shade; out past the map's edge the ground is rock too.
+            // A range where a road leads into a cave is a mountain of layered rock, its foot grassy,
+            // in deeper shade and brighter sun; out past the map's edge the ground is rock too.
             let scree = tiles(theme.hills?.bank ?? "tile_scree")
             var crag = look
             crag.ground = { cell in self.map.contains(cell) ? look.ground(cell) : scree(cell) }
@@ -413,6 +413,8 @@ final class WorldScene: SKScene {
             crag.rocky = 1
             crag.rockAbove = 0.2
             crag.ambient = 0.25
+            crag.brightest = 1.3
+            crag.strata = 14
             // Already where they show on screen (they lift themselves) and sorted, so straight into
             // the world.
             raisedHills = map.hills.flatMap { HillArt.sprites(for: $0, look: $0.isCrag ? crag : look) }
@@ -570,11 +572,17 @@ final class WorldScene: SKScene {
     }
 
     /// Boulders and stones strewn over a range where a road leads into a cave, out past the map's
-    /// edge, so its slopes read as rough rock; up where its ground stands.
+    /// edge, so its slopes read as rough rock; up where its ground stands, and none over its cave's
+    /// mouth.
     private func strewStones(on hill: WorldMap.Hill) {
         var random = SeededRandom(text: def.id + "/crag stones")
         for cell in hill.cells.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }) where !map.contains(cell) {
             let x = Double(cell.col) + 0.5, y = Double(cell.row) + 0.5
+            if let mouth = hill.mouth {
+                let dx = x - mouth.x, dy = y - mouth.y
+                let across = dx * mouth.along.x + dy * mouth.along.y, inward = dx * mouth.into.x + dy * mouth.into.y
+                if abs(across) < mouth.half + 2, inward < mouth.depth + 3 { continue }
+            }
             guard hill.rise(x, y) > 0.15, Double.random(in: 0..<1, using: &random) < 0.06 else { continue }
             let big = Bool.random(using: &random)
             let size = CGFloat.random(in: 0.55...0.85, using: &random)

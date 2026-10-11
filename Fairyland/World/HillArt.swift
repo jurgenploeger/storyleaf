@@ -29,6 +29,12 @@ enum HillArt {
         /// How lit slopes facing away from the sun still are (0.45 less a tenth for rocky, if unset):
         /// lower for deeper shade, so a mountain's shape shows.
         var ambient: Double? = nil
+        /// How much brighter than the flat its sunniest slopes go: only a shade on matte ground,
+        /// more on bare rock, so the sides of a mountain stand out from the ground past it.
+        var brightest = 1.06
+        /// Ledges across its steep bare rock, if set: a darker band every this many points up, a
+        /// lighter lip over each, so it reads as layered rock rather than a smooth mound.
+        var strata: Double? = nil
         /// The soft colour patches over the map's whole ground: a pixel a cell, north at the top.
         let variation: CGImage?
         let mapSize: (columns: Int, rows: Int)
@@ -144,6 +150,19 @@ enum HillArt {
                 if let above = look.rockAbove { amount = max(amount, min(1, max(0, (s - above + ragged * 0.1) / 0.12))) }
                 if amount > 0 { amount *= min(1, max(0, (trailDistance - 0.55) / 0.3)) }
                 for channel in 0..<4 { bare[index + channel] = UInt8(amount * 255) }
+                // Ledges: on bare rock from a gentle slope up (a cell's rise over its width, as the
+                // light has it, past 0.15), banded by height with a ragged edge.
+                if let strata = look.strata, amount > 0.5 {
+                    let steep = min(1, max(0, ((hx * hx + hy * hy).squareRoot() - 0.15) / 0.2))
+                    let level = (h00 + h10 + h01 + h11) / 4 + ragged * 6
+                    let band = level / strata - (level / strata).rounded(.down)
+                    if band < 0.18 {
+                        shade *= 1 - 0.3 * steep
+                    } else if band < 0.28 {
+                        shade *= 1 + 0.1 * steep
+                    }
+                    light[j * sw + i] = Float(shade)
+                }
             }
         }
         let patches = look.bank == nil ? nil : image(bare, width: sw, height: sh)
@@ -254,7 +273,8 @@ enum HillArt {
                 context.draw(variation, in: CGRect(x: -CGFloat(low.col) * scale, y: -CGFloat(low.row) * scale,
                                                    width: CGFloat(look.mapSize.columns) * scale, height: CGFloat(look.mapSize.rows) * scale))
             }
-            shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint)
+            shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint,
+                  brightest: Float(look.brightest))
             if let mouth = hill.mouth { Self.cave(mouth, in: context, at: { spot($0) }) }
             if let outline {
                 context.setBlendMode(.destinationIn)
@@ -568,8 +588,9 @@ enum HillArt {
     /// shades a hill in a few flat tones. A smooth gradient over pixel-art ground read as gloss.
     /// Shade leans toward the map's shadow colour (`tint`, its channels over its brightest).
     /// `offset`: where the square's corner is in the range's pixels, which `light` covers.
+    /// `brightest`: no sunny slope lighter than this (`Look.brightest`).
     private static func shade(_ context: CGContext, light: [Float], samples: (columns: Int, rows: Int), perSample: Float,
-                              offset: (x: Int, y: Int), tint: (Double, Double, Double)) {
+                              offset: (x: Int, y: Int), tint: (Double, Double, Double), brightest: Float) {
         guard let data = context.data else { return }
         let width = context.width, height = context.height, rowBytes = context.bytesPerRow
         let bytes = data.bindMemory(to: UInt8.self, capacity: rowBytes * height)
@@ -597,7 +618,7 @@ enum HillArt {
                     let lit = near + (far - near) * ty
                     let steps = ((lit - 1) / step + dither[(y % 4) * 4 + x % 4]).rounded()
                     guard steps != 0 else { continue }
-                    let s = min(1 + step, 1 + steps * step)
+                    let s = min(brightest, 1 + steps * step)
                     if s < 1 {
                         let toward = (1 - s) * 0.4
                         bytes[index] = UInt8(min(255, Float(bytes[index]) * s * (1 - toward * lean.0)))
