@@ -61,7 +61,7 @@ final class WorldScene: SKScene {
     private struct Ally {
         let id: UUID
         let node: Walker
-        let pet: Walker?
+        var pet: Walker?
         var waiting: Spot?
     }
     private var allies: [Ally] = []
@@ -1233,7 +1233,9 @@ final class WorldScene: SKScene {
     /// and friends waiting for you here stand at their spot.
     private func refreshAllies() {
         let members = session.partyMembers.filter { $0.waitingAt == nil || $0.waitingAt?.mapID == def.id }
-        guard members.map(\.id) != allies.map(\.id) || members.map(\.waitingAt) != allies.map(\.waiting) else { return }
+        // A friend's companion counts too: one they've just caught steps out beside them.
+        guard members.map(\.id) != allies.map(\.id) || members.map(\.waitingAt) != allies.map(\.waiting)
+                || members.map({ $0.petSpecies != nil }) != allies.map({ $0.pet != nil }) else { return }
         for ally in allies where !members.contains(where: { $0.id == ally.id }) {
             if let friend = session.friends.first(where: { $0.id == ally.id }), !session.isInParty(friend) {
                 // Left the party but still a friend: they stay here, so you can invite them back.
@@ -1253,6 +1255,10 @@ final class WorldScene: SKScene {
                     move(existing, to: point(for: spot, index: index))
                 }
                 existing.waiting = friend.waitingAt
+                if existing.pet == nil, let pet = companionWalker(of: friend, beside: existing.node) {
+                    SkillEffects.smoke(at: pet.position, in: world)
+                    existing.pet = pet
+                }
                 return existing
             }
             // No title over a friend's name: the party walks bunched up, so it would sit on the next one's
@@ -1271,18 +1277,21 @@ final class WorldScene: SKScene {
             }
             world.addChild(node)
             // Their companion comes along too, at their side.
-            var pet: Walker?
-            if let species = friend.petSpecies.flatMap(session.content.monster) {
-                let walker = Walker(cycle: art.walkCycle(species.art), label: nil)
-                walker.walkSpeed = 110
-                walker.motion = IdleMotion.of(art: species.art)
-                let side = node.position + CGVector(dx: 24, dy: 0)
-                walker.position = canStand(at: side) ? side : node.position
-                world.addChild(walker)
-                pet = walker
-            }
-            return Ally(id: friend.id, node: node, pet: pet, waiting: friend.waitingAt)
+            return Ally(id: friend.id, node: node, pet: companionWalker(of: friend, beside: node), waiting: friend.waitingAt)
         }
+    }
+
+    /// A friend's companion, if they have one, set down at their side.
+    private func companionWalker(of friend: Adventurer, beside node: Walker) -> Walker? {
+        guard let species = friend.petSpecies.flatMap(session.content.monster) else { return nil }
+        let walker = Walker(cycle: art.walkCycle(species.art), label: nil)
+        walker.walkSpeed = 110
+        walker.motion = IdleMotion.of(art: species.art)
+        let side = node.position + CGVector(dx: 24, dy: 0)
+        walker.position = canStand(at: side) ? side : node.position
+        world.addChild(walker)
+        walker.settle()
+        return walker
     }
 
     /// Puts a friend, and their companion, somewhere else on the map at once.

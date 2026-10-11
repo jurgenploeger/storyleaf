@@ -82,6 +82,10 @@ struct Combatant: Identifiable {
     var wave = 1
     /// A companion: the fighter it came with, who it stands behind.
     var ownerID: Int?
+    /// A friend without a companion: the Seal Stones they carry to catch one with.
+    var sealStones = 0
+    /// Sealed: who threw the stone that held it (you, or a friend it goes home with).
+    var capturedBy: Int?
 
     /// How spells change a stat now: ×1.25 raised by a quarter, ×0.8 cursed by a fifth.
     func factor(_ stat: BattleStat) -> Double {
@@ -286,16 +290,19 @@ final class BattleEngine {
     /// below 20%; players asked for more). The weaker it is the better your odds; tougher,
     /// higher-level monsters and long fights make it harder. A stronger `stone` multiplies the odds
     /// by its `sealPower` and lifts their ceiling (75% for a plain Seal Stone, up to 95%); a sure one
-    /// (the Wishing Seal) never fails. Nothing seals a boss.
-    func captureStatus(of id: Int, with stone: ItemDef? = nil) -> CaptureStatus {
+    /// (the Wishing Seal) never fails. Nothing seals a boss. `thrower`: a friend throwing their own
+    /// stone, with their level and their class's knack for it (you when nil).
+    func captureStatus(of id: Int, with stone: ItemDef? = nil, by thrower: Combatant? = nil) -> CaptureStatus {
         guard let target = combatant(id), target.isAlive, target.side == .enemies, target.captureRate > 0 else { return .impossible }
         if stone?.sure == true { return .ready(chance: 1) }
         let power = max(1, stone?.sealPower ?? 1)
         let weakness = Self.captureWeakness(atHP: target.hpFraction)
-        let above = Double(target.level - (hero?.level ?? 1))
+        let above = Double(target.level - ((thrower ?? hero)?.level ?? 1))
         let levelFactor = above > 0 ? max(0.4, 1 - 0.06 * above) : min(1.3, 1 - 0.03 * above)
         let fatigue = pow(0.92, Double(max(0, round - 1)))
-        let chance = target.captureRate * 0.3 * weakness * levelFactor * fatigue * captureBonus * power
+        var bonus = captureBonus
+        if let thrower, !thrower.isHero { bonus = thrower.classID.flatMap { content.classDef($0).captureBonus } ?? 1 }
+        let chance = target.captureRate * 0.3 * weakness * levelFactor * fatigue * bonus * power
         return .ready(chance: min(Self.captureCeiling(power: power), max(0.03 * power, chance)))
     }
 
@@ -519,12 +526,19 @@ final class BattleEngine {
                 events.append(.message(L("There's nothing left to capture.")))
                 return
             }
-            guard case .ready(let chance) = captureStatus(of: targetID, with: stoneID.flatMap(content.item)) else {
+            guard case .ready(let chance) = captureStatus(of: targetID, with: stoneID.flatMap(content.item), by: actor) else {
                 events.append(.message(L("{name} can't be captured.", ["name": target.name])))
                 return
             }
             let success = Double.random(in: 0..<1, using: &rng) < chance
-            if success { mutate(targetID) { $0.isCaptured = true } }
+            if success {
+                mutate(targetID) {
+                    $0.isCaptured = true
+                    $0.capturedBy = actor.id
+                }
+            }
+            // A friend's stone is used up either way (yours comes out of the bag as it plays).
+            if actor.isAlly { mutate(actor.id) { $0.sealStones = max(0, $0.sealStones - 1) } }
             // Three wobbles means it held; a near miss shakes longer before bursting open.
             let wobbles = success ? 3 : Int.random(in: 0...2, using: &rng)
             events.append(.capture(actor: actor.id, target: targetID, success: success, wobbles: wobbles, stone: stoneID))
@@ -610,11 +624,27 @@ final class BattleEngine {
            let hurt = inTrouble.min(by: { $0.hpFraction < $1.hpFraction }) {
             return .skill(heal.id, target: hurt.id)
         }
+        if let seal = sealAttempt(by: fighter) { return seal }
         // Friends leave the monster you're sealing to you, and fight on against the rest.
         let spared = fighter.side == .party ? sealTarget : nil
         guard let weakest = alive(on: fighter.side.opposite).filter({ $0.id != spared }).min(by: { $0.hp < $1.hp }) else { return .defend }
         let options = worth(of: skills, by: fighter).filter { !aims(at: spared, $0.action, by: fighter) }
         return pick(from: options) ?? .attack(target: weakest.id)
+    }
+
+    /// A friend still without a companion throws one of their Seal Stones once a monster is weak
+    /// enough for a fair chance (down where the odds climb, or the last one standing a little
+    /// sooner, before it's beaten or bolts): at the one most likely to hold, never the one you're
+    /// sealing. One catch a fight; it goes home with them.
+    private func sealAttempt(by fighter: Combatant) -> BattleAction? {
+        guard fighter.isAlly, fighter.sealStones > 0, !combatants.contains(where: { $0.capturedBy == fighter.id }) else { return nil }
+        let foes = alive(on: .enemies).filter { $0.id != sealTarget }
+        let weakEnough = foes.count == 1 ? 0.4 : Self.captureThreshold
+        let odds = foes.filter { $0.hpFraction <= weakEnough }.compactMap { foe -> (id: Int, chance: Double)? in
+            guard case .ready(let chance) = captureStatus(of: foe.id, by: fighter) else { return nil }
+            return (foe.id, chance)
+        }
+        return odds.max(by: { $0.chance < $1.chance }).map { BattleAction.capture(target: $0.id) }
     }
 
     /// Whether `action` would hurt the monster `id` (aimed at it, or a sweep or a splash that reaches it).

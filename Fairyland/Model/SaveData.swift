@@ -233,6 +233,11 @@ nonisolated struct Adventurer: Codable, Equatable, Identifiable, Sendable {
     /// yours); nil: full. Their own heals in a fight, and the healer, top them up.
     var hp: Int? = nil
     var mp: Int? = nil
+    /// Plain Seal Stones they carry: one without a companion throws them in a fight to catch one
+    /// (`BattleEngine.sealAttempt`). nil: the two everyone set out with.
+    var sealStones: Int? = nil
+
+    var stonesLeft: Int { sealStones ?? 2 }
 }
 
 /// A town square, or the entrance you last walked into a map through.

@@ -325,6 +325,11 @@ Full Heal.
   near 0, before level, fight length and the Beast Tamer's bonus), your side leaves the monster you're sealing
   alone, and a sealed monster is yours however the fight ends. A full party can take one newcomer a fight (you
   pick who stays behind). Until 0.3.65, only the last monster standing at 20% HP or less.
+- Friends at your side without a companion catch their own (ours, since 0.3.97, asked for in playtesting
+  2026-10-11; FO's other players caught pets like you did): each carries plain Seal Stones (0–3 when met, 2
+  for friends made before), and throws one at the monster most likely to hold once it's at 20% HP or less (40%
+  for the last one standing), never at the one you're sealing. Their level and class set the odds; a catch is
+  their companion from then on, and a stone is used up either way.
 - Companions grow as species base + growth × (level − 1) and have a fixed skill list.
 - Each round, after your own choice, you pick your companion's: Attack, one of its skills, Guard, or Auto (it
   decides itself). It always obeys, since there's no intimacy. A Settings switch leaves it to fight on its own.

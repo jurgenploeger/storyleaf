@@ -961,6 +961,38 @@ struct RulesTests {
         #expect(attacks.isEmpty)
     }
 
+    @Test func friendsWithoutACompanionTryToSealOne() {
+        let content = Content.shared
+        let jelly = content.monster("jelly")!
+        let stats = Stats(hp: 200, mp: 20, attack: 30, defense: 10, magic: 10, speed: 20)
+        let hero = Combatant(id: 0, side: .party, source: .hero, name: "Hero", art: "player_walk", level: 5, element: .neutral,
+                             stats: stats, hp: 200, mp: 20, skills: [], captureRate: 0)
+        let foeStats = jelly.stats(at: 3)
+        // Nearly beaten and on its own: weak enough for a fair throw.
+        let foe = Combatant(id: 10, side: .enemies, source: .wild("jelly"), name: "Jelly", art: jelly.art, level: 3, element: jelly.element,
+                            stats: foeStats, hp: 1, mp: 0, skills: [], captureRate: jelly.captureRate)
+        func throwsAStone(stones: Int) -> (thrown: Bool, ally: Combatant?, foe: Combatant?) {
+            var ally = Combatant(id: 2, side: .party, source: .ally(UUID()), name: "Momo", art: "player_walk", level: 5, element: .neutral,
+                                 stats: stats, hp: 200, mp: 20, skills: [], captureRate: 0)
+            ally.sealStones = stones
+            let engine = BattleEngine(party: [hero, ally], enemies: [foe], content: content, seed: 3)
+            // You stand guard, so it's the friend's move that counts.
+            let events = engine.resolveRound(heroAction: .defend)
+            let thrown = events.contains { event in
+                if case .capture(let actor, let target, _, _, _) = event { return actor == 2 && target == 10 }
+                return false
+            }
+            return (thrown, engine.combatant(2), engine.combatant(10))
+        }
+        let carrying = throwsAStone(stones: 2)
+        #expect(carrying.thrown)
+        // The stone is used up either way, and a catch is theirs.
+        #expect(carrying.ally?.sealStones == 1)
+        if carrying.foe?.isCaptured == true { #expect(carrying.foe?.capturedBy == 2) }
+        // Out of stones, they fight on instead.
+        #expect(!throwsAStone(stones: 0).thrown)
+    }
+
     @Test func frostBreathFreezesForOneTurn() {
         let content = Content.shared
         let jelly = content.monster("jelly")!

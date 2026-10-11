@@ -193,7 +193,7 @@ final class Crowd {
         let race = content.races.randomElement()?.id ?? "human"
         return Adventurer(name: name, raceID: race, classID: classID, level: level,
                           look: randomLook(race: race), petSpecies: Bool.random() ? companion(forLevel: level) : nil,
-                          hostile: danger && Int.random(in: 0..<5) < 2)
+                          hostile: danger && Int.random(in: 0..<5) < 2, sealStones: Int.random(in: 0...3))
     }
 
     /// How far below an adventurer's level the wild monsters they might have caught live.
