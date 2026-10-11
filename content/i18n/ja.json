@@ -776,6 +776,7 @@
     "Villagers talk about their own town now, its weather and its healer, instead of Meadowbrook's.": "村人たちは、メドウブルックではなく自分の町のお天気やヒーラーの話をするようになりました。",
     "The minimap's coordinates sit on a small plate in its bottom-right corner, over the map.": "ミニマップの座標は、マップの右下すみに小さなプレートで重ねて表示されるようになりました。",
     "Friends in your party who don't have a companion yet carry Seal Stones, and throw one at a monster once it's weak enough. If it holds, it's their companion, fighting beside them and walking with them.": "まだなかまがいないパーティーのフレンドは封印石を持っていて、モンスターが十分に弱ると投げます。封印できたら、そのモンスターはフレンドのなかまになり、いっしょに戦い、いっしょに歩きます。",
+    "At the blacksmith, the weapon tabs and the materials a recipe takes no longer squeeze into one row: the tabs go two by two when they don't fit, and the materials line up under the weapon's name.": "鍛冶屋で、武器のタブとレシピの素材が1行に詰めこまれなくなりました。タブは入りきらないときは2つずつ並び、素材は武器の名前の下に並びます。",
     "Tidy hero": "すっきりヒーロー",
     "The Character screen's gear slots sit in a ring around your hero with more room between them. Your level and EXP moved into the Stats section, and Attack, Defense, Magic and Speed each have an icon, with all the numbers in one size.": "キャラクター画面の装備スロットがヒーローを囲む輪の形に並び、間隔も広くなりました。レベルとEXPは能力欄に移り、こうげき・ぼうぎょ・まりょく・すばやさにはそれぞれアイコンが付いて、数字の大きさもそろいました。",
     "On the Companions page, the companion you bring along comes first, laid out like your hero: big, with its level, EXP, HP and stats in the same Stats section. The others follow below.": "なかまページでは、連れているなかまがヒーローと同じように一番上に大きく表示され、レベル、EXP、HP、能力が同じ能力欄に並びます。ほかのなかまはその下に続きます。",

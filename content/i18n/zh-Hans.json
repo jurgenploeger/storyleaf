@@ -776,6 +776,7 @@
     "Villagers talk about their own town now, its weather and its healer, instead of Meadowbrook's.": "村民们现在聊的是自己城镇的天气和治疗师，不再是溪草村的了。",
     "The minimap's coordinates sit on a small plate in its bottom-right corner, over the map.": "小地图的坐标现在显示在地图右下角的小铭牌上，叠在地图上方。",
     "Friends in your party who don't have a companion yet carry Seal Stones, and throw one at a monster once it's weak enough. If it holds, it's their companion, fighting beside them and walking with them.": "队伍里还没有伙伴的好友会带着封印石，等怪物够虚弱时就扔出一颗。封印成功的话，它就成了好友的伙伴，跟他们并肩作战、一起走路。",
+    "At the blacksmith, the weapon tabs and the materials a recipe takes no longer squeeze into one row: the tabs go two by two when they don't fit, and the materials line up under the weapon's name.": "铁匠那里的武器分页和配方材料不再挤在一行里：放不下时分页两两排列，材料排在武器名字下方。",
     "Tidy hero": "整洁的英雄",
     "The Character screen's gear slots sit in a ring around your hero with more room between them. Your level and EXP moved into the Stats section, and Attack, Defense, Magic and Speed each have an icon, with all the numbers in one size.": "角色界面的装备栏围成一圈环绕英雄，彼此间隔更宽。等级和经验移到了属性区，攻击、防御、魔力和速度各有一个图标，所有数字大小一致。",
     "On the Companions page, the companion you bring along comes first, laid out like your hero: big, with its level, EXP, HP and stats in the same Stats section. The others follow below.": "伙伴页面中，你带着的伙伴排在最前，像英雄一样大图显示，等级、经验、HP 和属性都在同样的属性区。其他伙伴列在下方。",

@@ -216,6 +216,8 @@ npc_land          | newgame,npc=elder,landscape | 8
 shop_land         | newgame,level=12,npc=shop,landscape | 8
 item_info_land    | newgame,level=12,npc=shop,info=iron_axe,landscape | 8
 smith_land        | newgame,level=30,npc=smith,landscape | 8
+smith_ingot       | newgame,level=90,class=fighter,map=goldburg,npc=goldburg_smith | 8
+smith_ingot_de    | newgame,level=90,class=fighter,map=goldburg,npc=goldburg_smith,lang=de | 8
 healer_land       | newgame,level=30,hp=0.5,npc=healer,landscape | 8
 guild_land        | newgame,level=10,npc=guild_warrior,landscape | 8
 boss_oak_land     | newgame,level=28,map=smiling_forest,at=-7_-11,npc=oak_grove,landscape | 15

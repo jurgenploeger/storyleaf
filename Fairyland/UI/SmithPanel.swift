@@ -35,10 +35,14 @@ struct SmithPanel: View {
         // Around the hero's level: a little behind (to catch up) and a little ahead (to aim for).
         let shown = session.recipes.filter { $0.icon == chosen && ($0.level ?? 1) >= level - 15 && ($0.level ?? 1) <= level + 10 }
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                ForEach(Self.lines) { option in
-                    Button(option.name) { line = option.icon }
-                        .buttonStyle(PixelButtonStyle(tint: option.icon == chosen ? HUDStyle.gold : HUDStyle.dim, compact: true))
+            // The weapon lines in a row when they fit, two by two when they don't (a narrow panel, longer
+            // names), each name on one line.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) {
+                    ForEach(Self.lines) { tab($0, chosen: chosen, fill: false) }
+                }
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
+                    ForEach(Self.lines) { tab($0, chosen: chosen, fill: true) }
                 }
             }
             if shown.isEmpty {
@@ -48,6 +52,18 @@ struct SmithPanel: View {
                 SmithRecipeRow(session: session, item: item, reply: $reply, info: $info)
             }
         }
+    }
+
+    /// `fill`: as wide as its grid column, the name shrunk a little if it must be.
+    private func tab(_ option: WeaponLine, chosen: String, fill: Bool) -> some View {
+        Button { line = option.icon } label: {
+            Text(option.name)
+                .lineLimit(1)
+                .minimumScaleFactor(fill ? 0.7 : 1)
+                .fixedSize(horizontal: !fill, vertical: false)
+                .frame(maxWidth: fill ? .infinity : nil)
+        }
+        .buttonStyle(PixelButtonStyle(tint: option.icon == chosen ? HUDStyle.gold : HUDStyle.dim, compact: true))
     }
 }
 
@@ -59,50 +75,68 @@ private struct SmithRecipeRow: View {
 
     var body: some View {
         let ready = session.canCraft(item)
-        HStack(alignment: .top, spacing: 10) {
-            // Tap the weapon for everything about it (who can use it, how it compares with yours).
-            Button { info = item } label: {
-                HStack(alignment: .top, spacing: 10) {
-                    ItemIcon(item: item, size: 36)
-                    details
-                    Spacer(minLength: 0)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: 10) {
+                // Tap the weapon for everything about it (who can use it, how it compares with yours).
+                Button { info = item } label: {
+                    HStack(alignment: .top, spacing: 10) {
+                        ItemIcon(item: item, size: 36)
+                        details
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
                 }
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+                .accessibilityHint(L("Shows what it does and who can use it"))
+                forge(ready: ready)
             }
-            .buttonStyle(.plain)
-            .accessibilityHint(L("Shows what it does and who can use it"))
-            Button(L("Forge")) {
-                if session.craft(item.id) {
-                    session.post(L("Forged a {item}!", ["item": item.name]), .reward)
-                    session.save()
-                    reply = L("Clang, clang… done! One {item}, fresh from the anvil.", ["item": item.name])
-                } else {
-                    reply = L("You're missing some materials. Monsters out in the wilds drop them.")
+            // Under the name, past the icon.
+            Group {
+                materials
+                if let issue = session.equipIssue(item) {
+                    Text(issue).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.orange)
                 }
             }
-            .buttonStyle(PixelButtonStyle(tint: ready ? HUDStyle.gold : HUDStyle.dim, compact: true))
+            .padding(.leading, 46)
         }
         .font(HUDStyle.font(12))
     }
 
-    /// Name and level, stats, the materials it takes (what you have of each), and what stops you using it.
+    private func forge(ready: Bool) -> some View {
+        Button(L("Forge")) {
+            if session.craft(item.id) {
+                session.post(L("Forged a {item}!", ["item": item.name]), .reward)
+                session.save()
+                reply = L("Clang, clang… done! One {item}, fresh from the anvil.", ["item": item.name])
+            } else {
+                reply = L("You're missing some materials. Monsters out in the wilds drop them.")
+            }
+        }
+        .buttonStyle(PixelButtonStyle(tint: ready ? HUDStyle.gold : HUDStyle.dim, compact: true))
+        .fixedSize()
+    }
+
+    /// Name and level, and its stats.
     private var details: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(L("{item}  ·  Lv {level}", ["item": item.name, "level": item.level ?? 1]))
             Text(item.stats?.bonusSummary ?? "").font(HUDStyle.font(10)).foregroundStyle(HUDStyle.green)
-            HStack(spacing: 8) {
-                ForEach(session.ingredients(of: item)) { part in
-                    HStack(spacing: 3) {
-                        ItemIcon(item: part.material, size: 16)
-                        Text("\(part.material.name) \(part.owned)/\(part.needed)")
-                            .foregroundStyle(part.owned >= part.needed ? HUDStyle.green : HUDStyle.dim)
-                    }
+        }
+    }
+
+    /// The materials it takes and how many you have of each, under the whole row and wrapping onto
+    /// more lines as they need: four in a row squeezed each name into a column of letters.
+    private var materials: some View {
+        WrapRows(spacing: 10) {
+            ForEach(session.ingredients(of: item)) { part in
+                HStack(spacing: 3) {
+                    ItemIcon(item: part.material, size: 16)
+                    Text("\(part.material.name) \(part.owned)/\(part.needed)")
+                        .lineLimit(1)
+                        .foregroundStyle(part.owned >= part.needed ? HUDStyle.green : HUDStyle.dim)
                 }
             }
-            .font(HUDStyle.font(10))
-            if let issue = session.equipIssue(item) {
-                Text(issue).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.orange)
-            }
         }
+        .font(HUDStyle.font(10))
     }
 }
