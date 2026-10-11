@@ -1191,8 +1191,10 @@ final class WorldMap {
                 for left in [startingLeft, !startingLeft] {
                     guard let points = hill.traceTrail(on: index, front: front, startingLeft: left) else { continue }
                     let path = Self.cells(along: points)
+                    // From the ground: by the heights walkers stand on (not `shape`, a hair off them),
+                    // with room to spare, so everything that asks agrees it starts there.
                     guard path.allSatisfy({ ring.contains($0) }),
-                          !fromGround || hill.shape(Double(points[0].x), Double(points[0].y)) < 1,
+                          !fromGround || hill.height(atCells: Double(points[0].x), Double(points[0].y)) < 0.5,
                           hill.steepestClimb(along: points) <= 8, !crowds(points)
                     else { continue }
                     trails.append(Hill.Trail(lobe: index, points: points))
@@ -1258,10 +1260,10 @@ final class WorldMap {
             guard hillCells.contains(cell) else { return 0 }
             return 2 + Double(height(atGrid: CGPoint(x: (CGFloat(cell.col) + 0.5) * Self.tileSize, y: (CGFloat(cell.row) + 0.5) * Self.tileSize))) / 4
         }
-        // From each trail that starts on the ground (others start up on the range).
-        let feet = hills.flatMap { hill in
-            hill.trails.compactMap(\.points.first).filter { hill.shape(Double($0.x), Double($0.y)) < 1 }
-        }
+        // From each trail that starts on the ground (others start up on the range), by the heights
+        // walkers stand on.
+        let feet = hills.flatMap { $0.trails.compactMap(\.points.first) }
+            .filter { height(atGrid: CGPoint(x: $0.x * Self.tileSize, y: $0.y * Self.tileSize)) < 1 }
         for foot in feet {
             let start = GridPoint(col: Int(foot.x.rounded(.down)), row: Int(foot.y.rounded(.down)))
             guard contains(start), ground[start.row][start.col] != .path else { continue }
