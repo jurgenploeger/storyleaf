@@ -57,6 +57,27 @@ final class WorldMap {
     private(set) var streetDecor: [(art: String, cell: GridPoint)] = []
     /// Raised terraces: their rectangles in grid cells (min corner inclusive), and stair cells.
     private(set) var terraces: [(origin: GridPoint, width: Int, height: Int, stairs: [GridPoint])] = []
+    /// Raised ground you can climb: a town's terraces and the hills out in the fields
+    /// (`height(at:)`). Each stands `height` points up; its rim is too steep to walk but at the ramps.
+    private(set) var plateaus: [Plateau] = []
+    /// Which plateau each raised cell belongs to.
+    private var plateauOf: [GridPoint: Int] = [:]
+
+    nonisolated struct Plateau {
+        nonisolated enum Kind { case terrace, hill }
+        /// Which way a ramp faces, down its slope: toward the row in front (south) or the column in
+        /// front (west), the two sides that face you. It climbs from the ground there to the top.
+        nonisolated enum Ramp { case south, west }
+        let kind: Kind
+        let cells: Set<GridPoint>
+        let ramps: [GridPoint: Ramp]
+        let height: CGFloat
+        /// The smallest and largest column and row it covers.
+        var bounds: (min: GridPoint, max: GridPoint) {
+            (GridPoint(col: cells.map(\.col).min() ?? 0, row: cells.map(\.row).min() ?? 0),
+             GridPoint(col: cells.map(\.col).max() ?? 0, row: cells.map(\.row).max() ?? 0))
+        }
+    }
     /// Cave rock: solid cells drawn as raised walls (only on maps with a `cave` theme).
     private(set) var rock: Set<GridPoint> = []
     /// The middles of a cave's galleries and tunnels, kept clear of scenery so they stay open.
@@ -104,6 +125,7 @@ final class WorldMap {
             keepNPCsInView()
         }
         if def.theme.cave == nil, let ponds { digPonds(ponds, &rng) }
+        if def.town == nil, def.theme.cave == nil, let hills = def.theme.hills { raiseHills(hills, &rng) }
         if def.theme.accent != nil {
             if let patches = def.theme.accentPatches {
                 paintAccentPatches(patches, &rng)
@@ -119,6 +141,41 @@ final class WorldMap {
     func cell(at point: CGPoint) -> GridPoint {
         let raw = rawCell(at: point)
         return GridPoint(col: min(max(raw.col, 0), columns - 1), row: min(max(raw.row, 0), rows - 1))
+    }
+
+    // MARK: Elevation
+
+    /// How high the ground stands at a point in grid space (unprojected): a plateau's height on
+    /// top of it, part of it on a ramp (rising from its foot to the top), and 0 elsewhere.
+    func height(atGrid grid: CGPoint) -> CGFloat {
+        let cell = GridPoint(col: Int((grid.x / Self.tileSize).rounded(.down)), row: Int((grid.y / Self.tileSize).rounded(.down)))
+        guard let index = plateauOf[cell] else { return 0 }
+        let plateau = plateaus[index]
+        let rise: CGFloat? = switch plateau.ramps[cell] {
+        case .south: grid.y / Self.tileSize - CGFloat(cell.row)
+        case .west: grid.x / Self.tileSize - CGFloat(cell.col)
+        case nil: nil
+        }
+        return plateau.height * min(1, max(0, rise ?? 1))
+    }
+
+    /// How high the ground stands under an on-screen (ground) point: walkers and scenery standing
+    /// there are drawn this much higher.
+    func height(at point: CGPoint) -> CGFloat {
+        plateaus.isEmpty ? 0 : height(atGrid: Self.unproject(point))
+    }
+
+    /// The ground point a tap at `point` means. Raised ground hides the ground behind it, so a tap
+    /// on a hilltop is a tap on the top: tops first, then ramps, then the ground itself.
+    func groundPoint(under point: CGPoint) -> CGPoint {
+        guard !plateaus.isEmpty else { return point }
+        for height in Set(plateaus.map(\.height)).sorted(by: >) {
+            let candidate = CGPoint(x: point.x, y: point.y - height)
+            if abs(self.height(at: candidate) - height) < 0.5 { return candidate }
+        }
+        var guess = point
+        for _ in 0..<4 { guess = CGPoint(x: point.x, y: point.y - height(at: guess)) }
+        return guess
     }
 
     /// The cell under an on-screen point, possibly outside the map.
@@ -866,6 +923,93 @@ final class WorldMap {
             }
         }
         terraces.append((origin, terrace.width, terrace.height, stairs))
+        // It stands raised: walk up its stairs (front and side) and you're up on it.
+        let cells = Set((origin.col..<(origin.col + terrace.width)).flatMap { col in
+            (origin.row..<(origin.row + terrace.height)).map { GridPoint(col: col, row: $0) }
+        }.filter { contains($0) })
+        addPlateau(Plateau(kind: .terrace, cells: cells, ramps: [stairs[0]: .south, stairs[1]: .west], height: Self.terraceHeight))
+    }
+
+    /// How high a town's terraces stand (points).
+    static let terraceHeight: CGFloat = 26
+
+    private func addPlateau(_ plateau: Plateau) {
+        for cell in plateau.cells { plateauOf[cell] = plateaus.count }
+        plateaus.append(plateau)
+    }
+
+    /// Grassy hills out in the fields (`theme.hills`): round, lumpy rises, each with a dome and two
+    /// smaller lobes, off the roads and water and clear of buildings, people, the arrivals and each
+    /// other. Their rim is a steep bank you can't walk; one or two ramps (on the sides facing you)
+    /// lead up to the top, where the scenery grows like anywhere else.
+    private func raiseHills(_ hills: MapDef.Hills, _ rng: inout SeededRandom) {
+        let sizes = hills.size ?? [3, 6]
+        let smallest = max(2, sizes.first ?? 3), biggest = max(smallest, sizes.last ?? 6)
+        let height = CGFloat(hills.height ?? 22)
+        var claimed: Set<GridPoint> = []
+        func around(_ cells: Set<GridPoint>) -> Set<GridPoint> {
+            cells.union(cells.flatMap { cell in
+                (-1...1).flatMap { dr in (-1...1).map { dc in GridPoint(col: cell.col + dc, row: cell.row + dr) } }
+            })
+        }
+        for _ in 0..<hills.count {
+            for _ in 0..<80 {
+                let radius = CGFloat(Int.random(in: smallest...biggest, using: &rng))
+                let middle = CGPoint(x: CGFloat(Int.random(in: 0..<columns, using: &rng)), y: CGFloat(Int.random(in: 0..<rows, using: &rng)))
+                var lobes = [(middle, radius)]
+                for _ in 0..<2 {
+                    let angle = CGFloat.random(in: 0..<(2 * .pi), using: &rng)
+                    let reach = radius * CGFloat.random(in: 0.4...0.8, using: &rng)
+                    lobes.append((CGPoint(x: middle.x + cos(angle) * reach, y: middle.y + sin(angle) * reach),
+                                  radius * CGFloat.random(in: 0.5...0.75, using: &rng)))
+                }
+                let span = Int(radius * 2) + 2
+                var cells: Set<GridPoint> = []
+                for row in (Int(middle.y) - span)...(Int(middle.y) + span) {
+                    for col in (Int(middle.x) - span)...(Int(middle.x) + span) {
+                        let spot = CGPoint(x: CGFloat(col), y: CGFloat(row))
+                        if lobes.contains(where: { spot.distance(to: $0.0) <= $0.1 }) { cells.insert(GridPoint(col: col, row: row)) }
+                    }
+                }
+                // Clear ground all round, a cell to spare, and well inside the map's edge.
+                let footprint = around(cells)
+                guard footprint.allSatisfy({ $0.col >= 3 && $0.row >= 3 && $0.col < columns - 3 && $0.row < rows - 3
+                                                && isFreeForScenery($0) && !claimed.contains($0) }) else { continue }
+                guard let hill = shapeHill(cells, height: height, &rng) else { continue }
+                addPlateau(hill)
+                claimed.formUnion(around(footprint))
+                break
+            }
+        }
+    }
+
+    /// A hill's rim (blocked but at its ramps) and ramps: one on the front, one on the side where
+    /// there's a straight stretch of rim to put it in. Nil when there's no top or no way up.
+    private func shapeHill(_ cells: Set<GridPoint>, height: CGFloat, _ rng: inout SeededRandom) -> Plateau? {
+        func at(_ cell: GridPoint, _ dc: Int, _ dr: Int) -> GridPoint { GridPoint(col: cell.col + dc, row: cell.row + dr) }
+        let rim = cells.filter { cell in (-1...1).contains { dr in (-1...1).contains { dc in !cells.contains(at(cell, dc, dr)) } } }
+        let top = cells.subtracting(rim)
+        guard top.count >= 4 else { return nil }
+        // Sorted, so the seeded pick is the same every visit.
+        let ordered = rim.sorted { ($0.row, $0.col) < ($1.row, $1.col) }
+        let south = ordered.filter { cell in
+            !cells.contains(at(cell, 0, -1)) && top.contains(at(cell, 0, 1)) && cells.contains(at(cell, -1, 0)) && cells.contains(at(cell, 1, 0))
+        }
+        let west = ordered.filter { cell in
+            !cells.contains(at(cell, -1, 0)) && top.contains(at(cell, 1, 0)) && cells.contains(at(cell, 0, -1)) && cells.contains(at(cell, 0, 1))
+        }
+        var ramps: [GridPoint: Plateau.Ramp] = [:]
+        if let cell = south.randomElement(using: &rng) { ramps[cell] = .south }
+        if let cell = west.randomElement(using: &rng) { ramps[cell] = .west }
+        guard !ramps.isEmpty else { return nil }
+        for cell in rim where ramps[cell] == nil { occupy(cell, blocking: true) }
+        // Nothing grows on a ramp, at its foot or at its head, so the way up stays open.
+        for (cell, ramp) in ramps {
+            occupy(cell, blocking: false)
+            occupy(ramp == .south ? at(cell, 0, -1) : at(cell, -1, 0), blocking: false)
+            occupy(ramp == .south ? at(cell, 0, 1) : at(cell, 1, 0), blocking: false)
+        }
+        return Plateau(kind: .hill, cells: cells, ramps: ramps, height: height)
     }
 
     private func scatterAccents(_ rng: inout SeededRandom) {

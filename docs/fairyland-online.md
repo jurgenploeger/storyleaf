@@ -96,6 +96,11 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   Since 0.3.65 the planner keeps each townsperson's spot and the cells just in front of it clear, so no
   house, lamp or tree hides them (before, every town's healer and shop stood inside or behind a house), and
   Larkspur, which had felt empty in playtesting (2026-10-07), has two rings of streets like the others.
+- Raised ground (since 0.3.97, asked for in playtesting 2026-10-11): a town's terraces and hills out in the
+  fields (`theme.hills`: count, size, height, bank tile) really stand up. The top is drawn its height higher,
+  a bank (stone wall, or earth) hangs under the edges facing you, and ramps (a terrace's stairs, a trodden
+  slope up a hill) climb to the top; whoever walks up rises with it (`WorldMap.height(at:)`, `Walker.settle`),
+  and trees on a hilltop stand up there too. A hill's rim is a bank you can't walk but at its ramps.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake
@@ -320,6 +325,11 @@ Full Heal.
   near 0, before level, fight length and the Beast Tamer's bonus), your side leaves the monster you're sealing
   alone, and a sealed monster is yours however the fight ends. A full party can take one newcomer a fight (you
   pick who stays behind). Until 0.3.65, only the last monster standing at 20% HP or less.
+- Friends at your side without a companion catch their own (ours, since 0.3.97, asked for in playtesting
+  2026-10-11; FO's other players caught pets like you did): each carries plain Seal Stones (0–3 when met, 2
+  for friends made before), and throws one at the monster most likely to hold once it's at 20% HP or less (40%
+  for the last one standing), never at the one you're sealing. Their level and class set the odds; a catch is
+  their companion from then on, and a stone is used up either way.
 - Companions grow as species base + growth × (level − 1) and have a fixed skill list.
 - Each round, after your own choice, you pick your companion's: Attack, one of its skills, Guard, or Auto (it
   decides itself). It always obeys, since there's no intimacy. A Settings switch leaves it to fight on its own.

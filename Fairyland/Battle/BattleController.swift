@@ -153,6 +153,8 @@ final class BattleController {
         fighter.skillLevels = Dictionary(uniqueKeysWithValues: skills.map { ($0.id, Combatant.naturalSkillLevel(for: person.level)) })
         fighter.classID = person.classID
         fighter.raceID = person.raceID
+        // A friend still without a companion brings their Seal Stones to catch one with.
+        if side == .party, person.petSpecies == nil { fighter.sealStones = person.stonesLeft }
         return fighter
     }
 
@@ -377,7 +379,12 @@ final class BattleController {
     /// Room for one more companion from this fight: a full party can still take one (the result
     /// screen asks who stays behind), but not two.
     private var hasRoomToSeal: Bool {
-        session.data.pets.count + engine.combatants.filter(\.isCaptured).count <= GameSession.maxPets
+        session.data.pets.count + sealedByYou.count <= GameSession.maxPets
+    }
+
+    /// The monsters you sealed this fight (a friend's catch goes home with them).
+    private var sealedByYou: [Combatant] {
+        engine.combatants.filter { $0.isCaptured && $0.capturedBy == engine.hero?.id }
     }
 
     func name(_ id: Int) -> String { combatants.first { $0.id == id }?.name ?? "?" }
@@ -861,15 +868,22 @@ final class BattleController {
         case .defend(let actor):
             SoundEffects.shared.play(.shield)
             message = L("{name} is on guard.", ["name": name(actor)])
-        case .capture(_, let target, let success, _, let stoneID):
+        case .capture(let actor, let target, let success, _, let stoneID):
             SoundEffects.shared.play(success ? .capture : .breakFree)
             if success {
                 Haptics.success()
                 mutate(target) { $0.isCaptured = true }
             }
-            // Every throw uses the stone up, whether it holds or not.
-            let stone = stoneID.flatMap(session.content.item) ?? stones.first
-            if let stone { session.removeItem(stone.id) }
+            // Every throw uses the stone up, whether it holds or not: yours from the bag, a friend's
+            // from their own.
+            let thrower = engine.combatant(actor)
+            let stone = stoneID.flatMap(session.content.item) ?? (thrower?.isHero == true ? stones.first : nil)
+            if case .ally(let friendID)? = thrower?.source,
+               let index = session.data.friends?.firstIndex(where: { $0.id == friendID }) {
+                session.data.friends?[index].sealStones = max(0, (session.data.friends?[index].stonesLeft ?? 1) - 1)
+            } else if let stone {
+                session.removeItem(stone.id)
+            }
             message = success ? L("Sealed! {name} was captured!", ["name": name(target)])
                 : L("Oh no! {name} broke free, and the {stone} crumbled away.", ["name": name(target), "stone": stone?.name ?? L("Seal Stone")])
         case .fled(let id):
@@ -1345,18 +1359,27 @@ final class BattleController {
             guard case .wild = foe.source else { return nil }
             return foe.speciesID.flatMap { content.monster($0) }
         }
-        session.noteBounties(beaten: wildBeaten, sealed: engine.combatants.filter(\.isCaptured).count, on: session.data.mapID)
+        session.noteBounties(beaten: wildBeaten, sealed: sealedByYou.count, on: session.data.mapID)
         session.claimBookMilestones()
         session.checkTitles()
         session.save()
         return lines
     }
 
-    /// Every monster sealed in this fight joins you, however the fight ended: the stone holds it.
+    /// Every monster you sealed in this fight joins you, however the fight ended: the stone holds it.
     /// With a full party the result screen asks who stays behind (`hasRoomToSeal` keeps it to one).
+    /// One a friend sealed is their companion now, walking and fighting at their side.
     private func handOverSealed() -> [String] {
         var lines: [String] = []
         for captured in engine.combatants where captured.isCaptured {
+            if case .ally(let friendID)? = captured.capturedBy.flatMap(engine.combatant)?.source {
+                guard let id = captured.speciesID, let species = session.content.monster(id),
+                      let index = session.data.friends?.firstIndex(where: { $0.id == friendID }),
+                      let friend = session.data.friends?[index], friend.petSpecies == nil else { continue }
+                session.data.friends?[index].petSpecies = id
+                lines.append(L("{monster} is {name}'s companion now!", ["monster": species.name, "name": friend.name]))
+                continue
+            }
             guard let id = captured.speciesID, var pet = session.makePet(species: id, level: captured.level) else { continue }
             pet.hp = max(1, captured.hp)
             if session.addPet(pet) {

@@ -7,7 +7,12 @@
       "name": "Meadowbrook",
       "crowd": {
         "adventurers": 12,
-        "villagers": 10
+        "villagers": 10,
+        "villagerLines": [
+          "Mind the jellies past the gate.",
+          "The fountain sparkles at night, you know.",
+          "Have you visited the guilds yet?"
+        ]
       },
       "width": 80,
       "height": 60,
@@ -1036,6 +1041,13 @@
         "fairyRings": {
           "count": 9,
           "art": "mushroom"
+        },
+        "hills": {
+          "count": 6,
+          "size": [
+            3,
+            6
+          ]
         },
         "props": [
           {
@@ -2793,7 +2805,10 @@
       "fence": true,
       "crowd": {
         "adventurers": 14,
-        "villagers": 10
+        "villagers": 10,
+        "villagerLines": [
+          "The fountain sparkles at night, you know."
+        ]
       },
       "theme": {
         "ground": "tile_grass",
@@ -3729,6 +3744,13 @@
         "accentPatches": 45,
         "water": "tile_ice",
         "ponds": 9,
+        "hills": {
+          "count": 4,
+          "size": [
+            3,
+            6
+          ]
+        },
         "props": [
           {
             "art": "big_snow_tree",
@@ -5800,6 +5822,15 @@
         "accentPatches": 68,
         "water": "tile_water",
         "ponds": 9,
+        "hills": {
+          "count": 5,
+          "size": [
+            4,
+            7
+          ],
+          "height": 18,
+          "bank": "tile_sand"
+        },
         "props": [
           {
             "art": "cactus",
@@ -6168,6 +6199,14 @@
         "path": "tile_path",
         "accent": "tile_cave_floor",
         "accentPatches": 68,
+        "hills": {
+          "count": 6,
+          "size": [
+            4,
+            7
+          ],
+          "height": 28
+        },
         "props": [
           {
             "art": "boulder",
@@ -6854,6 +6893,13 @@
         "fairyRings": {
           "count": 4,
           "art": "mushroom"
+        },
+        "hills": {
+          "count": 5,
+          "size": [
+            3,
+            6
+          ]
         },
         "props": [
           {
@@ -7568,6 +7614,15 @@
         "fairyRings": {
           "count": 4,
           "art": "mushroom"
+        },
+        "hills": {
+          "count": 6,
+          "size": [
+            3,
+            7
+          ],
+          "height": 26,
+          "bank": "tile_chocolate"
         },
         "props": [
           {
@@ -8381,7 +8436,10 @@
       "fence": true,
       "crowd": {
         "adventurers": 14,
-        "villagers": 14
+        "villagers": 14,
+        "villagerLines": [
+          "The fountain sparkles at night, you know."
+        ]
       },
       "theme": {
         "ground": "tile_grass",
@@ -9067,6 +9125,13 @@
         "fairyRings": {
           "count": 4,
           "art": "mushroom"
+        },
+        "hills": {
+          "count": 3,
+          "size": [
+            3,
+            5
+          ]
         },
         "props": [
           {
@@ -9826,6 +9891,13 @@
         "path": "tile_path",
         "accent": "tile_scree",
         "accentPatches": 30,
+        "hills": {
+          "count": 5,
+          "size": [
+            3,
+            6
+          ]
+        },
         "props": [
           {
             "art": "dead_tree",
@@ -10756,6 +10828,15 @@
         "accentPatches": 30,
         "water": "tile_water",
         "ponds": 4,
+        "hills": {
+          "count": 3,
+          "size": [
+            3,
+            6
+          ],
+          "height": 18,
+          "bank": "tile_sand"
+        },
         "props": [
           {
             "art": "cactus",

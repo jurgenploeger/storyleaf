@@ -134,6 +134,32 @@ struct ContentTests {
         }
     }
 
+    @Test func hillsStandUpWithAWayUp() {
+        for def in content.maps where def.theme.hills != nil {
+            let map = WorldMap(def: def)
+            let hills = map.plateaus.filter { $0.kind == .hill }
+            #expect(!hills.isEmpty, "map \(def.id) has no hills")
+            for hill in hills {
+                #expect(!hill.ramps.isEmpty, "map \(def.id): a hill with no way up")
+                for (cell, ramp) in hill.ramps {
+                    let foot = ramp == .south ? GridPoint(col: cell.col, row: cell.row - 1) : GridPoint(col: cell.col - 1, row: cell.row)
+                    let head = ramp == .south ? GridPoint(col: cell.col, row: cell.row + 1) : GridPoint(col: cell.col + 1, row: cell.row)
+                    // Up from the ground at its foot, over the slope, to the top.
+                    #expect(map.isWalkable(foot) && map.isWalkable(cell) && map.isWalkable(head), "map \(def.id): the ramp at \(cell) is blocked")
+                    #expect(map.height(at: map.center(of: foot)) == 0)
+                    #expect(map.height(at: map.center(of: head)) == hill.height)
+                    let halfway = map.height(at: map.center(of: cell))
+                    #expect(halfway > 0 && halfway < hill.height)
+                }
+            }
+        }
+        // A town's terraces stand up too, their stairs climbing to the top.
+        for def in content.maps where def.town?.terraces?.isEmpty == false {
+            let map = WorldMap(def: def)
+            #expect(map.plateaus.contains { $0.kind == .terrace && $0.height == WorldMap.terraceHeight }, "map \(def.id): terraces lie flat")
+        }
+    }
+
     @Test func housesStandOffTheRoads() {
         for def in content.maps {
             let map = WorldMap(def: def)
@@ -933,6 +959,38 @@ struct RulesTests {
         }
         #expect(guards.count == 1)
         #expect(attacks.isEmpty)
+    }
+
+    @Test func friendsWithoutACompanionTryToSealOne() {
+        let content = Content.shared
+        let jelly = content.monster("jelly")!
+        let stats = Stats(hp: 200, mp: 20, attack: 30, defense: 10, magic: 10, speed: 20)
+        let hero = Combatant(id: 0, side: .party, source: .hero, name: "Hero", art: "player_walk", level: 5, element: .neutral,
+                             stats: stats, hp: 200, mp: 20, skills: [], captureRate: 0)
+        let foeStats = jelly.stats(at: 3)
+        // Nearly beaten and on its own: weak enough for a fair throw.
+        let foe = Combatant(id: 10, side: .enemies, source: .wild("jelly"), name: "Jelly", art: jelly.art, level: 3, element: jelly.element,
+                            stats: foeStats, hp: 1, mp: 0, skills: [], captureRate: jelly.captureRate)
+        func throwsAStone(stones: Int) -> (thrown: Bool, ally: Combatant?, foe: Combatant?) {
+            var ally = Combatant(id: 2, side: .party, source: .ally(UUID()), name: "Momo", art: "player_walk", level: 5, element: .neutral,
+                                 stats: stats, hp: 200, mp: 20, skills: [], captureRate: 0)
+            ally.sealStones = stones
+            let engine = BattleEngine(party: [hero, ally], enemies: [foe], content: content, seed: 3)
+            // You stand guard, so it's the friend's move that counts.
+            let events = engine.resolveRound(heroAction: .defend)
+            let thrown = events.contains { event in
+                if case .capture(let actor, let target, _, _, _) = event { return actor == 2 && target == 10 }
+                return false
+            }
+            return (thrown, engine.combatant(2), engine.combatant(10))
+        }
+        let carrying = throwsAStone(stones: 2)
+        #expect(carrying.thrown)
+        // The stone is used up either way, and a catch is theirs.
+        #expect(carrying.ally?.sealStones == 1)
+        if carrying.foe?.isCaptured == true { #expect(carrying.foe?.capturedBy == 2) }
+        // Out of stones, they fight on instead.
+        #expect(!throwsAStone(stones: 0).thrown)
     }
 
     @Test func frostBreathFreezesForOneTurn() {

@@ -107,13 +107,18 @@ final class Crowd {
         if let market, traders > 0 {
             placeTraders(traders, market: market, names: &adventurerNames, avoiding: def, world: world)
         }
+        // Everyone's lines and the town's own, with its name and its healer's filled in.
+        let healer = def.npcs?.first { $0.role == .healer }?.name
+        let villagerLines = (options.villagerLines + (def.crowd?.villagerLines ?? []))
+            .filter { healer != nil || !$0.contains("{healer}") }
+            .map { $0.replacingOccurrences(of: "{town}", with: def.name).replacingOccurrences(of: "{healer}", with: healer ?? "") }
         for _ in 0..<(def.crowd?.villagers ?? 0) {
             guard let home = map.strollTarget(near: map.center, radius: spread, using: &rng) else { continue }
             let name = villagerNames.popLast() ?? L("Villager")
             let race = Content.shared.races.randomElement()?.id ?? "human"
             let walker = Self.person(name, art: GameSession.registerPerson(race: race, look: Self.randomLook(race: race)), color: .white)
             walker.walkSpeed = .random(in: 50...66)
-            add(Member(name: name, kind: .villager, walker: walker, pet: nil, home: home, roam: 5, lines: options.villagerLines), to: world)
+            add(Member(name: name, kind: .villager, walker: walker, pet: nil, home: home, roam: 5, lines: villagerLines), to: world)
         }
     }
 
@@ -188,7 +193,7 @@ final class Crowd {
         let race = content.races.randomElement()?.id ?? "human"
         return Adventurer(name: name, raceID: race, classID: classID, level: level,
                           look: randomLook(race: race), petSpecies: Bool.random() ? companion(forLevel: level) : nil,
-                          hostile: danger && Int.random(in: 0..<5) < 2)
+                          hostile: danger && Int.random(in: 0..<5) < 2, sealStones: Int.random(in: 0...3))
     }
 
     /// How far below an adventurer's level the wild monsters they might have caught live.
@@ -238,9 +243,11 @@ final class Crowd {
         // come spread over that, so the chat is lively from the start without a burst.
         member.chat = .random(in: 5...(45 * pace * (member.trades ? 2.5 : 1)))
         world.addChild(member.walker)
+        member.walker.settle()
         if let pet = member.pet {
             pet.position = member.walker.position + CGVector(dx: -30, dy: 0)
             world.addChild(pet)
+            pet.settle()
         }
         members.append(member)
     }

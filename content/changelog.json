@@ -2,6 +2,19 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.3.97",
+      "date": "2026-10-11",
+      "title": "Ups and downs",
+      "notes": [
+        "Town terraces really stand up now: their tops are raised over a stone wall, and you climb their stairs to walk up on top.",
+        "Hills rise out of the fields of Sunny Meadow, Windswept Downs, Gumdrop Peaks, the mountains, the snowy woods and the deserts. Walk up their slopes to the top, where the trees and flowers grow too.",
+        "Villagers talk about their own town now, its weather and its healer, instead of Meadowbrook's.",
+        "The minimap's coordinates sit on a small plate in its bottom-right corner, over the map.",
+        "Friends in your party who don't have a companion yet carry Seal Stones, and throw one at a monster once it's weak enough. If it holds, it's their companion, fighting beside them and walking with them.",
+        "At the blacksmith, the weapon tabs and the materials a recipe takes no longer squeeze into one row: the tabs go two by two when they don't fit, and the materials line up under the weapon's name."
+      ]
+    },
+    {
       "version": "0.3.96",
       "date": "2026-10-11",
       "title": "Tidy hero",

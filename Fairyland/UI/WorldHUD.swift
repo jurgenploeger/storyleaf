@@ -416,7 +416,8 @@ private struct SystemLog: View {
     }
 }
 
-/// A framed minimap window around the hero, with Fairyland's coordinates plate. Tap for the full map.
+/// A framed minimap window around the hero, with Fairyland's coordinates on a plate in its corner.
+/// Tap for the full map.
 private struct MinimapWindow: View {
     let image: UIImage
     let name: String
@@ -500,18 +501,21 @@ private struct MinimapWindow: View {
                 }
                 .frame(width: width, height: height)
                 .clipped()
+                // Where you stand, on a small plate tucked into the corner over the map.
+                .overlay(alignment: .bottomTrailing) {
+                    Text("\(cell.col) : \(rows - 1 - cell.row)")
+                        .font(HUDStyle.mono(9))
+                        .foregroundStyle(HUDStyle.plateDark)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(HUDStyle.plateBackground)
+                        .padding(4)
+                        .allowsHitTesting(false)
+                }
                 .contentShape(Rectangle())
                 .onTapGesture(perform: onOpen)
                 .accessibilityLabel(L("Open map"))
                 .accessibilityAddTraits(.isButton)
-
-                Text("\(cell.col) : \(rows - 1 - cell.row)")
-                    .font(HUDStyle.mono(10))
-                    .foregroundStyle(HUDStyle.plateDark)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 2)
-                    .background(HUDStyle.plateBackground)
-                    .padding(4)
             }
         }
         .frame(width: width)

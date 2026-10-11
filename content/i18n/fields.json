@@ -6,7 +6,7 @@
   "classes": ["name", "description", "guild"],
   "crowd": ["adventurerLines", "replies", "traderLines", "villagerLines", "villagerNames"],
   "items": ["name", "description"],
-  "maps": ["name", "greeting", "story", "title"],
+  "maps": ["name", "greeting", "story", "title", "villagerLines"],
   "monsters": ["name", "lore"],
   "quests": ["title", "description", "text"],
   "skills": ["name", "description"],
