@@ -938,10 +938,10 @@ final class WorldMap {
         plateaus.append(plateau)
     }
 
-    /// Grassy hills out in the fields (`theme.hills`): round, lumpy rises, each with a dome and two
-    /// smaller lobes, off the roads and water and clear of buildings, people, the arrivals and each
-    /// other. Their rim is a steep bank you can't walk; one or two ramps (on the sides facing you)
-    /// lead up to the top, where the scenery grows like anywhere else.
+    /// Grassy hills out in the fields (`theme.hills`): broad, flat-topped rises, each a block with one
+    /// or two smaller ones against its sides, off the roads and water and clear of buildings, people,
+    /// the arrivals and each other. Their rim is a steep bank you can't walk; one or two ramps (on the
+    /// sides facing you) lead up to the top, where the scenery grows like anywhere else.
     private func raiseHills(_ hills: MapDef.Hills, _ rng: inout SeededRandom) {
         let sizes = hills.size ?? [3, 6]
         let smallest = max(2, sizes.first ?? 3), biggest = max(smallest, sizes.last ?? 6)
@@ -954,21 +954,31 @@ final class WorldMap {
         }
         for _ in 0..<hills.count {
             for _ in 0..<80 {
-                let radius = CGFloat(Int.random(in: smallest...biggest, using: &rng))
-                let middle = CGPoint(x: CGFloat(Int.random(in: 0..<columns, using: &rng)), y: CGFloat(Int.random(in: 0..<rows, using: &rng)))
-                var lobes = [(middle, radius)]
-                for _ in 0..<2 {
-                    let angle = CGFloat.random(in: 0..<(2 * .pi), using: &rng)
-                    let reach = radius * CGFloat.random(in: 0.4...0.8, using: &rng)
-                    lobes.append((CGPoint(x: middle.x + cos(angle) * reach, y: middle.y + sin(angle) * reach),
-                                  radius * CGFloat.random(in: 0.5...0.75, using: &rng)))
+                // A broad, flat-topped rise: a block with one or two smaller ones against its sides,
+                // edged along the rows and columns so its banks run straight. Round ones came out as
+                // zig-zag steps on the grid.
+                let middle = GridPoint(col: Int.random(in: 0..<columns, using: &rng), row: Int.random(in: 0..<rows, using: &rng))
+                let reach = (cols: Int.random(in: smallest...biggest, using: &rng), rows: Int.random(in: smallest...biggest, using: &rng))
+                var blocks = [(centre: middle, reach: reach)]
+                for _ in 0..<Int.random(in: 1...2, using: &rng) {
+                    let size = (cols: max(1, reach.cols * Int.random(in: 4...7, using: &rng) / 10),
+                                rows: max(1, reach.rows * Int.random(in: 4...7, using: &rng) / 10))
+                    var centre = GridPoint(col: middle.col + Int.random(in: -reach.cols...reach.cols, using: &rng),
+                                           row: middle.row + Int.random(in: -reach.rows...reach.rows, using: &rng))
+                    // On one of the big block's sides, so it sticks out past it.
+                    if Bool.random(using: &rng) {
+                        centre.col = middle.col + (Bool.random(using: &rng) ? reach.cols : -reach.cols)
+                    } else {
+                        centre.row = middle.row + (Bool.random(using: &rng) ? reach.rows : -reach.rows)
+                    }
+                    blocks.append((centre: centre, reach: size))
                 }
-                let span = Int(radius * 2) + 2
                 var cells: Set<GridPoint> = []
-                for row in (Int(middle.y) - span)...(Int(middle.y) + span) {
-                    for col in (Int(middle.x) - span)...(Int(middle.x) + span) {
-                        let spot = CGPoint(x: CGFloat(col), y: CGFloat(row))
-                        if lobes.contains(where: { spot.distance(to: $0.0) <= $0.1 }) { cells.insert(GridPoint(col: col, row: row)) }
+                for block in blocks {
+                    for row in (block.centre.row - block.reach.rows)...(block.centre.row + block.reach.rows) {
+                        for col in (block.centre.col - block.reach.cols)...(block.centre.col + block.reach.cols) {
+                            cells.insert(GridPoint(col: col, row: row))
+                        }
                     }
                 }
                 // Clear ground all round, a cell to spare, and well inside the map's edge.
