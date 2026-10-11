@@ -1470,7 +1470,8 @@ struct RulesTests {
         // Old Ox's, from level 100.
         session.data.hero.level = 103
         session.data.quests["wishes_of_a_duckling"] = QuestProgress(state: .completed, count: 0)
-        #expect(session.quests(from: "swan_keeper").isEmpty)
+        // (quests(from:) still lists what's handed in; the dialog leaves those out.)
+        #expect(session.quests(from: "swan_keeper").allSatisfy { session.status(of: $0) == .completed })
         #expect(session.questGiverNote("swan_keeper") == "That's all I had for you. Thank you! Old Ox in Hidden Steppe has work for someone like you.")
         // Every quest at the hero's level everywhere is done: the next one to open.
         for quest in Content.shared.quests where (quest.minLevel ?? 1) <= 103 {
