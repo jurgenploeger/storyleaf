@@ -18,6 +18,9 @@ nonisolated struct ArtAsset: Decodable {
     let scale: Double?
     /// A free palette-swapped copy of another sprite (used until this one gets its own PNG).
     let derive: Derivation?
+    /// Which way a single picture looks, "left" (when not given) or "right": it has no side views,
+    /// so walking the other way it's mirrored (`WalkCycle.mirrors`). A copy looks the way its base does.
+    let faces: String?
 }
 
 /// One paper-doll layer (an art/sprites PNG) and how it's recoloured before stacking: by its own
@@ -37,9 +40,17 @@ struct SpriteArt {
 struct WalkCycle {
     let frames: [Direction: [SKTexture]]
     let size: CGSize
+    /// A single picture that looks right (`ArtAsset.faces`); most look left or straight at you.
+    var facesRight = false
 
     func frames(_ direction: Direction) -> [SKTexture] {
         frames[direction] ?? frames[.down] ?? []
+    }
+
+    /// The same picture whichever way it goes (a single image, or a sheet with no side views): it's
+    /// mirrored to walk the other way.
+    var mirrors: Bool {
+        frames(.left).first === frames(.right).first
     }
 }
 
@@ -113,7 +124,7 @@ final class ArtLibrary {
                   layers: [ArtLayer]? = nil) {
         guard runtime[id]?.key != key else { return }
         let kind = asset(base)?.kind ?? "monster"
-        runtime[id] = (ArtAsset(id: id, kind: kind, frame: nil, directions: nil, scale: nil, derive: Derivation(from: base, recolor: rules)), key)
+        runtime[id] = (ArtAsset(id: id, kind: kind, frame: nil, directions: nil, scale: nil, derive: Derivation(from: base, recolor: rules), faces: nil), key)
         gearLooks[id] = gear
         layerSets[id] = layers
         textures[id] = nil
@@ -145,7 +156,7 @@ final class ArtLibrary {
         // the frame size and direction order are lost and the wrong row shows (her back for "down").
         guard let derive = own.derive, derive.from != id, let base = asset(derive.from) else { return own }
         return ArtAsset(id: own.id, kind: own.kind, frame: own.frame ?? base.frame, directions: own.directions ?? base.directions,
-                        scale: own.scale ?? base.scale, derive: derive)
+                        scale: own.scale ?? base.scale, derive: derive, faces: own.faces ?? base.faces)
     }
 
     private func kind(of id: String) -> String {
@@ -469,7 +480,8 @@ final class ArtLibrary {
 
         guard kind == "walk_sheet" else {
             let art = sprite(id)
-            return WalkCycle(frames: Dictionary(uniqueKeysWithValues: Direction.allCases.map { ($0, [art.texture]) }), size: art.size)
+            return WalkCycle(frames: Dictionary(uniqueKeysWithValues: Direction.allCases.map { ($0, [art.texture]) }), size: art.size,
+                             facesRight: asset?.faces == "right")
         }
 
         guard let sheet = generatedTexture(id) else {

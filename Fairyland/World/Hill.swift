@@ -4,7 +4,7 @@ import Foundation
 extension WorldMap {
     /// Raised ground out in the fields (`theme.hills`): a range of summits melted into one another,
     /// each rising smoothly from its foot to a rounded top of its own height, so a long ridge of hills
-    /// or a mountain among its foothills. Its sides are too steep to walk but for its trails, which
+    /// or a mountain among its foothills. You can walk up it anywhere; its trails, the easy way up,
     /// zig-zag up the sides that face you (switchbacks) and onto the tops.
     /// Points here are in cells (grid space divided by `WorldMap.tileSize`).
     nonisolated struct Hill {
@@ -48,7 +48,7 @@ extension WorldMap {
         let ripples: [(fx: Double, px: Double, fy: Double, py: Double)]
         /// How high its highest top stands, in points.
         let peak: CGFloat
-        /// Its trails: the first from the ground in front, the others to tops it doesn't reach.
+        /// Its trails: the first from the ground in front, then one up its mountain.
         var trails: [Trail] = []
         /// The cells it rises over.
         var cells: Set<GridPoint> = []

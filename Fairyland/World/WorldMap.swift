@@ -290,13 +290,6 @@ final class WorldMap {
 
     // MARK: Placement
 
-    /// Too steep or too solid to walk, but scenery may still stand there (a hill's sides).
-    func block(_ cell: GridPoint) {
-        guard contains(cell), !blocked.contains(cell), let node = graph.node(atGridPosition: cell.vector) else { return }
-        graph.remove([node])
-        blocked.insert(cell)
-    }
-
     /// Reserves a cell; blocking things also take it out of the walk graph.
     func occupy(_ cell: GridPoint, blocking: Bool) {
         guard contains(cell) else { return }
@@ -970,8 +963,8 @@ final class WorldMap {
     /// Ranges of grassy hills out in the fields (`theme.hills`, `Hill`): summits one after another
     /// along a wandering line, melted together, off the roads and water and clear of buildings,
     /// people, the arrivals and each other. Mountains first, each the tallest and widest summit of
-    /// its range. Their sides are too steep to walk but for the trails zig-zagging up the sides
-    /// facing you; on top the scenery grows like anywhere else.
+    /// its range. You can walk up them anywhere, and trails zig-zag up the sides facing you, the easy
+    /// way up; scenery grows on them like anywhere else.
     private func raiseHills(_ hills: MapDef.Hills, _ rng: inout SeededRandom) {
         let sizes = hills.size ?? [3, 6]
         let smallest = Double(max(2, sizes.first ?? 3)), biggest = Double(max(sizes.first ?? 3, sizes.last ?? 6))
@@ -1043,9 +1036,9 @@ final class WorldMap {
     }
 
     /// Lays `hill` on the map if there's room: the cells it covers (all clear ground, a cell to spare
-    /// all round, well inside the map's edge and off the other hills), its heights, its trails, and
-    /// which of its cells are too steep to walk. False if it doesn't fit, there's no way up from the
-    /// ground in front, or none up its mountain (`mountain`, a summit's index).
+    /// all round, well inside the map's edge and off the other hills), its heights and its trails
+    /// (one up its mountain, `mountain`, a summit's index, where there's room). False if it doesn't
+    /// fit or there's no trail up from the ground in front.
     private func shapeHill(_ hill: inout Hill, mountain: Int?, startingLeft: Bool, claimed: Set<GridPoint>) -> Bool {
         // The cells any summit reaches into, with a cell to spare for the ripples.
         let reach = hill.lobes.map { max($0.along, $0.across) + 1 }
@@ -1094,38 +1087,10 @@ final class WorldMap {
                 hill.heights[j * width + i] = Float(hill.shape(Double(low.col) + Double(i) / Double(samples), Double(low.row) + Double(j) / Double(samples)))
             }
         }
-        // Too steep to walk: where the ground in a cell rises more than 8 points.
-        var steep: Set<GridPoint> = []
-        for cell in cells {
-            let i0 = (cell.col - low.col) * samples, j0 = (cell.row - low.row) * samples
-            var least = Float.infinity, most = -Float.infinity
-            for dj in 0...samples {
-                for di in 0...samples {
-                    let height = hill.heights[(j0 + dj) * width + i0 + di]
-                    least = min(least, height)
-                    most = max(most, height)
-                }
-            }
-            if most - least > 8 { steep.insert(cell) }
-        }
-        /// Where you can walk from around it: over its gentle ground, and up `trails`.
-        func reached(_ trails: Set<GridPoint>) -> Set<GridPoint> {
-            var seen = ring.subtracting(cells)
-            var queue = Array(seen)
-            while let cell = queue.popLast() {
-                for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
-                    let next = GridPoint(col: cell.col + dc, row: cell.row + dr)
-                    guard cells.contains(next), trails.contains(next) || !steep.contains(next), seen.insert(next).inserted else { continue }
-                    queue.append(next)
-                }
-            }
-            return seen
-        }
-
-        // Its trails: from the ground in front up the nearest summit with room for one, then up the
-        // mountain if that wasn't it, then up any top still out of reach. Each starts somewhere you
-        // can get to, is never steeper than you could walk, and keeps clear of the others. They face
-        // you: up the front, or the front left or right.
+        // Its trails, the easy way up (you can climb it anywhere): from the ground in front up the
+        // nearest summit with room for one, and up the mountain too if that wasn't it. Each is never
+        // steeper than a comfortable walk and keeps clear of the other. They face you: up the front,
+        // or the front left or right.
         let order = hill.lobes.indices.sorted { hill.lobes[$0].x + hill.lobes[$0].y < hill.lobes[$1].x + hill.lobes[$1].y }
         let fronts = [1.25 * Double.pi, Double.pi, 1.5 * Double.pi]
         var trails: [Hill.Trail] = []
@@ -1140,12 +1105,11 @@ final class WorldMap {
             }
         }
         func climb(_ index: Int, fromGround: Bool) -> Bool {
-            let open = reached(onTrails)
             for front in fronts {
                 for left in [startingLeft, !startingLeft] {
                     guard let points = hill.traceTrail(on: index, front: front, startingLeft: left) else { continue }
                     let path = Self.cells(along: points)
-                    guard let foot = path.first, open.contains(foot), path.allSatisfy({ ring.contains($0) }),
+                    guard path.allSatisfy({ ring.contains($0) }),
                           !fromGround || hill.shape(Double(points[0].x), Double(points[0].y)) < 1,
                           hill.steepestClimb(along: points) <= 8, !crowds(points)
                     else { continue }
@@ -1157,22 +1121,8 @@ final class WorldMap {
             return false
         }
         guard order.contains(where: { climb($0, fromGround: true) }) else { return false }
-        if let mountain, !trails.contains(where: { $0.lobe == mountain }) {
-            guard climb(mountain, fromGround: false) else { return false }
-        }
-        for index in order where !trails.contains(where: { $0.lobe == index }) {
-            let top = GridPoint(col: Int(hill.lobes[index].x.rounded(.down)), row: Int(hill.lobes[index].y.rounded(.down)))
-            if !reached(onTrails).contains(top) { _ = climb(index, fromGround: false) }
-        }
+        if let mountain, !trails.contains(where: { $0.lobe == mountain }) { _ = climb(mountain, fromGround: false) }
         hill.trails = trails
-
-        // Ground you could only reach over the steep sides (a top no trail climbs) is out of reach,
-        // so it's steep too: what's left walkable is reached from around it or up its trails.
-        steep.subtract(onTrails)
-        let open = reached(onTrails)
-        for cell in cells where !steep.contains(cell) && !open.contains(cell) { steep.insert(cell) }
-        // Too steep to walk, but trees and flowers grow on its sides like anywhere else.
-        for cell in steep { block(cell) }
         // Nothing grows on the trails or beside them, so the ways up stay open and in sight.
         for cell in onTrails {
             for dr in -1...1 {

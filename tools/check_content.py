@@ -512,6 +512,7 @@ for map_def in maps.values():
         for point in trail.get("via", []) + ([trail["from"]] if "from" in trail else []): inside(point, "trail waypoint")
 
 for asset in art.values():
+    check(asset.get("faces", "left") in ("left", "right"), f"art {asset['id']} → faces must be left or right")
     if "derive" in asset:
         check(asset["derive"]["from"] in art, f"art {asset['id']} → unknown base {asset['derive']['from']}")
         check_rules(asset["derive"]["recolor"], f"art {asset['id']} derive")

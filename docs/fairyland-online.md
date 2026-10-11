@@ -107,19 +107,20 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   steps of 6% with a 4×4 ordered dither between them, sides away from the sun a few shades darker (leaning to
   the palette's shadow colour) and sides facing it only one lighter; the first smooth, brighter gradient
   read as gloss in playtesting. Never steeper than 13 points a cell halfway up (15 before 0.4.4), so ground
-  facing away never leans out of sight and a tap finds one spot. Their sides are too steep to walk, but
-  scenery grows there like anywhere (since 0.4.3; tree shadows lie on the hill); a switchback trail (a leg
-  across the side facing you for every couple of cells up, cut into the slope with a shadow above and a lip
-  below) is the way up, kept clear a cell either side. A `bank` tile shows through in ragged patches where
-  they're steepest.
+  facing away never leans out of sight and a tap finds one spot. Scenery grows on them like anywhere
+  (since 0.4.3; tree shadows lie on the hill). Since 0.4.5 you can walk up them anywhere, straight up the
+  side too (asked for in playtesting 2026-10-11; 0.4.1 to 0.4.4 kept the steep sides blocked but for the
+  trail); a switchback trail (a leg across the side facing you for every couple of cells up, cut into the
+  slope with a shadow above and a lip below) is the easy way up, kept clear a cell either side. A `bank`
+  tile shows through in ragged patches where they're steepest.
 - Ranges and mountains (ours, since 0.4.4, asked for in playtesting 2026-10-11: hills should stretch across
   the land and some rise to a mountain): each hill is a range, a chain of summits (`chain`, 2 to 4 by default)
   along a wandering line, each with its own height, blended so where two meet stands a little fuller (the
   fourth root of their heights' fourth powers) and their tops often join into a ridge you can walk along.
   `mountains` (count, height up to 128) adds ranges with one summit far taller and wider than the rest; a
   summit is only as tall as its width lets it be at that steepness. The first trail climbs from the ground in
-  front; the mountain and any top still out of reach get trails of their own (front, front left or front
-  right), each from somewhere you can walk to, never steeper than you could walk, clear of the others. Too big
+  front; the mountain gets one of its own where there's room (front, front left or front right), never
+  steeper than a comfortable walk and clear of the other. Too big
   to draw or sort as one picture, a range is drawn in squares of 16 cells, each shown in strips two cells
   deep up the screen, sorted just behind their back edge (`HillArt.strip(at:)`), so trees and walkers behind
   a summit are hidden by it; tree shadows are split where the strip in front begins.
@@ -345,6 +346,9 @@ Full Heal.
 **Us:**
 - Up to 5 companions; only the one you bring along follows you, fights and earns EXP (50%, or 100% for a
   Beast Tamer).
+- A companion drawn as one picture (most monsters) is mirrored to face the way it walks, left or right
+  (since 0.4.5, asked for in playtesting 2026-10-11; `WalkCycle.mirrors`). Most pictures look left or at
+  you; the few that look right say so in art/assets.json (`faces`), and palette swaps inherit it.
 - Seal Stones are thrown with Capture (the plainest one you have) or from Items (any kind). Since 0.3.70
   (asked for in playtesting, 2026-10-07) there are five, the same crystal in five colours, and every throw
   uses the stone up, held or not (before, only when it worked): the teal Seal Stone (60 gold), the blue Moon

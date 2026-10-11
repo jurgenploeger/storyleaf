@@ -1073,6 +1073,7 @@
     {
       "id": "monster_tree_snake",
       "kind": "monster",
+      "faces": "right",
       "request": {
         "prompt": "coiled green snake with leaves along its back, chibi, cute monster",
         "prompt_style": "rd_plus__low_res",
@@ -1151,6 +1152,7 @@
     {
       "id": "npc_ugly_duckling",
       "kind": "monster",
+      "faces": "right",
       "request": {
         "prompt": "shy scruffy grey ugly duckling with big sad eyes, fluffy messy feathers, chibi, cute",
         "prompt_style": "rd_plus__low_res",
@@ -1239,6 +1241,7 @@
     {
       "id": "monster_mud_eagle",
       "kind": "monster",
+      "faces": "right",
       "request": {
         "prompt": "brown eagle chick with mud-streaked feathers, wings spread, chibi, cute monster",
         "prompt_style": "rd_plus__low_res",
@@ -1316,6 +1319,7 @@
     {
       "id": "monster_pegasus",
       "kind": "monster",
+      "faces": "right",
       "request": {
         "prompt": "white winged pony pegasus with a golden mane, chibi, cute monster",
         "prompt_style": "rd_plus__low_res",

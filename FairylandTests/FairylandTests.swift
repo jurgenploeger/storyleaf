@@ -139,7 +139,7 @@ struct ContentTests {
         for def in content.maps where def.theme.hills != nil {
             let map = WorldMap(def: def)
             #expect(!map.hills.isEmpty, "map \(def.id) has no hills")
-            #expect(map.hills.contains { hill in hill.cells.contains { !map.isWalkable($0) && map.isFreeForScenery($0) } },
+            #expect(map.hills.contains { hill in hill.cells.contains { map.isFreeForScenery($0) } },
                     "map \(def.id): nothing can grow on its hills")
             // Ranges stretch across the land, not a hump each; and a map with mountains has one.
             #expect(map.hills.contains { $0.size.columns >= 24 || $0.size.rows >= 24 }, "map \(def.id): only small hills")
@@ -177,8 +177,8 @@ struct ContentTests {
                     }
                     #expect(outside, "map \(def.id): no footpath from the trail at \(cell(foot)) to the roads")
                 }
-                // Its sides are too steep to walk (but trees and flowers grow there, above).
-                #expect(hill.cells.contains { !map.isWalkable($0) }, "map \(def.id): a hill you can walk straight up")
+                // You can walk up it anywhere, its steepest sides too (nothing grows on it yet).
+                #expect(hill.cells.allSatisfy { map.isWalkable($0) }, "map \(def.id): part of a hill you can't walk on")
                 // Never so steep that ground facing away from you would lean out of sight: going up
                 // the map and right at once (up the screen), it never drops faster than the view.
                 for cell in hill.cells {
@@ -334,6 +334,18 @@ struct LookTests {
     init() {
         // Belt and braces: never touch the real save from tests.
         SaveStore.fileName = "fairyland-tests-save.json"
+    }
+
+    @Test func singlePicturesTurnTheWayTheyWalk() {
+        let art = ArtLibrary.shared
+        // A monster is one picture, mirrored to walk the other way; a walk sheet has side views.
+        #expect(art.walkCycle("monster_jelly").mirrors)
+        #expect(!art.walkCycle("monster_jelly").facesRight)
+        #expect(!art.walkCycle("player_walk").mirrors)
+        #expect(!art.walkCycle("pet_walk").mirrors)
+        // Most look left or at you; a few look right, and a copy looks the way its base does.
+        #expect(art.walkCycle("npc_ugly_duckling").facesRight)
+        #expect(art.walkCycle("monster_tree_snake_sunny").facesRight)
     }
 
     @Test func derivedSpritesHaveABase() throws {

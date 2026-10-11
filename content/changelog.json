@@ -2,6 +2,15 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.4.5",
+      "date": "2026-10-11",
+      "title": "Climb anywhere",
+      "notes": [
+        "Walk up any hill or mountain wherever you like, straight up its side if you want. The trails are still there as the easy way up.",
+        "Companions turn to face the way they're walking, left or right."
+      ]
+    },
+    {
       "version": "0.4.4",
       "date": "2026-10-11",
       "title": "Ranges and mountains",
