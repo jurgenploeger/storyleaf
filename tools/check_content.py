@@ -493,8 +493,19 @@ check(0 <= crowd.get("botDensity", 1) <= 1, "crowd botDensity → between 0 and 
 for line in crowd.get("traderLines", []):
     check(("{item}" in line) != ("{buy}" in line), f"crowd traderLines → \"{line}\" needs {{item}} or {{buy}} (one of them)")
     check(set(re.findall(r"\{(\w+)\}", line)) <= {"item", "buy", "price"}, f"crowd traderLines → unknown placeholder in \"{line}\"")
+villager_placeholders = {"town", "healer"}
+for line in crowd.get("villagerLines", []):
+    check(set(re.findall(r"\{(\w+)\}", line)) <= villager_placeholders, f"crowd villagerLines → unknown placeholder in \"{line}\"")
 for map_def in maps.values():
     for key, value in (map_def.get("crowd") or {}).items():
+        if key == "villagerLines":
+            # A town's own lines: about its own places and people, so towns with villagers only.
+            check(isinstance(value, list) and all(isinstance(line, str) for line in value),
+                  f"map {map_def['id']} crowd → villagerLines: a list of lines")
+            check((map_def.get("crowd") or {}).get("villagers", 0) > 0, f"map {map_def['id']} crowd → villagerLines with no villagers to say them")
+            for line in value if isinstance(value, list) else []:
+                check(set(re.findall(r"\{(\w+)\}", str(line))) <= villager_placeholders, f"map {map_def['id']} crowd → unknown placeholder in \"{line}\"")
+            continue
         check(key in ("adventurers", "villagers", "traders") and isinstance(value, int) and value >= 0,
               f"map {map_def['id']} crowd → {key}: {value} (adventurers, villagers or traders: a whole number)")
     if (map_def.get("crowd") or {}).get("traders"):

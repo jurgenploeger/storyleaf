@@ -7,7 +7,12 @@
       "name": "Meadowbrook",
       "crowd": {
         "adventurers": 12,
-        "villagers": 10
+        "villagers": 10,
+        "villagerLines": [
+          "Mind the jellies past the gate.",
+          "The fountain sparkles at night, you know.",
+          "Have you visited the guilds yet?"
+        ]
       },
       "width": 80,
       "height": 60,
@@ -2800,7 +2805,10 @@
       "fence": true,
       "crowd": {
         "adventurers": 14,
-        "villagers": 10
+        "villagers": 10,
+        "villagerLines": [
+          "The fountain sparkles at night, you know."
+        ]
       },
       "theme": {
         "ground": "tile_grass",
@@ -8428,7 +8436,10 @@
       "fence": true,
       "crowd": {
         "adventurers": 14,
-        "villagers": 14
+        "villagers": 14,
+        "villagerLines": [
+          "The fountain sparkles at night, you know."
+        ]
       },
       "theme": {
         "ground": "tile_grass",

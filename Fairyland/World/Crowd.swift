@@ -107,13 +107,18 @@ final class Crowd {
         if let market, traders > 0 {
             placeTraders(traders, market: market, names: &adventurerNames, avoiding: def, world: world)
         }
+        // Everyone's lines and the town's own, with its name and its healer's filled in.
+        let healer = def.npcs?.first { $0.role == .healer }?.name
+        let villagerLines = (options.villagerLines + (def.crowd?.villagerLines ?? []))
+            .filter { healer != nil || !$0.contains("{healer}") }
+            .map { $0.replacingOccurrences(of: "{town}", with: def.name).replacingOccurrences(of: "{healer}", with: healer ?? "") }
         for _ in 0..<(def.crowd?.villagers ?? 0) {
             guard let home = map.strollTarget(near: map.center, radius: spread, using: &rng) else { continue }
             let name = villagerNames.popLast() ?? L("Villager")
             let race = Content.shared.races.randomElement()?.id ?? "human"
             let walker = Self.person(name, art: GameSession.registerPerson(race: race, look: Self.randomLook(race: race)), color: .white)
             walker.walkSpeed = .random(in: 50...66)
-            add(Member(name: name, kind: .villager, walker: walker, pet: nil, home: home, roam: 5, lines: options.villagerLines), to: world)
+            add(Member(name: name, kind: .villager, walker: walker, pet: nil, home: home, roam: 5, lines: villagerLines), to: world)
         }
     }
 

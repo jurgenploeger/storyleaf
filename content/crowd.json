@@ -1,5 +1,5 @@
 {
-  "_about": "Background life on the maps. Adventurers stand in for Fairyland's other players until there's online play, and say so with a BOT tag: a random race and look, sometimes with a companion, wandering and chatting. Villagers potter around towns. How many of each a map gets is its `crowd` in maps.json, with `traders`: market traders standing about the main square, their wares on a sign over their heads, calling out their real deals (`traderLines`: {item} and {price} for what they sell, {buy} and {price} for what they'd buy from you). `botDensity` scales every map's adventurers and traders (1: all of them); turn it down as real players arrive. Tap anyone to hear a line. An adventurer's companion is a catchable monster from the wild near their level (Crowd.companion(forLevel:)); `companions` are the starter ones they fall back on when none fits.",
+  "_about": "Background life on the maps. Adventurers stand in for Fairyland's other players until there's online play, and say so with a BOT tag: a random race and look, sometimes with a companion, wandering and chatting. Villagers potter around towns, saying `villagerLines` ({town} for the town, {healer} for its healer) and their own town's (maps.json `crowd.villagerLines`, for its own places and people). How many of each a map gets is its `crowd` in maps.json, with `traders`: market traders standing about the main square, their wares on a sign over their heads, calling out their real deals (`traderLines`: {item} and {price} for what they sell, {buy} and {price} for what they'd buy from you). `botDensity` scales every map's adventurers and traders (1: all of them); turn it down as real players arrive. Tap anyone to hear a line. An adventurer's companion is a catchable monster from the wild near their level (Crowd.companion(forLevel:)); `companions` are the starter ones they fall back on when none fits.",
   "botDensity": 1,
   "adventurerNames": [
     "Momo", "Pudding", "Lulu", "Kiki", "Tofu", "Sora", "Bubbles", "Mochi", "Pippin", "Clover", "Nana",
@@ -40,14 +40,11 @@
     "Auntie Fay", "Postman Rob", "Tilly", "Grandpa Oak"
   ],
   "villagerLines": [
-    "Lovely weather in Meadowbrook!",
-    "Mind the jellies past the gate.",
+    "Lovely weather in {town}!",
     "Fresh bread at the market today!",
     "My hens got loose again...",
-    "The fountain sparkles at night, you know.",
-    "Have you visited the guilds yet?",
     "Back in my day, bunnies were bigger.",
-    "Nurse Mira fixes up anyone for free.",
+    "{healer} fixes up anyone for free.",
     "Something glows in the Twilight Woods...",
     "Welcome, traveller!"
   ],
