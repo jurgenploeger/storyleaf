@@ -116,7 +116,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin screenshots || true
+          # Only its latest commit: the branch's whole history of pictures is gigabytes, and fetching it
+          # all held this step up for half an hour. The retries below fetch just what's new since.
+          git fetch --depth 1 origin screenshots || true
           git worktree add -B screenshots ../pub origin/screenshots 2>/dev/null \
             || { git worktree add --detach ../pub && cd ../pub && git checkout --orphan screenshots && git rm -rfq . && cd -; }
           mkdir -p "../pub/$BRANCH"
