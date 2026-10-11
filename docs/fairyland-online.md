@@ -152,6 +152,16 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   ground in flat tones (since 0.4.5; the height gradient read as a staircase of shades at a pixel a cell):
   a lighter tint, the edge facing the light lit and the far edge shaded, a cell of shadow on the ground past
   it, and a mountain's upper slopes lighter still.
+- Cave entrances (ours, since 0.4.5, asked for in playtesting 2026-10-11: a map's way into a cave should
+  show from afar, a mountain or rock formation on that side): where a road leads into a cave (Shiverdell
+  and Lotus Land into the Rat Cavern, Windswept Downs into Gooey Grotto, Moonwhisper and Emerald Road into
+  Whispering Hollow), the cave's own rock rises along that side of the map, 64 points tall (its walls
+  inside are 32 to 36): a band 2 to 5 cells in from the edge, its front wandering, and 6 to 10 cells more
+  out past it, rounding off past the corners (`WorldMap.raiseCrags`, `isCrag`; drawn by `CaveWalls`). The
+  road runs through it with a cell clear either side. On the north and east sides the rock's face at the
+  edge looks your way and the road ends at a dark arch in it; on the south and west that face looks away,
+  so the road runs on under an arch of rock into a dark cleft (`CaveMouth`). How FO showed its cave
+  entrances isn't in any source reachable from a cloud session.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake

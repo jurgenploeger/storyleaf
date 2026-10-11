@@ -178,6 +178,9 @@ final class WorldScene: SKScene {
         if let cave = def.theme.cave {
             caveWalls = CaveWalls(map: map, cave: cave, world: world, art: art, margin: Self.surroundingsMargin)
             await reached(0.55, progress)
+        } else if !map.crags.isEmpty {
+            placeCrags()
+            await reached(0.55, progress)
         }
         placeLilyPads()
         placeFence()
@@ -493,8 +496,30 @@ final class WorldScene: SKScene {
                 guard outside, Double.random(in: 0..<1, using: &decorRNG) < 0.14 else { continue }
                 let nearRoad = (-1...1).contains { dc in (-1...1).contains { dr in roadCells.contains(GridPoint(col: col + dc, row: row + dr)) } }
                 guard !nearRoad else { continue }
+                // Nor on or against the rock where a road leads into a cave.
+                let nearCrag = !map.crags.isEmpty && (-1...1).contains { dc in (-1...1).contains { dr in map.isCrag(GridPoint(col: col + dc, row: row + dr)) } }
+                guard !nearCrag else { continue }
                 addScenery(sprite, at: GridPoint(col: col, row: row))
             }
+        }
+    }
+
+    /// Where a road leads into a cave: the cave's rock along that side of the map and out past its
+    /// edge, and the cave's mouth where the road meets it (`WorldMap.Crag`, `CaveMouth`).
+    private func placeCrags() {
+        let margin = Self.surroundingsMargin
+        let rows = map.rows, columns = map.columns
+        for crag in map.crags {
+            // Only that side of the map and past it holds any of its rock.
+            let reach: (rows: Range<Int>, columns: Range<Int>) = switch crag.edge {
+            case .north: (rows - 8..<rows + margin, -margin..<columns + margin)
+            case .south: (-margin..<8, -margin..<columns + margin)
+            case .east: (-margin..<rows + margin, columns - 8..<columns + margin)
+            case .west: (-margin..<rows + margin, -margin..<8)
+            }
+            _ = CaveWalls(map: map, rock: crag.cave.rock, height: CaveMouth.height, topShade: CaveMouth.topShade,
+                          world: world, art: art, margin: margin, rows: reach.rows, columns: reach.columns, isRock: map.isCrag)
+            for sprite in CaveMouth.sprites(for: crag, map: map, art: art) { world.addChild(sprite) }
         }
     }
 

@@ -1,6 +1,7 @@
 import SpriteKit
 
-/// A cave's rock, drawn as raised walls you pass in front of and disappear behind. Each cell
+/// A cave's rock (and the crags outside where a road leads into one, `WorldMap.Crag`), drawn as
+/// raised walls you pass in front of and disappear behind. Each cell
 /// near the floor gets a depth-sorted block: a shaded stone top and lit faces where the rock
 /// drops to the floor. The outline runs through the middles of the cells (marching squares),
 /// so corners are cut at 45° instead of stepping in sharp right angles: on screen, walls that
@@ -14,14 +15,8 @@ final class CaveWalls {
     /// Straight pieces per rounded corner.
     private static let arcSteps = 6
 
-    init(map: WorldMap, cave: MapDef.Cave, world: SKNode, art: ArtLibrary, margin: Int) {
-        let tile = WorldMap.tileSize
-        let height = CGFloat(cave.height ?? 40)
-        // Every top uses the same tile, lined up with the flat layer, so they meet seamlessly.
-        let top = art.tileVariant(cave.rock, 0).cgImage()
-        let side = art.tileVariant(cave.rock, 1).cgImage()
-
-        // Beyond the map it's rock too, except the tunnels the roads leave through.
+    /// A cave's walls: its rock, and beyond the map rock too but for the tunnels the roads leave by.
+    convenience init(map: WorldMap, cave: MapDef.Cave, world: SKNode, art: ArtLibrary, margin: Int) {
         var mouths: Set<GridPoint> = []
         for exit in map.def.exits {
             for i in 0..<margin {
@@ -42,6 +37,19 @@ final class CaveWalls {
         func isRock(_ cell: GridPoint) -> Bool {
             map.contains(cell) ? map.rock.contains(cell) : !mouths.contains(cell)
         }
+        self.init(map: map, rock: cave.rock, height: CGFloat(cave.height ?? 40), topShade: CaveWalls.topShade,
+                  world: world, art: art, margin: margin, isRock: isRock)
+    }
+
+    /// Walls of `rock` (a tile) `height` points tall wherever `isRock` says, in the map and out past
+    /// its edge to `margin` cells, their tops `topShade` darker than the rock. `rows` and `columns`
+    /// narrow where to look, if the rock is all in one part of that.
+    init(map: WorldMap, rock: String, height: CGFloat, topShade: CGFloat, world: SKNode, art: ArtLibrary, margin: Int,
+         rows: Range<Int>? = nil, columns: Range<Int>? = nil, isRock: (GridPoint) -> Bool) {
+        let tile = WorldMap.tileSize
+        // Every top uses the same tile, lined up with the flat layer, so they meet seamlessly.
+        let top = art.tileVariant(rock, 0).cgImage()
+        let side = art.tileVariant(rock, 1).cgImage()
 
         let topTexture = SKTexture(cgImage: top)
         topTexture.filteringMode = .nearest
@@ -50,14 +58,18 @@ final class CaveWalls {
                                  tileSize: CGSize(width: tile, height: tile))
         deep.anchorPoint = .zero
         deep.color = .black
-        deep.colorBlendFactor = Self.topShade
+        deep.colorBlendFactor = topShade
         deep.position = CGPoint(x: -CGFloat(margin) * tile, y: -CGFloat(margin) * tile)
+        // Rock this far from the floor is hidden behind the blocks in front of it, so it can be the
+        // flat layer: about as many cells as the walls are tall, up the screen.
+        let depthStep = WorldMap.project(CGPoint(x: tile, y: 0)).y
+        let near = max(2, Int((height / depthStep).rounded(.up)) - 1)
 
         // Which blocks go where. A rock cell's block shows all of its rock; a floor cell in a
         // corner between walls gets a sliver of rock in that corner, sorted by where it sits.
         var pending: [(cell: GridPoint, key: Int, z: CGFloat)] = []
-        for row in -margin..<(map.rows + margin) {
-            for col in -margin..<(map.columns + margin) {
+        for row in rows ?? (-margin..<(map.rows + margin)) {
+            for col in columns ?? (-margin..<(map.columns + margin)) {
                 let cell = GridPoint(col: col, row: row)
                 var mask = 0
                 for dr in -1...1 {
@@ -66,7 +78,7 @@ final class CaveWalls {
                 let center = WorldMap.project(CGPoint(x: (CGFloat(col) + 0.5) * tile, y: (CGFloat(row) + 0.5) * tile))
                 if isRock(cell) {
                     // Only rock near the floor needs its own block; the rest is the flat layer.
-                    let nearFloor = (-2...2).contains { dr in (-2...2).contains { dc in !isRock(GridPoint(col: col + dc, row: row + dr)) } }
+                    let nearFloor = (-near...near).contains { dr in (-near...near).contains { dc in !isRock(GridPoint(col: col + dc, row: row + dr)) } }
                     if nearFloor {
                         pending.append((cell, mask, -center.y))
                     } else {
@@ -83,7 +95,7 @@ final class CaveWalls {
         }
 
         let keys = Array(Set(pending.map(\.key))).sorted()
-        let (textures, blockSize) = Self.atlas(keys: keys, top: top, side: side, height: height)
+        let (textures, blockSize) = Self.atlas(keys: keys, top: top, side: side, height: height, topShade: topShade)
         guard textures.count == keys.count else { return }
         let index = Dictionary(uniqueKeysWithValues: keys.enumerated().map { ($1, $0) })
         let half = WorldMap.project(CGPoint(x: tile, y: tile)).y / 2
@@ -177,7 +189,7 @@ final class CaveWalls {
 
     /// Every block that's needed, in one texture so they draw together, in the order of `keys`.
     /// Also returns a block's size in points.
-    private static func atlas(keys: [Int], top: CGImage, side: CGImage, height: CGFloat) -> ([SKTexture], CGSize) {
+    private static func atlas(keys: [Int], top: CGImage, side: CGImage, height: CGFloat, topShade: CGFloat) -> ([SKTexture], CGSize) {
         let tile = WorldMap.tileSize
         let c = CGFloat(0.5).squareRoot()
         let width = 2 * tile * c

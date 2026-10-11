@@ -125,6 +125,32 @@ struct ContentTests {
         }
     }
 
+    @Test func roadsIntoCavesRunIntoRock() throws {
+        // Where a road leads into a cave, the cave's rock rises along that side of the map, and the
+        // road runs through it to the cave's mouth at the edge.
+        for def in content.maps where def.theme.cave == nil && def.town == nil {
+            let map = WorldMap(def: def)
+            for exit in def.exits where content.map(exit.to)?.theme.cave != nil {
+                let crag = map.crags.first { $0.edge == exit.edge }
+                #expect(crag != nil, "map \(def.id): no rock where its road leads into \(exit.to)")
+                guard let crag else { continue }
+                let length = exit.edge == .north || exit.edge == .south ? map.columns : map.rows
+                let rocky = (0..<length).filter { map.isCrag(map.cell(on: exit.edge, along: $0, inward: 0)) }.count
+                #expect(rocky * 3 > length * 2, "map \(def.id): only \(rocky) of the \(length) cells along its \(exit.edge) edge are rock")
+                // Rock out past the edge too, but not in front of a mouth that looks your way.
+                let outside = map.cell(on: exit.edge, along: crag.mouth.lowerBound - 2, inward: -2)
+                #expect(map.isCrag(outside), "map \(def.id): no rock out past its \(exit.edge) edge")
+                let mouth = crag.mouth.map { map.cell(on: exit.edge, along: $0, inward: 0) }
+                #expect(mouth.contains { map.ground[$0.row][$0.col] == .path && map.isWalkable($0) },
+                        "map \(def.id): the road doesn't reach the cave's mouth")
+                let cleft = map.cell(on: exit.edge, along: (crag.mouth.lowerBound + crag.mouth.upperBound) / 2, inward: -2)
+                #expect(map.isCrag(cleft) != crag.opensTowardYou, "map \(def.id): the cave's mouth is the wrong way round")
+            }
+        }
+        // Nowhere else: no road from the meadow leads into a cave.
+        #expect(WorldMap(def: try #require(content.map("sunny_meadow"))).crags.isEmpty)
+    }
+
     @Test func everyMapHasRoomToWalk() {
         for def in content.maps {
             let map = WorldMap(def: def)
