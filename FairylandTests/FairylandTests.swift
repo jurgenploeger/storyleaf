@@ -169,11 +169,13 @@ struct ContentTests {
                     guard height(foot) < 1 else { continue }
                     // A footpath leads from a trail on the ground to the roads, and road goes on to
                     // the map's edge.
+                    // Step by step as walkers go, diagonals too: a footpath can join one of the
+                    // narrower side trails, whose cells often only meet corner to corner.
                     var seen: Set<GridPoint> = [cell(foot)]
                     var queue = [cell(foot)]
                     var outside = false
                     while let at = queue.popLast(), !outside {
-                        for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                        for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)] {
                             let next = GridPoint(col: at.col + dc, row: at.row + dr)
                             guard map.contains(next), map.ground[next.row][next.col] == .path, seen.insert(next).inserted else { continue }
                             if next.col == 0 || next.row == 0 || next.col == map.columns - 1 || next.row == map.rows - 1 { outside = true }
