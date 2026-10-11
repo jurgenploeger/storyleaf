@@ -439,16 +439,17 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let hills: Hills?
     }
 
-    /// Raised ground you walk up a ramp to: a bank along the sides facing you, the top like the
-    /// ground around it.
+    /// Rounded hills of the map's own ground (`WorldMap.Hill`), too steep to walk up but for the
+    /// trail zig-zagging up the side facing you.
     nonisolated struct Hills: Decodable, Sendable {
         let count: Int
-        /// How far its main block reaches from its middle, across and deep, in cells: [smallest,
-        /// biggest] (3 to 6 when not given).
+        /// How far each reaches from its middle, along and across, in cells, a cell more than this:
+        /// [smallest, biggest] (3 to 6 when not given).
         let size: [Int]?
-        /// How high they stand, in points (22 when not given).
+        /// How high the biggest stand, in points (44 when not given). A small hill stands lower, so
+        /// its sides are never too steep to see.
         let height: Double?
-        /// The tile their banks are drawn in (tile_scree when not given).
+        /// The tile showing through in patches on their steepest slopes (none when not given).
         let bank: String?
     }
 

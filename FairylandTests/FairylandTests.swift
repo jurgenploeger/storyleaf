@@ -134,29 +134,41 @@ struct ContentTests {
         }
     }
 
-    @Test func hillsStandUpWithAWayUp() {
+    @Test func hillsRiseWithATrailUp() {
+        let tile = WorldMap.tileSize
         for def in content.maps where def.theme.hills != nil {
             let map = WorldMap(def: def)
-            let hills = map.plateaus.filter { $0.kind == .hill }
-            #expect(!hills.isEmpty, "map \(def.id) has no hills")
-            for hill in hills {
-                #expect(!hill.ramps.isEmpty, "map \(def.id): a hill with no way up")
-                for (cell, ramp) in hill.ramps {
-                    let foot = ramp == .south ? GridPoint(col: cell.col, row: cell.row - 1) : GridPoint(col: cell.col - 1, row: cell.row)
-                    let head = ramp == .south ? GridPoint(col: cell.col, row: cell.row + 1) : GridPoint(col: cell.col + 1, row: cell.row)
-                    // Up from the ground at its foot, over the slope, to the top.
-                    #expect(map.isWalkable(foot) && map.isWalkable(cell) && map.isWalkable(head), "map \(def.id): the ramp at \(cell) is blocked")
-                    #expect(map.height(at: map.center(of: foot)) == 0)
-                    #expect(map.height(at: map.center(of: head)) == hill.height)
-                    let halfway = map.height(at: map.center(of: cell))
-                    #expect(halfway > 0 && halfway < hill.height)
+            #expect(!map.hills.isEmpty, "map \(def.id) has no hills")
+            for hill in map.hills {
+                func height(_ point: CGPoint) -> CGFloat { map.height(atGrid: CGPoint(x: point.x * tile, y: point.y * tile)) }
+                func cell(_ point: CGPoint) -> GridPoint { GridPoint(col: Int(point.x.rounded(.down)), row: Int(point.y.rounded(.down))) }
+                // Its trail starts on the ground and comes out on top, and every step of it is walkable.
+                guard let foot = hill.trail.first, let top = hill.trail.last else {
+                    Issue.record("map \(def.id): a hill with no trail")
+                    continue
+                }
+                #expect(height(foot) < 1, "map \(def.id): the trail starts up in the air")
+                #expect(abs(height(top) - hill.peak) < 1, "map \(def.id): the trail stops short of the top")
+                #expect(hill.trail.allSatisfy { map.isWalkable(cell($0)) }, "map \(def.id): the trail is blocked")
+                #expect(!map.path(from: map.center(of: cell(foot)), to: map.center(of: cell(top))).isEmpty, "map \(def.id): no way up")
+                // Its sides are too steep to walk.
+                #expect(hill.cells.contains { !map.isWalkable($0) }, "map \(def.id): a hill you can walk straight up")
+                // Never so steep that ground facing away from you would lean out of sight: going up
+                // the map and right at once (up the screen), it never drops faster than the view.
+                for cell in hill.cells {
+                    for (dx, dy) in [(0.25, 0.25), (0.75, 0.25), (0.25, 0.75), (0.75, 0.75)] {
+                        let point = CGPoint(x: CGFloat(cell.col) + dx, y: CGFloat(cell.row) + dy)
+                        let e: CGFloat = 0.1
+                        let drop = (height(CGPoint(x: point.x + e, y: point.y + e)) - height(CGPoint(x: point.x - e, y: point.y - e))) / (2 * e * tile)
+                        #expect(drop > -0.65, "map \(def.id): a hill folds over at \(point)")
+                    }
                 }
             }
         }
         // A town's terraces stand up too, their stairs climbing to the top.
         for def in content.maps where def.town?.terraces?.isEmpty == false {
             let map = WorldMap(def: def)
-            #expect(map.plateaus.contains { $0.kind == .terrace && $0.height == WorldMap.terraceHeight }, "map \(def.id): terraces lie flat")
+            #expect(map.plateaus.contains { $0.height == WorldMap.terraceHeight }, "map \(def.id): terraces lie flat")
         }
     }
 

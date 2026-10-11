@@ -209,7 +209,8 @@ final class Lighting {
         return CGFloat(Double.random(in: range[0]...range[1], using: &rng))
     }
 
-    private static func rgb(_ hex: String?) -> (r: Double, g: Double, b: Double)? {
+    /// A hex colour ("#RRGGBB") as 0...1 channels.
+    static func rgb(_ hex: String?) -> (r: Double, g: Double, b: Double)? {
         guard let hex, let value = UInt32(hex.trimmingCharacters(in: CharacterSet(charactersIn: "#")), radix: 16) else { return nil }
         return (Double((value >> 16) & 255) / 255, Double((value >> 8) & 255) / 255, Double(value & 255) / 255)
     }

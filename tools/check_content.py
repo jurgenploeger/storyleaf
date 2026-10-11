@@ -262,8 +262,9 @@ for map_def in maps.values():
         size = hills.get("size", [3, 6])
         check(isinstance(size, list) and len(size) == 2 and all(isinstance(v, int) for v in size) and 2 <= size[0] <= size[1] <= 12,
               f"{where} → size must be [smallest, biggest] radius in cells, 2 to 12")
-        check(isinstance(hills.get("height", 22), (int, float)) and 10 <= hills.get("height", 22) <= 48, f"{where} → height must be 10 to 48 points")
-        tiles.append(hills.get("bank", "tile_scree"))
+        check(isinstance(hills.get("height", 44), (int, float)) and 16 <= hills.get("height", 44) <= 64, f"{where} → height must be 16 to 64 points")
+        if "bank" in hills:
+            tiles.append(hills["bank"])
     props = [p["art"] for p in theme["props"]] + town.get("lots", []) + list(town.get("streetDecor", {}))
     props += [b["art"] for b in map_def.get("buildings", [])] + [d["art"] for d in map_def.get("decor", [])]
     for art_id in tiles + props:

@@ -2,6 +2,15 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.4.1",
+      "date": "2026-10-11",
+      "title": "Rolling hills",
+      "notes": [
+        "Hills are round now, rising smoothly out of the fields with a sunny side and a shady side, instead of flat-topped blocks.",
+        "Their sides are too steep to climb, so a trail zig-zags up the side facing you to the top. On some hills, chocolate, rock or sand shows through where they're steepest."
+      ]
+    },
+    {
       "version": "0.4.0",
       "date": "2026-10-11",
       "title": "Find it fast",

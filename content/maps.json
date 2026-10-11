@@ -5828,7 +5828,7 @@
             4,
             7
           ],
-          "height": 18,
+          "height": 32,
           "bank": "tile_sand"
         },
         "props": [
@@ -6205,7 +6205,7 @@
             4,
             7
           ],
-          "height": 28,
+          "height": 56,
           "bank": "tile_cave_rock"
         },
         "props": [
@@ -7622,7 +7622,7 @@
             3,
             7
           ],
-          "height": 26,
+          "height": 48,
           "bank": "tile_chocolate"
         },
         "props": [
@@ -10835,7 +10835,7 @@
             3,
             6
           ],
-          "height": 18,
+          "height": 32,
           "bank": "tile_sand"
         },
         "props": [

@@ -57,18 +57,20 @@ final class WorldMap {
     private(set) var streetDecor: [(art: String, cell: GridPoint)] = []
     /// Raised terraces: their rectangles in grid cells (min corner inclusive), and stair cells.
     private(set) var terraces: [(origin: GridPoint, width: Int, height: Int, stairs: [GridPoint])] = []
-    /// Raised ground you can climb: a town's terraces and the hills out in the fields
-    /// (`height(at:)`). Each stands `height` points up; its rim is too steep to walk but at the ramps.
+    /// A town's raised terraces (`height(at:)`): each stands `height` points up; its rim is a wall
+    /// but at its stairs.
     private(set) var plateaus: [Plateau] = []
     /// Which plateau each raised cell belongs to.
     private var plateauOf: [GridPoint: Int] = [:]
+    /// The hills out in the fields (`theme.hills`).
+    private(set) var hills: [Hill] = []
+    /// Which hill each cell it rises over belongs to.
+    private var hillOf: [GridPoint: Int] = [:]
 
     nonisolated struct Plateau {
-        nonisolated enum Kind { case terrace, hill }
         /// Which way a ramp faces, down its slope: toward the row in front (south) or the column in
         /// front (west), the two sides that face you. It climbs from the ground there to the top.
         nonisolated enum Ramp { case south, west }
-        let kind: Kind
         let cells: Set<GridPoint>
         let ramps: [GridPoint: Ramp]
         let height: CGFloat
@@ -145,10 +147,12 @@ final class WorldMap {
 
     // MARK: Elevation
 
-    /// How high the ground stands at a point in grid space (unprojected): a plateau's height on
-    /// top of it, part of it on a ramp (rising from its foot to the top), and 0 elsewhere.
+    /// How high the ground stands at a point in grid space (unprojected): on a hill, its slope's
+    /// height there; a plateau's height on top of it, part of it on a ramp (rising from its foot to
+    /// the top); and 0 elsewhere.
     func height(atGrid grid: CGPoint) -> CGFloat {
         let cell = GridPoint(col: Int((grid.x / Self.tileSize).rounded(.down)), row: Int((grid.y / Self.tileSize).rounded(.down)))
+        if let index = hillOf[cell] { return hills[index].height(atCells: grid.x / Self.tileSize, grid.y / Self.tileSize) }
         guard let index = plateauOf[cell] else { return 0 }
         let plateau = plateaus[index]
         let rise: CGFloat? = switch plateau.ramps[cell] {
@@ -162,13 +166,23 @@ final class WorldMap {
     /// How high the ground stands under an on-screen (ground) point: walkers and scenery standing
     /// there are drawn this much higher.
     func height(at point: CGPoint) -> CGFloat {
-        plateaus.isEmpty ? 0 : height(atGrid: Self.unproject(point))
+        plateaus.isEmpty && hills.isEmpty ? 0 : height(atGrid: Self.unproject(point))
     }
 
     /// The ground point a tap at `point` means. Raised ground hides the ground behind it, so a tap
-    /// on a hilltop is a tap on the top: tops first, then ramps, then the ground itself.
+    /// on a terrace is a tap on its top: tops first, then ramps, then the ground itself.
     func groundPoint(under point: CGPoint) -> CGPoint {
-        guard !plateaus.isEmpty else { return point }
+        guard !plateaus.isEmpty || !hills.isEmpty else { return point }
+        if !hills.isEmpty {
+            // A hill is never steeper than the view (`Hill.band`), so going up the screen the ground
+            // under it only ever rises: exactly one ground point lands on the spot. Found by halving.
+            var low = point.y - (hills.map(\.peak).max() ?? 0) - 1, high = point.y
+            for _ in 0..<24 {
+                let middle = (low + high) / 2
+                if middle + height(at: CGPoint(x: point.x, y: middle)) > point.y { high = middle } else { low = middle }
+            }
+            return CGPoint(x: point.x, y: (low + high) / 2)
+        }
         for height in Set(plateaus.map(\.height)).sorted(by: >) {
             let candidate = CGPoint(x: point.x, y: point.y - height)
             if abs(self.height(at: candidate) - height) < 0.5 { return candidate }
@@ -927,7 +941,7 @@ final class WorldMap {
         let cells = Set((origin.col..<(origin.col + terrace.width)).flatMap { col in
             (origin.row..<(origin.row + terrace.height)).map { GridPoint(col: col, row: $0) }
         }.filter { contains($0) })
-        addPlateau(Plateau(kind: .terrace, cells: cells, ramps: [stairs[0]: .south, stairs[1]: .west], height: Self.terraceHeight))
+        addPlateau(Plateau(cells: cells, ramps: [stairs[0]: .south, stairs[1]: .west], height: Self.terraceHeight))
     }
 
     /// How high a town's terraces stand (points).
@@ -938,88 +952,144 @@ final class WorldMap {
         plateaus.append(plateau)
     }
 
-    /// Grassy hills out in the fields (`theme.hills`): broad, flat-topped rises, each a block with one
-    /// or two smaller ones against its sides, off the roads and water and clear of buildings, people,
-    /// the arrivals and each other. Their rim is a steep bank you can't walk; one or two ramps (on the
-    /// sides facing you) lead up to the top, where the scenery grows like anywhere else.
+    /// Grassy hills out in the fields (`theme.hills`, `Hill`): rounded rises of a few ellipses
+    /// melted together, off the roads and water and clear of buildings, people, the arrivals and each
+    /// other. Their sides are too steep to walk but for the trail zig-zagging up the side facing you;
+    /// on top the scenery grows like anywhere else.
     private func raiseHills(_ hills: MapDef.Hills, _ rng: inout SeededRandom) {
         let sizes = hills.size ?? [3, 6]
-        let smallest = max(2, sizes.first ?? 3), biggest = max(smallest, sizes.last ?? 6)
-        let height = CGFloat(hills.height ?? 22)
+        let smallest = Double(max(2, sizes.first ?? 3)), biggest = Double(max(sizes.first ?? 3, sizes.last ?? 6))
+        let tallest = hills.height ?? 44
         var claimed: Set<GridPoint> = []
-        func around(_ cells: Set<GridPoint>) -> Set<GridPoint> {
-            cells.union(cells.flatMap { cell in
-                (-1...1).flatMap { dr in (-1...1).map { dc in GridPoint(col: cell.col + dc, row: cell.row + dr) } }
-            })
-        }
         for _ in 0..<hills.count {
             for _ in 0..<80 {
-                // A broad, flat-topped rise: a block with one or two smaller ones against its sides,
-                // edged along the rows and columns so its banks run straight. Round ones came out as
-                // zig-zag steps on the grid.
-                let middle = GridPoint(col: Int.random(in: 0..<columns, using: &rng), row: Int.random(in: 0..<rows, using: &rng))
-                let reach = (cols: Int.random(in: smallest...biggest, using: &rng), rows: Int.random(in: smallest...biggest, using: &rng))
-                var blocks = [(centre: middle, reach: reach)]
+                let middle = (x: Double.random(in: 0..<Double(columns), using: &rng), y: Double.random(in: 0..<Double(rows), using: &rng))
+                // A big ellipse a cell wider than `size`, and one or two smaller ones off its sides
+                // (spurs and shoulders, too small to reach the top on their own).
+                let along = Double.random(in: smallest...biggest, using: &rng) + 1
+                let across = Double.random(in: smallest...biggest, using: &rng) + 1
+                var lobes = [Hill.Lobe(x: middle.x, y: middle.y, along: along, across: across, angle: Double.random(in: 0..<Double.pi, using: &rng))]
                 for _ in 0..<Int.random(in: 1...2, using: &rng) {
-                    let size = (cols: max(1, reach.cols * Int.random(in: 4...7, using: &rng) / 10),
-                                rows: max(1, reach.rows * Int.random(in: 4...7, using: &rng) / 10))
-                    var centre = GridPoint(col: middle.col + Int.random(in: -reach.cols...reach.cols, using: &rng),
-                                           row: middle.row + Int.random(in: -reach.rows...reach.rows, using: &rng))
-                    // On one of the big block's sides, so it sticks out past it.
-                    if Bool.random(using: &rng) {
-                        centre.col = middle.col + (Bool.random(using: &rng) ? reach.cols : -reach.cols)
-                    } else {
-                        centre.row = middle.row + (Bool.random(using: &rng) ? reach.rows : -reach.rows)
-                    }
-                    blocks.append((centre: centre, reach: size))
+                    let turn = Double.random(in: 0..<(2 * Double.pi), using: &rng)
+                    let away = Double.random(in: 0.45...0.7, using: &rng) * (along + across) / 2
+                    lobes.append(Hill.Lobe(x: middle.x + away * cos(turn), y: middle.y + away * sin(turn),
+                                           along: along * Double.random(in: 0.45...0.65, using: &rng),
+                                           across: across * Double.random(in: 0.45...0.65, using: &rng),
+                                           angle: Double.random(in: 0..<Double.pi, using: &rng)))
                 }
-                var cells: Set<GridPoint> = []
-                for block in blocks {
-                    for row in (block.centre.row - block.reach.rows)...(block.centre.row + block.reach.rows) {
-                        for col in (block.centre.col - block.reach.cols)...(block.centre.col + block.reach.cols) {
-                            cells.insert(GridPoint(col: col, row: row))
-                        }
-                    }
+                let ripples = (0..<3).map { _ in
+                    (fx: Double.random(in: 0.4...1, using: &rng), px: Double.random(in: 0..<6.3, using: &rng),
+                     fy: Double.random(in: 0.4...1, using: &rng), py: Double.random(in: 0..<6.3, using: &rng))
                 }
-                // Clear ground all round, a cell to spare, and well inside the map's edge.
-                let footprint = around(cells)
-                guard footprint.allSatisfy({ $0.col >= 3 && $0.row >= 3 && $0.col < columns - 3 && $0.row < rows - 3
-                                                && isFreeForScenery($0) && !claimed.contains($0) }) else { continue }
-                guard let hill = shapeHill(cells, height: height, &rng) else { continue }
-                addPlateau(hill)
-                claimed.formUnion(around(footprint))
+                // Wide enough a climb for its height, and a top left over; a small one stands lower.
+                let band = min(max(3, tallest * 1.5 / Hill.steepest), min(along, across) * 0.8)
+                let peak = CGFloat(min(tallest, band * Hill.steepest / 1.5))
+                let startingLeft = Bool.random(using: &rng)
+                var hill = Hill(lobes: lobes, ripples: ripples, peak: peak, band: band)
+                guard shapeHill(&hill, startingLeft: startingLeft, claimed: claimed) else { continue }
+                let index = self.hills.count
+                for cell in hill.cells { hillOf[cell] = index }
+                self.hills.append(hill)
+                for cell in hill.cells {
+                    for dr in -2...2 { for dc in -2...2 { claimed.insert(GridPoint(col: cell.col + dc, row: cell.row + dr)) } }
+                }
                 break
             }
         }
     }
 
-    /// A hill's rim (blocked but at its ramps) and ramps: one on the front, one on the side where
-    /// there's a straight stretch of rim to put it in. Nil when there's no top or no way up.
-    private func shapeHill(_ cells: Set<GridPoint>, height: CGFloat, _ rng: inout SeededRandom) -> Plateau? {
-        func at(_ cell: GridPoint, _ dc: Int, _ dr: Int) -> GridPoint { GridPoint(col: cell.col + dc, row: cell.row + dr) }
-        let rim = cells.filter { cell in (-1...1).contains { dr in (-1...1).contains { dc in !cells.contains(at(cell, dc, dr)) } } }
-        let top = cells.subtracting(rim)
-        guard top.count >= 4 else { return nil }
-        // Sorted, so the seeded pick is the same every visit.
-        let ordered = rim.sorted { ($0.row, $0.col) < ($1.row, $1.col) }
-        let south = ordered.filter { cell in
-            !cells.contains(at(cell, 0, -1)) && top.contains(at(cell, 0, 1)) && cells.contains(at(cell, -1, 0)) && cells.contains(at(cell, 1, 0))
+    /// Lays `hill` on the map if there's room: the cells it covers (all clear ground, a cell to spare
+    /// all round, well inside the map's edge and off the other hills), its heights, its trail, and
+    /// which of its cells are too steep to walk. False if it doesn't fit or there's no way up.
+    private func shapeHill(_ hill: inout Hill, startingLeft: Bool, claimed: Set<GridPoint>) -> Bool {
+        // The cells any ellipse reaches into, with a cell to spare for the ripples.
+        let reach = hill.lobes.map { max($0.along, $0.across) + 1 }
+        let low = GridPoint(col: Int(zip(hill.lobes, reach).map { $0.x - $1 }.min()!.rounded(.down)),
+                            row: Int(zip(hill.lobes, reach).map { $0.y - $1 }.min()!.rounded(.down)))
+        let high = GridPoint(col: Int(zip(hill.lobes, reach).map { $0.x + $1 }.max()!.rounded(.up)),
+                             row: Int(zip(hill.lobes, reach).map { $0.y + $1 }.max()!.rounded(.up)))
+        guard low.col >= 3, low.row >= 3, high.col < columns - 3, high.row < rows - 3 else { return false }
+        // The cells it rises over: where it's inside at a corner, between two or in the middle (a
+        // quick look first, before the work of sampling it all).
+        var cells: Set<GridPoint> = []
+        for row in low.row..<high.row {
+            for col in low.col..<high.col {
+                let spots = [(0.0, 0.0), (0.5, 0.0), (1.0, 0.0), (0.0, 0.5), (0.5, 0.5), (1.0, 0.5), (0.0, 1.0), (0.5, 1.0), (1.0, 1.0)]
+                if spots.contains(where: { hill.field(Double(col) + $0.0, Double(row) + $0.1) > 0 }) { cells.insert(GridPoint(col: col, row: row)) }
+            }
         }
-        let west = ordered.filter { cell in
-            !cells.contains(at(cell, -1, 0)) && top.contains(at(cell, 1, 0)) && cells.contains(at(cell, 0, -1)) && cells.contains(at(cell, 0, 1))
+        guard !cells.isEmpty else { return false }
+        let ring = Set(cells.flatMap { cell in (-1...1).flatMap { dr in (-1...1).map { dc in GridPoint(col: cell.col + dc, row: cell.row + dr) } } })
+        guard ring.allSatisfy({ isFreeForScenery($0) && !claimed.contains($0) }) else { return false }
+        guard let trail = hill.traceTrail(startingLeft: startingLeft) else { return false }
+        hill.trail = trail
+        hill.cells = cells
+        // Its heights, `samples` a cell, at the cells' corners and between.
+        let samples = Hill.samples
+        hill.origin = low
+        hill.size = (high.col - low.col, high.row - low.row)
+        let width = hill.size.columns * samples + 1, depth = hill.size.rows * samples + 1
+        hill.heights = [Float](repeating: 0, count: width * depth)
+        for j in 0..<depth {
+            for i in 0..<width {
+                hill.heights[j * width + i] = Float(hill.shape(Double(low.col) + Double(i) / Double(samples), Double(low.row) + Double(j) / Double(samples)))
+            }
         }
-        var ramps: [GridPoint: Plateau.Ramp] = [:]
-        if let cell = south.randomElement(using: &rng) { ramps[cell] = .south }
-        if let cell = west.randomElement(using: &rng) { ramps[cell] = .west }
-        guard !ramps.isEmpty else { return nil }
-        for cell in rim where ramps[cell] == nil { occupy(cell, blocking: true) }
-        // Nothing grows on a ramp, at its foot or at its head, so the way up stays open.
-        for (cell, ramp) in ramps {
-            occupy(cell, blocking: false)
-            occupy(ramp == .south ? at(cell, 0, -1) : at(cell, -1, 0), blocking: false)
-            occupy(ramp == .south ? at(cell, 0, 1) : at(cell, 1, 0), blocking: false)
+        func samplesOf(_ cell: GridPoint) -> [Int] {
+            let i0 = (cell.col - low.col) * samples, j0 = (cell.row - low.row) * samples
+            return (0...samples).flatMap { dj in (0...samples).map { di in (j0 + dj) * width + i0 + di } }
         }
-        return Plateau(kind: .hill, cells: cells, ramps: ramps, height: height)
+
+        // The trail's cells, one after another with no diagonal steps, so you can walk it.
+        var path: [GridPoint] = []
+        for (a, b) in zip(trail, trail.dropFirst()) {
+            let steps = max(1, Int((hypot(b.x - a.x, b.y - a.y) / 0.1).rounded(.up)))
+            for k in 0...steps {
+                let t = CGFloat(k) / CGFloat(steps)
+                let cell = GridPoint(col: Int((a.x + (b.x - a.x) * t).rounded(.down)), row: Int((a.y + (b.y - a.y) * t).rounded(.down)))
+                guard cell != path.last else { continue }
+                if let last = path.last, last.col != cell.col, last.row != cell.row {
+                    // Through whichever of the two cells between is nearer the trail.
+                    let one = GridPoint(col: cell.col, row: last.row), other = GridPoint(col: last.col, row: cell.row)
+                    let middle = (x: (Double(one.col) + 0.5), y: (Double(one.row) + 0.5))
+                    let otherMiddle = (x: (Double(other.col) + 0.5), y: (Double(other.row) + 0.5))
+                    path.append(hill.distanceToTrail(middle.x, middle.y) <= hill.distanceToTrail(otherMiddle.x, otherMiddle.y) ? one : other)
+                }
+                path.append(cell)
+            }
+        }
+        let trailCells = Set(path)
+        // Too steep to walk: where the ground in a cell rises more than 8 points, but on the trail.
+        var steep: Set<GridPoint> = []
+        for cell in cells where !trailCells.contains(cell) {
+            let heights = samplesOf(cell).map { hill.heights[$0] }
+            if (heights.max() ?? 0) - (heights.min() ?? 0) > 8 { steep.insert(cell) }
+        }
+        // Ground you could only reach over the steep sides (a spur's own top) is out of reach, so
+        // it's steep too: what's left walkable is reached from around the hill or up its trail.
+        var reached: Set<GridPoint> = []
+        var queue = ring.subtracting(cells).filter { !steep.contains($0) }
+        reached.formUnion(queue)
+        while let cell = queue.popFirst() {
+            for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                let next = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                guard cells.contains(next), !steep.contains(next), !reached.contains(next) else { continue }
+                reached.insert(next)
+                queue.insert(next)
+            }
+        }
+        for cell in cells where !steep.contains(cell) && !reached.contains(cell) { steep.insert(cell) }
+        for cell in steep { occupy(cell, blocking: true) }
+        // Nothing grows on the trail or where it meets the ground and the top, so the way stays open.
+        for cell in trailCells { occupy(cell, blocking: false) }
+        for end in [path.first, path.last].compactMap({ $0 }) {
+            for dr in -1...1 {
+                for dc in -1...1 where !steep.contains(GridPoint(col: end.col + dc, row: end.row + dr)) {
+                    occupy(GridPoint(col: end.col + dc, row: end.row + dr), blocking: false)
+                }
+            }
+        }
+        return true
     }
 
     private func scatterAccents(_ rng: inout SeededRandom) {

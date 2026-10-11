@@ -97,12 +97,17 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   house, lamp or tree hides them (before, every town's healer and shop stood inside or behind a house), and
   Larkspur, which had felt empty in playtesting (2026-10-07), has two rings of streets like the others.
 - Raised ground (since 0.3.97, asked for in playtesting 2026-10-11): a town's terraces and hills out in the
-  fields (`theme.hills`: count, size, height, bank tile) really stand up. The top is drawn its height higher,
-  a bank (stone wall, or earth) hangs under the edges facing you, and ramps (a terrace's stairs, a trodden
-  slope up a hill) climb to the top; whoever walks up rises with it (`WorldMap.height(at:)`, `Walker.settle`),
-  and trees on a hilltop stand up there too. A hill's rim is a bank you can't walk but at its ramps. Since
-  0.3.99 hills are flat-topped blocks edged along the grid, like the terraces: round ones came out as zig-zag
-  steps. Their tops are a shade lighter, with a thin shade along the far edges.
+  fields really stand up, and whoever walks up rises with them (`WorldMap.height(at:)`, `Walker.settle`), trees
+  on top too. A terrace's top is drawn its height higher over a stone wall, with stairs up its front and side.
+  Hills (`theme.hills`: count, size, height, bank tile) were blocks with a ramp in 0.3.97–0.3.99, which
+  playtesting found too square. Since 0.4.1 they're heightfield hills, as isometric games draw terrain: a few
+  ellipses melted together (`WorldMap.Hill`), rising on a smoothstep from foot to top, drawn as one picture of
+  the map's own ground lit from the upper left (shady sides lean to the palette's shadow colour, the foot a
+  touch darker, the shoulder lighter) and lifted by its heights with a warp grid (`HillArt`). Never steeper
+  than 15 points a cell halfway up, so ground facing away never leans out of sight and a tap finds one spot.
+  Their sides are too steep to walk; a switchback trail (two or three legs across the side facing you, cut
+  into the slope with a shadow above and a lip below) is the way up. A `bank` tile shows through in ragged
+  patches where they're steepest.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake
