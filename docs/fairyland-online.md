@@ -150,7 +150,32 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   (`Hill.unfold`). Its range has bare layered rock from 40% of its height up, in deeper shade and brighter sun,
   like a cave's (`HillArt.Look.rockFrom`), and the minimap shows its heights lighter still. Heights since 0.4.9:
   Crystal Mountain 200 (two), Snow White Forest 170, Gumdrop Peaks 160 (grown to 140×100 for the room, its
-  scenery half again as much), Marionette Rise 150; 88 to 112 before.
+  scenery half again as much), Marionette Rise 150; 88 to 112 before. 0.4.9 lost both of Crystal Mountain's: a
+  range is kept in from the map's edge by a box round its summits, which still reached a mountain's full reach
+  back toward you, so the spot its round was given near the map's lower or left edge was turned down on every
+  try; since 0.4.10 a mountain's box is round its round (`shapeHill`).
+- Hills on every land (since 0.4.10, asked for in playtesting 2026-10-12: every map should have slopes,
+  hills or mountains): every map outside the towns and caves has `theme.hills`, dunes on Pineapple Shore, low
+  rises in the swamps (28 to 30 points), rolling hills in the woods and round the lakes (40 to 44), and a
+  mountain each in Shiverdell and Moonwhisper (160), on Emerald Road (140), in Big Bad Wolf's Lair and on
+  Sneezle Isle (130). Towns have their terraces; a cave's tunnels (3 cells wide, chambers up to 5 across)
+  have no room for a hill. Their bare slopes are the scree every rocky land shows: a first try gave
+  Moonwhisper and Tidewater Shrine the caves' dark cobbles (`bank` tile_cave_rock), and since a range where a
+  road leads into a cave takes its rock from the hills' bank, Moonwhisper's cave range went dark and
+  cobbled too, which playtesting called strange (2026-10-12).
+- Summits worth the climb (ours, since 0.4.10, asked for in playtesting 2026-10-12: more to explore, "maybe
+  on top of the mountain is a boss or quest"): an NPC or a decoration can stand up on a summit
+  (`NPCDef.summit`, `Decor.summit`: 0 the tallest of all the map's summits, `WorldMap.summits`; its `x` and
+  `y` then step from that summit's top), since ranges land wherever there's room. Their spot and the ground
+  in front stay clear of scenery once the hills are raised (`keepInView`). The Moon Rabbit Queen, the
+  Howlmaster and the Marionette King moved up onto their mountains (the Emerald Dragon stays at the end of
+  its road, Shiverdell's Great Wisp in its hollow), Pebble onto Crystal Mountain's second peak and Mister
+  Frost onto Snow White Forest's, and a treasure chest stands at the top of Gumdrop Peaks, Shiverdell,
+  Crystal Mountain, Snow White Forest, Sneezle Isle and Emerald Road, lanterns, crystals, lollipops or a
+  statue beside it. Each holds a summit treasure: gear only that chest has (`Content.chestHolding`, like a
+  quest treasure: no shop, monster, smith or adventurer has one, gold-framed, its card saying where it's
+  from), around the map's level: Gumdrop Star Charm 24, Shiverpeak Gloves 42, Crystal Crown Pendant 80,
+  Frostpeak Boots 84, Firepeak Ring 132, Emerald Crest Gauntlets 192, their art palette swaps of other gear's.
   Since 0.4.5 ranges go where every summit has room round it (`clearance`: how far each cell is from a road,
   water, a building or another hill), picked at random among the places they fit; before, random spots
   tried 120 times often found nowhere on crowded maps (Gumdrop Peaks had no mountain). The first trail climbs from the ground in
@@ -224,7 +249,11 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   face leans (0.4.6 painted it leaning with the slope, a skewed dark patch that playtesting called
   weird). You can walk its foot in the map; nothing grows there; and the only way out on that side is
   through the mouth (`WorldMap.exit(at:)`, since 0.4.7: before, any cell along that edge led into the
-  cave, even on the mountain's foot). You come out of the cave on the road in front of it. 0.4.5 drew
+  cave, even on the mountain's foot). Since 0.4.10 its rock is a wall (playtesting 2026-10-12: you
+  shouldn't get past the edge's mountains, but you could walk up onto the range and along the map's edge
+  behind it): from 12 points up (`WorldMap.cragFoot`), and its last three rows along the edge, only its
+  road walks on, up to the mouth; a dip between its summits shut in behind their rock is walled off too
+  (`sealCrags`). You come out of the cave on the road in front of it. 0.4.5 drew
   it as the cave's own rock in flat-topped walls (`CaveWalls`) with a dark arch in the face, or on the
   south and west a cleft under an arch; playtesting (2026-10-11) asked for a slope instead of flat tops
   and walls, and for no grass past it. How FO showed its cave entrances isn't in any source reachable

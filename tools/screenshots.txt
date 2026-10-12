@@ -149,6 +149,24 @@ mountain_snow  | newgame,level=80,map=snow_white_forest,hill=tallest,face,hour=1
 mountain_candy_land | newgame,level=26,map=candy_mountain,hill=tallest,face,landscape,zoom=0.85,hour=12,weather=clear | 8
 mountain_puppet | newgame,level=55,map=puppet_hill,hill=tallest,face,hour=12,weather=clear | 8
 mountain_evening | newgame,level=90,map=crystal_mountain,hill=tallest,face,hour=16,weather=clear | 8
+# Hills on every land (0.4.10): dunes on the shore, the woods' rolling hills, a swamp's low rises, and the
+# mountains of Shiverdell, Sneezle Isle and Big Bad Wolf's Lair.
+hill_shore     | newgame,level=12,map=pineapple_shore,hill=0,hour=12,weather=clear | 8
+hill_woods_land | newgame,level=20,map=twilight_woods,hill=0,landscape,hour=12,weather=clear | 8
+hill_swamp     | newgame,level=25,map=frog_swamp,hill=0,hour=12,weather=clear | 8
+mountain_valley | newgame,level=40,map=valley_of_fear,hill=tallest,face,hour=12,weather=clear | 8
+mountain_isle_land | newgame,level=125,map=hachoo_island,hill=tallest,face,landscape,zoom=0.85,hour=12,weather=clear | 8
+mountain_wolf  | newgame,level=30,map=wolf_lair,hill=tallest,face,hour=12,weather=clear | 8
+# Up on the summits (`NPCDef.summit`): the bosses that moved up, the treasure chests, Pebble on Crystal
+# Mountain's second peak and Mister Frost on Snow White Forest's.
+summit_moon    | newgame,level=100,map=moonglow,summit=0,hour=12,weather=clear | 8
+summit_puppet  | newgame,level=60,map=puppet_hill,summit=0,hour=12,weather=clear | 8
+summit_wolf_land | newgame,level=34,map=wolf_lair,summit=0,landscape,hour=12,weather=clear | 8
+summit_chest_crystal | newgame,level=85,map=crystal_mountain,summit=0,hour=12,weather=clear | 8
+summit_pebble  | newgame,level=85,map=crystal_mountain,summit=1,hour=12,weather=clear | 8
+summit_snow    | newgame,level=85,map=snow_white_forest,summit=0,hour=12,weather=clear | 8
+summit_candy_land | newgame,level=26,map=candy_mountain,summit=0,landscape,hour=12,weather=clear | 8
+summit_treasure | newgame,class=fighter,level=90,map=crystal_mountain,menu=bag,bag=crystal_crown_pendant+frostpeak_boots+gumdrop_star_charm,inspect=crystal_crown_pendant | 8
 # The sun through the day (`Sun`): low in the east in the morning (shadows toward you), over the upper
 # left at midday, low in the west in the afternoon (shadows away from you), the moon at night.
 sun_morning    | newgame,map=sunny_meadow,hill=0,hour=7,weather=clear  | 8
@@ -172,6 +190,7 @@ crag_east      | newgame,level=30,map=valley_of_fear,at=70_-24    | 8
 crag_south     | newgame,level=40,map=lotus_land,at=0_-32         | 8
 crag_north_land | newgame,level=190,map=emerald_road,at=0_35,landscape | 8
 crag_west_land | newgame,level=12,map=northern_grassland,at=-51_0,landscape | 8
+crag_moon      | newgame,level=100,map=moonglow,at=0_-49,hour=16,weather=clear | 8
 twilight     | newgame,level=40,map=twilight_woods                 | 15
 battle_big   | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,hp=0.3,map=genie_desert,battle=10 | 15
 battle_arrange | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,map=genie_desert,battle=10,arrange | 15

@@ -237,6 +237,21 @@ for item, given_by in givers.items():
     check(items[item].get("level", 1) <= quest.get("minLevel", 1),
           f"quest treasure {item} (Lv {items[item].get('level', 1)}) → above its quest {quest['id']}'s level {quest.get('minLevel', 1)}")
 
+# Chest treasures (Content.chestHolding): gear a chest holds that no shop sells. Like a quest's,
+# only that chest has it: no other chest, no quest, no monster's drop and no smith.
+quest_rewards = {item for quest in quests.values() for item in quest["reward"].get("items", [])}
+holders = {}
+for map_def in maps_file["maps"]:
+    for npc in map_def.get("npcs", []):
+        item = npc.get("gives")
+        if npc["role"] == "chest" and item in items and items[item]["type"] in GEAR and item not in stocked:
+            holders.setdefault(item, []).append(npc["id"])
+for item, held_by in holders.items():
+    check(len(held_by) == 1, f"chest treasure {item} → in more than one chest: {', '.join(sorted(held_by))}")
+    check(item not in quest_rewards, f"chest treasure {item} → a quest gives it too")
+    check(item not in boss_drops, f"chest treasure {item} → a monster drops it too")
+    check("recipe" not in items[item], f"chest treasure {item} → a smith forges it too")
+
 check(maps_file["start"] in maps, f"start map {maps_file['start']} doesn't exist")
 opposite = {"north": "south", "south": "north", "east": "west", "west": "east"}
 for map_def in maps.values():
@@ -358,6 +373,20 @@ for map_def in maps.values():
                   and all(isinstance(p, str) and 0 < len(p.strip()) <= 220 for p in story),
                   f"{where} → story must be 1 to 3 paragraphs of up to 220 characters (it fits one card)")
 
+    # Up on a summit (WorldMap.summits, the tallest first): only where hills are raised, and a
+    # summit past the first only where there are that many mountains.
+    hills = theme.get("hills")
+    tall = (hills or {}).get("mountains", {}).get("count", 0) if hills else 0
+    for thing in map_def.get("npcs", []) + map_def.get("decor", []):
+        if "summit" not in thing:
+            continue
+        name = thing.get("id", thing.get("art"))
+        summit = thing["summit"]
+        check(isinstance(summit, int) and summit >= 0, f"map {map_def['id']} → {name}'s summit must be a whole number from 0")
+        check(bool(hills) and "town" not in map_def and "cave" not in theme,
+              f"map {map_def['id']} → {name} stands on a summit, but no hills are raised there")
+        if isinstance(summit, int) and summit > 0:
+            check(summit < tall, f"map {map_def['id']} → {name} stands on summit {summit}, but there are only {tall} mountains")
 # Every monster can be met somewhere: on a map's encounter table, or standing there as a boss.
 met = {monster for m in maps.values() for monster in (m.get("encounters") or {}).get("monsters", {})}
 met |= {npc["monster"] for npc in npcs.values() if npc["role"] == "boss" and npc.get("monster")}

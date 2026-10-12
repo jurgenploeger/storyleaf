@@ -50,6 +50,14 @@ struct ItemInfoCard: View {
                                     .foregroundStyle(HUDStyle.cream)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
+                        } else if let place = session.content.chestHolding(item.id).flatMap({ session.content.home(ofNPC: $0.id) }) {
+                            section(L("Summit treasure")) {
+                                Text(L("Only in the treasure chest at the top of {place}. No monster drops it and no shop sells it.",
+                                       ["place": place.name]))
+                                    .font(HUDStyle.font(12))
+                                    .foregroundStyle(HUDStyle.cream)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
                         }
                         if isGear {
                             requirements
@@ -273,7 +281,7 @@ struct ItemInfoCard: View {
         }
         if item.price > 0 {
             // No shop sells a quest treasure, but they'll buy one.
-            lines.append(session.content.isQuestTreasure(item.id)
+            lines.append(session.content.isTreasure(item.id)
                          ? L("Shops pay {gold}g for it", ["gold": GameSession.sellPrice(of: item)])
                          : L("Shops sell it for {price}g and pay {gold}g", ["price": item.price, "gold": GameSession.sellPrice(of: item)]))
         }

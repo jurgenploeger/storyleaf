@@ -8584,6 +8584,137 @@
           }
         ]
       }
+    },
+    {
+      "id": "item_gumdrop_star_charm",
+      "kind": "item",
+      "derive": {
+        "from": "item_star_charm",
+        "recolor": [
+          {
+            "hue": [
+              15,
+              60
+            ],
+            "minSaturation": 0.2,
+            "to": 330,
+            "spread": 0.4,
+            "saturation": 0.9,
+            "value": 1.1
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_shiverpeak_gloves",
+      "kind": "item",
+      "derive": {
+        "from": "item_falcon_gloves",
+        "recolor": [
+          {
+            "hue": [
+              0,
+              45
+            ],
+            "minSaturation": 0.2,
+            "to": 200,
+            "spread": 0.4,
+            "saturation": 0.6,
+            "value": 1.15
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_crystal_crown_pendant",
+      "kind": "item",
+      "derive": {
+        "from": "item_moonstone_pendant",
+        "recolor": [
+          {
+            "hue": [
+              190,
+              230
+            ],
+            "minSaturation": 0.2,
+            "to": 285,
+            "spread": 0.4,
+            "saturation": 1.0,
+            "value": 1.1
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_frostpeak_boots",
+      "kind": "item",
+      "derive": {
+        "from": "item_cloudstep_boots",
+        "recolor": [
+          {
+            "hue": [
+              180,
+              225
+            ],
+            "minSaturation": 0.2,
+            "to": 170,
+            "spread": 0.3,
+            "saturation": 1.3,
+            "value": 1.05
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_firepeak_ring",
+      "kind": "item",
+      "derive": {
+        "from": "item_ruby_ring",
+        "recolor": [
+          {
+            "hue": [
+              330,
+              10
+            ],
+            "minSaturation": 0.2,
+            "to": 18,
+            "spread": 0.3,
+            "saturation": 1.0,
+            "value": 1.15
+          },
+          {
+            "hue": [
+              20,
+              60
+            ],
+            "minSaturation": 0.2,
+            "to": 30,
+            "spread": 0.3,
+            "saturation": 0.5,
+            "value": 0.55
+          }
+        ]
+      }
+    },
+    {
+      "id": "item_emerald_crest_gauntlets",
+      "kind": "item",
+      "derive": {
+        "from": "item_starforged_gauntlets",
+        "recolor": [
+          {
+            "hue": [
+              195,
+              240
+            ],
+            "minSaturation": 0.2,
+            "to": 145,
+            "spread": 0.4,
+            "saturation": 1.0,
+            "value": 1.0
+          }
+        ]
+      }
     }
   ]
 }

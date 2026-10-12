@@ -391,6 +391,9 @@ nonisolated struct NPCDef: Decodable, Identifiable, Sendable {
     let art: String
     let x: Int
     let y: Int
+    /// Up on one of the map's summits rather than out from its middle (`WorldMap.summits`, the
+    /// tallest first): `x` and `y` then step from that summit's top, in cells.
+    let summit: Int?
     let greeting: String
     let stock: [String]?
     let classId: String?
@@ -545,6 +548,8 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let x: Int
         let y: Int
         let blocking: Bool?
+        /// Up on one of the map's summits, like an NPC's (`NPCDef.summit`).
+        let summit: Int?
     }
 
     /// Whimsy: floating particles, butterflies, cloud shadows and a colour mood.
@@ -988,6 +993,8 @@ final class Content {
         let cardLevels: [String: Int]
         /// Quest treasures (`questGiving`): each one's quest.
         let questTreasures: [String: String]
+        /// Chest treasures (`chestHolding`): each one's chest.
+        let chestTreasures: [String: String]
     }
 
     private let bundle: Bundle
@@ -1059,6 +1066,11 @@ final class Content {
                 questTreasures[id] = quest.id
             }
         }
+        // And gear a chest holds that no shop sells (a summit's treasure).
+        var chestTreasures: [String: String] = [:]
+        for npc in mapFile.maps.flatMap({ $0.npcs ?? [] }) where npc.role == .chest {
+            if let id = npc.gives, gear.contains(id), !stocked.contains(id), questTreasures[id] == nil { chestTreasures[id] = npc.id }
+        }
         return Loaded(
             classChoiceLevel: classFile.classChoiceLevel,
             races: classFile.races,
@@ -1078,7 +1090,8 @@ final class Content {
             titles: (load("titles") as TitlesFile).titles,
             rewards: load("rewards"),
             cardLevels: cardLevels,
-            questTreasures: questTreasures
+            questTreasures: questTreasures,
+            chestTreasures: chestTreasures
         )
     }
 
@@ -1164,6 +1177,15 @@ final class Content {
     }
 
     func isQuestTreasure(_ itemID: String) -> Bool { loaded.questTreasures[itemID] != nil }
+
+    /// The chest that holds a chest treasure: gear only that chest holds, like a quest treasure
+    /// (no shop, monster, smith or adventurer has one), up where it stands (a summit's).
+    func chestHolding(_ itemID: String) -> NPCDef? {
+        loaded.chestTreasures[itemID].flatMap(npc)
+    }
+
+    /// A quest's or a chest's treasure: yours alone, found only there.
+    func isTreasure(_ itemID: String) -> Bool { isQuestTreasure(itemID) || loaded.chestTreasures[itemID] != nil }
 
     /// The level a monster's card is worth (`RewardsDef.Cards`): the middle of the gentlest band
     /// of levels it lives in, or a boss's own level; 1 for one that lives nowhere.

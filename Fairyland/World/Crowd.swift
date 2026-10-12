@@ -146,7 +146,7 @@ final class Crowd {
     /// of the townsfolk with jobs, each under a sign with something they're selling today.
     private func placeTraders(_ count: Int, market: Market, names: inout [String], avoiding def: MapDef, world: SKNode) {
         let middle = map.center(of: map.center)
-        let townsfolk = (def.npcs ?? []).map { map.center(of: map.offset($0.x, $0.y)) }
+        let townsfolk = (def.npcs ?? []).map { map.center(of: map.spot(of: $0)) }
         var spots: [CGPoint] = []
         for _ in 0..<(count * 20) where spots.count < count {
             let angle = Double.random(in: 0..<(2 * .pi), using: &rng)

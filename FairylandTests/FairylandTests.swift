@@ -168,9 +168,15 @@ struct ContentTests {
                     return hill.height(atCells: Double(cell.col) + 0.5, Double(cell.row) + 0.5) > 10
                 }
                 #expect(raised.count * 5 >= spots.count * 4, "map \(def.id): only \(raised.count) of \(spots.count) spots along its edge rise")
-                // You can walk on its foot in the map, and it never leans out of sight, in the map
-                // or past it.
-                #expect(hill.cells.filter { map.contains($0) }.allSatisfy { map.isWalkable($0) }, "map \(def.id): part of its range you can't walk on")
+                // Its rock is a wall (playtesting 2026-10-12): you can walk on its foot and up its
+                // road to the mouth, never up onto it or along the edge behind it.
+                for cell in hill.cells where map.contains(cell) && map.ground[cell.row][cell.col] != .path {
+                    let up = hill.height(atCells: Double(cell.col) + 0.5, Double(cell.row) + 0.5)
+                    if up > WorldMap.cragFoot || map.spot(of: cell, from: exit.edge).inward < 3 {
+                        #expect(!map.isWalkable(cell), "map \(def.id): you can climb its rock at \(cell)")
+                    }
+                }
+                // And it never leans out of sight, in the map or past it.
                 for cell in hill.cells where (cell.col + cell.row) % 3 == 0 {
                     let x = Double(cell.col) + 0.5, y = Double(cell.row) + 0.5, e = 0.1
                     let drop = (hill.height(atCells: x + e, y + e) - hill.height(atCells: x - e, y - e)) / (2 * e * tile)
@@ -320,6 +326,32 @@ struct ContentTests {
         for def in content.maps where def.town?.terraces?.isEmpty == false {
             let map = WorldMap(def: def)
             #expect(map.plateaus.contains { $0.height == WorldMap.terraceHeight }, "map \(def.id): terraces lie flat")
+        }
+    }
+
+    @Test func summitsHoldWhatsSetUpThere() throws {
+        // A boss, a chest or a friend set up on a summit (`NPCDef.summit`) stands up on its top, on
+        // ground you can walk on, and you can get there from the middle of the map.
+        let tile = WorldMap.tileSize
+        for def in content.maps {
+            let up = (def.npcs ?? []).filter { $0.summit != nil }
+            guard !up.isEmpty else { continue }
+            let map = WorldMap(def: def)
+            let hub = map.offset(def.hub?.first ?? 0, def.hub?.last ?? 0)
+            for npc in up {
+                let summit = try #require(npc.summit)
+                guard map.summits.indices.contains(summit) else {
+                    Issue.record("map \(def.id): no summit \(summit) for \(npc.id)")
+                    continue
+                }
+                let top = map.summits[summit]
+                let spot = map.spot(of: npc)
+                let peak = map.height(atGrid: CGPoint(x: top.x * tile, y: top.y * tile))
+                let here = map.height(atGrid: CGPoint(x: (CGFloat(spot.col) + 0.5) * tile, y: (CGFloat(spot.row) + 0.5) * tile))
+                #expect(peak > 60 && here > peak * 0.8, "map \(def.id): \(npc.id) isn't up on a summit (\(here) of \(peak) high)")
+                #expect(map.isWalkable(spot), "map \(def.id): \(npc.id) stands where you can't walk")
+                #expect(!map.path(from: map.center(of: hub), to: map.center(of: spot)).isEmpty, "map \(def.id): no way up to \(npc.id)")
+            }
         }
     }
 

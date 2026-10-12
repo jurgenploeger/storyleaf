@@ -929,7 +929,7 @@ final class WorldScene: SKScene {
 
     private func placeNPCs() {
         for npc in def.npcs ?? [] {
-            let cell = map.offset(npc.x, npc.y)
+            let cell = map.spot(of: npc)
             map.occupy(cell, blocking: true)
             let node = Walker(cycle: art.walkCycle(npc.art), label: npc.name)
             node.idles = npc.role != .chest
@@ -1038,7 +1038,7 @@ final class WorldScene: SKScene {
     /// Hand-placed decorations (fountains, blossom trees) from the map's `decor` list.
     private func placeDecor() {
         for decor in def.decor ?? [] {
-            let anchor = map.offset(decor.x, decor.y)
+            let anchor = map.spot(x: decor.x, y: decor.y, summit: decor.summit)
             let sprite = art.sprite(decor.art)
             let blocking = decor.blocking ?? true
             let footprint = max(1, Int(sprite.size.width / WorldMap.tileSize * 0.75))
