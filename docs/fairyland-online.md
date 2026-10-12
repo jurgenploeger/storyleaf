@@ -291,6 +291,20 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   worth more to the hero's class (`GameSession.gearValue`): each bonus weighted by the class's growth in that
   stat next to a novice's, and by how big that stat's numbers run. The Bag and the slot's list have search,
   sort (best for you, level, name, price, how many) and filters (the Bag's kinds; only what you can wear).
+- The weapon in hand (`GearArt.pose`, since 0.4.8, asked for in playtesting 2026-10-12: "when they're wearing a
+  weapon, it should look good"): the item's own art, held at the hand as each walk frame has it (beside the
+  body, at the side facing you or away or the near hand walking sideways, and part way down that frame's own
+  figure, so it sits lower on a dwarf and bobs a pixel as the walk does, frame by frame in step with it), and
+  just behind the body so the hand closes over the grip. Before, it hung at one fixed spot per direction about
+  four pixels out from the hand, and in front of the body facing you, so it floated beside the hero like a
+  pasted-on icon. Shrinking the 32-pixel art to the walk sheets' pixel size (three quarters) was tried and
+  dropped: it thinned the outlines and broke up whips and blades.
+- Armour drawn with Retro Diffusion (in progress, 2026-10-12): inpainting (`/v2/edit/tools/inpainting`, $0.18)
+  repaints a masked part of a 192×192 walk sheet in place, so armour drawn over a body sheet's torso and legs
+  stays lined up with its frames and sits between the body and the player's chosen hair. A freshly generated
+  walk sheet draws a whole new character (the unused `armor_*` sheets from before the paper doll are that), so
+  it can't be layered. Its results come back as CloudFront links that the cloud session's network may need
+  allowing.
 - One equipment drop in three is a trinket (gloves, necklace, boots or accessory), any up to the monster's
   level (`GameSession.accessoryShare`): there are only a few of each next to dozens of weapons and armours, so
   by level alone they'd hardly drop.
