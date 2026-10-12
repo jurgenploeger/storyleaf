@@ -41,6 +41,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `tools/rd.py`: Retro Diffusion client. `tools/icons.py`: vendors Iconaut icons (MIT), plus our own drawings in
   `art/icons/` where Iconaut has no shape that works (fire's three-tongued flame).
   `tools/check_content.py`: validates the game data.
+- `tools/deslab.py`: cuts the raised slab of ground some generated buildings came with (`inn`, `magic_tower`) out
+  of their sprites, so they stand on the map's ground; rerun it after regenerating one of them.
 - `theme.palette` in `content/maps.json` colour-grades each map's ground, scenery and buildings at load time.
   `tools/palette_preview.py` (needs pillow + numpy) renders every map with and without it, to tune without a Mac.
 - `content/i18n/`: translations. `languages.json` lists the languages (the picker's order), `<code>.json` maps each
