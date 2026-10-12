@@ -191,6 +191,20 @@ crag_south     | newgame,level=40,map=lotus_land,at=0_-32         | 8
 crag_north_land | newgame,level=190,map=emerald_road,at=0_35,landscape | 8
 crag_west_land | newgame,level=12,map=northern_grassland,at=-51_0,landscape | 8
 crag_moon      | newgame,level=100,map=moonglow,at=0_-49,hour=16,weather=clear | 8
+# The people who live on the maps (`MapDef.Local`, `Crowd`): a couple of steps from one, who starts on
+# their story (a fisher at the end of a jetty, a girl at a bridge, a farmer among his things, a dancer
+# on an island, a mapmaker up a mountain, a mole by a cave's mouth, a tin man), in German and Japanese too.
+local_fisher   | newgame,map=sunny_meadow,local=0,hour=10,weather=clear | 8
+local_bridge   | newgame,map=sunny_meadow,local=1,hour=10,weather=clear | 8
+local_farm_land | newgame,map=sunny_meadow,local=2,hour=10,weather=clear,landscape | 8
+local_woods    | newgame,level=26,map=smiling_forest,local=0,hour=10,weather=clear | 8
+local_island   | newgame,level=40,map=swan_lake,local=0,hour=10,weather=clear | 8
+local_summit   | newgame,level=85,map=crystal_mountain,local=1,hour=12,weather=clear | 8
+local_mouth    | newgame,level=40,map=lotus_land,local=1,hour=10,weather=clear | 8
+local_tin_land | newgame,level=190,map=emerald_road,local=0,hour=10,weather=clear,landscape | 8
+local_town     | newgame,map=meadowbrook,local=0 | 8
+local_de       | newgame,map=sunny_meadow,local=1,lang=de,hour=10,weather=clear | 8
+local_ja       | newgame,map=sunny_meadow,local=1,lang=ja,hour=10,weather=clear | 8
 twilight     | newgame,level=40,map=twilight_woods                 | 15
 battle_big   | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,hp=0.3,map=genie_desert,battle=10 | 15
 battle_arrange | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,map=genie_desert,battle=10,arrange | 15

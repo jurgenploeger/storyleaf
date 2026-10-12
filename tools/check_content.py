@@ -387,6 +387,58 @@ for map_def in maps.values():
               f"map {map_def['id']} → {name} stands on a summit, but no hills are raised there")
         if isinstance(summit, int) and summit > 0:
             check(summit < tall, f"map {map_def['id']} → {name} stands on summit {summit}, but there are only {tall} mountains")
+
+    # The people who live here (MapDef.Local): a look from appearance.json, a home and maybe an errand
+    # (MapDef.Place) by a landmark the map has, on a summit or out from the middle, and a story.
+    place_keys = {"at", "which", "summit", "x", "y"}
+    local_keys = {"name", "race", "gender", "hair", "outfit", "skin", "style", "walk", "roam", "face", "pet", "hold", "wear",
+                  "props", "lines"} | place_keys
+    lakes = theme.get("lakes") or {}
+    landmarks = {
+        "jetty": bool(lakes),
+        "shore": bool(lakes),
+        "island": lakes.get("islands", 0) > 0,
+        "bridge": "river" in theme,
+        "mouth": any("cave" in (maps.get(exit["to"]) or {}).get("theme", {}) for exit in map_def["exits"]) and "cave" not in theme,
+    }
+    for local in map_def.get("locals", []):
+        where = f"map {map_def['id']} local {local.get('name', '?')}"
+        check(set(local) <= local_keys, f"{where} → unknown keys {set(local) - local_keys}")
+        check(isinstance(local.get("name"), str) and 0 < len(local["name"].strip()) <= 24, f"{where} → name must be 1 to 24 characters")
+        lines = local.get("lines")
+        check(isinstance(lines, list) and 1 <= len(lines) <= 8 and all(isinstance(l, str) and 0 < len(l.strip()) <= 80 for l in lines),
+              f"{where} → lines must be 1 to 8 lines of up to 80 characters (a speech bubble)")
+        check("race" not in local or local["race"] in {r["id"] for r in classes["races"]}, f"{where} → unknown race {local.get('race')}")
+        check("gender" not in local or local["gender"] in gender_ids, f"{where} → unknown gender {local.get('gender')}")
+        for key, kind in (("hair", "hair"), ("outfit", "outfits"), ("skin", "skin"), ("style", "styles")):
+            check(key not in local or local[key] in {o["id"] for o in appearance[kind]}, f"{where} → unknown {key} {local.get(key)}")
+        check(isinstance(local.get("roam", 0), int) and 0 <= local.get("roam", 0) <= 12, f"{where} → roam must be 0 to 12 cells")
+        check(local.get("face", "down") in ("up", "down", "left", "right"), f"{where} → face must be up, down, left or right")
+        check("pet" not in local or local["pet"] in monsters, f"{where} → unknown pet {local.get('pet')}")
+        # In hand and worn: everyday gear, never a treasure that's yours alone.
+        for key, kind in (("hold", "weapon"), ("wear", "armor")):
+            if key in local:
+                item = local[key]
+                check(items.get(item, {}).get("type") == kind, f"{where} → {key} must be a {kind} from items.json, not {item}")
+                check(item not in givers and item not in holders, f"{where} → {item} is a treasure, not for a local to {key}")
+        for prop in local.get("props", []):
+            check(prop.get("art") in art and isinstance(prop.get("x"), int) and isinstance(prop.get("y"), int)
+                  and max(abs(prop.get("x", 0)), abs(prop.get("y", 0))) <= 4,
+                  f"{where} → props need known art and x, y within 4 steps of home")
+        for spot, label in ((local, "home"), (local.get("walk"), "walk")):
+            if spot is None:
+                continue
+            check(isinstance(spot, dict) and (label == "home" or set(spot) <= place_keys), f"{where} → {label} must be a place {place_keys}")
+            if not isinstance(spot, dict):
+                continue
+            if "at" in spot:
+                check(landmarks.get(spot["at"]) is True,
+                      f"{where} → {label} is at a {spot['at']}, which the map hasn't (jetty, shore, island, bridge or mouth)")
+                check("summit" not in spot, f"{where} → {label} is at a landmark or on a summit, not both")
+            if "summit" in spot:
+                check(spot["summit"] == 0 or (isinstance(spot["summit"], int) and 0 < spot["summit"] < tall),
+                      f"{where} → {label} is on summit {spot['summit']}, but there are only {tall} mountains")
+                check(bool(hills) and "town" not in map_def and "cave" not in theme, f"{where} → {label} is on a summit, but no hills are raised there")
 # Every monster can be met somewhere: on a map's encounter table, or standing there as a boss.
 met = {monster for m in maps.values() for monster in (m.get("encounters") or {}).get("monsters", {})}
 met |= {npc["monster"] for npc in npcs.values() if npc["role"] == "boss" and npc.get("monster")}

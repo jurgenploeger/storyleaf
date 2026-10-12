@@ -677,6 +677,8 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
     let ambience: Ambience?
     /// Background characters wandering the map (see content/crowd.json).
     let crowd: Crowd?
+    /// The people who live here, each with a story to tell (`Local`).
+    let locals: [Local]?
     /// A danger zone: adventurers can duel here, and some will pick a fight.
     let danger: Bool?
     /// Town planning: streets, a plaza, shops along the streets and raised terraces.
@@ -709,6 +711,78 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let traders: Int?
         /// What only this town's villagers say (its own places and people), besides crowd.json's.
         let villagerLines: [String]?
+    }
+
+    /// Someone who lives on the map (`Crowd`): a shepherd minding the flock, a fisher at the end of the
+    /// jetty, a pilgrim on the mountain path. They stand at home, stroll about it (`roam`) or walk to
+    /// `walk` and back, and tell their story a line at a time, in order, to whoever stops by. Home is
+    /// a `Place` (its keys sit on the local itself).
+    nonisolated struct Local: Decodable, Sendable {
+        let name: String
+        /// human | elf | dwarf, and the rest of their look as a hero's; each part not given is drawn
+        /// at random, the same on every visit.
+        let race: String?
+        let gender: String?
+        let hair: String?
+        let outfit: String?
+        let skin: String?
+        let style: String?
+        let home: Place
+        /// Where they walk to, and back home again, if they're out on an errand.
+        let walk: Place?
+        /// How far they stroll about home, in cells (0 or none: they stand there).
+        let roam: Int?
+        /// Which way they look while they stand (up | down | left | right): out over the water, say.
+        let face: String?
+        /// A monster species trotting along behind them (monsters.json).
+        let pet: String?
+        /// Something in hand, a weapon from items.json: a woodcutter's axe, a pilgrim's staff.
+        let hold: String?
+        /// Armour they wear (items.json): a guard's.
+        let wear: String?
+        /// Things set down around their home (a cart, crates, a haystack), `x` and `y` steps from it.
+        let props: [Decor]?
+        /// What they say, one line after another, then from the start again.
+        let lines: [String]
+
+        private enum CodingKeys: String, CodingKey {
+            case name, race, gender, hair, outfit, skin, style, walk, roam, face, pet, hold, wear, props, lines
+        }
+
+        init(from decoder: any Decoder) throws {
+            let keys = try decoder.container(keyedBy: CodingKeys.self)
+            name = try keys.decode(String.self, forKey: .name)
+            race = try keys.decodeIfPresent(String.self, forKey: .race)
+            gender = try keys.decodeIfPresent(String.self, forKey: .gender)
+            hair = try keys.decodeIfPresent(String.self, forKey: .hair)
+            outfit = try keys.decodeIfPresent(String.self, forKey: .outfit)
+            skin = try keys.decodeIfPresent(String.self, forKey: .skin)
+            style = try keys.decodeIfPresent(String.self, forKey: .style)
+            home = try Place(from: decoder)
+            walk = try keys.decodeIfPresent(Place.self, forKey: .walk)
+            roam = try keys.decodeIfPresent(Int.self, forKey: .roam)
+            face = try keys.decodeIfPresent(String.self, forKey: .face)
+            pet = try keys.decodeIfPresent(String.self, forKey: .pet)
+            hold = try keys.decodeIfPresent(String.self, forKey: .hold)
+            wear = try keys.decodeIfPresent(String.self, forKey: .wear)
+            props = try keys.decodeIfPresent([Decor].self, forKey: .props)
+            lines = try keys.decode([String].self, forKey: .lines)
+        }
+    }
+
+    /// Where a local lives or walks to (`WorldMap.spot(of:)`): by a landmark (`at`), up on a summit
+    /// (`summit`, as an NPC's), or `x` and `y` out from the middle; `x` and `y` step on from a
+    /// landmark or a summit's top too.
+    nonisolated struct Place: Decodable, Sendable {
+        /// jetty (out at its end) | bridge (by a road's bridge over the river) | island (a lake's) |
+        /// shore (a lake's, on the side facing you) | mouth (in front of a cave's mouth); the map
+        /// must have one.
+        let at: String?
+        /// Which of them, when the map has several (the first when not given).
+        let which: Int?
+        let summit: Int?
+        let x: Int?
+        let y: Int?
     }
 }
 

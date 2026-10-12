@@ -2,6 +2,18 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.4.12",
+      "date": "2026-10-12",
+      "title": "Folk with a story",
+      "notes": [
+        "People live out on the maps now, each with a story of their own: a fisher at the end of Sunny Meadow's jetty, a woodcutter in the Smiling Forest, a sleepwalker in Dozywick, a tin man rusting by the Emerald Road, and many more.",
+        "Walk up to someone and they tell you their story a line at a time. Stay a while, or tap them, to hear what comes next.",
+        "Some are out on errands: a courier walks the Windswept Downs, Granny Edda climbs Snow White Forest's mountain with soup for Mister Frost, and Hansel goes up Gumdrop Peaks to check it's still sugar.",
+        "Some stories run from one map to the next. Tess waits at Sunny Meadow's bridge for her brother, and a mapmaker turns up wherever there's a page left to draw.",
+        "Speech bubbles stay up longer for longer lines."
+      ]
+    },
+    {
       "version": "0.4.11",
       "date": "2026-10-12",
       "title": "Rock that faces you",

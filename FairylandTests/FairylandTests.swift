@@ -355,6 +355,30 @@ struct ContentTests {
         }
     }
 
+    @Test func localsLiveWhereYouCanFindThem() {
+        // The people who live on each map (`MapDef.Local`): the landmark they live by is there, and
+        // home and wherever they walk to are on ground you can walk on and get to from where the
+        // roads meet.
+        for def in content.maps {
+            guard let locals = def.locals, !locals.isEmpty else { continue }
+            let map = WorldMap(def: def)
+            let hub = map.center(of: map.offset(def.hub?.first ?? 0, def.hub?.last ?? 0))
+            for local in locals {
+                for place in [local.home] + (local.walk.map { [$0] } ?? []) {
+                    if let at = place.at {
+                        #expect(map.landmark(at, which: place.which ?? 0) != nil, "map \(def.id): no \(at) for \(local.name)")
+                    }
+                    guard let spot = map.spot(of: place) else {
+                        Issue.record("map \(def.id): nowhere for \(local.name) to stand")
+                        continue
+                    }
+                    #expect(map.isWalkable(spot), "map \(def.id): \(local.name) stands where you can't walk")
+                    #expect(!map.path(from: hub, to: map.center(of: spot)).isEmpty, "map \(def.id): no way to \(local.name) at \(spot)")
+                }
+            }
+        }
+    }
+
     @Test func housesStandOffTheRoads() {
         for def in content.maps {
             let map = WorldMap(def: def)

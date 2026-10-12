@@ -667,6 +667,20 @@ the Wishing Seal, which stays the Monster Book's last reward.
     rare sightings that really raise a rare monster's odds on its map for 20 minutes.
   - Goldburg's square has market traders under signs, selling their real deals of the day
     (`crowd.traders`). `botDensity` in content/crowd.json thins out every map's bots.
+  - Us (since 0.4.12, asked for in playtesting 2026-10-12: "characters walking/standing around that give
+    the place more character and a story"): every map has locals (maps.json `locals`, `MapDef.Local`),
+    two or three out in the fields and one in each cave and town, 56 in all. Each has a look of their own
+    (race, gender, hair, outfit; the rest drawn from their place in the list, so they look the same on
+    every visit), a home by a landmark (a jetty's end, a road's bridge, a lake's island or shore, a cave's
+    mouth), on a summit or out from the middle, and stands there, strolls about it or walks an errand
+    there and back (`walk`). Some carry something (`hold`, a weapon from items.json, never a treasure),
+    wear armour, lead an animal (`pet`) or have their things set down round them (`props`). They tell a
+    short story a line at a time, in order, starting as you come within 160 points and going on every 9
+    to 14 seconds while you stay (a tap brings the next line at once), in white like the villagers. Some
+    stories cross maps: Little Lou in Meadowbrook, Tess at Sunny Meadow's bridge and her brother Wil lost in
+    Twilight Woods; Odile the Mapmaker on five maps, drawing the pages of Liora's book. Fairy-tale folk
+    (Hansel and Gretel, Bo-Peep, Odette, the Tin Woodman) are public domain. Whether FO had people like
+    this out in its fields isn't in any source reachable from a cloud session; they're ours.
   - The minimap shows everyone else on the map as dots (since 0.3.55, asked for in playtesting 2026-10-06):
     blue adventurers, white friends, red hostile ones, green party friends; on dark maps only on cells you've
     seen. Whether FO's minimap showed other players isn't in any source reachable from a cloud session.

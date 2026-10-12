@@ -195,7 +195,7 @@ final class WorldScene: SKScene {
                                   shout: { [weak session] in session?.marketShout(for: $0) },
                                   level: session.data.hero.level)
         crowd = Crowd(def: def, map: map, world: world, heroLevel: session.data.hero.level,
-                      friends: session.friends.filter { !session.isInParty($0) }, market: market)
+                      friends: session.friends.filter { !session.isInParty($0) }, market: market, locals: placeLocals())
         crowd?.onChat = { [weak session] speaker, text, kind in session?.postChat(text, from: speaker, kind: kind) }
         crowd?.dares = { [weak session] rival in session?.dares(rival) ?? false }
         crowd?.onChallenge = { [weak self] rival in
@@ -950,6 +950,26 @@ final class WorldScene: SKScene {
             npcs.append((npc, node, marker))
         }
         updateNotices()
+    }
+
+    /// The people who live here (`MapDef.Local`): where each lives and walks to, their things set
+    /// down around home and home kept clear of scenery, for the crowd to bring them to life.
+    private func placeLocals() -> [Crowd.Local] {
+        var placed: [Crowd.Local] = []
+        for (index, local) in (def.locals ?? []).enumerated() {
+            guard let home = map.spot(of: local.home) else { continue }
+            for prop in local.props ?? [] {
+                let cell = GridPoint(col: home.col + prop.x, row: home.row + prop.y)
+                let blocking = prop.blocking ?? true
+                guard cell != home, map.isFreeForScenery(cell, insideFence: true, blocking: blocking) else { continue }
+                map.occupy(cell, blocking: blocking)
+                addScenery(art.sprite(prop.art), at: cell)
+            }
+            map.occupy(home, blocking: false)
+            let walk = local.walk.flatMap { map.spot(of: $0) }
+            placed.append(Crowd.Local(def: local, index: index, home: home, walk: walk))
+        }
+        return placed
     }
 
     /// Boulders on the slopes of rocky hills (`WorldMap.rockiness`), the more the rockier: the
@@ -1804,6 +1824,12 @@ final class WorldScene: SKScene {
     /// Debug launches (`say=<text>`): a speech bubble over the hero that stays, for screenshots.
     func sayForDebug(_ text: String) {
         player.say(text, for: 600)
+    }
+
+    /// Debug launches (`local=n`): the local you start beside tells you the first line of their
+    /// story, in a bubble that stays.
+    func localTellsForDebug() {
+        crowd?.tellForDebug(near: player.position)
     }
     #endif
 
