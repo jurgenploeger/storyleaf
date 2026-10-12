@@ -2,15 +2,20 @@ import SpriteKit
 import UIKit
 
 /// Light and depth on a map, from its `ambience` block in content/maps.json: pools of light on the
-/// ground, slanting sunbeams, a sun flare in the corner of the screen and distance haze at the top.
-/// Glows around glowing scenery, soft shadows under trees and the ground's colour patches are made
-/// per prop and per map by the helpers below.
+/// ground, slanting sunbeams, a sun flare at the edge of the screen and distance haze at the top.
+/// The beams and the flare follow the sun through the day (`follow(_:)`). Glows around glowing
+/// scenery, soft shadows under trees and the ground's colour patches are made per prop and per map
+/// by the helpers below.
 final class Lighting {
     private var flare: [(node: SKSpriteNode, size: CGFloat, along: CGFloat)] = []
     private var haze: SKSpriteNode?
     /// The sunbeams and the sun's flare, faded together at night and under cloud (`Sky.sunlight`).
     private let beamLayer = SKNode()
     private let sunGlow = SKNode()
+    /// Each sunbeam, and how far it leans off the rest.
+    private var sunbeams: [(node: SKSpriteNode, lean: CGFloat)] = []
+    private var sun = Sun.noon
+    private var screen = CGSize.zero
 
     init(_ def: MapDef.Ambience?, world: SKNode, camera: SKCameraNode, bounds: CGRect, seed: String) {
         var rng = SeededRandom(text: seed + "/light")
@@ -37,7 +42,9 @@ final class Lighting {
                 let width = Self.pick(beams.size, fallback: 30...70, &rng)
                 let node = Self.soft(color, size: CGSize(width: width, height: width * 7))
                 node.anchorPoint = CGPoint(x: 0.5, y: 0.05)
-                node.zRotation = -0.45 + CGFloat.random(in: -0.08...0.08, using: &rng)
+                let lean = CGFloat.random(in: -0.08...0.08, using: &rng)
+                node.zRotation = Self.tilt(sun) + lean
+                sunbeams.append((node, lean))
                 node.position = Self.point(in: bounds, &rng)
                 node.zPosition = 22_000
                 node.alpha = 0
@@ -51,7 +58,8 @@ final class Lighting {
         }
 
         if let hex = def?.sun, let color = UIColor(hex: hex) {
-            // The sun's glow in the top-left corner, then faint lens rings toward the middle.
+            // The sun's glow at the edge of the screen (`placeFlare`), then faint lens rings toward
+            // the middle.
             let parts: [(size: CGFloat, alpha: CGFloat, along: CGFloat)] = [(1.1, 0.4, 0), (0.2, 0.1, 0.45), (0.12, 0.08, 0.7), (0.3, 0.05, 1.3)]
             for part in parts {
                 let node = Self.soft(color, size: .zero)
@@ -75,14 +83,41 @@ final class Lighting {
     }
 
     func resize(to size: CGSize) {
+        screen = size
         haze?.size = CGSize(width: size.width * 1.2, height: size.height * 0.55)
         haze?.position = CGPoint(x: 0, y: size.height / 2)
-        let sun = CGPoint(x: -size.width * 0.42, y: size.height * 0.45)
+        placeFlare()
+    }
+
+    /// Turns the sunbeams and moves the sun's flare to where `sun` is.
+    func follow(_ sun: Sun) {
+        self.sun = sun
+        let tilt = Self.tilt(sun)
+        for beam in sunbeams { beam.node.zRotation = tilt + beam.lean }
+        placeFlare()
+    }
+
+    /// The sun's flare at the edge of the screen toward the sun (`Sun.angleOnScreen`): in the top-left
+    /// corner at midday, the top in the morning, down the left side in the afternoon, never in
+    /// the lower half, where it would wash out the controls.
+    private func placeFlare() {
+        guard !flare.isEmpty else { return }
+        let turned = (sun.angleOnScreen - Sun.noon.angleOnScreen).remainder(dividingBy: 2 * Double.pi)
+        let angle = min(Double.pi, max(Double.pi / 12, 0.75 * Double.pi + turned))
+        let reach = max(abs(cos(angle)), abs(sin(angle)))
+        let edge = CGPoint(x: screen.width * 0.42 * CGFloat(cos(angle) / reach), y: screen.height * 0.45 * CGFloat(sin(angle) / reach))
         for part in flare {
-            let side = size.height * part.size
+            let side = screen.height * part.size
             part.node.size = CGSize(width: side, height: side)
-            part.node.position = CGPoint(x: sun.x * (1 - part.along), y: sun.y * (1 - part.along))
+            part.node.position = CGPoint(x: edge.x * (1 - part.along), y: edge.y * (1 - part.along))
         }
+    }
+
+    /// How the sunbeams lean: their tops toward the sun on screen, by a little over half as much,
+    /// and never more than about a tenth of a turn. Upright when the light is overhead.
+    private static func tilt(_ sun: Sun) -> CGFloat {
+        let fromUpright = (sun.angleOnScreen - Double.pi / 2).remainder(dividingBy: 2 * Double.pi)
+        return CGFloat(min(0.6, max(-0.6, 0.6 * fromUpright)))
     }
 
     /// How much the sun shines, 0...1: its flare and the sunbeams fade with it.
@@ -109,33 +144,96 @@ final class Lighting {
         world.addChild(glow)
     }
 
-    /// A soft shadow on the ground under a tree or rock, a little toward the lower right as if lit
-    /// from the upper left. Drawn under everything that stands, so it never covers a character; on
-    /// a hill, `above` is the depth of the strip it stands on (`HillArt.strip(at:)`), so it lies on
-    /// the hill instead of under it, and `front` where the strip in front begins on screen and its
-    /// depth.
-    static func shadow(under node: SKSpriteNode, in world: SKNode, above ground: CGFloat? = nil,
-                       front: (line: CGFloat, z: CGFloat)? = nil) {
-        let width = node.size.width * 0.8
-        let size = CGSize(width: width, height: width * 0.36)
-        let middle = node.position + CGVector(dx: width * 0.12, dy: -1)
-        // Raised ground in front may start under it (`front`, from its line on screen down): the part
-        // below that lies on it, so it's sorted with it.
-        let bottom = middle.y - size.height / 2
-        let cut = front.map { min(1, max(0, ($0.line - bottom) / size.height)) } ?? 0
-        let parts: [(from: CGFloat, to: CGFloat, z: CGFloat)] = [(0, cut, front?.z ?? 0), (cut, 1, ground ?? -99_300.1)]
-        for part in parts where part.to > part.from {
-            let texture = part.from == 0 && part.to == 1
-                ? SoftTextures.glow : SKTexture(rect: CGRect(x: 0, y: part.from, width: 1, height: part.to - part.from), in: SoftTextures.glow)
-            let shadow = SKSpriteNode(texture: texture, size: CGSize(width: width, height: size.height * (part.to - part.from)))
-            shadow.anchorPoint = CGPoint(x: 0.5, y: 0)
-            shadow.color = .black
-            shadow.colorBlendFactor = 1
-            shadow.alpha = 0.3
-            shadow.position = CGPoint(x: middle.x, y: bottom + size.height * part.from)
-            shadow.zPosition = part.z + 0.1
-            world.addChild(shadow)
+    /// A soft shadow on the ground under a tree or rock, cast away from the sun (`fall(from:)`): a
+    /// round of shade under it stretched along the ground, short at midday (a little toward the
+    /// lower right) and long when the sun is low, round in the soft light as it rises and sets,
+    /// fainter by moonlight. Drawn under everything that stands, so it never covers a character.
+    final class Shadow {
+        /// Where it lies: on flat ground one part, under everything that stands; on a hill one for
+        /// the strip it stands on and one for each of the two in front (`HillArt.strip(at:)`), each
+        /// sorted with its strip and shown only from where that strip begins on screen up to where
+        /// the one behind it does.
+        private let parts: [(node: SKSpriteNode, from: CGFloat, to: CGFloat)]
+        private let foot: CGPoint
+        private let width: CGFloat
+
+        /// `layers`: where each part begins on screen and how deep it's sorted, the strip it stands
+        /// on first; none on flat ground.
+        init(under node: SKSpriteNode, in world: SKNode, layers: [(from: CGFloat, z: CGFloat)] = []) {
+            foot = node.position
+            width = node.size.width
+            let far: CGFloat = 1_000_000
+            let spans = layers.isEmpty ? [(from: -far, z: CGFloat(-99_300.1))] : layers
+            var parts: [(node: SKSpriteNode, from: CGFloat, to: CGFloat)] = []
+            var to = far
+            for (index, span) in spans.enumerated() {
+                let from = index == spans.count - 1 ? -far : span.from
+                let shadow = SKSpriteNode(texture: SoftTextures.glow)
+                shadow.color = .black
+                shadow.colorBlendFactor = 1
+                shadow.zPosition = span.z + 0.1
+                if spans.count > 1 { shadow.shader = Shadow.clip }
+                world.addChild(shadow)
+                parts.append((shadow, from, to))
+                to = from
+            }
+            self.parts = parts
+            fall(from: .noon)
         }
+
+        /// Lays it on the ground away from `sun`: a round a little over half as wide as its scenery,
+        /// stretched along the ground the lower the sun (by a quarter of the scenery's width at
+        /// midday, at most 1.4 widths), drawn as `WorldMap.project` draws the ground.
+        func fall(from sun: Sun) {
+            let wide = Double(width)
+            let level = (sun.x * sun.x + sun.y * sun.y).squareRoot()
+            let length = level > 1e-6 ? min(1.4 * wide, 0.18 * wide * level / sun.z) : 0
+            let away = level > 1e-6 ? (x: -sun.x / level, y: -sun.y / level) : (x: 1.0, y: 0.0)
+            let along = 0.285 * wide + length / 2, side = 0.285 * wide
+            func screen(_ x: Double, _ y: Double) -> (x: Double, y: Double) { (0.70710678 * (x - y), 0.35355339 * (x + y)) }
+            let middle = screen(away.x * length / 2, away.y * length / 2)
+            // The round's two axes on screen, then the ellipse they make: its axes and turn.
+            let u = screen(away.x * along, away.y * along), v = screen(-away.y * side, away.x * side)
+            let xx = u.x * u.x + v.x * v.x, yy = u.y * u.y + v.y * v.y, xy = u.x * u.y + v.x * v.y
+            let mean = (xx + yy) / 2, spread = (((xx - yy) / 2) * ((xx - yy) / 2) + xy * xy).squareRoot()
+            let long = (mean + spread).squareRoot(), short = max(0, mean - spread).squareRoot()
+            let turn = 0.5 * atan2(2 * xy, xx - yy)
+            let centre = CGPoint(x: foot.x + CGFloat(middle.x), y: foot.y + CGFloat(middle.y))
+            let size = CGSize(width: 2 * long, height: 2 * short)
+            // How far it reaches up and down the screen from its middle.
+            let rising = long * sin(turn), standing = short * cos(turn)
+            let reach = CGFloat((rising * rising + standing * standing).squareRoot())
+            for part in parts {
+                part.node.isHidden = centre.y + reach < part.from || centre.y - reach >= part.to
+                guard !part.node.isHidden else { continue }
+                part.node.position = centre
+                part.node.size = size
+                part.node.zRotation = CGFloat(turn)
+                part.node.alpha = 0.3 * CGFloat(sun.strength)
+                guard part.node.shader != nil else { continue }
+                let clip = SIMD4(Float(size.width * CGFloat(sin(turn))), Float(size.height * CGFloat(cos(turn))),
+                                 Float(part.from - centre.y), Float(part.to - centre.y))
+                part.node.setValue(SKAttributeValue(vectorFloat4: clip), forAttribute: "a_clip")
+            }
+        }
+
+        /// Shows only the part of a shadow from one height on screen to another (`a_clip`: its width
+        /// times the sine of its turn, its height times the cosine, then the two heights, all from
+        /// its middle).
+        private static let clip: SKShader = {
+            let shader = SKShader(source: """
+            void main() {
+                float up = (v_tex_coord.x - 0.5) * a_clip.x + (v_tex_coord.y - 0.5) * a_clip.y;
+                if (up < a_clip.z || up >= a_clip.w) {
+                    gl_FragColor = vec4(0.0);
+                } else {
+                    gl_FragColor = SKDefaultShading();
+                }
+            }
+            """)
+            shader.attributes = [SKAttribute(name: "a_clip", type: .vectorFloat4)]
+            return shader
+        }()
     }
 
     // MARK: Ground colour

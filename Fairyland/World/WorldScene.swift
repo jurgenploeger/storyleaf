@@ -225,6 +225,7 @@ final class WorldScene: SKScene {
         lighting?.resize(to: size)
         sky = Sky(map: def, camera: cam, start: session.data.startedAt)
         if let sky { lighting?.sunlight(sky.sunlight) }
+        follow(sky?.sun ?? .noon)
 
         // Don't start on top of scenery (e.g. an old save).
         // (A save from before a cave's walls went up can even be deep inside the rock.)
@@ -701,7 +702,7 @@ final class WorldScene: SKScene {
 
     /// Raised tops from `makeGround`, one per plateau, until `placePlateaus` sets them down.
     private var raisedTops: [SKNode] = []
-    /// Hills from `makeGround`, until `placePlateaus` sets them down.
+    /// Hills from `makeGround`: `placePlateaus` sets them down, and the sun lights them (`follow(_:)`).
     private var raisedHills: [SKNode] = []
 
     /// How deep raised ground over `cells` is drawn: just behind the back of it, so everything
@@ -934,13 +935,18 @@ final class WorldScene: SKScene {
                     }
                     if placement.shadow == true {
                         if map.hillIndex(at: cell) != nil {
-                            // On a hill, over the strip it stands on, and over the one in front where
-                            // it reaches that (`HillArt.strip(at:)`).
+                            // On a hill, over the strip it stands on, and over the two in front where
+                            // it reaches them (`HillArt.strip(at:)`): each from where it begins on
+                            // screen, under it.
                             let strip = HillArt.strip(at: -node.zPosition)
-                            let line = strip.start + map.height(at: CGPoint(x: node.position.x, y: strip.start))
-                            Lighting.shadow(under: node, in: world, above: strip.z, front: (line: line, z: strip.z + HillArt.stripHeight))
+                            let layers: [(from: CGFloat, z: CGFloat)] = (0..<3).map { step in
+                                let start = strip.start - CGFloat(step) * HillArt.stripHeight
+                                return (from: start + map.height(at: CGPoint(x: node.position.x, y: start)),
+                                        z: strip.z + CGFloat(step) * HillArt.stripHeight)
+                            }
+                            shadows.append(Lighting.Shadow(under: node, in: world, layers: layers))
                         } else {
-                            Lighting.shadow(under: node, in: world)
+                            shadows.append(Lighting.Shadow(under: node, in: world))
                         }
                     }
                     if let hex = placement.glow, let color = UIColor(hex: hex) {
@@ -1167,10 +1173,12 @@ final class WorldScene: SKScene {
     /// other hills, so a mountain's shape shows.
     private static let cragShade = 0.25
 
-    /// Darkens scenery on a hill's shaded side with the ground there (`HillArt.sunlight`): by most
-    /// of the ground's shade (60%) where the sun only grazes the slope, since it stands up into the
-    /// light, and by all of it where the slope turns its back on the sun, in the hill's own shadow.
-    /// A slope facing the sun leaves it as it is.
+    /// Scenery on a hill, with how the ground under it rises a cell across and up the map (as
+    /// `HillArt.sunlight` takes it) and how lit it is there turned from the midday sun: shaded
+    /// with that ground as the sun moves (`follow(_:)`).
+    private var onSlopes: [(node: SKSpriteNode, hx: Double, hy: Double, ambient: Double)] = []
+
+    /// Shades scenery standing on a hill with the ground there, by the sun (`Self.shade`).
     private func shade(_ node: SKSpriteNode, standingOn cell: GridPoint) {
         guard let index = map.hillIndex(at: cell) else { return }
         let hill = map.hills[index]
@@ -1180,11 +1188,41 @@ final class WorldScene: SKScene {
         let tile = Double(WorldMap.tileSize)
         // The same light as the ground's (`HillArt.sprites`), crags in their deeper shade.
         let ambient = hill.isCrag ? Self.cragShade : HillArt.ambient(rocky: map.rockiness)
-        let light = HillArt.sunlight(hx: gx / tile / 0.866, hy: gy / tile / 0.866, ambient: ambient)
-        guard light.shade < 1 else { return }
+        let spot = (node: node, hx: gx / tile / 0.866, hy: gy / tile / 0.866, ambient: ambient)
+        onSlopes.append(spot)
+        Self.shade(spot.node, hx: spot.hx, hy: spot.hy, ambient: spot.ambient, sun: sunShown ?? .noon)
+    }
+
+    /// Darkens scenery on a hill's shaded side with the ground there (`HillArt.sunlight`): by most
+    /// of the ground's shade (60%) where the sun only grazes the slope, since it stands up into the
+    /// light, and by all of it where the slope turns its back on the sun, in the hill's own shadow.
+    /// A slope facing the sun leaves it as it is.
+    private static func shade(_ node: SKSpriteNode, hx: Double, hy: Double, ambient: Double, sun: Sun) {
+        let light = HillArt.sunlight(hx: hx, hy: hy, ambient: ambient, sun: sun)
+        guard light.shade < 1 else {
+            node.colorBlendFactor = 0
+            return
+        }
         let shadowed = min(1, max(0, (0.15 - light.lambert) / 0.15))
         node.color = .black
         node.colorBlendFactor = CGFloat((1 - light.shade) * (0.6 + 0.4 * shadowed))
+    }
+
+    /// Shadows cast by scenery (`Lighting.Shadow`), turned with the sun.
+    private var shadows: [Lighting.Shadow] = []
+    /// The sun the map is lit by now (`follow(_:)`), and how long until it's looked at again.
+    private var sunShown: Sun?
+    private var sunTimer: TimeInterval = 0
+
+    /// Lights the map by where the sun is (`Sky.sun`; midday in a cave): its hills shaded and the
+    /// scenery on them, shadows cast away from it, its flare and beams turned toward it.
+    private func follow(_ sun: Sun) {
+        guard sun != sunShown else { return }
+        sunShown = sun
+        HillArt.light(raisedHills, by: sun)
+        for shadow in shadows { shadow.fall(from: sun) }
+        for spot in onSlopes { Self.shade(spot.node, hx: spot.hx, hy: spot.hy, ambient: spot.ambient, sun: sun) }
+        lighting?.follow(sun)
     }
 
     /// How far up its image a sprite's lowest opaque pixel sits (0...1). Scenery is anchored there,
@@ -1752,6 +1790,12 @@ final class WorldScene: SKScene {
         if let sky {
             sky.update(dt)
             lighting?.sunlight(sky.sunlight)
+            // The sun creeps (a fifth of a degree in half a second at most): no need to move it every frame.
+            sunTimer -= dt
+            if sunTimer <= 0 {
+                sunTimer = 0.5
+                follow(sky.sun)
+            }
         }
         updateCamera(dt)
         updateEdgeFade(dt)

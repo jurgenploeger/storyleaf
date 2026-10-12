@@ -420,6 +420,62 @@ struct LookTests {
         #expect(art.walkCycle("monster_tree_snake_sunny").facesRight)
     }
 
+    @Test func theSunCrossesTheSkyAndShadowsFollow() throws {
+        // Midday's sun is where the hills' light always came from: up the map and to the left, 36° up.
+        let noon = Sun.noon
+        let length = (0.36 + 1.0).squareRoot(), up = 36 * Double.pi / 180
+        #expect(abs(noon.x + 0.6 / length * cos(up)) < 1e-9)
+        #expect(abs(noon.y - 1 / length * cos(up)) < 1e-9)
+        #expect(abs(noon.z - sin(up)) < 1e-9)
+        #expect(noon.strength == 1)
+        for step in 0..<96 {
+            let sun = Sun(hour: Double(step) / 4)
+            #expect(abs(sun.x * sun.x + sun.y * sun.y + sun.z * sun.z - 1) < 1e-9)
+            #expect(sun.z > 0.13, "the light never comes from below the horizon at \(Double(step) / 4)hr")
+        }
+        // East in the morning, west in the evening, low then and highest at midday; soft and from
+        // overhead as it rises and sets, so the moon takes over without a jump; fainter at night.
+        #expect(Sun(hour: 7.5).x > 0.3)
+        #expect(Sun(hour: 16.5).x < -0.3)
+        #expect(Sun(hour: 8).z < noon.z && Sun(hour: 16).z < noon.z)
+        #expect(Sun(hour: 6).z > 0.99 && Sun(hour: 18).z > 0.99)
+        #expect(abs(Sun(hour: 5.999).z - Sun(hour: 6).z) < 0.01)
+        #expect(Sun(hour: 0).strength < 1)
+        // The hills' light at midday is what it always was.
+        let ambient = HillArt.ambient(rocky: 0.3)
+        for (hx, hy) in [(0.0, 0.0), (0.4, -0.2), (-0.7, 0.5), (0.1, 0.9)] {
+            let lambert = (-hx * noon.x - hy * noon.y + noon.z) / (hx * hx + hy * hy + 1).squareRoot()
+            let flat = ambient + (1 - ambient) * noon.z
+            let was = (ambient + (1 - ambient) * max(0, lambert)) / flat
+            #expect(abs(HillArt.sunlight(hx: hx, hy: hy, ambient: ambient, sun: noon).shade - was) < 1e-9)
+        }
+        // A slope facing east is brighter in the morning than in the evening.
+        let east = (hx: -0.5, hy: 0.0)
+        #expect(HillArt.sunlight(hx: east.hx, hy: east.hy, ambient: ambient, sun: Sun(hour: 8)).shade
+            > HillArt.sunlight(hx: east.hx, hy: east.hy, ambient: ambient, sun: Sun(hour: 16)).shade)
+
+        // A tree's shadow: a little to the right at midday, toward you in the morning, away from
+        // you in the evening, longer then; round when the light is overhead.
+        let world = SKNode()
+        let tree = SKSpriteNode(color: .green, size: CGSize(width: 60, height: 90))
+        tree.position = CGPoint(x: 100, y: 200)
+        let shadow = Lighting.Shadow(under: tree, in: world)
+        #expect(world.children.count == 1)
+        let cast = try #require(world.children.first as? SKSpriteNode)
+        shadow.fall(from: noon)
+        #expect(cast.position.x > tree.position.x + 5)
+        #expect(abs(cast.size.width - 48) < 2 && abs(cast.size.height - 17.3) < 1.5, "midday's shadow is as it always was")
+        let midday = cast.position.distance(to: tree.position)
+        shadow.fall(from: Sun(hour: 7.5))
+        #expect(cast.position.y < tree.position.y - 5)
+        #expect(cast.position.distance(to: tree.position) > midday)
+        shadow.fall(from: Sun(hour: 16.5))
+        #expect(cast.position.y > tree.position.y + 5)
+        shadow.fall(from: Sun(hour: 6))
+        #expect(abs(cast.position.x - tree.position.x) < 0.5 && abs(cast.position.y - tree.position.y) < 0.5)
+        #expect(abs(cast.size.width - 2 * cast.size.height) < 0.5)
+    }
+
     @Test func derivedSpritesHaveABase() throws {
         let url = try #require(Bundle.main.url(forResource: "assets", withExtension: "json", subdirectory: "art"))
         let manifest = try JSONDecoder().decode(ArtManifest.self, from: Data(contentsOf: url))

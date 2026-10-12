@@ -103,7 +103,7 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   playtesting found too square. Since 0.4.1 they're heightfield hills, as isometric games draw terrain: a few
   ellipses melted together (`WorldMap.Hill`), rising on a smoothstep from foot to top, drawn as one picture of
   the map's own ground lit from the upper left and lifted by its heights in a small shader (`HillArt`; a warp
-  grid crashed SpriteKit at that size). Since 0.4.3 the light is matte, as pixel art shades a hill: a few
+  grid crashed SpriteKit at that size). Since 0.4.7 the shader lights it too, by the sun of the hour (`Sun`). Since 0.4.3 the light is matte, as pixel art shades a hill: a few
   steps of 6% with a 4×4 ordered dither between them, sides away from the sun a few shades darker (leaning to
   the palette's shadow colour) and sides facing it only one lighter; the first smooth, brighter gradient
   read as gloss in playtesting. Never steeper than 13 points a cell halfway up (15 before 0.4.4), so ground
@@ -146,7 +146,7 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   clear of the other. Too big
   to draw or sort as one picture, a range is drawn in squares of 16 cells, each shown in strips two cells
   deep up the screen, sorted just behind their back edge (`HillArt.strip(at:)`), so trees and walkers behind
-  a summit are hidden by it; tree shadows are split where the strip in front begins.
+  a summit are hidden by it; tree shadows are split where each of the two strips in front begins.
 - Footpaths (ours, since 0.4.3, asked for in playtesting 2026-10-11: the trails as new ways to explore):
   from each trail that starts on the ground a cell-wide road winds across the fields to the nearest road or
   footpath, the cheapest way round what's in the way with a little seeded unevenness so it wanders
@@ -561,6 +561,20 @@ the Wishing Seal, which stays the Monster Book's last reward.
     for each (asked for the same day): with night and day off the light stays at midday, the HUD shows the
     sun and there are no dawn or dusk notices (the calendar still runs); with the weather off it's always
     clear. A debug `weather=` still wins, for screenshots.
+  - Us (since 0.4.7, asked for in playtesting 2026-10-12: "the shadows and sun should follow over the
+    landscape"): the sun crosses the sky (`Sun`, from `Sky`'s hour). It rises in the east-north-east (up the
+    screen) at 6hr, is where the art's light always was at midday (up the map and to the left, 36° up) and
+    sets in the west-south-west (behind you, to the left) at 18hr: half a turn, low at either end (8° at
+    least) and highest at midday. The moon takes the same path by night, at 60% strength. For the first and
+    last game hour the light turns soft and comes from overhead, so nothing jumps when one gives way to the
+    other. The hills' slopes are lit by it in their shader (`HillArt.lifting`; scenery on them with them):
+    as the sun gets lower, slopes facing it get brighter next to the flat and more of the others fall into
+    the hill's shadow, while the shade's depth stays midday's (the sky's light fades with the sun's). Trees'
+    and rocks' shadows (`Lighting.Shadow`) are a round under them stretched away from the sun along the ground,
+    a quarter of their width at midday (as they were) and up to 1.4 widths at sunrise and sunset; the sun's
+    flare sits at the edge of the screen toward it and the sunbeams lean their tops toward it. Before 0.4.7
+    the beams leaned to the upper right, against the flare in the top-left corner. Whether FO's light moved
+    with its clock isn't in any source we've found; this is ours. Clouds don't soften the shadows yet.
   - Our setting is called Storyleaf in every in-game text (Fairyland until 0.3.50; see Names). In FO the
     continent itself is Mysteria (above), which is also the relaunch's name.
 - **Bots, moderators and announcements:** ours, asked for in playtesting (2026-10-04). FO's chat channels,

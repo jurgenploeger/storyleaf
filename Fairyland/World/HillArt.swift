@@ -1,12 +1,12 @@
 import SpriteKit
 
 /// Draws a range of hills (`WorldMap.Hill`): the ground it rises over as pictures (the map's own
-/// tiles, bare patches on its steepest slopes, its trails worn into it), lit from the upper left like
-/// the trees' shadows say, then lifted off the map by its heights. The lifting is a small shader on
-/// flat sprites over where it shows on screen: each pixel finds the ground point that rises to it
-/// (`WorldMap.groundPoint`'s halving, against the same heights walkers stand on) and shows the
-/// picture there. A warped sprite (`SKWarpGeometryGrid`) did the same, but SpriteKit crashed
-/// subdividing grids that size.
+/// tiles, bare patches on its steepest slopes, its trails worn into it), then lifted off the map by
+/// its heights and lit by the sun wherever it is in the sky (`Sun`, `light(_:by:)`). The lifting is a
+/// small shader on flat sprites over where it shows on screen: each pixel finds the ground point
+/// that rises to it (`WorldMap.groundPoint`'s halving, against the same heights walkers stand on),
+/// shows the picture there and lights it by how the ground slopes there. A warped sprite
+/// (`SKWarpGeometryGrid`) did the same, but SpriteKit crashed subdividing grids that size.
 ///
 /// A range is too big for one picture, so it's drawn in squares `square` cells a side; and too deep to
 /// sort as one thing among the trees and walkers, so each square shows in strips `stripDepth` cells deep
@@ -26,8 +26,8 @@ enum HillArt {
         /// Bare rock all over from this far up its slopes (0 at the foot, 1 where its top begins), if
         /// set: a mountain of rock with only its foot grassy.
         var rockAbove: Double? = nil
-        /// How lit slopes facing away from the sun still are (0.45 less a tenth for rocky, if unset):
-        /// lower for deeper shade, so a mountain's shape shows.
+        /// How lit slopes facing away from the midday sun still are (0.45 less a tenth for rocky, if
+        /// unset): lower for deeper shade, so a mountain's shape shows.
         var ambient: Double? = nil
         /// How much brighter than the flat its sunniest slopes go: only a shade on matte ground,
         /// more on bare rock, so the sides of a mountain stand out from the ground past it.
@@ -45,28 +45,34 @@ enum HillArt {
         let highlight: (r: Double, g: Double, b: Double)
     }
 
-    /// Sunlight from the upper left of the screen (up the map and to the left), 36° up.
-    private static let sun: (x: Double, y: Double, z: Double) = {
-        let up = 36 * Double.pi / 180
-        let toward = (x: -0.6, y: 1.0), length = (0.36 + 1.0).squareRoot()
-        return (x: toward.x / length * cos(up), y: toward.y / length * cos(up), z: sin(up))
-    }()
-
-    /// How lit a hill's slopes facing away from the sun still are, on a map as rocky as `rocky`
-    /// (`WorldMap.rockiness`): the rockier, the deeper the shade.
+    /// How lit a hill's slopes facing away from the midday sun still are, on a map as rocky as
+    /// `rocky` (`WorldMap.rockiness`): the rockier, the deeper the shade.
     static func ambient(rocky: Double) -> Double {
         0.45 - 0.1 * rocky
     }
 
-    /// How brightly the sun lights a slope, next to the flat (1 there): `hx` and `hy` how far it
-    /// rises a cell across and up the map (as heights stand, 1/cos 30° taller than they're drawn,
-    /// over a cell's width), `ambient` how lit it still is turned from the sun. And `lambert`, how
+    /// How brightly `sun` lights a slope, next to the flat (1 there): `hx` and `hy` how far it rises
+    /// a cell across and up the map (as heights stand, 1/cos 30° taller than they're drawn, over a
+    /// cell's width), `ambient` how lit it still is turned from the midday sun. And `lambert`, how
     /// squarely the sun falls on it: 0 or below where the slope turns its back on the sun, steeper
-    /// than the sun is high, in the hill's own shadow.
-    static func sunlight(hx: Double, hy: Double, ambient: Double) -> (shade: Double, lambert: Double) {
+    /// than the sun is high, in the hill's own shadow. The lower the sun, the brighter the slopes
+    /// facing it next to the flat, and the more of them turned from it. The lifting shader
+    /// (`lifting`) lights a hill's ground the same way.
+    static func sunlight(hx: Double, hy: Double, ambient: Double, sun: Sun) -> (shade: Double, lambert: Double) {
         let lambert = (-hx * sun.x - hy * sun.y + sun.z) / (hx * hx + hy * hy + 1).squareRoot()
-        let flat = ambient + (1 - ambient) * sun.z
-        return ((ambient + (1 - ambient) * max(0, lambert)) / flat, lambert)
+        let shaded = Sun.shaded(ambient: ambient)
+        let shade = shaded + (1 - shaded) * max(0, lambert) / sun.z
+        return (1 + (shade - 1) * sun.strength, lambert)
+    }
+
+    /// Lights hills' sprites (from `sprites(for:look:)`) by `sun`: cheap, so it can follow the clock.
+    static func light(_ sprites: [SKNode], by sun: Sun) {
+        let value = SIMD4(Float(sun.x), Float(sun.y), Float(sun.z), Float(sun.strength))
+        var done: Set<ObjectIdentifier> = []
+        for case let sprite as SKSpriteNode in sprites {
+            guard let shader = sprite.shader, done.insert(ObjectIdentifier(shader)).inserted else { continue }
+            shader.uniformNamed("u_sun")?.vectorFloat4Value = value
+        }
     }
 
     /// Cells a side of each picture.
@@ -107,10 +113,12 @@ enum HillArt {
         let sw = columns * samples, sh = rows * samples
         var bare = [UInt8](repeating: 0, count: sw * sh * 4)
         var mask = [UInt8](repeating: 0, count: sw * sh * 4)
-        // How bright each sample is lit, 1 on the flat (bottom row first, like the heights).
+        // How much darker or lighter each sample is, whatever the sun does (its foot, ledges), 1 on
+        // the flat (bottom row first, like the heights). The sun's light is the shader's (`lifting`).
         var light = [Float](repeating: 1, count: sw * sh)
-        // Sunlight (`sunlight`): soft, the sides away from it a few shades darker, the sides facing
-        // it only a shade lighter, so the hill reads as matte ground rather than something glossy.
+        // Sunlight, for the shader (`sunlight`): soft, the sides away from it a few shades darker,
+        // the sides facing it only a shade lighter at midday, so the hill reads as matte ground
+        // rather than something glossy.
         let ambient = look.ambient ?? Self.ambient(rocky: look.rocky)
         let deepest = max(look.shadow.r, look.shadow.g, look.shadow.b, 0.01)
         let tint = (look.shadow.r / deepest, look.shadow.g / deepest, look.shadow.b / deepest)
@@ -147,14 +155,14 @@ enum HillArt {
                 if field < 0.2 { edge = max(edge, min(1, max(0, (0.5 - trailDistance) / 0.1))) }
                 for channel in 0..<4 { mask[index + channel] = UInt8(edge * 255) }
                 guard field > 0 else { continue }
-                // How the slope faces the sun, from the heights walkers stand on (points a cell).
-                // Heights stand 1/cos 30° taller than they're drawn.
+                // How steep it is, from the heights walkers stand on (points a cell). Heights stand
+                // 1/cos 30° taller than they're drawn.
                 let h00 = Double(height(i, j)), h10 = Double(height(i + 1, j))
                 let h01 = Double(height(i, j + 1)), h11 = Double(height(i + 1, j + 1))
                 let gx = ((h10 + h11) - (h00 + h01)) / 2 * Double(samples)
                 let gy = ((h01 + h11) - (h00 + h10)) / 2 * Double(samples)
                 let hx = gx / Double(tile) / 0.866, hy = gy / Double(tile) / 0.866
-                var shade = Self.sunlight(hx: hx, hy: hy, ambient: ambient).shade
+                var shade = 1.0
                 let s = hill.rise(x, y)
                 // The foot tucked in a little darker.
                 if s < 0.3 { shade *= 1 - 0.08 * sin(Double.pi * s / 0.3) }
@@ -327,10 +335,16 @@ enum HillArt {
         let heights = SKTexture(cgImage: heightImage)
         heights.filteringMode = .linear
         let shader = SKShader(source: Self.lifting)
+        let sun = Sun.noon
         shader.uniforms = [
             SKUniform(name: "u_heights", texture: heights),
             SKUniform(name: "u_samples", vectorFloat4: SIMD4(Float(low.col), Float(low.row), Float(samples), Float(peak))),
             SKUniform(name: "u_sampleSize", vectorFloat2: SIMD2(Float(lattice.columns), Float(lattice.rows))),
+            // The sun (`light(_:by:)` moves it); how dark the shade, how bright the sunniest slope
+            // and the picture's pixels a cell; how the shade leans toward the shadow colour.
+            SKUniform(name: "u_sun", vectorFloat4: SIMD4(Float(sun.x), Float(sun.y), Float(sun.z), Float(sun.strength))),
+            SKUniform(name: "u_look", vectorFloat4: SIMD4(Float(Sun.shaded(ambient: ambient)), Float(look.brightest), 0, Float(px))),
+            SKUniform(name: "u_lean", vectorFloat4: SIMD4(Float(1 - tint.0), Float(1 - tint.1), Float(1 - tint.2), 0)),
         ]
         shader.attributes = [
             SKAttribute(name: "a_box", type: .vectorFloat4),
@@ -419,6 +433,12 @@ enum HillArt {
     /// between the lowest and highest the strip stands, then the square's picture there, if that
     /// point is in this strip and square (a hair either side, so no seam opens between strips).
     /// `WorldMap.project` and `unproject` in reverse; `tileSize` is 44.
+    ///
+    /// Then lit by the sun (`u_sun`) as `sunlight` has it, from how the ground slopes at the middle of
+    /// the picture's pixel (its heights half a sample either side), so each pixel is one tone: in
+    /// steps of 6% with a 4×4 ordered dither where one gives way to the next, as `shade` lights the
+    /// picture, the shade leaning toward the map's shadow colour (`u_lean`). Flat ground stays as it
+    /// is. Everything inline: SpriteKit's shaders can't count on helper functions seeing uniforms.
     private static let lifting = """
     void main() {
         vec2 spot = a_box.xy + v_tex_coord * a_box.zw;
@@ -445,7 +465,36 @@ enum HillArt {
             || uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) {
             gl_FragColor = vec4(0.0);
         } else {
-            gl_FragColor = texture2D(u_texture, uv);
+            vec4 paint = texture2D(u_texture, uv);
+            vec2 pixel = floor(uv * a_area.zw * u_look.w);
+            vec2 centre = a_area.xy + (pixel + 0.5) / u_look.w;
+            vec2 base = ((centre - u_samples.xy) * u_samples.z + 0.5) / u_sampleSize;
+            vec2 sideways = vec2(0.5 / u_sampleSize.x, 0.0);
+            vec2 upward = vec2(0.0, 0.5 / u_sampleSize.y);
+            vec4 east = texture2D(u_heights, base + sideways);
+            vec4 west = texture2D(u_heights, base - sideways);
+            vec4 north = texture2D(u_heights, base + upward);
+            vec4 south = texture2D(u_heights, base - upward);
+            float rise = u_samples.w / 255.0 * u_samples.z / (44.0 * 0.8660254);
+            float hx = ((east.r - west.r) * 255.0 + (east.g - west.g)) * rise;
+            float hy = ((north.r - south.r) * 255.0 + (north.g - south.g)) * rise;
+            float facing = (u_sun.z - hx * u_sun.x - hy * u_sun.y) / sqrt(hx * hx + hy * hy + 1.0);
+            float lit = u_look.x + (1.0 - u_look.x) * max(0.0, facing) / u_sun.z;
+            lit = 1.0 + (lit - 1.0) * u_sun.w;
+            if (abs(lit - 1.0) > 0.004) {
+                vec2 row = vec2(pixel.x, 3.0 - mod(pixel.y, 4.0));
+                vec2 fine = mod(row, 2.0);
+                vec2 coarse = mod(floor(row * 0.5), 2.0);
+                float order = 4.0 * mod(2.0 * fine.x + 3.0 * fine.y, 4.0) + mod(2.0 * coarse.x + 3.0 * coarse.y, 4.0);
+                float steps = floor((lit - 1.0) / 0.06 + (order + 0.5) / 16.0);
+                float tone = min(u_look.y, 1.0 + steps * 0.06);
+                if (tone < 1.0) {
+                    paint.rgb = paint.rgb * tone * (vec3(1.0) - (1.0 - tone) * 0.4 * u_lean.rgb);
+                } else {
+                    paint.rgb = min(paint.rgb * tone, vec3(paint.a));
+                }
+            }
+            gl_FragColor = paint;
         }
     }
     """
