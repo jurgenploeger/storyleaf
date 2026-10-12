@@ -68,6 +68,43 @@ final class WorldMap {
     private var hillOf: [GridPoint: Int] = [:]
     /// The cells the hills' trails run over (for the minimap).
     private(set) var trailCells: Set<GridPoint> = []
+    /// The map's lakes (`theme.lakes`): each one's water, and its island if it has one. Their water
+    /// is among the `ponds` too, for lily pads and frogs.
+    private(set) var lakes: [(water: Set<GridPoint>, island: Set<GridPoint>)] = []
+    /// The river's water (`theme.river`), in over one edge and out over another.
+    private(set) var river: Set<GridPoint> = []
+    /// Bridges where roads cross the river, footbridges out to the lakes' islands and jetties.
+    private(set) var bridges: [Bridge] = []
+    /// The water under the bridges' decks, walked over like the land.
+    private(set) var bridgeCells: Set<GridPoint> = []
+    /// Where a footbridge or a jetty meets the land: footpaths run from there to the nearest road
+    /// (`layFootpaths`).
+    private var landings: [GridPoint] = []
+
+    /// A deck of planks over water (`BridgeArt` draws it), straight along the map's columns or its
+    /// rows as the tiles run, its lanes side by side across it.
+    nonisolated struct Bridge {
+        nonisolated enum Kind { case road, foot, jetty }
+        let kind: Kind
+        /// Whether it runs north, up the map along a column, rather than east along a row.
+        let northward: Bool
+        /// Its first lane (a column if it runs north, else a row) and how many it has.
+        let lane: Int, lanes: Int
+        /// Its first and last cell along it (rows if it runs north, else columns).
+        let start: Int, end: Int
+        /// Whether its start and its end meet land (a jetty's far end stands in the water).
+        let landsAtStart: Bool, landsAtEnd: Bool
+
+        /// The cell `lane` across (a column or a row, as the map numbers them) and `along` along it.
+        func cell(lane: Int, along: Int) -> GridPoint {
+            northward ? GridPoint(col: lane, row: along) : GridPoint(col: along, row: lane)
+        }
+
+        /// Every cell under its deck.
+        var cells: [GridPoint] {
+            (lane..<(lane + lanes)).flatMap { lane in (start...end).map { cell(lane: lane, along: $0) } }
+        }
+    }
 
     /// The hill rising over `cell`, if any (an index into `hills`).
     func hillIndex(at cell: GridPoint) -> Int? { hillOf[cell] }
@@ -171,6 +208,19 @@ final class WorldMap {
                 ranges.append((exit.edge, cave, range))
             }
         }
+        if def.theme.cave == nil, def.town == nil {
+            // Their own random numbers too.
+            var waterRNG = SeededRandom(text: def.id + "/water")
+            if let river = def.theme.river { carveRiver(river, avoiding: ranges.map(\.edge), &waterRNG) }
+            if let lakes = def.theme.lakes { digLakes(lakes, &waterRNG) }
+            // Nothing grows across a bridge's ends, where it meets the land.
+            for bridge in bridges {
+                for lane in bridge.lane..<(bridge.lane + bridge.lanes) {
+                    if bridge.landsAtStart { occupy(bridge.cell(lane: lane, along: bridge.start - 1), blocking: false) }
+                    if bridge.landsAtEnd { occupy(bridge.cell(lane: lane, along: bridge.end + 1), blocking: false) }
+                }
+            }
+        }
         if def.theme.cave == nil, let ponds { digPonds(ponds, &rng) }
         if def.town == nil, def.theme.cave == nil, let hills = def.theme.hills { raiseHills(hills, &rng) }
         // The ranges where roads lead into caves join the hills after them, so the hills keep their
@@ -182,7 +232,7 @@ final class WorldMap {
         }
         // Where you arrive through a cave's mouth beside the road has moved.
         if !ranges.isEmpty { cachedEntryCells = nil }
-        if def.town == nil, def.theme.cave == nil, def.theme.hills != nil { layFootpaths() }
+        if def.town == nil, def.theme.cave == nil, def.theme.hills != nil || !landings.isEmpty { layFootpaths() }
         if def.theme.accent != nil {
             if let patches = def.theme.accentPatches {
                 paintAccentPatches(patches, &rng)
@@ -1526,9 +1576,10 @@ final class WorldMap {
             return 2 + Double(height(atGrid: CGPoint(x: (CGFloat(cell.col) + 0.5) * Self.tileSize, y: (CGFloat(cell.row) + 0.5) * Self.tileSize))) / 4
         }
         // From each trail that starts on the ground (others start up on the range), by the heights
-        // walkers stand on.
+        // walkers stand on, and from where each footbridge and jetty meets the land.
         let feet = hills.flatMap { $0.trails.compactMap(\.points.first) }
             .filter { height(atGrid: CGPoint(x: $0.x * Self.tileSize, y: $0.y * Self.tileSize)) < 1 }
+            + landings.map { CGPoint(x: CGFloat($0.col) + 0.5, y: CGFloat($0.row) + 0.5) }
         for foot in feet {
             let start = GridPoint(col: Int(foot.x.rounded(.down)), row: Int(foot.y.rounded(.down)))
             guard contains(start), ground[start.row][start.col] != .path else { continue }
@@ -1625,6 +1676,438 @@ final class WorldMap {
         }
     }
 
+    // MARK: Rivers and lakes
+
+    /// The way out over each edge, as the map lies: north is up the map (rows count up from the south).
+    private static func outward(_ edge: Edge) -> CGVector {
+        switch edge {
+        case .north: CGVector(dx: 0, dy: 1)
+        case .south: CGVector(dx: 0, dy: -1)
+        case .east: CGVector(dx: 1, dy: 0)
+        case .west: CGVector(dx: -1, dy: 0)
+        }
+    }
+
+    /// A river across the map (`theme.river`): in over one edge and out over the other, winding
+    /// and swelling and narrowing a little as roads do, kept off the hub, the map's people and
+    /// buildings, the arrivals and where a road leads into a cave (`cragEdges`), and clear of where
+    /// roads leave over the edges. A bridge wherever it crosses a road (`bridge(over:along:)`).
+    /// Tried a few ways till one leaves every bit of land in reach of the hub; none if none does.
+    private func carveRiver(_ spec: MapDef.River, avoiding cragEdges: [Edge], _ rng: inout SeededRandom) {
+        guard spec.from != spec.to, !cragEdges.contains(spec.from), !cragEdges.contains(spec.to) else { return }
+        let width = CGFloat(min(6, max(2, spec.width ?? 3)))
+        let hub = point(def.hub ?? [0, 0])
+        let arrivals = def.exits.map { entryCell(from: $0.edge) }
+        // Where the roads leave over the edges.
+        var ends: [CGPoint] = []
+        for col in 0..<columns {
+            for row in [0, rows - 1] where ground[row][col] == .path { ends.append(CGPoint(x: CGFloat(col) + 0.5, y: CGFloat(row) + 0.5)) }
+        }
+        for row in 0..<rows {
+            for col in [0, columns - 1] where ground[row][col] == .path { ends.append(CGPoint(x: CGFloat(col) + 0.5, y: CGFloat(row) + 0.5)) }
+        }
+        /// Somewhere along `edge`, well clear of the roads leaving over it.
+        func edgePoint(_ edge: Edge) -> CGPoint? {
+            let length = CGFloat(edge == .north || edge == .south ? columns : rows)
+            for _ in 0..<50 {
+                let along = CGFloat.random(in: 0.15...0.85, using: &rng) * length
+                let spot: CGPoint = switch edge {
+                case .north: CGPoint(x: along, y: CGFloat(rows))
+                case .south: CGPoint(x: along, y: 0)
+                case .east: CGPoint(x: CGFloat(columns), y: along)
+                case .west: CGPoint(x: 0, y: along)
+                }
+                if ends.allSatisfy({ $0.distance(to: spot) > 12 }) { return spot }
+            }
+            return nil
+        }
+        let before = cutOff()
+        for attempt in 0..<16 {
+            guard let source = edgePoint(spec.from), let mouth = edgePoint(spec.to) else { continue }
+            let length = source.distance(to: mouth)
+            guard length > 1 else { continue }
+            let ahead = CGVector(dx: (mouth.x - source.x) / length, dy: (mouth.y - source.y) / length)
+            let side = CGVector(dx: -ahead.dy, dy: ahead.dx)
+            // From a little past each edge, so it runs right off the map, through waypoints pushed
+            // sideways by a smooth random drift and kept well off the hub.
+            var points = [source + Self.outward(spec.from) * 4, source]
+            let count = max(2, Int(length / 7))
+            let sway = min(16, length * 0.18)
+            var drift: CGFloat = 0
+            for k in 1..<count {
+                drift = min(max(drift + CGFloat.random(in: -3.5...3.5, using: &rng), -sway), sway)
+                let t = CGFloat(k) / CGFloat(count)
+                var spot = CGPoint(x: source.x + (mouth.x - source.x) * t, y: source.y + (mouth.y - source.y) * t) + side * drift
+                let keep = 9 + width, near = spot.distance(to: hub)
+                if near < keep {
+                    let away: CGFloat = (spot.x - hub.x) * side.dx + (spot.y - hub.y) * side.dy >= 0 ? 1 : -1
+                    spot = spot + side * (away * (keep - near + 1))
+                }
+                points.append(CGPoint(x: min(max(spot.x, 3), CGFloat(columns - 3)), y: min(max(spot.y, 3), CGFloat(rows - 3))))
+            }
+            points += [mouth, mouth + Self.outward(spec.to) * 4]
+            // Along a Catmull-Rom curve through them, a little wider and narrower as it goes.
+            var cells: Set<GridPoint> = []
+            var line: [CGPoint] = []
+            var travelled: CGFloat = 0
+            for index in 0..<(points.count - 1) {
+                let p0 = points[max(0, index - 1)], p1 = points[index], p2 = points[index + 1], p3 = points[min(points.count - 1, index + 2)]
+                let steps = max(4, Int(p1.distance(to: p2) * 4))
+                for step in 0...steps {
+                    let spot = Self.catmullRom(p0, p1, p2, p3, CGFloat(step) / CGFloat(steps))
+                    travelled += p1.distance(to: p2) / CGFloat(steps)
+                    line.append(spot)
+                    let reach = width / 2 * (1 + 0.18 * sin(travelled / 7 + CGFloat(attempt)))
+                    cells.formUnion(self.cells(around: spot, radius: reach))
+                }
+            }
+            // Off the people, buildings and arrivals, the hub and the rock where a road leads into a cave.
+            let clear = cells.allSatisfy { cell in
+                !occupied.contains(cell) && !rock.contains(cell) && !cragGround.contains(cell)
+                    && CGPoint(x: CGFloat(cell.col) + 0.5, y: CGFloat(cell.row) + 0.5).distance(to: hub) >= 7
+                    && arrivals.allSatisfy { max(abs($0.col - cell.col), abs($0.row - cell.row)) > 6 }
+            }
+            guard clear else { continue }
+            // Across the roads, not along them.
+            let crossings = Self.groups(of: cells.filter { ground[$0.row][$0.col] == .path })
+            guard crossings.allSatisfy({ $0.count <= Int(6 * width) }) else { continue }
+            let saved = (ground: ground, bridges: bridges, bridgeCells: bridgeCells)
+            for cell in cells { ground[cell.row][cell.col] = .water }
+            if crossings.allSatisfy({ bridge(over: $0, along: line) }), cutOff() <= before {
+                river = cells
+                for cell in cells { occupy(cell, blocking: !bridgeCells.contains(cell)) }
+                return
+            }
+            ground = saved.ground
+            bridges = saved.bridges
+            bridgeCells = saved.bridgeCells
+        }
+    }
+
+    /// Cells row by row from the south, west to east in each: an order for cells kept in sets.
+    static func inOrder(_ a: GridPoint, _ b: GridPoint) -> Bool {
+        (a.row, a.col) < (b.row, b.col)
+    }
+
+    /// The cells whose middles lie within `radius` of `spot`, on the map.
+    private func cells(around spot: CGPoint, radius: CGFloat) -> [GridPoint] {
+        let reach = Int(radius.rounded(.up)) + 1
+        let middle = GridPoint(col: Int(spot.x.rounded(.down)), row: Int(spot.y.rounded(.down)))
+        var found: [GridPoint] = []
+        for dr in -reach...reach {
+            for dc in -reach...reach {
+                let cell = GridPoint(col: middle.col + dc, row: middle.row + dr)
+                guard contains(cell), CGPoint(x: CGFloat(cell.col) + 0.5, y: CGFloat(cell.row) + 0.5).distance(to: spot) <= radius else { continue }
+                found.append(cell)
+            }
+        }
+        return found
+    }
+
+    /// `cells` in groups that touch, corners too, the same way every visit (sets don't keep an order).
+    private static func groups(of cells: Set<GridPoint>) -> [[GridPoint]] {
+        var left = cells
+        var groups: [[GridPoint]] = []
+        for first in cells.sorted(by: Self.inOrder) where left.contains(first) {
+            left.remove(first)
+            var group = [first]
+            var index = 0
+            while index < group.count {
+                let cell = group[index]
+                index += 1
+                for dr in -1...1 {
+                    for dc in -1...1 {
+                        if let next = left.remove(GridPoint(col: cell.col + dc, row: cell.row + dr)) { group.append(next) }
+                    }
+                }
+            }
+            groups.append(group)
+        }
+        return groups
+    }
+
+    /// How many cells one could stand on (land, or a bridge) can't be walked to from the hub,
+    /// round the water and the buildings, corners too as the walk graph has it.
+    private func cutOff() -> Int {
+        func open(_ col: Int, _ row: Int) -> Bool {
+            col >= 0 && row >= 0 && col < columns && row < rows && !blocked.contains(GridPoint(col: col, row: row))
+                && (ground[row][col] != .water || bridgeCells.contains(GridPoint(col: col, row: row)))
+        }
+        let hub = point(def.hub ?? [0, 0])
+        let start = GridPoint(col: Int(hub.x), row: Int(hub.y))
+        guard open(start.col, start.row) else { return 0 }
+        var reached = [Bool](repeating: false, count: columns * rows)
+        reached[start.row * columns + start.col] = true
+        var queue = [start]
+        var index = 0
+        while index < queue.count {
+            let cell = queue[index]
+            index += 1
+            for dr in -1...1 {
+                for dc in -1...1 {
+                    let col = cell.col + dc, row = cell.row + dr
+                    guard open(col, row), !reached[row * columns + col] else { continue }
+                    reached[row * columns + col] = true
+                    queue.append(GridPoint(col: col, row: row))
+                }
+            }
+        }
+        var count = 0
+        for row in 0..<rows {
+            for col in 0..<columns where open(col, row) && !reached[row * columns + col] { count += 1 }
+        }
+        return count
+    }
+
+    /// A bridge where the river crosses a road (`crossing`, the road's cells it covered): three
+    /// lanes wide, straight over the river whichever way the tiles run across it more squarely
+    /// (`line`, along its middle, says which way it runs there), and the road on either bank bent
+    /// to meet it squarely. False if it can't reach land in every lane.
+    private func bridge(over crossing: [GridPoint], along line: [CGPoint]) -> Bool {
+        guard !crossing.isEmpty, !line.isEmpty else { return false }
+        let middle = CGPoint(x: crossing.map { CGFloat($0.col) + 0.5 }.reduce(0, +) / CGFloat(crossing.count),
+                             y: crossing.map { CGFloat($0.row) + 0.5 }.reduce(0, +) / CGFloat(crossing.count))
+        let nearest = line.indices.min { line[$0].distance(to: middle) < line[$1].distance(to: middle) } ?? 0
+        let from = line[max(0, nearest - 4)], to = line[min(line.count - 1, nearest + 4)]
+        // A river running east is crossed going north.
+        guard let bridge = span(.road, at: middle, northward: abs(to.x - from.x) >= abs(to.y - from.y), lanes: 3) else { return false }
+        meetRoad(bridge)
+        return true
+    }
+
+    /// A bridge `lanes` wide over the water from bank to bank, its lanes centred on `middle`,
+    /// laid (`lay`); nil if any lane doesn't reach land within 14 cells.
+    private func span(_ kind: Bridge.Kind, at middle: CGPoint, northward: Bool, lanes: Int) -> Bridge? {
+        let first = Int(((northward ? middle.x : middle.y) - CGFloat(lanes) / 2).rounded())
+        let origin = Int((northward ? middle.y : middle.x).rounded(.down))
+        let probe = Bridge(kind: kind, northward: northward, lane: first, lanes: lanes, start: origin, end: origin, landsAtStart: true, landsAtEnd: true)
+        func water(_ along: Int) -> Bool {
+            (first..<(first + lanes)).contains { lane in
+                let cell = probe.cell(lane: lane, along: along)
+                return contains(cell) && ground[cell.row][cell.col] == .water
+            }
+        }
+        var start = origin, end = origin
+        while start > origin - 16, water(start - 1) { start -= 1 }
+        while end < origin + 16, water(end + 1) { end += 1 }
+        guard end - start <= 14 else { return nil }
+        for lane in first..<(first + lanes) {
+            for along in [start - 1, end + 1] {
+                let cell = probe.cell(lane: lane, along: along)
+                guard contains(cell), ground[cell.row][cell.col] != .water else { return nil }
+            }
+        }
+        let bridge = Bridge(kind: kind, northward: northward, lane: first, lanes: lanes, start: start, end: end, landsAtStart: true, landsAtEnd: true)
+        lay(bridge)
+        return bridge
+    }
+
+    /// Lays a bridge: the water under its deck becomes somewhere to walk.
+    private func lay(_ bridge: Bridge) {
+        bridges.append(bridge)
+        for cell in bridge.cells where contains(cell) && ground[cell.row][cell.col] == .water { bridgeCells.insert(cell) }
+    }
+
+    /// The road on either bank bent to meet a bridge squarely: a stretch of road from just past
+    /// each end to the nearest bit of the road there.
+    private func meetRoad(_ bridge: Bridge) {
+        let centre = CGFloat(bridge.lane) + CGFloat(bridge.lanes) / 2
+        for (along, step) in [(bridge.start - 1, -1), (bridge.end + 1, 1)] {
+            let foot = bridge.northward ? CGPoint(x: centre, y: CGFloat(along) + 0.5) : CGPoint(x: CGFloat(along) + 0.5, y: centre)
+            var best: (distance: CGFloat, spot: CGPoint)?
+            for dr in -8...8 {
+                for dc in -8...8 {
+                    let cell = GridPoint(col: Int(foot.x.rounded(.down)) + dc, row: Int(foot.y.rounded(.down)) + dr)
+                    guard contains(cell), ground[cell.row][cell.col] == .path else { continue }
+                    // Only on past the bridge, on its own bank.
+                    guard ((bridge.northward ? cell.row : cell.col) - along) * step >= 1 else { continue }
+                    let spot = CGPoint(x: CGFloat(cell.col) + 0.5, y: CGFloat(cell.row) + 0.5)
+                    let distance = spot.distance(to: foot)
+                    if distance < 7, distance < best?.distance ?? .infinity { best = (distance, spot) }
+                }
+            }
+            guard let best else { continue }
+            let steps = max(2, Int(best.distance * 4))
+            for k in 0...steps {
+                let t = CGFloat(k) / CGFloat(steps)
+                let spot = CGPoint(x: foot.x + (best.spot.x - foot.x) * t, y: foot.y + (best.spot.y - foot.y) * t)
+                for cell in cells(around: spot, radius: 1.05) where ground[cell.row][cell.col] != .water { ground[cell.row][cell.col] = .path }
+            }
+        }
+    }
+
+    /// Big lakes (`theme.lakes`): each a wobbly round of water (`blob`), somewhere with room round
+    /// it (`clearance`), cut back to keep two and a half cells off the roads and anything else in
+    /// the way, so where it comes near a road the road runs along its shore. An island in the
+    /// middle of as many as asked, with a footbridge out to it, and a jetty out into each from the
+    /// shore nearest a road. Smaller where a big one finds no room.
+    private func digLakes(_ spec: MapDef.Lakes, _ rng: inout SeededRandom) {
+        let smallest = max(3, spec.size.first ?? 8), biggest = max(smallest, spec.size.last ?? smallest)
+        var islands = spec.islands ?? 0
+        for _ in 0..<max(0, spec.count) {
+            let room = clearance(claimed: [])
+            let order = (0..<(columns * rows)).shuffled(using: &rng)
+            let before = cutOff()
+            for attempt in 0..<10 {
+                let radius = Double.random(in: smallest...biggest, using: &rng) * pow(0.9, Double(attempt))
+                let aspect = Double.random(in: 0.6...0.95, using: &rng)
+                let turn = Double.random(in: 0..<Double.pi, using: &rng)
+                let phases = (0..<3).map { _ in Double.random(in: 0..<6.3, using: &rng) }
+                let need = radius * 1.32 * aspect * 0.9 + 1
+                guard let index = order.first(where: { room[$0] >= need }) else { continue }
+                let middle = (x: Double(index % columns) + 0.5, y: Double(index / columns) + 0.5)
+                let whole = blob(middle, radius: radius, aspect: aspect, turn: turn, phases: phases)
+                let kept = whole.filter { contains($0) && room[$0.row * columns + $0.col] >= 2.5 }
+                guard Double(kept.count) >= 0.8 * Double(whole.count),
+                      let largest = Self.groups(of: kept).max(by: { $0.count < $1.count }) else { continue }
+                let water = Set(largest)
+                var island: Set<GridPoint> = []
+                if islands > 0, radius >= 8 {
+                    for _ in 0..<12 {
+                        let angle = Double.random(in: 0..<(2 * Double.pi), using: &rng)
+                        let off = Double.random(in: 0...0.35, using: &rng) * radius * aspect
+                        let size = radius * Double.random(in: 0.22...0.3, using: &rng)
+                        let shape = blob((middle.x + off * cos(angle), middle.y + off * sin(angle)), radius: size,
+                                         aspect: Double.random(in: 0.7...1, using: &rng), turn: Double.random(in: 0..<Double.pi, using: &rng),
+                                         phases: (0..<3).map { _ in Double.random(in: 0..<6.3, using: &rng) })
+                        // Well out in the water all round.
+                        let inside = shape.allSatisfy { cell in
+                            (-3...3).allSatisfy { dr in (-3...3).allSatisfy { dc in water.contains(GridPoint(col: cell.col + dc, row: cell.row + dr)) } }
+                        }
+                        if inside, !shape.isEmpty {
+                            island = shape
+                            break
+                        }
+                    }
+                }
+                let saved = (ground: ground, bridges: bridges, bridgeCells: bridgeCells, landings: landings)
+                for cell in water.subtracting(island) { ground[cell.row][cell.col] = .water }
+                // Out to its island, or no island.
+                if !island.isEmpty, !bridge(to: island, in: water) {
+                    for cell in island { ground[cell.row][cell.col] = .water }
+                    island = []
+                }
+                jetty(into: water.subtracting(island), clear: island)
+                guard cutOff() <= before else {
+                    ground = saved.ground
+                    bridges = saved.bridges
+                    bridgeCells = saved.bridgeCells
+                    landings = saved.landings
+                    continue
+                }
+                if !island.isEmpty { islands -= 1 }
+                let lake = water.subtracting(island)
+                for cell in lake { occupy(cell, blocking: !bridgeCells.contains(cell)) }
+                lakes.append((lake, island))
+                ponds.append(lake.sorted(by: Self.inOrder))
+                break
+            }
+        }
+    }
+
+    /// The cells inside a wobbly round of water or land: `radius` cells out from `middle` at most
+    /// (a little more where it bulges), `aspect` as wide across as along, turned by `turn`, its
+    /// shoreline swelling and dipping by three waves (`phases`) round it.
+    private func blob(_ middle: (x: Double, y: Double), radius: Double, aspect: Double, turn: Double, phases: [Double]) -> Set<GridPoint> {
+        let reach = Int(radius * 1.5) + 2
+        let base = GridPoint(col: Int(middle.x.rounded(.down)), row: Int(middle.y.rounded(.down)))
+        var cells: Set<GridPoint> = []
+        for dr in -reach...reach {
+            for dc in -reach...reach {
+                let cell = GridPoint(col: base.col + dc, row: base.row + dr)
+                let x = Double(cell.col) + 0.5 - middle.x, y = Double(cell.row) + 0.5 - middle.y
+                let along = x * cos(turn) + y * sin(turn), across = (-x * sin(turn) + y * cos(turn)) / aspect
+                let angle = atan2(across, along)
+                let shore = radius * (1 + 0.16 * sin(2 * angle + phases[0]) + 0.1 * sin(3 * angle + phases[1]) + 0.06 * sin(5 * angle + phases[2]))
+                if (along * along + across * across).squareRoot() <= shore { cells.insert(cell) }
+            }
+        }
+        return cells
+    }
+
+    /// A footbridge two lanes wide out to a lake's `island`, the shortest straight way over its
+    /// `water` the tiles run, and a footpath from where it lands (`landings`). False if none fits.
+    private func bridge(to island: Set<GridPoint>, in water: Set<GridPoint>) -> Bool {
+        var options: [(length: Int, middle: CGPoint, northward: Bool, landing: GridPoint)] = []
+        for cell in island.sorted(by: Self.inOrder) {
+            for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                var length = 0
+                var next = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                while water.contains(next), !island.contains(next) {
+                    length += 1
+                    next = GridPoint(col: next.col + dc, row: next.row + dr)
+                }
+                guard length > 0, contains(next), ground[next.row][next.col] != .water, !island.contains(next) else { continue }
+                let middle = CGPoint(x: CGFloat(cell.col) + 0.5 + CGFloat(dc) * (CGFloat(length) / 2 + 0.5),
+                                     y: CGFloat(cell.row) + 0.5 + CGFloat(dr) * (CGFloat(length) / 2 + 0.5))
+                options.append((length, middle, dc == 0, next))
+            }
+        }
+        // Shortest first; among those, the same one every visit.
+        let ranked = options.enumerated().sorted { ($0.element.length, $0.offset) < ($1.element.length, $1.offset) }.map(\.element)
+        for option in ranked.prefix(24) {
+            // Two lanes, this one and the next across, or the one before.
+            for shift in [CGFloat(0.5), -0.5] {
+                let middle = option.northward ? CGPoint(x: option.middle.x + shift, y: option.middle.y) : CGPoint(x: option.middle.x, y: option.middle.y + shift)
+                if span(.foot, at: middle, northward: option.northward, lanes: 2) != nil {
+                    landings.append(option.landing)
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    /// A jetty two lanes wide and four cells long out into a lake's `water` from the shore nearest
+    /// a road, clear of its island (`clear`), and a footpath from where it starts (`landings`).
+    private func jetty(into water: Set<GridPoint>, clear island: Set<GridPoint>) {
+        // How far each cell is from a road, a step at a time.
+        var distance = [Int](repeating: .max, count: columns * rows)
+        var queue: [GridPoint] = []
+        for row in 0..<rows {
+            for col in 0..<columns where ground[row][col] == .path {
+                distance[row * columns + col] = 0
+                queue.append(GridPoint(col: col, row: row))
+            }
+        }
+        var index = 0
+        while index < queue.count {
+            let cell = queue[index]
+            index += 1
+            for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                let next = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                guard contains(next), distance[next.row * columns + next.col] == .max else { continue }
+                distance[next.row * columns + next.col] = distance[cell.row * columns + cell.col] + 1
+                queue.append(next)
+            }
+        }
+        let length = 4
+        var best: (distance: Int, bridge: Bridge, landing: GridPoint)?
+        for cell in water.sorted(by: Self.inOrder) {
+            for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                // The land it starts from, behind it, and both lanes out over open water.
+                let land = GridPoint(col: cell.col - dc, row: cell.row - dr)
+                guard contains(land), ground[land.row][land.col] != .water, !island.contains(land) else { continue }
+                let northward = dc == 0
+                let start = northward ? cell.row : cell.col, step = northward ? dr : dc
+                let bridge = Bridge(kind: .jetty, northward: northward, lane: northward ? cell.col : cell.row, lanes: 2,
+                                    start: step > 0 ? start : start - length + 1, end: step > 0 ? start + length - 1 : start,
+                                    landsAtStart: step > 0, landsAtEnd: step < 0)
+                let besideLand = bridge.cell(lane: bridge.lane + 1, along: start - step)
+                let fits = contains(besideLand) && ground[besideLand.row][besideLand.col] != .water && !island.contains(besideLand)
+                    && bridge.cells.allSatisfy { deck in
+                        water.contains(deck) && island.allSatisfy { max(abs($0.col - deck.col), abs($0.row - deck.row)) > 2 }
+                    }
+                guard fits else { continue }
+                let away = distance[land.row * columns + land.col]
+                if away < best?.distance ?? .max { best = (away, bridge, land) }
+            }
+        }
+        guard let best else { return }
+        lay(best.bridge)
+        landings.append(best.landing)
+    }
+
     /// Wobbly ponds, kept away from roads, the centre and each other.
     private func digPonds(_ count: Int, _ rng: inout SeededRandom) {
         for _ in 0..<count {
@@ -1703,6 +2186,9 @@ final class WorldMap {
                 }
                 if rock.contains(cell) {
                     pixel = color(forTile: theme.cave?.rock ?? "cave_rock").shaded(0.5)
+                } else if bridgeCells.contains(cell) {
+                    // A bridge, wood brown over the water.
+                    pixel = PixelColor(0x9C6B3E)
                 } else if trailCells.contains(cell) {
                     pixel = tileColor == nil && theme.path == "tile_path" ? PixelColor(0xE8C98C) : color(forTile: theme.path).shaded(1.15)
                 } else if let index = hillOf[cell] {

@@ -182,6 +182,8 @@ final class WorldScene: SKScene {
             placeCrags()
         }
         placeLilyPads()
+        placeBridges()
+        placeReeds()
         placeFence()
         placeBuildings()
         await reached(0.65, progress)
@@ -273,6 +275,12 @@ final class WorldScene: SKScene {
         // Accent patches (flower meadows, moss) blend in as soft blobs. Not in towns, where the
         // accent is terrace paving and stays square.
         let patchAccent = (theme.accentPatches ?? 0) > 0 && theme.accent != nil && theme.accent != theme.ground
+        /// Whether the ground past the map's edge at `cell` is water: where a river runs off the map
+        /// it carries on straight (`placeSurroundings`), as the nearest cell on the map is.
+        func waterBeyond(_ cell: GridPoint) -> Bool {
+            let inside = GridPoint(col: min(max(cell.col, 0), map.columns - 1), row: min(max(cell.row, 0), map.rows - 1))
+            return map.river.contains(inside)
+        }
         /// Which cells of the 3×3 around `cell` are `kind` (bit row * 3 + col, row 0 north).
         func mask(_ cell: GridPoint, _ kind: Ground) -> Int {
             let own = map.ground[cell.row][cell.col] == kind
@@ -280,8 +288,8 @@ final class WorldScene: SKScene {
             for dy in -1...1 {
                 for dx in -1...1 {
                     let next = GridPoint(col: cell.col + dx, row: cell.row + dy)
-                    // Off the map a road or patch carries on; water doesn't.
-                    let hit = map.contains(next) ? map.ground[next.row][next.col] == kind : own && kind != .water
+                    // Off the map a road or patch carries on; water only where a river runs off it.
+                    let hit = map.contains(next) ? map.ground[next.row][next.col] == kind : kind == .water ? waterBeyond(next) : own
                     if hit { bits |= 1 << ((1 - dy) * 3 + dx + 1) }
                 }
             }
@@ -293,7 +301,8 @@ final class WorldScene: SKScene {
             for dy in -2...2 {
                 for dx in -2...2 {
                     let next = GridPoint(col: cell.col + dx, row: cell.row + dy)
-                    if map.contains(next), map.ground[next.row][next.col] == .water { bits |= 1 << ((2 - dy) * 5 + dx + 2) }
+                    let water = map.contains(next) ? map.ground[next.row][next.col] == .water : waterBeyond(next)
+                    if water { bits |= 1 << ((2 - dy) * 5 + dx + 2) }
                 }
             }
             return bits
@@ -374,6 +383,16 @@ final class WorldScene: SKScene {
         if let variation {
             variation.zPosition = 1
             grid.addChild(variation)
+        }
+        // Bridges' decks lie on the water with the ground (`BridgeArt`; their rails stand in the
+        // world, `placeBridges`).
+        if !map.bridges.isEmpty {
+            let pixels = art.tileTexture(theme.ground).cgImage().width
+            for bridge in map.bridges {
+                guard let deck = BridgeArt.deck(for: bridge, pixels: pixels, palette: theme.palette) else { continue }
+                deck.zPosition = 2
+                grid.addChild(deck)
+            }
         }
         // Hills: the same ground again, lit and lifted (`HillArt`; `placePlateaus` sets them down).
         if !map.hills.isEmpty {
@@ -467,7 +486,46 @@ final class WorldScene: SKScene {
         let rock = SKTileGroup(tileDefinition: SKTileDefinition(texture: art.tileTexture(theme.hills?.bank ?? "tile_scree"), size: tileSize))
         let columns = map.columns + margin * 2
         let rows = map.rows + margin * 2
-        let surroundings = SKTileMapNode(tileSet: SKTileSet(tileGroups: [fill, road, rock]), columns: columns, rows: rows, tileSize: tileSize, fillWith: fill)
+        // A river carries on straight out past the edges it runs over (as `makeGround` has it), its
+        // banks drawn as on the map, into the fog.
+        var riverOut: Set<GridPoint> = []
+        for cell in map.river {
+            for step in 1...margin {
+                if cell.row == map.rows - 1 { riverOut.insert(GridPoint(col: cell.col, row: cell.row + step)) }
+                if cell.row == 0 { riverOut.insert(GridPoint(col: cell.col, row: -step)) }
+                if cell.col == map.columns - 1 { riverOut.insert(GridPoint(col: cell.col + step, row: cell.row)) }
+                if cell.col == 0 { riverOut.insert(GridPoint(col: -step, row: cell.row)) }
+            }
+        }
+        func wet(_ cell: GridPoint) -> Bool {
+            map.contains(cell) ? map.ground[cell.row][cell.col] == .water : riverOut.contains(cell)
+        }
+        let waterID = theme.water ?? "tile_water"
+        let water = SKTileGroup(tileDefinition: SKTileDefinition(textures: art.waterFrames(waterID), size: tileSize, timePerFrame: 0.9))
+        var nearRiver: Set<GridPoint> = []
+        for cell in riverOut {
+            for dr in -1...1 { for dc in -1...1 { nearRiver.insert(GridPoint(col: cell.col + dc, row: cell.row + dr)) } }
+        }
+        var banks: [(cell: GridPoint, group: SKTileGroup)] = []
+        for cell in nearRiver.sorted(by: WorldMap.inOrder) where !map.contains(cell) {
+            var square = 0, pool = 0
+            for dy in -2...2 {
+                for dx in -2...2 where wet(GridPoint(col: cell.col + dx, row: cell.row + dy)) {
+                    pool |= 1 << ((2 - dy) * 5 + dx + 2)
+                    if abs(dx) <= 1, abs(dy) <= 1 { square |= 1 << ((1 - dy) * 3 + dx + 1) }
+                }
+            }
+            guard square != 0 else { continue }
+            if square == 0b111_111_111 {
+                banks.append((cell, water))
+            } else {
+                let bank = art.organicTile(base: theme.border ?? theme.ground, layers: [.init(tile: waterID, mask: pool, style: .water)],
+                                           cell: cell, variant: Self.variant(of: cell))
+                banks.append((cell, SKTileGroup(tileDefinition: SKTileDefinition(texture: bank, size: tileSize))))
+            }
+        }
+        let groups = [fill, road, rock, water] + banks.filter { $0.group !== water }.map { $0.group }
+        let surroundings = SKTileMapNode(tileSet: SKTileSet(tileGroups: groups), columns: columns, rows: rows, tileSize: tileSize, fillWith: fill)
         surroundings.anchorPoint = .zero
         surroundings.position = CGPoint(x: -CGFloat(margin) * tile, y: -CGFloat(margin) * tile)
         let fog = Self.fogColor(from: art.tileTexture(theme.border ?? theme.ground), cave: theme.cave != nil)
@@ -501,6 +559,10 @@ final class WorldScene: SKScene {
         for cell in roadCells {
             surroundings.setTileGroup(road, forColumn: cell.col + margin, row: cell.row + margin)
         }
+        for bank in banks where bank.cell.col >= -margin && bank.cell.row >= -margin
+            && bank.cell.col < map.columns + margin && bank.cell.row < map.rows + margin {
+            surroundings.setTileGroup(bank.group, forColumn: bank.cell.col + margin, row: bank.cell.row + margin)
+        }
         for crag in map.crags {
             for row in -margin..<(map.rows + margin) {
                 for col in -margin..<(map.columns + margin) where map.spot(of: GridPoint(col: col, row: row), from: crag.edge).inward < 0 {
@@ -520,7 +582,7 @@ final class WorldScene: SKScene {
                 let outside = row < 0 || col < 0 || row >= map.rows || col >= map.columns
                 guard outside, Double.random(in: 0..<1, using: &decorRNG) < 0.14 else { continue }
                 let nearRoad = (-1...1).contains { dc in (-1...1).contains { dr in roadCells.contains(GridPoint(col: col + dc, row: row + dr)) } }
-                guard !nearRoad else { continue }
+                guard !nearRoad, !nearRiver.contains(GridPoint(col: col, row: row)) else { continue }
                 // Nor on or against the range where a road leads into a cave.
                 guard map.crags.isEmpty || !map.nearCrag(GridPoint(col: col, row: row)) else { continue }
                 addScenery(sprite, at: GridPoint(col: col, row: row))
@@ -1009,8 +1071,9 @@ final class WorldScene: SKScene {
         let sprite = art.sprite("lily_pad")
         var padRNG = SeededRandom(text: def.id + "/lilies")
         for pond in map.ponds {
-            for _ in 0..<min(4, max(1, pond.count / 8)) {
-                guard let cell = pond.randomElement(using: &padRNG) else { continue }
+            // A few on a pond, more on a lake.
+            for _ in 0..<min(max(4, pond.count / 60), max(1, pond.count / 8)) {
+                guard let cell = pond.randomElement(using: &padRNG), !map.bridgeCells.contains(cell) else { continue }
                 let node = SKSpriteNode(texture: sprite.texture, size: sprite.size)
                 node.position = map.center(of: cell) + CGVector(dx: .random(in: -6...6, using: &padRNG), dy: .random(in: -6...6, using: &padRNG))
                 node.zPosition = -99_000
@@ -1019,6 +1082,36 @@ final class WorldScene: SKScene {
                     .rotate(toAngle: -0.08, duration: 2.2, shortestUnitArc: true),
                 ])))
                 world.addChild(node)
+            }
+        }
+    }
+
+    /// The bridges' posts and rails (`BridgeArt`; their decks lie with the ground, `makeGround`).
+    private func placeBridges() {
+        guard !map.bridges.isEmpty else { return }
+        let pixels = art.tileTexture(def.theme.ground).cgImage().width
+        for bridge in map.bridges {
+            BridgeArt.rails(for: bridge, pixels: pixels, palette: def.theme.palette, in: world)
+        }
+    }
+
+    /// Reeds here and there along the lakes' and the river's shores, where the water isn't frozen
+    /// or chocolate.
+    private func placeReeds() {
+        let water = def.theme.water ?? ""
+        guard !water.contains("ice"), !water.contains("chocolate"), !map.lakes.isEmpty || !map.river.isEmpty else { return }
+        let sprite = art.sprite("reeds")
+        var reedRNG = SeededRandom(text: def.id + "/reeds")
+        var seen: Set<GridPoint> = []
+        for shore in map.lakes.map({ $0.water }) + [map.river] {
+            for cell in shore.sorted(by: WorldMap.inOrder) {
+                for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                    let land = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                    guard map.contains(land), map.ground[land.row][land.col] != .water, seen.insert(land).inserted else { continue }
+                    guard Double.random(in: 0..<1, using: &reedRNG) < 0.12, map.isFreeForScenery(land, blocking: false) else { continue }
+                    map.occupy(land, blocking: false)
+                    addScenery(sprite, at: land, jitter: true, scale: CGFloat.random(in: 0.75...1, using: &reedRNG))
+                }
             }
         }
     }

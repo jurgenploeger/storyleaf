@@ -155,6 +155,25 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   ground in flat tones (since 0.4.5; the height gradient read as a staircase of shades at a pixel a cell):
   a lighter tint, the edge facing the light lit and the far edge shaded, a cell of shadow on the ground past
   it, and a mountain's upper slopes lighter still.
+- Lakes and rivers (ours, since 0.4.8, asked for in playtesting 2026-10-12: "more like RuneScape, with large
+  lakes and interesting pathways and landscapes"); nothing here records whether FO's fields had them.
+  `theme.river` (from, to, width) runs a river in over one edge and out over another
+  (`WorldMap.carveRiver`): a Catmull-Rom curve through waypoints drifting up to 16 cells sideways, swelling and
+  narrowing a little, kept off the hub, the map's people and buildings, the arrivals, where a road leads into a
+  cave and 12 cells clear of where roads leave over the edges, and carrying on straight out into the fog past
+  them. Where it crosses a road, a bridge three lanes wide straight over it along whichever way the tiles run
+  crosses it more squarely, the road on either bank bent to meet it (`bridge(over:along:)`, `meetRoad`). Up to
+  16 tries, kept only if it crosses roads rather than running along them and leaves every bit of land in reach
+  of the hub (`cutOff`). `theme.lakes` (count, size, islands) digs big lakes (`digLakes`): a wobbly round
+  (three waves round its shore, squashed and turned), where there's room (`clearance`), cut back to keep two and
+  a half cells off roads and anything else, so a road passing near runs along its shore; a footbridge two
+  lanes wide out to an island in the middle of as many as asked, and on each a jetty out into it from the shore
+  nearest a road, a footpath from both to the road (`layFootpaths`). Bridges are decks of planks drawn in code
+  a pixel at a time in the ground's layer, with posts and rails standing along their sides, the near side
+  sorted in front of you and the far side behind (`BridgeArt`); reeds grow here and there along the shores,
+  more lily pads on a lake than a pond, and the minimap shows the bridges. Rivers: Sunny Meadow, Smiling Forest,
+  Briarmere. Lakes: Swan Lake, Ingothold Lake and Briarmere (each grown about 1.3× each way for room: 140×104,
+  130×96, 130×104), Frog Swamp, Lotus Land and Sunny Meadow. Taller mountains, which need wider bases, are next.
 - Cave entrances (ours, since 0.4.5, asked for in playtesting 2026-10-11: a map's way into a cave should
   show from afar, a mountain or rock formation on that side): where a road leads into a cave (Shiverdell
   and Lotus Land into the Rat Cavern, Windswept Downs into Gooey Grotto, Moonwhisper and Emerald Road into

@@ -1037,7 +1037,19 @@
         "accent": "tile_flowers",
         "accentPatches": 158,
         "water": "tile_water",
-        "ponds": 20,
+        "ponds": 14,
+        "lakes": {
+          "count": 1,
+          "size": [
+            8,
+            11
+          ]
+        },
+        "river": {
+          "from": "north",
+          "to": "south",
+          "width": 4
+        },
         "fairyRings": {
           "count": 9,
           "art": "mushroom"
@@ -2277,7 +2289,12 @@
         "accent": "tile_flowers",
         "accentPatches": 112,
         "water": "tile_water",
-        "ponds": 11,
+        "ponds": 8,
+        "river": {
+          "from": "north",
+          "to": "south",
+          "width": 3
+        },
         "fairyRings": {
           "count": 14,
           "art": "mushroom"
@@ -4182,7 +4199,14 @@
         "accent": "tile_dark_grass",
         "accentPatches": 68,
         "water": "tile_water",
-        "ponds": 32,
+        "ponds": 24,
+        "lakes": {
+          "count": 3,
+          "size": [
+            7,
+            10
+          ]
+        },
         "props": [
           {
             "art": "big_swamp_tree",
@@ -9149,8 +9173,8 @@
       "crowd": {
         "adventurers": 5
       },
-      "width": 110,
-      "height": 80,
+      "width": 140,
+      "height": 104,
       "music": "shore",
       "theme": {
         "ground": "tile_grass",
@@ -9158,7 +9182,15 @@
         "accent": "tile_flowers",
         "accentPatches": 70,
         "water": "tile_water",
-        "ponds": 9,
+        "ponds": 5,
+        "lakes": {
+          "count": 1,
+          "size": [
+            17,
+            21
+          ],
+          "islands": 1
+        },
         "fairyRings": {
           "count": 4,
           "art": "mushroom"
@@ -9641,7 +9673,15 @@
         "accent": "tile_dark_grass",
         "accentPatches": 30,
         "water": "tile_water",
-        "ponds": 14,
+        "ponds": 8,
+        "lakes": {
+          "count": 1,
+          "size": [
+            10,
+            13
+          ],
+          "islands": 1
+        },
         "props": [
           {
             "art": "big_swamp_tree",
@@ -10246,8 +10286,8 @@
       "crowd": {
         "adventurers": 4
       },
-      "width": 100,
-      "height": 72,
+      "width": 130,
+      "height": 96,
       "music": "shore",
       "theme": {
         "ground": "tile_sand",
@@ -10255,7 +10295,15 @@
         "accent": "tile_shells",
         "accentPatches": 40,
         "water": "tile_water",
-        "ponds": 14,
+        "ponds": 6,
+        "lakes": {
+          "count": 1,
+          "size": [
+            15,
+            19
+          ],
+          "islands": 1
+        },
         "props": [
           {
             "art": "palm_tree",
@@ -11467,8 +11515,8 @@
     {
       "id": "rosen_lake",
       "name": "Briarmere",
-      "width": 100,
-      "height": 80,
+      "width": 130,
+      "height": 104,
       "music": "snow",
       "crowd": {
         "adventurers": 3
@@ -11479,7 +11527,20 @@
         "accent": "tile_grass",
         "accentPatches": 20,
         "water": "tile_water",
-        "ponds": 6,
+        "ponds": 3,
+        "lakes": {
+          "count": 1,
+          "size": [
+            14,
+            18
+          ],
+          "islands": 1
+        },
+        "river": {
+          "from": "west",
+          "to": "south",
+          "width": 3
+        },
         "props": [
           {
             "art": "big_snow_tree",

@@ -191,6 +191,56 @@ struct ContentTests {
         }
     }
 
+    @Test func lakesAndRiversLeaveEverywhereInReach() throws {
+        for def in content.maps where def.theme.lakes != nil || def.theme.river != nil {
+            let map = WorldMap(def: def)
+            // What each map got, for the log (the tests job lists these lines).
+            let lakes = map.lakes.map { "lake \($0.water.count)" + ($0.island.isEmpty ? "" : " with an island of \($0.island.count)") }
+            let bridges = map.bridges.map { "\($0.kind) \($0.end - $0.start + 1)" }
+            print("🌊 \(def.id): " + (lakes + ["river \(map.river.count)", "bridges: " + bridges.joined(separator: ", ")]).joined(separator: "; "))
+            if let asked = def.theme.lakes {
+                #expect(map.lakes.count == asked.count, "map \(def.id) has \(map.lakes.count) lakes, not \(asked.count)")
+                // Lakes, not ponds: however squashed and cut back, over a quarter of a round the size asked.
+                let smallest = asked.size.first ?? 8
+                #expect(map.lakes.allSatisfy { Double($0.water.count) > 0.25 * Double.pi * smallest * smallest }, "map \(def.id): a lake came out a pond")
+                #expect(map.lakes.filter { !$0.island.isEmpty }.count == asked.islands ?? 0, "map \(def.id): an island is missing")
+                // A jetty out into each, a footbridge out to each island.
+                #expect(map.bridges.filter { $0.kind == .jetty }.count == map.lakes.count, "map \(def.id): a lake has no jetty")
+                #expect(map.bridges.filter { $0.kind == .foot }.count == map.lakes.filter { !$0.island.isEmpty }.count, "map \(def.id): an island has no footbridge")
+            }
+            if def.theme.river != nil {
+                #expect(!map.river.isEmpty, "map \(def.id) has no river")
+                #expect(map.bridges.contains { $0.kind == .road }, "map \(def.id): no road crosses its river")
+                // The water can't be walked on but over a bridge.
+                #expect(map.river.allSatisfy { map.bridgeCells.contains($0) || !map.isWalkable($0) }, "map \(def.id): you can wade its river")
+            }
+            for bridge in map.bridges {
+                for cell in bridge.cells where map.contains(cell) && map.ground[cell.row][cell.col] == .water {
+                    #expect(map.isWalkable(cell), "map \(def.id): a bridge you can't walk over at \(cell)")
+                }
+            }
+            // From the hub every bit of land can be walked to, over the bridges, the islands too.
+            let hub = map.offset(def.hub?.first ?? 0, def.hub?.last ?? 0)
+            var reached: Set<GridPoint> = [hub]
+            var queue = [hub]
+            while let cell = queue.popLast() {
+                for dr in -1...1 {
+                    for dc in -1...1 {
+                        let next = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                        if map.isWalkable(next), reached.insert(next).inserted { queue.append(next) }
+                    }
+                }
+            }
+            var stranded = 0
+            for row in 0..<map.rows {
+                for col in 0..<map.columns where map.isWalkable(GridPoint(col: col, row: row)) && !reached.contains(GridPoint(col: col, row: row)) {
+                    stranded += 1
+                }
+            }
+            #expect(stranded == 0, "map \(def.id): \(stranded) cells cut off from the hub")
+        }
+    }
+
     @Test func hillsRiseWithATrailUp() throws {
         let tile = WorldMap.tileSize
         for def in content.maps where def.theme.hills != nil {
@@ -236,7 +286,9 @@ struct ContentTests {
                     while let at = queue.popLast(), !outside {
                         for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)] {
                             let next = GridPoint(col: at.col + dc, row: at.row + dr)
-                            guard map.contains(next), map.ground[next.row][next.col] == .path, seen.insert(next).inserted else { continue }
+                            // Over a bridge where the road crosses a river, too.
+                            guard map.contains(next), map.ground[next.row][next.col] == .path || map.bridgeCells.contains(next),
+                                  seen.insert(next).inserted else { continue }
                             if next.col == 0 || next.row == 0 || next.col == map.columns - 1 || next.row == map.rows - 1 { outside = true }
                             queue.append(next)
                         }
