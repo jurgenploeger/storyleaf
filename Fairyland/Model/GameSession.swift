@@ -37,13 +37,24 @@ final class GameSession {
     var nearbyNPC: String?
     /// The tile the hero stands on, for the minimap.
     var mapCell = GridPoint(col: 0, row: 0)
-    /// The other players on this map, as dots on the minimap.
+    /// Everyone else on this map, as dots on the minimap.
     var minimapDots: [MinimapDot] = []
+    /// Who does what on this map, as icons on the minimap.
+    var minimapMarks: [MinimapMark] = []
 
     /// Someone else on the minimap: an adventurer, a friend you've made, a red-named one looking for
-    /// a fight, or a friend in your party.
+    /// a fight, a friend in your party, or one of the folk who live there (villagers and locals).
     struct MinimapDot: Hashable {
-        enum Kind { case adventurer, friend, hostile, party }
+        enum Kind { case adventurer, friend, hostile, party, folk }
+        let cell: GridPoint
+        let kind: Kind
+    }
+
+    /// Someone with a job, as an icon on the minimap (like RuneScape's): a quest giver (with a quest
+    /// for you, or one to hand in), the healer, the shop, the smith, a guild, a chest still to open
+    /// and a boss still to beat.
+    struct MinimapMark: Hashable {
+        enum Kind { case quest, questNew, questReady, healer, shop, smith, guild, chest, boss }
         let cell: GridPoint
         let kind: Kind
     }

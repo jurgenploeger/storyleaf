@@ -700,6 +700,13 @@ the Wishing Seal, which stays the Monster Book's last reward.
   - The minimap shows everyone else on the map as dots (since 0.3.55, asked for in playtesting 2026-10-06):
     blue adventurers, white friends, red hostile ones, green party friends; on dark maps only on cells you've
     seen. Whether FO's minimap showed other players isn't in any source reachable from a cloud session.
+  - Us (since 0.4.14, playtesting 2026-10-12: "on the mini map it should show other characters in the game and
+    have an icon for quests, healing etc (similar to runescape)"): the folk who live on a map (villagers and
+    locals) are smaller yellow dots, as RuneScape's people are, and whoever has a job is a round icon in their
+    own colour (`GameSession.MinimapMark`, `MinimapIcon`): a gold "!" or "?" over a quest giver with a quest
+    for you (as over their head), a book over the others, a heart for the healer, coins for the shop, a hammer
+    for the smith, a shield for a guild, a gift for a chest still shut and a sword for a boss still to beat.
+    The world map still shows only the world, so the area you're in stays yours to explore.
 - **Selling products:** Logistics Trading Officers in the three capitals pay more for products than ordinary
   shops.
 

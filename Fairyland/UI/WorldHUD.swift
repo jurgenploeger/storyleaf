@@ -30,6 +30,7 @@ struct WorldHUD: View {
                     name: session.mapName,
                     cell: session.mapCell,
                     dots: session.minimapDots,
+                    marks: session.minimapMarks,
                     columns: coordinator.world.def.width,
                     rows: coordinator.world.def.height,
                     onOpen: { coordinator.open(.worldMap) }
@@ -423,6 +424,7 @@ private struct MinimapWindow: View {
     let name: String
     let cell: GridPoint
     let dots: [GameSession.MinimapDot]
+    let marks: [GameSession.MinimapMark]
     let columns: Int
     let rows: Int
     let onOpen: () -> Void
@@ -485,14 +487,20 @@ private struct MinimapWindow: View {
                         }
                         .rotationEffect(.degrees(-45))
                         .scaleEffect(x: 1, y: 0.5)
-                    // The other players, round dots on top of the turned map (drawn in it, they'd
-                    // be squashed flat).
+                    // Everyone else, round dots on top of the turned map (drawn in it, they'd be
+                    // squashed flat): the folk who live here smaller.
                     ForEach(Array(dots.enumerated()), id: \.offset) { _, dot in
+                        let size: CGFloat = dot.kind == .folk ? 4 : 5
                         Circle()
                             .fill(color(of: dot.kind))
-                            .frame(width: 5, height: 5)
+                            .frame(width: size, height: size)
                             .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1))
                             .offset(offset(of: dot.cell))
+                    }
+                    // Who does what, as icons over them.
+                    ForEach(Array(marks.enumerated()), id: \.offset) { _, mark in
+                        MinimapIcon(kind: mark.kind)
+                            .offset(offset(of: mark.cell))
                     }
                     Circle()
                         .fill(HUDStyle.gold)
@@ -534,14 +542,68 @@ private struct MinimapWindow: View {
         return CGSize(width: (x + y) * half, height: (y - x) * half * 0.5)
     }
 
-    /// Party friends green, other friends white, red-named adventurers red, everyone else the blue
-    /// of their names.
+    /// Party friends green, other friends white, red-named adventurers red, the folk who live here
+    /// yellow (as RuneScape's people are), everyone else the blue of their names.
     private func color(of kind: GameSession.MinimapDot.Kind) -> Color {
         switch kind {
         case .party: HUDStyle.green
         case .friend: .white
         case .hostile: Color(uiColor: Crowd.hostileColor)
         case .adventurer: Color(uiColor: Crowd.adventurerColor)
+        case .folk: Color(red: 1, green: 0.88, blue: 0.3)
+        }
+    }
+}
+
+/// One of the minimap's icons for who does what (`GameSession.MinimapMark`), RuneScape-style: a
+/// small round in its own colour with a white sign, outlined like the dots. A quest giver shows the
+/// "!" or "?" floating over their head in gold, else a book.
+private struct MinimapIcon: View {
+    let kind: GameSession.MinimapMark.Kind
+
+    var body: some View {
+        ZStack {
+            Circle().fill(fill)
+            sign
+        }
+        .frame(width: 13, height: 13)
+        .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1))
+    }
+
+    @ViewBuilder private var sign: some View {
+        switch kind {
+        case .questNew: mark("!")
+        case .questReady: mark("?")
+        case .quest: glyph(.book)
+        case .healer: glyph(.heart)
+        case .shop: glyph(.coins)
+        case .smith: glyph(.hammer)
+        case .guild: glyph(.shield)
+        case .chest: glyph(.gift)
+        case .boss: glyph(.sword)
+        }
+    }
+
+    private func mark(_ text: String) -> some View {
+        Text(verbatim: text)
+            .font(.system(size: 10, weight: .black, design: .rounded))
+            .foregroundStyle(HUDStyle.ink)
+    }
+
+    private func glyph(_ icon: GameIcon) -> some View {
+        IconImage(icon, size: 8).foregroundStyle(.white)
+    }
+
+    private var fill: Color {
+        switch kind {
+        case .questNew, .questReady: HUDStyle.gold
+        case .quest: Color(red: 0.3, green: 0.55, blue: 0.95)
+        case .healer: Color(red: 0.92, green: 0.32, blue: 0.42)
+        case .shop: Color(red: 0.25, green: 0.68, blue: 0.36)
+        case .smith: Color(red: 0.5, green: 0.52, blue: 0.6)
+        case .guild: Color(red: 0.58, green: 0.4, blue: 0.86)
+        case .chest: Color(red: 0.74, green: 0.47, blue: 0.2)
+        case .boss: Color(red: 0.62, green: 0.1, blue: 0.16)
         }
     }
 }
