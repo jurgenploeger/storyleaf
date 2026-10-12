@@ -3777,7 +3777,7 @@
           ],
           "mountains": {
             "count": 1,
-            "height": 96
+            "height": 170
           }
         },
         "props": [
@@ -6252,7 +6252,7 @@
           "height": 56,
           "mountains": {
             "count": 2,
-            "height": 112
+            "height": 200
           },
           "bank": "tile_cave_rock"
         },
@@ -7654,14 +7654,14 @@
       "crowd": {
         "adventurers": 5
       },
-      "width": 110,
-      "height": 80,
+      "width": 140,
+      "height": 100,
       "music": "meadow",
       "theme": {
         "ground": "tile_grass",
         "path": "tile_sugar_path",
         "accent": "tile_flowers",
-        "accentPatches": 70,
+        "accentPatches": 105,
         "water": "tile_chocolate",
         "ponds": 9,
         "fairyRings": {
@@ -7681,14 +7681,14 @@
           "height": 48,
           "mountains": {
             "count": 1,
-            "height": 96
+            "height": 160
           },
           "bank": "tile_chocolate"
         },
         "props": [
           {
             "art": "big_blossom_tree",
-            "count": 120,
+            "count": 180,
             "blocking": true,
             "cluster": 10,
             "sway": true,
@@ -7701,7 +7701,7 @@
           },
           {
             "art": "blossom_tree",
-            "count": 380,
+            "count": 570,
             "blocking": true,
             "cluster": 16,
             "sway": true,
@@ -7713,7 +7713,7 @@
           },
           {
             "art": "giant_flower",
-            "count": 60,
+            "count": 90,
             "blocking": true,
             "cluster": 4,
             "sway": true,
@@ -7724,7 +7724,7 @@
           },
           {
             "art": "candy_tree_lemon",
-            "count": 120,
+            "count": 180,
             "blocking": true,
             "cluster": 10,
             "sway": true,
@@ -7736,7 +7736,7 @@
           },
           {
             "art": "candy_tree_peach",
-            "count": 100,
+            "count": 150,
             "blocking": true,
             "cluster": 8,
             "sway": true,
@@ -7748,7 +7748,7 @@
           },
           {
             "art": "candy_tree_sky",
-            "count": 90,
+            "count": 135,
             "blocking": true,
             "cluster": 8,
             "sway": true,
@@ -7760,7 +7760,7 @@
           },
           {
             "art": "lollipop",
-            "count": 18,
+            "count": 27,
             "blocking": true,
             "cluster": 3,
             "size": [
@@ -7771,7 +7771,7 @@
           },
           {
             "art": "lollipop_pink",
-            "count": 18,
+            "count": 27,
             "blocking": true,
             "cluster": 3,
             "size": [
@@ -7782,7 +7782,7 @@
           },
           {
             "art": "lollipop_lemon",
-            "count": 18,
+            "count": 27,
             "blocking": true,
             "cluster": 3,
             "size": [
@@ -7793,7 +7793,7 @@
           },
           {
             "art": "lollipop_berry",
-            "count": 18,
+            "count": 27,
             "blocking": true,
             "cluster": 3,
             "size": [
@@ -7804,7 +7804,7 @@
           },
           {
             "art": "lollipop_sky",
-            "count": 18,
+            "count": 27,
             "blocking": true,
             "cluster": 3,
             "size": [
@@ -7815,7 +7815,7 @@
           },
           {
             "art": "gift_box",
-            "count": 14,
+            "count": 21,
             "blocking": false,
             "cluster": 2,
             "size": [
@@ -7825,7 +7825,7 @@
           },
           {
             "art": "gift_box_blue",
-            "count": 14,
+            "count": 21,
             "blocking": false,
             "cluster": 2,
             "size": [
@@ -7835,7 +7835,7 @@
           },
           {
             "art": "gift_box_purple",
-            "count": 14,
+            "count": 21,
             "blocking": false,
             "cluster": 2,
             "size": [
@@ -7845,7 +7845,7 @@
           },
           {
             "art": "gift_box_gold",
-            "count": 14,
+            "count": 21,
             "blocking": false,
             "cluster": 2,
             "size": [
@@ -7855,7 +7855,7 @@
           },
           {
             "art": "mushroom",
-            "count": 60,
+            "count": 90,
             "blocking": false,
             "cluster": 3,
             "size": [
@@ -7865,7 +7865,7 @@
           },
           {
             "art": "flowering_bush",
-            "count": 150,
+            "count": 225,
             "blocking": true,
             "cluster": 6,
             "size": [
@@ -7876,7 +7876,7 @@
           },
           {
             "art": "daisy",
-            "count": 90,
+            "count": 135,
             "blocking": false,
             "cluster": 5,
             "sway": true,
@@ -7887,7 +7887,7 @@
           },
           {
             "art": "daisy_yellow",
-            "count": 90,
+            "count": 135,
             "blocking": false,
             "cluster": 5,
             "sway": true,
@@ -7898,7 +7898,7 @@
           },
           {
             "art": "daisy_blue",
-            "count": 45,
+            "count": 68,
             "blocking": false,
             "cluster": 4,
             "sway": true,
@@ -7909,7 +7909,7 @@
           },
           {
             "art": "lilac_tree",
-            "count": 40,
+            "count": 60,
             "blocking": true,
             "cluster": 5,
             "sway": true,
@@ -7921,7 +7921,7 @@
           },
           {
             "art": "big_lilac_tree",
-            "count": 30,
+            "count": 45,
             "blocking": true,
             "cluster": 4,
             "sway": true,
@@ -7933,7 +7933,7 @@
           },
           {
             "art": "purple_mushroom",
-            "count": 30,
+            "count": 45,
             "blocking": false,
             "cluster": 3,
             "size": [
@@ -7943,7 +7943,7 @@
           },
           {
             "art": "toadstool",
-            "count": 20,
+            "count": 30,
             "blocking": false,
             "cluster": 3,
             "size": [
@@ -7953,7 +7953,7 @@
           },
           {
             "art": "berry_bush",
-            "count": 12,
+            "count": 18,
             "blocking": true,
             "cluster": 3,
             "size": [
@@ -7964,7 +7964,7 @@
           },
           {
             "art": "sunflower",
-            "count": 14,
+            "count": 21,
             "blocking": false,
             "cluster": 3,
             "sway": true,
@@ -7975,7 +7975,7 @@
           },
           {
             "art": "tulip_patch",
-            "count": 12,
+            "count": 18,
             "blocking": false,
             "cluster": 3,
             "size": [
@@ -7985,7 +7985,7 @@
           },
           {
             "art": "clover_patch",
-            "count": 16,
+            "count": 24,
             "blocking": false,
             "cluster": 4,
             "size": [
@@ -7995,12 +7995,12 @@
           },
           {
             "art": "signpost",
-            "count": 6,
+            "count": 9,
             "blocking": true
           },
           {
             "art": "candy_cane",
-            "count": 40,
+            "count": 60,
             "blocking": true,
             "cluster": 3,
             "size": [
@@ -8011,7 +8011,7 @@
           },
           {
             "art": "gumdrops",
-            "count": 60,
+            "count": 90,
             "blocking": false,
             "cluster": 3,
             "size": [
@@ -8021,7 +8021,7 @@
           },
           {
             "art": "giant_cupcake",
-            "count": 30,
+            "count": 45,
             "blocking": true,
             "cluster": 2,
             "size": [
@@ -8032,7 +8032,7 @@
           },
           {
             "art": "gingerbread_house",
-            "count": 8,
+            "count": 12,
             "blocking": true,
             "size": [
               0.9,
@@ -9985,7 +9985,7 @@
           ],
           "mountains": {
             "count": 1,
-            "height": 88
+            "height": 150
           }
         },
         "props": [

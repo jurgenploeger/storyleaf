@@ -292,8 +292,8 @@ for map_def in maps.values():
             if isinstance(mountains, dict):
                 check(isinstance(mountains.get("count"), int) and 1 <= mountains.get("count", 0) <= 4, f"{where} → mountains count must be 1 to 4")
                 height = mountains.get("height")
-                check(isinstance(height, (int, float)) and max(64, hills.get("height", 44)) < height <= 128,
-                      f"{where} → a mountain's height must be over the hills' and over 64, up to 128 points")
+                check(isinstance(height, (int, float)) and max(64, hills.get("height", 44)) < height <= 240,
+                      f"{where} → a mountain's height must be over the hills' and over 64, up to 240 points")
         if "bank" in hills:
             tiles.append(hills["bank"])
     if "lakes" in theme:

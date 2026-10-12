@@ -2,6 +2,16 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.4.9",
+      "date": "2026-10-12",
+      "title": "Mountains",
+      "notes": [
+        "The mountains of Crystal Mountain, Snow White Forest, Gumdrop Peaks and Marionette Rise stand about twice as tall: a steep face of bare, layered rock toward you, ridged with spurs, gentler slopes behind, and a trail winding up to the summit.",
+        "Gumdrop Peaks is bigger, to make room for its mountain.",
+        "Lotus Land's lake has its island now, with a footbridge out to it."
+      ]
+    },
+    {
       "version": "0.4.8",
       "date": "2026-10-12",
       "title": "Lakes and rivers",

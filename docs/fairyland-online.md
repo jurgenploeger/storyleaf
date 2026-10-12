@@ -136,9 +136,21 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   the land and some rise to a mountain): each hill is a range, a chain of summits (`chain`, 2 to 4 by default)
   along a wandering line, each with its own height, blended so where two meet stands a little fuller (the
   fourth root of their heights' fourth powers) and their tops often join into a ridge you can walk along.
-  `mountains` (count, height up to 128) adds ranges with one summit far taller and wider than the rest, at
+  `mountains` (count, height up to 240) adds ranges with one summit far taller and wider than the rest, at
   least 13 points a cell steep whatever the land; a summit is only as tall as its width lets it be at that
   steepness, so a mountain is as tall as asked where there's room, else as tall as the roomiest place allows.
+  Since 0.4.9 a mountain faces you (asked for in playtesting 2026-10-12: "some maps really need mountains
+  taller", more like RuneScape's): only ground facing away has to stay as gentle as the view (it would fold
+  over and hide itself past about 31 points a cell going up the screen), so its reach back climbs at that
+  pace while its sides are 1.6 times shorter and its face toward you 2.4 times shorter, much steeper
+  (`Hill.Lobe.front`), with a small top. Spurs fan down the face, sharp ridges with gullies between, unevenly
+  spaced and sized, gone at the sides, the summit and the foot (`Lobe.Spurs`); with a smooth face, a mountain
+  twice as tall still read as a gentle mound on a phone's screen, its base wider than the screen. Where a
+  spur's far side would still fold, the samples are raised the least that keeps it in sight
+  (`Hill.unfold`). Its range has bare layered rock from 40% of its height up, in deeper shade and brighter sun,
+  like a cave's (`HillArt.Look.rockFrom`), and the minimap shows its heights lighter still. Heights since 0.4.9:
+  Crystal Mountain 200 (two), Snow White Forest 170, Gumdrop Peaks 160 (grown to 140×100 for the room, its
+  scenery half again as much), Marionette Rise 150; 88 to 112 before.
   Since 0.4.5 ranges go where every summit has room round it (`clearance`: how far each cell is from a road,
   water, a building or another hill), picked at random among the places they fit; before, random spots
   tried 120 times often found nowhere on crowded maps (Gumdrop Peaks had no mountain). The first trail climbs from the ground in
@@ -173,7 +185,9 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   sorted in front of you and the far side behind (`BridgeArt`); reeds grow here and there along the shores,
   more lily pads on a lake than a pond, and the minimap shows the bridges. Rivers: Sunny Meadow, Smiling Forest,
   Briarmere. Lakes: Swan Lake, Ingothold Lake and Briarmere (each grown about 1.3× each way for room: 140×104,
-  130×96, 130×104), Frog Swamp, Lotus Land and Sunny Meadow. Taller mountains, which need wider bases, are next.
+  130×96, 130×104), Frog Swamp, Lotus Land and Sunny Meadow. A lake that should have an island and comes out
+  without one (no room for it well out in the water, or no footbridge out to it) is dug again while a try
+  could still be big enough for one (since 0.4.9; Lotus Land's lake had none in 0.4.8).
 - Cave entrances (ours, since 0.4.5, asked for in playtesting 2026-10-11: a map's way into a cave should
   show from afar, a mountain or rock formation on that side): where a road leads into a cave (Shiverdell
   and Lotus Land into the Rat Cavern, Windswept Downs into Gooey Grotto, Moonwhisper and Emerald Road into

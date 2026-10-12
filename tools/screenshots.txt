@@ -141,6 +141,14 @@ hill_mountain  | newgame,level=90,map=crystal_mountain,hill=tallest | 8
 hill_peak      | newgame,level=90,map=crystal_mountain,hill=tallest,ontop | 8
 hill_snow      | newgame,level=40,map=snow_white_forest,hill=tallest | 8
 hill_range_land | newgame,map=sunny_meadow,hill=0,landscape        | 8
+# Mountains (`Hill.Lobe.front`, `Spurs`): from a few cells out in front of each map's tallest summit,
+# looking up its face.
+mountain_crystal | newgame,level=90,map=crystal_mountain,hill=tallest,face,hour=12,weather=clear | 8
+mountain_crystal_land | newgame,level=90,map=crystal_mountain,hill=tallest,face,landscape,zoom=0.85,hour=12,weather=clear | 8
+mountain_snow  | newgame,level=80,map=snow_white_forest,hill=tallest,face,hour=12,weather=clear | 8
+mountain_candy_land | newgame,level=26,map=candy_mountain,hill=tallest,face,landscape,zoom=0.85,hour=12,weather=clear | 8
+mountain_puppet | newgame,level=55,map=puppet_hill,hill=tallest,face,hour=12,weather=clear | 8
+mountain_evening | newgame,level=90,map=crystal_mountain,hill=tallest,face,hour=16,weather=clear | 8
 # The sun through the day (`Sun`): low in the east in the morning (shadows toward you), over the upper
 # left at midday, low in the west in the afternoon (shadows away from you), the moon at night.
 sun_morning    | newgame,map=sunny_meadow,hill=0,hour=7,weather=clear  | 8
