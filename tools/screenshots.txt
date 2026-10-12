@@ -149,6 +149,8 @@ mountain_snow  | newgame,level=80,map=snow_white_forest,hill=tallest,face,hour=1
 mountain_candy_land | newgame,level=26,map=candy_mountain,hill=tallest,face,landscape,zoom=0.85,hour=12,weather=clear | 8
 mountain_puppet | newgame,level=55,map=puppet_hill,hill=tallest,face,hour=12,weather=clear | 8
 mountain_evening | newgame,level=90,map=crystal_mountain,hill=tallest,face,hour=16,weather=clear | 8
+# The trees' long morning shadows down a slope in shade: dark, not streaks of light (0.4.14).
+mountain_candy_morning | newgame,level=26,map=candy_mountain,hill=tallest,face,hour=7,weather=clear | 8
 # Hills on every land (0.4.10): dunes on the shore, the woods' rolling hills, a swamp's low rises, and the
 # mountains of Shiverdell, Sneezle Isle and Big Bad Wolf's Lair.
 hill_shore     | newgame,level=12,map=pineapple_shore,hill=0,hour=12,weather=clear | 8

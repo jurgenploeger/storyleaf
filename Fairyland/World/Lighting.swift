@@ -225,7 +225,9 @@ final class Lighting {
 
         /// Shows only the part of a shadow from one height on screen to another (`a_clip`: its width
         /// times the sine of its turn, its height times the cosine, then the two heights, all from
-        /// its middle).
+        /// its middle). Black from the glow's alpha: a shader's `SKDefaultShading()` leaves out the
+        /// sprite's colour, so shadows on hills came out as the white glow, long streaks of light
+        /// down the slopes when the sun was low (playtesting 2026-10-12, Gumdrop Peaks at 7 o'clock).
         private static let clip: SKShader = {
             let shader = SKShader(source: """
             void main() {
@@ -233,7 +235,7 @@ final class Lighting {
                 if (up < a_clip.z || up >= a_clip.w) {
                     gl_FragColor = vec4(0.0);
                 } else {
-                    gl_FragColor = SKDefaultShading();
+                    gl_FragColor = vec4(0.0, 0.0, 0.0, SKDefaultShading().a);
                 }
             }
             """)
