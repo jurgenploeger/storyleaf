@@ -12,11 +12,11 @@ struct MapOverlay: View {
                 .ignoresSafeArea()
                 .onTapGesture(perform: onClose)
 
-            // The game's window, like every other: the title bar along its top edge, the atlas below.
+            // The game's window, like every other: the title bar along its top edge, the atlas below
+            // out to its frame (no frame of its own inside it).
             VStack(spacing: 0) {
                 FLTitleBar(title: L("World map"), icon: .map, onClose: onClose)
                 WorldAtlas(session: session)
-                    .padding(12)
             }
             // As tall as the map wants, or what the screen has room for (a phone on its side):
             // the atlas scrolls in whatever height is left under the title.
