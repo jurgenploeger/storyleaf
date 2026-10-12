@@ -1408,24 +1408,60 @@ final class WorldScene: SKScene {
         session.explore(cells, on: def.id, columns: map.columns, rows: map.rows)
     }
 
-    /// Everyone else on this map, for the minimap: the adventurers walking about and the friends in
-    /// your party (behind you, or waiting where you left them). On a dark map, only those standing
-    /// somewhere you've seen.
+    /// Everyone else on this map, for the minimap: the adventurers walking about, the folk who live
+    /// here and the friends in your party (behind you, or waiting where you left them). On a dark
+    /// map, only those standing somewhere you've seen.
     private func minimapDots() -> [GameSession.MinimapDot] {
         let friends = Set(session.friends.map(\.id))
-        let seen: Data? = lantern == nil ? nil : session.explored(def.id) ?? Data()
+        let seen = seenCells()
         func dot(at point: CGPoint, _ kind: GameSession.MinimapDot.Kind) -> GameSession.MinimapDot? {
             let cell = map.cell(at: point)
-            if let seen {
-                let index = cell.row * map.columns + cell.col
-                guard index / 8 < seen.count, seen[index / 8] & UInt8(1 << (index % 8)) != 0 else { return nil }
-            }
-            return GameSession.MinimapDot(cell: cell, kind: kind)
+            return seen(cell) ? GameSession.MinimapDot(cell: cell, kind: kind) : nil
         }
         let walkers = (crowd?.adventurerPositions ?? []).compactMap { profile, position in
             dot(at: position, profile.hostile ? .hostile : friends.contains(profile.id) ? .friend : .adventurer)
         }
-        return walkers + allies.compactMap { dot(at: $0.node.position, .party) }
+        let folk = (crowd?.folkPositions ?? []).compactMap { dot(at: $0, .folk) }
+        return folk + walkers + allies.compactMap { dot(at: $0.node.position, .party) }
+    }
+
+    /// Who does what on this map, for the minimap's icons: the quest givers (a quest for you, or one
+    /// to hand in, as their "!" and "?" say), the healer, the shop, the smith, the guilds, a chest
+    /// still to open and a boss still to beat. On a dark map, only where you've been.
+    private func minimapMarks() -> [GameSession.MinimapMark] {
+        let seen = seenCells()
+        return npcs.compactMap { npc -> GameSession.MinimapMark? in
+            let cell = map.cell(at: npc.node.position)
+            guard !npc.node.isHidden, seen(cell) else { return nil }
+            let kind: GameSession.MinimapMark.Kind
+            switch npc.def.role {
+            case .healer: kind = .healer
+            case .shop: kind = .shop
+            case .smith: kind = .smith
+            case .guild: kind = .guild
+            case .boss: kind = .boss
+            case .chest:
+                guard !session.isOpened(npc.def.id) else { return nil }
+                kind = .chest
+            case .quests:
+                switch session.notice(for: npc.def.id) {
+                case .ready?: kind = .questReady
+                case nil: kind = .quest
+                default: kind = .questNew
+                }
+            }
+            return GameSession.MinimapMark(cell: cell, kind: kind)
+        }
+    }
+
+    /// Whether you've seen a cell (on a dark map, as the minimap shows it; everywhere elsewhere).
+    private func seenCells() -> (GridPoint) -> Bool {
+        guard lantern != nil else { return { _ in true } }
+        let seen = session.explored(def.id) ?? Data()
+        return { cell in
+            let index = cell.row * self.map.columns + cell.col
+            return index / 8 < seen.count && seen[index / 8] & UInt8(1 << (index % 8)) != 0
+        }
     }
 
     /// The HUD's minimap. On a dark map it shows only the cells you've seen; `version` is the
@@ -1927,6 +1963,8 @@ final class WorldScene: SKScene {
             if session.adventurersAround != around { session.adventurersAround = around }
             let dots = minimapDots()
             if session.minimapDots != dots { session.minimapDots = dots }
+            let marks = minimapMarks()
+            if session.minimapMarks != marks { session.minimapMarks = marks }
         }
 
         player.zPosition = -player.position.y

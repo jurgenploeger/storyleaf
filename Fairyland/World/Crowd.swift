@@ -476,6 +476,11 @@ final class Crowd {
         })
     }
 
+    /// Where the folk who live here stand (villagers and locals), for the minimap.
+    var folkPositions: [CGPoint] {
+        members.filter { $0.profile == nil }.map(\.walker.position)
+    }
+
     /// Every adventurer on the map and where they stand, for the minimap.
     var adventurerPositions: [(profile: Adventurer, position: CGPoint)] {
         members.compactMap { member in member.profile.map { ($0, member.walker.position) } }

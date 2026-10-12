@@ -128,16 +128,19 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
 - Rocky or grassy by danger (ours, since 0.4.5, asked for in playtesting 2026-10-11: rocky mountains on
   dangerous maps, slopes on easy ones): `WorldMap.rockiness`, 0 to 1 from the middle of the map's
   encounter levels ((mid − 15) / 70; Sunny Meadow 0, Swan Lake 0.3, Crystal Mountain 0.9, Hidden Steppe
-  1), or `theme.hills.rocky`. It sets how steep summits get halfway up (10 points a cell on grassy hills,
-  14 on rocky ones, so gentle maps' hills spread wider for their height), how far the bank shows down the
+  1), or `theme.hills.rocky`. It sets how steep summits get halfway up (13 points a cell on grassy hills,
+  18 on rocky ones, so gentle maps' hills spread wider for their height; 10 and 14 before 0.4.14, when
+  playtesting 2026-10-12 found the hills, slopes and mountains hardly noticeable: since then a summit can also
+  rise 0.85 of its narrower reach at that steepness, not 0.75, maps ask for 1.6 times the height (70 when not
+  given) and mountains 1.25 times, at least 17 points a cell steep; the caves' walls kept 14), how far the bank shows down the
   slopes and how solid (from 0.2 up scree when the map names none), how deep the shade, and boulders on
   the steeper slopes from 0.3 up (the map's own boulder and rock props, 8% of steep cells at the rockiest).
 - Ranges and mountains (ours, since 0.4.4, asked for in playtesting 2026-10-11: hills should stretch across
   the land and some rise to a mountain): each hill is a range, a chain of summits (`chain`, 2 to 4 by default)
   along a wandering line, each with its own height, blended so where two meet stands a little fuller (the
   fourth root of their heights' fourth powers) and their tops often join into a ridge you can walk along.
-  `mountains` (count, height up to 240) adds ranges with one summit far taller and wider than the rest, at
-  least 13 points a cell steep whatever the land; a summit is only as tall as its width lets it be at that
+  `mountains` (count, height up to 300 since 0.4.14, 240 before) adds ranges with one summit far taller and wider
+  than the rest, at least 17 points a cell steep whatever the land (13 before 0.4.14); a summit is only as tall as its width lets it be at that
   steepness, so a mountain is as tall as asked where there's room, else as tall as the roomiest place allows.
   Since 0.4.9 a mountain faces you (asked for in playtesting 2026-10-12: "some maps really need mountains
   taller", more like RuneScape's): only ground facing away has to stay as gentle as the view (it would fold
@@ -207,7 +210,11 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   lanes wide out to an island in the middle of as many as asked, and on each a jetty out into it from the shore
   nearest a road, a footpath from both to the road (`layFootpaths`). Bridges are decks of planks drawn in code
   a pixel at a time in the ground's layer, with posts and rails standing along their sides, the near side
-  sorted in front of you and the far side behind (`BridgeArt`). Nothing grows on a bridge or on the bank right
+  sorted in front of you and the far side behind (`BridgeArt`). Since 0.4.14 (playtesting 2026-10-12: Sunny
+  Meadow's bridge "is not fully connected to the land") each end lands on a bank: the water beside it is filled
+  in two cells deep and a lane past either side of the deck (`WorldMap.bank`), and the deck reaches 0.6 of a
+  cell onto it (was 0.35), its end posts on land. Before, where the shore ran right along a bridge's end, the
+  water came up to its corner posts and it only touched the land. Nothing grows on a bridge or on the bank right
   beside its deck (since 0.4.13: playtesting 2026-10-12 found a fern standing on Smiling Forest's bridge, on a
   bank cell beside the deck that only the cells off its ends were kept clear of); reeds grow here and there along the shores,
   more lily pads on a lake than a pond, and the minimap shows the bridges. Rivers: Sunny Meadow, Smiling Forest,
@@ -654,7 +661,10 @@ the Wishing Seal, which stays the Monster Book's last reward.
     a quarter of their width at midday (as they were) and up to 1.4 widths at sunrise and sunset. Since 0.4.13
     (playtesting 2026-10-12: the characters' shadows should follow too) everyone who walks casts the same
     shadow (`Walker.cast`, `Lighting.Shadow.shape`) instead of a fixed dark ellipse under their feet, so
-    at night they're as faint as the trees'. The sun's
+    at night they're as faint as the trees'. Until 0.4.14 a shadow on a hill (split by its strips, so it
+    has a shader) came out white: `SKDefaultShading()` leaves out a sprite's colour, so its clip shader
+    paints black from the glow's alpha (playtesting 2026-10-12: long streaks of light down Gumdrop
+    Peaks' shaded slope at 7hr). The sun's
     flare comes in along the top of the screen toward it through the morning and sits in the top-left corner
     from midday on, and the sunbeams lean their tops toward it. Before 0.4.7 the beams leaned to the upper
     right, against the flare in the top-left corner. In 0.4.7 the flare went on down the left side in the
@@ -700,6 +710,13 @@ the Wishing Seal, which stays the Monster Book's last reward.
   - The minimap shows everyone else on the map as dots (since 0.3.55, asked for in playtesting 2026-10-06):
     blue adventurers, white friends, red hostile ones, green party friends; on dark maps only on cells you've
     seen. Whether FO's minimap showed other players isn't in any source reachable from a cloud session.
+  - Us (since 0.4.14, playtesting 2026-10-12: "on the mini map it should show other characters in the game and
+    have an icon for quests, healing etc (similar to runescape)"): the folk who live on a map (villagers and
+    locals) are smaller yellow dots, as RuneScape's people are, and whoever has a job is a round icon in their
+    own colour (`GameSession.MinimapMark`, `MinimapIcon`): a gold "!" or "?" over a quest giver with a quest
+    for you (as over their head), a book over the others, a heart for the healer, coins for the shop, a hammer
+    for the smith, a shield for a guild, a gift for a chest still shut and a sword for a boss still to beat.
+    The world map still shows only the world, so the area you're in stays yours to explore.
 - **Selling products:** Logistics Trading Officers in the three capitals pay more for products than ordinary
   shops.
 
