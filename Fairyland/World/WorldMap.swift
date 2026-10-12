@@ -2038,9 +2038,11 @@ final class WorldMap {
                     next = GridPoint(col: next.col + dc, row: next.row + dr)
                 }
                 guard length > 0, contains(next), ground[next.row][next.col] != .water, !island.contains(next) else { continue }
-                let middle = CGPoint(x: CGFloat(cell.col) + 0.5 + CGFloat(dc) * (CGFloat(length) / 2 + 0.5),
-                                     y: CGFloat(cell.row) + 0.5 + CGFloat(dr) * (CGFloat(length) / 2 + 0.5))
-                options.append((length, middle, dc == 0, next))
+                // Halfway over: the water runs from a step past the island's edge to `length` steps.
+                let reach: CGFloat = CGFloat(length) / 2 + 0.5
+                let x: CGFloat = CGFloat(cell.col) + 0.5 + CGFloat(dc) * reach
+                let y: CGFloat = CGFloat(cell.row) + 0.5 + CGFloat(dr) * reach
+                options.append((length, CGPoint(x: x, y: y), dc == 0, next))
             }
         }
         // Shortest first; among those, the same one every visit.
