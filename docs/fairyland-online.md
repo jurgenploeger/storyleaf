@@ -681,6 +681,17 @@ the Wishing Seal, which stays the Monster Book's last reward.
     Twilight Woods; Odile the Mapmaker on five maps, drawing the pages of Liora's book. Fairy-tale folk
     (Hansel and Gretel, Bo-Peep, Odette, the Tin Woodman) are public domain. Whether FO had people like
     this out in its fields isn't in any source reachable from a cloud session; they're ours.
+  - Us (since 0.4.12, playtesting 2026-10-12: "near the temple keeper and other guilds there should
+    actually be something like a temple or building"): whoever works somewhere has it at their back, a
+    step right and two rows behind them (maps.json `buildings`), so they stand at its door.
+    - Briarmere's Temple Keeper keeps a lakeside shrine: the stone arch with Liora's statue behind it.
+    - Ambrose the Wise has a tower, Hermit Orrin a mushroom hut, the Old Swan Keeper and Little Pig
+      cottages, Mother Sheep a windmill, and Dozywick some houses.
+    - In Meadowbrook the Arcane Circle has its own tower beside the guild hall, which the Warrior
+      Guild and the Wildfolk Lodge share. The other towns' healers and shops stand at an inn's and a
+      shop's door, and Prismhaven's toymaker at a toy shop's.
+    - All existing art: new sprites (a real temple, a warrior hall, a lodge) were priced at $0.06 each
+      and turned down for now (2026-10-12).
   - The minimap shows everyone else on the map as dots (since 0.3.55, asked for in playtesting 2026-10-06):
     blue adventurers, white friends, red hostile ones, green party friends; on dark maps only on cells you've
     seen. Whether FO's minimap showed other players isn't in any source reachable from a cloud session.

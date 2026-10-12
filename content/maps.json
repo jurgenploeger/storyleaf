@@ -399,7 +399,12 @@
         },
         {
           "art": "guild_hall",
-          "x": -7,
+          "x": -8,
+          "y": -4
+        },
+        {
+          "art": "magic_tower",
+          "x": -3,
           "y": -4
         },
         {
@@ -797,7 +802,7 @@
           "role": "guild",
           "classId": "mage",
           "art": "npc_diviner",
-          "x": -7,
+          "x": -4,
           "y": -6,
           "greeting": "The Arcane Circle studies the seven elements. Magic is a path of patience."
         },
@@ -807,7 +812,7 @@
           "role": "guild",
           "classId": "tamer",
           "art": "npc_journeyman",
-          "x": -5,
+          "x": -7,
           "y": -6,
           "greeting": "The Wildfolk Lodge! We befriend beasts, not beat them. Well, mostly."
         },
@@ -1630,6 +1635,13 @@
       "hub": [
         -18,
         -9
+      ],
+      "buildings": [
+        {
+          "art": "windmill",
+          "x": 5,
+          "y": 5
+        }
       ],
       "npcs": [
         {
@@ -3061,6 +3073,13 @@
         -15,
         -6
       ],
+      "buildings": [
+        {
+          "art": "house",
+          "x": 5,
+          "y": -1
+        }
+      ],
       "npcs": [
         {
           "id": "little_pig",
@@ -3916,6 +3935,21 @@
           "art": "mushroom_house_gold",
           "x": -24,
           "y": -16
+        },
+        {
+          "art": "inn_teal",
+          "x": -6,
+          "y": 5
+        },
+        {
+          "art": "item_shop",
+          "x": 6,
+          "y": 5
+        },
+        {
+          "art": "item_shop_red",
+          "x": -2,
+          "y": 6
         }
       ],
       "decor": [
@@ -6370,6 +6404,16 @@
           "art": "mushroom_house",
           "x": -35,
           "y": -27
+        },
+        {
+          "art": "inn_red",
+          "x": -6,
+          "y": 5
+        },
+        {
+          "art": "blacksmith",
+          "x": 6,
+          "y": 5
         }
       ]
     },
@@ -10033,6 +10077,16 @@
           "art": "house",
           "x": 27,
           "y": -23
+        },
+        {
+          "art": "inn",
+          "x": -6,
+          "y": 5
+        },
+        {
+          "art": "item_shop",
+          "x": 6,
+          "y": 5
         }
       ],
       "decor": [
@@ -10635,6 +10689,13 @@
           "treefrog": 2
         }
       },
+      "buildings": [
+        {
+          "art": "house_green",
+          "x": 4,
+          "y": 5
+        }
+      ],
       "npcs": [
         {
           "id": "swan_keeper",
@@ -11332,6 +11393,13 @@
           "shade_puff": 2
         }
       },
+      "buildings": [
+        {
+          "art": "mushroom_house",
+          "x": 4,
+          "y": -1
+        }
+      ],
       "npcs": [
         {
           "id": "hermit_will",
@@ -11688,6 +11756,13 @@
           "starry_water_slug": 2
         }
       },
+      "buildings": [
+        {
+          "art": "magic_tower",
+          "x": 4,
+          "y": 5
+        }
+      ],
       "npcs": [
         {
           "id": "hamini",
@@ -12084,6 +12159,23 @@
           "shadow_snowman": 1
         }
       },
+      "buildings": [
+        {
+          "art": "house_purple",
+          "x": 4,
+          "y": 5
+        },
+        {
+          "art": "house",
+          "x": -8,
+          "y": 5
+        },
+        {
+          "art": "mushroom_house_blue",
+          "x": 10,
+          "y": -5
+        }
+      ],
       "npcs": [
         {
           "id": "thomas",
@@ -12895,7 +12987,7 @@
           "lines": [
             "Fish bite better when it's cold. So do I.",
             "I pulled up a bell once. A little silver one, all green with weed.",
-            "From the old shrine, the Temple Keeper says. She keeps it now.",
+            "From the old shrine, says the Temple Keeper, who keeps it safe now.",
             "Some nights the lake rings back."
           ]
         },
@@ -13240,6 +13332,20 @@
           "frosted_phantom": 2
         }
       },
+      "buildings": [
+        {
+          "art": "town_gate",
+          "x": 4,
+          "y": 5
+        }
+      ],
+      "decor": [
+        {
+          "art": "statue",
+          "x": 5,
+          "y": 6
+        }
+      ],
       "npcs": [
         {
           "id": "temple_keeper",
@@ -14363,6 +14469,13 @@
           "mint_black_kong": 2
         }
       },
+      "buildings": [
+        {
+          "art": "town_gate",
+          "x": 4,
+          "y": 5
+        }
+      ],
       "npcs": [
         {
           "id": "emerald_guard",
