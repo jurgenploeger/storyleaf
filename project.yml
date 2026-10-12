@@ -10,7 +10,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "0.4.10"
+    MARKETING_VERSION: "0.4.12"
     CURRENT_PROJECT_VERSION: "1"
 
 targets:

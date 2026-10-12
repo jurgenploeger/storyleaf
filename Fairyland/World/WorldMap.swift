@@ -327,6 +327,49 @@ final class WorldMap {
     /// Where an NPC stands (`spot(x:y:summit:)`).
     func spot(of npc: NPCDef) -> GridPoint { spot(x: npc.x, y: npc.y, summit: npc.summit) }
 
+    /// Where a local lives or walks to (`MapDef.Place`): `x` and `y` steps from its landmark (from
+    /// the middle if the map hasn't one), from a summit's top or from the middle, on the nearest
+    /// cell you can walk on. Nil when nowhere near is open.
+    func spot(of place: MapDef.Place) -> GridPoint? {
+        let x = place.x ?? 0, y = place.y ?? 0
+        if let name = place.at, let mark = landmark(name, which: place.which ?? 0) {
+            return nearestWalkable(to: GridPoint(col: mark.col + x, row: mark.row + y))
+        }
+        return nearestWalkable(to: spot(x: x, y: y, summit: place.summit))
+    }
+
+    /// A landmark's cell (`MapDef.Place.at`), the `which`th of its kind: a jetty's far end out in the
+    /// water, the bank beside a road's bridge over the river (at its end nearer you), the middle of a
+    /// lake's island, the lake's shore nearest you, or the road in front of a cave's mouth.
+    func landmark(_ name: String, which: Int) -> GridPoint? {
+        func pick<T>(_ list: [T]) -> T? { list.indices.contains(which) ? list[which] : nil }
+        switch name {
+        case "jetty":
+            guard let jetty = pick(bridges.filter { $0.kind == .jetty }) else { return nil }
+            return jetty.cell(lane: jetty.lane + jetty.lanes / 2, along: jetty.landsAtStart ? jetty.end : jetty.start)
+        case "bridge":
+            guard let bridge = pick(bridges.filter { $0.kind == .road }) else { return nil }
+            return bridge.cell(lane: bridge.lane - 1, along: bridge.start - 1)
+        case "island":
+            guard let island = pick(lakes.map { $0.island }.filter { !$0.isEmpty }) else { return nil }
+            let col = Double(island.map(\.col).reduce(0, +)) / Double(island.count)
+            let row = Double(island.map(\.row).reduce(0, +)) / Double(island.count)
+            func away(_ cell: GridPoint) -> Double { hypot(Double(cell.col) - col, Double(cell.row) - row) }
+            return island.min { away($0) < away($1) }
+        case "shore":
+            guard let lake = pick(lakes) else { return nil }
+            let shore = lake.water.flatMap { cell in
+                [(1, 0), (-1, 0), (0, 1), (0, -1)].map { GridPoint(col: cell.col + $0.0, row: cell.row + $0.1) }
+            }.filter { isWalkable($0) && !lake.water.contains($0) && !bridgeCells.contains($0) && ground[$0.row][$0.col] != .path }
+            return shore.min { ($0.col + $0.row, $0.col) < ($1.col + $1.row, $1.col) }
+        case "mouth":
+            guard let crag = pick(crags) else { return nil }
+            return entryCell(from: crag.edge)
+        default:
+            return nil
+        }
+    }
+
     /// On-screen centre of a cell's diamond.
     func center(of cell: GridPoint) -> CGPoint {
         Self.project(CGPoint(x: (CGFloat(cell.col) + 0.5) * Self.tileSize, y: (CGFloat(cell.row) + 0.5) * Self.tileSize))

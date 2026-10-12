@@ -9,8 +9,9 @@ final class BattleScene: SKScene {
     private let art = ArtLibrary.shared
     /// Everything that shakes on big hits.
     private let stage = SKNode()
+    /// The map you were standing on, blurred. Only the blurred copy is kept: the snapshot is a whole
+    /// screen at full resolution, taken while the map is still loaded underneath.
     private let backdrop: SKTexture?
-    private lazy var blurredBackdrop: SKTexture? = backdrop.flatMap { Self.blur($0, radius: 5) }
     private var ground: SKNode?
     private var actors: [Int: BattleActor] = [:]
     private var markers: [SKNode] = []
@@ -22,7 +23,7 @@ final class BattleScene: SKScene {
 
     init(controller: BattleController, size: CGSize, backdrop: SKTexture?) {
         self.controller = controller
-        self.backdrop = backdrop
+        self.backdrop = backdrop.map { Self.blur($0, radius: 5) ?? $0 }
         super.init(size: size)
         scaleMode = .resizeFill
         anchorPoint = .zero
@@ -348,7 +349,7 @@ final class BattleScene: SKScene {
         node.zPosition = -10_000
         if let backdrop {
             // The map you were standing on, softly blurred so the fighters stand out.
-            let sprite = SKSpriteNode(texture: blurredBackdrop ?? backdrop)
+            let sprite = SKSpriteNode(texture: backdrop)
             let scale = max(size.width / backdrop.size().width, size.height / backdrop.size().height)
             sprite.size = backdrop.size() * scale
             sprite.position = CGPoint(x: size.width / 2, y: size.height / 2)
@@ -373,15 +374,22 @@ final class BattleScene: SKScene {
         ground = node
     }
 
-    /// Gaussian-blurs a texture once, clamping the edges so the borders don't fade out. (The story's
-    /// pictures blur their fights' backdrops with it too, StoryScene.)
+    /// One Core Image context for every blur: making one is slow and holds on to memory, and a
+    /// battle starts while the map it left is still loaded.
+    private static let blurContext = CIContext(options: [.cacheIntermediates: false])
+
+    /// Gaussian-blurs a texture once, clamping the edges so the borders don't fade out. At half size,
+    /// a quarter of the pixels to blur and keep: it comes out soft anyway. (The story's pictures blur
+    /// their fights' backdrops with it too, StoryScene.)
     static func blur(_ texture: SKTexture, radius: Double) -> SKTexture? {
-        let source = CIImage(cgImage: texture.cgImage())
+        let half = 0.5
+        let source = CIImage(cgImage: texture.cgImage()).transformed(by: CGAffineTransform(scaleX: half, y: half))
+        let extent = source.extent.integral
         guard let filter = CIFilter(name: "CIGaussianBlur") else { return nil }
         filter.setValue(source.clampedToExtent(), forKey: kCIInputImageKey)
-        filter.setValue(radius, forKey: kCIInputRadiusKey)
-        guard let output = filter.outputImage?.cropped(to: source.extent),
-              let image = CIContext(options: nil).createCGImage(output, from: source.extent)
+        filter.setValue(radius * half, forKey: kCIInputRadiusKey)
+        guard let output = filter.outputImage?.cropped(to: extent),
+              let image = blurContext.createCGImage(output, from: extent)
         else { return nil }
         let blurred = SKTexture(cgImage: image)
         blurred.filteringMode = .linear

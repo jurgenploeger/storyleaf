@@ -2,9 +2,10 @@ import SpriteKit
 
 /// Background life on a map: adventurers (standing in for Fairyland's other players until there's
 /// online play, and tagged BOT, some with a companion trotting behind), market traders about a
-/// town's main square, and villagers pottering around town. They stroll, pause, look around and chat
-/// now and then. They never block the way. Walk up to an adventurer to see their card: befriend
-/// them, invite them along, trade, or (in danger zones) duel.
+/// town's main square, villagers pottering around town, and the locals who live out on the maps
+/// (`MapDef.Local`), each with a story they tell a line at a time as you stop by. They stroll, pause,
+/// look around and chat now and then. They never block the way. Walk up to an adventurer to see
+/// their card: befriend them, invite them along, trade, or (in danger zones) duel.
 final class Crowd {
     private final class Member {
         let name: String
@@ -22,11 +23,27 @@ final class Crowd {
         var chat: TimeInterval
         /// Hostile adventurers wait a while between picking fights.
         var calm: TimeInterval = 8
+        /// A local: tells their lines in order (`nextLine`), starting as you come by.
+        let story: Bool
+        /// How many lines of their story they've told.
+        var told = 0
+        /// Whether they've started on their story since you came near.
+        var noticed = false
+        /// A local out on an errand: where they walk to and back home from, and whether they're on
+        /// their way there.
+        let route: GridPoint?
+        var outward = true
+        /// Which way a local likes to look while standing (out over the water).
+        let facing: Direction?
 
         init(name: String, kind: GameSession.ChatLine.Kind, walker: Walker, pet: Walker?, home: GridPoint, roam: Int,
-             lines: [String], profile: Adventurer? = nil, trades: Bool = false) {
+             lines: [String], profile: Adventurer? = nil, trades: Bool = false, story: Bool = false,
+             route: GridPoint? = nil, facing: Direction? = nil) {
             self.profile = profile
             self.trades = trades
+            self.story = story
+            self.route = route
+            self.facing = facing
             self.name = name
             self.kind = kind
             self.walker = walker
@@ -37,7 +54,27 @@ final class Crowd {
             wait = .random(in: 0.5...4)
             chat = .random(in: 6...30)
         }
+
+        /// What they say next: a local the next line of their story (then from the start again),
+        /// anyone else any of their lines.
+        func nextLine() -> String? {
+            guard story, !lines.isEmpty else { return lines.randomElement() }
+            defer { told += 1 }
+            return lines[told % lines.count]
+        }
     }
+
+    /// Someone who lives on the map (`MapDef.Local`), as the scene set them down: where they live and
+    /// walk to, and their place in the map's list (which draws the parts of their look not given).
+    struct Local {
+        let def: MapDef.Local
+        let index: Int
+        let home: GridPoint
+        let walk: GridPoint?
+    }
+
+    /// How near you come before a local starts on their story, in points.
+    static let storyRange: CGFloat = 160
 
     static let adventurerColor = UIColor(red: 0.62, green: 0.93, blue: 1, alpha: 1)
     static let hostileColor = UIColor(red: 1, green: 0.42, blue: 0.4, alpha: 1)
@@ -71,8 +108,9 @@ final class Crowd {
     /// Friends you've made (and who aren't travelling with you) now and then turn up on a map with
     /// other adventurers about, if it suits their level, so you can meet them again and invite them.
     /// `heroLevel`: yours, which a town's adventurers are about. `market`: what the town's traders
-    /// (`crowd.traders`) have, if it has any.
-    init(def: MapDef, map: WorldMap, world: SKNode, heroLevel: Int = 1, friends: [Adventurer] = [], market: Market? = nil) {
+    /// (`crowd.traders`) have, if it has any. `locals`: the map's own people, where the scene set them.
+    init(def: MapDef, map: WorldMap, world: SKNode, heroLevel: Int = 1, friends: [Adventurer] = [], market: Market? = nil,
+         locals: [Local] = []) {
         self.map = map
         self.market = market
         let options = Content.shared.crowd
@@ -120,6 +158,7 @@ final class Crowd {
             walker.walkSpeed = .random(in: 50...66)
             add(Member(name: name, kind: .villager, walker: walker, pet: nil, home: home, roam: 5, lines: villagerLines), to: world)
         }
+        for local in locals { addLocal(local, on: def.id, world: world) }
     }
 
     /// How likely each friend is to be on a map you enter.
@@ -132,14 +171,43 @@ final class Crowd {
         walker.setGear(weapon: GameSession.weapon(for: profile), accessory: nil)
         walker.setTitle(GameSession.botTitle(level: profile.level, id: profile.id))
         walker.walkSpeed = .random(in: 72...92)
-        var pet: Walker?
-        if let species = profile.petSpecies.flatMap(Content.shared.monster) {
-            pet = Walker(cycle: ArtLibrary.shared.walkCycle(species.art), label: nil)
-            pet?.walkSpeed = 110
-            pet?.motion = IdleMotion.of(art: species.art)
-        }
-        add(Member(name: profile.name, kind: .adventurer, walker: walker, pet: pet, home: home, roam: roam,
+        add(Member(name: profile.name, kind: .adventurer, walker: walker, pet: Self.pet(profile.petSpecies), home: home, roam: roam,
                    lines: Content.shared.crowd.adventurerLines, profile: profile, trades: trades), to: world)
+    }
+
+    /// A monster trotting along behind someone (a monsters.json species), if they have one.
+    private static func pet(_ species: String?) -> Walker? {
+        guard let monster = species.flatMap(Content.shared.monster) else { return nil }
+        let pet = Walker(cycle: ArtLibrary.shared.walkCycle(monster.art), label: nil)
+        pet.walkSpeed = 110
+        pet.motion = IdleMotion.of(art: monster.art)
+        return pet
+    }
+
+    /// One of the map's own people, looking as their entry says, the rest of their look drawn from
+    /// where they are in the map's list so they look the same on every visit (and in every language).
+    private func addLocal(_ local: Local, on mapID: String, world: SKNode) {
+        let content = Content.shared
+        let def = local.def
+        // Every part drawn whether it's given or not, so giving one leaves the others as they were.
+        var draw = SeededRandom(text: "\(mapID)/local/\(local.index)")
+        let options = content.appearance
+        let race = content.races.randomElement(using: &draw)?.id
+        let gender = options.genders.randomElement(using: &draw)?.id
+        let hair = options.hair.randomElement(using: &draw)?.id
+        let outfit = options.outfits.randomElement(using: &draw)?.id
+        let skin = options.skin.randomElement(using: &draw)?.id
+        let style = options.styles.randomElement(using: &draw)?.id
+        let look = Look(hair: def.hair ?? hair ?? Look.standard.hair, outfit: def.outfit ?? outfit ?? Look.standard.outfit,
+                        skin: def.skin ?? skin ?? Look.standard.skin, gender: def.gender ?? gender, style: def.style ?? style)
+        let art = GameSession.registerPerson(race: def.race ?? race ?? "human", look: look, armor: def.wear.flatMap(content.item))
+        let walker = Self.person(def.name, art: art, color: .white)
+        walker.setGear(weapon: def.hold.flatMap(content.item), accessory: nil)
+        walker.walkSpeed = .random(in: 44...56, using: &draw)
+        let facing = def.face.flatMap(Direction.init(rawValue:))
+        add(Member(name: def.name, kind: .villager, walker: walker, pet: Self.pet(def.pet), home: local.home, roam: def.roam ?? 0,
+                   lines: def.lines, story: true, route: local.walk, facing: facing), to: world)
+        if let facing { walker.face(facing) }
     }
 
     /// Market traders about the main square: a step apart, clear of the middle where you arrive and
@@ -258,9 +326,10 @@ final class Crowd {
         self.player = player
         for member in members {
             let walker = member.walker
-            walker.isNear = walker.position.distance(to: player) < Walker.nameRange
-            // Adventurers stop to chat when you walk up to them.
-            if member.profile?.hostile == false, walker.position.distance(to: player) < 90 {
+            let distance = walker.position.distance(to: player)
+            walker.isNear = distance < Walker.nameRange
+            // Adventurers and locals stop to chat when you walk up to them.
+            if member.profile?.hostile == false || member.story, distance < 90 {
                 walker.path = []
                 walker.face(Direction(player - walker.position, current: walker.facing))
                 member.wait = max(member.wait, 1.5)
@@ -273,20 +342,28 @@ final class Crowd {
                 member.wait -= dt
                 if member.wait <= 0 { decide(member) }
             }
+            // A local starts on their story as you come by, and goes on while you stay about.
+            if member.story {
+                if distance < Self.storyRange, !member.noticed {
+                    member.noticed = true
+                    member.chat = min(member.chat, .random(in: 0.5...1.5))
+                } else if distance > 420 {
+                    member.noticed = false
+                }
+            }
             member.chat -= dt
             if member.chat <= 0 {
-                member.chat = .random(in: 20...45) * pace * (member.trades ? 2.5 : 1)
-                // Adventurers talk on the map channel; villagers only chat to those nearby. Traders
-                // call out their deals.
-                let near = walker.position.distance(to: player) < 420
+                member.chat = member.story ? .random(in: 9...14) : .random(in: 20...45) * pace * (member.trades ? 2.5 : 1)
+                // Adventurers talk on the map channel; villagers only chat to those nearby, and locals
+                // only once you've come by. Traders call out their deals.
+                let near = distance < 420 && (member.noticed || !member.story)
                 let deal = member.trades ? member.profile.flatMap { market?.shout($0) } : nil
-                if near || member.kind == .adventurer, let line = deal ?? member.lines.randomElement() {
+                if near || member.kind == .adventurer, let line = deal ?? member.nextLine() {
                     speak(line, by: member, bubble: near)
                 }
             }
             if let profile = member.profile, profile.hostile {
                 member.calm -= dt
-                let distance = walker.position.distance(to: player)
                 if member.calm <= 0, distance < 170, dares?(profile) != false {
                     member.calm = 25
                     walker.path = []
@@ -306,10 +383,29 @@ final class Crowd {
         }
     }
 
-    /// Standing around is over: look about, or stroll somewhere near home (traders mind their spot).
+    /// Standing around is over: look about, or stroll somewhere near home (traders and locals who
+    /// stand mind their spot; locals out on an errand go on to where they're going).
     private func decide(_ member: Member) {
-        if member.trades || Int.random(in: 0..<3, using: &rng) == 0 {
-            member.walker.face(Direction.allCases.randomElement(using: &rng) ?? .down)
+        if let route = member.route {
+            let goal = member.outward ? route : member.home
+            if member.walker.position.distance(to: map.center(of: goal)) < 30 {
+                // There: a while to look about, then back the other way.
+                let glance = Direction.allCases.randomElement(using: &rng) ?? .down
+                member.outward.toggle()
+                member.walker.face(member.facing ?? glance)
+                member.wait = .random(in: 8...16, using: &rng)
+            } else {
+                member.walker.path = map.path(from: member.walker.position, to: map.center(of: goal))
+                // Somewhere they can't get to: they stay put a good while rather than keep trying.
+                member.wait = member.walker.path.isEmpty ? 30 : .random(in: 1...2, using: &rng)
+            }
+            return
+        }
+        if member.trades || member.roam == 0 || Int.random(in: 0..<3, using: &rng) == 0 {
+            // A local standing at their spot mostly looks the way they like to.
+            var look = Direction.allCases.randomElement(using: &rng) ?? .down
+            if let facing = member.facing, Int.random(in: 0..<4, using: &rng) > 0 { look = facing }
+            member.walker.face(look)
             member.wait = .random(in: 1.5...3.5, using: &rng)
             return
         }
@@ -337,6 +433,22 @@ final class Crowd {
             member.pet?.position = member.walker.position + CGVector(dx: -26, dy: -6)
         }
         return chosen.compactMap(\.profile)
+    }
+
+    /// Debug launches (`local=n`): the local nearest `point` turns to it and starts on their story,
+    /// the first line in a bubble that stays, for screenshots.
+    func tellForDebug(near point: CGPoint) {
+        guard let member = members.filter(\.story).min(by: { $0.walker.position.distance(to: point) < $1.walker.position.distance(to: point) })
+        else { return }
+        member.told = 0
+        guard let line = member.nextLine() else { return }
+        member.walker.path = []
+        member.wait = 600
+        member.chat = 600
+        member.noticed = true
+        member.walker.face(Direction(point - member.walker.position, current: member.walker.facing))
+        member.walker.say(line, for: 600)
+        onChat?(member.name, line, member.kind)
     }
     #endif
 
@@ -401,8 +513,9 @@ final class Crowd {
         member.walker.revealTag()
         member.walker.face(Direction(player - member.walker.position, current: member.walker.facing))
         member.wait = 3
-        member.chat = .random(in: 20...45)
-        if let line = member.lines.randomElement() { speak(line, by: member, bubble: true) }
+        member.chat = member.story ? .random(in: 9...14) : .random(in: 20...45)
+        member.noticed = true
+        if let line = member.nextLine() { speak(line, by: member, bubble: true) }
         return true
     }
 
@@ -420,7 +533,8 @@ final class Crowd {
     }
 
     private func speak(_ line: String, by member: Member, bubble: Bool) {
-        if bubble { member.walker.say(line) }
+        // Long enough to read: a longer line stays up longer.
+        if bubble { member.walker.say(line, for: max(3.5, Double(line.count) / 14)) }
         onChat?(member.name, line, member.kind)
     }
 }

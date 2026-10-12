@@ -187,9 +187,14 @@ enum HillArt {
                 if amount > 0, let road = look.road, road(GridPoint(col: Int(x.rounded(.down)), row: Int(y.rounded(.down)))) { amount = 0 }
                 for channel in 0..<4 { bare[index + channel] = UInt8(amount * 255) }
                 // Ledges: on bare rock from a gentle slope up (a cell's rise over its width, as the
-                // light has it, past 0.15), banded by height with a ragged edge.
+                // light has it, past 0.15), banded by height with a ragged edge; only where the rock
+                // faces you. On a slope turned away the view squeezes each band into a thin dark line
+                // that reads as a crack in the ground (playtesting 2026-10-12, Moonwhisper's cave
+                // range): `facing` is 1 within 60° of straight at you, 0 turned side on or away.
                 if let strata = look.strata, amount > 0.5 {
-                    let steep = min(1, max(0, ((hx * hx + hy * hy).squareRoot() - 0.15) / 0.2))
+                    let rise = (hx * hx + hy * hy).squareRoot()
+                    let facing = min(1, max(0, 2 * (hx + hy) / max(rise * 2.0.squareRoot(), 1e-6)))
+                    let steep = min(1, max(0, (rise - 0.15) / 0.2)) * facing
                     let level = (h00 + h10 + h01 + h11) / 4 + ragged * 6
                     let band = level / strata - (level / strata).rounded(.down)
                     if band < 0.18 {

@@ -1,5 +1,5 @@
 {
-  "_about": "Maps. Walk off an edge listed in `exits` to travel to that map. `theme` picks ground tiles, ponds, fairy rings and scenery (art ids from art/assets.json); props with `cluster` grow in groups, `sway` ones move in the breeze. `ambience` adds particles (petals | leaves | fireflies | sparkles | bubbles | dandelions | sprinkles | lanterns | zzz | notes, joined with +), butterflies, `critters` that hop off when you come near (bunny | frog | crab), `birds` crossing the sky (songbirds | gulls | bats), cloud shadows, a colour tint and `weather` weights (clear | cloudy | rain | storm | fog | snow; {} for no sky). A prop with `bob` floats gently up and down. Maps with `encounters` have random battles; `music` is a song id from music.json. Building/decor/NPC x,y are tile offsets from the map centre (y up). Boss NPCs name their `monster` and `level`, `minions` (how many of the map's own monsters fight beside it, 9 unless set), `waves` (how many waves the fight comes in, 3 unless set: waves of 10 of the map's monsters, then the boss) and a `victory` story (a title and 1 to 3 short paragraphs), told the first time you beat it.",
+  "_about": "Maps. Walk off an edge listed in `exits` to travel to that map. `theme` picks ground tiles, ponds, fairy rings and scenery (art ids from art/assets.json); props with `cluster` grow in groups, `sway` ones move in the breeze. `ambience` adds particles (petals | leaves | fireflies | sparkles | bubbles | dandelions | sprinkles | lanterns | zzz | notes, joined with +), butterflies, `critters` that hop off when you come near (bunny | frog | crab), `birds` crossing the sky (songbirds | gulls | bats), cloud shadows, a colour tint and `weather` weights (clear | cloudy | rain | storm | fog | snow; {} for no sky). A prop with `bob` floats gently up and down. Maps with `encounters` have random battles; `music` is a song id from music.json. Building/decor/NPC x,y are tile offsets from the map centre (y up). Boss NPCs name their `monster` and `level`, `minions` (how many of the map's own monsters fight beside it, 9 unless set), `waves` (how many waves the fight comes in, 3 unless set: waves of 10 of the map's monsters, then the boss) and a `victory` story (a title and 1 to 3 short paragraphs), told the first time you beat it. `locals` are the people who live there (MapDef.Local in Content.swift): a name, a look, a home (`at` a landmark: jetty | bridge | island | shore | mouth, else on a `summit` or `x`, `y` out from the middle), `roam` or a `walk` there and back, maybe a `pet`, something to `hold`, armour to `wear` and `props` round them, and `lines`: their story, told a line at a time in order.",
   "start": "meadowbrook",
   "maps": [
     {
@@ -14,6 +14,25 @@
           "Have you visited the guilds yet?"
         ]
       },
+      "locals": [
+        {
+          "name": "Little Lou",
+          "race": "human",
+          "gender": "male",
+          "hair": "ginger",
+          "x": -2,
+          "y": -1,
+          "roam": 4,
+          "hold": "wooden_sword",
+          "pet": "bunny",
+          "lines": [
+            "I'm going to be an adventurer when I grow up!",
+            "Elder Oak says I need a sword. I've got a stick. Same thing.",
+            "Tess's brother went off adventuring. He isn't back yet.",
+            "When I'm big I'll go and find him. Unless you find him first!"
+          ]
+        }
+      ],
       "width": 80,
       "height": 60,
       "world": [
@@ -380,7 +399,12 @@
         },
         {
           "art": "guild_hall",
-          "x": -7,
+          "x": -8,
+          "y": -4
+        },
+        {
+          "art": "magic_tower",
+          "x": -3,
           "y": -4
         },
         {
@@ -778,7 +802,7 @@
           "role": "guild",
           "classId": "mage",
           "art": "npc_diviner",
-          "x": -7,
+          "x": -4,
           "y": -6,
           "greeting": "The Arcane Circle studies the seven elements. Magic is a path of patience."
         },
@@ -788,7 +812,7 @@
           "role": "guild",
           "classId": "tamer",
           "art": "npc_journeyman",
-          "x": -5,
+          "x": -7,
           "y": -6,
           "greeting": "The Wildfolk Lodge! We befriend beasts, not beat them. Well, mostly."
         },
@@ -1024,6 +1048,72 @@
       "crowd": {
         "adventurers": 5
       },
+      "locals": [
+        {
+          "name": "Old Fisher Gil",
+          "race": "human",
+          "gender": "male",
+          "hair": "white",
+          "outfit": "blue",
+          "at": "jetty",
+          "lines": [
+            "Shh... they're biting today.",
+            "I've fished this lake since I was knee-high to a jelly.",
+            "Caught one THIS big once. Well... this big. Fine, a tadpole.",
+            "Come back at sunset. The whole lake turns gold."
+          ]
+        },
+        {
+          "name": "Tess",
+          "race": "human",
+          "gender": "female",
+          "hair": "ginger",
+          "style": "braids",
+          "at": "bridge",
+          "roam": 2,
+          "lines": [
+            "My brother Wil crossed this bridge to see the world.",
+            "He said he'd be back before the blossoms fell.",
+            "The blossoms have fallen twice now.",
+            "He went east, to the dark woods. He's scared of the dark, you know.",
+            "If you meet a boy with a wooden sword, tell him Tess is waiting."
+          ]
+        },
+        {
+          "name": "Farmer Hollis",
+          "race": "dwarf",
+          "gender": "male",
+          "outfit": "green",
+          "x": -24,
+          "y": -3,
+          "roam": 3,
+          "hold": "small_hatchet",
+          "props": [
+            {
+              "art": "haystack",
+              "x": 2,
+              "y": 1
+            },
+            {
+              "art": "scarecrow",
+              "x": -2,
+              "y": 2
+            },
+            {
+              "art": "pumpkin_patch",
+              "x": 1,
+              "y": 3,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "Jelly Puffs ate my cabbages again!",
+            "I put up a scarecrow. They bounced on it.",
+            "Elder Oak says an adventurer will sort them out.",
+            "Is that you? You look like an adventurer. Mostly."
+          ]
+        }
+      ],
       "width": 165,
       "height": 120,
       "world": [
@@ -1546,6 +1636,13 @@
         -18,
         -9
       ],
+      "buildings": [
+        {
+          "art": "windmill",
+          "x": 5,
+          "y": 5
+        }
+      ],
       "npcs": [
         {
           "id": "mother_sheep",
@@ -1564,6 +1661,52 @@
       "crowd": {
         "adventurers": 4
       },
+      "locals": [
+        {
+          "name": "Beachcomber Nell",
+          "race": "human",
+          "gender": "female",
+          "hair": "blonde",
+          "style": "messy",
+          "x": 24,
+          "y": -3,
+          "roam": 6,
+          "lines": [
+            "Every tide brings something new. Yesterday, a boot.",
+            "Today, the other boot!",
+            "Old Shelly says the Mud Eagles snatch all the pretty shells.",
+            "I found a bottle with a message once. It said 'Hello'. So I wrote back."
+          ]
+        },
+        {
+          "name": "Captain Salt",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "white",
+          "outfit": "blue",
+          "x": -46,
+          "y": -16,
+          "face": "down",
+          "props": [
+            {
+              "art": "barrels",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "wooden_crates",
+              "x": 0,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "Forty years at sea, and I never saw a pineapple swim.",
+            "Then I came here. They don't swim. They hop.",
+            "Some say a ship sank off this shore, full of gold.",
+            "I say it was full of pineapples. Look around you."
+          ]
+        }
+      ],
       "width": 150,
       "height": 108,
       "world": [
@@ -1888,6 +2031,51 @@
       "crowd": {
         "adventurers": 5
       },
+      "locals": [
+        {
+          "name": "Wil",
+          "race": "human",
+          "gender": "male",
+          "hair": "ginger",
+          "style": "spiky",
+          "x": -6,
+          "y": 20,
+          "roam": 3,
+          "hold": "wooden_sword",
+          "lines": [
+            "I'm not lost. I'm exploring.",
+            "...Okay, I'm a little lost.",
+            "Did my sister send you? Tess worries too much.",
+            "The wisps keep showing me the way out, then giggling.",
+            "Tell Tess I'll be home soon. Right after I find the way."
+          ]
+        },
+        {
+          "name": "Granny Thistle",
+          "race": "elf",
+          "gender": "female",
+          "hair": "white",
+          "outfit": "purple",
+          "x": 43,
+          "y": 31,
+          "roam": 2,
+          "hold": "oak_staff",
+          "props": [
+            {
+              "art": "glow_mushroom",
+              "x": 2,
+              "y": 1,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "Glow-caps for a sleeping draught. Sparkle-ferns for a waking one.",
+            "Never mix them up. Ask Dozywick how that went.",
+            "Willow the Wisp fades a little more each night.",
+            "The Shade Puffs drink the moonlight, poor dear."
+          ]
+        }
+      ],
       "danger": true,
       "width": 150,
       "height": 120,
@@ -2307,6 +2495,72 @@
       "crowd": {
         "adventurers": 5
       },
+      "locals": [
+        {
+          "name": "Woodcutter Bram",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "brown",
+          "outfit": "red",
+          "x": -20,
+          "y": -12,
+          "roam": 2,
+          "hold": "wood_axe",
+          "props": [
+            {
+              "art": "tree_stump",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "fallen_log",
+              "x": -1,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "I'd never cut a tree that smiles. Only the grumpy ones.",
+            "There's just the one grumpy one. And I'm not cutting HIM.",
+            "He swatted my hat clean off last spring.",
+            "Little Pig asked me for sticks. I told him: bricks!"
+          ]
+        },
+        {
+          "name": "Shepherd Lark",
+          "race": "human",
+          "gender": "female",
+          "hair": "brown",
+          "style": "ponytail",
+          "outfit": "green",
+          "x": -6,
+          "y": 2,
+          "roam": 5,
+          "hold": "bamboo_staff",
+          "pet": "flame_sheep",
+          "lines": [
+            "Easy, Ember. No setting the nice adventurer on fire.",
+            "Flame Sheep make the warmest wool. If you can catch them.",
+            "Prismhaven's mayor wants them kept away from the market awnings.",
+            "Ember only sets fire to things she loves. So... everything."
+          ]
+        },
+        {
+          "name": "Odile the Mapmaker",
+          "race": "elf",
+          "gender": "female",
+          "hair": "white",
+          "outfit": "teal",
+          "style": "ponytail",
+          "at": "bridge",
+          "roam": 2,
+          "lines": [
+            "Mapping the river. It keeps moving.",
+            "Rivers don't move? Tell that to this one.",
+            "Every land is a page of Liora's book, you know. I'm drawing them all.",
+            "This is page... twelve? I've lost count of the pages."
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_forest_floor",
         "path": "tile_path",
@@ -2819,6 +3073,13 @@
         -15,
         -6
       ],
+      "buildings": [
+        {
+          "art": "house",
+          "x": 5,
+          "y": -1
+        }
+      ],
       "npcs": [
         {
           "id": "little_pig",
@@ -2867,6 +3128,24 @@
           "The fountain sparkles at night, you know."
         ]
       },
+      "locals": [
+        {
+          "name": "Painter Ivo",
+          "race": "elf",
+          "gender": "male",
+          "hair": "purple",
+          "outfit": "pink",
+          "x": 6,
+          "y": -1,
+          "roam": 3,
+          "lines": [
+            "I'm painting Prismhaven. I've run out of colours.",
+            "There are more colours here than in my whole box.",
+            "Tilly the Toymaker wants me to paint her toys. All of them.",
+            "Have you seen the fountain at night? Every colour at once."
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_grass",
         "path": "tile_town",
@@ -3656,6 +3935,21 @@
           "art": "mushroom_house_gold",
           "x": -24,
           "y": -16
+        },
+        {
+          "art": "inn_teal",
+          "x": -6,
+          "y": 5
+        },
+        {
+          "art": "item_shop",
+          "x": 6,
+          "y": 5
+        },
+        {
+          "art": "item_shop_red",
+          "x": -2,
+          "y": 6
         }
       ],
       "decor": [
@@ -3794,6 +4088,53 @@
       "crowd": {
         "adventurers": 3
       },
+      "locals": [
+        {
+          "name": "Granny Edda",
+          "race": "human",
+          "gender": "female",
+          "hair": "white",
+          "outfit": "red",
+          "wear": "snow_cloak",
+          "x": -24,
+          "y": -6,
+          "walk": {
+            "summit": 0,
+            "x": -3,
+            "y": -3
+          },
+          "lines": [
+            "Soup for Mister Frost. Cold soup, he insists.",
+            "He's a dear, but he won't come down. Says it's too warm.",
+            "Mind the wolf on the way up. He's all teeth and manners.",
+            "There's a chest up at the top too. Nobody knows who left it."
+          ]
+        },
+        {
+          "name": "Dwarf Fennick",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "black",
+          "outfit": "gold",
+          "x": -31,
+          "y": -14,
+          "roam": 3,
+          "hold": "hand_axe",
+          "props": [
+            {
+              "art": "barrels",
+              "x": 2,
+              "y": 1
+            }
+          ],
+          "lines": [
+            "Seven of us, there were. Now it's just me and six snowmen.",
+            "The others went down to Ingothold for the winter.",
+            "I stayed for the apples. Have you tried them? Not the shiny ones.",
+            "A princess kept house for us once. She's off being royal now."
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_snow",
         "path": "tile_snow_path",
@@ -4250,6 +4591,38 @@
       "crowd": {
         "adventurers": 3
       },
+      "locals": [
+        {
+          "name": "Old Reed",
+          "race": "elf",
+          "gender": "male",
+          "hair": "green",
+          "outfit": "green",
+          "at": "jetty",
+          "lines": [
+            "Ribbit. Sorry. Live here long enough, it slips out.",
+            "The Frog Prince says he's a real prince. They all say that.",
+            "He lost his golden ball in the pond. The Water Slugs sit on it like eggs.",
+            "The frogs sing all night. Meadowbrook complains. I sleep like a log."
+          ]
+        },
+        {
+          "name": "Duck-Keeper Maud",
+          "race": "human",
+          "gender": "female",
+          "hair": "brown",
+          "style": "bob",
+          "outfit": "white",
+          "x": 4,
+          "y": -19,
+          "roam": 4,
+          "lines": [
+            "That little grey duckling? Don't you listen to the Mud Slimes.",
+            "Every swan was a duckling once. Every single one.",
+            "One day it'll fly north to Swan Lake. You'll see."
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_swamp",
         "path": "tile_path",
@@ -4613,6 +4986,45 @@
       "crowd": {
         "adventurers": 4
       },
+      "locals": [
+        {
+          "name": "Lamplighter Ansel",
+          "race": "human",
+          "gender": "male",
+          "hair": "black",
+          "outfit": "black",
+          "x": 2,
+          "y": 4,
+          "walk": {
+            "x": 18,
+            "y": -10
+          },
+          "hold": "oak_staff",
+          "lines": [
+            "Keep to the road, friend. The lights off it aren't mine.",
+            "I light these lanterns every night. The Great Wisp blows them out.",
+            "Travellers follow its pretty light and never come back.",
+            "Well. They come back. Very muddy and very embarrassed."
+          ]
+        },
+        {
+          "name": "Dwarf Tolly",
+          "race": "dwarf",
+          "gender": "female",
+          "hair": "ginger",
+          "style": "braids",
+          "outfit": "gold",
+          "at": "mouth",
+          "y": 2,
+          "hold": "small_hatchet",
+          "lines": [
+            "The cavern's ours. Was ours. The rats have it now.",
+            "A Rat King, if you please! With a crown and everything.",
+            "Ingothold is cut off till someone sorts him out.",
+            "Bring a light. And cheese. Rats love cheese."
+          ]
+        }
+      ],
       "danger": true,
       "theme": {
         "ground": "tile_dark_grass",
@@ -4984,6 +5396,26 @@
       "crowd": {
         "adventurers": 2
       },
+      "locals": [
+        {
+          "name": "Scout Hode",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "brown",
+          "outfit": "gold",
+          "x": -10,
+          "y": -8,
+          "roam": 3,
+          "hold": "hand_axe",
+          "wear": "leather_vest",
+          "lines": [
+            "Ingothold sent me to scout. I've scouted. It's rats.",
+            "Big rats. And a king rat, with a crown made of spoons.",
+            "Our spoons! From Ingothold!",
+            "Sort him out and we'll make you a new set. Of spoons."
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_cave_floor",
         "path": "tile_scree",
@@ -5262,6 +5694,31 @@
         "villagers": 8,
         "traders": 16
       },
+      "locals": [
+        {
+          "name": "Old Miner Dunmore",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "white",
+          "outfit": "gold",
+          "x": -8,
+          "y": -6,
+          "roam": 2,
+          "props": [
+            {
+              "art": "mine_cart",
+              "x": 2,
+              "y": 0
+            }
+          ],
+          "lines": [
+            "Ingothold steel! Best in the world. Ask anyone. Ask me.",
+            "We were cut off for a year when the Rat King took the cavern.",
+            "Then someone sorted him out. Was that you? Have a nod, then.",
+            "Crystal Mountain's south of here. Gem Crawlers. Good shells."
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_desert",
         "path": "tile_scree",
@@ -5947,6 +6404,16 @@
           "art": "mushroom_house",
           "x": -35,
           "y": -27
+        },
+        {
+          "art": "inn_red",
+          "x": -6,
+          "y": 5
+        },
+        {
+          "art": "blacksmith",
+          "x": 6,
+          "y": 5
         }
       ]
     },
@@ -5963,6 +6430,54 @@
       "crowd": {
         "adventurers": 3
       },
+      "locals": [
+        {
+          "name": "Caravan Master Zara",
+          "race": "human",
+          "gender": "female",
+          "hair": "black",
+          "style": "long",
+          "outfit": "gold",
+          "x": -20,
+          "y": 9,
+          "roam": 2,
+          "props": [
+            {
+              "art": "desert_pot",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "wooden_crates",
+              "x": -1,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "The caravans wait. There's a dragon in the oasis.",
+            "A drunk dragon. Singing. Badly.",
+            "We used to rest there. Now we rest here and complain.",
+            "Sober him up and the first figs are yours."
+          ]
+        },
+        {
+          "name": "Odile the Mapmaker",
+          "race": "elf",
+          "gender": "female",
+          "hair": "white",
+          "outfit": "teal",
+          "style": "ponytail",
+          "x": -43,
+          "y": -37,
+          "roam": 3,
+          "lines": [
+            "The sand moves every night. My map of here is mostly guesses.",
+            "I drew a dune. By morning it was a different dune.",
+            "Somewhere out here, a lamp holds a genie. Or a very cramped lizard.",
+            "This page of Liora's book is the hardest to draw."
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_desert",
         "path": "tile_path",
@@ -6346,6 +6861,57 @@
       "crowd": {
         "adventurers": 3
       },
+      "locals": [
+        {
+          "name": "Miner Greta",
+          "race": "dwarf",
+          "gender": "female",
+          "hair": "blonde",
+          "style": "braids",
+          "outfit": "red",
+          "x": 4,
+          "y": -5,
+          "roam": 2,
+          "hold": "hand_axe",
+          "wear": "leather_vest",
+          "props": [
+            {
+              "art": "mine_cart",
+              "x": 2,
+              "y": 1
+            },
+            {
+              "art": "ore_vein",
+              "x": -2,
+              "y": 1
+            }
+          ],
+          "lines": [
+            "Gem Crawlers carry the best crystal on their backs.",
+            "Ingothold's forge wants every shell they shed.",
+            "Pebble up the hill was just a boulder in my grandad's day. Then he woke up.",
+            "The tallest peak glitters at sunrise. Something's up there."
+          ]
+        },
+        {
+          "name": "Odile the Mapmaker",
+          "race": "elf",
+          "gender": "female",
+          "hair": "white",
+          "outfit": "teal",
+          "style": "ponytail",
+          "summit": 0,
+          "x": 3,
+          "y": -2,
+          "roam": 1,
+          "lines": [
+            "Made it! The view from this page is the best in the book.",
+            "I can see Ingothold's chimneys from here.",
+            "Somebody left that chest. Not me. I only leave footprints.",
+            "Getting down is the part I never plan for."
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_scree",
         "path": "tile_path",
@@ -6727,6 +7293,49 @@
       "crowd": {
         "adventurers": 3
       },
+      "locals": [
+        {
+          "name": "Mochi Maker Hana",
+          "race": "human",
+          "gender": "female",
+          "hair": "black",
+          "style": "bob",
+          "outfit": "white",
+          "x": 6,
+          "y": -2,
+          "roam": 2,
+          "props": [
+            {
+              "art": "mochi_stack",
+              "x": 2,
+              "y": 0
+            }
+          ],
+          "lines": [
+            "Moon-mochi, fresh pounded! Well. Ordinary mochi.",
+            "The Queen's mochi went missing. Everyone looks at me.",
+            "I didn't take it! I only make it. Very different.",
+            "Between us... I think the Moon Rabbits ate it themselves."
+          ]
+        },
+        {
+          "name": "Stargazer Lune",
+          "race": "elf",
+          "gender": "male",
+          "hair": "blue",
+          "outfit": "purple",
+          "wear": "mage_robe",
+          "x": 37,
+          "y": -28,
+          "face": "up",
+          "lines": [
+            "Stardust can't fly while the skeletons roam.",
+            "Out here the stars feel close enough to pocket.",
+            "I count them every night. I'm on star nine thousand and four.",
+            "Nine thousand and five. Oh, that one's moving. That's Stardust!"
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_scree",
         "path": "tile_snow_path",
@@ -7109,6 +7718,44 @@
       "crowd": {
         "adventurers": 5
       },
+      "locals": [
+        {
+          "name": "Courier Dot",
+          "race": "human",
+          "gender": "female",
+          "hair": "ginger",
+          "style": "ponytail",
+          "outfit": "blue",
+          "x": -3,
+          "y": -3,
+          "walk": {
+            "x": 32,
+            "y": 3
+          },
+          "lines": [
+            "Letters for Meadowbrook! Letters for Larkspur! Letters for... smudged.",
+            "The wind took three letters today. Somewhere a goose is very well informed.",
+            "Gooey Grotto? I don't deliver there. Everything comes back sticky.",
+            "If you see a letter blowing about, it's probably mine."
+          ]
+        },
+        {
+          "name": "Kite-Flyer Wynn",
+          "race": "elf",
+          "gender": "male",
+          "hair": "blonde",
+          "style": "messy",
+          "x": -14,
+          "y": 8,
+          "roam": 5,
+          "lines": [
+            "This is the windiest place in Storyleaf! Perfect for kites.",
+            "I lost my red kite last week. It flew west, toward the grotto.",
+            "Something gooey and golden bounces out of there at night.",
+            "Grandma says it's the Gilded Brute, counting his treasure."
+          ]
+        }
+      ],
       "width": 110,
       "height": 80,
       "music": "meadow",
@@ -7594,6 +8241,25 @@
       "crowd": {
         "adventurers": 2
       },
+      "locals": [
+        {
+          "name": "Prospector Goldie",
+          "race": "dwarf",
+          "gender": "female",
+          "hair": "blonde",
+          "outfit": "gold",
+          "x": 6,
+          "y": 2,
+          "roam": 4,
+          "hold": "small_hatchet",
+          "lines": [
+            "Gold in the grotto! Real gold! ...Slimy gold.",
+            "The slimes eat coins and get shinier. I just follow them about.",
+            "Their boss calls himself the Gilded Brute. Says it's all for the Gilded King.",
+            "Never met this king. I bet he's slimy too."
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_cave_floor",
         "path": "tile_scree",
@@ -7834,6 +8500,46 @@
       "crowd": {
         "adventurers": 5
       },
+      "locals": [
+        {
+          "name": "Gretel the Baker",
+          "race": "human",
+          "gender": "female",
+          "hair": "blonde",
+          "style": "braids",
+          "outfit": "pink",
+          "x": -4,
+          "y": -6,
+          "roam": 3,
+          "lines": [
+            "Don't nibble the houses, dear. Somebody might live in them.",
+            "I did, once. Long story. There was an oven.",
+            "These days I just bake. Gumdrops, mostly.",
+            "Wolves prowl the peaks at night. They don't like sugar. More for us."
+          ]
+        },
+        {
+          "name": "Hansel",
+          "race": "human",
+          "gender": "male",
+          "hair": "blonde",
+          "style": "crop",
+          "outfit": "green",
+          "x": -2,
+          "y": -8,
+          "walk": {
+            "summit": 0,
+            "x": -3,
+            "y": -3
+          },
+          "lines": [
+            "My sister says I eat too much. I'm just checking the mountain's still sugar.",
+            "It is. Mostly.",
+            "There's a chest at the very top of the peak. I hope it's full of fudge.",
+            "Mother Sheep's lambs came through here. The wolves took them west."
+          ]
+        }
+      ],
       "width": 140,
       "height": 100,
       "music": "meadow",
@@ -8365,6 +9071,44 @@
       "crowd": {
         "adventurers": 5
       },
+      "locals": [
+        {
+          "name": "Bo-Peep",
+          "race": "human",
+          "gender": "female",
+          "hair": "blonde",
+          "style": "shoulder",
+          "outfit": "blue",
+          "x": -4,
+          "y": -8,
+          "roam": 3,
+          "hold": "bamboo_staff",
+          "lines": [
+            "I've lost my sheep, and I don't know where to find them.",
+            "Everyone says leave them alone and they'll come home.",
+            "Everyone hasn't met the Howlmaster.",
+            "If you climb up there... tell the lambs Bo-Peep is waiting at the bottom."
+          ]
+        },
+        {
+          "name": "Huntsman Corwin",
+          "race": "human",
+          "gender": "male",
+          "hair": "brown",
+          "outfit": "green",
+          "wear": "ranger_cloak",
+          "x": 6,
+          "y": -10,
+          "roam": 2,
+          "hold": "iron_axe",
+          "lines": [
+            "This is the Howlmaster's hill. Even the crows whisper here.",
+            "He keeps the stolen lambs at the top, where he can watch them.",
+            "I'm a huntsman. I don't fight wolves. I just keep an eye on them.",
+            "From very far away. Like now."
+          ]
+        }
+      ],
       "danger": true,
       "width": 100,
       "height": 80,
@@ -8744,6 +9488,25 @@
           "The fountain sparkles at night, you know."
         ]
       },
+      "locals": [
+        {
+          "name": "Birdwatcher Pell",
+          "race": "elf",
+          "gender": "female",
+          "hair": "blue",
+          "style": "bob",
+          "outfit": "teal",
+          "x": -6,
+          "y": -4,
+          "roam": 3,
+          "lines": [
+            "Bluebirds nest on every roof in Larkspur. Bring an umbrella.",
+            "Nella the Tailor wants feathers for a dress. A swan's dress.",
+            "I told her swans don't shed for just anyone.",
+            "Swan Lake's the place. Mind the Water Slugs."
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_grass",
         "path": "tile_town",
@@ -9314,6 +10077,16 @@
           "art": "house",
           "x": 27,
           "y": -23
+        },
+        {
+          "art": "inn",
+          "x": -6,
+          "y": 5
+        },
+        {
+          "art": "item_shop",
+          "x": 6,
+          "y": 5
         }
       ],
       "decor": [
@@ -9415,6 +10188,38 @@
       "crowd": {
         "adventurers": 5
       },
+      "locals": [
+        {
+          "name": "Odette",
+          "race": "elf",
+          "gender": "female",
+          "hair": "white",
+          "style": "long",
+          "outfit": "white",
+          "at": "island",
+          "roam": 2,
+          "lines": [
+            "One, two, three, turn... The swans taught me that.",
+            "By day I dance. By night... well, never mind the night.",
+            "A sorcerer's spell, they say. I say it's good exercise.",
+            "Have you seen the little grey duckling? It hides from the Water Slugs."
+          ]
+        },
+        {
+          "name": "Boatwright Hugo",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "ginger",
+          "outfit": "blue",
+          "at": "jetty",
+          "lines": [
+            "This jetty gets you halfway to the island. The other half is swimming.",
+            "There's a footbridge, mind. I just prefer my way.",
+            "The swans come home in spring. They land right... about... there.",
+            "Old Swan Keeper's fed them since he was a cygnet himself."
+          ]
+        }
+      ],
       "width": 140,
       "height": 104,
       "music": "shore",
@@ -9884,6 +10689,13 @@
           "treefrog": 2
         }
       },
+      "buildings": [
+        {
+          "art": "house_green",
+          "x": 4,
+          "y": 5
+        }
+      ],
       "npcs": [
         {
           "id": "swan_keeper",
@@ -9909,13 +10721,46 @@
       "crowd": {
         "adventurers": 3
       },
+      "locals": [
+        {
+          "name": "Kip",
+          "race": "human",
+          "gender": "male",
+          "hair": "brown",
+          "style": "messy",
+          "x": 4,
+          "y": -4,
+          "roam": 4,
+          "lines": [
+            "Shh! I'm catching a ladybug. A giant one.",
+            "They're the size of ponies here! Thumbelina rides one.",
+            "She's tiny. Thumb-tiny. Hence the name.",
+            "She wants to cross the pond to see her prince. The Lotus Sprites won't let her."
+          ]
+        },
+        {
+          "name": "Mister Mole",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "black",
+          "outfit": "black",
+          "at": "mouth",
+          "x": 2,
+          "lines": [
+            "I live underground, you know. Very sensible. No sun.",
+            "I asked Thumbelina to marry me. She said she'd think about it.",
+            "That was three summers ago. Still thinking, I expect.",
+            "The tunnels down there run to the Rat Cavern. Ghastly neighbours."
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_swamp",
         "path": "tile_path",
         "accent": "tile_dark_grass",
         "accentPatches": 30,
         "water": "tile_water",
-        "ponds": 8,
+        "ponds": 5,
         "lakes": {
           "count": 1,
           "size": [
@@ -9927,12 +10772,12 @@
         "hills": {
           "count": 2,
           "size": [
-            5,
+            6,
             9
           ],
           "chain": [
-            2,
-            3
+            3,
+            4
           ],
           "height": 30
         },
@@ -10221,6 +11066,54 @@
       "crowd": {
         "adventurers": 4
       },
+      "locals": [
+        {
+          "name": "Old Carver Beppo",
+          "race": "human",
+          "gender": "male",
+          "hair": "white",
+          "outfit": "red",
+          "x": 5,
+          "y": -6,
+          "roam": 2,
+          "hold": "small_hatchet",
+          "props": [
+            {
+              "art": "toy_blocks",
+              "x": 2,
+              "y": 0,
+              "blocking": false
+            },
+            {
+              "art": "wooden_crates",
+              "x": -1,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "I carved half the puppets on this hill. Long ago.",
+            "They danced for the children at the fair. Such joy.",
+            "Then the Marionette King took up their strings, and they never stopped.",
+            "Cut his strings, friend. Set my puppets free."
+          ]
+        },
+        {
+          "name": "Fiddler Rook",
+          "race": "elf",
+          "gender": "male",
+          "hair": "black",
+          "outfit": "purple",
+          "x": -5,
+          "y": -3,
+          "roam": 2,
+          "lines": [
+            "The puppets dance to my tune. Watch! ...See? Nothing.",
+            "They only dance for their king now.",
+            "I play anyway. The animals will come back when it's safe.",
+            "Hermit Orrin says they're waiting just over the hill."
+          ]
+        }
+      ],
       "danger": true,
       "theme": {
         "ground": "tile_dark_grass",
@@ -10500,6 +11393,13 @@
           "shade_puff": 2
         }
       },
+      "buildings": [
+        {
+          "art": "mushroom_house",
+          "x": 4,
+          "y": -1
+        }
+      ],
       "npcs": [
         {
           "id": "hermit_will",
@@ -10557,6 +11457,40 @@
       "crowd": {
         "adventurers": 4
       },
+      "locals": [
+        {
+          "name": "Hilde the Fisher",
+          "race": "dwarf",
+          "gender": "female",
+          "hair": "ginger",
+          "style": "braids",
+          "outfit": "teal",
+          "at": "jetty",
+          "lines": [
+            "Dwarves don't fish, they say. Dwarves say a lot of things.",
+            "I caught a fish with a glowing stone in its belly once.",
+            "Ambrose said it was Dreamstone and took it off to study. I wanted it for soup.",
+            "The golems roll down to drink at dusk. Keep off the shore then."
+          ]
+        },
+        {
+          "name": "Scholar Wendel",
+          "race": "elf",
+          "gender": "male",
+          "hair": "blonde",
+          "outfit": "white",
+          "wear": "silk_robe",
+          "at": "island",
+          "roam": 2,
+          "hold": "oak_staff",
+          "lines": [
+            "Ambrose sent me to count the golems. I've got as far as 'lots'.",
+            "Their cores glow like the lamps in Liora's temple.",
+            "Some say her treasure lies south, in the Hidden Steppe.",
+            "Something guards it there. Something that hits very hard."
+          ]
+        }
+      ],
       "width": 130,
       "height": 96,
       "music": "shore",
@@ -10822,6 +11756,13 @@
           "starry_water_slug": 2
         }
       },
+      "buildings": [
+        {
+          "art": "magic_tower",
+          "x": 4,
+          "y": 5
+        }
+      ],
       "npcs": [
         {
           "id": "hamini",
@@ -10844,6 +11785,53 @@
       "crowd": {
         "adventurers": 5
       },
+      "locals": [
+        {
+          "name": "Sleepwalker Mabel",
+          "race": "human",
+          "gender": "female",
+          "hair": "pink",
+          "style": "messy",
+          "outfit": "white",
+          "x": -4,
+          "y": -4,
+          "walk": {
+            "x": 10,
+            "y": -12
+          },
+          "lines": [
+            "Zzz... five more minutes...",
+            "Zzz... the bread's in the oven... zzz...",
+            "Mmm? Is it morning? ...No? Lovely. Zzz...",
+            "Zzz... wake Rosalind... the rock... it snores... zzz..."
+          ]
+        },
+        {
+          "name": "Watchman Ollie",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "brown",
+          "outfit": "blue",
+          "x": 6,
+          "y": -1,
+          "face": "down",
+          "hold": "oak_staff",
+          "props": [
+            {
+              "art": "giant_pillow",
+              "x": 2,
+              "y": 0,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "I'm the night watchman. I watch the night. It's very quiet.",
+            "Everyone in Dozywick's been asleep for a year. Even the cat.",
+            "Except Jory and me. Jory's too worried. I'm too... what was I saying?",
+            "The Craghulk snores in its cave. Every snore, the whole town sighs."
+          ]
+        }
+      ],
       "danger": true,
       "width": 100,
       "height": 80,
@@ -11171,6 +12159,23 @@
           "shadow_snowman": 1
         }
       },
+      "buildings": [
+        {
+          "art": "house_purple",
+          "x": 4,
+          "y": 5
+        },
+        {
+          "art": "house",
+          "x": -8,
+          "y": 5
+        },
+        {
+          "art": "mushroom_house_blue",
+          "x": 10,
+          "y": -5
+        }
+      ],
       "npcs": [
         {
           "id": "thomas",
@@ -11214,6 +12219,56 @@
       "crowd": {
         "adventurers": 3
       },
+      "locals": [
+        {
+          "name": "Herder Tamsin",
+          "race": "human",
+          "gender": "female",
+          "hair": "brown",
+          "style": "ponytail",
+          "outfit": "red",
+          "x": -6,
+          "y": -4,
+          "roam": 5,
+          "pet": "red_bull",
+          "hold": "sheepskin_whip",
+          "lines": [
+            "Steady, Brindle. It's just thunder. Probably.",
+            "Old Ox's friends wander all over the steppe now.",
+            "Four of them, tail to tail, and no lion dared come near. Now look.",
+            "If you see one, tell them the old ox misses them."
+          ]
+        },
+        {
+          "name": "Treasure Hunter Jasper",
+          "race": "human",
+          "gender": "male",
+          "hair": "black",
+          "outfit": "gold",
+          "x": 7,
+          "y": 9,
+          "roam": 2,
+          "hold": "steel_axe",
+          "props": [
+            {
+              "art": "wooden_crates",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "desert_pot",
+              "x": -2,
+              "y": 1
+            }
+          ],
+          "lines": [
+            "The goddess's treasure is out here. I can smell it.",
+            "It smells like dust. Mostly dust.",
+            "There's a guardian, they say. Morvane. Hits for thousands.",
+            "I'm waiting for someone else to go first. Want to go first?"
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_desert",
         "path": "tile_path",
@@ -11551,6 +12606,57 @@
       "crowd": {
         "adventurers": 4
       },
+      "locals": [
+        {
+          "name": "Ume the Picker",
+          "race": "human",
+          "gender": "female",
+          "hair": "black",
+          "style": "bob",
+          "outfit": "pink",
+          "x": -7,
+          "y": 1,
+          "roam": 3,
+          "props": [
+            {
+              "art": "wooden_crates",
+              "x": 2,
+              "y": 1
+            }
+          ],
+          "lines": [
+            "Achoo! Sorry. Everyone sneezes here. It's the pollen.",
+            "Little Crab grew a whole persimmon tree from one seed!",
+            "Now the apes come down from the hills to raid it.",
+            "Share the harvest, Little Crab says. The apes don't share."
+          ]
+        },
+        {
+          "name": "Castaway Fitz",
+          "race": "elf",
+          "gender": "male",
+          "hair": "ginger",
+          "style": "messy",
+          "outfit": "white",
+          "x": 8,
+          "y": -8,
+          "roam": 3,
+          "props": [
+            {
+              "art": "driftwood",
+              "x": 2,
+              "y": 0,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "Washed up here ten years ago. Achoo! Never left.",
+            "Who'd leave? Sun, persimmons, a mountain to climb.",
+            "Somebody hid a chest at the top of the peak. Achoo!",
+            "I'd fetch it myself, but... achoo! ...the pollen's worse up there."
+          ]
+        }
+      ],
       "width": 100,
       "height": 72,
       "music": "shore",
@@ -11852,6 +12958,56 @@
       "crowd": {
         "adventurers": 3
       },
+      "locals": [
+        {
+          "name": "Bridge Warden Aldric",
+          "race": "human",
+          "gender": "male",
+          "hair": "brown",
+          "outfit": "blue",
+          "wear": "chain_mail",
+          "at": "bridge",
+          "hold": "steel_sword",
+          "lines": [
+            "Halt! ...Sorry. Habit. Cross away.",
+            "I've watched this bridge since the Tidewater Shrine sank.",
+            "Some nights you can hear its bells under the ice.",
+            "The Temple Keeper says something still guards it down there."
+          ]
+        },
+        {
+          "name": "Ice Fisher Brin",
+          "race": "dwarf",
+          "gender": "female",
+          "hair": "white",
+          "style": "braids",
+          "outfit": "teal",
+          "wear": "snow_cloak",
+          "at": "jetty",
+          "lines": [
+            "Fish bite better when it's cold. So do I.",
+            "I pulled up a bell once. A little silver one, all green with weed.",
+            "From the old shrine, says the Temple Keeper, who keeps it safe now.",
+            "Some nights the lake rings back."
+          ]
+        },
+        {
+          "name": "Odile the Mapmaker",
+          "race": "elf",
+          "gender": "female",
+          "hair": "white",
+          "outfit": "teal",
+          "style": "ponytail",
+          "at": "island",
+          "roam": 2,
+          "lines": [
+            "The island's easy to draw. Round, with a tree. Done!",
+            "The lake's harder. It freezes, then it thaws.",
+            "Briarmere's page is near the end of Liora's book.",
+            "I wonder what's on the last page. A road, I think. A green one."
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_snow",
         "path": "tile_snow_path",
@@ -12176,6 +13332,20 @@
           "frosted_phantom": 2
         }
       },
+      "buildings": [
+        {
+          "art": "town_gate",
+          "x": 4,
+          "y": 5
+        }
+      ],
+      "decor": [
+        {
+          "art": "statue",
+          "x": 5,
+          "y": 6
+        }
+      ],
       "npcs": [
         {
           "id": "temple_keeper",
@@ -12201,6 +13371,46 @@
       "crowd": {
         "adventurers": 3
       },
+      "locals": [
+        {
+          "name": "Diver Marisol",
+          "race": "elf",
+          "gender": "female",
+          "hair": "blue",
+          "style": "long",
+          "outfit": "teal",
+          "x": 4,
+          "y": -6,
+          "roam": 4,
+          "lines": [
+            "I dive down to the old halls. Hold your breath and kick!",
+            "The jellies glow like lanterns down there.",
+            "In the deepest hall something big sleeps. It breathes in tides.",
+            "I don't go to the deepest hall."
+          ]
+        },
+        {
+          "name": "Pilgrim Sela",
+          "race": "human",
+          "gender": "female",
+          "hair": "white",
+          "style": "long",
+          "outfit": "white",
+          "x": -4,
+          "y": -8,
+          "walk": {
+            "x": -2,
+            "y": 14
+          },
+          "hold": "bamboo_staff",
+          "lines": [
+            "I walk the shrine's halls every day, as my teachers did.",
+            "The water rose long ago. We kept walking.",
+            "The Wavecrest Dragon was a guardian once. Now it guards only its anger.",
+            "Be gentle with it, if you can."
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_scree",
         "path": "tile_path",
@@ -12481,6 +13691,24 @@
       "crowd": {
         "adventurers": 2
       },
+      "locals": [
+        {
+          "name": "Bard Lyle",
+          "race": "elf",
+          "gender": "male",
+          "hair": "purple",
+          "outfit": "purple",
+          "x": -4,
+          "y": -6,
+          "roam": 4,
+          "lines": [
+            "Hello? ...hello? ...hello?",
+            "Oh! A real person. I thought you were another echo.",
+            "The hollow whispers. Mostly about the Silver Wraith.",
+            "The Warden holds the only way through to the Emerald Road. Few get past."
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_cave_floor",
         "path": "tile_scree",
@@ -12742,6 +13970,43 @@
       "crowd": {
         "adventurers": 5
       },
+      "locals": [
+        {
+          "name": "Tin Woodman",
+          "race": "human",
+          "gender": "male",
+          "hair": "black",
+          "outfit": "white",
+          "wear": "iron_plate",
+          "x": -5,
+          "y": -2,
+          "roam": 3,
+          "hold": "battle_axe",
+          "lines": [
+            "Oil can... oil can...",
+            "Ah, that's better. I've stood here rusting since the dragon came.",
+            "I'm walking to the Emerald City. For a heart.",
+            "The dragon at the gate won't let anyone by. Not even a polite tin man."
+          ]
+        },
+        {
+          "name": "Odile the Mapmaker",
+          "race": "elf",
+          "gender": "female",
+          "hair": "white",
+          "outfit": "teal",
+          "style": "ponytail",
+          "at": "mouth",
+          "x": 2,
+          "roam": 2,
+          "lines": [
+            "The last page! Or nearly. The Emerald City is just past the dragon.",
+            "I've drawn every page of Liora's book. All but one.",
+            "I'll draw the city when someone clears the way.",
+            "No rush. I'm very good at waiting, and very bad at dragons."
+          ]
+        }
+      ],
       "theme": {
         "ground": "tile_forest_floor",
         "path": "tile_path",
@@ -13204,6 +14469,13 @@
           "mint_black_kong": 2
         }
       },
+      "buildings": [
+        {
+          "art": "town_gate",
+          "x": 4,
+          "y": 5
+        }
+      ],
       "npcs": [
         {
           "id": "emerald_guard",

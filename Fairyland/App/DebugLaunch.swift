@@ -16,6 +16,8 @@ import SpriteKit
 ///                  with `face`, a few cells out in front of its tallest summit's face
 ///   summit=n       start up on the map's nth summit (0 the tallest; `WorldMap.summits`), just in
 ///                  front of its top
+///   local=n        start a couple of steps in front of the map's nth local (maps.json `locals`, 0
+///                  first), who starts on their story, the first line in a bubble that stays
 ///   bridge=n       start on the map's nth bridge (0 first: those over the river, then the
 ///                  footbridges and jetties out into its lakes; `WorldMap.bridges`), at its land end
 ///                  (a jetty's) or its middle
@@ -562,6 +564,13 @@ enum DebugLaunch {
                 session.playerPosition = WorldMap.project(CGPoint(x: (top.x - 2) * WorldMap.tileSize, y: (top.y - 2) * WorldMap.tileSize))
             }
         }
+        if let pick = flags["local"].flatMap({ Int($0) }), let def = Content.shared.map(session.data.mapID),
+           let local = def.locals?.dropFirst(pick).first {
+            let grid = WorldMap(def: def)
+            if let home = grid.spot(of: local.home) {
+                session.playerPosition = grid.center(of: grid.nearestWalkable(to: GridPoint(col: home.col - 2, row: home.row - 2)) ?? home)
+            }
+        }
         if let pick = flags["bridge"].flatMap({ Int($0) }), let def = Content.shared.map(session.data.mapID) {
             let grid = WorldMap(def: def)
             if grid.bridges.indices.contains(pick) {
@@ -672,6 +681,18 @@ enum DebugLaunch {
                     guard coordinator.isReady, coordinator.world.view != nil else { continue }
                     try? await Task.sleep(for: .seconds(1))
                     coordinator.world.featherAwayForDebug()
+                    return
+                }
+            }
+        }
+        // `local=n`: once the map is on screen, the local you start beside starts on their story.
+        if flags["local"] != nil {
+            Task {
+                for _ in 0..<240 {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    guard coordinator.isReady, coordinator.world.view != nil else { continue }
+                    try? await Task.sleep(for: .seconds(1))
+                    coordinator.world.localTellsForDebug()
                     return
                 }
             }

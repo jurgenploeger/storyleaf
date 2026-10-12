@@ -253,7 +253,9 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   shouldn't get past the edge's mountains, but you could walk up onto the range and along the map's edge
   behind it): from 12 points up (`WorldMap.cragFoot`), and its last three rows along the edge, only its
   road walks on, up to the mouth; a dip between its summits shut in behind their rock is walled off too
-  (`sealCrags`). You come out of the cave on the road in front of it. 0.4.5 drew
+  (`sealCrags`). Since 0.4.11 its rock's ledges (`Look.strata`, a mountain's too) show only on rock facing
+  you: on the slopes turned away behind a cave's range the view squeezed each band into a thin dark line,
+  which playtesting took for a crack in the ground (2026-10-12). You come out of the cave on the road in front of it. 0.4.5 drew
   it as the cave's own rock in flat-topped walls (`CaveWalls`) with a dark arch in the face, or on the
   south and west a cleft under an arch; playtesting (2026-10-11) asked for a slope instead of flat tops
   and walls, and for no grass past it. How FO showed its cave entrances isn't in any source reachable
@@ -665,6 +667,31 @@ the Wishing Seal, which stays the Monster Book's last reward.
     rare sightings that really raise a rare monster's odds on its map for 20 minutes.
   - Goldburg's square has market traders under signs, selling their real deals of the day
     (`crowd.traders`). `botDensity` in content/crowd.json thins out every map's bots.
+  - Us (since 0.4.12, asked for in playtesting 2026-10-12: "characters walking/standing around that give
+    the place more character and a story"): every map has locals (maps.json `locals`, `MapDef.Local`),
+    two or three out in the fields and one in each cave and town, 56 in all. Each has a look of their own
+    (race, gender, hair, outfit; the rest drawn from their place in the list, so they look the same on
+    every visit), a home by a landmark (a jetty's end, a road's bridge, a lake's island or shore, a cave's
+    mouth), on a summit or out from the middle, and stands there, strolls about it or walks an errand
+    there and back (`walk`). Some carry something (`hold`, a weapon from items.json, never a treasure),
+    wear armour, lead an animal (`pet`) or have their things set down round them (`props`). They tell a
+    short story a line at a time, in order, starting as you come within 160 points and going on every 9
+    to 14 seconds while you stay (a tap brings the next line at once), in white like the villagers. Some
+    stories cross maps: Little Lou in Meadowbrook, Tess at Sunny Meadow's bridge and her brother Wil lost in
+    Twilight Woods; Odile the Mapmaker on five maps, drawing the pages of Liora's book. Fairy-tale folk
+    (Hansel and Gretel, Bo-Peep, Odette, the Tin Woodman) are public domain. Whether FO had people like
+    this out in its fields isn't in any source reachable from a cloud session; they're ours.
+  - Us (since 0.4.12, playtesting 2026-10-12: "near the temple keeper and other guilds there should
+    actually be something like a temple or building"): whoever works somewhere has it at their back, a
+    step right and two rows behind them (maps.json `buildings`), so they stand at its door.
+    - Briarmere's Temple Keeper keeps a lakeside shrine: the stone arch with Liora's statue behind it.
+    - Ambrose the Wise has a tower, Hermit Orrin a mushroom hut, the Old Swan Keeper and Little Pig
+      cottages, Mother Sheep a windmill, and Dozywick some houses.
+    - In Meadowbrook the Arcane Circle has its own tower beside the guild hall, which the Warrior
+      Guild and the Wildfolk Lodge share. The other towns' healers and shops stand at an inn's and a
+      shop's door, and Prismhaven's toymaker at a toy shop's.
+    - All existing art: new sprites (a real temple, a warrior hall, a lodge) were priced at $0.06 each
+      and turned down for now (2026-10-12).
   - The minimap shows everyone else on the map as dots (since 0.3.55, asked for in playtesting 2026-10-06):
     blue adventurers, white friends, red hostile ones, green party friends; on dark maps only on cells you've
     seen. Whether FO's minimap showed other players isn't in any source reachable from a cloud session.
