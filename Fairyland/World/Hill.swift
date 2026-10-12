@@ -248,12 +248,13 @@ extension WorldMap {
             }
         }
 
-        /// How steep a range's sides get halfway up, at most, in points a cell: gentle slopes on the
-        /// easiest maps (10), steep and rocky on the most dangerous (14). The view looks down at 30°,
+        /// How steep a range's sides get halfway up, at most, in points a cell: gentler slopes on the
+        /// easiest maps (13), steep and rocky on the most dangerous (18). The view looks down at 30°,
         /// so ground facing away from you would drop out of sight past about 22 points a cell (going
-        /// diagonally); this leaves room for the ripples and where summits meet.
+        /// diagonally); this leaves room for the ripples and where summits meet, and `unfold()` keeps
+        /// what's left in view. Up from 10 to 14 before 0.4.14, where hills hardly showed.
         static func steepness(rockiness: Double) -> Double {
-            10 + 4 * min(1, max(0, rockiness))
+            13 + 5 * min(1, max(0, rockiness))
         }
 
         init(lobes: [Lobe], ripples: [(fx: Double, px: Double, fy: Double, py: Double)], steepness: Double) {

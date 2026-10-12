@@ -1731,7 +1731,7 @@
             2,
             3
           ],
-          "height": 30
+          "height": 48
         },
         "props": [
           {
@@ -2106,7 +2106,7 @@
             2,
             4
           ],
-          "height": 40
+          "height": 64
         },
         "props": [
           {
@@ -2587,7 +2587,7 @@
             2,
             4
           ],
-          "height": 40
+          "height": 64
         },
         "props": [
           {
@@ -4154,7 +4154,7 @@
           ],
           "mountains": {
             "count": 1,
-            "height": 170
+            "height": 210
           }
         },
         "props": [
@@ -4647,7 +4647,7 @@
             2,
             3
           ],
-          "height": 28
+          "height": 45
         },
         "props": [
           {
@@ -5041,10 +5041,10 @@
             3,
             5
           ],
-          "height": 50,
+          "height": 80,
           "mountains": {
             "count": 1,
-            "height": 160
+            "height": 200
           }
         },
         "props": [
@@ -6495,7 +6495,7 @@
             3,
             5
           ],
-          "height": 32,
+          "height": 51,
           "bank": "tile_sand"
         },
         "props": [
@@ -6927,10 +6927,10 @@
             2,
             4
           ],
-          "height": 56,
+          "height": 90,
           "mountains": {
             "count": 2,
-            "height": 200
+            "height": 250
           },
           "bank": "tile_cave_rock"
         },
@@ -7351,10 +7351,10 @@
             2,
             4
           ],
-          "height": 52,
+          "height": 83,
           "mountains": {
             "count": 1,
-            "height": 160
+            "height": 200
           }
         },
         "props": [
@@ -8564,10 +8564,10 @@
             2,
             4
           ],
-          "height": 48,
+          "height": 77,
           "mountains": {
             "count": 1,
-            "height": 160
+            "height": 200
           },
           "bank": "tile_chocolate"
         },
@@ -9134,10 +9134,10 @@
             2,
             4
           ],
-          "height": 44,
+          "height": 70,
           "mountains": {
             "count": 1,
-            "height": 130
+            "height": 160
           }
         },
         "props": [
@@ -10252,7 +10252,7 @@
             2,
             3
           ],
-          "height": 40
+          "height": 64
         },
         "props": [
           {
@@ -10779,7 +10779,7 @@
             3,
             4
           ],
-          "height": 30
+          "height": 48
         },
         "props": [
           {
@@ -11132,7 +11132,7 @@
           ],
           "mountains": {
             "count": 1,
-            "height": 150
+            "height": 190
           }
         },
         "props": [
@@ -11519,7 +11519,7 @@
             2,
             4
           ],
-          "height": 40
+          "height": 64
         },
         "props": [
           {
@@ -11857,7 +11857,7 @@
             2,
             4
           ],
-          "height": 40
+          "height": 64
         },
         "props": [
           {
@@ -12286,7 +12286,7 @@
             3,
             5
           ],
-          "height": 32,
+          "height": 51,
           "bank": "tile_sand"
         },
         "props": [
@@ -12677,10 +12677,10 @@
             2,
             3
           ],
-          "height": 36,
+          "height": 58,
           "mountains": {
             "count": 1,
-            "height": 130
+            "height": 160
           }
         },
         "props": [
@@ -13038,7 +13038,7 @@
             2,
             4
           ],
-          "height": 44
+          "height": 70
         },
         "props": [
           {
@@ -13426,7 +13426,7 @@
             2,
             3
           ],
-          "height": 44
+          "height": 70
         },
         "props": [
           {
@@ -14028,10 +14028,10 @@
             2,
             4
           ],
-          "height": 48,
+          "height": 77,
           "mountains": {
             "count": 1,
-            "height": 140
+            "height": 175
           }
         },
         "props": [

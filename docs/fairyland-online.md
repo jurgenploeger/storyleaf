@@ -128,16 +128,19 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
 - Rocky or grassy by danger (ours, since 0.4.5, asked for in playtesting 2026-10-11: rocky mountains on
   dangerous maps, slopes on easy ones): `WorldMap.rockiness`, 0 to 1 from the middle of the map's
   encounter levels ((mid − 15) / 70; Sunny Meadow 0, Swan Lake 0.3, Crystal Mountain 0.9, Hidden Steppe
-  1), or `theme.hills.rocky`. It sets how steep summits get halfway up (10 points a cell on grassy hills,
-  14 on rocky ones, so gentle maps' hills spread wider for their height), how far the bank shows down the
+  1), or `theme.hills.rocky`. It sets how steep summits get halfway up (13 points a cell on grassy hills,
+  18 on rocky ones, so gentle maps' hills spread wider for their height; 10 and 14 before 0.4.14, when
+  playtesting 2026-10-12 found the hills, slopes and mountains hardly noticeable: since then a summit can also
+  rise 0.85 of its narrower reach at that steepness, not 0.75, maps ask for 1.6 times the height (70 when not
+  given) and mountains 1.25 times, at least 17 points a cell steep; the caves' walls kept 14), how far the bank shows down the
   slopes and how solid (from 0.2 up scree when the map names none), how deep the shade, and boulders on
   the steeper slopes from 0.3 up (the map's own boulder and rock props, 8% of steep cells at the rockiest).
 - Ranges and mountains (ours, since 0.4.4, asked for in playtesting 2026-10-11: hills should stretch across
   the land and some rise to a mountain): each hill is a range, a chain of summits (`chain`, 2 to 4 by default)
   along a wandering line, each with its own height, blended so where two meet stands a little fuller (the
   fourth root of their heights' fourth powers) and their tops often join into a ridge you can walk along.
-  `mountains` (count, height up to 240) adds ranges with one summit far taller and wider than the rest, at
-  least 13 points a cell steep whatever the land; a summit is only as tall as its width lets it be at that
+  `mountains` (count, height up to 300 since 0.4.14, 240 before) adds ranges with one summit far taller and wider
+  than the rest, at least 17 points a cell steep whatever the land (13 before 0.4.14); a summit is only as tall as its width lets it be at that
   steepness, so a mountain is as tall as asked where there's room, else as tall as the roomiest place allows.
   Since 0.4.9 a mountain faces you (asked for in playtesting 2026-10-12: "some maps really need mountains
   taller", more like RuneScape's): only ground facing away has to stay as gentle as the view (it would fold

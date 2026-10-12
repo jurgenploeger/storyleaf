@@ -1042,7 +1042,8 @@ final class WorldMap {
         let facesYou = out.x + out.y > 0
         let toward: (x: Double, y: Double) = facesYou ? (x: -out.x, y: -out.y) : out
         let angle = edge == .north || edge == .south ? 0.0 : Double.pi / 2
-        let steepness = Hill.steepness(rockiness: 1)
+        // As steep as the rockiest hills were before they grew (0.4.14): the walls they make are tuned to it.
+        let steepness = 14.0
         func summit(_ a: Double, _ o: Double, along reach: Double, across depth: Double, turn: Double, peak: Double) -> Hill.Lobe {
             let centre = point(a, o)
             var lobe = Hill.Lobe(x: centre.x, y: centre.y, along: reach, across: depth, angle: angle + turn, peak: peak, steepness: steepness)
@@ -1387,10 +1388,10 @@ final class WorldMap {
         let sizes = hills.size ?? [3, 6]
         let smallest = Double(max(2, sizes.first ?? 3)), biggest = Double(max(sizes.first ?? 3, sizes.last ?? 6))
         let fewest = max(1, hills.chain?.first ?? 2), most = max(fewest, hills.chain?.last ?? 4)
-        let tallest = hills.height ?? 44
+        let tallest = hills.height ?? 70
         let steep = Hill.steepness(rockiness: rockiness)
         // A mountain is steep whatever the land, or it'd need more room than a map has.
-        let mountainSteep = max(steep, 13)
+        let mountainSteep = max(steep, 17)
         let mountains = [Double?](repeating: hills.mountains?.height, count: hills.mountains?.count ?? 0)
         var claimed: Set<GridPoint> = []
         for mountain in mountains + [Double?](repeating: nil, count: hills.count) {
@@ -1423,7 +1424,7 @@ final class WorldMap {
                         front = along / Self.mountainFace
                     } else {
                         // A narrow one stands lower, so it still has a top.
-                        peak = min(peak, min(along, across) * 0.75 * steepness / 1.5)
+                        peak = min(peak, min(along, across) * 0.85 * steepness / 1.5)
                     }
                     var x = 0.0, y = 0.0
                     if let previous = lobes.last {

@@ -4,8 +4,9 @@
     {
       "version": "0.4.14",
       "date": "2026-10-12",
-      "title": "Who's who on the minimap",
+      "title": "Taller hills, who's who on the minimap",
       "notes": [
+        "Hills and mountains stand taller and steeper: hills about half as high again, mountains a quarter, so you can see the land rise.",
         "The minimap shows the folk who live on each map as yellow dots, besides the adventurers and your friends.",
         "Icons on the minimap show who does what: a gold \"!\" or \"?\" over a quest giver with a quest for you, a book over the others, a heart for the healer, coins for the shop, a hammer for the smith, a shield for the guilds, a gift for a chest still to open and a sword for a boss still to beat."
       ]

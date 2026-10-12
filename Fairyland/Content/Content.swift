@@ -456,7 +456,7 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let size: [Int]?
         /// How many summits a range runs to, one after another: [fewest, most] (2 to 4 when not given).
         let chain: [Int]?
-        /// How high the biggest stand, in points (44 when not given). A narrow summit stands lower, so
+        /// How high the biggest stand, in points (70 when not given). A narrow summit stands lower, so
         /// its sides are never too steep to see.
         let height: Double?
         /// Ranges that each rise to a mountain: one summit far taller and wider than the rest.
