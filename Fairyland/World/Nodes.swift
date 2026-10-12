@@ -9,14 +9,6 @@ enum Nodes {
     /// Fairyland's yellow name tags.
     static let nameYellow = UIColor(red: 1, green: 0.95, blue: 0.35, alpha: 1)
 
-    static func shadow(width: CGFloat) -> SKShapeNode {
-        let node = SKShapeNode(ellipseOf: CGSize(width: width, height: width * 0.35))
-        node.fillColor = UIColor(white: 0, alpha: 0.22)
-        node.strokeColor = .clear
-        node.zPosition = -1
-        return node
-    }
-
     /// A cream speech bubble with a little tail, anchored at the tail's tip.
     static func speechBubble(_ text: String, maxWidth: CGFloat = 150) -> SKSpriteNode {
         let base = UIFont.systemFont(ofSize: 11, weight: .bold)

@@ -1355,6 +1355,9 @@ final class WorldScene: SKScene {
         sunShown = sun
         HillArt.light(raisedHills, by: sun)
         for shadow in shadows { shadow.fall(from: sun) }
+        // Everyone standing on the map casts theirs the same way, and anyone set down later too.
+        Walker.sun = sun
+        for case let walker as Walker in world.children { walker.cast(from: sun) }
         for spot in onSlopes { Self.shade(spot.node, hx: spot.hx, hy: spot.hy, ambient: spot.ambient, sun: sun) }
         lighting?.follow(sun)
     }

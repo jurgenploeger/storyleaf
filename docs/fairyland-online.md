@@ -651,7 +651,10 @@ the Wishing Seal, which stays the Monster Book's last reward.
     as the sun gets lower, slopes facing it get brighter next to the flat and more of the others fall into
     the hill's shadow, while the shade's depth stays midday's (the sky's light fades with the sun's). Trees'
     and rocks' shadows (`Lighting.Shadow`) are a round under them stretched away from the sun along the ground,
-    a quarter of their width at midday (as they were) and up to 1.4 widths at sunrise and sunset; the sun's
+    a quarter of their width at midday (as they were) and up to 1.4 widths at sunrise and sunset. Since 0.4.13
+    (playtesting 2026-10-12: the characters' shadows should follow too) everyone who walks casts the same
+    shadow (`Walker.cast`, `Lighting.Shadow.shape`) instead of a fixed dark ellipse under their feet, so
+    at night they're as faint as the trees'. The sun's
     flare comes in along the top of the screen toward it through the morning and sits in the top-left corner
     from midday on, and the sunbeams lean their tops toward it. Before 0.4.7 the beams leaned to the upper
     right, against the flare in the top-left corner. In 0.4.7 the flare went on down the left side in the

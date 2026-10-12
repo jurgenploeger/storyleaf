@@ -62,6 +62,11 @@ final class Walker: SKNode {
     private var goingRight = false
     /// How high the ground under it stands (`WorldScene.groundHeight(at:)`).
     private(set) var lift: CGFloat = 0
+    /// Its shadow on the ground, cast away from the sun like the scenery's (`cast(from:)`).
+    private let shadow = SKSpriteNode(texture: SoftTextures.glow)
+    /// Where the light over the map comes from now, for anyone set down after it last moved
+    /// (`WorldScene.follow`).
+    static var sun = Sun.noon
 
     override var position: CGPoint {
         didSet { settle() }
@@ -79,6 +84,16 @@ final class Walker: SKNode {
         if node === body { super.addChild(node) } else { body.addChild(node) }
     }
 
+    /// Lays its shadow on the ground away from `sun`, as the scenery's (`Lighting.Shadow.shape`):
+    /// a soft round under its feet, stretched the lower the sun, fainter by moonlight.
+    func cast(from sun: Sun) {
+        let (middle, size, turn) = Lighting.Shadow.shape(wide: Double(cycle.size.width) * 0.9, sun: sun)
+        shadow.position = CGPoint(x: middle.dx, y: middle.dy)
+        shadow.size = size
+        shadow.zRotation = turn
+        shadow.alpha = 0.34 * CGFloat(sun.strength)
+    }
+
     /// `badge`: BOT after the name.
     init(cycle: WalkCycle, label: String?, labelColor: UIColor = .white, badge: PlayerBadge? = nil) {
         self.cycle = cycle
@@ -86,7 +101,11 @@ final class Walker: SKNode {
         sprite.anchorPoint = CGPoint(x: 0.5, y: 0.08)
         super.init()
         super.addChild(body)
-        addChild(Nodes.shadow(width: cycle.size.width * 0.5))
+        shadow.color = .black
+        shadow.colorBlendFactor = 1
+        shadow.zPosition = -1
+        addChild(shadow)
+        cast(from: Self.sun)
         addChild(turn)
         turn.addChild(sprite)
         // It starts out looking the way its picture does.
