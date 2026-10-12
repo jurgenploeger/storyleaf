@@ -47,7 +47,7 @@ struct ItemIcon: View {
 
     var body: some View {
         // A quest treasure (`Content.questGiving`) has a gold frame, and a sparkle once there's room.
-        let treasure = Content.shared.isQuestTreasure(item.id)
+        let treasure = Content.shared.isTreasure(item.id)
         IconTile(icon: item.icon.flatMap(GameIcon.init) ?? .gift, tint: tint, size: size,
                  picture: item.art.flatMap(ArtLibrary.shared.artImage))
             .overlay {

@@ -4305,6 +4305,96 @@
       },
       "level": 190,
       "description": "The Emerald Dragon's heart-stone, set in a ring. Only one was ever made."
+    },
+    {
+      "id": "gumdrop_star_charm",
+      "icon": "gem",
+      "art": "item_gumdrop_star_charm",
+      "name": "Gumdrop Star Charm",
+      "type": "accessory",
+      "price": 640,
+      "stats": {
+        "attack": 5,
+        "magic": 5,
+        "speed": 3
+      },
+      "level": 24,
+      "description": "A sugar star from the very top of Gumdrop Peaks. It never melts, and it never stops sparkling."
+    },
+    {
+      "id": "shiverpeak_gloves",
+      "icon": "sword",
+      "art": "item_shiverpeak_gloves",
+      "name": "Shiverpeak Gloves",
+      "type": "gloves",
+      "price": 1400,
+      "stats": {
+        "attack": 9,
+        "defense": 5,
+        "speed": 2
+      },
+      "level": 42,
+      "description": "Frost-stiff gloves left on Shiverdell's peak. Whoever wears them never feels their fingers shiver."
+    },
+    {
+      "id": "crystal_crown_pendant",
+      "icon": "gem",
+      "art": "item_crystal_crown_pendant",
+      "name": "Crystal Crown Pendant",
+      "type": "necklace",
+      "price": 3700,
+      "stats": {
+        "magic": 14,
+        "mp": 25,
+        "hp": 40
+      },
+      "level": 80,
+      "description": "Cut from the crystal that crowns Crystal Mountain's peak. It hums when the wind blows."
+    },
+    {
+      "id": "frostpeak_boots",
+      "icon": "wind",
+      "art": "item_frostpeak_boots",
+      "name": "Frostpeak Boots",
+      "type": "boots",
+      "price": 3100,
+      "stats": {
+        "speed": 11,
+        "defense": 9,
+        "hp": 20
+      },
+      "level": 84,
+      "description": "Boots that never slip, found high above Snow White Forest, where the snow never melts."
+    },
+    {
+      "id": "firepeak_ring",
+      "icon": "gem",
+      "art": "item_firepeak_ring",
+      "name": "Firepeak Ring",
+      "type": "accessory",
+      "price": 10200,
+      "stats": {
+        "attack": 16,
+        "magic": 16,
+        "speed": 6
+      },
+      "level": 132,
+      "description": "A ring of black glass from the old fire mountain at Sneezle Isle's heart. Still warm."
+    },
+    {
+      "id": "emerald_crest_gauntlets",
+      "icon": "sword",
+      "art": "item_emerald_crest_gauntlets",
+      "name": "Emerald Crest Gauntlets",
+      "type": "gloves",
+      "price": 19500,
+      "stats": {
+        "attack": 24,
+        "defense": 16,
+        "hp": 50
+      },
+      "level": 192,
+      "description": "Gauntlets of green steel from the crest above Emerald Road, where the dragon likes to sun itself."
     }
   ]
 }

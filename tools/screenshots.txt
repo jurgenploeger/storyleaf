@@ -157,6 +157,16 @@ hill_swamp     | newgame,level=25,map=frog_swamp,hill=0,hour=12,weather=clear | 
 mountain_valley | newgame,level=40,map=valley_of_fear,hill=tallest,face,hour=12,weather=clear | 8
 mountain_isle_land | newgame,level=125,map=hachoo_island,hill=tallest,face,landscape,zoom=0.85,hour=12,weather=clear | 8
 mountain_wolf  | newgame,level=30,map=wolf_lair,hill=tallest,face,hour=12,weather=clear | 8
+# Up on the summits (`NPCDef.summit`): the bosses that moved up, the treasure chests, Pebble on Crystal
+# Mountain's second peak and Mister Frost on Snow White Forest's.
+summit_moon    | newgame,level=100,map=moonglow,summit=0,hour=12,weather=clear | 8
+summit_puppet  | newgame,level=60,map=puppet_hill,summit=0,hour=12,weather=clear | 8
+summit_wolf_land | newgame,level=34,map=wolf_lair,summit=0,landscape,hour=12,weather=clear | 8
+summit_chest_crystal | newgame,level=85,map=crystal_mountain,summit=0,hour=12,weather=clear | 8
+summit_pebble  | newgame,level=85,map=crystal_mountain,summit=1,hour=12,weather=clear | 8
+summit_snow    | newgame,level=85,map=snow_white_forest,summit=0,hour=12,weather=clear | 8
+summit_candy_land | newgame,level=26,map=candy_mountain,summit=0,landscape,hour=12,weather=clear | 8
+summit_treasure | newgame,class=fighter,level=90,map=crystal_mountain,menu=bag,bag=crystal_crown_pendant+frostpeak_boots+gumdrop_star_charm,inspect=crystal_crown_pendant | 8
 # The sun through the day (`Sun`): low in the east in the morning (shadows toward you), over the upper
 # left at midday, low in the west in the afternoon (shadows away from you), the moon at night.
 sun_morning    | newgame,map=sunny_meadow,hill=0,hour=7,weather=clear  | 8

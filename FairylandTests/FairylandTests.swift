@@ -323,6 +323,32 @@ struct ContentTests {
         }
     }
 
+    @Test func summitsHoldWhatsSetUpThere() throws {
+        // A boss, a chest or a friend set up on a summit (`NPCDef.summit`) stands up on its top, on
+        // ground you can walk on, and you can get there from the middle of the map.
+        let tile = WorldMap.tileSize
+        for def in content.maps {
+            let up = (def.npcs ?? []).filter { $0.summit != nil }
+            guard !up.isEmpty else { continue }
+            let map = WorldMap(def: def)
+            let hub = map.offset(def.hub?.first ?? 0, def.hub?.last ?? 0)
+            for npc in up {
+                let summit = try #require(npc.summit)
+                guard map.summits.indices.contains(summit) else {
+                    Issue.record("map \(def.id): no summit \(summit) for \(npc.id)")
+                    continue
+                }
+                let top = map.summits[summit]
+                let spot = map.spot(of: npc)
+                let peak = map.height(atGrid: CGPoint(x: top.x * tile, y: top.y * tile))
+                let here = map.height(atGrid: CGPoint(x: (CGFloat(spot.col) + 0.5) * tile, y: (CGFloat(spot.row) + 0.5) * tile))
+                #expect(peak > 60 && here > peak * 0.8, "map \(def.id): \(npc.id) isn't up on a summit (\(here) of \(peak) high)")
+                #expect(map.isWalkable(spot), "map \(def.id): \(npc.id) stands where you can't walk")
+                #expect(!map.path(from: map.center(of: hub), to: map.center(of: spot)).isEmpty, "map \(def.id): no way up to \(npc.id)")
+            }
+        }
+    }
+
     @Test func housesStandOffTheRoads() {
         for def in content.maps {
             let map = WorldMap(def: def)

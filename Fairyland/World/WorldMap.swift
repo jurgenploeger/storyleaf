@@ -66,6 +66,9 @@ final class WorldMap {
     private(set) var hills: [Hill] = []
     /// Which hill each cell it rises over belongs to.
     private var hillOf: [GridPoint: Int] = [:]
+    /// The tops of the hills' summits (not a cave's range), the tallest first, in cells: where
+    /// NPCs and decorations stand that are set up on one (`NPCDef.summit`, `spot(x:y:summit:)`).
+    private(set) var summits: [CGPoint] = []
     /// The cells the hills' trails run over (for the minimap).
     private(set) var trailCells: Set<GridPoint> = []
     /// The map's lakes (`theme.lakes`): each one's water, and its island if it has one. Their water
@@ -223,6 +226,10 @@ final class WorldMap {
         }
         if def.theme.cave == nil, let ponds { digPonds(ponds, &rng) }
         if def.town == nil, def.theme.cave == nil, let hills = def.theme.hills { raiseHills(hills, &rng) }
+        // Each summit's top is the middle of its round, where it rises highest.
+        let lobes: [Hill.Lobe] = self.hills.flatMap { $0.lobes }.sorted { $0.peak > $1.peak }
+        summits = lobes.map { lobe in CGPoint(x: lobe.x, y: lobe.y) }
+        for npc in def.npcs ?? [] where npc.summit != nil { keepInView(spot(of: npc), wide: npc.role == .boss) }
         // The ranges where roads lead into caves join the hills after them, so the hills keep their
         // places in the list.
         for range in ranges {
@@ -307,6 +314,17 @@ final class WorldMap {
     func offset(_ x: Int, _ y: Int) -> GridPoint {
         GridPoint(col: center.col + x, row: center.row + y)
     }
+
+    /// Where an NPC or a decoration stands: up on a summit (`summit`, the tallest first; `x` and
+    /// `y` step from its top) if the map has that many, else `x` and `y` out from the middle.
+    func spot(x: Int, y: Int, summit: Int?) -> GridPoint {
+        guard let summit, summits.indices.contains(summit) else { return offset(x, y) }
+        let top = summits[summit]
+        return GridPoint(col: Int(top.x.rounded(.down)) + x, row: Int(top.y.rounded(.down)) + y)
+    }
+
+    /// Where an NPC stands (`spot(x:y:summit:)`).
+    func spot(of npc: NPCDef) -> GridPoint { spot(x: npc.x, y: npc.y, summit: npc.summit) }
 
     /// On-screen centre of a cell's diamond.
     func center(of cell: GridPoint) -> CGPoint {
@@ -1170,17 +1188,20 @@ final class WorldMap {
     /// screen, toward you), where it would hide them. A boss is big, and the trees around it tall,
     /// so it gets a wider clearing. You can still walk there.
     private func keepNPCsInView() {
-        for npc in def.npcs ?? [] {
-            let spot = offset(npc.x, npc.y)
-            let reach = npc.role == .boss ? 5 : 2
-            for dc in -reach...1 {
-                for dr in -reach...1 { occupy(GridPoint(col: spot.col + dc, row: spot.row + dr), blocking: false) }
-            }
+        // Those up on a summit once the hills are raised.
+        for npc in def.npcs ?? [] where npc.summit == nil { keepInView(offset(npc.x, npc.y), wide: npc.role == .boss) }
+    }
+
+    /// Keeps scenery off an NPC's spot and the ground in front of it, wider round a boss.
+    private func keepInView(_ spot: GridPoint, wide: Bool) {
+        let reach = wide ? 5 : 2
+        for dc in -reach...1 {
+            for dr in -reach...1 { occupy(GridPoint(col: spot.col + dc, row: spot.row + dr), blocking: false) }
         }
     }
 
     private func placeOwnBuildings() {
-        let npcs = Set((def.npcs ?? []).map { offset($0.x, $0.y) })
+        let npcs = Set((def.npcs ?? []).filter { $0.summit == nil }.map { offset($0.x, $0.y) })
         let fence = Set(fenceCells)
         func fits(_ anchor: GridPoint) -> Bool {
             for dc in -1...1 {

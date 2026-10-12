@@ -4106,9 +4106,21 @@
           "name": "Mister Frost",
           "role": "quests",
           "art": "monster_snowman",
-          "x": -4,
-          "y": 3,
+          "x": -2,
+          "y": 0,
+          "summit": 0,
           "greeting": "Brrr-illiant to see you!"
+        },
+        {
+          "id": "snow_summit_chest",
+          "name": "Treasure Chest",
+          "role": "chest",
+          "art": "treasure_chest",
+          "x": 1,
+          "y": 1,
+          "summit": 0,
+          "greeting": "A chest, left at the top for whoever climbs this far.",
+          "gives": "frostpeak_boots"
         }
       ],
       "encounters": {
@@ -4213,6 +4225,15 @@
               9
             ]
           ]
+        }
+      ],
+      "decor": [
+        {
+          "art": "ice_cluster",
+          "x": 2,
+          "y": -2,
+          "blocking": false,
+          "summit": 0
         }
       ]
     },
@@ -4919,6 +4940,33 @@
               "Travellers can keep to the road again; Shiverdell is only a dark valley now. Only the cavern to the east still squeaks."
             ]
           }
+        },
+        {
+          "id": "shiverdell_summit_chest",
+          "name": "Treasure Chest",
+          "role": "chest",
+          "art": "treasure_chest",
+          "x": 0,
+          "y": 0,
+          "summit": 0,
+          "greeting": "A chest, left at the top for whoever climbs this far.",
+          "gives": "shiverpeak_gloves"
+        }
+      ],
+      "decor": [
+        {
+          "art": "spooky_lantern",
+          "x": -2,
+          "y": 1,
+          "blocking": false,
+          "summit": 0
+        },
+        {
+          "art": "tombstone",
+          "x": 1,
+          "y": -2,
+          "blocking": false,
+          "summit": 0
         }
       ]
     },
@@ -6624,9 +6672,44 @@
           "name": "Pebble",
           "role": "quests",
           "art": "monster_floating_stone_amber",
-          "x": 4,
-          "y": -3,
+          "x": 0,
+          "y": 0,
+          "summit": 1,
           "greeting": "...rumble. Oh! Sorry, I was napping."
+        },
+        {
+          "id": "crystal_summit_chest",
+          "name": "Treasure Chest",
+          "role": "chest",
+          "art": "treasure_chest",
+          "x": 0,
+          "y": 0,
+          "summit": 0,
+          "greeting": "A chest, left at the top for whoever climbs this far.",
+          "gives": "crystal_crown_pendant"
+        }
+      ],
+      "decor": [
+        {
+          "art": "star_crystal",
+          "x": -2,
+          "y": 1,
+          "blocking": false,
+          "summit": 0
+        },
+        {
+          "art": "star_crystal",
+          "x": 1,
+          "y": -2,
+          "blocking": false,
+          "summit": 0
+        },
+        {
+          "art": "star_crystal",
+          "x": -2,
+          "y": 1,
+          "blocking": false,
+          "summit": 1
         }
       ]
     },
@@ -6990,7 +7073,8 @@
           "role": "boss",
           "art": "boss_moon_rabbit_queen",
           "x": 0,
-          "y": -16,
+          "y": 0,
+          "summit": 0,
           "greeting": "Who stole my moon-mochi? Was it YOU? Hop to it and face me!",
           "monster": "moon_rabbit_queen",
           "level": 105,
@@ -7001,6 +7085,22 @@
               "Mystery solved. The queen scoops up the little thief and hops back up to the moon, and Moonwhisper can sleep under a quiet full moon again."
             ]
           }
+        }
+      ],
+      "decor": [
+        {
+          "art": "moon_lantern_post",
+          "x": -2,
+          "y": 1,
+          "blocking": false,
+          "summit": 0
+        },
+        {
+          "art": "moon_lantern_post",
+          "x": 1,
+          "y": -2,
+          "blocking": false,
+          "summit": 0
         }
       ]
     },
@@ -8229,6 +8329,35 @@
       "world": [
         0,
         2
+      ],
+      "npcs": [
+        {
+          "id": "gumdrop_summit_chest",
+          "name": "Treasure Chest",
+          "role": "chest",
+          "art": "treasure_chest",
+          "x": 0,
+          "y": 0,
+          "summit": 0,
+          "greeting": "A chest, left at the top for whoever climbs this far.",
+          "gives": "gumdrop_star_charm"
+        }
+      ],
+      "decor": [
+        {
+          "art": "lollipop",
+          "x": -2,
+          "y": 1,
+          "blocking": false,
+          "summit": 0
+        },
+        {
+          "art": "lollipop_pink",
+          "x": 1,
+          "y": -2,
+          "blocking": false,
+          "summit": 0
+        }
       ]
     },
     {
@@ -8567,7 +8696,8 @@
           "role": "boss",
           "art": "boss_wolf_leader",
           "x": 0,
-          "y": 18,
+          "y": 0,
+          "summit": 0,
           "greeting": "Grrr... the sheep's lambs are ours. Turn back, little hero.",
           "monster": "wolf_leader",
           "level": 36,
@@ -8583,6 +8713,22 @@
       "world": [
         -1,
         2
+      ],
+      "decor": [
+        {
+          "art": "skull_bones",
+          "x": -2,
+          "y": 1,
+          "blocking": false,
+          "summit": 0
+        },
+        {
+          "art": "skull_bones",
+          "x": 1,
+          "y": -2,
+          "blocking": false,
+          "summit": 0
+        }
       ]
     },
     {
@@ -10371,7 +10517,8 @@
           "role": "boss",
           "art": "boss_puppet_king",
           "x": 0,
-          "y": 18,
+          "y": 0,
+          "summit": 0,
           "greeting": "Dance! Dance for your king, forever and ever!",
           "monster": "puppet_king",
           "level": 62,
@@ -10387,6 +10534,22 @@
       "world": [
         3,
         1
+      ],
+      "decor": [
+        {
+          "art": "spooky_lantern",
+          "x": -2,
+          "y": 1,
+          "blocking": false,
+          "summit": 0
+        },
+        {
+          "art": "spooky_lantern",
+          "x": 1,
+          "y": -2,
+          "blocking": false,
+          "summit": 0
+        }
       ]
     },
     {
@@ -11658,6 +11821,26 @@
           "x": -3,
           "y": 3,
           "greeting": "Oh! Mind the persimmons, they fall hard around here."
+        },
+        {
+          "id": "sneezle_summit_chest",
+          "name": "Treasure Chest",
+          "role": "chest",
+          "art": "treasure_chest",
+          "x": 0,
+          "y": 0,
+          "summit": 0,
+          "greeting": "A chest, left at the top for whoever climbs this far.",
+          "gives": "firepeak_ring"
+        }
+      ],
+      "decor": [
+        {
+          "art": "sand_ruin",
+          "x": -2,
+          "y": 1,
+          "blocking": false,
+          "summit": 0
         }
       ]
     },
@@ -13050,11 +13233,31 @@
               "From a wooden sword in Meadowbrook to the gates of the Emerald City, you've walked the longest road in Storyleaf. The Emerald Guard will hardly believe it."
             ]
           }
+        },
+        {
+          "id": "emerald_summit_chest",
+          "name": "Treasure Chest",
+          "role": "chest",
+          "art": "treasure_chest",
+          "x": 0,
+          "y": 0,
+          "summit": 0,
+          "greeting": "A chest, left at the top for whoever climbs this far.",
+          "gives": "emerald_crest_gauntlets"
         }
       ],
       "world": [
         2,
         -6
+      ],
+      "decor": [
+        {
+          "art": "statue",
+          "x": -2,
+          "y": 1,
+          "blocking": false,
+          "summit": 0
+        }
       ]
     }
   ]

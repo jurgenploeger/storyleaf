@@ -14,6 +14,8 @@ import SpriteKit
 ///                  `hill=tallest` the range with the highest top, up its highest trail; `trail=k`
 ///                  its kth trail instead; with `ontop`, where the trail comes out on the top;
 ///                  with `face`, a few cells out in front of its tallest summit's face
+///   summit=n       start up on the map's nth summit (0 the tallest; `WorldMap.summits`), just in
+///                  front of its top
 ///   bridge=n       start on the map's nth bridge (0 first: those over the river, then the
 ///                  footbridges and jetties out into its lakes; `WorldMap.bridges`), at its land end
 ///                  (a jetty's) or its middle
@@ -550,6 +552,14 @@ enum DebugLaunch {
                     let spot = flags["ontop"] != nil ? top : foot
                     session.playerPosition = WorldMap.project(CGPoint(x: spot.x * WorldMap.tileSize, y: spot.y * WorldMap.tileSize))
                 }
+            }
+        }
+        if let pick = flags["summit"].flatMap({ Int($0) }), let def = Content.shared.map(session.data.mapID) {
+            // Up on a summit (the tallest first), a step in front of its top and whoever's there.
+            let grid = WorldMap(def: def)
+            if grid.summits.indices.contains(pick) {
+                let top = grid.summits[pick]
+                session.playerPosition = WorldMap.project(CGPoint(x: (top.x - 2) * WorldMap.tileSize, y: (top.y - 2) * WorldMap.tileSize))
             }
         }
         if let pick = flags["bridge"].flatMap({ Int($0) }), let def = Content.shared.map(session.data.mapID) {

@@ -160,6 +160,19 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   mountain each in Shiverdell and Moonwhisper (160), on Emerald Road (140), in Big Bad Wolf's Lair and on
   Sneezle Isle (130). Towns have their terraces; a cave's tunnels (3 cells wide, chambers up to 5 across)
   have no room for a hill.
+- Summits worth the climb (ours, since 0.4.10, asked for in playtesting 2026-10-12: more to explore, "maybe
+  on top of the mountain is a boss or quest"): an NPC or a decoration can stand up on a summit
+  (`NPCDef.summit`, `Decor.summit`: 0 the tallest of all the map's summits, `WorldMap.summits`; its `x` and
+  `y` then step from that summit's top), since ranges land wherever there's room. Their spot and the ground
+  in front stay clear of scenery once the hills are raised (`keepInView`). The Moon Rabbit Queen, the
+  Howlmaster and the Marionette King moved up onto their mountains (the Emerald Dragon stays at the end of
+  its road, Shiverdell's Great Wisp in its hollow), Pebble onto Crystal Mountain's second peak and Mister
+  Frost onto Snow White Forest's, and a treasure chest stands at the top of Gumdrop Peaks, Shiverdell,
+  Crystal Mountain, Snow White Forest, Sneezle Isle and Emerald Road, lanterns, crystals, lollipops or a
+  statue beside it. Each holds a summit treasure: gear only that chest has (`Content.chestHolding`, like a
+  quest treasure: no shop, monster, smith or adventurer has one, gold-framed, its card saying where it's
+  from), around the map's level: Gumdrop Star Charm 24, Shiverpeak Gloves 42, Crystal Crown Pendant 80,
+  Frostpeak Boots 84, Firepeak Ring 132, Emerald Crest Gauntlets 192, their art palette swaps of other gear's.
   Since 0.4.5 ranges go where every summit has room round it (`clearance`: how far each cell is from a road,
   water, a building or another hill), picked at random among the places they fit; before, random spots
   tried 120 times often found nowhere on crowded maps (Gumdrop Peaks had no mountain). The first trail climbs from the ground in

@@ -766,7 +766,7 @@ final class GameSession {
         // Never a quest treasure: those are yours alone.
         let wearable = Content.shared.items.filter {
             $0.type == .armor && ($0.level ?? 1) <= adventurer.level && ($0.classes?.contains(adventurer.classID) ?? true)
-                && !Content.shared.isQuestTreasure($0.id)
+                && !Content.shared.isTreasure($0.id)
         }
         let tiers = Set(wearable.map { $0.level ?? 1 }).sorted(by: >)
         guard let best = tiers.first else { return nil }
@@ -782,7 +782,7 @@ final class GameSession {
     static func weapon(for adventurer: Adventurer) -> ItemDef? {
         let usable = Content.shared.items.filter {
             $0.type == .weapon && ($0.level ?? 1) <= adventurer.level && ($0.classes?.contains(adventurer.classID) ?? true)
-                && !Content.shared.isQuestTreasure($0.id)
+                && !Content.shared.isTreasure($0.id)
         }
         let tiers = Set(usable.map { $0.level ?? 1 }).sorted(by: >)
         guard let best = tiers.first else { return nil }
@@ -1006,20 +1006,20 @@ final class GameSession {
         playerPosition = nil
     }
 
-    // MARK: - Eggs & gift boxes
+    // MARK: - Eggs & chests
 
     func isOpened(_ chestID: String) -> Bool {
         data.openedChests?.contains(chestID) == true
     }
 
-    /// Whether a gift box can be opened yet (its quest has to be accepted first).
+    /// Whether a chest can be opened yet (its quest, if it has one, has to be accepted first).
     func canOpen(_ chest: NPCDef) -> Bool {
         guard !isOpened(chest.id) else { return false }
         guard let questID = chest.quest else { return true }
         return data.quests[questID] != nil
     }
 
-    /// Opens a gift box and returns the item inside.
+    /// Opens a chest and returns the item inside.
     @discardableResult
     func openChest(_ chest: NPCDef) -> ItemDef? {
         guard canOpen(chest), let id = chest.gives, let item = content.item(id) else { return nil }
@@ -1027,7 +1027,7 @@ final class GameSession {
         SoundEffects.shared.play(.chest)
         addItem(id)
         record(.collect, target: "gift_box")
-        post(L("Found {item} in the gift box!", ["item": item.name]), .reward)
+        post(L("Found {item} in the treasure chest!", ["item": item.name]), .reward)
         return item
     }
 
@@ -1207,7 +1207,7 @@ final class GameSession {
         // And they carry a few things around their level.
         let level = adventurer.level
         let goods = content.items.filter { item in
-            item.price > 0 && item.capture != true && item.hatches == nil && !content.isQuestTreasure(item.id)
+            item.price > 0 && item.capture != true && item.hatches == nil && !content.isTreasure(item.id)
                 && (item.type == .consumable || item.type == .material || abs((item.level ?? 1) - level) <= 12)
         }
         let carried = Array(goods.shuffled(using: &rng).prefix(3))
@@ -1342,7 +1342,7 @@ final class GameSession {
     /// class can use. Bosses' own rare drops aren't in it, nor are quest treasures; those stay theirs.
     func equipmentDrop(level: Int, best: Bool = false) -> ItemDef? {
         let span = best ? 6 : 12
-        let kept = Set(content.monsters.flatMap { $0.drops ?? [] }.map(\.item)).union(content.items.map(\.id).filter(content.isQuestTreasure))
+        let kept = Set(content.monsters.flatMap { $0.drops ?? [] }.map(\.item)).union(content.items.map(\.id).filter(content.isTreasure))
         // Past the best gear a monster can drop, it drops from the top (quest treasures go higher).
         let top = min(level, content.items.filter { !kept.contains($0.id) }.compactMap(\.level).max() ?? level)
         let accessories = content.items.filter {
