@@ -109,28 +109,81 @@ enum GearArt {
         return (texture, anchor, artSize)
     }
 
-    /// Holds the weapon in the right hand for the way the character faces.
-    static func pose(_ weapon: SKSpriteNode, facing: Direction, height: CGFloat) {
-        let hand = height * 0.34
-        switch facing {
-        case .down:
-            weapon.position = CGPoint(x: height * 0.2, y: hand)
-            weapon.xScale = 1
-            weapon.zPosition = 1
-        case .up:
-            weapon.position = CGPoint(x: -height * 0.2, y: hand)
-            weapon.xScale = -1
-            weapon.zPosition = -1
-        case .left:
-            weapon.position = CGPoint(x: -height * 0.1, y: hand)
-            weapon.xScale = -1
-            weapon.zPosition = 1
-        case .right:
-            weapon.position = CGPoint(x: height * 0.1, y: hand)
-            weapon.xScale = 1
-            weapon.zPosition = -1
-        }
+    /// Holds the weapon in the hand for the way the character faces (`hand(in:facing:)`), in the
+    /// frame the sprite shows: just behind the body, so the hand closes over the grip and the rest
+    /// of the weapon shows past it, rather than hanging beside it. Pointing up and away from the
+    /// body, mirrored facing away or left. `frame`: a frame other than the one showing (the walk's
+    /// next, `Walker`).
+    static func pose(_ weapon: SKSpriteNode, facing: Direction, height: CGFloat, frame: SKTexture? = nil) {
+        weapon.position = grip(on: weapon.parent as? SKSpriteNode, frame: frame, facing: facing, height: height)
+        weapon.xScale = facing == .up || facing == .left ? -1 : 1
+        weapon.zPosition = -1
     }
+
+    /// Where a weapon's grip goes on `body` (a walking sprite) showing `frame` (else its own): its
+    /// hand there, from the sprite's anchor.
+    static func grip(on body: SKSpriteNode?, frame: SKTexture? = nil, facing: Direction, height: CGFloat) -> CGPoint {
+        let size = body?.size ?? CGSize(width: height, height: height)
+        let anchor = body?.anchorPoint ?? CGPoint(x: 0.5, y: 0.08)
+        let spot = (frame ?? body?.texture).map { hand(in: $0, facing: facing) } ?? hand(top: 0.27, bottom: 0.94, facing: facing)
+        return CGPoint(x: (spot.x - anchor.x) * size.width, y: (spot.y - anchor.y) * size.height)
+    }
+
+    /// Where the hand that holds a weapon is in a walking sprite's frame facing `facing`, as a unit
+    /// point (x from the left, y up from the bottom, like an anchor): beside the body (at the side
+    /// facing you, the side facing away, or the near hand walking sideways, measured on the walk
+    /// sheets' 48-pixel frames) and part way down the figure in that very frame, from the top of its
+    /// head to its feet, so it sits lower on a dwarf and bobs a pixel as the walk does.
+    static func hand(in frame: SKTexture, facing: Direction) -> CGPoint {
+        let bounds = Self.figure(of: frame)
+        return hand(top: bounds.top, bottom: bounds.bottom, facing: facing)
+    }
+
+    /// The hand for a figure reaching from `top` to `bottom` of its frame (shares of its height,
+    /// from the top).
+    private static func hand(top: CGFloat, bottom: CGFloat, facing: Direction) -> CGPoint {
+        let (across, down): (CGFloat, CGFloat) = switch facing {
+        case .down: (3, 0.58)
+        case .up: (-9, 0.55)
+        case .right: (3, 0.56)
+        case .left: (-4, 0.56)
+        }
+        return CGPoint(x: 0.5 + across / 48, y: 1 - (top + down * (bottom - top)))
+    }
+
+    /// How far down its frame a figure's top and bottom are (shares of the frame's height, from
+    /// the top), by its solid pixels; kept per frame while the frame lasts.
+    private static func figure(of frame: SKTexture) -> (top: CGFloat, bottom: CGFloat) {
+        if let known = figures.object(forKey: frame) { return (CGFloat(known.cgPointValue.x), CGFloat(known.cgPointValue.y)) }
+        var found = (top: CGFloat(0.27), bottom: CGFloat(0.94))
+        let image = frame.cgImage()
+        let width = image.width, height = image.height
+        if width > 0, height > 0 {
+            var pixels = [UInt8](repeating: 0, count: width * height * 4)
+            let drawn: Bool = pixels.withUnsafeMutableBytes { buffer in
+                guard let context = CGContext(data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+                                              space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+                context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+                return true
+            }
+            // Rows run top to bottom.
+            var top = height, bottom = -1
+            if drawn {
+                for row in 0..<height {
+                    for col in 0..<width where pixels[(row * width + col) * 4 + 3] > 127 {
+                        top = min(top, row)
+                        bottom = max(bottom, row)
+                    }
+                }
+            }
+            if bottom >= top { found = (CGFloat(top) / CGFloat(height), CGFloat(bottom + 1) / CGFloat(height)) }
+        }
+        figures.setObject(NSValue(cgPoint: CGPoint(x: found.top, y: found.bottom)), forKey: frame)
+        return found
+    }
+
+    /// Each frame's figure (`figure(of:)`), forgotten with the frame.
+    private static let figures = NSMapTable<SKTexture, NSValue>.weakToStrongObjects()
 
     private static var cache: [String: SKTexture] = [:]
 

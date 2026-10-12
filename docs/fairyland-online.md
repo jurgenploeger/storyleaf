@@ -155,6 +155,25 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   ground in flat tones (since 0.4.5; the height gradient read as a staircase of shades at a pixel a cell):
   a lighter tint, the edge facing the light lit and the far edge shaded, a cell of shadow on the ground past
   it, and a mountain's upper slopes lighter still.
+- Lakes and rivers (ours, since 0.4.8, asked for in playtesting 2026-10-12: "more like RuneScape, with large
+  lakes and interesting pathways and landscapes"); nothing here records whether FO's fields had them.
+  `theme.river` (from, to, width) runs a river in over one edge and out over another
+  (`WorldMap.carveRiver`): a Catmull-Rom curve through waypoints drifting up to 16 cells sideways, swelling and
+  narrowing a little, kept off the hub, the map's people and buildings, the arrivals, where a road leads into a
+  cave and 12 cells clear of where roads leave over the edges, and carrying on straight out into the fog past
+  them. Where it crosses a road, a bridge three lanes wide straight over it along whichever way the tiles run
+  crosses it more squarely, the road on either bank bent to meet it (`bridge(over:along:)`, `meetRoad`). Up to
+  16 tries, kept only if it crosses roads rather than running along them and leaves every bit of land in reach
+  of the hub (`cutOff`). `theme.lakes` (count, size, islands) digs big lakes (`digLakes`): a wobbly round
+  (three waves round its shore, squashed and turned), where there's room (`clearance`), cut back to keep two and
+  a half cells off roads and anything else, so a road passing near runs along its shore; a footbridge two
+  lanes wide out to an island in the middle of as many as asked, and on each a jetty out into it from the shore
+  nearest a road, a footpath from both to the road (`layFootpaths`). Bridges are decks of planks drawn in code
+  a pixel at a time in the ground's layer, with posts and rails standing along their sides, the near side
+  sorted in front of you and the far side behind (`BridgeArt`); reeds grow here and there along the shores,
+  more lily pads on a lake than a pond, and the minimap shows the bridges. Rivers: Sunny Meadow, Smiling Forest,
+  Briarmere. Lakes: Swan Lake, Ingothold Lake and Briarmere (each grown about 1.3× each way for room: 140×104,
+  130×96, 130×104), Frog Swamp, Lotus Land and Sunny Meadow. Taller mountains, which need wider bases, are next.
 - Cave entrances (ours, since 0.4.5, asked for in playtesting 2026-10-11: a map's way into a cave should
   show from afar, a mountain or rock formation on that side): where a road leads into a cave (Shiverdell
   and Lotus Land into the Rat Cavern, Windswept Downs into Gooey Grotto, Moonwhisper and Emerald Road into
@@ -272,6 +291,20 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   worth more to the hero's class (`GameSession.gearValue`): each bonus weighted by the class's growth in that
   stat next to a novice's, and by how big that stat's numbers run. The Bag and the slot's list have search,
   sort (best for you, level, name, price, how many) and filters (the Bag's kinds; only what you can wear).
+- The weapon in hand (`GearArt.pose`, since 0.4.8, asked for in playtesting 2026-10-12: "when they're wearing a
+  weapon, it should look good"): the item's own art, held at the hand as each walk frame has it (beside the
+  body, at the side facing you or away or the near hand walking sideways, and part way down that frame's own
+  figure, so it sits lower on a dwarf and bobs a pixel as the walk does, frame by frame in step with it), and
+  just behind the body so the hand closes over the grip. Before, it hung at one fixed spot per direction about
+  four pixels out from the hand, and in front of the body facing you, so it floated beside the hero like a
+  pasted-on icon. Shrinking the 32-pixel art to the walk sheets' pixel size (three quarters) was tried and
+  dropped: it thinned the outlines and broke up whips and blades.
+- Armour drawn with Retro Diffusion (in progress, 2026-10-12): inpainting (`/v2/edit/tools/inpainting`, $0.18)
+  repaints a masked part of a 192×192 walk sheet in place, so armour drawn over a body sheet's torso and legs
+  stays lined up with its frames and sits between the body and the player's chosen hair. A freshly generated
+  walk sheet draws a whole new character (the unused `armor_*` sheets from before the paper doll are that), so
+  it can't be layered. Its results come back as CloudFront links that the cloud session's network may need
+  allowing.
 - One equipment drop in three is a trinket (gloves, necklace, boots or accessory), any up to the monster's
   level (`GameSession.accessoryShare`): there are only a few of each next to dozens of weapons and armours, so
   by level alone they'd hardly drop.
@@ -572,8 +605,11 @@ the Wishing Seal, which stays the Monster Book's last reward.
     the hill's shadow, while the shade's depth stays midday's (the sky's light fades with the sun's). Trees'
     and rocks' shadows (`Lighting.Shadow`) are a round under them stretched away from the sun along the ground,
     a quarter of their width at midday (as they were) and up to 1.4 widths at sunrise and sunset; the sun's
-    flare sits at the edge of the screen toward it and the sunbeams lean their tops toward it. Before 0.4.7
-    the beams leaned to the upper right, against the flare in the top-left corner. Whether FO's light moved
+    flare comes in along the top of the screen toward it through the morning and sits in the top-left corner
+    from midday on, and the sunbeams lean their tops toward it. Before 0.4.7 the beams leaned to the upper
+    right, against the flare in the top-left corner. In 0.4.7 the flare went on down the left side in the
+    afternoon, where half its glow was on screen and washed out the middle of the map (left of the screen
+    half again as bright at 16hr in the screenshots, 2026-10-12); since 0.4.8 it stays in the corner. Whether FO's light moved
     with its clock isn't in any source we've found; this is ours. Clouds don't soften the shadows yet.
   - Our setting is called Storyleaf in every in-game text (Fairyland until 0.3.50; see Names). In FO the
     continent itself is Mysteria (above), which is also the relaunch's name.

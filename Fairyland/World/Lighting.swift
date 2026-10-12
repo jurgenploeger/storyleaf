@@ -97,13 +97,13 @@ final class Lighting {
         placeFlare()
     }
 
-    /// The sun's flare at the edge of the screen toward the sun (`Sun.angleOnScreen`): in the top-left
-    /// corner at midday, the top in the morning, down the left side in the afternoon, never in
-    /// the lower half, where it would wash out the controls.
+    /// The sun's flare at the top of the screen toward the sun (`Sun.angleOnScreen`): moving from the
+    /// middle of the top to the top-left corner through the morning, then staying in the corner. Down
+    /// the left side, as the afternoon sun is, half its glow was on screen and washed out the map.
     private func placeFlare() {
         guard !flare.isEmpty else { return }
         let turned = (sun.angleOnScreen - Sun.noon.angleOnScreen).remainder(dividingBy: 2 * Double.pi)
-        let angle = min(Double.pi, max(Double.pi / 12, 0.75 * Double.pi + turned))
+        let angle = min(0.75 * Double.pi, max(Double.pi / 12, 0.75 * Double.pi + turned))
         let reach = max(abs(cos(angle)), abs(sin(angle)))
         let edge = CGPoint(x: screen.width * 0.42 * CGFloat(cos(angle) / reach), y: screen.height * 0.45 * CGFloat(sin(angle) / reach))
         for part in flare {

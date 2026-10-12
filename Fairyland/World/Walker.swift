@@ -131,7 +131,8 @@ final class Walker: SKNode {
         if let accessory, let aura = GearArt.aura(accessory, height: cycle.size.height) {
             addChild(aura)
         }
-        poseGear()
+        // From the walk's first frame, the weapon in step with it.
+        animate()
     }
 
     /// Tints a sprite with the map's light, so characters take on the colours around them.
@@ -142,9 +143,17 @@ final class Walker: SKNode {
     }
 
     private func poseGear() {
-        if let weapon = sprite.childNode(withName: "weapon") as? SKSpriteNode {
-            GearArt.pose(weapon, facing: facing, height: cycle.size.height)
+        guard let weapon = sprite.childNode(withName: "weapon") as? SKSpriteNode else { return }
+        weapon.removeAction(forKey: "walk")
+        GearArt.pose(weapon, facing: facing, height: cycle.size.height)
+        guard isWalking else { return }
+        // In hand as the walk goes, frame by frame in step with it (`animate`): it bobs as the body does.
+        let frames = cycle.frames(facing)
+        guard frames.count > 1 else { return }
+        let steps = frames.flatMap { frame -> [SKAction] in
+            [.move(to: GearArt.grip(on: sprite, frame: frame, facing: facing, height: cycle.size.height), duration: 0), .wait(forDuration: 0.16)]
         }
+        weapon.run(.repeatForever(.sequence(steps)), withKey: "walk")
     }
 
     func setLabel(_ text: String) {

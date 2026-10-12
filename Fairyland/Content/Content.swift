@@ -429,6 +429,10 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         /// Water tile for ponds.
         let water: String?
         let ponds: Int?
+        /// Big lakes, besides the ponds (not in towns or caves).
+        let lakes: Lakes?
+        /// A river across the map, bridged where roads cross it (not in towns or caves).
+        let river: River?
         let fairyRings: FairyRings?
         let props: [PropPlacement]
         /// The map's colour mood for ground, scenery and buildings.
@@ -468,6 +472,25 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
             /// wide, else as high as the roomiest place allows.
             let height: Double
         }
+    }
+
+    /// Big lakes out in the fields (`WorldMap.digLakes`): each a wobbly round of water kept a little
+    /// off the roads, with a jetty out into it from the side nearest a road and a footpath there.
+    nonisolated struct Lakes: Decodable, Sendable {
+        let count: Int
+        /// How far each reaches from its middle at most, in cells: [smallest, biggest].
+        let size: [Double]
+        /// How many of them have an island in the middle, a footbridge out to it.
+        let islands: Int?
+    }
+
+    /// A river across the map (`WorldMap.carveRiver`): in over one edge and out over another,
+    /// winding, a bridge wherever a road crosses it.
+    nonisolated struct River: Decodable, Sendable {
+        let from: Edge
+        let to: Edge
+        /// How wide it runs, in cells (3 when not given).
+        let width: Double?
     }
 
     /// Solid rock everywhere except galleries along the roads and trails, chambers off them and

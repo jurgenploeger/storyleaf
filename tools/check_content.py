@@ -296,6 +296,28 @@ for map_def in maps.values():
                       f"{where} → a mountain's height must be over the hills' and over 64, up to 128 points")
         if "bank" in hills:
             tiles.append(hills["bank"])
+    if "lakes" in theme:
+        lakes = theme["lakes"]
+        where = f"map {map_def['id']} lakes"
+        check(isinstance(lakes, dict) and set(lakes) <= {"count", "size", "islands"}, f"{where} → must be {{count, size, islands}}")
+        check(not map_def.get("town") and "cave" not in theme, f"{where} → only out in the fields (not towns or caves)")
+        check("water" in theme, f"{where} → needs the map's water tile")
+        check(isinstance(lakes.get("count"), int) and 1 <= lakes.get("count", 0) <= 4, f"{where} → count must be 1 to 4")
+        size = lakes.get("size")
+        check(isinstance(size, list) and len(size) == 2 and all(isinstance(v, (int, float)) for v in size) and 5 <= size[0] <= size[1] <= 24,
+              f"{where} → size must be [smallest, biggest] reach in cells, 5 to 24")
+        islands = lakes.get("islands", 0)
+        check(isinstance(islands, int) and 0 <= islands <= lakes.get("count", 0), f"{where} → islands must be 0 to count")
+    if "river" in theme:
+        river = theme["river"]
+        where = f"map {map_def['id']} river"
+        edges = {"north", "south", "east", "west"}
+        check(isinstance(river, dict) and set(river) <= {"from", "to", "width"}, f"{where} → must be {{from, to, width}}")
+        check(not map_def.get("town") and "cave" not in theme, f"{where} → only out in the fields (not towns or caves)")
+        check("water" in theme, f"{where} → needs the map's water tile")
+        check(river.get("from") in edges and river.get("to") in edges and river.get("from") != river.get("to"),
+              f"{where} → from and to must be two different edges")
+        check(isinstance(river.get("width", 3), (int, float)) and 2 <= river.get("width", 3) <= 6, f"{where} → width must be 2 to 6 cells")
     props = [p["art"] for p in theme["props"]] + town.get("lots", []) + list(town.get("streetDecor", {}))
     props += [b["art"] for b in map_def.get("buildings", [])] + [d["art"] for d in map_def.get("decor", [])]
     for art_id in tiles + props:

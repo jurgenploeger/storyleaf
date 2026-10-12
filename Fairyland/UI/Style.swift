@@ -332,9 +332,10 @@ struct WalkingSprite: View {
                         .frame(width: size, height: size)
                 }
                 if let weapon, let held = GearArt.heldImage(weapon) {
-                    HeldWeapon(image: held.image, grip: held.grip, scale: held.scale, facing: facing, size: size)
-                        // Behind the body facing away or to the right, as on the map (GearArt.pose).
-                        .zIndex(facing == .up || facing == .right ? -1 : 1)
+                    let hand = frames.isEmpty ? nil : GearArt.hand(in: frames[tick % frames.count], facing: facing)
+                    HeldWeapon(image: held.image, grip: held.grip, scale: held.scale, facing: facing, size: size, hand: hand)
+                        // Just behind the body, the hand over its grip, as on the map (GearArt.pose).
+                        .zIndex(-1)
                 }
             }
             .frame(width: size, height: size)
@@ -342,8 +343,8 @@ struct WalkingSprite: View {
     }
 }
 
-/// A weapon in a walking sprite's right hand, posed for the way they face like `GearArt.pose` does
-/// on the map: the hand is 34% of the height above the feet, which stand 8% up from the bottom.
+/// A weapon in a walking sprite's hand, posed for the way they face like `GearArt.pose` does on
+/// the map: at the hand in the frame showing (`hand`, a unit point, y up), or where it usually is.
 private struct HeldWeapon: View {
     let image: UIImage
     /// The grip as a unit point, y up (an anchor point).
@@ -351,23 +352,19 @@ private struct HeldWeapon: View {
     let scale: CGFloat
     let facing: Direction
     let size: CGFloat
+    let hand: CGPoint?
 
     var body: some View {
         let side = size * scale
         let mirrored = facing == .up || facing == .left
-        let reach: CGFloat = switch facing {
-        case .down: 0.2
-        case .up: -0.2
-        case .left: -0.1
-        case .right: 0.1
-        }
-        let hand = CGPoint(x: size * (0.5 + reach), y: size * (1 - 0.08 - 0.34))
+        let spot = hand ?? CGPoint(x: facing == .up ? 0.31 : facing == .left ? 0.42 : 0.56, y: 0.36)
+        let point = CGPoint(x: size * spot.x, y: size * (1 - spot.y))
         Image(uiImage: image)
             .interpolation(.none)
             .resizable()
             .frame(width: side, height: side)
             .scaleEffect(x: mirrored ? -1 : 1, y: 1)
-            .position(x: hand.x + (mirrored ? -1 : 1) * (0.5 - grip.x) * side, y: hand.y + (grip.y - 0.5) * side)
+            .position(x: point.x + (mirrored ? -1 : 1) * (0.5 - grip.x) * side, y: point.y + (grip.y - 0.5) * side)
     }
 }
 

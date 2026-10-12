@@ -13,6 +13,9 @@ import SpriteKit
 ///   hill=n         start at the foot of the first trail up the map's nth range of hills (0 first);
 ///                  `hill=tallest` the range with the highest top, up its highest trail; `trail=k`
 ///                  its kth trail instead; with `ontop`, where the trail comes out on the top
+///   bridge=n       start on the map's nth bridge (0 first: those over the river, then the
+///                  footbridges and jetties out into its lakes; `WorldMap.bridges`), at its land end
+///                  (a jetty's) or its middle
 ///   equip=a+b      start wearing these items (ids from content/items.json, joined with +)
 ///   bag=a+b        put these items in the bag
 ///   done=a+b       these quests (ids from content/quests.json) already handed in (their treasures
@@ -541,6 +544,15 @@ enum DebugLaunch {
                     let spot = flags["ontop"] != nil ? top : foot
                     session.playerPosition = WorldMap.project(CGPoint(x: spot.x * WorldMap.tileSize, y: spot.y * WorldMap.tileSize))
                 }
+            }
+        }
+        if let pick = flags["bridge"].flatMap({ Int($0) }), let def = Content.shared.map(session.data.mapID) {
+            let grid = WorldMap(def: def)
+            if grid.bridges.indices.contains(pick) {
+                let bridge = grid.bridges[pick]
+                // A jetty from where it leaves the shore, looking out; a bridge from its middle.
+                let along = !bridge.landsAtEnd ? bridge.start : !bridge.landsAtStart ? bridge.end : (bridge.start + bridge.end) / 2
+                session.playerPosition = grid.center(of: bridge.cell(lane: bridge.lane, along: along))
             }
         }
         if let id = flags["title"], Content.shared.title(id) != nil {
