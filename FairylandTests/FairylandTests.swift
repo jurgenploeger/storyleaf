@@ -940,8 +940,8 @@ struct RulesTests {
             if !best.type.isTrinket { #expect((35...40).contains(best.level ?? 1)) }
         }
         // Past the best gear monsters drop, weapons and armour come from the top (trinkets from
-        // anywhere). Quest treasures go higher, but no monster drops them.
-        let droppable = Content.shared.items.filter { !bossDrops.contains($0.id) && !Content.shared.isQuestTreasure($0.id) }
+        // anywhere). Quest and summit treasures go higher, but no monster drops them.
+        let droppable = Content.shared.items.filter { !bossDrops.contains($0.id) && !Content.shared.isTreasure($0.id) }
         let top = try #require(droppable.compactMap(\.level).max())
         let beyond = (0..<30).compactMap { _ in session.equipmentDrop(level: top + 50) }.filter { !$0.type.isTrinket }
         #expect(!beyond.isEmpty)
@@ -1729,21 +1729,24 @@ struct RulesTests {
         #expect(content.questGiving("oxhide_mail")?.id == "four_oxen")
         // Shop gear a quest gives isn't one (the Leather Vest for choosing your path).
         #expect(!content.isQuestTreasure("leather_vest"))
+        // A summit's treasure is as much yours alone (`chestHolding`).
+        #expect(content.chestHolding("crystal_crown_pendant")?.id == "crystal_summit_chest")
+        #expect(content.isTreasure("crystal_crown_pendant") && !content.isQuestTreasure("crystal_crown_pendant"))
         let session = GameSession.newGame(name: "Test", raceID: "human")
         session.data.hero.classID = "fighter"
         for level in stride(from: 10, through: 200, by: 10) {
             for draw in 0..<40 {
                 if let drop = session.equipmentDrop(level: level, best: draw % 2 == 0) {
-                    #expect(!content.isQuestTreasure(drop.id), "a level-\(level) monster dropped \(drop.id)")
+                    #expect(!content.isTreasure(drop.id), "a level-\(level) monster dropped \(drop.id)")
                 }
             }
             for classID in ["fighter", "mage", "tamer"] {
                 let adventurer = Adventurer(name: "Momo", raceID: "elf", classID: classID, level: level, look: .standard)
                 if let armor = GameSession.armor(for: adventurer) {
-                    #expect(!content.isQuestTreasure(armor.id), "a level-\(level) \(classID) wears \(armor.id)")
+                    #expect(!content.isTreasure(armor.id), "a level-\(level) \(classID) wears \(armor.id)")
                 }
                 for offer in session.tradeOffers(with: adventurer) {
-                    #expect(!content.isQuestTreasure(offer.item.id), "a level-\(level) trader sells \(offer.item.id)")
+                    #expect(!content.isTreasure(offer.item.id), "a level-\(level) trader sells \(offer.item.id)")
                 }
             }
         }

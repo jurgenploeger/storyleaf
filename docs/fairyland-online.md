@@ -253,7 +253,9 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   shouldn't get past the edge's mountains, but you could walk up onto the range and along the map's edge
   behind it): from 12 points up (`WorldMap.cragFoot`), and its last three rows along the edge, only its
   road walks on, up to the mouth; a dip between its summits shut in behind their rock is walled off too
-  (`sealCrags`). You come out of the cave on the road in front of it. 0.4.5 drew
+  (`sealCrags`). Since 0.4.11 its rock's ledges (`Look.strata`, a mountain's too) show only on rock facing
+  you: on the slopes turned away behind a cave's range the view squeezed each band into a thin dark line,
+  which playtesting took for a crack in the ground (2026-10-12). You come out of the cave on the road in front of it. 0.4.5 drew
   it as the cave's own rock in flat-topped walls (`CaveWalls`) with a dark arch in the face, or on the
   south and west a cleft under an arch; playtesting (2026-10-11) asked for a slope instead of flat tops
   and walls, and for no grass past it. How FO showed its cave entrances isn't in any source reachable
