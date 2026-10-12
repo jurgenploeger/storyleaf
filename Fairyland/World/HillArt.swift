@@ -45,6 +45,30 @@ enum HillArt {
         let highlight: (r: Double, g: Double, b: Double)
     }
 
+    /// Sunlight from the upper left of the screen (up the map and to the left), 36° up.
+    private static let sun: (x: Double, y: Double, z: Double) = {
+        let up = 36 * Double.pi / 180
+        let toward = (x: -0.6, y: 1.0), length = (0.36 + 1.0).squareRoot()
+        return (x: toward.x / length * cos(up), y: toward.y / length * cos(up), z: sin(up))
+    }()
+
+    /// How lit a hill's slopes facing away from the sun still are, on a map as rocky as `rocky`
+    /// (`WorldMap.rockiness`): the rockier, the deeper the shade.
+    static func ambient(rocky: Double) -> Double {
+        0.45 - 0.1 * rocky
+    }
+
+    /// How brightly the sun lights a slope, next to the flat (1 there): `hx` and `hy` how far it
+    /// rises a cell across and up the map (as heights stand, 1/cos 30° taller than they're drawn,
+    /// over a cell's width), `ambient` how lit it still is turned from the sun. And `lambert`, how
+    /// squarely the sun falls on it: 0 or below where the slope turns its back on the sun, steeper
+    /// than the sun is high, in the hill's own shadow.
+    static func sunlight(hx: Double, hy: Double, ambient: Double) -> (shade: Double, lambert: Double) {
+        let lambert = (-hx * sun.x - hy * sun.y + sun.z) / (hx * hx + hy * hy + 1).squareRoot()
+        let flat = ambient + (1 - ambient) * sun.z
+        return ((ambient + (1 - ambient) * max(0, lambert)) / flat, lambert)
+    }
+
     /// Cells a side of each picture.
     static let square = 16
     /// Cells deep each strip is, along the map's diagonal (up the screen).
@@ -85,14 +109,9 @@ enum HillArt {
         var mask = [UInt8](repeating: 0, count: sw * sh * 4)
         // How bright each sample is lit, 1 on the flat (bottom row first, like the heights).
         var light = [Float](repeating: 1, count: sw * sh)
-        // Sunlight from the upper left of the screen (up the map and to the left), 36° up. Soft: the
-        // sides away from it go a few shades darker, the sides facing it only a shade lighter, so
-        // the hill reads as matte ground rather than something glossy.
-        let up = 36 * Double.pi / 180
-        let toward = (x: -0.6, y: 1.0), length = (0.36 + 1.0).squareRoot()
-        let sun = (x: toward.x / length * cos(up), y: toward.y / length * cos(up), z: sin(up))
-        let ambient = look.ambient ?? (0.45 - 0.1 * look.rocky)
-        let flat = ambient + (1 - ambient) * sun.z
+        // Sunlight (`sunlight`): soft, the sides away from it a few shades darker, the sides facing
+        // it only a shade lighter, so the hill reads as matte ground rather than something glossy.
+        let ambient = look.ambient ?? Self.ambient(rocky: look.rocky)
         let deepest = max(look.shadow.r, look.shadow.g, look.shadow.b, 0.01)
         let tint = (look.shadow.r / deepest, look.shadow.g / deepest, look.shadow.b / deepest)
         // The trails as worn paths (`stamps(of:)`), and how near each sample is to one: from its
@@ -135,8 +154,7 @@ enum HillArt {
                 let gx = ((h10 + h11) - (h00 + h01)) / 2 * Double(samples)
                 let gy = ((h01 + h11) - (h00 + h10)) / 2 * Double(samples)
                 let hx = gx / Double(tile) / 0.866, hy = gy / Double(tile) / 0.866
-                let lambert = (-hx * sun.x - hy * sun.y + sun.z) / (hx * hx + hy * hy + 1).squareRoot()
-                var shade = (ambient + (1 - ambient) * max(0, lambert)) / flat
+                var shade = Self.sunlight(hx: hx, hy: hy, ambient: ambient).shade
                 let s = hill.rise(x, y)
                 // The foot tucked in a little darker.
                 if s < 0.3 { shade *= 1 - 0.08 * sin(Double.pi * s / 0.3) }

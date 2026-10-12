@@ -108,7 +108,10 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   the palette's shadow colour) and sides facing it only one lighter; the first smooth, brighter gradient
   read as gloss in playtesting. Never steeper than 13 points a cell halfway up (15 before 0.4.4), so ground
   facing away never leans out of sight and a tap finds one spot. Scenery grows on them like anywhere
-  (since 0.4.3; tree shadows lie on the hill). Since 0.4.5 you can walk up them anywhere, straight up the
+  (since 0.4.3; tree shadows lie on the hill), and since 0.4.7 it's darker on the shaded side with the
+  ground (`HillArt.sunlight`, playtesting 2026-10-12): by 60% of the ground's shade where the sun only grazes
+  the slope (a tree stands up into the light, so it isn't as dark as the ground under it), and by all of it
+  where the slope is steeper than the sun is high, in the hill's own shadow. Since 0.4.5 you can walk up them anywhere, straight up the
   side too (asked for in playtesting 2026-10-11; 0.4.1 to 0.4.4 kept the steep sides blocked but for the
   trail); a trail cut into the slope (a shadow above, a lip below) is the easy way up, kept clear a cell
   either side. Since 0.4.5 it winds up round the side as a path would (asked for in playtesting 2026-10-11:

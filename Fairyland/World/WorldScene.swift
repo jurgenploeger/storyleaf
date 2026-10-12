@@ -412,7 +412,7 @@ final class WorldScene: SKScene {
             crag.bank = scree
             crag.rocky = 1
             crag.rockAbove = 0.2
-            crag.ambient = 0.25
+            crag.ambient = Self.cragShade
             crag.brightest = 1.3
             crag.strata = 14
             // Its road stays a road all the way up to the cave's mouth.
@@ -1145,6 +1145,7 @@ final class WorldScene: SKScene {
         position.y += map.height(at: map.center(of: cell))
         node.position = position
         node.zPosition = -ground
+        shade(node, standingOn: cell)
         if sway {
             let duration = TimeInterval.random(in: 1.8...2.8, using: &rng)
             let lean = CGFloat.random(in: 0.018...0.03, using: &rng)
@@ -1161,6 +1162,30 @@ final class WorldScene: SKScene {
     }
 
     private var feet: [ObjectIdentifier: CGFloat] = [:]
+
+    /// How lit a cave's range is turned from the sun (`HillArt.Look.ambient`): deeper shade than
+    /// other hills, so a mountain's shape shows.
+    private static let cragShade = 0.25
+
+    /// Darkens scenery on a hill's shaded side with the ground there (`HillArt.sunlight`): by most
+    /// of the ground's shade (60%) where the sun only grazes the slope, since it stands up into the
+    /// light, and by all of it where the slope turns its back on the sun, in the hill's own shadow.
+    /// A slope facing the sun leaves it as it is.
+    private func shade(_ node: SKSpriteNode, standingOn cell: GridPoint) {
+        guard let index = map.hillIndex(at: cell) else { return }
+        let hill = map.hills[index]
+        let x = Double(cell.col) + 0.5, y = Double(cell.row) + 0.5, e = 0.25
+        let gx = Double(hill.height(atCells: x + e, y) - hill.height(atCells: x - e, y)) / (2 * e)
+        let gy = Double(hill.height(atCells: x, y + e) - hill.height(atCells: x, y - e)) / (2 * e)
+        let tile = Double(WorldMap.tileSize)
+        // The same light as the ground's (`HillArt.sprites`), crags in their deeper shade.
+        let ambient = hill.isCrag ? Self.cragShade : HillArt.ambient(rocky: map.rockiness)
+        let light = HillArt.sunlight(hx: gx / tile / 0.866, hy: gy / tile / 0.866, ambient: ambient)
+        guard light.shade < 1 else { return }
+        let shadowed = min(1, max(0, (0.15 - light.lambert) / 0.15))
+        node.color = .black
+        node.colorBlendFactor = CGFloat((1 - light.shade) * (0.6 + 0.4 * shadowed))
+    }
 
     /// How far up its image a sprite's lowest opaque pixel sits (0...1). Scenery is anchored there,
     /// so a log or cactus drawn with empty rows under it stands on its cell instead of floating
