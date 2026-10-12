@@ -181,11 +181,11 @@ final class Lighting {
             fall(from: .noon)
         }
 
-        /// Lays it on the ground away from `sun`: a round a little over half as wide as its scenery,
-        /// stretched along the ground the lower the sun (by a quarter of the scenery's width at
-        /// midday, at most 1.4 widths), drawn as `WorldMap.project` draws the ground.
-        func fall(from sun: Sun) {
-            let wide = Double(width)
+        /// The shadow of something `wide` across, away from `sun`: a round a little over half as wide,
+        /// stretched along the ground the lower the sun (by a quarter of the width at midday, at most
+        /// 1.4 widths), drawn as `WorldMap.project` draws the ground. Its middle from the foot, its
+        /// size on screen and its turn. Scenery's (`fall(from:)`) and the characters' (`Walker.cast`).
+        static func shape(wide: Double, sun: Sun) -> (middle: CGVector, size: CGSize, turn: CGFloat) {
             let level = (sun.x * sun.x + sun.y * sun.y).squareRoot()
             let length = level > 1e-6 ? min(1.4 * wide, 0.18 * wide * level / sun.z) : 0
             let away = level > 1e-6 ? (x: -sun.x / level, y: -sun.y / level) : (x: 1.0, y: 0.0)
@@ -198,10 +198,16 @@ final class Lighting {
             let mean = (xx + yy) / 2, spread = (((xx - yy) / 2) * ((xx - yy) / 2) + xy * xy).squareRoot()
             let long = (mean + spread).squareRoot(), short = max(0, mean - spread).squareRoot()
             let turn = 0.5 * atan2(2 * xy, xx - yy)
-            let centre = CGPoint(x: foot.x + CGFloat(middle.x), y: foot.y + CGFloat(middle.y))
-            let size = CGSize(width: 2 * long, height: 2 * short)
+            return (CGVector(dx: middle.x, dy: middle.y), CGSize(width: 2 * long, height: 2 * short), CGFloat(turn))
+        }
+
+        /// Lays it on the ground away from `sun` (`shape(wide:sun:)`), as wide as its scenery.
+        func fall(from sun: Sun) {
+            let (middle, size, angle) = Self.shape(wide: Double(width), sun: sun)
+            let centre = foot + middle
+            let turn = Double(angle)
             // How far it reaches up and down the screen from its middle.
-            let rising = long * sin(turn), standing = short * cos(turn)
+            let rising = Double(size.width) / 2 * sin(turn), standing = Double(size.height) / 2 * cos(turn)
             let reach = CGFloat((rising * rising + standing * standing).squareRoot())
             for part in parts {
                 part.node.isHidden = centre.y + reach < part.from || centre.y - reach >= part.to
