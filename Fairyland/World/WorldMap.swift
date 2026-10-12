@@ -240,6 +240,7 @@ final class WorldMap {
         // Where you arrive through a cave's mouth beside the road has moved.
         if !ranges.isEmpty { cachedEntryCells = nil }
         if def.town == nil, def.theme.cave == nil, def.theme.hills != nil || !landings.isEmpty { layFootpaths() }
+        sealCrags()
         if def.theme.accent != nil {
             if let patches = def.theme.accentPatches {
                 paintAccentPatches(patches, &rng)
@@ -1110,12 +1111,32 @@ final class WorldMap {
             }
         }
         hill.highest = CGFloat(hill.heights.max() ?? 0)
-        // Nothing grows on its foot in the map, and no pond or other hill goes there.
+        // Nothing grows on its foot in the map, and no pond or other hill goes there. Its rock is a
+        // wall (playtesting 2026-10-12: you shouldn't get past the edge's mountains): you can walk
+        // on its foot, and up its road to the cave's mouth, but not up onto it or along the edge
+        // behind it, where it rises from the map, so the only way on is through the mouth.
         for cell in cells where contains(cell) {
-            occupy(cell, blocking: false)
+            let up = hill.height(atCells: Double(cell.col) + 0.5, Double(cell.row) + 0.5)
+            let wall = up > Self.cragFoot || spot(of: cell, from: edge).inward < 3
+            occupy(cell, blocking: wall && ground[cell.row][cell.col] != .path)
             cragGround.insert(cell)
         }
         return hill
+    }
+
+    /// How high a range where a road leads into a cave stands where its rock begins, the wall you
+    /// can't climb (points): its foot below that you can walk on.
+    static let cragFoot: CGFloat = 12
+
+    /// Walls off whatever of a cave's range in the map you can't reach from the hub any more
+    /// (a dip between its summits, behind their rock), so nothing walkable is shut in.
+    private func sealCrags() {
+        guard !cragGround.isEmpty else { return }
+        let reached = reachedFromHub()
+        guard reached.contains(true) else { return }
+        for cell in cragGround where contains(cell) && !blocked.contains(cell) && !reached[cell.row * columns + cell.col] {
+            occupy(cell, blocking: true)
+        }
     }
 
     /// Whether a cell is under or against a range where a road leads into a cave, in the map or
@@ -1877,17 +1898,19 @@ final class WorldMap {
         return groups
     }
 
-    /// How many cells one could stand on (land, or a bridge) can't be walked to from the hub,
-    /// round the water and the buildings, corners too as the walk graph has it.
-    private func cutOff() -> Int {
-        func open(_ col: Int, _ row: Int) -> Bool {
-            col >= 0 && row >= 0 && col < columns && row < rows && !blocked.contains(GridPoint(col: col, row: row))
-                && (ground[row][col] != .water || bridgeCells.contains(GridPoint(col: col, row: row)))
-        }
+    /// Whether one could stand on a cell: land or a bridge, not walled off.
+    private func standable(_ col: Int, _ row: Int) -> Bool {
+        col >= 0 && row >= 0 && col < columns && row < rows && !blocked.contains(GridPoint(col: col, row: row))
+            && (ground[row][col] != .water || bridgeCells.contains(GridPoint(col: col, row: row)))
+    }
+
+    /// Which cells (row by row) can be walked to from the hub, round the water and the buildings,
+    /// corners too as the walk graph has it. None if the hub itself is walled off.
+    private func reachedFromHub() -> [Bool] {
+        var reached = [Bool](repeating: false, count: columns * rows)
         let hub = point(def.hub ?? [0, 0])
         let start = GridPoint(col: Int(hub.x), row: Int(hub.y))
-        guard open(start.col, start.row) else { return 0 }
-        var reached = [Bool](repeating: false, count: columns * rows)
+        guard standable(start.col, start.row) else { return reached }
         reached[start.row * columns + start.col] = true
         var queue = [start]
         var index = 0
@@ -1897,15 +1920,23 @@ final class WorldMap {
             for dr in -1...1 {
                 for dc in -1...1 {
                     let col = cell.col + dc, row = cell.row + dr
-                    guard open(col, row), !reached[row * columns + col] else { continue }
+                    guard standable(col, row), !reached[row * columns + col] else { continue }
                     reached[row * columns + col] = true
                     queue.append(GridPoint(col: col, row: row))
                 }
             }
         }
+        return reached
+    }
+
+    /// How many cells one could stand on (land, or a bridge) can't be walked to from the hub.
+    private func cutOff() -> Int {
+        let hub = point(def.hub ?? [0, 0])
+        guard standable(Int(hub.x), Int(hub.y)) else { return 0 }
+        let reached = reachedFromHub()
         var count = 0
         for row in 0..<rows {
-            for col in 0..<columns where open(col, row) && !reached[row * columns + col] { count += 1 }
+            for col in 0..<columns where standable(col, row) && !reached[row * columns + col] { count += 1 }
         }
         return count
     }

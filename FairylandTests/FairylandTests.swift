@@ -168,9 +168,15 @@ struct ContentTests {
                     return hill.height(atCells: Double(cell.col) + 0.5, Double(cell.row) + 0.5) > 10
                 }
                 #expect(raised.count * 5 >= spots.count * 4, "map \(def.id): only \(raised.count) of \(spots.count) spots along its edge rise")
-                // You can walk on its foot in the map, and it never leans out of sight, in the map
-                // or past it.
-                #expect(hill.cells.filter { map.contains($0) }.allSatisfy { map.isWalkable($0) }, "map \(def.id): part of its range you can't walk on")
+                // Its rock is a wall (playtesting 2026-10-12): you can walk on its foot and up its
+                // road to the mouth, never up onto it or along the edge behind it.
+                for cell in hill.cells where map.contains(cell) && map.ground[cell.row][cell.col] != .path {
+                    let up = hill.height(atCells: Double(cell.col) + 0.5, Double(cell.row) + 0.5)
+                    if up > WorldMap.cragFoot || map.spot(of: cell, from: exit.edge).inward < 3 {
+                        #expect(!map.isWalkable(cell), "map \(def.id): you can climb its rock at \(cell)")
+                    }
+                }
+                // And it never leans out of sight, in the map or past it.
                 for cell in hill.cells where (cell.col + cell.row) % 3 == 0 {
                     let x = Double(cell.col) + 0.5, y = Double(cell.row) + 0.5, e = 0.1
                     let drop = (hill.height(atCells: x + e, y + e) - hill.height(atCells: x - e, y - e)) / (2 * e * tile)
