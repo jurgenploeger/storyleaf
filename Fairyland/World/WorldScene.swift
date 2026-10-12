@@ -1506,8 +1506,23 @@ final class WorldScene: SKScene {
     /// The Homeward Feather's light: a warm white, like sun through a cloud.
     private static let featherLight = UIColor(red: 1, green: 0.95, blue: 0.78, alpha: 1)
 
-    /// A Homeward Feather taking you away: a gust of feathers whirls up round you, and you rise
-    /// into a column of light and fade, then `done` (the map changes).
+    /// A Homeward Feather's arrival (`featherArrive`), the way it's timed; its departure
+    /// (`featherAway`) is the same played backward. The hero floats down `height` points over
+    /// `drop` seconds, appearing over the first `appear`; the column of light shines `hold` seconds
+    /// and then fades over `fade`; `count` feathers spiral down and out, each over `flight` seconds,
+    /// one every `stagger`. The whole of it is `length` long (until the last feather settles).
+    private enum Feather {
+        static let height: CGFloat = 90
+        static let drop = 0.85, appear = 0.45
+        static let hold = 0.5, fade = 0.6
+        static let count = 12
+        static let flight = 1.2, stagger = 0.04
+        static let length = flight + stagger * Double(count - 1)
+    }
+
+    /// A Homeward Feather taking you away: its arrival (`featherArrive`) played backward. A gust
+    /// of feathers spirals up and in round you, the column of light shines up out of nothing, and
+    /// you rise into it and fade, then `done` (the map changes).
     func featherAway(then done: @escaping () -> Void) {
         isInputLocked = true
         player.path = []
@@ -1515,16 +1530,15 @@ final class WorldScene: SKScene {
         player.idles = false
         let column = featherColumn(over: player.position)
         column.alpha = 0
-        column.yScale = 0.3
-        column.run(.group([.fadeAlpha(to: 0.9, duration: 0.45), .scaleY(to: 1, duration: 0.45)]))
-        featherGust(around: player.position, rising: true)
-        let lift = SKAction.moveBy(x: 0, y: 90, duration: 0.9)
+        column.run(.sequence([.wait(forDuration: Feather.length - Feather.hold - Feather.fade), .fadeAlpha(to: 0.9, duration: Feather.fade)]))
+        featherGust(around: player.position, backward: true)
+        let lift = SKAction.moveBy(x: 0, y: Feather.height, duration: Feather.drop)
         lift.timingMode = .easeIn
-        player.sprite.run(.sequence([.wait(forDuration: 0.25), .group([lift, .scaleX(to: 0.55, duration: 0.9)])]), withKey: "feather")
-        player.run(.sequence([.wait(forDuration: 0.55), .fadeOut(withDuration: 0.6)]))
+        player.sprite.run(.sequence([.wait(forDuration: Feather.length - Feather.drop), lift]), withKey: "feather")
+        player.run(.sequence([.wait(forDuration: Feather.length - Feather.appear), .fadeOut(withDuration: Feather.appear)]))
         onFeatherGone = done
         Task {
-            await run(.wait(forDuration: 1.25))
+            await run(.wait(forDuration: Feather.length))
             let gone = onFeatherGone
             onFeatherGone = nil
             gone?()
@@ -1538,17 +1552,17 @@ final class WorldScene: SKScene {
     func awaitFeatherArrival() {
         player.idles = false
         player.alpha = 0
-        player.sprite.position = CGPoint(x: 0, y: 90)
+        player.sprite.position = CGPoint(x: 0, y: Feather.height)
     }
 
     /// Arriving by Homeward Feather: you float down in the light as the feathers settle.
     func featherArrive() {
         let column = featherColumn(over: player.position)
         column.alpha = 0.9
-        column.run(.sequence([.wait(forDuration: 0.5), .fadeOut(withDuration: 0.6), .removeFromParent()]))
-        featherGust(around: player.position, rising: false)
-        player.run(.fadeIn(withDuration: 0.45))
-        let drop = SKAction.move(to: .zero, duration: 0.85)
+        column.run(.sequence([.wait(forDuration: Feather.hold), .fadeOut(withDuration: Feather.fade), .removeFromParent()]))
+        featherGust(around: player.position, backward: false)
+        player.run(.fadeIn(withDuration: Feather.appear))
+        let drop = SKAction.move(to: .zero, duration: Feather.drop)
         drop.timingMode = .easeOut
         player.sprite.run(.sequence([drop, .run { [weak self] in self?.player.idles = true }]), withKey: "feather")
     }
@@ -1562,28 +1576,31 @@ final class WorldScene: SKScene {
         return column
     }
 
-    /// Feathers whirling round `center`: spiralling up and closing in (`rising`), or drifting down
-    /// and out to settle.
-    private func featherGust(around center: CGPoint, rising: Bool) {
+    /// Feathers whirling round `center` as you arrive: spiralling down from high up and out to
+    /// settle, one after another. `backward`: the same played backward, as you leave, the last
+    /// to settle the first to rise, spiralling up and in.
+    private func featherGust(around center: CGPoint, backward: Bool) {
         let texture = ArtLibrary.shared.sprite("item_homeward_feather").texture
-        let count = 12
-        let duration: CGFloat = 1.2
-        for index in 0..<count {
+        let flight = CGFloat(Feather.flight)
+        for index in 0..<Feather.count {
             let feather = SKSpriteNode(texture: texture, size: CGSize(width: 18, height: 18))
             feather.zPosition = 30_001
             feather.alpha = 0
             world.addChild(feather)
-            let phase = CGFloat(index) / CGFloat(count) * 2 * .pi
-            let spin = SKAction.customAction(withDuration: duration) { node, elapsed in
-                let t = min(1, elapsed / duration)
-                let p = rising ? t : 1 - t
+            let phase = CGFloat(index) / CGFloat(Feather.count) * 2 * .pi
+            let spin = SKAction.customAction(withDuration: Feather.flight) { node, elapsed in
+                let t = min(1, elapsed / flight)
+                // How far through its arrival it is, and so how high (1 up top, 0 settled).
+                let s = backward ? 1 - t : t
+                let p = 1 - s
                 let angle = phase + p * 4.4 * .pi
                 let radius = 34 - 14 * p
                 node.position = CGPoint(x: center.x + cos(angle) * radius, y: center.y + 6 + p * 140 + sin(angle) * radius * 0.35)
                 node.zRotation = angle
-                node.alpha = min(1, t * 5, (1 - t) * 4)
+                node.alpha = min(1, s * 5, (1 - s) * 4)
             }
-            feather.run(.sequence([.wait(forDuration: Double(index) * 0.04), spin, .removeFromParent()]))
+            let order = backward ? Feather.count - 1 - index : index
+            feather.run(.sequence([.wait(forDuration: Double(order) * Feather.stagger), spin, .removeFromParent()]))
         }
     }
 
@@ -1611,7 +1628,7 @@ final class WorldScene: SKScene {
     /// still part-way so a screenshot catches the feathers whirling.
     func featherAwayForDebug() {
         featherAway {}
-        run(.sequence([.wait(forDuration: 0.75), .run { [weak self] in self?.isPaused = true }]))
+        run(.sequence([.wait(forDuration: 1.2), .run { [weak self] in self?.isPaused = true }]))
     }
 
     /// Debug launches (`say=<text>`): a speech bubble over the hero that stays, for screenshots.
