@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.4.13",
+      "date": "2026-10-12",
+      "title": "Clear bridges",
+      "notes": [
+        "No more ferns or trees standing on a bridge: nothing grows on the bank right beside a bridge's planks."
+      ]
+    },
+    {
       "version": "0.4.12",
       "date": "2026-10-12",
       "title": "Folk with a story",

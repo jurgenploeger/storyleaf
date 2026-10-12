@@ -1125,6 +1125,13 @@ final class WorldScene: SKScene {
         let pixels = art.tileTexture(def.theme.ground).cgImage().width
         for bridge in map.bridges {
             BridgeArt.rails(for: bridge, pixels: pixels, palette: def.theme.palette, in: world)
+            // Nothing grows right beside a deck either, on the bank its planks and rails reach over,
+            // where a fern or a tree would stand on the bridge.
+            for cell in bridge.cells {
+                for dc in -1...1 {
+                    for dr in -1...1 { map.occupy(GridPoint(col: cell.col + dc, row: cell.row + dr), blocking: false) }
+                }
+            }
         }
     }
 
