@@ -54,11 +54,11 @@ struct WorldAtlas: View {
             .frame(maxHeight: 400)
             .background(Color(red: 0.16, green: 0.42, blue: 0.62))
             .overlay(alignment: .topTrailing) { AtlasCompass().padding(6).allowsHitTesting(false) }
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(HUDStyle.cream.opacity(0.6), lineWidth: 2))
 
             if let selected, let map = Content.shared.map(selected) {
                 caption(for: map)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 10)
             }
         }
         .onAppear {

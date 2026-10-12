@@ -52,6 +52,9 @@ final class Sky {
         GameSettings.dayAndNight ? GameClock.hours(since: start).truncatingRemainder(dividingBy: 24) : 12
     }
 
+    /// Where the sun (or the moon) is at this hour: the hills' light and the shadows follow it.
+    var sun: Sun { Sun(hour: hour) }
+
     private func sunGoal() -> CGFloat {
         guard weather?.sunny ?? true else { return 0 }
         let hour = self.hour

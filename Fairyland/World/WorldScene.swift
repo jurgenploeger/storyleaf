@@ -225,6 +225,7 @@ final class WorldScene: SKScene {
         lighting?.resize(to: size)
         sky = Sky(map: def, camera: cam, start: session.data.startedAt)
         if let sky { lighting?.sunlight(sky.sunlight) }
+        follow(sky?.sun ?? .noon)
 
         // Don't start on top of scenery (e.g. an old save).
         // (A save from before a cave's walls went up can even be deep inside the rock.)
@@ -412,9 +413,11 @@ final class WorldScene: SKScene {
             crag.bank = scree
             crag.rocky = 1
             crag.rockAbove = 0.2
-            crag.ambient = 0.25
+            crag.ambient = Self.cragShade
             crag.brightest = 1.3
             crag.strata = 14
+            // Its road stays a road all the way up to the cave's mouth.
+            crag.road = { cell in self.map.contains(cell) && self.map.ground[cell.row][cell.col] == .path }
             // Already where they show on screen (they lift themselves) and sorted, so straight into
             // the world.
             raisedHills = map.hills.flatMap { HillArt.sprites(for: $0, look: $0.isCrag ? crag : look) }
@@ -699,7 +702,7 @@ final class WorldScene: SKScene {
 
     /// Raised tops from `makeGround`, one per plateau, until `placePlateaus` sets them down.
     private var raisedTops: [SKNode] = []
-    /// Hills from `makeGround`, until `placePlateaus` sets them down.
+    /// Hills from `makeGround`: `placePlateaus` sets them down, and the sun lights them (`follow(_:)`).
     private var raisedHills: [SKNode] = []
 
     /// How deep raised ground over `cells` is drawn: just behind the back of it, so everything
@@ -932,13 +935,18 @@ final class WorldScene: SKScene {
                     }
                     if placement.shadow == true {
                         if map.hillIndex(at: cell) != nil {
-                            // On a hill, over the strip it stands on, and over the one in front where
-                            // it reaches that (`HillArt.strip(at:)`).
+                            // On a hill, over the strip it stands on, and over the two in front where
+                            // it reaches them (`HillArt.strip(at:)`): each from where it begins on
+                            // screen, under it.
                             let strip = HillArt.strip(at: -node.zPosition)
-                            let line = strip.start + map.height(at: CGPoint(x: node.position.x, y: strip.start))
-                            Lighting.shadow(under: node, in: world, above: strip.z, front: (line: line, z: strip.z + HillArt.stripHeight))
+                            let layers: [(from: CGFloat, z: CGFloat)] = (0..<3).map { step in
+                                let start = strip.start - CGFloat(step) * HillArt.stripHeight
+                                return (from: start + map.height(at: CGPoint(x: node.position.x, y: start)),
+                                        z: strip.z + CGFloat(step) * HillArt.stripHeight)
+                            }
+                            shadows.append(Lighting.Shadow(under: node, in: world, layers: layers))
                         } else {
-                            Lighting.shadow(under: node, in: world)
+                            shadows.append(Lighting.Shadow(under: node, in: world))
                         }
                     }
                     if let hex = placement.glow, let color = UIColor(hex: hex) {
@@ -1143,6 +1151,7 @@ final class WorldScene: SKScene {
         position.y += map.height(at: map.center(of: cell))
         node.position = position
         node.zPosition = -ground
+        shade(node, standingOn: cell)
         if sway {
             let duration = TimeInterval.random(in: 1.8...2.8, using: &rng)
             let lean = CGFloat.random(in: 0.018...0.03, using: &rng)
@@ -1159,6 +1168,62 @@ final class WorldScene: SKScene {
     }
 
     private var feet: [ObjectIdentifier: CGFloat] = [:]
+
+    /// How lit a cave's range is turned from the sun (`HillArt.Look.ambient`): deeper shade than
+    /// other hills, so a mountain's shape shows.
+    private static let cragShade = 0.25
+
+    /// Scenery on a hill, with how the ground under it rises a cell across and up the map (as
+    /// `HillArt.sunlight` takes it) and how lit it is there turned from the midday sun: shaded
+    /// with that ground as the sun moves (`follow(_:)`).
+    private var onSlopes: [(node: SKSpriteNode, hx: Double, hy: Double, ambient: Double)] = []
+
+    /// Shades scenery standing on a hill with the ground there, by the sun (`Self.shade`).
+    private func shade(_ node: SKSpriteNode, standingOn cell: GridPoint) {
+        guard let index = map.hillIndex(at: cell) else { return }
+        let hill = map.hills[index]
+        let x = Double(cell.col) + 0.5, y = Double(cell.row) + 0.5, e = 0.25
+        let gx = Double(hill.height(atCells: x + e, y) - hill.height(atCells: x - e, y)) / (2 * e)
+        let gy = Double(hill.height(atCells: x, y + e) - hill.height(atCells: x, y - e)) / (2 * e)
+        let tile = Double(WorldMap.tileSize)
+        // The same light as the ground's (`HillArt.sprites`), crags in their deeper shade.
+        let ambient = hill.isCrag ? Self.cragShade : HillArt.ambient(rocky: map.rockiness)
+        let spot = (node: node, hx: gx / tile / 0.866, hy: gy / tile / 0.866, ambient: ambient)
+        onSlopes.append(spot)
+        Self.shade(spot.node, hx: spot.hx, hy: spot.hy, ambient: spot.ambient, sun: sunShown ?? .noon)
+    }
+
+    /// Darkens scenery on a hill's shaded side with the ground there (`HillArt.sunlight`): by most
+    /// of the ground's shade (60%) where the sun only grazes the slope, since it stands up into the
+    /// light, and by all of it where the slope turns its back on the sun, in the hill's own shadow.
+    /// A slope facing the sun leaves it as it is.
+    private static func shade(_ node: SKSpriteNode, hx: Double, hy: Double, ambient: Double, sun: Sun) {
+        let light = HillArt.sunlight(hx: hx, hy: hy, ambient: ambient, sun: sun)
+        guard light.shade < 1 else {
+            node.colorBlendFactor = 0
+            return
+        }
+        let shadowed = min(1, max(0, (0.15 - light.lambert) / 0.15))
+        node.color = .black
+        node.colorBlendFactor = CGFloat((1 - light.shade) * (0.6 + 0.4 * shadowed))
+    }
+
+    /// Shadows cast by scenery (`Lighting.Shadow`), turned with the sun.
+    private var shadows: [Lighting.Shadow] = []
+    /// The sun the map is lit by now (`follow(_:)`), and how long until it's looked at again.
+    private var sunShown: Sun?
+    private var sunTimer: TimeInterval = 0
+
+    /// Lights the map by where the sun is (`Sky.sun`; midday in a cave): its hills shaded and the
+    /// scenery on them, shadows cast away from it, its flare and beams turned toward it.
+    private func follow(_ sun: Sun) {
+        guard sun != sunShown else { return }
+        sunShown = sun
+        HillArt.light(raisedHills, by: sun)
+        for shadow in shadows { shadow.fall(from: sun) }
+        for spot in onSlopes { Self.shade(spot.node, hx: spot.hx, hy: spot.hy, ambient: spot.ambient, sun: sun) }
+        lighting?.follow(sun)
+    }
 
     /// How far up its image a sprite's lowest opaque pixel sits (0...1). Scenery is anchored there,
     /// so a log or cactus drawn with empty rows under it stands on its cell instead of floating
@@ -1504,8 +1569,23 @@ final class WorldScene: SKScene {
     /// The Homeward Feather's light: a warm white, like sun through a cloud.
     private static let featherLight = UIColor(red: 1, green: 0.95, blue: 0.78, alpha: 1)
 
-    /// A Homeward Feather taking you away: a gust of feathers whirls up round you, and you rise
-    /// into a column of light and fade, then `done` (the map changes).
+    /// A Homeward Feather's arrival (`featherArrive`), the way it's timed; its departure
+    /// (`featherAway`) is the same played backward. The hero floats down `height` points over
+    /// `drop` seconds, appearing over the first `appear`; the column of light shines `hold` seconds
+    /// and then fades over `fade`; `count` feathers spiral down and out, each over `flight` seconds,
+    /// one every `stagger`. The whole of it is `length` long (until the last feather settles).
+    private enum Feather {
+        static let height: CGFloat = 90
+        static let drop = 0.85, appear = 0.45
+        static let hold = 0.5, fade = 0.6
+        static let count = 12
+        static let flight = 1.2, stagger = 0.04
+        static let length = flight + stagger * Double(count - 1)
+    }
+
+    /// A Homeward Feather taking you away: its arrival (`featherArrive`) played backward. A gust
+    /// of feathers spirals up and in round you, the column of light shines up out of nothing, and
+    /// you rise into it and fade, then `done` (the map changes).
     func featherAway(then done: @escaping () -> Void) {
         isInputLocked = true
         player.path = []
@@ -1513,16 +1593,15 @@ final class WorldScene: SKScene {
         player.idles = false
         let column = featherColumn(over: player.position)
         column.alpha = 0
-        column.yScale = 0.3
-        column.run(.group([.fadeAlpha(to: 0.9, duration: 0.45), .scaleY(to: 1, duration: 0.45)]))
-        featherGust(around: player.position, rising: true)
-        let lift = SKAction.moveBy(x: 0, y: 90, duration: 0.9)
+        column.run(.sequence([.wait(forDuration: Feather.length - Feather.hold - Feather.fade), .fadeAlpha(to: 0.9, duration: Feather.fade)]))
+        featherGust(around: player.position, backward: true)
+        let lift = SKAction.moveBy(x: 0, y: Feather.height, duration: Feather.drop)
         lift.timingMode = .easeIn
-        player.sprite.run(.sequence([.wait(forDuration: 0.25), .group([lift, .scaleX(to: 0.55, duration: 0.9)])]), withKey: "feather")
-        player.run(.sequence([.wait(forDuration: 0.55), .fadeOut(withDuration: 0.6)]))
+        player.sprite.run(.sequence([.wait(forDuration: Feather.length - Feather.drop), lift]), withKey: "feather")
+        player.run(.sequence([.wait(forDuration: Feather.length - Feather.appear), .fadeOut(withDuration: Feather.appear)]))
         onFeatherGone = done
         Task {
-            await run(.wait(forDuration: 1.25))
+            await run(.wait(forDuration: Feather.length))
             let gone = onFeatherGone
             onFeatherGone = nil
             gone?()
@@ -1536,17 +1615,17 @@ final class WorldScene: SKScene {
     func awaitFeatherArrival() {
         player.idles = false
         player.alpha = 0
-        player.sprite.position = CGPoint(x: 0, y: 90)
+        player.sprite.position = CGPoint(x: 0, y: Feather.height)
     }
 
     /// Arriving by Homeward Feather: you float down in the light as the feathers settle.
     func featherArrive() {
         let column = featherColumn(over: player.position)
         column.alpha = 0.9
-        column.run(.sequence([.wait(forDuration: 0.5), .fadeOut(withDuration: 0.6), .removeFromParent()]))
-        featherGust(around: player.position, rising: false)
-        player.run(.fadeIn(withDuration: 0.45))
-        let drop = SKAction.move(to: .zero, duration: 0.85)
+        column.run(.sequence([.wait(forDuration: Feather.hold), .fadeOut(withDuration: Feather.fade), .removeFromParent()]))
+        featherGust(around: player.position, backward: false)
+        player.run(.fadeIn(withDuration: Feather.appear))
+        let drop = SKAction.move(to: .zero, duration: Feather.drop)
         drop.timingMode = .easeOut
         player.sprite.run(.sequence([drop, .run { [weak self] in self?.player.idles = true }]), withKey: "feather")
     }
@@ -1560,28 +1639,31 @@ final class WorldScene: SKScene {
         return column
     }
 
-    /// Feathers whirling round `center`: spiralling up and closing in (`rising`), or drifting down
-    /// and out to settle.
-    private func featherGust(around center: CGPoint, rising: Bool) {
+    /// Feathers whirling round `center` as you arrive: spiralling down from high up and out to
+    /// settle, one after another. `backward`: the same played backward, as you leave, the last
+    /// to settle the first to rise, spiralling up and in.
+    private func featherGust(around center: CGPoint, backward: Bool) {
         let texture = ArtLibrary.shared.sprite("item_homeward_feather").texture
-        let count = 12
-        let duration: CGFloat = 1.2
-        for index in 0..<count {
+        let flight = CGFloat(Feather.flight)
+        for index in 0..<Feather.count {
             let feather = SKSpriteNode(texture: texture, size: CGSize(width: 18, height: 18))
             feather.zPosition = 30_001
             feather.alpha = 0
             world.addChild(feather)
-            let phase = CGFloat(index) / CGFloat(count) * 2 * .pi
-            let spin = SKAction.customAction(withDuration: duration) { node, elapsed in
-                let t = min(1, elapsed / duration)
-                let p = rising ? t : 1 - t
+            let phase = CGFloat(index) / CGFloat(Feather.count) * 2 * .pi
+            let spin = SKAction.customAction(withDuration: Feather.flight) { node, elapsed in
+                let t = min(1, elapsed / flight)
+                // How far through its arrival it is, and so how high (1 up top, 0 settled).
+                let s = backward ? 1 - t : t
+                let p = 1 - s
                 let angle = phase + p * 4.4 * .pi
                 let radius = 34 - 14 * p
                 node.position = CGPoint(x: center.x + cos(angle) * radius, y: center.y + 6 + p * 140 + sin(angle) * radius * 0.35)
                 node.zRotation = angle
-                node.alpha = min(1, t * 5, (1 - t) * 4)
+                node.alpha = min(1, s * 5, (1 - s) * 4)
             }
-            feather.run(.sequence([.wait(forDuration: Double(index) * 0.04), spin, .removeFromParent()]))
+            let order = backward ? Feather.count - 1 - index : index
+            feather.run(.sequence([.wait(forDuration: Double(order) * Feather.stagger), spin, .removeFromParent()]))
         }
     }
 
@@ -1609,7 +1691,7 @@ final class WorldScene: SKScene {
     /// still part-way so a screenshot catches the feathers whirling.
     func featherAwayForDebug() {
         featherAway {}
-        run(.sequence([.wait(forDuration: 0.75), .run { [weak self] in self?.isPaused = true }]))
+        run(.sequence([.wait(forDuration: 1.2), .run { [weak self] in self?.isPaused = true }]))
     }
 
     /// Debug launches (`say=<text>`): a speech bubble over the hero that stays, for screenshots.
@@ -1708,6 +1790,12 @@ final class WorldScene: SKScene {
         if let sky {
             sky.update(dt)
             lighting?.sunlight(sky.sunlight)
+            // The sun creeps (a fifth of a degree in half a second at most): no need to move it every frame.
+            sunTimer -= dt
+            if sunTimer <= 0 {
+                sunTimer = 0.5
+                follow(sky.sun)
+            }
         }
         updateCamera(dt)
         updateEdgeFade(dt)
@@ -1890,13 +1978,13 @@ final class WorldScene: SKScene {
         }
     }
 
-    /// The last few steps toward an open road out fade to black.
+    /// The last few steps toward an open road out fade to black (into a cave, only toward its mouth).
     private func updateEdgeFade(_ dt: TimeInterval) {
         let cell = map.cell(at: player.position)
         let fadeCells = 4
         var target: CGFloat = 0
         for exit in def.exits where session.canTravel(exit) {
-            let distance = map.distance(from: cell, to: exit.edge)
+            let distance = map.distance(from: cell, toWayOutThrough: exit.edge)
             guard distance < fadeCells else { continue }
             target = max(target, CGFloat(fadeCells - distance) / CGFloat(fadeCells) * 0.75)
         }

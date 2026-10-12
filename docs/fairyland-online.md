@@ -103,12 +103,15 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   playtesting found too square. Since 0.4.1 they're heightfield hills, as isometric games draw terrain: a few
   ellipses melted together (`WorldMap.Hill`), rising on a smoothstep from foot to top, drawn as one picture of
   the map's own ground lit from the upper left and lifted by its heights in a small shader (`HillArt`; a warp
-  grid crashed SpriteKit at that size). Since 0.4.3 the light is matte, as pixel art shades a hill: a few
+  grid crashed SpriteKit at that size). Since 0.4.7 the shader lights it too, by the sun of the hour (`Sun`). Since 0.4.3 the light is matte, as pixel art shades a hill: a few
   steps of 6% with a 4×4 ordered dither between them, sides away from the sun a few shades darker (leaning to
   the palette's shadow colour) and sides facing it only one lighter; the first smooth, brighter gradient
   read as gloss in playtesting. Never steeper than 13 points a cell halfway up (15 before 0.4.4), so ground
   facing away never leans out of sight and a tap finds one spot. Scenery grows on them like anywhere
-  (since 0.4.3; tree shadows lie on the hill). Since 0.4.5 you can walk up them anywhere, straight up the
+  (since 0.4.3; tree shadows lie on the hill), and since 0.4.7 it's darker on the shaded side with the
+  ground (`HillArt.sunlight`, playtesting 2026-10-12): by 60% of the ground's shade where the sun only grazes
+  the slope (a tree stands up into the light, so it isn't as dark as the ground under it), and by all of it
+  where the slope is steeper than the sun is high, in the hill's own shadow. Since 0.4.5 you can walk up them anywhere, straight up the
   side too (asked for in playtesting 2026-10-11; 0.4.1 to 0.4.4 kept the steep sides blocked but for the
   trail); a trail cut into the slope (a shadow above, a lip below) is the easy way up, kept clear a cell
   either side. Since 0.4.5 it winds up round the side as a path would (asked for in playtesting 2026-10-11:
@@ -143,7 +146,7 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   clear of the other. Too big
   to draw or sort as one picture, a range is drawn in squares of 16 cells, each shown in strips two cells
   deep up the screen, sorted just behind their back edge (`HillArt.strip(at:)`), so trees and walkers behind
-  a summit are hidden by it; tree shadows are split where the strip in front begins.
+  a summit are hidden by it; tree shadows are split where each of the two strips in front begins.
 - Footpaths (ours, since 0.4.3, asked for in playtesting 2026-10-11: the trails as new ways to explore):
   from each trail that starts on the ground a cell-wide road winds across the fields to the nearest road or
   footpath, the cheapest way round what's in the way with a little seeded unevenness so it wanders
@@ -168,10 +171,27 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   its foot grassy, deeper shade (`Look.ambient` 0.25) and sunny slopes up to 30% brighter than the flat
   (`Look.brightest`; other hills go only 6%, or a ridge's sunlit side looked like the flat rock past it),
   ledges across its steep rock every 14 points up (`Look.strata`), stones strewn over it but not its
-  mouth, and the ground past that edge rock as well. Mist thickens over it from 14 cells out (13 past a ridge) to all mist 8 further, at
-  about the ground's height there, so no grass shows past it. The mouth is painted into its ground, so it
-  rises and leans with the slope: a rough arch, darker deep in, a shadow round its rim, light on its lip,
-  its darkness spilling over the road. You can walk its foot in the map; nothing grows there. 0.4.5 drew
+  mouth, and the ground past that edge rock as well. Mist thickens over it from 14 cells out (13 past a
+  ridge) to all mist 8 further, at about the ground's height there, so no grass shows past it. The mouth
+  is a doorway (`HillArt.doorway`) cut into a wall of rock facing you (`Hill.Wall`, part of the range's
+  ground, so lit, shaded and ledged like the rest): it climbs 50 to 55 points in under a cell, then
+  falls back 8 to 10 points a cell into the slopes behind, full height a cell past the doorway either
+  side, then tapering away (quickly at the end toward you, slowly at the end away, which like the back
+  can be no steeper than the view). On the north and east it's a cliff where the road meets the edge,
+  at the foot of the mountain's face, level with the mouth all along. On the south and west the range's
+  side toward the map faces away from you, where nothing steep can show, so it's a crag beside the
+  road's end in the map, standing on the ground there, its face turned back along the edge toward you
+  and the road; the road runs on along its foot, and you step into the mouth from the side, walking
+  away from you like on the other edges (playtesting 2026-10-12: the doorway alone looked stuck on, and
+  asked for the wall to be taller there). The doorway is upright on the screen like a door in an
+  isometric wall, its sides straight up and its arched top leaning along the face, 30 points tall and
+  14 more for each cell of its half-width (as wide as the road at the road's end, 2.6 cells beside
+  it), black inside, a shadow round its edge and light on the rock over its top. It's painted into the
+  ground, each point where the ground shows that far up the screen, so it stays upright however the
+  face leans (0.4.6 painted it leaning with the slope, a skewed dark patch that playtesting called
+  weird). You can walk its foot in the map; nothing grows there; and the only way out on that side is
+  through the mouth (`WorldMap.exit(at:)`, since 0.4.7: before, any cell along that edge led into the
+  cave, even on the mountain's foot). You come out of the cave on the road in front of it. 0.4.5 drew
   it as the cave's own rock in flat-topped walls (`CaveWalls`) with a dark arch in the face, or on the
   south and west a cleft under an arch; playtesting (2026-10-11) asked for a slope instead of flat tops
   and walls, and for no grass past it. How FO showed its cave entrances isn't in any source reachable
@@ -180,8 +200,12 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake
   up there after fainting. Mages learn Bridge of Light (Lv 20, 10 MP) to go back to it, and since 0.3.53
-  anyone can buy a Homeward Feather (50 gold, every town shop) that does the same once; since 0.3.54 won
-  fights drop one now and then (8%), and a beaten boss always does. How FO itself moved players between towns isn't in any source reachable
+  anyone can buy a Homeward Feather (50 gold, every town shop) that does the same once; since 0.4.7 both
+  let you choose any town you've been to instead (`TravelPicker`, the checkpoint first; playtesting
+  2026-10-12), going straight there when there's only one, nothing spent until you pick; since 0.3.54 won
+  fights drop one now and then (8%), and a beaten boss always does. Arriving by feather, you float down
+  in a column of light as feathers spiral down round you; leaving is the same played backward
+  (`WorldScene.Feather`, one timeline for both, since 0.4.7: playtesting 2026-10-12 asked for them to match). How FO itself moved players between towns isn't in any source reachable
   from a cloud session (2026-10-05); this is our own design.
 - Fairy-tale fields echo the lands: Genie Desert, Lotus Land (with Thumbelina), Gumdrop Peaks, Snow White
   Forest, Emerald Road.
@@ -537,6 +561,20 @@ the Wishing Seal, which stays the Monster Book's last reward.
     for each (asked for the same day): with night and day off the light stays at midday, the HUD shows the
     sun and there are no dawn or dusk notices (the calendar still runs); with the weather off it's always
     clear. A debug `weather=` still wins, for screenshots.
+  - Us (since 0.4.7, asked for in playtesting 2026-10-12: "the shadows and sun should follow over the
+    landscape"): the sun crosses the sky (`Sun`, from `Sky`'s hour). It rises in the east-north-east (up the
+    screen) at 6hr, is where the art's light always was at midday (up the map and to the left, 36° up) and
+    sets in the west-south-west (behind you, to the left) at 18hr: half a turn, low at either end (8° at
+    least) and highest at midday. The moon takes the same path by night, at 60% strength. For the first and
+    last game hour the light turns soft and comes from overhead, so nothing jumps when one gives way to the
+    other. The hills' slopes are lit by it in their shader (`HillArt.lifting`; scenery on them with them):
+    as the sun gets lower, slopes facing it get brighter next to the flat and more of the others fall into
+    the hill's shadow, while the shade's depth stays midday's (the sky's light fades with the sun's). Trees'
+    and rocks' shadows (`Lighting.Shadow`) are a round under them stretched away from the sun along the ground,
+    a quarter of their width at midday (as they were) and up to 1.4 widths at sunrise and sunset; the sun's
+    flare sits at the edge of the screen toward it and the sunbeams lean their tops toward it. Before 0.4.7
+    the beams leaned to the upper right, against the flare in the top-left corner. Whether FO's light moved
+    with its clock isn't in any source we've found; this is ours. Clouds don't soften the shadows yet.
   - Our setting is called Storyleaf in every in-game text (Fairyland until 0.3.50; see Names). In FO the
     continent itself is Mysteria (above), which is also the relaunch's name.
 - **Bots, moderators and announcements:** ours, asked for in playtesting (2026-10-04). FO's chat channels,

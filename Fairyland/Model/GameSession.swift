@@ -884,9 +884,9 @@ final class GameSession {
         }
     }
 
-    /// Where you wake up after fainting, and where Bridge of Light and Homeward Feathers take you:
-    /// the square of the last town you walked into. (An older save could hold a wild map's entrance;
-    /// that becomes the town nearest to it.)
+    /// Where you wake up after fainting, and the first town Bridge of Light and Homeward Feathers
+    /// offer to take you to (`travelDestinations`): the square of the last town you walked into.
+    /// (An older save could hold a wild map's entrance; that becomes the town nearest to it.)
     var checkpoint: Checkpoint {
         inTown(data.checkpoint) ?? Checkpoint(mapID: content.startMap, entry: nil)
     }
@@ -932,6 +932,14 @@ final class GameSession {
         guard point != data.checkpoint else { return }
         data.checkpoint = point
         post(L("Checkpoint saved at {place}.", ["place": checkpointName(point)]), .quest)
+    }
+
+    /// The towns Bridge of Light and Homeward Feathers can take you to: every town you've been to
+    /// but the one you're in, your checkpoint first, then the rest in the order the world lists them.
+    var travelDestinations: [String] {
+        let towns = content.maps.filter { $0.fence == true && $0.id != data.mapID && hasVisited($0.id) }.map(\.id)
+        let home = checkpoint.mapID
+        return towns.filter { $0 == home } + towns.filter { $0 != home }
     }
 
     func checkpointName(_ point: Checkpoint) -> String {

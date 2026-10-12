@@ -127,7 +127,7 @@ struct ContentTests {
 
     @Test func roadsIntoCavesRunIntoAMountain() throws {
         // Where a road leads into a cave, a range of rocky hills rises along that side of the map
-        // and on past its edge, the road climbing a little to the cave's mouth in its side.
+        // and on past its edge, the road climbing a little to the cave's mouth in a wall of rock.
         let tile = WorldMap.tileSize
         for def in content.maps where def.theme.cave == nil && def.town == nil {
             let map = WorldMap(def: def)
@@ -140,17 +140,28 @@ struct ContentTests {
                 func height(out: Double) -> CGFloat {
                     hill.height(atCells: mouth.x + mouth.into.x * out, mouth.y + mouth.into.y * out)
                 }
-                print("⛰ \(def.id) crag: \(Int(hill.highest)) high, mouth at \(Int(height(out: 0))), 5 out \(Int(height(out: 5)))")
-                #expect(height(out: 5) > 50, "map \(def.id): no mountain behind the cave's mouth")
+                let place = mouth.beside ? "beside the road" : "at the road's end"
+                print("⛰ \(def.id) crag: \(Int(hill.highest)) high, mouth \(place) at \(Int(height(out: 0))), a wall \(Int(height(out: 1) - height(out: 0))) over it")
+                // It's in a wall of rock facing you, at least 40 points taller a cell in, and on the
+                // north and east the mountain rises on behind it.
+                #expect(height(out: 1) - height(out: 0) > 40, "map \(def.id): no wall of rock over the cave's mouth")
+                if !mouth.beside { #expect(height(out: 5) > 50, "map \(def.id): no mountain behind the cave's mouth") }
                 // The road reaches the mouth, climbing only a little, and you can walk it.
                 let last = GridPoint(col: Int((mouth.x - mouth.into.x * 0.5).rounded(.down)),
                                      row: Int((mouth.y - mouth.into.y * 0.5).rounded(.down)))
                 #expect(map.ground[last.row][last.col] == .path && map.isWalkable(last), "map \(def.id): the road doesn't reach the cave's mouth")
+                // The only way out on that side is through the mouth: the rest of the edge is the
+                // mountain. And you don't arrive in it.
+                let length = exit.edge == .north || exit.edge == .south ? map.columns : map.rows
+                #expect(map.exit(at: last)?.to == exit.to, "map \(def.id): the cave's mouth doesn't lead into \(exit.to)")
+                let ways = (0..<map.rows).flatMap { row in (0..<map.columns).map { GridPoint(col: $0, row: row) } }
+                    .filter { map.exit(at: $0)?.to == exit.to }
+                #expect(ways.count <= Int(2 * mouth.half) + 1, "map \(def.id): \(ways.count) cells lead into \(exit.to)")
+                #expect(map.exit(at: map.entryCell(from: exit.edge)) == nil, "map \(def.id): you'd come out of \(exit.to) in its mouth")
                 // Partway up a slope, so it shows: not up in the air, and the hill rising behind it.
                 #expect(height(out: 0) < 70, "map \(def.id): the cave's mouth stands \(height(out: 0)) up")
                 #expect(height(out: mouth.depth) - height(out: 0) > 10, "map \(def.id): the cave's mouth is on the flat")
                 // It runs along the whole side: the ground just past the edge rises nearly all along it.
-                let length = exit.edge == .north || exit.edge == .south ? map.columns : map.rows
                 let spots = Array(stride(from: 0, to: length, by: 3))
                 let raised = spots.filter { along in
                     let cell = map.cell(on: exit.edge, along: along, inward: -3)
@@ -407,6 +418,62 @@ struct LookTests {
         // Most look left or at you; a few look right, and a copy looks the way its base does.
         #expect(art.walkCycle("npc_ugly_duckling").facesRight)
         #expect(art.walkCycle("monster_tree_snake_sunny").facesRight)
+    }
+
+    @Test func theSunCrossesTheSkyAndShadowsFollow() throws {
+        // Midday's sun is where the hills' light always came from: up the map and to the left, 36° up.
+        let noon = Sun.noon
+        let length = (0.36 + 1.0).squareRoot(), up = 36 * Double.pi / 180
+        #expect(abs(noon.x + 0.6 / length * cos(up)) < 1e-9)
+        #expect(abs(noon.y - 1 / length * cos(up)) < 1e-9)
+        #expect(abs(noon.z - sin(up)) < 1e-9)
+        #expect(noon.strength == 1)
+        for step in 0..<96 {
+            let sun = Sun(hour: Double(step) / 4)
+            #expect(abs(sun.x * sun.x + sun.y * sun.y + sun.z * sun.z - 1) < 1e-9)
+            #expect(sun.z > 0.13, "the light never comes from below the horizon at \(Double(step) / 4)hr")
+        }
+        // East in the morning, west in the evening, low then and highest at midday; soft and from
+        // overhead as it rises and sets, so the moon takes over without a jump; fainter at night.
+        #expect(Sun(hour: 7.5).x > 0.3)
+        #expect(Sun(hour: 16.5).x < -0.3)
+        #expect(Sun(hour: 8).z < noon.z && Sun(hour: 16).z < noon.z)
+        #expect(Sun(hour: 6).z > 0.99 && Sun(hour: 18).z > 0.99)
+        #expect(abs(Sun(hour: 5.999).z - Sun(hour: 6).z) < 0.01)
+        #expect(Sun(hour: 0).strength < 1)
+        // The hills' light at midday is what it always was.
+        let ambient = HillArt.ambient(rocky: 0.3)
+        for (hx, hy) in [(0.0, 0.0), (0.4, -0.2), (-0.7, 0.5), (0.1, 0.9)] {
+            let lambert = (-hx * noon.x - hy * noon.y + noon.z) / (hx * hx + hy * hy + 1).squareRoot()
+            let flat = ambient + (1 - ambient) * noon.z
+            let was = (ambient + (1 - ambient) * max(0, lambert)) / flat
+            #expect(abs(HillArt.sunlight(hx: hx, hy: hy, ambient: ambient, sun: noon).shade - was) < 1e-9)
+        }
+        // A slope facing east is brighter in the morning than in the evening.
+        let east = (hx: -0.5, hy: 0.0)
+        #expect(HillArt.sunlight(hx: east.hx, hy: east.hy, ambient: ambient, sun: Sun(hour: 8)).shade
+            > HillArt.sunlight(hx: east.hx, hy: east.hy, ambient: ambient, sun: Sun(hour: 16)).shade)
+
+        // A tree's shadow: a little to the right at midday, toward you in the morning, away from
+        // you in the evening, longer then; round when the light is overhead.
+        let world = SKNode()
+        let tree = SKSpriteNode(color: .green, size: CGSize(width: 60, height: 90))
+        tree.position = CGPoint(x: 100, y: 200)
+        let shadow = Lighting.Shadow(under: tree, in: world)
+        #expect(world.children.count == 1)
+        let cast = try #require(world.children.first as? SKSpriteNode)
+        shadow.fall(from: noon)
+        #expect(cast.position.x > tree.position.x + 5)
+        #expect(abs(cast.size.width - 48) < 2 && abs(cast.size.height - 17.3) < 1.5, "midday's shadow is as it always was")
+        let midday = cast.position.distance(to: tree.position)
+        shadow.fall(from: Sun(hour: 7.5))
+        #expect(cast.position.y < tree.position.y - 5)
+        #expect(cast.position.distance(to: tree.position) > midday)
+        shadow.fall(from: Sun(hour: 16.5))
+        #expect(cast.position.y > tree.position.y + 5)
+        shadow.fall(from: Sun(hour: 6))
+        #expect(abs(cast.position.x - tree.position.x) < 0.5 && abs(cast.position.y - tree.position.y) < 0.5)
+        #expect(abs(cast.size.width - 2 * cast.size.height) < 0.5)
     }
 
     @Test func derivedSpritesHaveABase() throws {
@@ -1951,6 +2018,27 @@ struct RulesTests {
         #expect(GameSession.featherDropChance(boss: true) == 1)
         #expect((0.03...0.2).contains(GameSession.featherDropChance(boss: false)))
         #expect(content.item(GameSession.featherID)?.travel == true)
+    }
+
+    @Test func teleportsGoToAnyTownYouveBeenTo() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let content = Content.shared
+        let towns = content.maps.filter { $0.fence == true }.map(\.id)
+        // In the first town with nowhere else visited, there's nowhere to go.
+        session.data.mapID = content.startMap
+        #expect(session.travelDestinations.isEmpty)
+        // Out in the wild having been to them all: every town, the checkpoint first.
+        let wild = try #require(content.maps.first { $0.fence != true && $0.encounters != nil })
+        session.data.mapID = wild.id
+        for town in towns { session.markVisited(town) }
+        let home = try #require(towns.last)
+        session.reachCheckpoint(try #require(content.map(home)))
+        #expect(session.travelDestinations.first == home)
+        #expect(Set(session.travelDestinations) == Set(towns))
+        // In one of them: every other one.
+        session.data.mapID = towns[0]
+        #expect(session.travelDestinations.count == towns.count - 1)
+        #expect(!session.travelDestinations.contains(towns[0]))
     }
 
     @Test func botsAreTagged() {

@@ -2,6 +2,21 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.4.7",
+      "date": "2026-10-11",
+      "title": "The way in",
+      "notes": [
+        "Where a road leads into a cave, the only way on is through the cave's mouth: walking along the foot of the mountain no longer takes you to the next map.",
+        "The cave's mouth is cut into a wall of rock now, a cliff at the foot of the mountain or a crag beside the road's end, instead of a dark patch leaning with the slope.",
+        "Leaving by Homeward Feather is now its arrival played backward: the feathers spiral up round you and you rise into the column of light.",
+        "Inns and the wizard's tower no longer stand on a raised square of grass: they sit on the ground like the other buildings.",
+        "Bushes are bushes now, round and leafy, instead of tiny trees: green, blossoming, lilac, autumn, golden, mossy, dark, dry, frosted and bare bramble, with ferns by the sea and snowy evergreen shrubs in the cold.",
+        "Trees, bushes and flowers on a hill's shaded side are a little darker, like the ground they stand on, and darker still where the hill's own shadow falls.",
+        "Bridge of Light and the Homeward Feather let you choose where to go: any town you've been to, your checkpoint first. Nothing is spent until you pick one.",
+        "The sun crosses the sky with the time of day: hills light up on the side facing it, shadows turn with it and stretch long in the morning and evening, and its glow and sunbeams follow it. By night the moon casts fainter shadows."
+      ]
+    },
+    {
       "version": "0.4.6",
       "date": "2026-10-11",
       "title": "Into the mountain",

@@ -83,7 +83,7 @@
       "type": "consumable",
       "price": 50,
       "travel": true,
-      "description": "Outside battle: the wind carries you back to your checkpoint. For any class."
+      "description": "Outside battle: the wind carries you to a town you've been to. For any class."
     },
     {
       "id": "pet_egg",

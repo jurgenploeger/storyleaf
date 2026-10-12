@@ -245,7 +245,7 @@
       "kind": "field",
       "power": 0,
       "target": "ally",
-      "description": "Outside battle: carry yourself back to your checkpoint."
+      "description": "Outside battle: carry yourself to a town you've been to."
     },
     {
       "id": "wild_call",

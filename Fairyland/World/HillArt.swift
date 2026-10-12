@@ -1,12 +1,12 @@
 import SpriteKit
 
 /// Draws a range of hills (`WorldMap.Hill`): the ground it rises over as pictures (the map's own
-/// tiles, bare patches on its steepest slopes, its trails worn into it), lit from the upper left like
-/// the trees' shadows say, then lifted off the map by its heights. The lifting is a small shader on
-/// flat sprites over where it shows on screen: each pixel finds the ground point that rises to it
-/// (`WorldMap.groundPoint`'s halving, against the same heights walkers stand on) and shows the
-/// picture there. A warped sprite (`SKWarpGeometryGrid`) did the same, but SpriteKit crashed
-/// subdividing grids that size.
+/// tiles, bare patches on its steepest slopes, its trails worn into it), then lifted off the map by
+/// its heights and lit by the sun wherever it is in the sky (`Sun`, `light(_:by:)`). The lifting is a
+/// small shader on flat sprites over where it shows on screen: each pixel finds the ground point
+/// that rises to it (`WorldMap.groundPoint`'s halving, against the same heights walkers stand on),
+/// shows the picture there and lights it by how the ground slopes there. A warped sprite
+/// (`SKWarpGeometryGrid`) did the same, but SpriteKit crashed subdividing grids that size.
 ///
 /// A range is too big for one picture, so it's drawn in squares `square` cells a side; and too deep to
 /// sort as one thing among the trees and walkers, so each square shows in strips `stripDepth` cells deep
@@ -26,8 +26,8 @@ enum HillArt {
         /// Bare rock all over from this far up its slopes (0 at the foot, 1 where its top begins), if
         /// set: a mountain of rock with only its foot grassy.
         var rockAbove: Double? = nil
-        /// How lit slopes facing away from the sun still are (0.45 less a tenth for rocky, if unset):
-        /// lower for deeper shade, so a mountain's shape shows.
+        /// How lit slopes facing away from the midday sun still are (0.45 less a tenth for rocky, if
+        /// unset): lower for deeper shade, so a mountain's shape shows.
         var ambient: Double? = nil
         /// How much brighter than the flat its sunniest slopes go: only a shade on matte ground,
         /// more on bare rock, so the sides of a mountain stand out from the ground past it.
@@ -35,12 +35,44 @@ enum HillArt {
         /// Ledges across its steep bare rock, if set: a darker band every this many points up, a
         /// lighter lip over each, so it reads as layered rock rather than a smooth mound.
         var strata: Double? = nil
+        /// The map's road, if bare rock should leave it showing (a road up into a cave's mouth).
+        var road: ((GridPoint) -> Bool)? = nil
         /// The soft colour patches over the map's whole ground: a pixel a cell, north at the top.
         let variation: CGImage?
         let mapSize: (columns: Int, rows: Int)
         /// Slopes in shade lean toward this colour, sunny ones toward the highlight.
         let shadow: (r: Double, g: Double, b: Double)
         let highlight: (r: Double, g: Double, b: Double)
+    }
+
+    /// How lit a hill's slopes facing away from the midday sun still are, on a map as rocky as
+    /// `rocky` (`WorldMap.rockiness`): the rockier, the deeper the shade.
+    static func ambient(rocky: Double) -> Double {
+        0.45 - 0.1 * rocky
+    }
+
+    /// How brightly `sun` lights a slope, next to the flat (1 there): `hx` and `hy` how far it rises
+    /// a cell across and up the map (as heights stand, 1/cos 30° taller than they're drawn, over a
+    /// cell's width), `ambient` how lit it still is turned from the midday sun. And `lambert`, how
+    /// squarely the sun falls on it: 0 or below where the slope turns its back on the sun, steeper
+    /// than the sun is high, in the hill's own shadow. The lower the sun, the brighter the slopes
+    /// facing it next to the flat, and the more of them turned from it. The lifting shader
+    /// (`lifting`) lights a hill's ground the same way.
+    static func sunlight(hx: Double, hy: Double, ambient: Double, sun: Sun) -> (shade: Double, lambert: Double) {
+        let lambert = (-hx * sun.x - hy * sun.y + sun.z) / (hx * hx + hy * hy + 1).squareRoot()
+        let shaded = Sun.shaded(ambient: ambient)
+        let shade = shaded + (1 - shaded) * max(0, lambert) / sun.z
+        return (1 + (shade - 1) * sun.strength, lambert)
+    }
+
+    /// Lights hills' sprites (from `sprites(for:look:)`) by `sun`: cheap, so it can follow the clock.
+    static func light(_ sprites: [SKNode], by sun: Sun) {
+        let value = SIMD4(Float(sun.x), Float(sun.y), Float(sun.z), Float(sun.strength))
+        var done: Set<ObjectIdentifier> = []
+        for case let sprite as SKSpriteNode in sprites {
+            guard let shader = sprite.shader, done.insert(ObjectIdentifier(shader)).inserted else { continue }
+            shader.uniformNamed("u_sun")?.vectorFloat4Value = value
+        }
     }
 
     /// Cells a side of each picture.
@@ -81,16 +113,13 @@ enum HillArt {
         let sw = columns * samples, sh = rows * samples
         var bare = [UInt8](repeating: 0, count: sw * sh * 4)
         var mask = [UInt8](repeating: 0, count: sw * sh * 4)
-        // How bright each sample is lit, 1 on the flat (bottom row first, like the heights).
+        // How much darker or lighter each sample is, whatever the sun does (its foot, ledges), 1 on
+        // the flat (bottom row first, like the heights). The sun's light is the shader's (`lifting`).
         var light = [Float](repeating: 1, count: sw * sh)
-        // Sunlight from the upper left of the screen (up the map and to the left), 36° up. Soft: the
-        // sides away from it go a few shades darker, the sides facing it only a shade lighter, so
-        // the hill reads as matte ground rather than something glossy.
-        let up = 36 * Double.pi / 180
-        let toward = (x: -0.6, y: 1.0), length = (0.36 + 1.0).squareRoot()
-        let sun = (x: toward.x / length * cos(up), y: toward.y / length * cos(up), z: sin(up))
-        let ambient = look.ambient ?? (0.45 - 0.1 * look.rocky)
-        let flat = ambient + (1 - ambient) * sun.z
+        // Sunlight, for the shader (`sunlight`): soft, the sides away from it a few shades darker,
+        // the sides facing it only a shade lighter at midday, so the hill reads as matte ground
+        // rather than something glossy.
+        let ambient = look.ambient ?? Self.ambient(rocky: look.rocky)
         let deepest = max(look.shadow.r, look.shadow.g, look.shadow.b, 0.01)
         let tint = (look.shadow.r / deepest, look.shadow.g / deepest, look.shadow.b / deepest)
         // The trails as worn paths (`stamps(of:)`), and how near each sample is to one: from its
@@ -126,15 +155,14 @@ enum HillArt {
                 if field < 0.2 { edge = max(edge, min(1, max(0, (0.5 - trailDistance) / 0.1))) }
                 for channel in 0..<4 { mask[index + channel] = UInt8(edge * 255) }
                 guard field > 0 else { continue }
-                // How the slope faces the sun, from the heights walkers stand on (points a cell).
-                // Heights stand 1/cos 30° taller than they're drawn.
+                // How steep it is, from the heights walkers stand on (points a cell). Heights stand
+                // 1/cos 30° taller than they're drawn.
                 let h00 = Double(height(i, j)), h10 = Double(height(i + 1, j))
                 let h01 = Double(height(i, j + 1)), h11 = Double(height(i + 1, j + 1))
                 let gx = ((h10 + h11) - (h00 + h01)) / 2 * Double(samples)
                 let gy = ((h01 + h11) - (h00 + h10)) / 2 * Double(samples)
                 let hx = gx / Double(tile) / 0.866, hy = gy / Double(tile) / 0.866
-                let lambert = (-hx * sun.x - hy * sun.y + sun.z) / (hx * hx + hy * hy + 1).squareRoot()
-                var shade = (ambient + (1 - ambient) * max(0, lambert)) / flat
+                var shade = 1.0
                 let s = hill.rise(x, y)
                 // The foot tucked in a little darker.
                 if s < 0.3 { shade *= 1 - 0.08 * sin(Double.pi * s / 0.3) }
@@ -149,6 +177,7 @@ enum HillArt {
                 var amount = min(1, max(0, (sheer - from) / 0.12)) * solid
                 if let above = look.rockAbove { amount = max(amount, min(1, max(0, (s - above + ragged * 0.1) / 0.12))) }
                 if amount > 0 { amount *= min(1, max(0, (trailDistance - 0.55) / 0.3)) }
+                if amount > 0, let road = look.road, road(GridPoint(col: Int(x.rounded(.down)), row: Int(y.rounded(.down)))) { amount = 0 }
                 for channel in 0..<4 { bare[index + channel] = UInt8(amount * 255) }
                 // Ledges: on bare rock from a gentle slope up (a cell's rise over its width, as the
                 // light has it, past 0.15), banded by height with a ragged edge.
@@ -205,6 +234,9 @@ enum HillArt {
             let cell = GridPoint(col: Int(stamp.x.rounded(.down)), row: Int(stamp.y.rounded(.down)))
             for dr in -1...1 { for dc in -1...1 { worn.insert(GridPoint(col: cell.col + dc, row: cell.row + dr)) } }
         }
+
+        // A cave's mouth, standing upright on the screen however its slope leans.
+        let doorway = hill.mouth.map { mouth in Self.doorway(mouth, height: { x, y in Double(hill.height(atCells: x, y)) }) }
 
         // The pictures, a square of cells at a time, all drawn in the range's own pixels (from its
         // corner, `low`).
@@ -275,7 +307,7 @@ enum HillArt {
             }
             shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint,
                   brightest: Float(look.brightest))
-            if let mouth = hill.mouth { Self.cave(mouth, in: context, at: { spot($0) }) }
+            if let doorway { Self.cave(doorway, in: context, at: { spot($0) }) }
             if let outline {
                 context.setBlendMode(.destinationIn)
                 context.draw(outline, in: whole)
@@ -303,10 +335,16 @@ enum HillArt {
         let heights = SKTexture(cgImage: heightImage)
         heights.filteringMode = .linear
         let shader = SKShader(source: Self.lifting)
+        let sun = Sun.noon
         shader.uniforms = [
             SKUniform(name: "u_heights", texture: heights),
             SKUniform(name: "u_samples", vectorFloat4: SIMD4(Float(low.col), Float(low.row), Float(samples), Float(peak))),
             SKUniform(name: "u_sampleSize", vectorFloat2: SIMD2(Float(lattice.columns), Float(lattice.rows))),
+            // The sun (`light(_:by:)` moves it); how dark the shade, how bright the sunniest slope
+            // and the picture's pixels a cell; how the shade leans toward the shadow colour.
+            SKUniform(name: "u_sun", vectorFloat4: SIMD4(Float(sun.x), Float(sun.y), Float(sun.z), Float(sun.strength))),
+            SKUniform(name: "u_look", vectorFloat4: SIMD4(Float(Sun.shaded(ambient: ambient)), Float(look.brightest), 0, Float(px))),
+            SKUniform(name: "u_lean", vectorFloat4: SIMD4(Float(1 - tint.0), Float(1 - tint.1), Float(1 - tint.2), 0)),
         ]
         shader.attributes = [
             SKAttribute(name: "a_box", type: .vectorFloat4),
@@ -395,6 +433,12 @@ enum HillArt {
     /// between the lowest and highest the strip stands, then the square's picture there, if that
     /// point is in this strip and square (a hair either side, so no seam opens between strips).
     /// `WorldMap.project` and `unproject` in reverse; `tileSize` is 44.
+    ///
+    /// Then lit by the sun (`u_sun`) as `sunlight` has it, from how the ground slopes at the middle of
+    /// the picture's pixel (its heights half a sample either side), so each pixel is one tone: in
+    /// steps of 6% with a 4×4 ordered dither where one gives way to the next, as `shade` lights the
+    /// picture, the shade leaning toward the map's shadow colour (`u_lean`). Flat ground stays as it
+    /// is. Everything inline: SpriteKit's shaders can't count on helper functions seeing uniforms.
     private static let lifting = """
     void main() {
         vec2 spot = a_box.xy + v_tex_coord * a_box.zw;
@@ -421,7 +465,36 @@ enum HillArt {
             || uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) {
             gl_FragColor = vec4(0.0);
         } else {
-            gl_FragColor = texture2D(u_texture, uv);
+            vec4 paint = texture2D(u_texture, uv);
+            vec2 pixel = floor(uv * a_area.zw * u_look.w);
+            vec2 centre = a_area.xy + (pixel + 0.5) / u_look.w;
+            vec2 base = ((centre - u_samples.xy) * u_samples.z + 0.5) / u_sampleSize;
+            vec2 sideways = vec2(0.5 / u_sampleSize.x, 0.0);
+            vec2 upward = vec2(0.0, 0.5 / u_sampleSize.y);
+            vec4 east = texture2D(u_heights, base + sideways);
+            vec4 west = texture2D(u_heights, base - sideways);
+            vec4 north = texture2D(u_heights, base + upward);
+            vec4 south = texture2D(u_heights, base - upward);
+            float rise = u_samples.w / 255.0 * u_samples.z / (44.0 * 0.8660254);
+            float hx = ((east.r - west.r) * 255.0 + (east.g - west.g)) * rise;
+            float hy = ((north.r - south.r) * 255.0 + (north.g - south.g)) * rise;
+            float facing = (u_sun.z - hx * u_sun.x - hy * u_sun.y) / sqrt(hx * hx + hy * hy + 1.0);
+            float lit = u_look.x + (1.0 - u_look.x) * max(0.0, facing) / u_sun.z;
+            lit = 1.0 + (lit - 1.0) * u_sun.w;
+            if (abs(lit - 1.0) > 0.004) {
+                vec2 row = vec2(pixel.x, 3.0 - mod(pixel.y, 4.0));
+                vec2 fine = mod(row, 2.0);
+                vec2 coarse = mod(floor(row * 0.5), 2.0);
+                float order = 4.0 * mod(2.0 * fine.x + 3.0 * fine.y, 4.0) + mod(2.0 * coarse.x + 3.0 * coarse.y, 4.0);
+                float steps = floor((lit - 1.0) / 0.06 + (order + 0.5) / 16.0);
+                float tone = min(u_look.y, 1.0 + steps * 0.06);
+                if (tone < 1.0) {
+                    paint.rgb = paint.rgb * tone * (vec3(1.0) - (1.0 - tone) * 0.4 * u_lean.rgb);
+                } else {
+                    paint.rgb = min(paint.rgb * tone, vec3(paint.a));
+                }
+            }
+            gl_FragColor = paint;
         }
     }
     """
@@ -522,63 +595,97 @@ enum HillArt {
         return Double(value & 0xffff) / 65535
     }
 
-    /// A cave's mouth in a hill's side (`WorldMap.Hill.Mouth`), painted on its ground so it rises
-    /// and leans with the slope: a rough arch from the foot up into the hill, dark and darkest deep
-    /// in, a shadow round its rim and light catching its lip, and its darkness spilling a little way
-    /// out over the ground in front. `at`: a point in cells in the picture's pixels.
-    private static func cave(_ mouth: WorldMap.Hill.Mouth, in context: CGContext, at: (CGPoint) -> CGPoint) {
-        func point(_ across: Double, _ inward: Double) -> CGPoint {
-            at(CGPoint(x: mouth.x + mouth.along.x * across + mouth.into.x * inward,
-                       y: mouth.y + mouth.along.y * across + mouth.into.y * inward))
+    /// A cave's mouth (`WorldMap.Hill.Mouth`) as a doorway in the rock: its opening and the edge of
+    /// the rock round it, each a rough arch over the mouth's foot, in cells.
+    struct Doorway {
+        let opening: [CGPoint]
+        let rim: [CGPoint]
+        /// Where light catches the rim's top, just inside its edge.
+        let lip: [CGPoint]
+        /// The middle of its floor and of its top, for the shade inside.
+        let floor: CGPoint
+        let top: CGPoint
+    }
+
+    /// The mouth's doorway, upright on the screen like a door in a wall, however the slope it's in
+    /// leans: its sides straight up from its foot and its top an arch leaning along the edge, the
+    /// way the map's diagonals do. The opening is 30 points tall and 14 more for each cell of its
+    /// half-width (55 over a road 3 cells wide). Painted on the ground, each point of it is where
+    /// the ground shows that far up the screen over its foot: up the map's diagonal (a cell of it
+    /// is 31 points up the screen), plus however much the ground rises or falls on the way.
+    static func doorway(_ mouth: WorldMap.Hill.Mouth, height: (Double, Double) -> Double) -> Doorway {
+        let climb = 2 * Double(WorldMap.project(CGPoint(x: WorldMap.tileSize, y: 0)).y)
+        /// The ground `up` points up the screen over the foot, `across` cells along from its middle.
+        func point(_ across: Double, _ up: Double) -> CGPoint {
+            let x = mouth.x + mouth.along.x * across, y = mouth.y + mouth.along.y * across
+            let foot = height(x, y)
+            // Ground up the screen never folds back under itself, so this only climbs.
+            var low = 0.0, high = 8.0
+            for _ in 0..<24 {
+                let t = (low + high) / 2
+                if climb * t + height(x + t, y + t) - foot < up { low = t } else { high = t }
+            }
+            let t = (low + high) / 2
+            return CGPoint(x: x + t, y: y + t)
         }
-        let space = CGColorSpaceCreateDeviceRGB()
-        // The spill: dark at the mouth, gone a cell and a half out.
-        let spill = CGMutablePath()
-        spill.addLines(between: [point(-mouth.half - 0.4, 0), point(mouth.half + 0.4, 0),
-                                 point(mouth.half + 0.9, -1.5), point(-mouth.half - 0.9, -1.5)])
-        spill.closeSubpath()
-        let fade = [UIColor(white: 0, alpha: 0.45).cgColor, UIColor(white: 0, alpha: 0).cgColor] as CFArray
-        if let gradient = CGGradient(colorsSpace: space, colors: fade, locations: [0, 1]) {
-            context.saveGState()
-            context.addPath(spill)
-            context.clip()
-            context.drawLinearGradient(gradient, start: point(0, 0), end: point(0, -1.5), options: [])
-            context.restoreGState()
+        let tall = 30 + 14 * mouth.half
+        /// Feet first, then up one side, over the top and down the other.
+        func arch(_ half: Double, _ top: Double, rough: Double) -> [CGPoint] {
+            let steps = 20, side = 0.38 * top
+            var points = [point(-half, 0)]
+            for k in 0...steps {
+                let u = Double(k) / Double(steps)
+                let bulge = max(0, 1 - (2 * u - 1) * (2 * u - 1)).squareRoot()
+                let wobble = k == 0 || k == steps ? 0 : rough * sin(Double(k) * 2.3 + 0.7)
+                points.append(point((2 * u - 1) * half, side + (top - side) * bulge + wobble))
+            }
+            points.append(point(half, 0))
+            return points
         }
-        // The arch: straight sides a little way up, then a rough round top.
-        let arch = CGMutablePath()
-        arch.move(to: point(-mouth.half, -0.1))
-        let steps = 14
-        var lip: [CGPoint] = []
-        for k in 0...steps {
-            let t = Double(k) / Double(steps)
-            let across = (2 * t - 1) * mouth.half
-            let bulge = max(0, 1 - (2 * t - 1) * (2 * t - 1)).squareRoot()
-            let rough = k == 0 || k == steps ? 0 : 0.08 * sin(Double(k) * 2.3 + 0.7)
-            let inward = mouth.depth * (0.4 + 0.6 * bulge) + rough
-            arch.addLine(to: point(across, inward))
-            lip.append(point(across * 1.06, inward + 0.12))
+        let lip = arch(mouth.half + 0.32, tall + 6.5, rough: 2.5)
+        return Doorway(opening: arch(mouth.half, tall, rough: 1), rim: arch(mouth.half + 0.45, tall + 9, rough: 2.5),
+                       lip: Array(lip[3..<(lip.count - 3)]), floor: point(0, 0), top: point(0, tall))
+    }
+
+    /// Paints a cave's doorway on a hill's ground, in the face of its rock wall (`Hill.Wall`): a
+    /// shadow round its edge, light catching the rock over its top, the opening black up under its
+    /// top and a little lighter at its floor, where the road goes in. `at`: a point in cells in the
+    /// picture's pixels.
+    private static func cave(_ doorway: Doorway, in context: CGContext, at: (CGPoint) -> CGPoint) {
+        func shape(_ points: [CGPoint]) -> CGPath {
+            let path = CGMutablePath()
+            path.addLines(between: points.map(at))
+            path.closeSubpath()
+            return path
         }
-        arch.addLine(to: point(mouth.half, -0.1))
-        arch.closeSubpath()
-        let deep = [UIColor(red: 0.06, green: 0.05, blue: 0.07, alpha: 0.88).cgColor,
-                    UIColor(red: 0.02, green: 0.02, blue: 0.03, alpha: 0.98).cgColor] as CFArray
+        /// Its outline over the top, not along the floor.
+        func line(_ points: [CGPoint]) -> CGPath {
+            let path = CGMutablePath()
+            path.addLines(between: points.map(at))
+            return path
+        }
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+        context.addPath(line(doorway.rim))
+        context.setStrokeColor(UIColor(white: 0, alpha: 0.3).cgColor)
+        context.setLineWidth(3)
+        context.strokePath()
+        context.addPath(line(doorway.lip))
+        context.setStrokeColor(UIColor(white: 1, alpha: 0.3).cgColor)
+        context.setLineWidth(1.5)
+        context.strokePath()
+        let inside = [UIColor(red: 0.13, green: 0.11, blue: 0.14, alpha: 1).cgColor,
+                      UIColor(red: 0.02, green: 0.02, blue: 0.03, alpha: 1).cgColor] as CFArray
         context.saveGState()
-        context.addPath(arch)
+        context.addPath(shape(doorway.opening))
         context.clip()
-        if let gradient = CGGradient(colorsSpace: space, colors: deep, locations: [0, 1]) {
-            context.drawLinearGradient(gradient, start: point(0, 0), end: point(0, mouth.depth),
+        if let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: inside, locations: [0, 0.6]) {
+            context.drawLinearGradient(gradient, start: at(doorway.floor), end: at(doorway.top),
                                        options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
         }
         context.restoreGState()
-        context.setLineCap(.round)
-        context.setLineJoin(.round)
-        context.addPath(arch)
-        context.setStrokeColor(UIColor(white: 0, alpha: 0.5).cgColor)
-        context.setLineWidth(3)
-        context.strokePath()
-        context.addLines(between: lip)
-        context.setStrokeColor(UIColor(white: 1, alpha: 0.28).cgColor)
+        context.addPath(line(doorway.opening))
+        context.setStrokeColor(UIColor(white: 0, alpha: 0.7).cgColor)
         context.setLineWidth(2)
         context.strokePath()
     }

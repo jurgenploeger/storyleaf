@@ -141,6 +141,14 @@ hill_mountain  | newgame,level=90,map=crystal_mountain,hill=tallest | 8
 hill_peak      | newgame,level=90,map=crystal_mountain,hill=tallest,ontop | 8
 hill_snow      | newgame,level=40,map=snow_white_forest,hill=tallest | 8
 hill_range_land | newgame,map=sunny_meadow,hill=0,landscape        | 8
+# The sun through the day (`Sun`): low in the east in the morning (shadows toward you), over the upper
+# left at midday, low in the west in the afternoon (shadows away from you), the moon at night.
+sun_morning    | newgame,map=sunny_meadow,hill=0,hour=7,weather=clear  | 8
+sun_noon       | newgame,map=sunny_meadow,hill=0,hour=12,weather=clear | 8
+sun_evening    | newgame,map=sunny_meadow,hill=0,hour=16,weather=clear | 8
+sun_moon       | newgame,map=sunny_meadow,hill=0,hour=22,weather=clear | 8
+sun_mountain_morning | newgame,level=90,map=crystal_mountain,hill=tallest,hour=8,weather=clear | 8
+sun_mountain_evening | newgame,level=90,map=crystal_mountain,hill=tallest,hour=16,weather=clear | 8
 # Where a road leads into a cave its rock rises along that side of the map, the road running into a
 # dark mouth (north and east) or under an arch into a dark cleft (south and west).
 crag_east      | newgame,level=30,map=valley_of_fear,at=70_-24    | 8
@@ -218,6 +226,8 @@ larkspur_terrace | newgame,level=30,map=bluebird,at=0_11,weather=clear,nohud | 8
 # The hero's speech bubble in Prismhaven (its tail is part of the outline).
 bubble         | newgame,map=rainbow_city,say=Welcome traveller! | 6
 feather        | newgame,map=sunny_meadow,feather | 6
+# Where a Homeward Feather takes you, with every town visited: the checkpoint first.
+travel_pick    | newgame,map=sunny_meadow,travel | 6
 # A stranger's card on a danger map: Befriend, Trade and Duel on one line, in English and in French (its longest words).
 card_duel    | newgame,level=45,class=fighter,map=wolf_lair,meet=1 | 10
 card_duel_fr | newgame,level=45,class=fighter,map=wolf_lair,meet=1,lang=fr | 10
