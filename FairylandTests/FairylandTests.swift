@@ -255,10 +255,11 @@ struct ContentTests {
             print("⛰ \(def.id): rocky \(map.rockiness), " + ranges.joined(separator: "; "))
             // Ranges stretch across the land, not a hump each; and a map with mountains has one.
             #expect(fields.contains { $0.size.columns >= 24 || $0.size.rows >= 24 }, "map \(def.id): only small hills")
-            if def.theme.hills?.mountains != nil {
-                // As tall as there's room for: at least far taller than its hills.
-                let hills = def.theme.hills?.height ?? 44
-                #expect(fields.contains { Double($0.peak) >= hills * 1.4 }, "map \(def.id) has no mountain")
+            if let asked = def.theme.hills?.mountains?.height {
+                // As tall as asked, near enough: each map with mountains has room for them (they
+                // face you, steeper toward you than away, so they need less).
+                #expect(fields.contains { $0.hasMountain && Double($0.peak) >= asked * 0.85 },
+                        "map \(def.id): no mountain near \(Int(asked)) high (needs more room)")
             }
             for hill in fields {
                 func height(_ point: CGPoint) -> CGFloat { map.height(atGrid: CGPoint(x: point.x * tile, y: point.y * tile)) }

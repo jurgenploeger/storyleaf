@@ -22,6 +22,47 @@ extension WorldMap {
             /// steep as you like, ground facing away no steeper than the view.
             var steepSide: (x: Double, y: Double)?
             var steepening = 0.0
+            /// A mountain's reach toward you (along `-angle`), in cells, shorter than `along`: turned
+            /// to face you (`angle` 45°), it climbs gently from behind (`along`, as steep as ground
+            /// facing away can be), steeper from the sides (`across`) and steepest up its face
+            /// toward you, so it stands tall without a base that fills the map.
+            var front: Double?
+            /// Ridges down a mountain's face toward you, if it has any.
+            var spurs: Spurs?
+
+            /// Ridges fanning down a mountain's face from its summit (`front`): sharp crests with
+            /// gullies between, unevenly spaced and sized, the most straight down the face toward
+            /// you and fading away toward its sides, its summit and its foot, so its face reads as
+            /// rock rather than a smooth mound. Only where it faces you: across a spur's far side,
+            /// ground going up the screen drops, which the steep climb of the face makes up for there.
+            nonisolated struct Spurs {
+                /// How many ridges they'd be all the way round, how deep they cut (a share of the
+                /// mountain's reach back), and three phases (where they fall, how unevenly spaced,
+                /// how unevenly sized).
+                let count, depth: Double
+                let phases: (Double, Double, Double)
+                /// Where they begin on the way round from the side (0) to straight toward you (1).
+                static let from = 0.5
+
+                /// How much deeper in the face stands at a point than its smooth shape, in shares of
+                /// the reach back: `u` and `v` its place along (toward you below 0) and across, in
+                /// shares of the reaches that way, and `reach` how far out it is (1 at the foot).
+                func lift(u: Double, v: Double, reach: Double) -> Double {
+                    let facing = min(1, -u / max(reach, 1e-9))
+                    let k = min(1, max(0, (facing - Self.from) / (1 - Self.from)))
+                    guard k > 0 else { return 0 }
+                    let weight = k * k * (3 - 2 * k)
+                    let angle = atan2(v, -u)
+                    let warped = angle + 0.25 * sin(3 * angle + phases.1)
+                    let ridge = 1 - abs(sin(count * warped / 2 + phases.0))
+                    let size = 0.75 + 0.25 * sin(5 * angle + phases.2)
+                    // Gone at the summit, where they'd all meet as steep as they are lower down
+                    // while the face itself rounds off; deepest three quarters of the way down.
+                    let out = min(reach, 1)
+                    let fade = out * out * (1 - out * out * out) * 2.2
+                    return depth * fade * size * (ridge - 0.5) * weight
+                }
+            }
 
             /// `steepness`: its range's (`Hill.steepness`).
             init(x: Double, y: Double, along: Double, across: Double, angle: Double, peak: Double, steepness: Double) {
@@ -36,14 +77,26 @@ extension WorldMap {
                 sine = sin(angle)
             }
 
+            /// The round it stands in, for finding room for it: its middle and radius, in cells.
+            var footprint: (x: Double, y: Double, radius: Double) {
+                guard let front else { return (x, y, max(along, across)) }
+                let shift = (along - front) / 2
+                return (x + shift * cosine, y + shift * sine, max((along + front) / 2, across))
+            }
+
             /// How far inside its ellipse a point is: about the cells in from its edge, below 0 outside.
             /// On a steeper side it grows faster from the edge, up to `1 + steepening` times as fast at
             /// the edge itself and its usual pace by the middle, so the outline stays where it was.
+            /// A mountain (`front`) grows from its foot as fast as its gentle back does, steeper toward
+            /// you and across, plus its spurs.
             func depth(_ x: Double, _ y: Double) -> Double {
                 let dx = x - self.x, dy = y - self.y
-                let u = (dx * cosine + dy * sine) / along
+                let lean = dx * cosine + dy * sine
+                let u = lean / (lean < 0 ? front ?? along : along)
                 let v = (dy * cosine - dx * sine) / across
-                let inside = (1 - (u * u + v * v).squareRoot()) * min(along, across)
+                let reach = (u * u + v * v).squareRoot()
+                var inside = (1 - reach) * (front == nil ? min(along, across) : along)
+                if lean < 0, let spurs { inside += spurs.lift(u: u, v: v, reach: reach) * along }
                 guard let side = steepSide, inside > 0 else { return inside }
                 let toward = min(1, max(0, (dx * side.x + dy * side.y) / across))
                 return inside * (1 + steepening * toward * toward)
@@ -139,6 +192,8 @@ extension WorldMap {
         /// A range along a map's edge with a cave's mouth in it, rising on past the edge, rather than
         /// hills out in the fields.
         var isCrag: Bool { mouth != nil }
+        /// A range with a mountain among its summits (`Lobe.front`).
+        var hasMountain: Bool { lobes.contains { $0.front != nil } }
         /// The cells it rises over.
         var cells: Set<GridPoint> = []
         /// Its height sampled `samples` times a cell from `origin` over `size` cells, for walkers
@@ -147,6 +202,51 @@ extension WorldMap {
         var size = (columns: 0, rows: 0)
         var heights: [Float] = []
         static let samples = 4
+
+        /// The most the ground may drop going up the screen, in points over a cell across and a
+        /// cell up the map at once: a little short of the view's 31, past which it would fold over
+        /// and hide itself (and a tap would find two spots).
+        static let foldLimit = 28.0
+
+        /// Raises its samples wherever the ground, going up the screen, would drop faster than
+        /// `foldLimit` (across a mountain's spurs it can), so every spot on screen still shows one
+        /// place. As walkers stand on them, each square of four samples slopes evenly between its
+        /// corners, so it drops fastest at its near corner or its far one: a diagonal of samples
+        /// at a time, front to back (up the screen), each is raised as far as the squares in front
+        /// of it need, the two beyond a square's near corner sharing what they're short of it, so
+        /// a fold is filled in a few points, never piled up. Ground that already stays in sight is
+        /// left as it is.
+        mutating func unfold() {
+            let width = size.columns * Self.samples + 1, depth = size.rows * Self.samples + 1
+            guard width > 1, depth > 1 else { return }
+            let most = Float(Self.foldLimit / Double(Self.samples))
+            func at(_ i: Int, _ j: Int) -> Float { heights[j * width + i] }
+            var raised: [(index: Int, height: Float)] = []
+            for level in 1..<(width + depth - 1) {
+                raised.removeAll(keepingCapacity: true)
+                for i in max(0, level - depth + 1)...min(level, width - 1) {
+                    let j = level - i
+                    let here = at(i, j)
+                    var need = here
+                    // The square it's the far corner of: from its near corner, and from the two
+                    // beside it.
+                    if i > 0, j > 0 {
+                        need = max(need, at(i - 1, j - 1) - most, (at(i - 1, j) + at(i, j - 1) - most) / 2)
+                    }
+                    // The squares it's beyond the near corner of, with the sample beside it.
+                    if i > 0, j + 1 < depth {
+                        let short = 2 * at(i - 1, j) - most - here - at(i - 1, j + 1)
+                        need = max(need, here + short / 2)
+                    }
+                    if j > 0, i + 1 < width {
+                        let short = 2 * at(i, j - 1) - most - at(i + 1, j - 1) - here
+                        need = max(need, here + short / 2)
+                    }
+                    if need > here { raised.append((j * width + i, need)) }
+                }
+                for (index, height) in raised { heights[index] = height }
+            }
+        }
 
         /// How steep a range's sides get halfway up, at most, in points a cell: gentle slopes on the
         /// easiest maps (10), steep and rocky on the most dangerous (14). The view looks down at 30°,

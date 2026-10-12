@@ -26,6 +26,9 @@ enum HillArt {
         /// Bare rock all over from this far up its slopes (0 at the foot, 1 where its top begins), if
         /// set: a mountain of rock with only its foot grassy.
         var rockAbove: Double? = nil
+        /// Bare rock all over from this high up (points), if set, with a ragged edge: a mountain's
+        /// upper slopes, its foothills' grassy tops below.
+        var rockFrom: Double? = nil
         /// How lit slopes facing away from the midday sun still are (0.45 less a tenth for rocky, if
         /// unset): lower for deeper shade, so a mountain's shape shows.
         var ambient: Double? = nil
@@ -176,6 +179,10 @@ enum HillArt {
                 let sheer = slope / hill.steepness + ragged * (0.15 + 0.15 * look.rocky)
                 var amount = min(1, max(0, (sheer - from) / 0.12)) * solid
                 if let above = look.rockAbove { amount = max(amount, min(1, max(0, (s - above + ragged * 0.1) / 0.12))) }
+                if let line = look.rockFrom {
+                    let level = (h00 + h10 + h01 + h11) / 4
+                    amount = max(amount, min(1, max(0, (level - line + ragged * 12) / 14)))
+                }
                 if amount > 0 { amount *= min(1, max(0, (trailDistance - 0.55) / 0.3)) }
                 if amount > 0, let road = look.road, road(GridPoint(col: Int(x.rounded(.down)), row: Int(y.rounded(.down)))) { amount = 0 }
                 for channel in 0..<4 { bare[index + channel] = UInt8(amount * 255) }

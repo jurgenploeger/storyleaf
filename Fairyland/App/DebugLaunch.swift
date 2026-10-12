@@ -12,7 +12,8 @@ import SpriteKit
 ///   at=x_y         start at this offset from the map's centre (e.g. at=0_14)
 ///   hill=n         start at the foot of the first trail up the map's nth range of hills (0 first);
 ///                  `hill=tallest` the range with the highest top, up its highest trail; `trail=k`
-///                  its kth trail instead; with `ontop`, where the trail comes out on the top
+///                  its kth trail instead; with `ontop`, where the trail comes out on the top;
+///                  with `face`, a few cells out in front of its tallest summit's face
 ///   bridge=n       start on the map's nth bridge (0 first: those over the river, then the
 ///                  footbridges and jetties out into its lakes; `WorldMap.bridges`), at its land end
 ///                  (a jetty's) or its middle
@@ -540,7 +541,12 @@ enum DebugLaunch {
                 let highest = hill.trails.indices.max { hill.lobes[hill.trails[$0].lobe].peak < hill.lobes[hill.trails[$1].lobe].peak }
                 let chosen: Int = tallest ? (highest ?? 0) : 0
                 let which = flags["trail"].flatMap { Int($0) } ?? chosen
-                if hill.trails.indices.contains(which), let foot = hill.trails[which].points.first, let top = hill.trails[which].points.last {
+                if flags["face"] != nil, let summit = hill.lobes.max(by: { $0.peak < $1.peak }) {
+                    // A few cells out in front of its tallest summit's face, looking up it.
+                    let out = (summit.front ?? summit.across) + 3
+                    let spot = CGPoint(x: summit.x - out * 0.7071, y: summit.y - out * 0.7071)
+                    session.playerPosition = WorldMap.project(CGPoint(x: spot.x * WorldMap.tileSize, y: spot.y * WorldMap.tileSize))
+                } else if hill.trails.indices.contains(which), let foot = hill.trails[which].points.first, let top = hill.trails[which].points.last {
                     let spot = flags["ontop"] != nil ? top : foot
                     session.playerPosition = WorldMap.project(CGPoint(x: spot.x * WorldMap.tileSize, y: spot.y * WorldMap.tileSize))
                 }

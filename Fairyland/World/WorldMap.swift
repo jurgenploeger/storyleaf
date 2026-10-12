@@ -1278,6 +1278,14 @@ final class WorldMap {
         plateaus.append(plateau)
     }
 
+    /// A mountain's shape (`raiseHills`, `Hill.Lobe.front`): how far up its gentle back its top
+    /// begins (a share of its reach back, so a small top), how many times shorter its reach toward
+    /// you and across, and so how big a round it stands in, a share of its reach back.
+    private static let mountainTop = 0.88
+    private static let mountainFace = 2.4
+    private static let mountainSides = 1.6
+    private static let mountainRound = max((1 + 1 / mountainFace) / 2, 1 / mountainSides)
+
     /// How a range's trails wind (`Hill.traceTrail`): the angle their feet aim at (round the front),
     /// which way round they go first, how much further round than they need, and how they bend.
     private struct Winding {
@@ -1317,14 +1325,17 @@ final class WorldMap {
                     var across = max(min(along, 4), along * Double.random(in: 0.6...0.95, using: &rng))
                     var peak = tallest * Double.random(in: 0.8...1.15, using: &rng)
                     let steepness = index == tall ? mountainSteep : steep
+                    var front: Double?
                     if index == tall, let mountain {
                         // As tall as asked, if anywhere has room for one that wide (it needs the
-                        // width to climb that high and still have a top); else as tall as fits.
-                        let fits = (widest - 1) * 0.75 * steepness / 1.5
+                        // reach back to climb that high gently and still have a top); else as tall
+                        // as fits. It faces you (`Hill.Lobe.front`), steeper across and toward you.
+                        let fits = ((widest - 1) / Self.mountainRound - 1) * Self.mountainTop * steepness / 1.5
                         peak = max(tallest, min(mountain * Double.random(in: 0.92...1.08, using: &rng), fits))
-                        let need = 1.5 * peak / steepness / 0.75 + 1
-                        along = max(along, min(max(widest, need), need * Double.random(in: 1...1.2, using: &rng)))
-                        across = max(across, need)
+                        let need = 1.5 * peak / steepness / Self.mountainTop + 1
+                        along = max(need, min((widest - 1) / Self.mountainRound, need * Double.random(in: 1...1.1, using: &rng)))
+                        across = along / Self.mountainSides
+                        front = along / Self.mountainFace
                     } else {
                         // A narrow one stands lower, so it still has a top.
                         peak = min(peak, min(along, across) * 0.75 * steepness / 1.5)
@@ -1337,8 +1348,18 @@ final class WorldMap {
                         x = previous.x + step * cos(heading)
                         y = previous.y + step * sin(heading)
                     }
-                    lobes.append(Hill.Lobe(x: x, y: y, along: along, across: across,
-                                           angle: heading + Double.random(in: -0.3...0.3, using: &rng), peak: peak, steepness: steepness))
+                    if let front {
+                        // Turned to face you, its spurs down the face.
+                        var lobe = Hill.Lobe(x: x, y: y, along: along, across: across, angle: Double.pi / 4, peak: peak, steepness: steepness)
+                        lobe.front = front
+                        lobe.spurs = Hill.Lobe.Spurs(count: Double(Int.random(in: 11...15, using: &rng)), depth: 0.22,
+                                                     phases: (Double.random(in: 0..<6.3, using: &rng), Double.random(in: 0..<6.3, using: &rng),
+                                                              Double.random(in: 0..<6.3, using: &rng)))
+                        lobes.append(lobe)
+                    } else {
+                        lobes.append(Hill.Lobe(x: x, y: y, along: along, across: across,
+                                               angle: heading + Double.random(in: -0.3...0.3, using: &rng), peak: peak, steepness: steepness))
+                    }
                 }
                 // Somewhere every summit has room around it, if anywhere.
                 guard let spot = place(lobes, in: room, trying: order) else { continue }
@@ -1416,13 +1437,14 @@ final class WorldMap {
     /// how far to move them, its first summit in the first of the cells `order` lists (a random
     /// order) where they all fit, or nil if they fit nowhere.
     private func place(_ lobes: [Hill.Lobe], in room: [Double], trying order: [Int]) -> (x: Double, y: Double)? {
-        guard let first = lobes.first else { return nil }
+        guard let first = lobes.first?.footprint else { return nil }
         // Its reach, its ripples, the cell to spare round it, and a little for the rough measure.
-        let needs = lobes.map { max($0.along, $0.across) * 1.05 + 3 }
+        let rounds = lobes.map(\.footprint)
+        let needs = rounds.map { $0.radius * 1.05 + 3 }
         for index in order where room[index] >= needs[0] {
             let dx = Double(index % columns) + 0.5 - first.x, dy = Double(index / columns) + 0.5 - first.y
-            let fits = zip(lobes, needs).allSatisfy { lobe, need in
-                let col = Int((lobe.x + dx).rounded(.down)), row = Int((lobe.y + dy).rounded(.down))
+            let fits = zip(rounds, needs).allSatisfy { circle, need in
+                let col = Int((circle.x + dx).rounded(.down)), row = Int((circle.y + dy).rounded(.down))
                 return col >= 0 && row >= 0 && col < columns && row < rows && room[row * columns + col] >= need
             }
             if fits { return (dx, dy) }
@@ -1448,7 +1470,7 @@ final class WorldMap {
         for lobe in hill.lobes {
             let turn: (cos: Double, sin: Double) = (cos(lobe.angle), sin(lobe.angle))
             for (u, v) in [(0.0, 0.0), (0.5, 0.0), (-0.5, 0.0), (0.0, 0.5), (0.0, -0.5)] {
-                let a: Double = u * lobe.along, b: Double = v * lobe.across
+                let a: Double = u * (u < 0 ? lobe.front ?? lobe.along : lobe.along), b: Double = v * lobe.across
                 let x: Double = lobe.x + a * turn.cos - b * turn.sin
                 let y: Double = lobe.y + a * turn.sin + b * turn.cos
                 guard free(GridPoint(col: Int(x.rounded(.down)), row: Int(y.rounded(.down)))) else { return false }
@@ -1482,6 +1504,8 @@ final class WorldMap {
                 hill.heights[j * width + i] = Float(hill.shape(Double(low.col) + Double(i) / Double(samples), Double(low.row) + Double(j) / Double(samples)))
             }
         }
+        // Wherever a mountain's spurs would fold over, filled in so it stays in sight.
+        hill.unfold()
         hill.highest = CGFloat(hill.heights.max() ?? 0)
         // Its trails, the easy way up (you can climb it anywhere): from the ground in front up the
         // nearest summit with room for one, and up the mountain too if that wasn't it, winding round
@@ -1988,7 +2012,11 @@ final class WorldMap {
                     island = []
                 }
                 jetty(into: water.subtracting(island), clear: island)
-                guard cutOff() <= before else {
+                // A lake that should have an island and has none (no room for one well out in the
+                // water, or no footbridge out to it) is dug again while the next try could still be
+                // big enough for one.
+                let wanted = islands > 0 && island.isEmpty && attempt < 9 && biggest * pow(0.9, Double(attempt + 1)) >= 8
+                guard cutOff() <= before, !wanted else {
                     ground = saved.ground
                     bridges = saved.bridges
                     bridgeCells = saved.bridgeCells
@@ -2198,10 +2226,11 @@ final class WorldMap {
                     // (a pixel a cell made it a staircase of shades): a hill a shade lighter, its edge
                     // lit where it faces the light (up the map and left, as the trees' shadows say)
                     // and shaded where it faces away, and a mountain's upper slopes, higher than any
-                    // hill stands, lighter still.
+                    // hill stands, lighter still, and its heights lighter again.
                     let lit = !onHill(col - 1, row) || !onHill(col, row + 1)
                     let away = !onHill(col + 1, row) || !onHill(col, row - 1)
-                    var tone: Double = hills[index].height(atCells: Double(col) + 0.5, Double(row) + 0.5) >= 66 ? 1.2 : 1.1
+                    let up = hills[index].height(atCells: Double(col) + 0.5, Double(row) + 0.5)
+                    var tone: Double = up >= 130 ? 1.3 : up >= 66 ? 1.2 : 1.1
                     if lit, !away { tone = 1.24 } else if away, !lit { tone = 0.8 }
                     pixel = pixel.shaded(tone)
                 } else if blocked.contains(cell), ground[row][col] != .water {

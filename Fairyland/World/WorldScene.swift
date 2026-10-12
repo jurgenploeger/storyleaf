@@ -437,9 +437,22 @@ final class WorldScene: SKScene {
             crag.strata = 14
             // Its road stays a road all the way up to the cave's mouth.
             crag.road = { cell in self.map.contains(cell) && self.map.ground[cell.row][cell.col] == .path }
+            // A range with a mountain in it: bare layered rock from partway up (its foothills'
+            // tops below that), in deeper shade and brighter sun, so its height shows.
+            var mountain = look
+            mountain.bank = look.bank ?? scree
+            mountain.ambient = Self.cragShade
+            mountain.brightest = 1.2
+            mountain.strata = 14
             // Already where they show on screen (they lift themselves) and sorted, so straight into
             // the world.
-            raisedHills = map.hills.flatMap { HillArt.sprites(for: $0, look: $0.isCrag ? crag : look) }
+            raisedHills = map.hills.flatMap { hill -> [SKSpriteNode] in
+                if hill.isCrag { return HillArt.sprites(for: hill, look: crag) }
+                guard hill.hasMountain else { return HillArt.sprites(for: hill, look: look) }
+                var high = mountain
+                high.rockFrom = Double(hill.peak) * 0.4
+                return HillArt.sprites(for: hill, look: high)
+            }
         }
         let ground = projected(grid)
         ground.zPosition = -100_000
@@ -1279,8 +1292,9 @@ final class WorldScene: SKScene {
         let gx = Double(hill.height(atCells: x + e, y) - hill.height(atCells: x - e, y)) / (2 * e)
         let gy = Double(hill.height(atCells: x, y + e) - hill.height(atCells: x, y - e)) / (2 * e)
         let tile = Double(WorldMap.tileSize)
-        // The same light as the ground's (`HillArt.sprites`), crags in their deeper shade.
-        let ambient = hill.isCrag ? Self.cragShade : HillArt.ambient(rocky: map.rockiness)
+        // The same light as the ground's (`HillArt.sprites`), crags and mountains in their deeper
+        // shade.
+        let ambient = hill.isCrag || hill.hasMountain ? Self.cragShade : HillArt.ambient(rocky: map.rockiness)
         let spot = (node: node, hx: gx / tile / 0.866, hy: gy / tile / 0.866, ambient: ambient)
         onSlopes.append(spot)
         Self.shade(spot.node, hx: spot.hx, hy: spot.hy, ambient: spot.ambient, sun: sunShown ?? .noon)
