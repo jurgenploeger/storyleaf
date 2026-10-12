@@ -150,7 +150,16 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   (`Hill.unfold`). Its range has bare layered rock from 40% of its height up, in deeper shade and brighter sun,
   like a cave's (`HillArt.Look.rockFrom`), and the minimap shows its heights lighter still. Heights since 0.4.9:
   Crystal Mountain 200 (two), Snow White Forest 170, Gumdrop Peaks 160 (grown to 140×100 for the room, its
-  scenery half again as much), Marionette Rise 150; 88 to 112 before.
+  scenery half again as much), Marionette Rise 150; 88 to 112 before. 0.4.9 lost both of Crystal Mountain's: a
+  range is kept in from the map's edge by a box round its summits, which still reached a mountain's full reach
+  back toward you, so the spot its round was given near the map's lower or left edge was turned down on every
+  try; since 0.4.10 a mountain's box is round its round (`shapeHill`).
+- Hills on every land (since 0.4.10, asked for in playtesting 2026-10-12: every map should have slopes,
+  hills or mountains): every map outside the towns and caves has `theme.hills`, dunes on Pineapple Shore, low
+  rises in the swamps (28 to 30 points), rolling hills in the woods and round the lakes (40 to 44), and a
+  mountain each in Shiverdell and Moonwhisper (160), on Emerald Road (140), in Big Bad Wolf's Lair and on
+  Sneezle Isle (130). Towns have their terraces; a cave's tunnels (3 cells wide, chambers up to 5 across)
+  have no room for a hill.
   Since 0.4.5 ranges go where every summit has room round it (`clearance`: how far each cell is from a road,
   water, a building or another hill), picked at random among the places they fit; before, random spots
   tried 120 times often found nowhere on crowded maps (Gumdrop Peaks had no mountain). The first trail climbs from the ground in

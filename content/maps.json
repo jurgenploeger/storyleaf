@@ -1578,6 +1578,18 @@
         "accentPatches": 90,
         "water": "tile_water",
         "ponds": 32,
+        "hills": {
+          "count": 3,
+          "size": [
+            5,
+            9
+          ],
+          "chain": [
+            2,
+            3
+          ],
+          "height": 30
+        },
         "props": [
           {
             "art": "palm_tree",
@@ -1895,6 +1907,18 @@
         "fairyRings": {
           "count": 16,
           "art": "glow_mushroom"
+        },
+        "hills": {
+          "count": 3,
+          "size": [
+            6,
+            10
+          ],
+          "chain": [
+            2,
+            4
+          ],
+          "height": 40
         },
         "props": [
           {
@@ -2298,6 +2322,18 @@
         "fairyRings": {
           "count": 14,
           "art": "mushroom"
+        },
+        "hills": {
+          "count": 3,
+          "size": [
+            6,
+            10
+          ],
+          "chain": [
+            2,
+            4
+          ],
+          "height": 40
         },
         "props": [
           {
@@ -4207,6 +4243,18 @@
             10
           ]
         },
+        "hills": {
+          "count": 2,
+          "size": [
+            5,
+            9
+          ],
+          "chain": [
+            2,
+            3
+          ],
+          "height": 28
+        },
         "props": [
           {
             "art": "big_swamp_tree",
@@ -4550,6 +4598,22 @@
         "path": "tile_path",
         "accent": "tile_scree",
         "accentPatches": 68,
+        "hills": {
+          "count": 3,
+          "size": [
+            7,
+            11
+          ],
+          "chain": [
+            3,
+            5
+          ],
+          "height": 50,
+          "mountains": {
+            "count": 1,
+            "height": 160
+          }
+        },
         "props": [
           {
             "art": "dead_tree",
@@ -6585,6 +6649,23 @@
         "path": "tile_snow_path",
         "accent": "tile_snow",
         "accentPatches": 90,
+        "hills": {
+          "count": 3,
+          "size": [
+            6,
+            11
+          ],
+          "chain": [
+            2,
+            4
+          ],
+          "height": 52,
+          "mountains": {
+            "count": 1,
+            "height": 160
+          },
+          "bank": "tile_cave_rock"
+        },
         "props": [
           {
             "art": "crystal",
@@ -8171,6 +8252,22 @@
           "count": 7,
           "art": "glow_mushroom"
         },
+        "hills": {
+          "count": 2,
+          "size": [
+            6,
+            10
+          ],
+          "chain": [
+            2,
+            4
+          ],
+          "height": 44,
+          "mountains": {
+            "count": 1,
+            "height": 130
+          }
+        },
         "props": [
           {
             "art": "big_dark_tree",
@@ -9682,6 +9779,18 @@
           ],
           "islands": 1
         },
+        "hills": {
+          "count": 2,
+          "size": [
+            5,
+            9
+          ],
+          "chain": [
+            2,
+            3
+          ],
+          "height": 30
+        },
         "props": [
           {
             "art": "big_swamp_tree",
@@ -10304,6 +10413,18 @@
           ],
           "islands": 1
         },
+        "hills": {
+          "count": 2,
+          "size": [
+            6,
+            10
+          ],
+          "chain": [
+            2,
+            4
+          ],
+          "height": 40
+        },
         "props": [
           {
             "art": "palm_tree",
@@ -10575,6 +10696,18 @@
         "fairyRings": {
           "count": 7,
           "art": "glow_mushroom"
+        },
+        "hills": {
+          "count": 2,
+          "size": [
+            6,
+            10
+          ],
+          "chain": [
+            2,
+            4
+          ],
+          "height": 40
         },
         "props": [
           {
@@ -11266,6 +11399,22 @@
         "accentPatches": 40,
         "water": "tile_water",
         "ponds": 14,
+        "hills": {
+          "count": 2,
+          "size": [
+            5,
+            9
+          ],
+          "chain": [
+            2,
+            3
+          ],
+          "height": 36,
+          "mountains": {
+            "count": 1,
+            "height": 130
+          }
+        },
         "props": [
           {
             "art": "palm_tree",
@@ -11540,6 +11689,18 @@
           "from": "west",
           "to": "south",
           "width": 3
+        },
+        "hills": {
+          "count": 2,
+          "size": [
+            6,
+            10
+          ],
+          "chain": [
+            2,
+            4
+          ],
+          "height": 44
         },
         "props": [
           {
@@ -11863,6 +12024,19 @@
         "path": "tile_path",
         "accent": "tile_cave_floor",
         "accentPatches": 30,
+        "hills": {
+          "count": 2,
+          "size": [
+            6,
+            10
+          ],
+          "chain": [
+            2,
+            3
+          ],
+          "height": 44,
+          "bank": "tile_cave_rock"
+        },
         "props": [
           {
             "art": "boulder",
@@ -12397,6 +12571,22 @@
         "fairyRings": {
           "count": 6,
           "art": "mushroom"
+        },
+        "hills": {
+          "count": 2,
+          "size": [
+            6,
+            10
+          ],
+          "chain": [
+            2,
+            4
+          ],
+          "height": 48,
+          "mountains": {
+            "count": 1,
+            "height": 140
+          }
         },
         "props": [
           {

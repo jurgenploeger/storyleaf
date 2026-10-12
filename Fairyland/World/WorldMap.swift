@@ -1457,12 +1457,18 @@ final class WorldMap {
     /// (one up its mountain, `mountain`, a summit's index, where there's room). False if it doesn't
     /// fit or there's no trail up from the ground in front.
     private func shapeHill(_ hill: inout Hill, mountain: Int?, winding: Winding, claimed: Set<GridPoint>) -> Bool {
-        // The cells any summit reaches into, with a cell to spare for the ripples.
-        let reach = hill.lobes.map { max($0.along, $0.across) + 1 }
-        let low = GridPoint(col: Int(zip(hill.lobes, reach).map { $0.x - $1 }.min()!.rounded(.down)),
-                            row: Int(zip(hill.lobes, reach).map { $0.y - $1 }.min()!.rounded(.down)))
-        let high = GridPoint(col: Int(zip(hill.lobes, reach).map { $0.x + $1 }.max()!.rounded(.up)),
-                             row: Int(zip(hill.lobes, reach).map { $0.y + $1 }.max()!.rounded(.up)))
+        // The cells any summit reaches into, with a cell to spare for the ripples: round its
+        // middle, or round the round a mountain stands in (`footprint`; its face reaches far less
+        // far than its back), a little over it where its face meets its sides, and its spurs.
+        let extents = hill.lobes.map { lobe -> (x: Double, y: Double, reach: Double) in
+            guard lobe.front != nil else { return (lobe.x, lobe.y, max(lobe.along, lobe.across) + 1) }
+            let circle = lobe.footprint
+            return (circle.x, circle.y, circle.radius * 1.05 + 1.5)
+        }
+        let low = GridPoint(col: Int(extents.map { $0.x - $0.reach }.min()!.rounded(.down)),
+                            row: Int(extents.map { $0.y - $0.reach }.min()!.rounded(.down)))
+        let high = GridPoint(col: Int(extents.map { $0.x + $0.reach }.max()!.rounded(.up)),
+                             row: Int(extents.map { $0.y + $0.reach }.max()!.rounded(.up)))
         guard low.col >= 3, low.row >= 3, high.col < columns - 3, high.row < rows - 3 else { return false }
         func free(_ cell: GridPoint) -> Bool { isFreeForScenery(cell) && !claimed.contains(cell) }
         // A quick look first, before the work of sampling it all: each summit's middle and halfway

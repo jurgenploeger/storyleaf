@@ -2,6 +2,16 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.4.10",
+      "date": "2026-10-12",
+      "title": "Hills everywhere",
+      "notes": [
+        "Every land outside the towns and caves has hills now: dunes on Pineapple Shore, rolling hills in Twilight Woods and Smiling Forest, low rises in Frog Swamp and Lotus Land, and slopes round Ingothold Lake, Dozywick, Briarmere and Tidewater Shrine.",
+        "Shiverdell, Moonwhisper, Big Bad Wolf's Lair, Sneezle Isle and Emerald Road each have a mountain to climb.",
+        "Crystal Mountain has its two mountains again: they were left out when they couldn't find room."
+      ]
+    },
+    {
       "version": "0.4.9",
       "date": "2026-10-12",
       "title": "Mountains",
