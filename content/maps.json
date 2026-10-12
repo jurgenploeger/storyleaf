@@ -6746,8 +6746,7 @@
           "mountains": {
             "count": 1,
             "height": 160
-          },
-          "bank": "tile_cave_rock"
+          }
         },
         "props": [
           {
@@ -12217,8 +12216,7 @@
             2,
             3
           ],
-          "height": 44,
-          "bank": "tile_cave_rock"
+          "height": 44
         },
         "props": [
           {

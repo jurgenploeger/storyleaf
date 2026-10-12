@@ -159,7 +159,10 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   rises in the swamps (28 to 30 points), rolling hills in the woods and round the lakes (40 to 44), and a
   mountain each in Shiverdell and Moonwhisper (160), on Emerald Road (140), in Big Bad Wolf's Lair and on
   Sneezle Isle (130). Towns have their terraces; a cave's tunnels (3 cells wide, chambers up to 5 across)
-  have no room for a hill.
+  have no room for a hill. Their bare slopes are the scree every rocky land shows: a first try gave
+  Moonwhisper and Tidewater Shrine the caves' dark cobbles (`bank` tile_cave_rock), and since a range where a
+  road leads into a cave takes its rock from the hills' bank, Moonwhisper's cave range went dark and
+  cobbled too, which playtesting called strange (2026-10-12).
 - Summits worth the climb (ours, since 0.4.10, asked for in playtesting 2026-10-12: more to explore, "maybe
   on top of the mountain is a boss or quest"): an NPC or a decoration can stand up on a summit
   (`NPCDef.summit`, `Decor.summit`: 0 the tallest of all the map's summits, `WorldMap.summits`; its `x` and
