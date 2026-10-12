@@ -10,7 +10,10 @@
         "Walk up to someone and they tell you their story a line at a time. Stay a while, or tap them, to hear what comes next.",
         "Some are out on errands: a courier walks the Windswept Downs, Granny Edda climbs Snow White Forest's mountain with soup for Mister Frost, and Hansel goes up Gumdrop Peaks to check it's still sugar.",
         "Some stories run from one map to the next. Tess waits at Sunny Meadow's bridge for her brother, and a mapmaker turns up wherever there's a page left to draw.",
-        "Speech bubbles stay up longer for longer lines."
+        "Quest givers have a place of their own: a lakeside shrine with Liora's statue for Briarmere's Temple Keeper, a tower for Ambrose the Wise, a hut for Hermit Orrin, cottages for the Old Swan Keeper and Little Pig, a windmill for Mother Sheep, and houses in sleepy Dozywick.",
+        "In Meadowbrook the Arcane Circle has a tower of its own beside the guild hall, and in the other towns the healers and shops stand at their own doors.",
+        "Speech bubbles stay up longer for longer lines.",
+        "A battle starting should no longer crash the game: a fight can't begin on top of a conversation or another fight, and the blurred map behind a battle takes a quarter of the memory."
       ]
     },
     {

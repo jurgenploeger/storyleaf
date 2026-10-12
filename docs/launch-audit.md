@@ -100,6 +100,13 @@ engine's formulas, and the CI screenshots. Every finding here was checked agains
 2. **Memory grows with every map visit** (*est.* rate). Each new villager or adventurer look caches a recoloured
    sheet in `ArtLibrary` for good; nothing evicts them and nothing handles memory warnings. Fix: an LRU cap on
    runtime looks, and a purge on memory warnings.
+   - Playtesting 2026-10-12: the app sometimes crashes as a battle starts. A code audit found no Swift trap on
+     that path; likeliest is memory at its peak (the map still loaded, a full-resolution snapshot of it read back
+     and blurred on the CPU with a new Core Image context every battle). Since 0.4.12 it's blurred at half size
+     with one shared context and only the blurred copy is kept, and a battle can no longer start on top of a
+     conversation or another battle (`GameCoordinator`'s battle guards, `WorldScene.checkCell`). Still open: the
+     purge on memory warnings above, and the phone's crash log (Settings › Privacy & Security › Analytics &
+     Improvements › Analytics Data: a `JetsamEvent` means memory) to confirm.
 3. **Nothing teaches befriending, the biggest difficulty lever** (*est.* hero and companion alone win 9-83% of
    fights on mid-level maps, 54-100% with two friends): neither How to play nor the first-play tour mentions it.
    Add a tip or a coach mark. The Wisdom answer also hatches a Jelly Puff, clearly weaker than the other two eggs.

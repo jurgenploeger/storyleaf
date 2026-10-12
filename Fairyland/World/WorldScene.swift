@@ -1844,9 +1844,9 @@ final class WorldScene: SKScene {
         crowd?.reply(near: player.position)
     }
 
-    /// Called by the HUD's Talk button.
+    /// Called by the HUD's Talk button. Not while a battle's starting (or anything else has the map).
     func talkToNearby() {
-        guard let id = session.nearbyNPC, let npc = npcs.first(where: { $0.def.id == id }) else { return }
+        guard !isInputLocked, let id = session.nearbyNPC, let npc = npcs.first(where: { $0.def.id == id }) else { return }
         startTalking(to: npc.def, node: npc.node)
     }
 
@@ -1977,6 +1977,8 @@ final class WorldScene: SKScene {
     }
 
     private func checkCell() {
+        // Walking up to someone this frame opened their window: no battle or road out under it.
+        guard !isInputLocked else { return }
         let cell = map.cell(at: player.position)
         guard cell != lastCell else { return }
         if let barricade = barricades.first(where: { $0.cells.contains(cell) || map.exit(at: cell)?.to == $0.exit.to }) {

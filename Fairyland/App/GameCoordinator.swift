@@ -237,6 +237,8 @@ final class GameCoordinator {
     // MARK: Battles
 
     func startBattle(_ encounters: MapDef.Encounters, backdrop: SKTexture? = nil) {
+        // One battle at a time: a second starting on top of the first would take its place mid-fade.
+        guard battle == nil else { return }
         let controller = BattleController.encounter(encounters, session: session)
         SoundEffects.shared.play(.encounter)
         controller.onFinish = { [weak self] outcome in self?.endBattle(outcome) }
@@ -251,6 +253,7 @@ final class GameCoordinator {
     private var rival: Adventurer?
 
     private func startDuel(with rival: Adventurer, backdrop: SKTexture?) {
+        guard battle == nil else { return }
         let controller = BattleController.duel(with: rival, session: session)
         controller.onFinish = { [weak self] outcome in self?.endBattle(outcome) }
         battleScene = BattleScene(controller: controller, size: world.size, backdrop: backdrop)
@@ -265,7 +268,7 @@ final class GameCoordinator {
     private var boss: NPCDef?
 
     func fightBoss(_ npc: NPCDef) {
-        guard let controller = BattleController.boss(npc, encounters: world.def.encounters, session: session) else { return }
+        guard battle == nil, let controller = BattleController.boss(npc, encounters: world.def.encounters, session: session) else { return }
         overlay = nil
         controller.onFinish = { [weak self] outcome in self?.endBattle(outcome) }
         // The map you're standing on, like any fight (without the boss: it's in the battle now).
