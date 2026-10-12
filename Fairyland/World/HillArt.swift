@@ -528,8 +528,8 @@ enum HillArt {
         return Double(value & 0xffff) / 65535
     }
 
-    /// A cave's mouth (`WorldMap.Hill.Mouth`) as a doorway in the rock: its opening and the rim of
-    /// rock round it, each a rough arch over the mouth's foot, in cells.
+    /// A cave's mouth (`WorldMap.Hill.Mouth`) as a doorway in the rock: its opening and the edge of
+    /// the rock round it, each a rough arch over the mouth's foot, in cells.
     struct Doorway {
         let opening: [CGPoint]
         let rim: [CGPoint]
@@ -580,9 +580,10 @@ enum HillArt {
                        lip: Array(lip[3..<(lip.count - 3)]), floor: point(0, 0), top: point(0, tall))
     }
 
-    /// Paints a cave's doorway on a hill's ground: the rock round it a little lighter, edged dark,
-    /// light catching its top; the opening black up under its top and a little lighter at its
-    /// floor, where the road goes in. `at`: a point in cells in the picture's pixels.
+    /// Paints a cave's doorway on a hill's ground, in the face of its rock wall (`Hill.Wall`): a
+    /// shadow round its edge, light catching the rock over its top, the opening black up under its
+    /// top and a little lighter at its floor, where the road goes in. `at`: a point in cells in the
+    /// picture's pixels.
     private static func cave(_ doorway: Doorway, in context: CGContext, at: (CGPoint) -> CGPoint) {
         func shape(_ points: [CGPoint]) -> CGPath {
             let path = CGMutablePath()
@@ -598,11 +599,8 @@ enum HillArt {
         }
         context.setLineCap(.round)
         context.setLineJoin(.round)
-        context.addPath(shape(doorway.rim))
-        context.setFillColor(UIColor(white: 1, alpha: 0.14).cgColor)
-        context.fillPath()
         context.addPath(line(doorway.rim))
-        context.setStrokeColor(UIColor(white: 0, alpha: 0.45).cgColor)
+        context.setStrokeColor(UIColor(white: 0, alpha: 0.3).cgColor)
         context.setLineWidth(3)
         context.strokePath()
         context.addPath(line(doorway.lip))

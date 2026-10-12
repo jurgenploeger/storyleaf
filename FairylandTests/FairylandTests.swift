@@ -127,7 +127,7 @@ struct ContentTests {
 
     @Test func roadsIntoCavesRunIntoAMountain() throws {
         // Where a road leads into a cave, a range of rocky hills rises along that side of the map
-        // and on past its edge, the road climbing a little to the cave's mouth in its side.
+        // and on past its edge, the road climbing a little to the cave's mouth in a wall of rock.
         let tile = WorldMap.tileSize
         for def in content.maps where def.theme.cave == nil && def.town == nil {
             let map = WorldMap(def: def)
@@ -140,17 +140,24 @@ struct ContentTests {
                 func height(out: Double) -> CGFloat {
                     hill.height(atCells: mouth.x + mouth.into.x * out, mouth.y + mouth.into.y * out)
                 }
-                print("⛰ \(def.id) crag: \(Int(hill.highest)) high, mouth at \(Int(height(out: 0))), 5 out \(Int(height(out: 5)))")
-                #expect(height(out: 5) > 50, "map \(def.id): no mountain behind the cave's mouth")
+                let place = mouth.beside ? "beside the road" : "at the road's end"
+                print("⛰ \(def.id) crag: \(Int(hill.highest)) high, mouth \(place) at \(Int(height(out: 0))), a wall \(Int(height(out: 1) - height(out: 0))) over it")
+                // It's in a wall of rock facing you, at least 40 points taller a cell in, and on the
+                // north and east the mountain rises on behind it.
+                #expect(height(out: 1) - height(out: 0) > 40, "map \(def.id): no wall of rock over the cave's mouth")
+                if !mouth.beside { #expect(height(out: 5) > 50, "map \(def.id): no mountain behind the cave's mouth") }
                 // The road reaches the mouth, climbing only a little, and you can walk it.
                 let last = GridPoint(col: Int((mouth.x - mouth.into.x * 0.5).rounded(.down)),
                                      row: Int((mouth.y - mouth.into.y * 0.5).rounded(.down)))
                 #expect(map.ground[last.row][last.col] == .path && map.isWalkable(last), "map \(def.id): the road doesn't reach the cave's mouth")
-                // The only way out on that side is through the mouth: the rest of the edge is the mountain.
+                // The only way out on that side is through the mouth: the rest of the edge is the
+                // mountain. And you don't arrive in it.
                 let length = exit.edge == .north || exit.edge == .south ? map.columns : map.rows
                 #expect(map.exit(at: last)?.to == exit.to, "map \(def.id): the cave's mouth doesn't lead into \(exit.to)")
-                let ways = (0..<length).filter { map.exit(at: map.cell(on: exit.edge, along: $0, inward: 0))?.to == exit.to }
-                #expect(ways.count <= Int(2 * mouth.half) + 1, "map \(def.id): \(ways.count) cells along its edge lead into \(exit.to)")
+                let ways = (0..<map.rows).flatMap { row in (0..<map.columns).map { GridPoint(col: $0, row: row) } }
+                    .filter { map.exit(at: $0)?.to == exit.to }
+                #expect(ways.count <= Int(2 * mouth.half) + 1, "map \(def.id): \(ways.count) cells lead into \(exit.to)")
+                #expect(map.exit(at: map.entryCell(from: exit.edge)) == nil, "map \(def.id): you'd come out of \(exit.to) in its mouth")
                 // Partway up a slope, so it shows: not up in the air, and the hill rising behind it.
                 #expect(height(out: 0) < 70, "map \(def.id): the cave's mouth stands \(height(out: 0)) up")
                 #expect(height(out: mouth.depth) - height(out: 0) > 10, "map \(def.id): the cave's mouth is on the flat")

@@ -180,6 +180,8 @@ final class WorldMap {
             crags.append(Crag(edge: range.edge, cave: range.cave, hill: self.hills.count))
             self.hills.append(range.hill)
         }
+        // Where you arrive through a cave's mouth beside the road has moved.
+        if !ranges.isEmpty { cachedEntryCells = nil }
         if def.town == nil, def.theme.cave == nil, def.theme.hills != nil { layFootpaths() }
         if def.theme.accent != nil {
             if let patches = def.theme.accentPatches {
@@ -282,25 +284,41 @@ final class WorldMap {
     // MARK: Exits
 
     /// The exit edge `cell` touches, if any — step on the outermost row of an exit to leave. Where
-    /// a road leads into a cave, only in its mouth: the rest of that edge is the mountain.
+    /// a road leads into a cave, step into its mouth instead: the rest of that edge is the mountain.
     func exit(at cell: GridPoint) -> MapDef.Exit? {
         def.exits.first { exit in
-            let onEdge = switch exit.edge {
+            if let opening = mouth(on: exit.edge) {
+                let offset = place(of: cell, from: opening)
+                return abs(offset.across) < opening.half && offset.inward > -1 && offset.inward < 0
+            }
+            return switch exit.edge {
             case .north: cell.row == rows - 1
             case .south: cell.row == 0
             case .east: cell.col == columns - 1
             case .west: cell.col == 0
             }
-            return onEdge && isBeforeWayOut(cell, through: exit.edge)
         }
     }
 
-    /// Whether `cell` is across from the way out through `edge`, give or take `give` cells along
-    /// it: anywhere along most edges, but where a road leads into a cave, only before its mouth.
-    func isBeforeWayOut(_ cell: GridPoint, through edge: Edge, give: Double = 0) -> Bool {
-        guard let crag = crags.first(where: { $0.edge == edge }), let mouth = hills[crag.hill].mouth else { return true }
+    /// The mouth of the cave a road through `edge` leads into, if it does (`Hill.Mouth`).
+    func mouth(on edge: Edge) -> Hill.Mouth? {
+        crags.first { $0.edge == edge }.flatMap { hills[$0.hill].mouth }
+    }
+
+    /// Where a cell's middle is from a cave's mouth: cells across from its middle, and cells in
+    /// (below 0 in front of it).
+    private func place(of cell: GridPoint, from mouth: Hill.Mouth) -> (across: Double, inward: Double) {
         let dx = Double(cell.col) + 0.5 - mouth.x, dy = Double(cell.row) + 0.5 - mouth.y
-        return abs(dx * mouth.along.x + dy * mouth.along.y) < mouth.half + give
+        return (dx * mouth.along.x + dy * mouth.along.y, dx * mouth.into.x + dy * mouth.into.y)
+    }
+
+    /// How many cells `cell` is from the way out through `edge` (0 = standing on it): from the
+    /// edge, or where a road leads into a cave, from its mouth.
+    func distance(from cell: GridPoint, toWayOutThrough edge: Edge) -> Int {
+        guard let opening = mouth(on: edge) else { return distance(from: cell, to: edge) }
+        let offset = place(of: cell, from: opening)
+        let across = max(0, abs(offset.across) - opening.half + 0.5), inward = max(0, -offset.inward - 0.5)
+        return Int((across * across + inward * inward).squareRoot())
     }
 
     /// How many cells `cell` is from the edge of `exit` (0 = standing on the way out).
@@ -323,8 +341,14 @@ final class WorldMap {
         }
     }
 
-    /// Where you arrive when entering through `edge`: on the road, a couple of tiles in.
+    /// Where you arrive when entering through `edge`: on the road, a couple of tiles in (out of a
+    /// cave's mouth beside the road, on the road in front of it).
     func entryCell(from edge: Edge) -> GridPoint {
+        if let opening = mouth(on: edge), opening.beside {
+            let front = GridPoint(col: Int((opening.x - opening.into.x * 2).rounded(.down)),
+                                  row: Int((opening.y - opening.into.y * 2).rounded(.down)))
+            return nearestWalkable(to: front) ?? center
+        }
         let cell = switch edge {
         case .north: GridPoint(col: roadColumn(near: rows - 3), row: rows - 3)
         case .south: GridPoint(col: roadColumn(near: 2), row: 2)
@@ -963,10 +987,38 @@ final class WorldMap {
              fy: Double.random(in: 0.4...1, using: &rng), py: Double.random(in: 0..<6.3, using: &rng))
         }
         var hill = Hill(lobes: lobes, ripples: ripples, steepness: steepness)
+        // The cave's mouth, in a wall of rock facing you (`Hill.Wall`): on the north and east where
+        // the road meets the edge, the wall rising out of the mountain's face. On the south and west
+        // the mountain's side toward the map faces away, where nothing steep can show, so the wall
+        // is a crag beside the road's end in the map, its face turned back along the edge toward
+        // you and the road, which runs on along its foot to the mouth.
+        let mouth: Hill.Mouth
+        if facesYou {
+            let foot = point(middle, 0)
+            mouth = Hill.Mouth(x: foot.x, y: foot.y, along: along, into: out, half: Double(road.count) / 2 + 0.3, depth: 2, beside: false)
+        } else {
+            let half = 1.3, last = road[road.count - 1]
+            let foot = point(Double(last + 1), -(half + 0.5))
+            mouth = Hill.Mouth(x: foot.x, y: foot.y, along: (x: -out.x, y: -out.y), into: along, half: half, depth: 2, beside: true)
+            for inward in 0...2 {
+                let cell = self.cell(on: edge, along: last, inward: inward)
+                ground[cell.row][cell.col] = .path
+            }
+        }
+        hill.mouth = mouth
+        // On the north and east it stands level with the mouth all along, 50 points taller, and
+        // tapers away slowly toward the far end of the edge; beside the road on the south and west
+        // it stands on the ground, 55 points over it, and tapers away slowly into the map. (Its far
+        // end and its back face away from you: the slow taper and its fall keep them in sight.)
+        hill.wall = Hill.Wall(x: mouth.x, y: mouth.y, along: mouth.along, into: mouth.into,
+                              base: facesYou ? Double(hill.shape(mouth.x, mouth.y)) : nil, reach: mouth.half + 1.2,
+                              taper: facesYou ? (toward: 4.0, away: 12.0) : (toward: 3.0, away: 5.0),
+                              run: 0.8, rise: facesYou ? 50.0 : 55.0, fall: facesYou ? 8.0 : 10.0)
         // Where it's drawn: past the map's corners and out past its edge till the mist hides it
-        // (`WorldScene.placeCrags`: from 14 cells out, or 13 past a ridge, and all mist 8 further).
-        let far = facesYou ? 30.0 : 24.0
-        let corners = [point(-20, -6), point(Double(length) + 20, -6), point(-20, far), point(Double(length) + 20, far)]
+        // (`WorldScene.placeCrags`: from 14 cells out, or 13 past a ridge, and all mist 8 further),
+        // and on the south and west far enough in for the crag.
+        let far = facesYou ? 30.0 : 24.0, near = facesYou ? -6.0 : -11.0
+        let corners = [point(-20, near), point(Double(length) + 20, near), point(-20, far), point(Double(length) + 20, far)]
         let xs = corners.map { $0.x }, ys = corners.map { $0.y }
         let low = GridPoint(col: Int(xs.min()!.rounded(.down)), row: Int(ys.min()!.rounded(.down)))
         let high = GridPoint(col: Int(xs.max()!.rounded(.up)), row: Int(ys.max()!.rounded(.up)))
@@ -990,8 +1042,6 @@ final class WorldMap {
             }
         }
         hill.highest = CGFloat(hill.heights.max() ?? 0)
-        let mouth = point(middle, 0)
-        hill.mouth = Hill.Mouth(x: mouth.x, y: mouth.y, along: along, into: out, half: Double(road.count) / 2 + 0.3, depth: 2)
         // Nothing grows on its foot in the map, and no pond or other hill goes there.
         for cell in cells where contains(cell) {
             occupy(cell, blocking: false)

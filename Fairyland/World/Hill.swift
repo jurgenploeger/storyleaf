@@ -68,16 +68,74 @@ extension WorldMap {
         /// Its trails: the first from the ground in front, then one up its mountain.
         var trails: [Trail] = []
         /// A cave's mouth in its side, where a road leads into a cave (`WorldMap.raiseCrags`): its
-        /// middle at the foot (in cells), which way is along the edge it's on and which way into
-        /// the hill (unit), how far across either side it opens (cells; the way out of the map is
-        /// only there, `WorldMap.exit(at:)`), and how far in the mountain over it stands (cells).
+        /// middle at the foot (in cells), which way is along the rock face it's in and which way
+        /// into the rock (unit), how far across either side it opens (cells; the way out of the map
+        /// is only there, `WorldMap.exit(at:)`), and how far in the rock over it stands (cells).
+        /// `beside`: in a crag beside the road's end, its face turned back along the map's edge,
+        /// rather than where the road meets the edge.
         nonisolated struct Mouth {
             let x, y: Double
             let along: (x: Double, y: Double)
             let into: (x: Double, y: Double)
             let half, depth: Double
+            let beside: Bool
         }
         var mouth: Mouth?
+        /// The rock wall a cave's mouth is in, facing you (`WorldMap.raiseCrags`): from its foot, a
+        /// line through the mouth's, it climbs `rise` points in `run` cells, near enough sheer, then
+        /// falls back `fall` points a cell into the slopes behind; full height `reach` cells either
+        /// side of the mouth, then tapering away, quickly at the end toward you (-`along`) and
+        /// slowly at the end away (+`along`, up the map whichever edge it's on). Its face can be as
+        /// steep as you like, facing you; its back and far end, facing away, fall no faster than
+        /// ground can and still show. Its foot stands at `base` all along, or if nil on the ground.
+        nonisolated struct Wall {
+            let x, y: Double
+            let along: (x: Double, y: Double)
+            let into: (x: Double, y: Double)
+            let base: Double?
+            let reach: Double
+            let taper: (toward: Double, away: Double)
+            let run, rise, fall: Double
+
+            /// A point's place from the middle of its foot: cells along it and cells in.
+            func spot(_ x: Double, _ y: Double) -> (along: Double, into: Double) {
+                let dx = x - self.x, dy = y - self.y
+                return (dx * along.x + dy * along.y, dx * into.x + dy * into.y)
+            }
+
+            /// Its foot straight out from a point.
+            func foot(_ x: Double, _ y: Double) -> (x: Double, y: Double) {
+                let inward = spot(x, y).into
+                return (x - into.x * inward, y - into.y * inward)
+            }
+
+            /// At a point in it: how much of its height stands there (1 in its full width, falling to
+            /// 0 at its ends), how high it stands over its foot before that, and how far up its face
+            /// the point is (0 at the foot, 1 at the top of the face). Nil outside it.
+            func lift(_ x: Double, _ y: Double) -> (width: Double, height: Double, up: Double)? {
+                let place = spot(x, y)
+                guard place.into > 0 else { return nil }
+                let end = place.along > 0 ? taper.away : taper.toward
+                let width = Self.smooth((reach + end - abs(place.along)) / end)
+                guard width > 0 else { return nil }
+                let height = rise * Self.smooth(place.into / run) - fall * max(0, place.into - run)
+                return (width, height, Self.smooth(place.into / (run * 0.4)) * width)
+            }
+
+            /// How far inside it a point is, about the cells in from its edge, below 0 outside it.
+            func depth(_ x: Double, _ y: Double) -> Double {
+                let place = spot(x, y)
+                let back = run + ((base ?? 0) + rise) / fall
+                let end = place.along > 0 ? taper.away : taper.toward
+                return min(place.into + 0.5, back - place.into, reach + end - abs(place.along))
+            }
+
+            static func smooth(_ value: Double) -> Double {
+                let t = min(1, max(0, value))
+                return t * t * (3 - 2 * t)
+            }
+        }
+        var wall: Wall?
         /// A range along a map's edge with a cave's mouth in it, rising on past the edge, rather than
         /// hills out in the fields.
         var isCrag: Bool { mouth != nil }
@@ -115,6 +173,7 @@ extension WorldMap {
         func field(_ x: Double, _ y: Double) -> Double {
             var deepest = -Double.infinity
             for lobe in lobes { deepest = max(deepest, lobe.depth(x, y)) }
+            if let wall { deepest = max(deepest, wall.depth(x, y)) }
             return deepest + ripple(x, y)
         }
 
@@ -128,14 +187,29 @@ extension WorldMap {
             let wave = ripple(x, y)
             var highest = 0.0
             for lobe in lobes { highest = max(highest, min(1, (lobe.depth(x, y) + wave) / lobe.band)) }
+            if let wall, let lift = wall.lift(x, y) { highest = max(highest, lift.up) }
             return highest
         }
 
         /// Its height at a point, worked out exactly: each summit gentle at its foot, steepest halfway
         /// up and rounding off onto its top (smoothstep), and the summits blended (the fourth root of
         /// their heights' fourth powers): as high as the highest, a little fuller where two meet, and
-        /// flat ground where none rise.
+        /// flat ground where none rise. A cave's wall (`wall`) stands over the ground at its foot.
         func shape(_ x: Double, _ y: Double) -> CGFloat {
+            let ground = summits(x, y)
+            guard let wall, let lift = wall.lift(x, y) else { return CGFloat(ground) }
+            let top: Double
+            if let base = wall.base {
+                top = max(0, base + lift.height) * lift.width
+            } else {
+                let foot = wall.foot(x, y)
+                top = summits(foot.x, foot.y) + max(0, lift.height) * lift.width
+            }
+            return CGFloat(max(ground, top))
+        }
+
+        /// The summits' blended height at a point (`shape`).
+        private func summits(_ x: Double, _ y: Double) -> Double {
             let wave = ripple(x, y)
             var total = 0.0
             for lobe in lobes {
@@ -143,7 +217,7 @@ extension WorldMap {
                 let height = lobe.peak * s * s * (3 - 2 * s)
                 total += height * height * height * height
             }
-            return CGFloat(total.squareRoot().squareRoot())
+            return total.squareRoot().squareRoot()
         }
 
         /// Straight up summit `index`'s slope from a point (unit length), and how fast its depth

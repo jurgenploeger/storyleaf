@@ -1898,8 +1898,8 @@ final class WorldScene: SKScene {
         let fadeCells = 4
         var target: CGFloat = 0
         for exit in def.exits where session.canTravel(exit) {
-            let distance = map.distance(from: cell, to: exit.edge)
-            guard distance < fadeCells, map.isBeforeWayOut(cell, through: exit.edge, give: 1) else { continue }
+            let distance = map.distance(from: cell, toWayOutThrough: exit.edge)
+            guard distance < fadeCells else { continue }
             target = max(target, CGFloat(fadeCells - distance) / CGFloat(fadeCells) * 0.75)
         }
         if hasLeft { target = 0.85 }

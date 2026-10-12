@@ -170,15 +170,25 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   ledges across its steep rock every 14 points up (`Look.strata`), stones strewn over it but not its
   mouth, and the ground past that edge rock as well. Mist thickens over it from 14 cells out (13 past a
   ridge) to all mist 8 further, at about the ground's height there, so no grass shows past it. The mouth
-  is a doorway in the rock as wide as the road (`HillArt.doorway`): upright on the screen like a door in
-  an isometric wall, its sides straight up and its arched top leaning along the edge, 30 points tall and
-  14 more for each cell of its half-width, black inside, a rim of lighter rock edged dark round it with
-  light on its top. It's painted into the ground, each point where the ground shows that far up the
-  screen, so it stays upright whichever way the slope leans (0.4.6 painted it leaning with the slope, a
-  skewed dark patch that playtesting called weird). On the south and west it faces you too, though a
-  real one would face away up there. You can walk its foot in the map; nothing grows there; and the only
-  way out on that side is through the mouth (`WorldMap.exit(at:)`, since 0.4.7: before, any cell along
-  that edge led into the cave, even on the mountain's foot). 0.4.5 drew
+  is a doorway (`HillArt.doorway`) cut into a wall of rock facing you (`Hill.Wall`, part of the range's
+  ground, so lit, shaded and ledged like the rest): it climbs 50 to 55 points in under a cell, then
+  falls back 8 to 10 points a cell into the slopes behind, full height a cell past the doorway either
+  side, then tapering away (quickly at the end toward you, slowly at the end away, which like the back
+  can be no steeper than the view). On the north and east it's a cliff where the road meets the edge,
+  at the foot of the mountain's face, level with the mouth all along. On the south and west the range's
+  side toward the map faces away from you, where nothing steep can show, so it's a crag beside the
+  road's end in the map, standing on the ground there, its face turned back along the edge toward you
+  and the road; the road runs on along its foot, and you step into the mouth from the side, walking
+  away from you like on the other edges (playtesting 2026-10-12: the doorway alone looked stuck on, and
+  asked for the wall to be taller there). The doorway is upright on the screen like a door in an
+  isometric wall, its sides straight up and its arched top leaning along the face, 30 points tall and
+  14 more for each cell of its half-width (as wide as the road at the road's end, 2.6 cells beside
+  it), black inside, a shadow round its edge and light on the rock over its top. It's painted into the
+  ground, each point where the ground shows that far up the screen, so it stays upright however the
+  face leans (0.4.6 painted it leaning with the slope, a skewed dark patch that playtesting called
+  weird). You can walk its foot in the map; nothing grows there; and the only way out on that side is
+  through the mouth (`WorldMap.exit(at:)`, since 0.4.7: before, any cell along that edge led into the
+  cave, even on the mountain's foot). You come out of the cave on the road in front of it. 0.4.5 drew
   it as the cave's own rock in flat-topped walls (`CaveWalls`) with a dark arch in the face, or on the
   south and west a cleft under an arch; playtesting (2026-10-11) asked for a slope instead of flat tops
   and walls, and for no grass past it. How FO showed its cave entrances isn't in any source reachable
