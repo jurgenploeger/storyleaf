@@ -516,12 +516,13 @@ enum Effects {
     /// Fairyland's destination marker: a swirl on the ground, in Storyleaf's colours and drawn
     /// like the logo's letters: a pale leaf-green line over a forest-green outline. On every
     /// map one of the two stands out: the outline on sand, snow and candy, the line on grass,
-    /// caves and dark woods.
-    static func tapMarker(at point: CGPoint, in parent: SKNode) {
+    /// caves and dark woods. `z`: how deep it sorts, under everything that stands unless it lies on
+    /// raised ground (`WorldScene.flatZ`).
+    static func tapMarker(at point: CGPoint, z: CGFloat = -50_000, in parent: SKNode) {
         let marker = SKNode()
         marker.name = tapMarkerName
         marker.position = point
-        marker.zPosition = -50_000
+        marker.zPosition = z
         parent.addChild(marker)
 
         let spiral = CGMutablePath()
