@@ -6,8 +6,9 @@ import SpriteKit
 /// of whoever walks the deck and the far side behind, so you walk between them. Wood, drawn in
 /// code a pixel at a time like the tiles, in the map's palette.
 enum BridgeArt {
-    /// How far a deck reaches on over the land at an end that meets it, in cells.
-    static let overlap: CGFloat = 0.35
+    /// How far a deck reaches on over the land at an end that meets it, in cells: well onto the bank
+    /// (`WorldMap.bank`), its end posts standing on land. A third of a cell only touched the shore.
+    static let overlap: CGFloat = 0.6
 
     /// The wood, as 0...255 channels.
     private static let plank = (r: 164.0, g: 116.0, b: 70.0)

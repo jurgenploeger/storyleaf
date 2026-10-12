@@ -210,7 +210,11 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   lanes wide out to an island in the middle of as many as asked, and on each a jetty out into it from the shore
   nearest a road, a footpath from both to the road (`layFootpaths`). Bridges are decks of planks drawn in code
   a pixel at a time in the ground's layer, with posts and rails standing along their sides, the near side
-  sorted in front of you and the far side behind (`BridgeArt`). Nothing grows on a bridge or on the bank right
+  sorted in front of you and the far side behind (`BridgeArt`). Since 0.4.14 (playtesting 2026-10-12: Sunny
+  Meadow's bridge "is not fully connected to the land") each end lands on a bank: the water beside it is filled
+  in two cells deep and a lane past either side of the deck (`WorldMap.bank`), and the deck reaches 0.6 of a
+  cell onto it (was 0.35), its end posts on land. Before, where the shore ran right along a bridge's end, the
+  water came up to its corner posts and it only touched the land. Nothing grows on a bridge or on the bank right
   beside its deck (since 0.4.13: playtesting 2026-10-12 found a fern standing on Smiling Forest's bridge, on a
   bank cell beside the deck that only the cells off its ends were kept clear of); reeds grow here and there along the shores,
   more lily pads on a lake than a pond, and the minimap shows the bridges. Rivers: Sunny Meadow, Smiling Forest,

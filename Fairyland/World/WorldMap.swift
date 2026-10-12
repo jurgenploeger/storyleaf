@@ -1890,8 +1890,9 @@ final class WorldMap {
             let saved = (ground: ground, bridges: bridges, bridgeCells: bridgeCells)
             for cell in cells { ground[cell.row][cell.col] = .water }
             if crossings.allSatisfy({ bridge(over: $0, along: line) }), cutOff() <= before {
-                river = cells
-                for cell in cells { occupy(cell, blocking: !bridgeCells.contains(cell)) }
+                // Less the banks filled in at the bridges' ends (`bank(_:)`).
+                river = cells.filter { ground[$0.row][$0.col] == .water }
+                for cell in river { occupy(cell, blocking: !bridgeCells.contains(cell)) }
                 return
             }
             ground = saved.ground
@@ -2025,6 +2026,7 @@ final class WorldMap {
         }
         let bridge = Bridge(kind: kind, northward: northward, lane: first, lanes: lanes, start: start, end: end, landsAtStart: true, landsAtEnd: true)
         lay(bridge)
+        bank(bridge)
         return bridge
     }
 
@@ -2032,6 +2034,22 @@ final class WorldMap {
     private func lay(_ bridge: Bridge) {
         bridges.append(bridge)
         for cell in bridge.cells where contains(cell) && ground[cell.row][cell.col] == .water { bridgeCells.insert(cell) }
+    }
+
+    /// The bank at each end of a bridge, filled in two cells deep and a lane past either side of its
+    /// deck, so it lands on a bank wider than itself. Where the shore ran right along its end, the
+    /// water came up to its corner posts and it only touched the land (playtesting 2026-10-12,
+    /// Sunny Meadow's river).
+    private func bank(_ bridge: Bridge) {
+        for (along, step) in [(bridge.start - 1, -1), (bridge.end + 1, 1)] {
+            for deep in 0..<2 {
+                for lane in (bridge.lane - 1)...(bridge.lane + bridge.lanes) {
+                    let cell = bridge.cell(lane: lane, along: along + step * deep)
+                    guard contains(cell), ground[cell.row][cell.col] == .water else { continue }
+                    ground[cell.row][cell.col] = .ground
+                }
+            }
+        }
     }
 
     /// The road on either bank bent to meet a bridge squarely: a stretch of road from just past
@@ -2113,7 +2131,9 @@ final class WorldMap {
                     for cell in island { ground[cell.row][cell.col] = .water }
                     island = []
                 }
-                jetty(into: water.subtracting(island), clear: island)
+                // Less the banks filled in at its footbridge's ends (`bank(_:)`).
+                let lakeWater = water.subtracting(island).filter { ground[$0.row][$0.col] == .water }
+                jetty(into: lakeWater, clear: island)
                 // A lake that should have an island and has none (no room for one well out in the
                 // water, or no footbridge out to it) is dug again while the next try could still be
                 // big enough for one.
@@ -2126,7 +2146,7 @@ final class WorldMap {
                     continue
                 }
                 if !island.isEmpty { islands -= 1 }
-                let lake = water.subtracting(island)
+                let lake = lakeWater
                 for cell in lake { occupy(cell, blocking: !bridgeCells.contains(cell)) }
                 lakes.append((lake, island))
                 ponds.append(lake.sorted(by: Self.inOrder))
