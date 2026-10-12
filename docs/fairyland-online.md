@@ -200,7 +200,9 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake
   up there after fainting. Mages learn Bridge of Light (Lv 20, 10 MP) to go back to it, and since 0.3.53
-  anyone can buy a Homeward Feather (50 gold, every town shop) that does the same once; since 0.3.54 won
+  anyone can buy a Homeward Feather (50 gold, every town shop) that does the same once; since 0.4.7 both
+  let you choose any town you've been to instead (`TravelPicker`, the checkpoint first; playtesting
+  2026-10-12), going straight there when there's only one, nothing spent until you pick; since 0.3.54 won
   fights drop one now and then (8%), and a beaten boss always does. Arriving by feather, you float down
   in a column of light as feathers spiral down round you; leaving is the same played backward
   (`WorldScene.Feather`, one timeline for both, since 0.4.7: playtesting 2026-10-12 asked for them to match). How FO itself moved players between towns isn't in any source reachable

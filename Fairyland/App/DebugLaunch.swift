@@ -64,6 +64,7 @@ import SpriteKit
 ///   npc=<id>       open an NPC dialog
 ///   info=<item>    with npc=<a shop>: open that item's info card
 ///   worldmap       open the world map
+///   travel         every town visited, and the window for where a Homeward Feather takes you open
 ///   book           open the Monster Book, with the first 24 monsters already met
 ///   page=<monster> with book: open that monster's page
 ///   cards=n        the first n monsters' cards found (and those monsters met), for the Book
@@ -730,6 +731,10 @@ enum DebugLaunch {
         }
         if flags["worldmap"] != nil {
             coordinator.open(.worldMap)
+        }
+        if flags["travel"] != nil {
+            for map in Content.shared.maps where map.fence == true { coordinator.session.markVisited(map.id) }
+            coordinator.open(.destinations(.feather("homeward_feather")))
         }
     }
 }

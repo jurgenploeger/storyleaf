@@ -47,6 +47,15 @@ final class GameCoordinator {
         case trade(Adventurer)
         /// Someone's stats: tapped on the map, or their face in the top-left corner.
         case profile(Profile)
+        /// Which town to travel to (`TravelPicker`), when you've been to more than one.
+        case destinations(Travel)
+    }
+
+    /// A way to a town you've been to: Bridge of Light (the skill's id) or a Homeward Feather (the
+    /// item's id). Its MP or its feather is spent once you pick where.
+    enum Travel: Equatable {
+        case bridge(String)
+        case feather(String)
     }
 
     let session: GameSession
@@ -340,47 +349,78 @@ final class GameCoordinator {
         }
     }
 
-    /// A field spell cast from the Character screen. Bridge of Light carries you to your checkpoint.
+    /// A field spell cast from the Character screen. Bridge of Light carries you to a town you've
+    /// been to.
     private func castField(_ skill: SkillDef) {
         guard battle == nil, skill.id == "bridge_of_light" else { return }
-        let cost = GameSession.mpCost(of: skill, level: session.skillLevel(skill.id))
-        guard session.data.hero.mp >= cost else {
+        guard session.data.hero.mp >= cost(of: skill) else {
             session.post(L("Not enough MP for {skill}.", ["skill": skill.name]))
             return
         }
-        guard let map = Content.shared.map(session.checkpoint.mapID) else { return }
-        session.data.hero.mp -= cost
-        carryHome(to: map, saying: L("A bridge of light carries you to {place}.", ["place": session.checkpointName(session.checkpoint)]))
+        choose(.bridge(skill.id))
     }
 
-    /// A travel item used from the bag (the Homeward Feather): to your checkpoint, like Bridge of
-    /// Light, for any class. One is used up.
+    private func cost(of skill: SkillDef) -> Int {
+        GameSession.mpCost(of: skill, level: session.skillLevel(skill.id))
+    }
+
+    /// A travel item used from the bag (the Homeward Feather): to a town you've been to, like
+    /// Bridge of Light, for any class. One is used up.
     private func travel(with item: ItemDef) {
-        guard battle == nil, item.travel == true, session.count(of: item.id) > 0,
-              let map = Content.shared.map(session.checkpoint.mapID) else { return }
-        guard session.removeItem(item.id) else { return }
-        let line = L("The wind carries you to {place}.", ["place": session.checkpointName(session.checkpoint)])
-        // The bag closes, and the feathers whisk you up before the map changes; you come down
-        // in the same light at the other end (finishLoading).
-        overlay = nil
-        SoundEffects.shared.play(.whoosh)
-        world.featherAway { [weak self] in
-            guard let self else { return }
-            arrivesByFeather = true
-            carryHome(to: map, saying: line, sound: false)
+        guard battle == nil, item.travel == true, session.count(of: item.id) > 0 else { return }
+        choose(.feather(item.id))
+    }
+
+    /// Where to: with one town to go to, straight there; with more, the choice (`TravelPicker`),
+    /// nothing spent until you pick one.
+    private func choose(_ travel: Travel) {
+        let towns = session.travelDestinations
+        guard let only = towns.first else {
+            session.post(L("There's no other town you've been to yet."))
+            return
+        }
+        if towns.count == 1 {
+            depart(travel, to: only)
+            return
+        }
+        overlay = .destinations(travel)
+        world.isInputLocked = true
+        input.move = .zero
+    }
+
+    /// Off to town `mapID` (`travelDestinations`): Bridge of Light spends its MP; a Homeward
+    /// Feather is used up and whisks you away first, the window and the bag closed so you see it.
+    func depart(_ travel: Travel, to mapID: String) {
+        guard battle == nil, session.travelDestinations.contains(mapID), let map = Content.shared.map(mapID) else { return }
+        switch travel {
+        case .bridge(let id):
+            guard let skill = Content.shared.skill(id), session.data.hero.mp >= cost(of: skill) else { return }
+            session.data.hero.mp -= cost(of: skill)
+            carry(to: map, saying: L("A bridge of light carries you to {place}.", ["place": map.name]))
+        case .feather(let id):
+            guard session.removeItem(id) else { return }
+            let line = L("The wind carries you to {place}.", ["place": map.name])
+            // The feathers whisk you up before the map changes; you come down in the same light at
+            // the other end (finishLoading).
+            overlay = nil
+            SoundEffects.shared.play(.whoosh)
+            world.featherAway { [weak self] in
+                guard let self else { return }
+                arrivesByFeather = true
+                carry(to: map, saying: line, sound: false)
+            }
         }
     }
 
     /// Set while a Homeward Feather is carrying you: the next map brings you down in its light.
     @ObservationIgnored private var arrivesByFeather = false
 
-    /// Off to your checkpoint, wherever you are: the menu closes and the map changes.
-    private func carryHome(to map: MapDef, saying line: String, sound: Bool = true) {
-        let checkpoint = session.checkpoint
+    /// Off to a town's square, wherever you are: the window closes and the map changes.
+    private func carry(to map: MapDef, saying line: String, sound: Bool = true) {
         overlay = nil
         session.post(line, .quest)
         if sound { SoundEffects.shared.play(.whoosh) }
-        go(to: map, entry: checkpoint.entry)
+        go(to: map, entry: nil)
     }
 
     func closeOverlay() {

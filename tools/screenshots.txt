@@ -218,6 +218,8 @@ larkspur_terrace | newgame,level=30,map=bluebird,at=0_11,weather=clear,nohud | 8
 # The hero's speech bubble in Prismhaven (its tail is part of the outline).
 bubble         | newgame,map=rainbow_city,say=Welcome traveller! | 6
 feather        | newgame,map=sunny_meadow,feather | 6
+# Where a Homeward Feather takes you, with every town visited: the checkpoint first.
+travel_pick    | newgame,map=sunny_meadow,travel | 6
 # A stranger's card on a danger map: Befriend, Trade and Duel on one line, in English and in French (its longest words).
 card_duel    | newgame,level=45,class=fighter,map=wolf_lair,meet=1 | 10
 card_duel_fr | newgame,level=45,class=fighter,map=wolf_lair,meet=1,lang=fr | 10

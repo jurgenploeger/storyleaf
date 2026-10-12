@@ -1964,6 +1964,27 @@ struct RulesTests {
         #expect(content.item(GameSession.featherID)?.travel == true)
     }
 
+    @Test func teleportsGoToAnyTownYouveBeenTo() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let content = Content.shared
+        let towns = content.maps.filter { $0.fence == true }.map(\.id)
+        // In the first town with nowhere else visited, there's nowhere to go.
+        session.data.mapID = content.startMap
+        #expect(session.travelDestinations.isEmpty)
+        // Out in the wild having been to them all: every town, the checkpoint first.
+        let wild = try #require(content.maps.first { $0.fence != true && $0.encounters != nil })
+        session.data.mapID = wild.id
+        for town in towns { session.markVisited(town) }
+        let home = try #require(towns.last)
+        session.reachCheckpoint(try #require(content.map(home)))
+        #expect(session.travelDestinations.first == home)
+        #expect(Set(session.travelDestinations) == Set(towns))
+        // In one of them: every other one.
+        session.data.mapID = towns[0]
+        #expect(session.travelDestinations.count == towns.count - 1)
+        #expect(!session.travelDestinations.contains(towns[0]))
+    }
+
     @Test func botsAreTagged() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         session.postChat("hi!", from: "Momo", kind: .adventurer)

@@ -40,6 +40,9 @@ struct GameView: View {
                     ChatView(session: coordinator.session, onSay: coordinator.say, onClose: coordinator.closeOverlay)
                 case .profile(let profile):
                     ProfileCard(session: coordinator.session, profile: profile, onClose: coordinator.closeOverlay)
+                case .destinations(let travel):
+                    TravelPicker(session: coordinator.session, travel: travel, onGo: { coordinator.depart(travel, to: $0) },
+                                 onClose: coordinator.closeOverlay)
                 case .npc(let id):
                     if let npc = Content.shared.npc(id) {
                         NPCDialogView(npc: npc, session: coordinator.session, onClose: coordinator.closeOverlay, onFight: coordinator.fightBoss)
