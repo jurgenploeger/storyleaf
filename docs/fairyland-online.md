@@ -572,8 +572,11 @@ the Wishing Seal, which stays the Monster Book's last reward.
     the hill's shadow, while the shade's depth stays midday's (the sky's light fades with the sun's). Trees'
     and rocks' shadows (`Lighting.Shadow`) are a round under them stretched away from the sun along the ground,
     a quarter of their width at midday (as they were) and up to 1.4 widths at sunrise and sunset; the sun's
-    flare sits at the edge of the screen toward it and the sunbeams lean their tops toward it. Before 0.4.7
-    the beams leaned to the upper right, against the flare in the top-left corner. Whether FO's light moved
+    flare comes in along the top of the screen toward it through the morning and sits in the top-left corner
+    from midday on, and the sunbeams lean their tops toward it. Before 0.4.7 the beams leaned to the upper
+    right, against the flare in the top-left corner. In 0.4.7 the flare went on down the left side in the
+    afternoon, where half its glow was on screen and washed out the middle of the map (left of the screen
+    half again as bright at 16hr in the screenshots, 2026-10-12); since 0.4.8 it stays in the corner. Whether FO's light moved
     with its clock isn't in any source we've found; this is ours. Clouds don't soften the shadows yet.
   - Our setting is called Storyleaf in every in-game text (Fairyland until 0.3.50; see Names). In FO the
     continent itself is Mysteria (above), which is also the relaunch's name.

@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.4.8",
+      "date": "2026-10-12",
+      "title": "Afternoon light",
+      "notes": [
+        "In the afternoon the sun's glow stays in the top corner of the screen instead of washing out the left side of the map."
+      ]
+    },
+    {
       "version": "0.4.7",
       "date": "2026-10-11",
       "title": "The way in",
