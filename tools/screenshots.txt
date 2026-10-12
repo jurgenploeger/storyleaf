@@ -190,6 +190,7 @@ crag_east      | newgame,level=30,map=valley_of_fear,at=70_-24    | 8
 crag_south     | newgame,level=40,map=lotus_land,at=0_-32         | 8
 crag_north_land | newgame,level=190,map=emerald_road,at=0_35,landscape | 8
 crag_west_land | newgame,level=12,map=northern_grassland,at=-51_0,landscape | 8
+crag_moon      | newgame,level=100,map=moonglow,at=0_-49,hour=16,weather=clear | 8
 twilight     | newgame,level=40,map=twilight_woods                 | 15
 battle_big   | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,hp=0.3,map=genie_desert,battle=10 | 15
 battle_arrange | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,map=genie_desert,battle=10,arrange | 15
