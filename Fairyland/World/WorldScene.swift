@@ -62,6 +62,8 @@ final class WorldScene: SKScene {
     private var lantern: Lantern?
     /// The minimap with only what you've seen, and which sighting it was drawn for.
     private var fogged: (version: Int, image: UIImage)?
+    /// The minimap with what's round the land (`minimapPicture`), and what it was drawn from.
+    private var surrounded: (version: Int, overviews: Int, picture: MinimapPicture)?
     /// Scenery softens toward the top and bottom of the screen.
     private let focus: DepthOfField
     private var crowd: Crowd?
@@ -1852,6 +1854,59 @@ final class WorldScene: SKScene {
         let image = Self.fog(minimap, seen: session.explored(def.id), columns: map.columns, rows: map.rows)
         fogged = (version, image)
         return image
+    }
+
+    /// The minimap and what's round the land, `margin` cells out each way (`origin` is its south-west
+    /// cell, in this land's cells).
+    struct MinimapPicture {
+        let image: UIImage
+        let origin: GridPoint
+        let columns: Int
+        let rows: Int
+    }
+
+    /// The HUD's minimap with everything round the land, so it shows past the edges too: the lands
+    /// nearby as their own minimaps show them (`WorldOverview`; a dark one only where you've seen)
+    /// and the sea between. Round a cave, its gloom. `overviews`: how many lands `WorldOverview` has
+    /// drawn, so it's drawn again as more come in.
+    func minimapPicture(explored version: Int, overviews: Int) -> MinimapPicture {
+        if let surrounded, surrounded.version == version, surrounded.overviews == overviews { return surrounded.picture }
+        let margin = 40
+        let columns = map.columns + margin * 2, rows = map.rows + margin * 2
+        let own = minimapImage(explored: version)
+        guard let context = CGContext(data: nil, width: columns, height: rows, bitsPerComponent: 8, bytesPerRow: columns * 4,
+                                      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return MinimapPicture(image: own, origin: .init(col: 0, row: 0), columns: map.columns, rows: map.rows) }
+        context.interpolationQuality = .none
+        let onContinent = Continent.origin(of: def) != nil
+        let sea = WorldMap.seaColor
+        if onContinent {
+            context.setFillColor(red: CGFloat(sea.r) / 255, green: CGFloat(sea.g) / 255, blue: CGFloat(sea.b) / 255, alpha: 1)
+        } else {
+            context.setFillColor(red: 13 / 255, green: 31 / 255, blue: 56 / 255, alpha: 1)
+        }
+        context.fill(CGRect(x: 0, y: 0, width: columns, height: rows))
+        let drawn = WorldOverview.shared.images
+        var missing = false
+        for (land, offset) in Continent.lands(near: def, within: margin) {
+            guard var image = drawn[land.id] else {
+                missing = true
+                continue
+            }
+            if land.ambience?.darkness != nil,
+               let fogged = Self.fog(UIImage(cgImage: image), seen: session.explored(land.id), columns: land.width, rows: land.height).cgImage {
+                image = fogged
+            }
+            context.draw(image, in: CGRect(x: offset.col + margin, y: offset.row + margin, width: land.width, height: land.height))
+        }
+        // Lands not drawn yet are laid out in the background (once the HUD's drawn), and the
+        // minimap's drawn again as they come.
+        if missing { Task { WorldOverview.shared.prepare() } }
+        if let image = own.cgImage { context.draw(image, in: CGRect(x: margin, y: margin, width: map.columns, height: map.rows)) }
+        let made = context.makeImage().map { UIImage(cgImage: $0) } ?? own
+        let picture = MinimapPicture(image: made, origin: GridPoint(col: -margin, row: -margin), columns: columns, rows: rows)
+        surrounded = (version, overviews, picture)
+        return picture
     }
 
     /// `image` with every cell you haven't seen painted the minimap window's own dark blue.

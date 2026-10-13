@@ -39,6 +39,10 @@ coast        | newgame,map=meadowbrook,edge=west,landscape,weather=clear,hour=12
 coast_bay    | newgame,map=frog_swamp,edge=west,landscape,weather=clear,hour=12 | 6
 coast_north  | newgame,map=snow_white_forest,edge=north,landscape,weather=clear,hour=12 | 6
 coast_lair   | newgame,map=wolf_lair,edge=south,landscape,weather=clear,hour=12 | 6
+# The land next door built as the game builds it, in the background a few milliseconds a frame (the
+# border scenes above build it at once): the lair's border with the candy land, where playtesting
+# saw its ground missing past the line.
+border_built | newgame,map=wolf_lair,edge=east,landscape,weather=clear,hour=12 | 180
 city_wall    | newgame,map=bluebird,border=smiling_forest,landscape,weather=clear,hour=12 | 6
 city_gate    | newgame,map=goldburg,border=valley_of_fear,landscape,weather=clear,hour=12 | 6
 battle       | newgame,map=sunny_meadow,battle   | 15

@@ -26,7 +26,7 @@ struct WorldHUD: View {
 
             VStack(alignment: .trailing, spacing: 6) {
                 MinimapWindow(
-                    image: coordinator.world.minimapImage(explored: session.exploredVersion),
+                    picture: coordinator.world.minimapPicture(explored: session.exploredVersion, overviews: WorldOverview.shared.images.count),
                     name: session.mapName,
                     cell: session.mapCell,
                     dots: session.minimapDots,
@@ -420,7 +420,8 @@ private struct SystemLog: View {
 /// A framed minimap window around the hero, with Fairyland's coordinates on a plate in its corner.
 /// Tap for the full map.
 private struct MinimapWindow: View {
-    let image: UIImage
+    /// The land's map and what's round it (`WorldScene.minimapPicture`).
+    let picture: WorldScene.MinimapPicture
     let name: String
     let cell: GridPoint
     let dots: [GameSession.MinimapDot]
@@ -476,13 +477,13 @@ private struct MinimapWindow: View {
                     Color.clear
                         .frame(width: layer, height: layer)
                         .overlay(alignment: .topLeading) {
-                            Image(uiImage: image)
+                            Image(uiImage: picture.image)
                                 .interpolation(.none)
                                 .resizable()
-                                .frame(width: CGFloat(columns) * zoom, height: CGFloat(rows) * zoom)
+                                .frame(width: CGFloat(picture.columns) * zoom, height: CGFloat(picture.rows) * zoom)
                                 .offset(
-                                    x: layer / 2 - (CGFloat(cell.col) + 0.5) * zoom,
-                                    y: layer / 2 - (CGFloat(rows - 1 - cell.row) + 0.5) * zoom
+                                    x: layer / 2 - (CGFloat(cell.col - picture.origin.col) + 0.5) * zoom,
+                                    y: layer / 2 - (CGFloat(picture.rows - 1 - (cell.row - picture.origin.row)) + 0.5) * zoom
                                 )
                         }
                         .rotationEffect(.degrees(-45))

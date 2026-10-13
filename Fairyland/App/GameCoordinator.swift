@@ -221,6 +221,7 @@ final class GameCoordinator {
         land.friendsElsewhere = world.visitingFriends
         nextDoor[id] = land
         await land.build(pace: .hurried) { _ in }
+        _ = land.minimap
         buildingNextDoor = nil
         world.show(land, as: neighbour)
     }
@@ -239,6 +240,8 @@ final class GameCoordinator {
             land.friendsElsewhere = away
             nextDoor[def.id] = land
             await land.build(pace: .background) { _ in }
+            // Its picture for the minimap and the world map (`WorldOverview`).
+            _ = land.minimap
             if buildingNextDoor == def.id { buildingNextDoor = nil }
         }
     }

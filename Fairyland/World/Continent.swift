@@ -136,6 +136,19 @@ enum Continent {
         return Coast(origin: origin, lands: near, crossings: crossings)
     }
 
+    /// The other lands within `reach` cells of `here`'s edges, each with its south-west cell in
+    /// `here`'s cells (none for a cave): what shows round it on the minimap.
+    static func lands(near here: MapDef, within reach: Int) -> [(def: MapDef, offset: GridPoint)] {
+        guard let origin = origin(of: here) else { return [] }
+        return lands.compactMap { land in
+            guard land.def.id != here.id else { return nil }
+            let low = GridPoint(col: land.origin.col - origin.col, row: land.origin.row - origin.row)
+            guard low.col + land.def.width > -reach, low.row + land.def.height > -reach,
+                  low.col < here.width + reach, low.row < here.height + reach else { return nil }
+            return (land.def, low)
+        }
+    }
+
     /// Whether a cell of `here` (in its cells, past its edges) lies in any land.
     static func isLand(_ cell: GridPoint, from here: MapDef) -> Bool {
         guard let origin = origin(of: here) else { return false }

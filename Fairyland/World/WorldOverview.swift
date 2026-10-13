@@ -12,19 +12,29 @@ final class WorldOverview {
     /// Each land's picture, by id.
     private(set) var images: [String: CGImage] = [:]
     @ObservationIgnored private var making = false
+    /// Pictures handed in while the HUD's being drawn (a minimap made for it), shown a moment later.
+    @ObservationIgnored private var pending: [String: CGImage] = [:]
 
-    /// A land's picture, drawn already (its minimap).
+    /// A land's picture, drawn already (its minimap). It may come in while SwiftUI's drawing the
+    /// HUD, so it's added once that's done.
     func remember(_ id: String, _ image: CGImage) {
-        guard images[id] == nil else { return }
-        images[id] = image
+        guard images[id] == nil, pending[id] == nil else { return }
         save(id, image)
+        pending[id] = image
+        guard pending.count == 1 else { return }
+        Task { self.flush() }
+    }
+
+    private func flush() {
+        images.merge(pending) { kept, _ in kept }
+        pending = [:]
     }
 
     /// Fills in every land on the continent that isn't drawn yet: from disk, else laid out in the
     /// background, one at a time, each showing as it's done.
     func prepare() {
         let content = Content.shared
-        let missing = content.maps.filter { content.world[$0.id] != nil && images[$0.id] == nil }
+        let missing = content.maps.filter { content.world[$0.id] != nil && images[$0.id] == nil && pending[$0.id] == nil }
         for def in missing {
             if let image = load(def.id) { images[def.id] = image }
         }
@@ -34,7 +44,7 @@ final class WorldOverview {
         making = true
         let caves = WorldMap.caves
         Task {
-            for job in jobs where images[job.def.id] == nil {
+            for job in jobs where images[job.def.id] == nil && pending[job.def.id] == nil {
                 let def = job.def, coast = job.coast
                 let map = await Task.detached(priority: .utility) { WorldMap(def: def, caves: caves, coast: coast) }.value
                 remember(def.id, WorldScene.overview(of: map, art: ArtLibrary.shared))
