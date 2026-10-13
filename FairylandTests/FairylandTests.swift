@@ -257,17 +257,32 @@ struct ContentTests {
                                 "\(def.id) | \(here.def.id): open on one side only, \(along) along")
                     }
                 }
-                // The line between them wanders the same from either side (`Seam`), turned round.
+                // The band where one gives way to the other is the same from either side (`Seam`):
+                // its middle line wanders the same, turned round, and every cell across it shows
+                // the same land's ground whichever of the two works it out.
                 let seam = Continent.coast(of: def)?.seams.first { $0.neighbour == here.def.id }
                 let other = Continent.coast(of: here.def)?.seams.first { $0.neighbour == def.id }
-                #expect((seam == nil) == (other == nil), "\(def.id) | \(here.def.id): a wandering line from one side only")
-                #expect((seam == nil) == here.town, "\(def.id) | \(here.def.id): a wandering line beside a town, or none between lands")
+                #expect((seam == nil) == (other == nil), "\(def.id) | \(here.def.id): a band from one side only")
+                #expect((seam == nil) == here.town, "\(def.id) | \(here.def.id): a band beside a town, or none between lands")
                 if let seam, let other {
                     for step in 0...(here.span.count * 4) {
                         let along = Double(here.span.lowerBound) + Double(step) / 4
                         #expect(abs(seam.offset(at: along) + other.offset(at: along - Double(shift))) < 1e-9,
-                                "\(def.id) | \(here.def.id): the line between them differs from each side, \(along) along")
+                                "\(def.id) | \(here.def.id): the band's middle differs from each side, \(along) along")
                     }
+                    var differ = 0
+                    for along in stride(from: here.span.lowerBound, through: here.span.upperBound, by: 2) {
+                        for inward in -Seam.depth..<Seam.depth {
+                            let cell: GridPoint = switch here.edge {
+                            case .east: GridPoint(col: def.width - 1 - inward, row: along)
+                            case .west: GridPoint(col: inward, row: along)
+                            case .north: GridPoint(col: along, row: def.height - 1 - inward)
+                            case .south: GridPoint(col: along, row: inward)
+                            }
+                            if seam.showsOther(cell) == other.showsOther(here.local(cell)) { differ += 1 }
+                        }
+                    }
+                    #expect(differ == 0, "\(def.id) | \(here.def.id): \(differ) cells of the band show a different land from each side")
                 }
                 // The sea comes in the same at the line from either side (`Coast`), so the wall along
                 // it stops in the same place and you can't step over into the sea.

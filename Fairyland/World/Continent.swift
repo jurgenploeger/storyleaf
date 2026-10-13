@@ -159,8 +159,8 @@ enum Continent {
     }
 
     /// Where `here` lies among the lands, for the sea to come in over its coast (`Coast`): the lands
-    /// near it and where roads cross between them, in its cells; and the wandering lines it meets
-    /// the lands beside it along (`Seam`), but a town's. Nil for a cave.
+    /// near it and where roads cross between them, in its cells; and the bands it gives way to the
+    /// lands beside it over (`Seam`), but a town's. Nil for a cave.
     static func coast(of here: MapDef) -> Coast? {
         guard let origin = origin(of: here) else { return nil }
         let reach = Coast.margin
@@ -185,15 +185,8 @@ enum Continent {
         }
         let seams = neighbours(of: here).compactMap { neighbour -> Seam? in
             guard !neighbour.town else { return nil }
-            let vertical = neighbour.edge == .east || neighbour.edge == .west
-            let line: Int = switch neighbour.edge {
-            case .east: origin.col + here.width
-            case .west: origin.col
-            case .north: origin.row + here.height
-            case .south: origin.row
-            }
             return Seam(neighbour: neighbour.def.id, edge: neighbour.edge, span: neighbour.span, columns: here.width, rows: here.height,
-                        start: vertical ? origin.row : origin.col, line: line, sign: here.id < neighbour.def.id ? 1 : -1)
+                        origin: origin, sign: here.id < neighbour.def.id ? 1 : -1)
         }
         return Coast(origin: origin, lands: near, crossings: crossings, seams: seams)
     }

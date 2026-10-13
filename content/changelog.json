@@ -2,6 +2,16 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.5.2",
+      "date": "2026-10-13",
+      "title": "Lands that run into each other",
+      "notes": [
+        "Where two lands meet there's no line any more: one gives way to the other across a wide band, the other land's ground coming in patches, a few at first, then more and more, with its own trees and plants growing on them.",
+        "Past a border there's always the land next door: until it's built, its ground shows as it does on the world map, never an empty gap.",
+        "Walking keeps its pace while the game builds the land ahead of you."
+      ]
+    },
+    {
       "version": "0.5.1",
       "date": "2026-10-13",
       "title": "Coasts and the world map",

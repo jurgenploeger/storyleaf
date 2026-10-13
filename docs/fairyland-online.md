@@ -296,6 +296,12 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   - The lands next door (`Continent.neighbours`) are laid out off the main thread and built a few
     milliseconds a frame (`WorldScene.Pace.background`) once you're within 48 cells of their border, then
     shown past it (their layer moved into the scene you're in, `WorldScene.show(_:as:)`); let go past 64.
+    Until then (since 0.5.2, playtesting 2026-10-13: "the maps are broken and still not one big
+    continuous map", from a screenshot of nothing past the border at night) every land within 64 cells
+    lies flat on the ground as its world map picture (`WorldScene.placeFarLands`), so there's never a
+    gap. Movement goes by the time that's passed up to an eighth of a second a frame (it was a
+    twentieth), so a frame the background build makes late doesn't slow your walking ("walking around
+    feels slower").
     Walking over hands the scene over with no card (`takeOver`): the hero, companion, party and camera
     carry on where they were, the land you left shows next door in its turn. Not built yet when you step
     over: behind the card as before, where you crossed.
@@ -313,19 +319,26 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     there should be a city wall"; drawn in code, the grey of the town gate's stone), the gate opening
     once the quest's done. `BorderArt` draws them the same from both lands, on the line between them.
     A town's own picket fence stays inside.
-  - Seams (since 0.5.1, playtesting 2026-10-13: "the different lands still look too squared, it needs
-    to blend together more naturally and in different shapes"): two lands' ground meets along a line
-    wandering up to 16 cells either side of the straight border, in three waves of noise along it (52,
-    18 and 7 cells), coming back to the border over 16 cells at either end of the stretch they share
-    (`Seam`, worked out in world cells so both lands draw the same line). Past it a land shows the next
-    land's ground graded with that land's palette, chequered a pixel or so either side of the line
-    (`ArtLibrary.Over`), grows that land's scenery as thickly as it grows there (`placeSeamProps`), keeps
-    its own accent patches a cell short of it, and shows the next land's colour on the minimap and the
-    world map (`WorldMap.foreign`). Only drawn: where you walk and whose cells they are still stops at
-    the straight line. Not beside a town, whose wall stands on the line.
-    A wash of the next land's colour fades in over the 9 cells either side of the line
-    (`WorldScene.blendBand`), as RuneScape blends its ground's colours (0.5.0's first draft also scattered
-    the next land's own ground tiles there, which read as a checkerboard where the two differ); the tint, haze, sun flare,
+  - Seams (since 0.5.2; playtesting 2026-10-13: "the different lands still look too squared, it needs
+    to blend together more naturally and in different shapes", then "you shouldn't see a hard line,
+    but the environment should change into the other naturally, so the ground slowly shows more of
+    the other area, same for the scenery"): two lands give way to each other across a band 20 cells
+    either side of a middle line that wanders up to 10 cells either side of the straight border (52,
+    18 and 7 cell waves of noise), the band narrowing over 16 cells to the corners where a third land
+    or the coast takes over (`Seam`, worked out in world cells so both lands draw the same band; a
+    test checks every cell). Across it the other land's ground comes in patches, by patchy noise over
+    the continent against the other land's share (none 20 cells in, half on the line, all 20 past),
+    graded with that land's palette and drawn as soft rounded blobs, as an accent's patches are
+    (`ArtLibrary.GroundLayer.from`). The other land's scenery grows on its patches as thickly as it
+    grows there, this land's on its own (`placeSeamProps`), the land's accent keeps out of the band,
+    and the minimap and the world map show the patches (`WorldMap.foreign`). Only drawn: where you
+    walk and whose cells they are still stops at the straight line. Not beside a town, whose wall
+    stands on the line. 0.5.1 drew one winding line instead, each side all one land's: a hard
+    edge, if a curved one.
+    A wash of the two lands' colours, mixed as their ground is, lies over the band, strongest on its
+    middle line, so the patches' colours run into each other (`WorldScene.blendBand`, as RuneScape
+    blends its ground's colours; 0.5.0's first draft scattered the next land's own ground tiles one
+    by one, which read as a checkerboard where the two differ); the tint, haze, sun flare,
     particles and weather fade out over the last 10 cells toward a border you can cross and in again past it
     (`mood`), and the light and cloud shade carry on across.
   - The sea (playtesting 2026-10-13: "everything outside of the land should be sea"): all round the

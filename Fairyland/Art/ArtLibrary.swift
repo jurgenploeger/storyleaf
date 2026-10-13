@@ -291,6 +291,15 @@ final class ArtLibrary {
         /// the 5×5 around it (bit `row * 5 + col`, bit 12 is the cell itself).
         let mask: Int
         let style: Style
+        /// A land next door's tile, graded with its palette as it is there, not this land's: its
+        /// ground in patches across the band between the two (`Seam`).
+        var from: Foreign? = nil
+    }
+
+    /// A land next door, for its tiles (`GroundLayer.from`).
+    nonisolated struct Foreign: Sendable {
+        let land: String
+        let palette: MapPalette?
     }
 
     /// One of four versions of a tile (0 is the tile itself). The others show the texture shifted
@@ -345,17 +354,6 @@ final class ArtLibrary {
         return out
     }
 
-    /// The ground of a land next door where it comes over the line onto the land being drawn
-    /// (`Seam`): its tile, graded with its palette as it is there, and which side of the line each
-    /// point of the cell lies (`Seam.side(across:)`: below 0 past it, in the cell's own coordinates
-    /// as `organicTile` has them, -0.5...0.5, x east and y north).
-    struct Over {
-        let land: String
-        let tile: String
-        let palette: MapPalette?
-        let side: (Double, Double) -> Double
-    }
-
     /// Another land's tiles, graded with its palette, by land, tile, version and size: kept whatever
     /// map the library grades for, a few lands' ground at most.
     private var foreignVariants: [String: [UInt8]] = [:]
@@ -369,8 +367,8 @@ final class ArtLibrary {
         return made
     }
 
-    /// Version `variant` of a land next door's tile, graded as it is there (`Over`), for a cell all
-    /// past the line, the size of this land's `base` tile.
+    /// Version `variant` of a land next door's tile, graded as it is there (`Foreign`), for a cell
+    /// all its ground, the size of this land's `base` tile.
     func foreignTile(_ id: String, palette: MapPalette?, from land: String, variant: Int, base: String) -> SKTexture {
         let key = "foreign|\(land)|\(id)|\(variant % 4)"
         if let cached = blended[key] { return cached }
@@ -386,37 +384,27 @@ final class ArtLibrary {
     /// every tile. Water is a smooth field over the 5×5 cells around, so shores curve freely instead
     /// of following cell edges, and wobbles with its place on the map (`cell`). Either way
     /// neighbouring tiles meet seamlessly. Roads get a darker rim, water a foamy edge and a damp bank.
-    /// Shoreline tiles are unique anyway, so they also use tile variant `variant`. `over`: a land
-    /// next door's ground past the line it meets this one along, under the layers (`Over`; unique too).
-    func organicTile(base: String, layers: [GroundLayer], cell: GridPoint, variant: Int, over: Over? = nil) -> SKTexture {
+    /// Shoreline tiles are unique anyway, so they also use tile variant `variant`. A patch layer
+    /// `from` a land next door is its ground, graded as it is there.
+    func organicTile(base: String, layers: [GroundLayer], cell: GridPoint, variant: Int) -> SKTexture {
         let hasWater = layers.contains { $0.style == .water || $0.style == .cut }
-        let unique = hasWater || over != nil
-        let place = unique ? "@\(cell.col),\(cell.row)#\(variant)" + (over.map { "|over:" + $0.land } ?? "") : ""
-        let key = "organic|\(base)|" + layers.map { "\($0.tile):\($0.mask):\($0.style)" }.joined(separator: "|") + place
+        let place = hasWater ? "@\(cell.col),\(cell.row)#\(variant)" : ""
+        let key = "organic|\(base)|" + layers.map { "\($0.tile):\($0.mask):\($0.style):\($0.from?.land ?? "")" }.joined(separator: "|") + place
         if let cached = blended[key] { return cached }
         let size = max(tileImage(base).width, 16)
-        let pick = unique ? variant : 0
+        let pick = hasWater ? variant : 0
         var out = variantPixels(base, pick, size: size)
-        if let over {
-            // Past the line the land next door's ground, the pixels either side of it chequered, as
-            // pixel art blends two grounds.
-            let other = foreignPixels(over.tile, palette: over.palette, from: over.land, variant: pick, size: size)
-            let blend = 1.4 / Double(size)
-            for py in 0..<size {
-                for px in 0..<size {
-                    let x = (Double(px) + 0.5) / Double(size) - 0.5, y = 0.5 - (Double(py) + 0.5) / Double(size)
-                    let side = over.side(x, y)
-                    let past = abs(side) < blend ? (px + py) % 2 == 0 : side < 0
-                    guard past else { continue }
-                    let index = (py * size + px) * 4
-                    for c in 0..<4 { out[index + c] = other[index + c] }
-                }
-            }
-        }
         let rim = 1.2 / Double(size)
         for layer in layers {
             let shore = layer.style == .water || layer.style == .cut
-            let texels = layer.style == .cut ? [] : variantPixels(layer.tile, pick, size: size)
+            let texels: [UInt8]
+            if layer.style == .cut {
+                texels = []
+            } else if let from = layer.from {
+                texels = foreignPixels(layer.tile, palette: from.palette, from: from.land, variant: pick, size: size)
+            } else {
+                texels = variantPixels(layer.tile, pick, size: size)
+            }
             let segments: [(x0: Double, y0: Double, x1: Double, y1: Double)] = shore ? [] : Self.strokes(mask: layer.mask)
             let pools: [(x: Double, y: Double)] = shore ? Self.pools(mask: layer.mask) : []
             let radius: Double = switch layer.style {
