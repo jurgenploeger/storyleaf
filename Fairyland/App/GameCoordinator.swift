@@ -184,11 +184,15 @@ final class GameCoordinator {
     /// you can see past it, with time to build it at a walk), and how far you go before it's let go.
     private static let buildWithin = 48
     private static let keepWithin = 64
+    /// Debug launches (`border`): the land next door is built at once for the screenshot
+    /// (`showNextDoorForDebug`), not in the background as you near it.
+    @ObservationIgnored var holdsNextDoor = false
 
     /// Every half second, the land you're in says how far each land next door is: the nearest not
     /// built yet starts building, the built ones near enough show past their borders, and those
     /// left far behind are let go.
     private func landsNear(_ near: [(neighbour: Continent.Neighbour, distance: Int)]) {
+        guard !holdsNextDoor else { return }
         let here = world
         let shown = here.shownNextDoor
         for (neighbour, distance) in near {

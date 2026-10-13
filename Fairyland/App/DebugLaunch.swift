@@ -710,6 +710,7 @@ enum DebugLaunch {
         // `cross` you walk over into it); only then is the scene ready for its screenshot.
         #if DEBUG
         if let id = flags["border"] {
+            coordinator.holdsNextDoor = true
             Task {
                 for _ in 0..<480 {
                     try? await Task.sleep(for: .milliseconds(500))
