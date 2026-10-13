@@ -20,7 +20,8 @@ lakes and hills it was placed for, and only its last stretch bends: `WorldMap.ca
     python3 tools/world_layout.py --check --preview out.png   # the same, of world.json as it is
 
 The preview draws the coasts as the game lets the sea in over them (`coast`, after
-Fairyland/World/Coast.swift: keep the two in step).
+Fairyland/World/Coast.swift) and the wandering lines two lands' ground meets along (`seam_offset`,
+after Fairyland/World/Seam.swift): keep them in step.
 
 Needs numpy and scipy.
 """
@@ -361,6 +362,78 @@ def coast(lands, origins, left, bottom, width, height):
     return sea
 
 
+# Where two lands meet, the line between them wanders up to SEAM_REACH cells either side of the
+# straight border, in two waves of noise along it (every SEAM_WAVES cells), coming back to the
+# border over the last SEAM_TAPER cells at either end of the stretch they share. Not beside a town,
+# whose walls stand on the border.
+SEAM_REACH, SEAM_TAPER = 16.0, 16.0
+SEAM_WAVES = ((52, 0x5EA, 1.0), (18, 0x5EB, 0.5), (7, 0x5EC, 0.18))
+
+
+def seam_offset(along, line, low, high, sign):
+    """How far into the land `sign` is +1 for (the first of the two by id) the line between two
+    lands lies at `along` (in world cells along the border, which lies at `line` across it; the two
+    share low...high): `Seam.offset` in Fairyland/World/Seam.swift (keep the two in step)."""
+    end = min(along - low, high - along)
+    if end <= 0:
+        return 0.0
+    t = min(1.0, end / SEAM_TAPER)
+    wave = sum(_value(along, line, every, seed) * weight for every, seed, weight in SEAM_WAVES)
+    wave /= sum(weight for _, _, weight in SEAM_WAVES)
+    return sign * (wave * 2 - 1) * SEAM_REACH * t * t * (3 - 2 * t)
+
+
+def borders(lands, origins):
+    """Every pair of lands sharing a stretch of border, neither a town: (first, second, the edge of
+    the first it runs along, where the border lies across, the world cells along it they share)."""
+    found = []
+    ids = sorted(origins)
+    for i, a in enumerate(ids):
+        for b in ids[i + 1:]:
+            if lands[a].get("fence") or lands[b].get("fence"):
+                continue
+            (ax, ay), (bx, by) = origins[a], origins[b]
+            aw, ah, bw, bh = lands[a]["width"], lands[a]["height"], lands[b]["width"], lands[b]["height"]
+            rows = (max(ay, by), min(ay + ah, by + bh))
+            columns = (max(ax, bx), min(ax + aw, bx + bw))
+            if ax + aw == bx and rows[0] < rows[1]:
+                found.append((a, b, "east", bx, rows))
+            elif bx + bw == ax and rows[0] < rows[1]:
+                found.append((a, b, "west", ax, rows))
+            elif ay + ah == by and columns[0] < columns[1]:
+                found.append((a, b, "north", by, columns))
+            elif by + bh == ay and columns[0] < columns[1]:
+                found.append((a, b, "south", ay, columns))
+    return found
+
+
+def looks(lands, origins, left, bottom, width, height):
+    """Which land's ground shows at each cell from (left, bottom): its index in sorted(origins), or
+    -1 in no land. Each land's own, but past the wandering line between two lands, the other's."""
+    import numpy as np
+    ids = sorted(origins)
+    look = np.full((height, width), -1, int)
+    for index, land_id in enumerate(ids):
+        x, y = origins[land_id]
+        look[y - bottom:y - bottom + lands[land_id]["height"], x - left:x - left + lands[land_id]["width"]] = index
+    for a, b, edge, line, (low, high) in borders(lands, origins):
+        for along in range(low, high):
+            offset = seam_offset(along + 0.5, line, low, high, 1)
+            for cell in range(line - int(SEAM_REACH) - 2, line + int(SEAM_REACH) + 2):
+                # How far the cell's middle is into the first land, from the border.
+                inward = (line - cell - 0.5) if edge in ("east", "north") else (cell + 0.5 - line)
+                if 0 < inward < offset:
+                    shown = ids.index(b)
+                elif offset < inward < 0:
+                    shown = ids.index(a)
+                else:
+                    continue
+                col, row = (cell - left, along - bottom) if edge in ("east", "west") else (along - left, cell - bottom)
+                if 0 <= row < height and 0 <= col < width:
+                    look[row, col] = shown
+    return look
+
+
 def preview(lands, origins, path):
     import numpy as np
     from PIL import Image, ImageDraw
@@ -374,11 +447,9 @@ def preview(lands, origins, path):
     sea = coast(lands, origins, left, bottom, right - left, top - bottom)
     cells = np.zeros((top - bottom, right - left, 3), np.uint8)
     cells[:] = (59, 127, 192)
-    for land_id, (x, y) in origins.items():
-        land = lands[land_id]
-        rows, cols = slice(y - bottom, y - bottom + land["height"]), slice(x - left, x - left + land["width"])
-        ground = cells[rows, cols]
-        ground[~sea[rows, cols]] = colours.get(land["theme"]["ground"], (200, 200, 200))
+    look = looks(lands, origins, left, bottom, right - left, top - bottom)
+    for index, land_id in enumerate(sorted(origins)):
+        cells[(look == index) & ~sea] = colours.get(lands[land_id]["theme"]["ground"], (200, 200, 200))
     # North up: the picture's rows run top down.
     image = Image.fromarray(cells[::-1]).resize(((right - left) * scale, (top - bottom) * scale), Image.NEAREST)
     draw = ImageDraw.Draw(image)
@@ -388,7 +459,6 @@ def preview(lands, origins, path):
 
     for land_id, (x, y) in origins.items():
         land = lands[land_id]
-        draw.rectangle(box(x, y, land["width"], land["height"]), outline=(0, 0, 0, 60))
         draw.text(((x - left + 3) * scale, (top - y - land["height"] + 3) * scale), land_id, fill=(0, 0, 0))
         for exit in land["exits"]:
             edge, at = exit["edge"], crossing(exit)

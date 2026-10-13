@@ -15,9 +15,11 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   `Brand` in `Fairyland/UI/BrandSky.swift` holds the same values, so change both together.
 - `content/world.json` + `tools/world_layout.py`: the lands as one continent (where each lies, in world cells); the
   tool solves it so roads meet across borders (an exit's `meets`) and `check_content.py` checks it. Rerun it after
-  changing a map's size or exits. `Fairyland/World/Continent.swift` reads it: neighbours, open and walled borders,
+  changing a map's size or exits. `Fairyland/World/Continent.swift` reads it: neighbours, open and walled borders
+  (a border opens along its length once a road you can take joins the two lands, so none skips a quest),
   and the sea all round (`BorderArt` draws the fences, rocks and city walls). `Coast.swift` lets the sea in over
-  the coasts (natural shapes, lower than the land; `tools/world_layout.py --check --preview out.png` draws them).
+  the coasts (natural shapes, lower than the land); `Seam.swift` wanders the line two lands' ground meets along
+  (`tools/world_layout.py --check --preview out.png` draws both; keep its mirrors in step).
   The world map (`WorldAtlas`) shows every land's minimap where it lies (`WorldOverview`, cached on disk). Lands next door are built in the background and shown past the border (`WorldScene.show(_:as:)`);
   you walk over with no loading card (`takeOver`). Caves still load behind the card.
 - `content/*.json`: all game data (maps, monsters, skills, items, quests, music, looks, crowd, announcements, titles,

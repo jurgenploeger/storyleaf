@@ -294,6 +294,7 @@ final class WorldScene: SKScene {
         placeOutcrops()
         await breathe()
         await placeProps()
+        await placeSeamProps()
         placeSignposts()
         placeBorders()
         // Everyone set down before they were on the map stands up on the ground under them.
@@ -480,6 +481,23 @@ final class WorldScene: SKScene {
             }
             return bits
         }
+        // Where a land next door's ground comes over the line onto this one (`Seam`): past it, its
+        // ground, graded as it is there; across a cell the line runs through, the two either side of
+        // it, chequered along it (`ArtLibrary.Over`).
+        let seams: [(seam: Seam, land: MapDef)] = map.seams.compactMap { seam in Content.shared.map(seam.neighbour).map { (seam: seam, land: $0) } }
+        let blend = 0.05
+        func across(_ cell: GridPoint) -> (seam: Seam, land: MapDef, all: Bool)? {
+            var best: (seam: Seam, land: MapDef, low: Double, high: Double)?
+            for (seam, land) in seams {
+                guard let sides = seam.sides(of: cell), sides.low < blend else { continue }
+                if let known = best, known.low <= sides.low { continue }
+                best = (seam, land, sides.low, sides.high)
+            }
+            guard let best else { return nil }
+            return (best.seam, best.land, best.high < -blend)
+        }
+        // The cells the line runs through are drawn a pixel at a time: a breath every so many.
+        var crossed = 0
         var picks: [(col: Int, row: Int, group: SKTileGroup?)] = []
         // The land's cells within two of the sea, for its bank.
         var shoreline: [(col: Int, row: Int)] = []
@@ -511,11 +529,28 @@ final class WorldScene: SKScene {
                 if near != 0 { shoreline.append((col, row)) }
                 let coast = near == 0 ? 0 : shore(cell)
                 if coast != 0 { layers.append(.init(tile: base, mask: near, style: .cut)) }
+                let over = across(cell)
                 let chosen: SKTileGroup
                 if pond == full, coast == 0 {
                     chosen = waterVaries ? plain(waterID, variant) : water
                 } else if road == full, pond == 0, coast == 0 {
                     chosen = plain(theme.path, variant)
+                } else if let over, over.all, layers.isEmpty {
+                    let land = over.land
+                    chosen = group("foreign|\(land.id)#\(variant)") {
+                        art.foreignTile(land.theme.ground, palette: land.theme.palette, from: land.id, variant: variant, base: base)
+                    }
+                } else if let over {
+                    // Unique, as a shoreline's is: the line runs its own way through every cell.
+                    let land = over.land
+                    let side = over.seam.side(across: cell)
+                    let key = base + "|" + layers.map { "\($0.style)\($0.mask)" }.joined(separator: "|") + "@\(col),\(row)|over:" + land.id
+                    chosen = group(key) {
+                        art.organicTile(base: base, layers: layers, cell: cell, variant: variant,
+                                        over: ArtLibrary.Over(land: land.id, tile: land.theme.ground, palette: land.theme.palette, side: side))
+                    }
+                    crossed += 1
+                    if crossed % 32 == 0 { await breathe() }
                 } else if layers.isEmpty {
                     chosen = plain(base, variant)
                 } else if let accent = theme.accent, patch == full, road == 0, pond == 0, coast == 0 {
@@ -567,7 +602,7 @@ final class WorldScene: SKScene {
         // the tiles themselves whole: tiles of the land next door scattered in read as a checkerboard
         // where the two differ).
         for neighbour in neighbours {
-            grid.addChild(blendBand(toward: neighbour))
+            grid.addChild(blendBand(toward: neighbour, seam: map.seams.first { $0.neighbour == neighbour.def.id }))
         }
         // Bridges' decks lie on the water with the ground (`BridgeArt`; their rails stand in the
         // world, `placeBridges`).
@@ -702,17 +737,23 @@ final class WorldScene: SKScene {
 
     /// How many cells in from a border the land next door's colour reaches (`makeGround`).
     private static let blendReach = 9
+    /// How many texels a cell the wash has across, so it turns from one land's colour to the
+    /// other's where the line runs through a cell, not at the cell's edge.
+    private static let blendFineness = 4
 
     /// A wash of the land next door's ground colour (graded by its palette) along the border with
     /// it, strongest on the line between them and fading to nothing `blendReach` cells in, laid
     /// on the ground (grid space). The land next door lays the same wash of this land's colour on
-    /// its side, so at the line both show half of each. One pixel a cell, smoothed: none over the
-    /// sea or the land's edge along it (its bank shows there), and fading out toward the ends of the
-    /// stretch they share.
-    private func blendBand(toward neighbour: Continent.Neighbour) -> SKNode {
+    /// its side, so at the line both show half of each. Where the line wanders (`seam`), it follows
+    /// it: past it, over the land next door's ground come onto this one, a wash of this land's
+    /// colour instead, as the land next door lays over its own ground there. Over the band along the
+    /// border only, `blendFineness` texels a cell, smoothed: none over the sea or the land's edge
+    /// along it (its bank shows there), and fading out toward the ends of the stretch they share.
+    private func blendBand(toward neighbour: Continent.Neighbour, seam: Seam?) -> SKNode {
         let tile = WorldMap.tileSize
         let image = art.gradedTile(neighbour.def.theme.ground, palette: neighbour.def.theme.palette)
         let (r, g, b) = image.map { Self.averageColor(of: $0) } ?? (0.5, 0.5, 0.5)
+        let own = art.gradedTile(def.theme.ground, palette: def.theme.palette).map { Self.averageColor(of: $0) } ?? (0.5, 0.5, 0.5)
         let columns = map.columns, rows = map.rows
         func nearSea(_ cell: GridPoint) -> Bool {
             for dr in -1...1 {
@@ -724,29 +765,71 @@ final class WorldScene: SKScene {
             }
             return false
         }
-        var pixels = [UInt8](repeating: 0, count: columns * rows * 4)
-        let reach = CGFloat(Self.blendReach)
-        for row in 0..<rows {
-            for col in 0..<columns {
-                let cell = GridPoint(col: col, row: row)
-                let place = Continent.place(of: cell, from: neighbour.edge, columns: columns, rows: rows)
-                guard place.inward < Self.blendReach, neighbour.span.contains(place.along), !nearSea(cell) else { continue }
-                let t = 1 - (CGFloat(place.inward) + 0.5) / reach
-                let end = min(1, (CGFloat(min(place.along - neighbour.span.lowerBound, neighbour.span.upperBound - place.along)) + 0.5) / 4)
-                let alpha = 0.5 * t * t * (3 - 2 * t) * end * end * (3 - 2 * end)
-                // The bitmap's rows run north to south; the grid's count up from the south.
-                let index = ((rows - 1 - row) * columns + col) * 4
-                pixels[index] = UInt8((r * alpha * 255).rounded())
-                pixels[index + 1] = UInt8((g * alpha * 255).rounded())
-                pixels[index + 2] = UInt8((b * alpha * 255).rounded())
+        // The band the wash covers: the stretch the two share, and in from the edge as far as the
+        // line wanders and the wash past it.
+        let edge = neighbour.edge, span = neighbour.span
+        let across = edge == .east || edge == .west
+        let depth = min(Self.blendReach + Int(Seam.reach) + 1, across ? columns : rows)
+        let low: GridPoint = switch edge {
+        case .north: GridPoint(col: span.lowerBound, row: rows - depth)
+        case .south: GridPoint(col: span.lowerBound, row: 0)
+        case .east: GridPoint(col: columns - depth, row: span.lowerBound)
+        case .west: GridPoint(col: 0, row: span.lowerBound)
+        }
+        let cells = (width: across ? depth : span.count, height: across ? span.count : depth)
+        let fine = Self.blendFineness
+        let width = cells.width * fine, height = cells.height * fine
+        // The line's offset from the border at each texel along it (none along a town's wall).
+        let offsets: [Double] = (0..<(span.count * fine)).map { step in
+            seam?.offset(at: Double(span.lowerBound) + (Double(step) + 0.5) / Double(fine)) ?? 0
+        }
+        let reach = Double(Self.blendReach)
+        var wet: [GridPoint: Bool] = [:]
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        for y in 0..<height {
+            for x in 0..<width {
+                // The texel's middle in the land's cells: the bitmap's rows run north to south, the
+                // grid's count up from the south.
+                let gx = Double(low.col) + (Double(x) + 0.5) / Double(fine)
+                let gy = Double(low.row + cells.height) - (Double(y) + 0.5) / Double(fine)
+                // How far in from the edge, and which texel along it.
+                let spot: (inward: Double, step: Int) = switch edge {
+                case .north: (Double(rows) - gy, x)
+                case .south: (gy, x)
+                case .east: (Double(columns) - gx, height - 1 - y)
+                case .west: (gx, height - 1 - y)
+                }
+                let step = spot.step
+                // How far it is from the line between the two lands: below 0 past it.
+                let side = spot.inward - offsets[step]
+                guard abs(side) < reach else { continue }
+                let cell = GridPoint(col: Int(gx.rounded(.down)), row: Int(gy.rounded(.down)))
+                let near: Bool
+                if let known = wet[cell] {
+                    near = known
+                } else {
+                    near = nearSea(cell)
+                    wet[cell] = near
+                }
+                guard !near else { continue }
+                let color = side >= 0 ? (r, g, b) : own
+                let t = 1 - abs(side) / reach
+                let along = (Double(step) + 0.5) / Double(fine)
+                let end = min(1, min(along, Double(span.count) - along) / 4)
+                let alpha = CGFloat(0.5 * t * t * (3 - 2 * t) * end * end * (3 - 2 * end))
+                let index = (y * width + x) * 4
+                pixels[index] = UInt8((color.0 * alpha * 255).rounded())
+                pixels[index + 1] = UInt8((color.1 * alpha * 255).rounded())
+                pixels[index + 2] = UInt8((color.2 * alpha * 255).rounded())
                 pixels[index + 3] = UInt8((alpha * 255).rounded())
             }
         }
-        guard let made = PixelImage.make(pixels, width: columns, height: rows) else { return SKNode() }
+        guard width > 0, height > 0, let made = PixelImage.make(pixels, width: width, height: height) else { return SKNode() }
         let texture = SKTexture(cgImage: made)
         texture.filteringMode = .linear
-        let band = SKSpriteNode(texture: texture, size: CGSize(width: CGFloat(columns) * tile, height: CGFloat(rows) * tile))
+        let band = SKSpriteNode(texture: texture, size: CGSize(width: CGFloat(cells.width) * tile, height: CGFloat(cells.height) * tile))
         band.anchorPoint = .zero
+        band.position = CGPoint(x: CGFloat(low.col) * tile, y: CGFloat(low.row) * tile)
         band.zPosition = 1.5
         return band
     }
@@ -1269,7 +1352,9 @@ final class WorldScene: SKScene {
         }
     }
 
-    /// Scenery from the theme. Props with `cluster` grow in groves around a random centre.
+    /// Scenery from the theme. Props with `cluster` grow in groves around a random centre. None
+    /// past the lines the land meets the lands beside it along (`WorldMap.foreign`), where theirs
+    /// grows (`placeSeamProps`).
     private func placeProps() async {
         for placement in def.theme.props {
             let sprite = art.sprite(placement.art)
@@ -1293,43 +1378,89 @@ final class WorldScene: SKScene {
                         col: middle.col + Int.random(in: -spread...spread, using: &rng),
                         row: middle.row + Int.random(in: -spread...spread, using: &rng)
                     )
-                    guard map.isFreeForScenery(cell, insideFence: placement.within != nil, blocking: placement.blocking) else { continue }
-                    map.occupy(cell, blocking: placement.blocking)
+                    guard map.isFreeForScenery(cell, insideFence: placement.within != nil, blocking: placement.blocking),
+                          map.foreign[cell] == nil else { continue }
                     var scale: CGFloat = 1
                     if let range = placement.size, range.count == 2, range[0] <= range[1] {
                         scale = CGFloat(Double.random(in: range[0]...range[1], using: &rng))
                     }
-                    let node = addScenery(sprite, at: cell, sway: placement.sway == true, jitter: true, scale: scale)
-                    if placement.bob == true {
-                        // Unseeded, so the map's layout stays what it was.
-                        let rise = SKAction.moveBy(x: 0, y: 3, duration: .random(in: 1.3...2))
-                        rise.timingMode = .easeInEaseOut
-                        node.run(.repeatForever(.sequence([rise, rise.reversed()])), withKey: "bob")
-                    }
-                    if placement.shadow == true {
-                        if map.hillIndex(at: cell) != nil {
-                            // On a hill, over the strip it stands on, and over the two in front where
-                            // it reaches them (`HillArt.strip(at:)`): each from where it begins on
-                            // screen, under it.
-                            let strip = HillArt.strip(at: -node.zPosition)
-                            let layers: [(from: CGFloat, z: CGFloat)] = (0..<3).map { step in
-                                let start = strip.start - CGFloat(step) * HillArt.stripHeight
-                                return (from: start + map.height(at: CGPoint(x: node.position.x, y: start)),
-                                        z: strip.z + CGFloat(step) * HillArt.stripHeight)
-                            }
-                            shadows.append(Lighting.Shadow(under: node, in: chunk(at: node.position), layers: layers))
-                        } else {
-                            shadows.append(Lighting.Shadow(under: node, in: chunk(at: node.position)))
-                        }
-                    }
-                    if let hex = placement.glow, let color = UIColor(hex: hex) {
-                        Lighting.glow(behind: node, color: color, in: chunk(at: node.position), rng: &rng)
-                        lantern?.glint(at: node.position + CGVector(dx: 0, dy: node.size.height * 0.4), color: color, width: node.size.width * 1.6)
-                    }
+                    plant(sprite, placement, at: cell, scale: scale)
                     inGroup += 1
                 }
                 placed += inGroup
             }
+        }
+    }
+
+    /// Past the lines the land meets the lands beside it along (`Seam`), where their ground has come
+    /// over onto this one, their scenery (graded as it is there), as thick as it grows there, so the
+    /// woods and the meadows run on over the line as the ground does.
+    private func placeSeamProps() async {
+        guard !map.foreign.isEmpty else { return }
+        var random = SeededRandom(text: def.id + "/seams")
+        var sprites: [String: SpriteArt] = [:]
+        let lands = map.seams.map { Content.shared.map($0.neighbour) }
+        for (number, cell) in map.foreign.keys.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }).enumerated() {
+            if number % 64 == 63 { await breathe() }
+            guard let seam = map.foreign[cell], let land = lands[seam] else { continue }
+            let area = Double(land.width * land.height)
+            for placement in land.theme.props where placement.within == nil {
+                guard Double.random(in: 0..<1, using: &random) < Double(placement.count) / area else { continue }
+                guard map.isFreeForScenery(cell, blocking: placement.blocking) else { break }
+                let key = land.id + "|" + placement.art
+                let sprite: SpriteArt
+                if let known = sprites[key] {
+                    sprite = known
+                } else {
+                    let own = art.sprite(placement.art)
+                    let texture = art.gradedTile(placement.art, palette: land.theme.palette).map { image -> SKTexture in
+                        let made = SKTexture(cgImage: image)
+                        made.filteringMode = .nearest
+                        return made
+                    } ?? own.texture
+                    sprite = SpriteArt(texture: texture, size: own.size)
+                    sprites[key] = sprite
+                }
+                var scale: CGFloat = 1
+                if let range = placement.size, range.count == 2, range[0] <= range[1] {
+                    scale = CGFloat(Double.random(in: range[0]...range[1], using: &random))
+                }
+                plant(sprite, placement, at: cell, scale: scale)
+                break
+            }
+        }
+    }
+
+    /// Sets a prop down at `cell` as its placement says: taking the cell, swaying, bobbing, with its
+    /// shadow and its glow.
+    private func plant(_ sprite: SpriteArt, _ placement: MapDef.PropPlacement, at cell: GridPoint, scale: CGFloat) {
+        map.occupy(cell, blocking: placement.blocking)
+        let node = addScenery(sprite, at: cell, sway: placement.sway == true, jitter: true, scale: scale)
+        if placement.bob == true {
+            // Unseeded, so the map's layout stays what it was.
+            let rise = SKAction.moveBy(x: 0, y: 3, duration: .random(in: 1.3...2))
+            rise.timingMode = .easeInEaseOut
+            node.run(.repeatForever(.sequence([rise, rise.reversed()])), withKey: "bob")
+        }
+        if placement.shadow == true {
+            if map.hillIndex(at: cell) != nil {
+                // On a hill, over the strip it stands on, and over the two in front where
+                // it reaches them (`HillArt.strip(at:)`): each from where it begins on
+                // screen, under it.
+                let strip = HillArt.strip(at: -node.zPosition)
+                let layers: [(from: CGFloat, z: CGFloat)] = (0..<3).map { step in
+                    let start = strip.start - CGFloat(step) * HillArt.stripHeight
+                    return (from: start + map.height(at: CGPoint(x: node.position.x, y: start)),
+                            z: strip.z + CGFloat(step) * HillArt.stripHeight)
+                }
+                shadows.append(Lighting.Shadow(under: node, in: chunk(at: node.position), layers: layers))
+            } else {
+                shadows.append(Lighting.Shadow(under: node, in: chunk(at: node.position)))
+            }
+        }
+        if let hex = placement.glow, let color = UIColor(hex: hex) {
+            Lighting.glow(behind: node, color: color, in: chunk(at: node.position), rng: &rng)
+            lantern?.glint(at: node.position + CGVector(dx: 0, dy: node.size.height * 0.4), color: color, width: node.size.width * 1.6)
         }
     }
 
@@ -1504,11 +1635,12 @@ final class WorldScene: SKScene {
         return nil
     }
 
-    /// What walls the land's borders with the lands next door (`BorderArt`): fences, boulders and
-    /// a quest's barred gate. Roads off the continent (out of a cave) a quest hasn't opened yet
-    /// get a barricade across them instead (`placeBarricades`).
+    /// What walls the land's borders with the lands next door (`BorderArt`): a town's city wall, and
+    /// fences or boulders where you can't cross yet, with a quest's barred gate. Roads off the
+    /// continent (out of a cave) a quest hasn't opened yet get a barricade across them instead
+    /// (`placeBarricades`).
     private func placeBorders() {
-        for neighbour in neighbours where neighbour.isWalled {
+        for neighbour in neighbours where neighbour.isWalled(done: session.hasCompleted, joined: isJoined(neighbour)) {
             let open = neighbour.quest.map(session.hasCompleted) ?? false
             let columns = map.columns, rows = map.rows
             let dry = { [unowned self] (along: Int) -> Bool in
@@ -1526,8 +1658,20 @@ final class WorldScene: SKScene {
         placeBarricades()
     }
 
-    /// Quests' gates still barred: the border and the bar across the gate.
+    /// Walls that come down once you can cross (`BorderArt.place`): the border, and what's taken
+    /// away (a town's gate's bar, or the whole fence).
     private var gates: [(neighbour: Continent.Neighbour, bar: [SKNode])] = []
+
+    /// Whether the roads you can take join this land to a land next door (`Continent.joined`), by
+    /// its id: worked out when it's wanted, and again after a quest (`openBarricades`).
+    private var joinedLands: [String: Bool] = [:]
+
+    private func isJoined(_ neighbour: Continent.Neighbour) -> Bool {
+        if let known = joinedLands[neighbour.def.id] { return known }
+        let joined = Continent.joined(def.id, neighbour.def.id, done: session.hasCompleted)
+        joinedLands[neighbour.def.id] = joined
+        return joined
+    }
 
     /// A fence across each road off the continent that a quest hasn't opened yet, with a little lock sign.
     private func placeBarricades() {
@@ -1563,9 +1707,11 @@ final class WorldScene: SKScene {
         }
     }
 
-    /// A finished quest opened a road while you were here: the barricade, or the bar across the
-    /// border's gate, poofs away (next door too, where the same gate shows).
+    /// A finished quest opened a road while you were here: the barricade, the bar across the
+    /// border's gate, or a fence along a border you can cross now, poofs away (next door too, where
+    /// the same wall shows).
     private func openBarricades() {
+        joinedLands = [:]
         barricades.removeAll { barricade in
             guard session.canTravel(barricade.exit) else { return false }
             for node in barricade.nodes {
@@ -1575,7 +1721,10 @@ final class WorldScene: SKScene {
             return true
         }
         gates.removeAll { gate in
-            guard let quest = gate.neighbour.quest, session.hasCompleted(quest) else { return false }
+            let neighbour = gate.neighbour
+            let opened = neighbour.town ? neighbour.quest.map(session.hasCompleted) ?? false
+                : !neighbour.isWalled(done: session.hasCompleted, joined: isJoined(neighbour))
+            guard opened else { return false }
             for node in gate.bar {
                 if let parent = node.parent { SkillEffects.smoke(at: node.position, in: parent) }
                 node.run(.sequence([.fadeOut(withDuration: 0.4), .removeFromParent()]))
@@ -1935,7 +2084,7 @@ final class WorldScene: SKScene {
     static func overview(of map: WorldMap, art: ArtLibrary) -> CGImage {
         let palette = map.def.theme.palette
         let waterID = map.def.theme.water ?? "tile_water"
-        return map.overviewImage { id in
+        return map.overviewImage(tileColor: { id in
             let color: (CGFloat, CGFloat, CGFloat)
             if let image = art.gradedTile(id, palette: palette) {
                 color = averageColor(of: image)
@@ -1943,7 +2092,12 @@ final class WorldScene: SKScene {
                 color = averageColor(of: id == waterID ? art.waterFrames(id).first ?? art.tileTexture(id) : art.tileTexture(id))
             }
             return PixelColor(r: UInt8(color.0 * 255), g: UInt8(color.1 * 255), b: UInt8(color.2 * 255))
-        }
+        }, foreignColor: { id in
+            // A land next door's ground, as it's graded there.
+            guard let other = Content.shared.map(id), let image = art.gradedTile(other.theme.ground, palette: other.theme.palette) else { return nil }
+            let color = averageColor(of: image)
+            return PixelColor(r: UInt8(color.0 * 255), g: UInt8(color.1 * 255), b: UInt8(color.2 * 255))
+        })
     }
 
 
@@ -2439,7 +2593,7 @@ final class WorldScene: SKScene {
     private func canCross(into cell: GridPoint) -> Bool {
         guard let neighbour = neighbour(holding: cell) else { return false }
         let place = Continent.place(of: cell, from: neighbour.edge, columns: map.columns, rows: map.rows)
-        guard place.inward == -1, neighbour.isOpen(at: place.along, done: session.hasCompleted) else { return false }
+        guard place.inward == -1, neighbour.isOpen(at: place.along, done: session.hasCompleted, joined: isJoined(neighbour)) else { return false }
         // Not built yet: anywhere the sea hasn't come in over its coast (`Coast`).
         guard let land = nextDoor[neighbour.def.id]?.scene else { return !map.isOpenSea(cell) }
         return land.map.isWalkable(neighbour.local(cell))
@@ -2580,7 +2734,7 @@ final class WorldScene: SKScene {
     private func updateMood(_ dt: TimeInterval) {
         let here = map.cell(at: player.position)
         var nearest = Self.moodReach
-        for neighbour in neighbours where neighbour.exit != nil {
+        for neighbour in neighbours where neighbour.isCrossable(done: session.hasCompleted, joined: isJoined(neighbour)) {
             nearest = min(nearest, neighbour.distance(from: here, columns: map.columns, rows: map.rows))
         }
         let t = CGFloat(nearest) / CGFloat(Self.moodReach)

@@ -33,6 +33,10 @@ border_cross | newgame,map=sunny_meadow,border=twilight_woods,done=pineapple_har
 border_rocks | newgame,map=genie_desert,border=valley_of_fear,landscape,weather=clear,hour=12 | 6
 border_fence | newgame,map=frog_swamp,border=twilight_woods,landscape,weather=clear,hour=12 | 6
 border_sand  | newgame,map=northern_grassland,border=pineapple_shore,weather=clear,hour=12 | 6
+# The swamp's border with the dark woods once roads join the two (both quests done): its fence gone,
+# you walk over anywhere, and the two grounds meet along a winding line, each one's trees on its own.
+border_joined | newgame,map=frog_swamp,border=twilight_woods,done=new_friend+pineapple_harvest,landscape,weather=clear,hour=12 | 6
+seam_snow    | newgame,map=snow_white_forest,border=swan_lake,landscape,weather=clear,hour=12 | 6
 coast        | newgame,map=meadowbrook,edge=west,landscape,weather=clear,hour=12 | 6
 # The sea come in over a wild coast, lower than the land: the bank facing you (a bay in the swamp's
 # west), from behind (the snowy wood's north), and where the sea used to let you walk out (the lair's south).

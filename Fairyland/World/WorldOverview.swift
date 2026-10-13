@@ -79,8 +79,12 @@ final class WorldOverview {
         try? data.write(to: url, options: .atomic)
     }
 
-    /// This build of the game and its maps: the version, the build, and a hash of the maps and the
-    /// continent (FNV-1a).
+    /// How the lands are drawn on it: one more each time that changes (the lines between lands
+    /// wander now, `Seam`), so the pictures kept are drawn afresh even in the same build.
+    private static let look = 2
+
+    /// This build of the game and its maps: the version, the build, how they're drawn (`look`) and
+    /// a hash of the maps and the continent (FNV-1a).
     private static let stamp: String = {
         let info = Bundle.main.infoDictionary
         var hash: UInt64 = 0xCBF2_9CE4_8422_2325
@@ -97,7 +101,7 @@ final class WorldOverview {
             }
         }
         let version = (info?["CFBundleShortVersionString"] as? String ?? "") + "-" + (info?["CFBundleVersion"] as? String ?? "")
-        mix(Data(version.utf8))
+        mix(Data((version + "-\(WorldOverview.look)").utf8))
         return String(hash, radix: 16)
     }()
 }

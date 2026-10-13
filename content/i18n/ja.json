@@ -800,6 +800,8 @@
     "Deep": "褐色",
     "Coasts and the world map": "海岸とワールドマップ",
     "The lands are natural shapes now: the sea comes in over their coasts in bays and headlands, and the continent's corners round off.": "土地が自然なかたちになりました。海が入り江や岬をつくって海岸に入りこみ、大陸の角はまるくなっています。",
+    "Lands blend into each other along winding edges instead of straight lines: each land's ground and trees carry on over the line, on the minimap and the world map too.": "土地と土地が、まっすぐな線ではなく曲がりくねったさかいめで自然につながるようになりました。それぞれの土地の地面や木が線の向こうまで続き、ミニマップとワールドマップにも反映されます。",
+    "Walk from one land into the next anywhere along the border, not just on the road. Where you can't go yet, a fence stands until a quest opens the way, then comes down.": "道だけでなく、さかいめのどこからでもとなりの土地へ歩いて行けるようになりました。まだ行けない場所には柵があり、クエストで道がひらくとなくなります。",
     "The sea lies lower than the land, below a bank of earth with foam at its foot, and you can't walk out onto it any more.": "海は土地より低いところにあり、波しぶきのよせる土の岸の下に広がっています。もう海の上を歩くことはできません。",
     "Tap the minimap for the world map: the whole continent as it really looks, with where you are. Drag to look round, pinch to zoom.": "ミニマップをタップするとワールドマップがひらきます。大陸全体がほんとうの姿で、いまいる場所といっしょに見られます。ドラッグで見まわし、ピンチでズームできます。",
     "Climbing a hill or a mountain, the camera follows you up, so you stay in the middle of the screen.": "丘や山をのぼると、カメラがいっしょについてきて、いつも画面のまんなかにいられます。",

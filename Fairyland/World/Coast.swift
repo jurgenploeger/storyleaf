@@ -36,6 +36,8 @@ nonisolated struct Coast: Sendable {
     let lands: [Land]
     /// Where roads cross from one land into the next (the cell either side of the line), in its cells.
     let crossings: [GridPoint]
+    /// The wandering lines it meets the lands beside it along, drawn and on its map (`Seam`).
+    let seams: [Seam]
 
     /// How far round a land the coast is worked out: past the furthest the sea reaches in, the
     /// rounding of the corners and the rounding's own reach, so both sides of a border see the

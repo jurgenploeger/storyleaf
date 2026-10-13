@@ -249,10 +249,25 @@ struct ContentTests {
                 #expect(here.span.count == back.span.count, "\(def.id) | \(here.def.id): not as long from both sides")
                 #expect(here.quest == back.quest, "\(def.id) | \(here.def.id): a different quest from each side")
                 #expect((here.exit == nil) == (back.exit == nil), "\(def.id) | \(here.def.id): a road from one side only")
+                #expect(here.town == back.town, "\(def.id) | \(here.def.id): a town's wall from one side only")
                 let shift = here.edge == .east || here.edge == .west ? here.offset.row : here.offset.col
                 for along in here.span {
-                    #expect(here.isOpen(at: along, done: { _ in true }) == back.isOpen(at: along - shift, done: { _ in true }),
-                            "\(def.id) | \(here.def.id): open on one side only, \(along) along")
+                    for (done, joined) in [(true, true), (false, true), (true, false), (false, false)] {
+                        #expect(here.isOpen(at: along, done: { _ in done }, joined: joined) == back.isOpen(at: along - shift, done: { _ in done }, joined: joined),
+                                "\(def.id) | \(here.def.id): open on one side only, \(along) along")
+                    }
+                }
+                // The line between them wanders the same from either side (`Seam`), turned round.
+                let seam = Continent.coast(of: def)?.seams.first { $0.neighbour == here.def.id }
+                let other = Continent.coast(of: here.def)?.seams.first { $0.neighbour == def.id }
+                #expect((seam == nil) == (other == nil), "\(def.id) | \(here.def.id): a wandering line from one side only")
+                #expect((seam == nil) == here.town, "\(def.id) | \(here.def.id): a wandering line beside a town, or none between lands")
+                if let seam, let other {
+                    for step in 0...(here.span.count * 4) {
+                        let along = Double(here.span.lowerBound) + Double(step) / 4
+                        #expect(abs(seam.offset(at: along) + other.offset(at: along - Double(shift))) < 1e-9,
+                                "\(def.id) | \(here.def.id): the line between them differs from each side, \(along) along")
+                    }
                 }
                 // The sea comes in the same at the line from either side (`Coast`), so the wall along
                 // it stops in the same place and you can't step over into the sea.
@@ -270,6 +285,26 @@ struct ContentTests {
                     #expect(mine.isSea(line.inside) == theirs.isSea(here.local(line.inside))
                             && mine.isSea(line.outside) == theirs.isSea(here.local(line.outside)),
                             "\(def.id) | \(here.def.id): the sea comes in differently from each side, \(along) along")
+                }
+            }
+        }
+    }
+
+    /// A border no road crosses opens only once the roads you can take join its two lands anyway
+    /// (`Continent.joined`), so walking over it never takes you round a quest: whatever quests are
+    /// done, where you can go with the borders open is where the roads alone would take you.
+    @Test func openBordersNeverSkipAQuest() {
+        let quests = Set(content.maps.flatMap { $0.exits.compactMap(\.requires) }).sorted()
+        let start = content.startMap
+        for mask in 0..<(1 << quests.count) {
+            let done = Set(quests.indices.filter { mask & (1 << $0) != 0 }.map { quests[$0] })
+            let isDone: (String) -> Bool = { done.contains($0) }
+            // Where the roads alone lead: those of these lands are joined to each other, no others.
+            let reached = Continent.reachable(from: start, done: isDone)
+            for def in content.maps where content.world[def.id] != nil && reached.contains(def.id) {
+                for neighbour in Continent.neighbours(of: def) where neighbour.isCrossable(done: isDone, joined: reached.contains(neighbour.def.id)) {
+                    #expect(reached.contains(neighbour.def.id),
+                            "\(def.id) | \(neighbour.def.id): open with only \(done.sorted()) done, but no road leads there yet")
                 }
             }
         }

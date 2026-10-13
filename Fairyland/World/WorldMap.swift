@@ -172,6 +172,12 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// Whether the sea's coast came in over the land (false if it would have cut something off,
     /// `carveCoast`).
     private(set) var hasCoast = false
+    /// The wandering lines the land meets the lands beside it along (`Seam`; none for a cave).
+    let seams: [Seam]
+    /// The cells whose middles lie past one of them, where the land next door's ground shows: by
+    /// cell, which of `seams` (the one it's furthest past). Still this land's cells, to walk and
+    /// to set things on.
+    private(set) var foreign: [GridPoint: Int] = [:]
 
     /// The projected map's on-screen bounding box.
     var bounds: CGRect {
@@ -199,6 +205,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
     init(def: MapDef, caves: [String: MapDef.Cave], coast: Coast?) {
         self.def = def
         self.coast = coast?.field(columns: def.width, rows: def.height)
+        seams = coast?.seams ?? []
         columns = def.width
         rows = def.height
         center = GridPoint(col: def.width / 2, row: def.height / 2)
@@ -274,6 +281,27 @@ nonisolated final class WorldMap: @unchecked Sendable {
         }
         // Last, round everything that's on the land.
         if let field = self.coast { carveCoast(field) }
+        markForeign()
+    }
+
+    /// Finds the cells past the lines the land meets its neighbours along (`foreign`). The land's
+    /// accent (its flower patches, its moss) stops a cell short of them, so it never spills over.
+    private func markForeign() {
+        let depth = Int(Seam.reach) + 2
+        var furthest: [GridPoint: Double] = [:]
+        for (index, seam) in seams.enumerated() {
+            for along in seam.span {
+                for inward in 0..<depth {
+                    let spot = cell(on: seam.edge, along: along, inward: inward)
+                    guard contains(spot) else { continue }
+                    let side = seam.side(x: Double(spot.col) + 0.5, y: Double(spot.row) + 0.5)
+                    if side < 1.5, ground[spot.row][spot.col] == .accent { ground[spot.row][spot.col] = .ground }
+                    guard side < 0, side < furthest[spot] ?? 0 else { continue }
+                    furthest[spot] = side
+                    foreign[spot] = index
+                }
+            }
+        }
     }
 
     // MARK: Coast
@@ -2446,7 +2474,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// One pixel per tile, for the map screen.
     /// `tileColor` gives a tile's colour as the map really shows it (the scene averages its graded
     /// tiles, so the minimap matches the map's palette); without it, rough colours by tile name.
-    @MainActor func overviewImage(tileColor: ((String) -> PixelColor)? = nil) -> CGImage {
+    /// `foreignColor` gives the ground's colour of a land next door (by id), where its ground has come
+    /// over the line onto this one (`foreign`).
+    @MainActor func overviewImage(tileColor: ((String) -> PixelColor)? = nil, foreignColor: ((String) -> PixelColor?)? = nil) -> CGImage {
         // First match wins, so more specific names come first.
         let tileColors: [(String, UInt32)] = [
             ("snow_path", 0xC9D6E8), ("snow", 0xF2F6FA), ("cave_rock", 0x2B2F3A), ("cave", 0x4A4F5C), ("scree", 0x8C9099),
@@ -2462,6 +2492,13 @@ nonisolated final class WorldMap: @unchecked Sendable {
             colors[id] = value
             return value
         }
+        var neighbours: [String: PixelColor?] = [:]
+        func color(of neighbour: String) -> PixelColor? {
+            if let known = neighbours[neighbour] { return known }
+            let value = foreignColor?(neighbour)
+            neighbours[neighbour] = value
+            return value
+        }
         let theme = def.theme
         func onHill(_ col: Int, _ row: Int) -> Bool { hillOf[GridPoint(col: col, row: row)] != nil }
         var canvas = PixelCanvas(width: columns, height: rows)
@@ -2475,6 +2512,11 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 case .border: color(forTile: theme.border ?? theme.ground)
                 case .water: tileColor == nil ? PixelColor(0x4FA3E0) : color(forTile: theme.water ?? "tile_water")
                 case .sea: Self.seaColor
+                }
+                // Past the line it meets a land next door along, that land's ground.
+                if let seam = foreign[cell], ground[row][col] != .sea, ground[row][col] != .water, ground[row][col] != .path,
+                   let other = color(of: seams[seam].neighbour) {
+                    pixel = ground[row][col] == .accent ? other.shaded(1.08) : other
                 }
                 if rock.contains(cell) {
                     pixel = color(forTile: theme.cave?.rock ?? "cave_rock").shaded(0.5)
