@@ -548,24 +548,6 @@ nonisolated final class WorldMap: @unchecked Sendable {
         return (dx * mouth.along.x + dy * mouth.along.y, dx * mouth.into.x + dy * mouth.into.y)
     }
 
-    /// How many cells `cell` is from the way out through `edge` (0 = standing on it): from the
-    /// edge, or where a road leads into a cave, from its mouth.
-    func distance(from cell: GridPoint, toWayOutThrough edge: Edge) -> Int {
-        guard let opening = mouth(on: edge) else { return distance(from: cell, to: edge) }
-        let offset = place(of: cell, from: opening)
-        let across = max(0, abs(offset.across) - opening.half + 0.5), inward = max(0, -offset.inward - 0.5)
-        return Int((across * across + inward * inward).squareRoot())
-    }
-
-    /// How many cells `cell` is from the edge of `exit` (0 = standing on the way out).
-    func distance(from cell: GridPoint, to edge: Edge) -> Int {
-        switch edge {
-        case .north: rows - 1 - cell.row
-        case .south: cell.row
-        case .east: columns - 1 - cell.col
-        case .west: cell.col
-        }
-    }
 
     /// Road cells one step in from `edge`, where a barricade closes a road.
     func roadCells(near edge: Edge) -> [GridPoint] {

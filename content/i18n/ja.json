@@ -804,6 +804,7 @@
     "Tap the minimap for the world map: the whole continent as it really looks, with where you are. Drag to look round, pinch to zoom.": "ミニマップをタップするとワールドマップがひらきます。大陸全体がほんとうの姿で、いまいる場所といっしょに見られます。ドラッグで見まわし、ピンチでズームできます。",
     "Climbing a hill or a mountain, the camera follows you up, so you stay in the middle of the screen.": "丘や山をのぼると、カメラがいっしょについてきて、いつも画面のまんなかにいられます。",
     "The minimap shows what's round the land you're in too: the lands next door and the sea.": "ミニマップに、いまいる土地のまわりも映るようになりました。となりの土地や海も見えます。",
+    "The screen no longer darkens as you near the edge of a land or a cave's mouth.": "土地のはしや洞窟の入り口に近づいても、もう画面が暗くなりません。",
     "One continent": "ひとつの大陸",
     "The lands lie side by side as one continent: walk from one into the next with no loading screen. Only caves still have one, going in and coming out.": "土地がひとつの大陸として隣り合うようになりました。読み込み画面なしで次の土地へ歩いて行けます。読み込み画面があるのは洞窟の出入りだけです。",
     "Near a border you can see the land next door, and the ground and its colours blend from one land into the other.": "境目に近づくと隣の土地が見え、地面と色が土地から土地へなめらかに移り変わります。",

@@ -804,6 +804,7 @@
     "Tap the minimap for the world map: the whole continent as it really looks, with where you are. Drag to look round, pinch to zoom.": "點擊小地圖即可打開世界地圖：整個大陸的真實模樣，以及你所在的位置。拖曳查看四周，雙指縮放。",
     "Climbing a hill or a mountain, the camera follows you up, so you stay in the middle of the screen.": "爬上山丘或高山時，鏡頭會跟著你，讓你始終在螢幕中央。",
     "The minimap shows what's round the land you're in too: the lands next door and the sea.": "小地圖現在也會顯示你所在土地的周圍：相鄰的土地和大海。",
+    "The screen no longer darkens as you near the edge of a land or a cave's mouth.": "走近土地邊緣或洞口時，畫面不會再變暗了。",
     "One continent": "同一片大陸",
     "The lands lie side by side as one continent: walk from one into the next with no loading screen. Only caves still have one, going in and coming out.": "各片土地現在相鄰相連，組成同一片大陸：從一片土地走到下一片，不再有載入畫面。只有進出洞穴時還有。",
     "Near a border you can see the land next door, and the ground and its colours blend from one land into the other.": "走近邊界時能看到相鄰的土地，地面和色彩會從一片土地自然過渡到另一片。",

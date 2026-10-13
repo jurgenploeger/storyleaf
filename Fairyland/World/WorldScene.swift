@@ -2886,17 +2886,10 @@ final class WorldScene: SKScene {
     /// The last few steps toward an open road out fade to black (into a cave, only toward its mouth).
     /// Not where it runs on into the land next door: you can see where you're going.
     private func updateEdgeFade(_ dt: TimeInterval) {
-        let cell = map.cell(at: player.position)
-        let fadeCells = 4
-        var target: CGFloat = 0
-        let onContinent = Continent.origin(of: def) != nil
-        for exit in def.exits where session.canTravel(exit) && !(onContinent && Content.shared.world[exit.to] != nil) {
-            let distance = map.distance(from: cell, toWayOutThrough: exit.edge)
-            guard distance < fadeCells else { continue }
-            target = max(target, CGFloat(fadeCells - distance) / CGFloat(fadeCells) * 0.75)
-        }
-        // Off behind the loading card (not walking on over a border, where there's no card).
-        if hasLeft, !walkingOver { target = 0.85 }
+        // Only going off behind the loading card (into a cave, or over a border before the land's
+        // built), not walking on over a border. Nearing a way out used to darken too, from when every
+        // edge was one; playtesting: "the map doesn't need to go dark anymore when you switch lands".
+        let target: CGFloat = hasLeft && !walkingOver ? 0.85 : 0
         let t = dt == 0 ? 1 : min(1, CGFloat(dt) * 6)
         edgeFade.alpha += (target - edgeFade.alpha) * t
     }
