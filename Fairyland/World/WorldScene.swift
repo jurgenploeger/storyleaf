@@ -304,7 +304,8 @@ final class WorldScene: SKScene {
             refreshFollower()
             refreshAllies()
         }
-        cam.position = player.position
+        player.settle()
+        cam.position = cameraGoal
         edgeFade.alpha = 0
         edgeFade.size = CGSize(width: size.width * 1.2, height: size.height * 1.2)
         edgeFade.zPosition = 40_000
@@ -326,7 +327,7 @@ final class WorldScene: SKScene {
                let open = map.nearestWalkable(to: lastCell, within: 48) ?? map.nearestWalkable(to: map.entryCell(from: def.exits.first?.edge ?? .south)) {
                 player.position = map.center(of: open)
                 lastCell = open
-                cam.position = player.position
+                cam.position = cameraGoal
             }
             session.playerPosition = player.position
             lantern?.follow(player.position)
@@ -2845,9 +2846,15 @@ final class WorldScene: SKScene {
         edgeFade.alpha += (target - edgeFade.alpha) * t
     }
 
+    /// Where the camera looks: at the hero as drawn, lifted onto the hills, not at the ground under
+    /// them, or climbing a mountain you'd walk off the top of the screen.
+    private var cameraGoal: CGPoint {
+        player.position + CGVector(dx: 0, dy: player.lift)
+    }
+
     private func updateCamera(_ dt: TimeInterval) {
         // The diamond's corners are filled by the surroundings, so just follow the hero.
-        let goal = player.position
+        let goal = cameraGoal
         let t = dt == 0 ? 1 : min(1, CGFloat(dt) * 10)
         let eased = CGPoint(x: cam.position.x + (goal.x - cam.position.x) * t, y: cam.position.y + (goal.y - cam.position.y) * t)
         // Snap to whole screen pixels so pixel art doesn't shimmer (zooming changes their size).
