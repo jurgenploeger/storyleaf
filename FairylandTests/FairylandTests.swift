@@ -189,7 +189,7 @@ struct ContentTests {
     }
 
     /// Lands a road joins touch on the continent (content/world.json), and the road runs on across
-    /// the border: where it leaves one land it comes into the next, on the same world cells.
+    /// the border: where it leaves one land it comes into the next, on the same world cells, as wide.
     @Test func roadsRunOnIntoTheNextLand() throws {
         var maps: [String: WorldMap] = [:]
         func grid(_ def: MapDef) -> WorldMap {
@@ -204,6 +204,8 @@ struct ContentTests {
                 guard let next = content.map(exit.to), let there = content.world[next.id] else { continue }
                 let map = grid(def), other = grid(next)
                 // The road's cells along the border, in world cells, on either side of it.
+                // Only near where it crosses, so another road along the same edge doesn't count.
+                let road = (exit.edge == .east ? map.rows : map.columns) / 2 + (exit.meets ?? exit.at ?? 0)
                 let mine: Set<Int>, theirs: Set<Int>
                 if exit.edge == .east {
                     #expect(origin.col + map.columns == there.col, "\(next.id) doesn't start where \(def.id) ends")
@@ -214,8 +216,11 @@ struct ContentTests {
                     mine = Set((0..<map.columns).filter { map.ground[map.rows - 1][$0] == .path }.map { $0 + origin.col })
                     theirs = Set((0..<other.columns).filter { other.ground[0][$0] == .path }.map { $0 + there.col })
                 }
-                #expect(mine.intersection(theirs).count >= 2,
-                        "\(def.id) → \(next.id): the road doesn't run on (\(mine.sorted()) meets \(theirs.sorted()))")
+                let crossing = road + (exit.edge == .east ? origin.row : origin.col)
+                let near = (crossing - 4)...(crossing + 4)
+                let ours = mine.filter { near.contains($0) }, across = theirs.filter { near.contains($0) }
+                #expect(!ours.isEmpty && ours == across,
+                        "\(def.id) → \(next.id): the road doesn't run on (\(ours.sorted()) meets \(across.sorted()))")
             }
         }
         // Every land outside the caves is on the continent.

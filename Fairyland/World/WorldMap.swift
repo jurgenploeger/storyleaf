@@ -694,17 +694,22 @@ nonisolated final class WorldMap: @unchecked Sendable {
             }
         }
         points += tail.map { $0 + bend }
+        // Where a road crosses into the next land: its last stretch runs dead straight and it settles
+        // to its plain width there, so the road's as wide on both sides of the line.
+        let crossing = tail.isEmpty ? nil : points.last
 
         // Paint along a Catmull-Rom curve through the waypoints.
         var travelled: CGFloat = 0
         for index in 0..<(points.count - 1) {
             let p0 = points[max(0, index - 1)], p1 = points[index], p2 = points[index + 1], p3 = points[min(points.count - 1, index + 2)]
+            let straight = crossing != nil && index == points.count - 2
             let steps = max(4, Int(p1.distance(to: p2) * 4))
             for step in 0...steps {
                 let t = CGFloat(step) / CGFloat(steps)
-                let point = Self.catmullRom(p0, p1, p2, p3, t)
+                let point = straight ? CGPoint(x: p1.x + (p2.x - p1.x) * t, y: p1.y + (p2.y - p1.y) * t) : Self.catmullRom(p0, p1, p2, p3, t)
                 travelled += p1.distance(to: p2) / CGFloat(steps)
-                let halfWidth = fenced ? base : base + base / 3 * sin(travelled / 6)
+                let settle = crossing.map { min(1, point.distance(to: $0) / 8) } ?? 1
+                let halfWidth = fenced ? base : base + base / 3 * sin(travelled / 6) * settle
                 paintRoad(around: point, radius: halfWidth)
             }
         }
