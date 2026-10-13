@@ -16,7 +16,7 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `content/world.json` + `tools/world_layout.py`: the lands as one continent (where each lies, in world cells); the
   tool solves it so roads meet across borders (an exit's `meets`) and `check_content.py` checks it. Rerun it after
   changing a map's size or exits. `Fairyland/World/Continent.swift` reads it: neighbours, open and walled borders,
-  the wilds. Lands next door are built in the background and shown past the border (`WorldScene.show(_:as:)`);
+  and the sea all round (`BorderArt` draws the fences, rocks and city walls). Lands next door are built in the background and shown past the border (`WorldScene.show(_:as:)`);
   you walk over with no loading card (`takeOver`). Caves still load behind the card.
 - `content/*.json`: all game data (maps, monsters, skills, items, quests, music, looks, crowd, announcements, titles,
   rewards: the daily gift, bounties, Monster Book milestones and monster cards). Data-driven;

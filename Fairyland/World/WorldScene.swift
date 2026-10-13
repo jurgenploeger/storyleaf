@@ -460,6 +460,32 @@ final class WorldScene: SKScene {
                 return texture
             })
         }
+        // The sea round the land (on the continent): its shore curves in over the land's outer cells,
+        // as a lake's does, out of the same water as the open sea (`Self.seaTile`).
+        var sea: Set<GridPoint> = []
+        if Continent.origin(of: def) != nil {
+            for row in -2..<(map.rows + 2) {
+                for col in -2..<(map.columns + 2) where row < 0 || col < 0 || row >= map.rows || col >= map.columns {
+                    let cell = GridPoint(col: col, row: row)
+                    if !Continent.isLand(cell, from: def) { sea.insert(cell) }
+                }
+            }
+        }
+        /// The sea's cells of the 3×3 around `cell` (as `mask`), and of the 5×5 (as `poolMask`).
+        func shore(_ cell: GridPoint) -> Int {
+            var bits = 0
+            for dy in -1...1 {
+                for dx in -1...1 where sea.contains(GridPoint(col: cell.col + dx, row: cell.row + dy)) { bits |= 1 << ((1 - dy) * 3 + dx + 1) }
+            }
+            return bits
+        }
+        func seaPool(_ cell: GridPoint) -> Int {
+            var bits = 0
+            for dy in -2...2 {
+                for dx in -2...2 where sea.contains(GridPoint(col: cell.col + dx, row: cell.row + dy)) { bits |= 1 << ((2 - dy) * 5 + dx + 2) }
+            }
+            return bits
+        }
         func blended(_ cell: GridPoint) -> SKTileGroup? {
             for border in borders {
                 let distance = border.neighbour.distance(from: cell, columns: map.columns, rows: map.rows)
@@ -490,6 +516,8 @@ final class WorldScene: SKScene {
                 if patch != 0, let accent = theme.accent { layers.append(.init(tile: accent, mask: patch, style: .patch)) }
                 if road != 0 { layers.append(.init(tile: theme.path, mask: road, style: .road)) }
                 if pond != 0 { layers.append(.init(tile: waterID, mask: poolMask(cell), style: .water)) }
+                let coast = sea.isEmpty ? 0 : shore(cell)
+                if coast != 0 { layers.append(.init(tile: Self.seaTile, mask: seaPool(cell), style: .water)) }
                 let chosen: SKTileGroup
                 if pond == full {
                     chosen = waterVaries ? plain(waterID, variant) : water
@@ -501,7 +529,7 @@ final class WorldScene: SKScene {
                     chosen = plain(accent, variant)
                 } else {
                     // Shorelines depend on where they are (see organicTile), so each gets its own tile.
-                    let place = pond != 0 ? "@\(col),\(row)" : ""
+                    let place = pond != 0 || coast != 0 ? "@\(col),\(row)" : ""
                     let key = base + "|" + layers.map { "\($0.style)\($0.mask)" }.joined(separator: "|") + place
                     chosen = group(key) { art.organicTile(base: base, layers: layers, cell: cell, variant: variant) }
                 }
@@ -699,151 +727,93 @@ final class WorldScene: SKScene {
     /// the same fog colour, so walking to a corner never shows black.
     private static let fogBand = 8
 
-    /// Scenery beyond the map's edge, so small maps never show black bars (e.g. in portrait): the
-    /// wilds, where no land lies (`Continent.wilds`), as much of them as are this land's to draw.
-    /// Right along its edge a thicket, or a tumble of rocks on rocky ground, walls it in; further out
-    /// a loose treeline, then mist. A river carries on out into them; in a cave (off the continent)
-    /// the roads carry on out through the exits too.
+    /// What lies past the map's edge, so small maps never show black bars (e.g. in portrait): on the
+    /// continent the sea (`placeSea`); round a cave its ground, under the rock of its walls
+    /// (`CaveWalls`), the roads running on out through the exits, into the gloom.
     private func placeSurroundings() async {
         let margin = Self.surroundingsMargin
+        let around = Continent.sea(round: def, margin: margin)
+        if Continent.origin(of: def) != nil {
+            placeSea(around, margin: margin)
+            return
+        }
         let tile = WorldMap.tileSize
         let tileSize = CGSize(width: tile, height: tile)
         let theme = def.theme
         let fill = SKTileGroup(tileDefinition: SKTileDefinition(texture: art.tileTexture(theme.border ?? theme.ground), size: tileSize))
         let road = SKTileGroup(tileDefinition: SKTileDefinition(texture: art.tileTexture(theme.path), size: tileSize))
-        // Past an edge where a road leads into a cave, the range's rock.
-        let rock = SKTileGroup(tileDefinition: SKTileDefinition(texture: art.tileTexture(theme.hills?.bank ?? "tile_scree"), size: tileSize))
-        let columns = map.columns + margin * 2
-        let rows = map.rows + margin * 2
-        // The wilds round the land that are its own to draw, and how far each cell is from any land.
-        let wilds = Continent.wilds(round: def, margin: margin)
-        let onContinent = Continent.origin(of: def) != nil
-        // A river carries on straight out past the edges it runs over (as `makeGround` has it), its
-        // banks drawn as on the map, into the fog: out into the wilds, not into a land next door.
-        var riverOut: Set<GridPoint> = []
-        for cell in map.river {
-            for step in 1...margin {
-                var out: [GridPoint] = []
-                if cell.row == map.rows - 1 { out.append(GridPoint(col: cell.col, row: cell.row + step)) }
-                if cell.row == 0 { out.append(GridPoint(col: cell.col, row: -step)) }
-                if cell.col == map.columns - 1 { out.append(GridPoint(col: cell.col + step, row: cell.row)) }
-                if cell.col == 0 { out.append(GridPoint(col: -step, row: cell.row)) }
-                for spot in out where wilds[spot] != nil { riverOut.insert(spot) }
-            }
-        }
-        func wet(_ cell: GridPoint) -> Bool {
-            map.contains(cell) ? map.ground[cell.row][cell.col] == .water : riverOut.contains(cell)
-        }
-        let waterID = theme.water ?? "tile_water"
-        let water = SKTileGroup(tileDefinition: SKTileDefinition(textures: art.waterFrames(waterID), size: tileSize, timePerFrame: 0.9))
-        var nearRiver: Set<GridPoint> = []
-        for cell in riverOut {
-            for dr in -1...1 { for dc in -1...1 { nearRiver.insert(GridPoint(col: cell.col + dc, row: cell.row + dr)) } }
-        }
-        var banks: [(cell: GridPoint, group: SKTileGroup)] = []
-        for cell in nearRiver.sorted(by: WorldMap.inOrder) where !map.contains(cell) && wilds[cell] != nil {
-            var square = 0, pool = 0
-            for dy in -2...2 {
-                for dx in -2...2 where wet(GridPoint(col: cell.col + dx, row: cell.row + dy)) {
-                    pool |= 1 << ((2 - dy) * 5 + dx + 2)
-                    if abs(dx) <= 1, abs(dy) <= 1 { square |= 1 << ((1 - dy) * 3 + dx + 1) }
-                }
-            }
-            guard square != 0 else { continue }
-            if square == 0b111_111_111 {
-                banks.append((cell, water))
-            } else {
-                let bank = art.organicTile(base: theme.border ?? theme.ground, layers: [.init(tile: waterID, mask: pool, style: .water)],
-                                           cell: cell, variant: Self.variant(of: cell))
-                banks.append((cell, SKTileGroup(tileDefinition: SKTileDefinition(texture: bank, size: tileSize))))
-            }
-        }
-        await breathe()
-        let groups = [fill, road, rock, water] + banks.filter { $0.group !== water }.map { $0.group }
-        let surroundings = SKTileMapNode(tileSet: SKTileSet(tileGroups: groups), columns: columns, rows: rows, tileSize: tileSize)
+        let surroundings = SKTileMapNode(tileSet: SKTileSet(tileGroups: [fill, road]), columns: map.columns + margin * 2,
+                                         rows: map.rows + margin * 2, tileSize: tileSize, fillWith: fill)
         surroundings.anchorPoint = .zero
         surroundings.position = CGPoint(x: -CGFloat(margin) * tile, y: -CGFloat(margin) * tile)
-        // Only the wilds: under the land itself its own ground lies, and the lands next door draw theirs.
-        for cell in wilds.keys {
-            surroundings.setTileGroup(fill, forColumn: cell.col + margin, row: cell.row + margin)
-        }
-        let fog = Self.fogColor(from: art.tileTexture(theme.border ?? theme.ground), cave: theme.cave != nil)
-        backgroundColor = fog
-        let ground = SKNode()
-        ground.addChild(surroundings)
-        if let mist = mist(over: wilds, margin: margin, color: fog) { ground.addChild(mist) }
-        let projectedSurroundings = projected(ground)
-        projectedSurroundings.zPosition = -100_001
-        world.addChild(projectedSurroundings)
-
-        // In a cave, each exit's road runs straight out to the edge of the surroundings.
-        var roadCells: Set<GridPoint> = []
-        for exit in def.exits where !onContinent {
+        // Each exit's road runs straight out to the edge of the surroundings.
+        for exit in def.exits {
             for i in 0..<margin {
                 switch exit.edge {
                 case .north, .south:
                     let edgeRow = exit.edge == .north ? map.rows - 1 : 0
                     for col in 0..<map.columns where map.ground[edgeRow][col] == .path {
-                        roadCells.insert(GridPoint(col: col, row: exit.edge == .north ? map.rows + i : -1 - i))
+                        let row = exit.edge == .north ? map.rows + i : -1 - i
+                        surroundings.setTileGroup(road, forColumn: col + margin, row: row + margin)
                     }
                 case .east, .west:
                     let edgeCol = exit.edge == .east ? map.columns - 1 : 0
                     for row in 0..<map.rows where map.ground[row][edgeCol] == .path {
-                        roadCells.insert(GridPoint(col: exit.edge == .east ? map.columns + i : -1 - i, row: row))
+                        let col = exit.edge == .east ? map.columns + i : -1 - i
+                        surroundings.setTileGroup(road, forColumn: col + margin, row: row + margin)
                     }
                 }
             }
         }
-        for cell in roadCells where wilds[cell] != nil {
-            surroundings.setTileGroup(road, forColumn: cell.col + margin, row: cell.row + margin)
-        }
-        for bank in banks where bank.cell.col >= -margin && bank.cell.row >= -margin
-            && bank.cell.col < map.columns + margin && bank.cell.row < map.rows + margin {
-            surroundings.setTileGroup(bank.group, forColumn: bank.cell.col + margin, row: bank.cell.row + margin)
-        }
-        for crag in map.crags {
-            for cell in wilds.keys where map.spot(of: cell, from: crag.edge).inward < 0 {
-                surroundings.setTileGroup(rock, forColumn: cell.col + margin, row: cell.row + margin)
-            }
-        }
-        await breathe()
-
-        // A thicket (or rocks) right along the edge, then a loose treeline, keeping the roads clear
-        // (caves have rock walls instead), and stopping where the mist begins so nothing pokes out of it.
-        guard def.theme.cave == nil, let decor = theme.props.first(where: \.blocking)?.art else { return }
-        let sprite = art.sprite(decor)
-        let rocky = map.rockiness >= 0.3 || ["desert", "sand", "scree", "snow"].contains { theme.ground.contains($0) }
-        let stones = theme.props.map(\.art).filter { $0.contains("boulder") || $0.hasSuffix("rock") }
-        let boulders = (stones.isEmpty ? ["boulder", "small_boulder"] : stones).map { art.sprite($0) }
-        var decorRNG = SeededRandom(text: def.id + "/surroundings")
-        let reach = Double(margin - Self.fogBand)
-        for (index, cell) in wilds.keys.sorted(by: WorldMap.inOrder).enumerated() {
-            if index % 400 == 399 { await breathe() }
-            guard let distance = wilds[cell], distance <= reach else { continue }
-            // The wall along the edge: thick where it meets the land, thinning out.
-            let chance = distance <= 1.5 ? 0.6 : distance <= 2.5 ? 0.4 : 0.14
-            guard Double.random(in: 0..<1, using: &decorRNG) < chance else { continue }
-            let nearRoad = (-1...1).contains { dc in (-1...1).contains { dr in roadCells.contains(GridPoint(col: cell.col + dc, row: cell.row + dr)) } }
-            guard !nearRoad, !nearRiver.contains(cell) else { continue }
-            // Nor on or against the range where a road leads into a cave.
-            guard map.crags.isEmpty || !map.nearCrag(cell) else { continue }
-            if distance <= 2.5, rocky || Double.random(in: 0..<1, using: &decorRNG) < 0.2 {
-                let stone = boulders[Int.random(in: 0..<boulders.count, using: &decorRNG)]
-                addScenery(stone, at: cell, jitter: true, scale: CGFloat.random(in: 0.8...1.2, using: &decorRNG))
-            } else {
-                addScenery(sprite, at: cell)
-            }
-        }
+        let fog = Self.fogColor(from: art.tileTexture(theme.border ?? theme.ground), cave: theme.cave != nil)
+        backgroundColor = fog
+        let ground = SKNode()
+        ground.addChild(surroundings)
+        if let mist = mist(over: around, margin: margin, color: fog) { ground.addChild(mist) }
+        let projectedSurroundings = projected(ground)
+        projectedSurroundings.zPosition = -100_001
+        world.addChild(projectedSurroundings)
     }
 
-    /// Mist over the wilds round the land, by how far each cell is from any land: clear close by,
-    /// thickening from `fogBand` cells short of the margin to solid at it, where the scene's
-    /// background (the same colour) takes over. One pixel a cell, smoothed as it's drawn.
-    private func mist(over wilds: [GridPoint: Double], margin: Int, color: UIColor) -> SKSpriteNode? {
+    /// The water all round the lands (`Self.seaTile`, the same blue whichever land you're in).
+    private static let seaTile = "raw:tile_water"
+
+    /// The sea round a land on the continent (`Continent.sea`, as much of it as is this land's to
+    /// draw): water out to the haze, which thickens with distance from any land until the scene's
+    /// background, the same colour, takes over. Where a road leads into a cave, its range rises out
+    /// of it on rock.
+    private func placeSea(_ sea: [GridPoint: Double], margin: Int) {
+        let tile = WorldMap.tileSize
+        let tileSize = CGSize(width: tile, height: tile)
+        let water = SKTileGroup(tileDefinition: SKTileDefinition(texture: art.tileTexture(Self.seaTile), size: tileSize))
+        let rock = SKTileGroup(tileDefinition: SKTileDefinition(texture: art.tileTexture(def.theme.hills?.bank ?? "tile_scree"), size: tileSize))
+        let surroundings = SKTileMapNode(tileSet: SKTileSet(tileGroups: [water, rock]), columns: map.columns + margin * 2,
+                                         rows: map.rows + margin * 2, tileSize: tileSize)
+        surroundings.anchorPoint = .zero
+        surroundings.position = CGPoint(x: -CGFloat(margin) * tile, y: -CGFloat(margin) * tile)
+        let ranges = map.crags.map { map.hills[$0.hill] }
+        for cell in sea.keys {
+            let group = ranges.contains { $0.cells.contains(cell) } ? rock : water
+            surroundings.setTileGroup(group, forColumn: cell.col + margin, row: cell.row + margin)
+        }
+        let haze = Self.fogColor(from: art.tileTexture(Self.seaTile), cave: false)
+        backgroundColor = haze
+        let ground = SKNode()
+        ground.addChild(surroundings)
+        if let mist = mist(over: sea, margin: margin, color: haze) { ground.addChild(mist) }
+        let projectedSea = projected(ground)
+        projectedSea.zPosition = -100_001
+        world.addChild(projectedSea)
+    }
+
+    /// Haze over what lies round the land (the sea, a cave's gloom), by how far each cell is from any
+    /// land: clear close by, thickening from `fogBand` cells short of the margin to solid at it,
+    /// where the scene's background (the same colour) takes over. One pixel a cell, smoothed.
+    private func mist(over around: [GridPoint: Double], margin: Int, color: UIColor) -> SKSpriteNode? {
         let columns = map.columns + margin * 2, rows = map.rows + margin * 2
         var pixels = [UInt8](repeating: 0, count: columns * rows * 4)
         let start = Double(margin - Self.fogBand)
-        for (cell, distance) in wilds {
+        for (cell, distance) in around {
             let t = min(1, max(0, (distance - start) / Double(Self.fogBand)))
             let alpha = UInt8((t * t * (3 - 2 * t) * 255).rounded())
             // The bitmap's rows run north to south; the grid's count up from the south.

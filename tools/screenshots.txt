@@ -33,7 +33,9 @@ border_cross | newgame,map=sunny_meadow,border=twilight_woods,done=pineapple_har
 border_rocks | newgame,map=genie_desert,border=valley_of_fear,landscape,weather=clear,hour=12 | 6
 border_fence | newgame,map=frog_swamp,border=twilight_woods,landscape,weather=clear,hour=12 | 6
 border_sand  | newgame,map=northern_grassland,border=pineapple_shore,weather=clear,hour=12 | 6
-wilds_edge   | newgame,map=meadowbrook,edge=west,landscape,weather=clear,hour=12 | 6
+coast        | newgame,map=meadowbrook,edge=west,landscape,weather=clear,hour=12 | 6
+city_wall    | newgame,map=bluebird,border=smiling_forest,landscape,weather=clear,hour=12 | 6
+city_gate    | newgame,map=goldburg,border=valley_of_fear,landscape,weather=clear,hour=12 | 6
 battle       | newgame,map=sunny_meadow,battle   | 15
 night        | newgame,map=meadowbrook,hour=22,weather=clear | 8
 dusk         | newgame,map=sunny_meadow,hour=18,weather=clear | 15

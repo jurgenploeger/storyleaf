@@ -220,6 +220,8 @@ final class ArtLibrary {
 
     /// The sprite's own PNG, or — for derived sprites — its base's PNG with the palette swap applied.
     private func sourceImage(_ id: String, depth: Int = 0) -> CGImage? {
+        // "raw:<id>": the art as it's drawn, graded for no map (the sea, the same blue round every land).
+        if id.hasPrefix("raw:") { return sourceImage(String(id.dropFirst(4)), depth: depth) }
         if let url = pngURL(id), let image = UIImage(contentsOfFile: url.path)?.cgImage { return image }
         guard depth < 3, let derive = asset(id)?.derive else { return nil }
         let base: CGImage

@@ -3,9 +3,9 @@ import CoreGraphics
 /// The lands as one continent (content/world.json, laid out by tools/world_layout.py): where each
 /// lies, which touch, and where you can walk across. Lands a road joins are open along the border
 /// they share; a road a quest opens crosses a fence through a gate, shut until the quest is done;
-/// every other border is walled off. Past the lands' edges, where no land lies, are the wilds: rough
-/// ground and thickets you can see but not walk into, fading into mist further out. Caves aren't on
-/// it: you go into them through their mouths, behind a loading card, as ever.
+/// every other border is walled off. All round the lands, where no land lies, is the sea, fading into
+/// haze further out. Caves aren't on it: you go into them through their mouths, behind a loading
+/// card, as ever.
 enum Continent {
     /// A land beside another (`here`), as `here` sees it.
     struct Neighbour {
@@ -120,21 +120,21 @@ enum Continent {
         world.col >= origin.col && world.row >= origin.row && world.col < origin.col + def.width && world.row < origin.row + def.height
     }
 
-    /// The wilds round `here`: which cells within `margin` of its edges lie in no land and are
-    /// `here`'s to draw (it's the nearest land to them, so two lands never draw the same ground
-    /// twice), and for each how many cells it is from the nearest land of all, for the mist.
-    /// Off the continent (a cave), everything round it is its own, as before the continent.
-    static func wilds(round here: MapDef, margin: Int) -> [GridPoint: Double] {
-        var wilds: [GridPoint: Double] = [:]
+    /// The sea round `here`: which cells within `margin` of its edges lie in no land and are
+    /// `here`'s to draw (it's the nearest land to them, so two lands never draw the same water
+    /// twice), and for each how many cells it is from the nearest land of all, for the haze.
+    /// Off the continent (a cave), everything round it is its own: the cave's rock.
+    static func sea(round here: MapDef, margin: Int) -> [GridPoint: Double] {
+        var sea: [GridPoint: Double] = [:]
         let rows = -margin..<(here.height + margin), columns = -margin..<(here.width + margin)
         guard let origin = origin(of: here) else {
             for row in rows {
                 for col in columns where row < 0 || col < 0 || row >= here.height || col >= here.width {
                     let outside = max(0, -row, -col, row - here.height + 1, col - here.width + 1)
-                    wilds[GridPoint(col: col, row: row)] = Double(outside)
+                    sea[GridPoint(col: col, row: row)] = Double(outside)
                 }
             }
-            return wilds
+            return sea
         }
         // The lands near enough to matter, in `here`'s cells.
         let near = lands.compactMap { land -> (id: String, low: GridPoint, high: GridPoint)? in
@@ -164,9 +164,9 @@ enum Continent {
                 }
                 guard !inLand, nearest.id == here.id else { continue }
                 // How far from any land: the mist thickens out there.
-                wilds[cell] = near.reduce(Double.infinity) { min($0, gap(cell, $1.low, $1.high)) }
+                sea[cell] = near.reduce(Double.infinity) { min($0, gap(cell, $1.low, $1.high)) }
             }
         }
-        return wilds
+        return sea
     }
 }

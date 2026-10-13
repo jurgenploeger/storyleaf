@@ -301,15 +301,21 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     over: behind the card as before, where you crossed.
   - Borders: open along a road's whole border; a road a quest opens crosses a fence through a stone arch,
     barred and signed "Closed" until the quest is done (the quest from either side's exit), then open
-    only through the gate; no road, walled off: a wooden fence, or boulders where either land's ground
-    is sand, snow, scree or desert (`BorderArt`, drawn the same by both lands on the line between them).
+    only through the gate; no road, walled off: a wooden fence, boulders where either land's ground
+    is sand, snow, scree or desert, or beside a town a stone city wall with towers every 8 cells and
+    either side of its gate (asked for in playtesting 2026-10-13: "if a city has blocked path, there
+    should be a city wall"; drawn in code, the grey of the town gate's stone). `BorderArt` draws them
+    the same from both lands, on the line between them. A town's own picket fence stays inside.
     Near a border the next land's ground tile shows in a few cells, more the nearer it is, and a wash of
     its colour fades in over the last 9 cells (`WorldScene.blendBand`); the tint, haze, sun flare,
     particles and weather fade out over the last 10 cells toward an open border and in again past it
     (`mood`), and the light and cloud shade carry on across.
-  - The wilds: past an edge with no land, a thicket (rocks on rocky ground) right along it, a loose
-    treeline, then mist by how far it is from any land (`Continent.wilds`: each wild cell drawn by the
-    nearest land only).
+  - The sea (playtesting 2026-10-13: "everything outside of the land should be sea"): all round the
+    lands and in the gaps between them, the same blue whichever land you're in (`raw:tile_water`, not
+    graded by a palette), its shore curving in over a land's outer cells as a lake's does, a river
+    that reaches a coast running out into it, and haze thickening with distance from any land
+    (`Continent.sea`: each cell drawn by the nearest land only). A cave's range rises out of it on
+    rock. 0.5.0's first draft had wilds there (a thicket along the edge, then mist).
   - Not yet: a river that runs over a border into another land stops at the line (Sunny Meadow's into
     Pineapple Shore and Frog Swamp, Smiling Forest's into Prismhaven and Pineapple Shore, Briarmere's
     into Tidewater Shrine). The fix is rivers that line up across lands, like the roads.
