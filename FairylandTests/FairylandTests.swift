@@ -224,6 +224,27 @@ struct ContentTests {
         }
     }
 
+    /// Two lands see the border they share the same from either side: as long, the same road and
+    /// quest across it, open on the same cells, so you can walk back the way you came.
+    @Test func bordersAreTheSameFromEitherSide() {
+        for def in content.maps where content.world[def.id] != nil {
+            for here in Continent.neighbours(of: def) {
+                guard let back = Continent.neighbours(of: here.def).first(where: { $0.def.id == def.id }) else {
+                    Issue.record("\(here.def.id) doesn't see \(def.id) next door")
+                    continue
+                }
+                #expect(here.span.count == back.span.count, "\(def.id) | \(here.def.id): not as long from both sides")
+                #expect(here.quest == back.quest, "\(def.id) | \(here.def.id): a different quest from each side")
+                #expect((here.exit == nil) == (back.exit == nil), "\(def.id) | \(here.def.id): a road from one side only")
+                let shift = here.edge == .east || here.edge == .west ? here.offset.row : here.offset.col
+                for along in here.span {
+                    #expect(here.isOpen(at: along, done: { _ in true }) == back.isOpen(at: along - shift, done: { _ in true }),
+                            "\(def.id) | \(here.def.id): open on one side only, \(along) along")
+                }
+            }
+        }
+    }
+
     @Test func everyMapHasRoomToWalk() {
         for def in content.maps {
             let map = WorldMap(def: def)
@@ -2482,6 +2503,24 @@ struct PerformanceTests {
     #else
     static let mapBuildLimit: Duration = .seconds(3)
     #endif
+
+    /// A land next door builds in the background, giving the frame back every few milliseconds;
+    /// this prints the longest it kept the game waiting in one go (⏱), on big wooded lands. In a
+    /// debug build on a CI simulator it's many times what a phone takes.
+    @Test func landsNextDoorBuildAFewMillisecondsAtATime() async {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        for id in ["smiling_forest", "twilight_woods", "sunny_meadow"] {
+            guard let def = Content.shared.map(id) else { continue }
+            let clock = ContinuousClock()
+            let start = clock.now
+            let grid = WorldMap(def: def)
+            let laidOut = clock.now - start
+            let scene = WorldScene(map: def, session: session, input: InputState(), entry: nil, grid: grid, nextDoor: true)
+            await scene.build(pace: .background) { _ in }
+            #expect(scene.isBuilt)
+            print("⏱ \(id) next door: laid out \(laidOut) (off the main thread), longest slice \(scene.longestSlice), in all \(clock.now - start)")
+        }
+    }
 
     /// Every map must build, and quickly; this prints how long each one takes.
     @Test func mapsBuildQuickly() async {

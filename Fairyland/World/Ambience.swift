@@ -7,9 +7,15 @@ import UIKit
 final class Ambience {
     private let tint: SKSpriteNode?
     private let vignette: SKSpriteNode?
+    /// The drifting particles, and how many each lets go a second at full strength (`setMood`).
+    private var emitters: [(node: SKEmitterNode, rate: CGFloat)] = []
+    private var tintAlpha: CGFloat = 0
 
-    init(_ def: MapDef.Ambience?, world: SKNode, camera: SKCameraNode, bounds: CGRect, seed: String) {
+    /// `inside`: brings a point of `bounds` onto the land itself, so its butterflies start there.
+    init(_ def: MapDef.Ambience?, world: SKNode, camera: SKCameraNode, bounds: CGRect, seed: String,
+         inside: (CGPoint) -> CGPoint = { $0 }) {
         var rng = SeededRandom(text: seed + "/ambience")
+        var drifting: [(node: SKEmitterNode, rate: CGFloat)] = []
 
         // One kind, or several joined with "+" (e.g. "snow+sparkles").
         for kind in (def?.particles ?? "").split(separator: "+").map(String.init) {
@@ -19,6 +25,7 @@ final class Ambience {
                 camera.addChild(emitter)
                 // Already drifting when you arrive, instead of starting from an empty sky.
                 emitter.advanceSimulationTime(TimeInterval(emitter.particleLifetime))
+                drifting.append((emitter, emitter.particleBirthRate))
             }
             if kind == "snow" {
                 // Big close flakes that move with the camera, rushing past in front of the world.
@@ -26,11 +33,12 @@ final class Ambience {
                 near.zPosition = 30_500
                 camera.addChild(near)
                 near.advanceSimulationTime(TimeInterval(near.particleLifetime))
+                drifting.append((near, near.particleBirthRate))
             }
         }
 
         for _ in 0..<(def?.butterflies ?? 0) {
-            let point = CGPoint(x: .random(in: bounds.minX...bounds.maxX, using: &rng), y: .random(in: bounds.minY...bounds.maxY, using: &rng))
+            let point = inside(CGPoint(x: .random(in: bounds.minX...bounds.maxX, using: &rng), y: .random(in: bounds.minY...bounds.maxY, using: &rng)))
             world.addChild(Self.butterfly(at: point, rng: &rng))
         }
 
@@ -60,10 +68,19 @@ final class Ambience {
         } else {
             vignette = nil
         }
+        emitters = drifting
+        tintAlpha = tint?.alpha ?? 0
     }
 
     func resize(to size: CGSize) {
         vignette?.size = CGSize(width: size.width * 1.15, height: size.height * 1.15)
+    }
+
+    /// How much of the map's mood shows, 0...1 (`WorldScene.mood`): its colour and its drifting
+    /// particles fade toward a border you can walk across, as the next land's come in beyond it.
+    func setMood(_ strength: CGFloat) {
+        tint?.alpha = tintAlpha * strength
+        for emitter in emitters { emitter.node.particleBirthRate = emitter.rate * strength }
     }
 
     /// A few stars twinkling around a point (fairy rings, fountains).

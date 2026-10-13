@@ -1,7 +1,7 @@
 import CoreGraphics
 import Foundation
 
-extension WorldMap {
+nonisolated extension WorldMap {
     /// Raised ground out in the fields (`theme.hills`): a range of summits melted into one another,
     /// each rising smoothly from its foot to a rounded top of its own height, so a long ridge of hills
     /// or a mountain among its foothills. You can walk up it anywhere; its trails, the easy way up,

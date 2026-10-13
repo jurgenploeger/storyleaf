@@ -169,6 +169,102 @@ final class GameCoordinator {
         scene.onTravel = { [weak self] exit in self?.travel(through: exit) }
         scene.onDuel = { [weak self] rival, backdrop in self?.startDuel(with: rival, backdrop: backdrop) }
         scene.onInspect = { [weak self] profile in self?.open(.profile(profile)) }
+        scene.onLandsNear = { [weak self] near in self?.landsNear(near) }
+        scene.onCross = { [weak self] neighbour, land, point in self?.cross(neighbour, into: land, at: point) }
+    }
+
+    // MARK: Next door
+
+    /// Lands next door, built (or being built) in the background to show past the borders of the
+    /// land you're in, by id.
+    @ObservationIgnored private var nextDoor: [String: WorldScene] = [:]
+    /// The one being built now: one at a time, the nearest first.
+    @ObservationIgnored private var buildingNextDoor: String?
+    /// How near a land's border you come before it's built and shown (in cells: a little more than
+    /// you can see past it, with time to build it at a walk), and how far you go before it's let go.
+    private static let buildWithin = 48
+    private static let keepWithin = 64
+
+    /// Every half second, the land you're in says how far each land next door is: the nearest not
+    /// built yet starts building, the built ones near enough show past their borders, and those
+    /// left far behind are let go.
+    private func landsNear(_ near: [(neighbour: Continent.Neighbour, distance: Int)]) {
+        let here = world
+        let shown = here.shownNextDoor
+        for (neighbour, distance) in near {
+            let id = neighbour.def.id
+            if let land = nextDoor[id] ?? shown[id] {
+                if land.isBuilt, distance <= Self.keepWithin, shown[id] == nil { here.show(land, as: neighbour) }
+            } else if buildingNextDoor == nil, distance <= Self.buildWithin {
+                buildNextDoor(neighbour.def)
+            }
+        }
+        let wanted = Set(near.filter { $0.distance <= Self.keepWithin }.map(\.neighbour.def.id))
+        for id in Set(nextDoor.keys).union(shown.keys) where !wanted.contains(id) && id != buildingNextDoor {
+            here.hide(id)
+            nextDoor[id] = nil
+            ArtLibrary.shared.release(map: id)
+        }
+    }
+
+    #if DEBUG
+    /// Debug launches (`border=<land>`): that land next door built at once (in long slices) and
+    /// shown, for a screenshot of the border.
+    func showNextDoorForDebug(_ id: String) async {
+        guard let neighbour = world.neighbours.first(where: { $0.def.id == id }) else { return }
+        buildingNextDoor = id
+        let land = WorldScene(map: neighbour.def, session: session, input: input, entry: nil, nextDoor: true)
+        land.friendsElsewhere = world.visitingFriends
+        nextDoor[id] = land
+        await land.build(pace: .hurried) { _ in }
+        buildingNextDoor = nil
+        world.show(land, as: neighbour)
+    }
+    #endif
+
+    /// Lays a land next door out off the main thread, then builds it a few milliseconds a frame.
+    private func buildNextDoor(_ def: MapDef) {
+        buildingNextDoor = def.id
+        let caves = WorldMap.caves
+        let away = world.visitingFriends
+        Task { [weak self] in
+            let grid = await Task.detached(priority: .userInitiated) { WorldMap(def: def, caves: caves) }.value
+            guard let self else { return }
+            let land = WorldScene(map: def, session: session, input: input, entry: nil, grid: grid, nextDoor: true)
+            land.friendsElsewhere = away
+            nextDoor[def.id] = land
+            await land.build(pace: .background) { _ in }
+            if buildingNextDoor == def.id { buildingNextDoor = nil }
+        }
+    }
+
+    /// You've walked over a border. Into a land shown next door: it simply carries on there, no
+    /// loading card (`WorldScene.takeOver`), and the land you left shows next door in its turn.
+    /// Into one not built yet: there behind the card, where you stepped across.
+    private func cross(_ neighbour: Continent.Neighbour, into land: WorldScene?, at point: CGPoint) {
+        guard let land else {
+            SoundEffects.shared.play(.whoosh)
+            go(to: neighbour.def, entry: nil, arrival: point)
+            return
+        }
+        let previous = world
+        previous.isInputLocked = true
+        land.walkedInFrom = previous
+        land.arrivesOnFoot = true
+        nextDoor[land.def.id] = nil
+        nextDoor[previous.def.id] = previous
+        session.data.mapID = land.def.id
+        session.markVisited(land.def.id)
+        session.bossesBeatenHere = []
+        session.reachCheckpoint(land.def)
+        // Its first frame tells the announcer you've arrived (`finishLoading`), as after a card.
+        wire(land)
+        world = land
+        Task { [weak self] in
+            // Once it's taken over (as it shows), with where you stand there.
+            try? await Task.sleep(for: .milliseconds(300))
+            self?.session.save()
+        }
     }
 
     // MARK: Maps
@@ -182,8 +278,9 @@ final class GameCoordinator {
         go(to: destination, entry: exit.edge.opposite)
     }
 
-    /// Shows the loading card first, then builds the (big) map behind it.
-    private func go(to map: MapDef, entry: Edge?) {
+    /// Shows the loading card first, then builds the (big) map behind it. `arrival`: where to stand
+    /// there instead of where its road from `entry` comes in.
+    private func go(to map: MapDef, entry: Edge?, arrival: CGPoint? = nil) {
         // The map you're leaving stays on screen under the card for a moment: nothing more happens on it.
         world.isInputLocked = true
         loadingMapName = map.name
@@ -192,7 +289,7 @@ final class GameCoordinator {
         isReady = false
         Task {
             try? await Task.sleep(for: .milliseconds(280))
-            loadMap(map, entry: entry)
+            loadMap(map, entry: entry, arrival: arrival)
         }
     }
 
@@ -219,14 +316,19 @@ final class GameCoordinator {
         }
     }
 
-    private func loadMap(_ map: MapDef, entry: Edge?) {
+    private func loadMap(_ map: MapDef, entry: Edge?, arrival: CGPoint? = nil) {
         session.data.mapID = map.id
         session.markVisited(map.id)
         session.bossesBeatenHere = []
         if entry == nil { session.playerPosition = nil }
         session.reachCheckpoint(map)
+        // A new start: the lands next door to wherever you were are let go (the new one's are built
+        // as you walk toward them).
+        for id in nextDoor.keys { ArtLibrary.shared.release(map: id) }
+        nextDoor = [:]
+        buildingNextDoor = nil
         let began = Date()
-        let scene = WorldScene(map: map, session: session, input: input, entry: entry)
+        let scene = WorldScene(map: map, session: session, input: input, entry: entry, arrival: arrival)
         wire(scene)
         build(scene, mapID: map.id, began: began)
         input.move = .zero

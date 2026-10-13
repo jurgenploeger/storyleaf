@@ -67,19 +67,25 @@ enum TownFence {
             done.insert(other)
             // Draw from the west/north end to the east/south end.
             let (from, to) = step.0 + step.1 * -1 > 0 ? (cell, other) : (other, cell)
-            let a = map.center(of: from), b = map.center(of: to)
-            let span = CGVector(dx: b.x - a.x, dy: b.y - a.y)
-            let gateSize = CGSize(width: abs(span.dx) + pad * 2, height: abs(span.dy) + gateHeight + pad * 2)
-            let start = CGPoint(x: span.dx >= 0 ? pad : gateSize.width - pad, y: span.dy >= 0 ? pad : gateSize.height - gateHeight - pad)
-            let texture = render(size: gateSize) { context in
-                draw(arch, in: context, from: start, along: span, part: nil, height: gateHeight)
-            }
-            let node = SKSpriteNode(texture: texture, size: gateSize)
-            node.anchorPoint = CGPoint(x: start.x / gateSize.width, y: start.y / gateSize.height)
-            node.position = a
-            node.zPosition = -(a.y + b.y) / 2
-            world.addChild(node)
+            world.addChild(gate(arch, from: map.center(of: from), to: map.center(of: to)))
         }
+    }
+
+    /// The stone arch over a road through a fence, from `a` to `b` on screen (the west or north
+    /// end first), standing on the line between them. `picture`: the arch, cropped (`cropped`).
+    static func gate(_ picture: CGImage, from a: CGPoint, to b: CGPoint) -> SKSpriteNode {
+        let pad: CGFloat = 2
+        let span = CGVector(dx: b.x - a.x, dy: b.y - a.y)
+        let gateSize = CGSize(width: abs(span.dx) + pad * 2, height: abs(span.dy) + gateHeight + pad * 2)
+        let start = CGPoint(x: span.dx >= 0 ? pad : gateSize.width - pad, y: span.dy >= 0 ? pad : gateSize.height - gateHeight - pad)
+        let texture = render(size: gateSize) { context in
+            draw(picture, in: context, from: start, along: span, part: nil, height: gateHeight)
+        }
+        let node = SKSpriteNode(texture: texture, size: gateSize)
+        node.anchorPoint = CGPoint(x: start.x / gateSize.width, y: start.y / gateSize.height)
+        node.position = a
+        node.zPosition = -(a.y + b.y) / 2
+        return node
     }
 
     /// One cell's stretch of a railing picture that has a post at each end (`posts`: how far across
@@ -132,7 +138,7 @@ enum TownFence {
     }
 
     /// The image without its transparent margins.
-    private static func cropped(_ image: CGImage) -> CGImage? {
+    static func cropped(_ image: CGImage) -> CGImage? {
         let width = image.width, height = image.height
         guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
                                       space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),

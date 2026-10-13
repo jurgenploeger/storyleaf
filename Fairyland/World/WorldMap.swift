@@ -9,7 +9,7 @@ nonisolated struct GridPoint: Hashable {
     var row: Int
 }
 
-extension GridPoint {
+nonisolated extension GridPoint {
     init(_ vector: vector_int2) {
         self.init(col: Int(vector.x), row: Int(vector.y))
     }
@@ -22,7 +22,10 @@ extension GridPoint {
 /// Fairyland Online was 2.5D, not flat top-down: the grid is turned 45° and squashed to half
 /// height (a 2:1 isometric diamond). Game logic works on the square grid; `project` and
 /// `unproject` convert to and from on-screen positions.
-final class WorldMap {
+///
+/// Laid out off the main thread when a land is built in the background, as you walk toward it
+/// (`WorldScene.Pace.background`); after that only the main thread touches it.
+nonisolated final class WorldMap: @unchecked Sendable {
     /// Size of a grid cell before projection (on screen a cell is a ~62×31 diamond).
     static let tileSize: CGFloat = 44
 
@@ -172,8 +175,19 @@ final class WorldMap {
         return CGRect(x: xs.min()!, y: ys.min()!, width: xs.max()! - xs.min()!, height: ys.max()! - ys.min()!)
     }
 
-    /// `caveOf`: the cave a map is, if it is one (by its id), for the roads that lead into caves.
-    init(def: MapDef, caveOf: (String) -> MapDef.Cave? = { Content.shared.map($0)?.theme.cave }) {
+    /// The caves the game's maps are, by map id, for the roads that lead into them.
+    @MainActor static var caves: [String: MapDef.Cave] {
+        var caves: [String: MapDef.Cave] = [:]
+        for map in Content.shared.maps { caves[map.id] = map.theme.cave }
+        return caves
+    }
+
+    @MainActor convenience init(def: MapDef) {
+        self.init(def: def, caves: Self.caves)
+    }
+
+    /// `caves`: the caves among the maps, by id (`WorldMap.caves`), for the roads that lead into them.
+    init(def: MapDef, caves: [String: MapDef.Cave]) {
         self.def = def
         columns = def.width
         rows = def.height
@@ -207,7 +221,7 @@ final class WorldMap {
             // Its own random numbers, so the rest of the map comes out as it did before.
             var cragRNG = SeededRandom(text: def.id + "/crags")
             for exit in def.exits {
-                guard let cave = caveOf(exit.to), let range = raiseCrags(along: exit.edge, &cragRNG) else { continue }
+                guard let cave = caves[exit.to], let range = raiseCrags(along: exit.edge, &cragRNG) else { continue }
                 ranges.append((exit.edge, cave, range))
             }
         }
@@ -1398,7 +1412,7 @@ final class WorldMap {
 
     /// How a range's trails wind (`Hill.traceTrail`): the angle their feet aim at (round the front),
     /// which way round they go first, how much further round than they need, and how they bend.
-    private struct Winding {
+    private nonisolated struct Winding {
         let aim, way, stretch, phase: Double
         let bends: Int
     }
@@ -1757,7 +1771,7 @@ final class WorldMap {
     }
 
     /// The cheapest cell first (a binary heap), for `layFootpaths`.
-    private struct CostQueue {
+    private nonisolated struct CostQueue {
         private var heap: [(cell: GridPoint, cost: Double)] = []
 
         mutating func push(_ cell: GridPoint, _ cost: Double) {
@@ -2331,7 +2345,7 @@ final class WorldMap {
     /// One pixel per tile, for the map screen.
     /// `tileColor` gives a tile's colour as the map really shows it (the scene averages its graded
     /// tiles, so the minimap matches the map's palette); without it, rough colours by tile name.
-    func overviewImage(tileColor: ((String) -> PixelColor)? = nil) -> CGImage {
+    @MainActor func overviewImage(tileColor: ((String) -> PixelColor)? = nil) -> CGImage {
         // First match wins, so more specific names come first.
         let tileColors: [(String, UInt32)] = [
             ("snow_path", 0xC9D6E8), ("snow", 0xF2F6FA), ("cave_rock", 0x2B2F3A), ("cave", 0x4A4F5C), ("scree", 0x8C9099),

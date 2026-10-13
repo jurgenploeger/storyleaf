@@ -88,16 +88,52 @@ final class ArtLibrary {
     /// Sprite kinds that take on a map's palette.
     private static let gradedKinds: Set<String> = ["tile", "prop", "building"]
 
+    /// Ground, scenery and buildings graded for the map the library grades for now (`use`).
+    private var gradedTextures: [String: SKTexture] = [:]
+    /// Another map's graded art, kept while it may be wanted again: a land next door, on screen
+    /// past the border or being built while you walk toward it, takes turns with the one you're in.
+    private struct Graded {
+        let palette: MapPalette?
+        let textures: [String: SKTexture]
+        let blended: [String: SKTexture]
+        let tileImages: [String: CGImage]
+        let variants: [String: [UInt8]]
+    }
+    private var stashed: [String: Graded] = [:]
+    /// The stashed maps, the longest unused first. A few at most: the land you're in, those beside
+    /// it and the one you came from.
+    private var stashOrder: [String] = []
+    private static let stashLimit = 4
+
+    /// The palette and map the library grades for now, to go back to (`use`).
+    var grading: (palette: MapPalette?, map: String?) { (palette, paletteMap) }
+
     /// Grades ground, scenery and buildings with `map`'s palette from now on. Sprites already
-    /// on screen keep their textures; cached ones are graded again on next use.
+    /// on screen keep their textures. The art graded for the map before is put aside, and taken
+    /// up again if it comes back soon, so lands can take turns cheaply.
     func use(palette: MapPalette?, for map: String) {
         guard map != paletteMap else { return }
+        if let current = paletteMap {
+            stashed[current] = Graded(palette: self.palette, textures: gradedTextures, blended: blended, tileImages: tileImages, variants: variantCache)
+            stashOrder.removeAll { $0 == current }
+            stashOrder.append(current)
+        }
+        let kept = stashed.removeValue(forKey: map)
+        stashOrder.removeAll { $0 == map }
+        while stashOrder.count > Self.stashLimit { stashed[stashOrder.removeFirst()] = nil }
         paletteMap = map
         self.palette = palette
-        textures = textures.filter { !Self.gradedKinds.contains(kind(of: $0.key)) }
-        blended = [:]
-        tileImages = [:]
-        variantCache = [:]
+        gradedTextures = kept?.textures ?? [:]
+        blended = kept?.blended ?? [:]
+        tileImages = kept?.tileImages ?? [:]
+        variantCache = kept?.variants ?? [:]
+    }
+
+    /// Lets go of a map's graded art: nothing of it is on screen any more.
+    func release(map: String) {
+        guard map != paletteMap else { return }
+        stashed[map] = nil
+        stashOrder.removeAll { $0 == map }
     }
 
     /// A tile's image graded with `palette`, whatever map the library is grading for right now: the
@@ -128,6 +164,7 @@ final class ArtLibrary {
         gearLooks[id] = gear
         layerSets[id] = layers
         textures[id] = nil
+        gradedTextures[id] = nil
         cycles[id] = nil
         images = images.filter { $0.key != id && !$0.key.hasPrefix(id + "#") }
     }
@@ -169,11 +206,15 @@ final class ArtLibrary {
 
     /// The generated PNG for `id` (art/sprites/<id>.png), or nil if it doesn't exist yet.
     func generatedTexture(_ id: String) -> SKTexture? {
-        if let cached = textures[id] { return cached }
+        if let cached = gradedTextures[id] ?? textures[id] { return cached }
         guard let image = gradedImage(id) else { return nil }
         let texture = SKTexture(cgImage: image)
         texture.filteringMode = .nearest
-        textures[id] = texture
+        if Self.gradedKinds.contains(kind(of: id)) {
+            gradedTextures[id] = texture
+        } else {
+            textures[id] = texture
+        }
         return texture
     }
 

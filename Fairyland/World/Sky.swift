@@ -10,6 +10,8 @@ import UIKit
 final class Sky {
     private let shade = SKSpriteNode(color: .white, size: CGSize(width: 3000, height: 3000))
     private let camera: SKCameraNode
+    /// The weather's rain, fog or snow, faded with the map's mood (`setMood`).
+    private let weatherLayer = SKNode()
     private let map: MapDef
     private let start: Date?
     private(set) var weather: Weather?
@@ -40,6 +42,7 @@ final class Sky {
         shade.blendMode = .multiply
         shade.zPosition = 43_000
         camera.addChild(shade)
+        camera.addChild(weatherLayer)
         turn(to: Weather.on(map, since: start), fade: 0)
         color = target()
         apply()
@@ -105,9 +108,24 @@ final class Sky {
         let node = SKNode()
         for child in Self.nodes(for: next) { node.addChild(child) }
         node.alpha = fade > 0 ? 0 : 1
-        camera.addChild(node)
+        weatherLayer.addChild(node)
         if fade > 0 { node.run(.fadeIn(withDuration: fade)) }
         layer = node
+    }
+
+    /// How much of the map's weather shows, 0...1 (`WorldScene.mood`): it thins out toward a
+    /// border you can walk across, and the next land's comes in beyond it.
+    func setMood(_ strength: CGFloat) {
+        weatherLayer.alpha = strength
+        weatherLayer.isHidden = strength <= 0.01
+    }
+
+    /// Walked over a border from under `other`: the light and the clouds' shade go on from where
+    /// they were, easing toward this map's own (`update`).
+    func carryOn(from other: Sky) {
+        color = other.color
+        sunlight = other.sunlight
+        apply()
     }
 
     // MARK: Weather

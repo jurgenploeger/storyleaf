@@ -142,7 +142,9 @@ enum DebugLaunch {
     /// Debug launches leave `Documents/debug-ready` once the map or battle is on screen (or How to
     /// play's part, with `clip`), so tools/screenshots.sh knows when to shoot (the loading curtain
     /// alone can look "drawn").
-    static func markReady() {
+    static func markReady(nextDoorShown: Bool = false) {
+        // `border`: not till the land next door is up too (`apply`).
+        guard flags["border"] == nil || nextDoorShown else { return }
         guard isActive || introClip != nil, let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
         try? Data().write(to: folder.appending(path: "debug-ready"))
     }
@@ -435,6 +437,25 @@ enum DebugLaunch {
         if let map = flags["map"], Content.shared.map(map) != nil {
             session.data.mapID = map
         }
+        // `border=<land>`: you start just inside the border with that land next door, on the road
+        // over it if one crosses, looking across (the land next door comes up before the screenshot,
+        // `apply`). `edge=<north|south|east|west>`: just inside that edge, half way along.
+        if let here = Content.shared.map(session.data.mapID) {
+            let neighbour = flags["border"].flatMap { id in Continent.neighbours(of: here).first { $0.def.id == id } }
+            if let edge = neighbour?.edge ?? flags["edge"].flatMap(Edge.init(rawValue:)) {
+                let length = edge == .north || edge == .south ? here.width : here.height
+                let along = neighbour.map { $0.road ?? ($0.span.lowerBound + $0.span.upperBound) / 2 } ?? length / 2
+                let inward = 5
+                let cell: GridPoint = switch edge {
+                case .east: GridPoint(col: here.width - 1 - inward, row: along)
+                case .west: GridPoint(col: inward, row: along)
+                case .north: GridPoint(col: along, row: here.height - 1 - inward)
+                case .south: GridPoint(col: along, row: inward)
+                }
+                let map = WorldMap(def: here)
+                session.playerPosition = map.center(of: map.isWalkable(cell) ? cell : map.nearestWalkable(to: cell) ?? cell)
+            }
+        }
         #if DEBUG
         if let zoom = flags["zoom"].flatMap(Double.init) {
             WorldScene.zoomForDebug(CGFloat(zoom))
@@ -685,6 +706,22 @@ enum DebugLaunch {
                 }
             }
         }
+        // `border=<land>`: once the map is on screen, the land next door is built and shown (and with
+        // `cross` you walk over into it); only then is the scene ready for its screenshot.
+        #if DEBUG
+        if let id = flags["border"] {
+            Task {
+                for _ in 0..<480 {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    guard coordinator.isReady, coordinator.world.view != nil else { continue }
+                    await coordinator.showNextDoorForDebug(id)
+                    if flags["cross"] != nil { await coordinator.world.walkOverForDebug(into: id) }
+                    markReady(nextDoorShown: true)
+                    return
+                }
+            }
+        }
+        #endif
         // `local=n`: once the map is on screen, the local you start beside starts on their story.
         if flags["local"] != nil {
             Task {

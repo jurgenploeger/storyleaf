@@ -74,7 +74,9 @@ final class Walker: SKNode {
 
     /// Up onto the ground under its spot: as it walks, and once it's on the map.
     func settle() {
-        let height = (scene as? WorldScene)?.groundHeight(at: position) ?? 0
+        // Its own land's ground, even shown past the border of the land you're in.
+        let land = (parent as? LandNode)?.land ?? (scene as? WorldScene)
+        let height = land?.groundHeight(at: position) ?? 0
         guard height != lift else { return }
         lift = height
         body.position.y = height
@@ -152,6 +154,17 @@ final class Walker: SKNode {
         }
         // From the walk's first frame, the weapon in step with it.
         animate()
+    }
+
+    /// Takes on the light of the land it's in now (`Walker.light`), as if made there: the hero and
+    /// the party walking over a border into a land next door.
+    func relight() {
+        sprite.colorBlendFactor = 0
+        Self.lit(sprite)
+        if let weapon = sprite.childNode(withName: "weapon") as? SKSpriteNode {
+            weapon.colorBlendFactor = 0
+            Self.lit(weapon)
+        }
     }
 
     /// Tints a sprite with the map's light, so characters take on the colours around them.

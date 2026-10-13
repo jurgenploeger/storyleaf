@@ -280,6 +280,39 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   in a column of light as feathers spiral down round you; leaving is the same played backward
   (`WorldScene.Feather`, one timeline for both, since 0.4.7: playtesting 2026-10-12 asked for them to match). How FO itself moved players between towns isn't in any source reachable
   from a cloud session (2026-10-05); this is our own design.
+- One continent (ours, since 0.5.0, asked for in playtesting 2026-10-13: "instead of the maps being
+  separated and there being loading screens whenever you go to a new land, one big continuous landscape,
+  the changes in colour and area natural and subtle, similar to RuneScape; areas that are locked or
+  blocked should have fences or rocks; caves still have a loading screen"). FO itself was separate maps
+  you walked between (above), so this is a deliberate departure, like the RuneScape-style trails and
+  minimap icons. RuneScape isn't one loaded map either: it keeps a 104x104-tile area round you and reloads
+  as you near its edge; we do the same per land.
+  - Layout: `content/world.json` places every outdoor land (the caves aren't on it) in world cells,
+    solved by `tools/world_layout.py` (an integer program, scipy/HiGHS): lands a road joins touch along
+    that edge, nothing overlaps, a 30-cell strip stays clear past each cave's mountains, lands keep their
+    atlas order and sit close. Where a road must meet the next land elsewhere along the border, the exit
+    gives it (`meets`): `WorldMap.carveRoad` still lays it toward `at` with the same random drift, so the
+    land's hills, ponds and towns come out as before, and only its last stretch eases over.
+  - The lands next door (`Continent.neighbours`) are laid out off the main thread and built a few
+    milliseconds a frame (`WorldScene.Pace.background`) once you're within 48 cells of their border, then
+    shown past it (their layer moved into the scene you're in, `WorldScene.show(_:as:)`); let go past 64.
+    Walking over hands the scene over with no card (`takeOver`): the hero, companion, party and camera
+    carry on where they were, the land you left shows next door in its turn. Not built yet when you step
+    over: behind the card as before, where you crossed.
+  - Borders: open along a road's whole border; a road a quest opens crosses a fence through a stone arch,
+    barred and signed "Closed" until the quest is done (the quest from either side's exit), then open
+    only through the gate; no road, walled off: a wooden fence, or boulders where either land's ground
+    is sand, snow, scree or desert (`BorderArt`, drawn the same by both lands on the line between them).
+    Near a border the next land's ground tile shows in a few cells, more the nearer it is, and a wash of
+    its colour fades in over the last 9 cells (`WorldScene.blendBand`); the tint, haze, sun flare,
+    particles and weather fade out over the last 10 cells toward an open border and in again past it
+    (`mood`), and the light and cloud shade carry on across.
+  - The wilds: past an edge with no land, a thicket (rocks on rocky ground) right along it, a loose
+    treeline, then mist by how far it is from any land (`Continent.wilds`: each wild cell drawn by the
+    nearest land only).
+  - Not yet: a river that runs over a border into another land stops at the line (Sunny Meadow's into
+    Pineapple Shore and Frog Swamp, Smiling Forest's into Prismhaven and Pineapple Shore, Briarmere's
+    into Tidewater Shrine). The fix is rivers that line up across lands, like the roads.
 - Fairy-tale fields echo the lands: Genie Desert, Lotus Land (with Thumbelina), Gumdrop Peaks, Snow White
   Forest, Emerald Road.
 - Gumdrop Peaks is our nod to the Candy House land (Hansel and Gretel's Grasha Village): a sugar path,

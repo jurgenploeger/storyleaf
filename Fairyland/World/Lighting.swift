@@ -16,8 +16,15 @@ final class Lighting {
     private var sunbeams: [(node: SKSpriteNode, lean: CGFloat)] = []
     private var sun = Sun.noon
     private var screen = CGSize.zero
+    /// The haze's own strength, and how much of the map's mood shows (`setMood`).
+    private var hazeAlpha: CGFloat = 0
+    private var mood: CGFloat = 1
+    private var shine: CGFloat = 1
 
-    init(_ def: MapDef.Ambience?, world: SKNode, camera: SKCameraNode, bounds: CGRect, seed: String) {
+    /// `inside`: brings a point of `bounds` onto the land itself (its diamond), so no pool of light or
+    /// sunbeam falls on the land next door.
+    init(_ def: MapDef.Ambience?, world: SKNode, camera: SKCameraNode, bounds: CGRect, seed: String,
+         inside: (CGPoint) -> CGPoint = { $0 }) {
         var rng = SeededRandom(text: seed + "/light")
         world.addChild(beamLayer)
         camera.addChild(sunGlow)
@@ -27,7 +34,7 @@ final class Lighting {
             for _ in 0..<patches.count {
                 let width = Self.pick(patches.size, fallback: 60...140, &rng)
                 let node = Self.soft(color, size: CGSize(width: width, height: width * 0.5))
-                node.position = Self.point(in: bounds, &rng)
+                node.position = inside(Self.point(in: bounds, &rng))
                 node.zPosition = -99_400
                 node.alpha = alpha
                 let duration = Double.random(in: 2.5...5, using: &rng)
@@ -45,7 +52,7 @@ final class Lighting {
                 let lean = CGFloat.random(in: -0.08...0.08, using: &rng)
                 node.zRotation = Self.tilt(sun) + lean
                 sunbeams.append((node, lean))
-                node.position = Self.point(in: bounds, &rng)
+                node.position = inside(Self.point(in: bounds, &rng))
                 node.zPosition = 22_000
                 node.alpha = 0
                 let wait = Double.random(in: 0...6, using: &rng), duration = Double.random(in: 3...6, using: &rng)
@@ -75,6 +82,7 @@ final class Lighting {
             node.color = color
             node.colorBlendFactor = 1
             node.alpha = CGFloat(def?.hazeAlpha ?? 0.2)
+            hazeAlpha = node.alpha
             node.anchorPoint = CGPoint(x: 0.5, y: 1)
             node.zPosition = 44_000
             camera.addChild(node)
@@ -122,10 +130,20 @@ final class Lighting {
 
     /// How much the sun shines, 0...1: its flare and the sunbeams fade with it.
     func sunlight(_ amount: CGFloat) {
+        shine = amount
         beamLayer.alpha = amount
-        sunGlow.alpha = amount
+        sunGlow.alpha = amount * mood
         beamLayer.isHidden = amount <= 0.01
-        sunGlow.isHidden = amount <= 0.01
+        sunGlow.isHidden = amount * mood <= 0.01
+    }
+
+    /// How much of the map's mood shows, 0...1 (`WorldScene.mood`): its haze and the sun's flare
+    /// in its colours fade toward a border you can walk across, as the next land's come in beyond.
+    func setMood(_ strength: CGFloat) {
+        mood = strength
+        haze?.alpha = hazeAlpha * strength
+        sunGlow.alpha = shine * strength
+        sunGlow.isHidden = shine * strength <= 0.01
     }
 
     // MARK: Per prop

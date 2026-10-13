@@ -93,10 +93,11 @@ engine's formulas, and the CI screenshots. Every finding here was checked agains
 
 ### High
 
-1. **Performance on the wooded maps** (*est.*, needs a phone). Nothing is culled: every prop, shadow, glow and
-   swaying tree stays in the scene graph with its endless actions, about 10-12k nodes and 3.5-4.7k actions on
-   Twilight Woods, Snow White Forest, Smiling Forest and Frog Swamp, against a few hundred on screen. Profile on
-   an iPhone XS or 11; if it's heavy, parent scenery to chunks and attach only those near the camera.
+1. **Performance on the wooded maps** (*est.*, needs a phone). Since 0.5.0 scenery is parented to 400-point
+   chunks and only those near the camera are in the scene (`WorldScene.showChunks`), so Twilight Woods, Snow
+   White Forest, Smiling Forest and Frog Swamp no longer keep their 10-12k nodes and 3.5-4.7k actions live.
+   Still to do on an iPhone XS or 11: profile walking toward a border, where the land next door builds a few
+   milliseconds a frame (the tests print the longest slice, ⏱), and memory with two or three lands loaded.
 2. **Memory grows with every map visit** (*est.* rate). Each new villager or adventurer look caches a recoloured
    sheet in `ArtLibrary` for good; nothing evicts them and nothing handles memory warnings. Fix: an LRU cap on
    runtime looks, and a purge on memory warnings.

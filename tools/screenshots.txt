@@ -25,6 +25,15 @@ candy_mountain | newgame,map=candy_mountain       | 15
 frog_swamp   | newgame,map=frog_swamp            | 15
 pineapple_shore | newgame,map=pineapple_shore     | 15
 moonglow     | newgame,map=moonglow              | 15
+# The continent: a land next door shown past the border (built before the shot), its wall or
+# gate, the ground blending across, and walking over into it with no loading card.
+border_open  | newgame,map=sunny_meadow,border=meadowbrook,landscape,weather=clear,hour=12 | 6
+border_gate  | newgame,map=sunny_meadow,border=pineapple_shore,landscape,weather=clear,hour=12 | 6
+border_cross | newgame,map=sunny_meadow,border=twilight_woods,done=pineapple_harvest,cross,landscape,weather=clear,hour=12 | 6
+border_rocks | newgame,map=genie_desert,border=valley_of_fear,landscape,weather=clear,hour=12 | 6
+border_fence | newgame,map=frog_swamp,border=twilight_woods,landscape,weather=clear,hour=12 | 6
+border_sand  | newgame,map=northern_grassland,border=pineapple_shore,weather=clear,hour=12 | 6
+wilds_edge   | newgame,map=meadowbrook,edge=west,landscape,weather=clear,hour=12 | 6
 battle       | newgame,map=sunny_meadow,battle   | 15
 night        | newgame,map=meadowbrook,hour=22,weather=clear | 8
 dusk         | newgame,map=sunny_meadow,hour=18,weather=clear | 15
