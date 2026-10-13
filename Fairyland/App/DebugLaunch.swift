@@ -72,6 +72,7 @@ import SpriteKit
 ///   npc=<id>       open an NPC dialog
 ///   info=<item>    with npc=<a shop>: open that item's info card
 ///   worldmap       open the world map
+///   visited=a+b    those lands visited (`all`: every one), for the world map
 ///   travel         every town visited, and the window for where a Homeward Feather takes you open
 ///   book           open the Monster Book, with the first 24 monsters already met
 ///   page=<monster> with book: open that monster's page
@@ -445,15 +446,20 @@ enum DebugLaunch {
             if let edge = neighbour?.edge ?? flags["edge"].flatMap(Edge.init(rawValue:)) {
                 let length = edge == .north || edge == .south ? here.width : here.height
                 let along = neighbour.map { $0.road ?? ($0.span.lowerBound + $0.span.upperBound) / 2 } ?? length / 2
-                let inward = 5
-                let cell: GridPoint = switch edge {
-                case .east: GridPoint(col: here.width - 1 - inward, row: along)
-                case .west: GridPoint(col: inward, row: along)
-                case .north: GridPoint(col: along, row: here.height - 1 - inward)
-                case .south: GridPoint(col: along, row: inward)
+                func cell(_ inward: Int) -> GridPoint {
+                    switch edge {
+                    case .east: GridPoint(col: here.width - 1 - inward, row: along)
+                    case .west: GridPoint(col: inward, row: along)
+                    case .north: GridPoint(col: along, row: here.height - 1 - inward)
+                    case .south: GridPoint(col: along, row: inward)
+                    }
                 }
                 let map = WorldMap(def: here)
-                session.playerPosition = map.center(of: map.isWalkable(cell) ? cell : map.nearestWalkable(to: cell) ?? cell)
+                // Over a border, 5 cells in; at the coast, 3 in from where the sea's come in to.
+                let depth = edge == .north || edge == .south ? here.height : here.width
+                let shore = neighbour == nil ? (0..<(depth / 2)).first(where: { map.isWalkable(cell($0)) }) ?? 0 : 0
+                let spot = cell(neighbour == nil ? shore + 3 : 5)
+                session.playerPosition = map.center(of: map.isWalkable(spot) ? spot : map.nearestWalkable(to: spot) ?? spot)
             }
         }
         #if DEBUG
@@ -815,6 +821,10 @@ enum DebugLaunch {
         }
         if flags["book"] != nil {
             coordinator.open(.menu(.companions))
+        }
+        if let seen = flags["visited"] {
+            let ids = seen.split(separator: "+").map(String.init)
+            for map in Content.shared.maps where seen == "all" || ids.contains(map.id) { coordinator.session.markVisited(map.id) }
         }
         if flags["worldmap"] != nil {
             coordinator.open(.worldMap)

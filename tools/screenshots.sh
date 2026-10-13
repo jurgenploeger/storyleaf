@@ -52,7 +52,7 @@ grep -vE '^\s*(#|$)' "$SCENES" | while IFS='|' read -r name flags wait; do
       size=$(stat -f%z "$OUT/$name.png" 2>/dev/null || echo 0)
       [ "$size" -gt 300000 ] && break
     fi
-    if [ $((SECONDS - start)) -gt 150 ]; then echo "  still on the launch screen after 150 s"; break; fi
+    if [ $((SECONDS - start)) -gt 240 ]; then echo "  still on the launch screen after 240 s"; break; fi
     sleep "$poll"
   done
   echo "::notice::$name: first frame after $((SECONDS - start)) s"

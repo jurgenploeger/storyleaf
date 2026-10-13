@@ -221,6 +221,7 @@ final class GameCoordinator {
         land.friendsElsewhere = world.visitingFriends
         nextDoor[id] = land
         await land.build(pace: .hurried) { _ in }
+        _ = land.minimap
         buildingNextDoor = nil
         world.show(land, as: neighbour)
     }
@@ -230,14 +231,17 @@ final class GameCoordinator {
     private func buildNextDoor(_ def: MapDef) {
         buildingNextDoor = def.id
         let caves = WorldMap.caves
+        let coast = Continent.coast(of: def)
         let away = world.visitingFriends
         Task { [weak self] in
-            let grid = await Task.detached(priority: .userInitiated) { WorldMap(def: def, caves: caves) }.value
+            let grid = await Task.detached(priority: .userInitiated) { WorldMap(def: def, caves: caves, coast: coast) }.value
             guard let self else { return }
             let land = WorldScene(map: def, session: session, input: input, entry: nil, grid: grid, nextDoor: true)
             land.friendsElsewhere = away
             nextDoor[def.id] = land
             await land.build(pace: .background) { _ in }
+            // Its picture for the minimap and the world map (`WorldOverview`).
+            _ = land.minimap
             if buildingNextDoor == def.id { buildingNextDoor = nil }
         }
     }

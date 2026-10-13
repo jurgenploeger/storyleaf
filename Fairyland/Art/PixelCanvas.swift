@@ -108,3 +108,31 @@ struct PixelCanvas {
         )!
     }
 }
+
+/// An image of premultiplied RGBA pixels, rows top down, that holds its own copy of them. Never
+/// the image of a bitmap context drawn into memory lent to it (an array's, through a pointer): that
+/// image can go on reading the context's memory, which is gone once the array is, and then shows
+/// whatever moved in there (playtesting 2026-10-13: blocks of coloured garbage over a monster).
+nonisolated enum PixelImage {
+    static func make(_ bytes: [UInt8], width: Int, height: Int) -> CGImage? {
+        guard width > 0, height > 0, bytes.count >= width * height * 4,
+              let provider = CGDataProvider(data: Data(bytes) as CFData) else { return nil }
+        return CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: width * 4,
+                       space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                       provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
+    }
+
+    /// `image`'s pixels (premultiplied RGBA, rows top down), drawn into an array only while it's lent.
+    static func pixels(of image: CGImage, width: Int, height: Int) -> [UInt8]? {
+        var bytes = [UInt8](repeating: 0, count: width * height * 4)
+        let drawn: Bool = bytes.withUnsafeMutableBytes { buffer in
+            guard let context = CGContext(data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+                                          space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            else { return false }
+            context.interpolationQuality = .none
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        return drawn ? bytes : nil
+    }
+}

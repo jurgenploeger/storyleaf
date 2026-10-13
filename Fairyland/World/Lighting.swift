@@ -267,7 +267,9 @@ final class Lighting {
     /// Big soft patches of colour over the ground, leaning toward the palette's shadow and
     /// highlight colours, so it isn't one flat colour: one pixel per cell, stretched over the map
     /// with smooth filtering. Lives in grid space, next to the ground tile map.
-    static func groundVariation(columns: Int, rows: Int, tile: CGFloat, palette: MapPalette?, seed: String) -> SKSpriteNode? {
+    /// `dry`: whether a cell is land (none over the sea, where it's come in over the coast).
+    static func groundVariation(columns: Int, rows: Int, tile: CGFloat, palette: MapPalette?, seed: String,
+                                dry: (Int, Int) -> Bool = { _, _ in true }) -> SKSpriteNode? {
         let strength = palette?.variation ?? 0.12
         guard strength > 0, columns > 0, rows > 0 else { return nil }
         let dark: (r: Double, g: Double, b: Double) = rgb(palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3)
@@ -281,7 +283,7 @@ final class Lighting {
                 let n: Double = coarse.value(col, row) * 0.7 + fine.value(col, row) * 0.3
                 let lean: Double = (n - 0.5) * 2
                 let color = lean < 0 ? dark : light
-                let alpha: Double = strength * min(1, abs(lean) * 1.6)
+                let alpha: Double = dry(col, row) ? strength * min(1, abs(lean) * 1.6) : 0
                 // Image rows run north to south; grid rows count up from the south.
                 let index = ((rows - 1 - row) * columns + col) * 4
                 bytes[index] = UInt8(color.r * alpha * 255)

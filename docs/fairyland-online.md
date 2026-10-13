@@ -299,24 +299,62 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     Walking over hands the scene over with no card (`takeOver`): the hero, companion, party and camera
     carry on where they were, the land you left shows next door in its turn. Not built yet when you step
     over: behind the card as before, where you crossed.
-  - Borders: open along a road's whole border; a road a quest opens crosses a fence through a stone arch,
-    barred and signed "Closed" until the quest is done (the quest from either side's exit), then open
-    only through the gate; no road, walled off: a wooden fence, boulders where either land's ground
-    is sand, snow, scree or desert, or beside a town a stone city wall with towers every 8 cells and
-    either side of its gate (asked for in playtesting 2026-10-13: "if a city has blocked path, there
-    should be a city wall"; drawn in code, the grey of the town gate's stone). `BorderArt` draws them
-    the same from both lands, on the line between them. A town's own picket fence stays inside.
-    Near a border a wash of the next land's colour fades in over the last 9 cells (`WorldScene.blendBand`),
-    as RuneScape blends its ground's colours and keeps the tiles whole (0.5.0's first draft also scattered
+  - Borders (since 0.5.1, playtesting 2026-10-13: "with lands I should be able to walk freely from one
+    to the other, not just one opening"): you walk over anywhere along the border two lands share, once
+    you can. A road a quest opens crosses a fence through a stone arch, barred and signed "Closed" until
+    the quest is done (the quest from either side's exit), then the whole fence comes down. Where no road
+    crosses, a fence (boulders where either land's ground is sand, snow, scree or desert) stands until
+    the roads you can take join the two lands some other way (`Continent.joined`), then comes down too:
+    opening those borders outright would have let you round quests (Twilight Woods into Frog Swamp
+    without "new_friend", Valley of Fear into Genie Desert without "dragon_hangover"; the test
+    `openBordersNeverSkipAQuest` holds it). 0.5.0 opened only a road's border and kept the rest walled.
+    A town keeps a stone city wall with towers every 8 cells and either side of its gate wherever no
+    road crosses or a quest's does (asked for in playtesting 2026-10-13: "if a city has blocked path,
+    there should be a city wall"; drawn in code, the grey of the town gate's stone), the gate opening
+    once the quest's done. `BorderArt` draws them the same from both lands, on the line between them.
+    A town's own picket fence stays inside.
+  - Seams (since 0.5.1, playtesting 2026-10-13: "the different lands still look too squared, it needs
+    to blend together more naturally and in different shapes"): two lands' ground meets along a line
+    wandering up to 16 cells either side of the straight border, in three waves of noise along it (52,
+    18 and 7 cells), coming back to the border over 16 cells at either end of the stretch they share
+    (`Seam`, worked out in world cells so both lands draw the same line). Past it a land shows the next
+    land's ground graded with that land's palette, chequered a pixel or so either side of the line
+    (`ArtLibrary.Over`), grows that land's scenery as thickly as it grows there (`placeSeamProps`), keeps
+    its own accent patches a cell short of it, and shows the next land's colour on the minimap and the
+    world map (`WorldMap.foreign`). Only drawn: where you walk and whose cells they are still stops at
+    the straight line. Not beside a town, whose wall stands on the line.
+    A wash of the next land's colour fades in over the 9 cells either side of the line
+    (`WorldScene.blendBand`), as RuneScape blends its ground's colours (0.5.0's first draft also scattered
     the next land's own ground tiles there, which read as a checkerboard where the two differ); the tint, haze, sun flare,
-    particles and weather fade out over the last 10 cells toward an open border and in again past it
+    particles and weather fade out over the last 10 cells toward a border you can cross and in again past it
     (`mood`), and the light and cloud shade carry on across.
   - The sea (playtesting 2026-10-13: "everything outside of the land should be sea"): all round the
     lands and in the gaps between them, the same blue whichever land you're in (`raw:tile_water`, not
-    graded by a palette), its shore curving in over a land's outer cells as a lake's does, a river
-    that reaches a coast running out into it, and haze thickening with distance from any land
-    (`Continent.sea`: each cell drawn by the nearest land only). A cave's range rises out of it on
-    rock. 0.5.0's first draft had wilds there (a thicket along the edge, then mist).
+    graded by a palette), a river that reaches a coast running out into it, and haze thickening with
+    distance from any land (`Continent.sea`: each cell drawn by the nearest land only). A cave's range
+    rises out of it on rock. 0.5.0's first draft had wilds there (a thicket along the edge, then mist).
+  - Coasts (since 0.5.1, playtesting 2026-10-13: "the maps shouldn't be squares any more but natural
+    landscape areas with natural curves; the sea part should be lower than the land; I shouldn't be able to
+    walk here", from a screenshot of the hero out on the sea): the sea comes in over each land's coast
+    (`Coast`, `WorldMap.carveCoast`), nearer than a depth that wanders between 3 and 30 cells in two waves
+    of noise over the continent, measured from the lands' outline with its outer corners rounded to 30
+    cells: bays, headlands and round capes instead of rectangles. Worked out from where the lands lie
+    alone, so both sides of a border agree (`WorldMap.isOpenSea`; the walls stop where it comes in). Shallow
+    beside a town (its walls stand by the sea), none round a road over a border, and held back round
+    whatever's on a land (roads, ponds and lakes, hills, buildings, a town's fence, people, the ways in),
+    which keeps a ring of dry land; it never cuts a piece of land off or leaves a pool inland, and if it
+    would cut off something that matters it stays out of that land. It lies `WorldScene.seaDrop` (14
+    points) below the land: the land's edge is cut clear along it (`ArtLibrary` style `cut`) over a bank
+    of earth, the land's outline again in layers darkening toward the water, foam at its foot (`bank`).
+    Up to about a seventh of the land goes under. `tools/world_layout.py --check --preview out.png` draws the
+    continent's coasts (without what holds them back) and the seams between lands. The hero had walked out onto the sea by tapping it:
+    a tap past the edge clamped to the edge cell, which counted as the spot itself (`WorldMap.path`).
+  - The world map (since 0.5.1, playtesting 2026-10-13: "the mini map should also open the bigger world
+    map, similar to RuneScape"): tapping the minimap opens the continent as it really looks, every land's
+    minimap laid where it lies (`WorldAtlas`, `WorldOverview`: drawn in the background the first time and
+    kept on disk), turned like the game, dragged and pinched like RuneScape's. Places you haven't been to
+    are faded and named "???", a dark land shows only where you've seen, a quest's shut gate shows its
+    lock, caves show where they open. It was a diagram of badges on the roads between places before.
   - Not yet: a river that runs over a border into another land stops at the line (Sunny Meadow's into
     Pineapple Shore and Frog Swamp, Smiling Forest's into Prismhaven and Pineapple Shore, Briarmere's
     into Tidewater Shrine). The fix is rivers that line up across lands, like the roads.
@@ -756,7 +794,8 @@ the Wishing Seal, which stays the Monster Book's last reward.
     own colour (`GameSession.MinimapMark`, `MinimapIcon`): a gold "!" or "?" over a quest giver with a quest
     for you (as over their head), a book over the others, a heart for the healer, coins for the shop, a hammer
     for the smith, a shield for a guild, a gift for a chest still shut and a sword for a boss still to beat.
-    The world map still shows only the world, so the area you're in stays yours to explore.
+    The world map showed only the world, so the area you're in stayed yours to explore, until 0.5.1 drew
+    every land on it as it looks (below, One continent); a dark land still shows only where you've seen.
 - **Selling products:** Logistics Trading Officers in the three capitals pay more for products than ordinary
   shops.
 

@@ -1,58 +1,61 @@
 import SwiftUI
 
-/// The whole world at a glance, like Fairyland's world map: every place on the roads between
-/// them, turned like the game's isometric view so north points up-left and east up-right, the way
-/// you walk out of a map on screen. A compass in the corner says so. Places you haven't been to show as "???". A quest
-/// closes a road one way only (the way back is always open, so you can't get stuck), so a closed road is dashed from the
-/// end it's closed at, where the fence stands in the game, with a lock in its middle. Tap a place to read about it.
+/// The whole world at a glance, RuneScape-style: the continent's lands as they really lie and look
+/// (each land's minimap, `WorldOverview`), the sea all round, turned like the game's isometric view
+/// so north points up-left and east up-right, the way you walk on screen. A compass in the corner
+/// says so. Drag to look round, pinch (or the buttons) to zoom; it opens on where you are. Places you
+/// haven't been to are faded and named "???"; a quest's shut gate shows its lock; caves show where
+/// they open. A dark land shows only where you've been, as its minimap does. Tap a place to read
+/// about it. A quest closes a road one way only (the way back is always open, so you can't get stuck).
 struct WorldAtlas: View {
     let session: GameSession
     @State private var selected: String?
     @State private var pulse = false
+    /// Points a cell (0 until the map's first laid out), and where the turned map sits in the view.
+    @State private var scale: CGFloat = 0
+    @State private var pan: CGSize = .zero
+    @State private var dragStart: CGSize?
+    @State private var pinchStart: (scale: CGFloat, pan: CGSize)?
+    @State private var picture: CGImage?
+    private let overview = WorldOverview.shared
 
     enum Status: Equatable {
         case here, visited, undiscovered
         case locked(quest: String?)
     }
 
-    private struct Road: Identifiable {
-        let a: MapDef
-        let b: MapDef
-        /// The ends it's closed from (a quest barricades the exit there); it's open the other way.
-        let closedFrom: [String]
-        let known: Bool
-        var id: String { a.id + "|" + b.id }
+    /// A land on the continent and its south-west cell there.
+    private struct Land {
+        let def: MapDef
+        let origin: GridPoint
     }
 
-    /// One step east moves a place a cell right and a cell up; one step north, a cell left and a cell up.
-    private let cell = CGSize(width: 64, height: 46)
-    private var maps: [MapDef] { Content.shared.maps.filter { $0.world?.count == 2 } }
-    /// Screen column (east minus north) and row from the bottom (east plus north) of a place.
-    private func spot(_ map: MapDef) -> (across: Int, up: Int) {
-        let world = map.world ?? [0, 0]
-        return (world[0] - world[1], world[0] + world[1])
+    private var lands: [Land] {
+        let content = Content.shared
+        return content.maps.compactMap { def in content.world[def.id].map { Land(def: def, origin: $0) } }
     }
-    private var minAcross: Int { maps.map { spot($0).across }.min() ?? 0 }
-    private var maxAcross: Int { maps.map { spot($0).across }.max() ?? 0 }
-    private var minUp: Int { maps.map { spot($0).up }.min() ?? 0 }
-    private var maxUp: Int { maps.map { spot($0).up }.max() ?? 0 }
 
-    /// Room round the atlas: a badge reaches past its spot and its name hangs below it, so the
-    /// places along the edges need it to show whole.
-    private let margin = EdgeInsets(top: 10, leading: 10, bottom: 34, trailing: 10)
+    /// The continent's cells, with a border of sea: its south-west cell and how many it spans.
+    private var bounds: (low: GridPoint, columns: Int, rows: Int) {
+        let all = lands
+        let sea = 24
+        let low = GridPoint(col: (all.map(\.origin.col).min() ?? 0) - sea, row: (all.map(\.origin.row).min() ?? 0) - sea)
+        let high = GridPoint(col: (all.map { $0.origin.col + $0.def.width }.max() ?? 0) + sea,
+                             row: (all.map { $0.origin.row + $0.def.height }.max() ?? 0) + sea)
+        return (low, high.col - low.col, high.row - low.row)
+    }
+
+    private static let seaColor = WorldMap.seaColor
+    private static let minScale: CGFloat = 0.15
+    private static let maxScale: CGFloat = 8
 
     var body: some View {
         VStack(spacing: 8) {
-            ScrollView([.vertical, .horizontal], showsIndicators: false) {
-                atlas
-                    .padding(margin)
+            GeometryReader { proxy in
+                map(in: proxy.size)
             }
-            // Opens on where you are: the scroll view lines up the same share of the atlas and of
-            // itself, so your place shows in the middle when it's in the middle of the world, and
-            // whole, nearer the edge, when it's near one.
-            .defaultScrollAnchor(here)
-            .frame(maxHeight: 400)
-            .background(Color(red: 0.16, green: 0.42, blue: 0.62))
+            .frame(height: 400)
+            .background(Color(red: Double(Self.seaColor.r) / 255, green: Double(Self.seaColor.g) / 255, blue: Double(Self.seaColor.b) / 255))
             .overlay(alignment: .topTrailing) { AtlasCompass().padding(6).allowsHitTesting(false) }
 
             if let selected, let map = Content.shared.map(selected) {
@@ -62,62 +65,353 @@ struct WorldAtlas: View {
             }
         }
         .onAppear {
+            overview.prepare()
             withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) { pulse = true }
         }
+        // Drawn again as each land's picture comes in.
+        .task(id: overview.images.count) { picture = compose() }
     }
 
-    private var atlasSize: CGSize {
-        CGSize(width: CGFloat(maxAcross - minAcross + 1) * cell.width, height: CGFloat(maxUp - minUp + 1) * cell.height)
-    }
+    // MARK: The map
 
-    /// Where you are in the scrolling atlas, margins and all, as shares of its size.
-    private var here: UnitPoint {
-        guard let map = maps.first(where: { $0.id == session.data.mapID }) else { return .center }
-        let middle = center(of: map)
-        return UnitPoint(x: (middle.x + margin.leading) / (atlasSize.width + margin.leading + margin.trailing),
-                         y: (middle.y + margin.top) / (atlasSize.height + margin.top + margin.bottom))
-    }
-
-    private var atlas: some View {
-        ZStack(alignment: .topLeading) {
-            ForEach(roads) { road in
-                let paint = road.known ? HUDStyle.plate : HUDStyle.plate.opacity(0.35)
-                if road.closedFrom.isEmpty {
-                    // In one stroke: two halves would overlap in the middle and show a brighter dot there.
-                    Path { path in
-                        path.move(to: center(of: road.a))
-                        path.addLine(to: center(of: road.b))
+    private func map(in size: CGSize) -> some View {
+        let (_, columns, rows) = bounds
+        return ZStack(alignment: .topLeading) {
+            // The picture rides in an overlay, so its size never moves the view's.
+            Color.clear
+                .frame(width: size.width, height: size.height)
+                .overlay(alignment: .topLeading) {
+                    if let picture, scale > 0 {
+                        Image(decorative: picture, scale: 1)
+                            .interpolation(.none)
+                            .resizable()
+                            .frame(width: CGFloat(columns), height: CGFloat(rows))
+                            .transformEffect(CGAffineTransform(a: scale, b: -scale / 2, c: scale, d: scale / 2,
+                                                               tx: pan.width, ty: scale * CGFloat(columns) / 2 + pan.height))
                     }
-                    .stroke(paint, style: StrokeStyle(lineWidth: 5, lineCap: .round))
-                } else {
-                    // In halves, dashed from an end it's closed at, with the lock in the middle.
-                    ForEach([road.a, road.b]) { end in
-                        Path { path in
-                            path.move(to: center(of: end))
-                            path.addLine(to: midpoint(road))
-                        }
-                        .stroke(paint, style: StrokeStyle(lineWidth: 5, lineCap: .round, dash: road.closedFrom.contains(end.id) ? [5, 7] : []))
-                    }
-                    IconImage(.lock, size: 12)
-                        .foregroundStyle(HUDStyle.ink)
-                        .frame(width: 20, height: 20)
-                        .background(Circle().fill(HUDStyle.gold))
-                        .position(midpoint(road))
+                }
+            if scale > 0 {
+                ForEach(marks) { mark in
+                    view(of: mark)
+                        .position(point(of: mark.cell))
                 }
             }
-            ForEach(maps) { map in
-                PlaceBadge(map: map, status: status(of: map), selected: selected == map.id, pulse: pulse, labelWidth: cell.width + 12)
-                    // The tap goes on the badge itself: after .position it'd cover the whole atlas.
-                    .onTapGesture { selected = map.id }
-                    .position(center(of: map))
+            controls(in: size)
+                .frame(width: size.width, height: size.height, alignment: .bottomTrailing)
+        }
+        .frame(width: size.width, height: size.height)
+        .clipped()
+        .contentShape(Rectangle())
+        .gesture(dragging(in: size).simultaneously(with: pinching(in: size)))
+        .onTapGesture(coordinateSpace: .local) { location in tap(at: location) }
+        .onAppear { if scale == 0 { open(in: size) } }
+    }
+
+    /// Opens on where you are, your land filling most of the view.
+    private func open(in size: CGSize) {
+        let here = lands.first { $0.def.id == session.data.mapID }
+        let span = CGFloat((here?.def.width ?? 150) + (here?.def.height ?? 120))
+        scale = clamped(size.width * 0.8 / span, in: size)
+        centre(on: hereCell ?? lands.first.map { GridPoint(col: $0.origin.col + $0.def.width / 2, row: $0.origin.row + $0.def.height / 2) },
+               in: size)
+    }
+
+    private func centre(on cell: GridPoint?, in size: CGSize) {
+        guard let cell else { return }
+        let at = point(of: cell, pan: .zero)
+        pan = clampedPan(CGSize(width: size.width / 2 - at.x, height: size.height / 2 - at.y), in: size)
+    }
+
+    /// Where a cell of the continent shows in the view: its place in the picture (columns east, rows
+    /// north to south), turned and squashed like the world.
+    private func point(of cell: GridPoint, pan: CGSize? = nil) -> CGPoint {
+        let (low, columns, rows) = bounds
+        let u = CGFloat(cell.col - low.col) + 0.5, v = CGFloat(rows - (cell.row - low.row)) - 0.5
+        let shift = pan ?? self.pan
+        return CGPoint(x: scale * (u + v) + shift.width, y: scale * (v - u) / 2 + scale * CGFloat(columns) / 2 + shift.height)
+    }
+
+    /// The continent's cell under a point in the view.
+    private func cell(at location: CGPoint) -> GridPoint {
+        let (low, columns, rows) = bounds
+        let x = (location.x - pan.width) / scale
+        let y = 2 * (location.y - pan.height - scale * CGFloat(columns) / 2) / scale
+        let v = (x + y) / 2, u = (x - y) / 2
+        return GridPoint(col: low.col + Int(u.rounded(.down)), row: low.row + Int((CGFloat(rows) - v).rounded(.down)))
+    }
+
+    private func clamped(_ value: CGFloat, in size: CGSize) -> CGFloat {
+        let (_, columns, rows) = bounds
+        // At the least, the whole continent in view.
+        let whole = min(size.width / CGFloat(columns + rows), size.height * 2 / CGFloat(columns + rows))
+        return min(Self.maxScale, max(min(whole, Self.minScale), value))
+    }
+
+    /// Keeps the middle of the view over the continent.
+    private func clampedPan(_ value: CGSize, in size: CGSize) -> CGSize {
+        let (_, columns, rows) = bounds
+        let wide = scale * CGFloat(columns + rows), tall = wide / 2
+        return CGSize(width: min(size.width / 2, max(size.width / 2 - wide, value.width)),
+                      height: min(size.height / 2, max(size.height / 2 - tall, value.height)))
+    }
+
+    private func dragging(in size: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 4)
+            .onChanged { value in
+                let start = dragStart ?? pan
+                dragStart = start
+                pan = clampedPan(CGSize(width: start.width + value.translation.width, height: start.height + value.translation.height), in: size)
+            }
+            .onEnded { _ in dragStart = nil }
+    }
+
+    private func pinching(in size: CGSize) -> some Gesture {
+        MagnifyGesture()
+            .onChanged { value in
+                let start = pinchStart ?? (scale: scale, pan: pan)
+                pinchStart = start
+                zoom(to: start.scale * value.magnification, around: value.startLocation, from: start, in: size)
+            }
+            .onEnded { _ in pinchStart = nil }
+    }
+
+    /// Zooms to `target`, keeping the spot at `anchor` where it is.
+    private func zoom(to target: CGFloat, around anchor: CGPoint, from start: (scale: CGFloat, pan: CGSize), in size: CGSize) {
+        let next = clamped(target, in: size)
+        let ratio = next / start.scale
+        scale = next
+        pan = clampedPan(CGSize(width: anchor.x - (anchor.x - start.pan.width) * ratio,
+                                height: anchor.y - (anchor.y - start.pan.height) * ratio), in: size)
+    }
+
+    private func controls(in size: CGSize) -> some View {
+        VStack(spacing: 6) {
+            mapButton(Text("+").font(HUDStyle.font(16)), label: L("Zoom in")) {
+                zoom(to: scale * 1.6, around: CGPoint(x: size.width / 2, y: size.height / 2), from: (scale: scale, pan: pan), in: size)
+            }
+            mapButton(Text("−").font(HUDStyle.font(16)), label: L("Zoom out")) {
+                zoom(to: scale / 1.6, around: CGPoint(x: size.width / 2, y: size.height / 2), from: (scale: scale, pan: pan), in: size)
+            }
+            mapButton(IconImage(.user, size: 14), label: L("Where you are")) { centre(on: hereCell, in: size) }
+        }
+        .padding(6)
+    }
+
+    private func mapButton(_ face: some View, label: String, action: @escaping () -> Void) -> some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.25)) { action() }
+        } label: {
+            face
+                .foregroundStyle(HUDStyle.ink)
+                .frame(width: 30, height: 30)
+                .background(Circle().fill(HUDStyle.plate))
+                .overlay(Circle().strokeBorder(HUDStyle.ink.opacity(0.6), lineWidth: 1.5))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+
+    private func tap(at location: CGPoint) {
+        guard scale > 0 else { return }
+        // A cave's mark first, small as it is; else the land under the tap.
+        if let cave = marks.first(where: { $0.kind == .cave && point(of: $0.cell).distance(to: location) < 18 }) {
+            selected = cave.place
+            return
+        }
+        let spot = cell(at: location)
+        selected = lands.first { land in
+            spot.col >= land.origin.col && spot.row >= land.origin.row
+                && spot.col < land.origin.col + land.def.width && spot.row < land.origin.row + land.def.height
+        }?.def.id
+    }
+
+    // MARK: Marks
+
+    /// What's marked over the map: each land's name, the caves where they open, a quest's shut
+    /// gate, and you.
+    private struct Mark: Identifiable {
+        enum Kind { case land, cave, lock, here }
+        let id: String
+        let kind: Kind
+        /// The place it's about (a land or a cave).
+        let place: String
+        let cell: GridPoint
+    }
+
+    private var marks: [Mark] {
+        var marks: [Mark] = []
+        let content = Content.shared
+        for land in lands {
+            let def = land.def
+            marks.append(Mark(id: "land " + def.id, kind: .land, place: def.id,
+                              cell: GridPoint(col: land.origin.col + def.width / 2, row: land.origin.row + def.height / 2)))
+            for exit in def.exits {
+                let crossing = Self.crossing(of: exit, in: land)
+                if content.world[exit.to] == nil, content.map(exit.to) != nil {
+                    marks.append(Mark(id: "cave \(def.id) \(exit.to)", kind: .cave, place: exit.to, cell: crossing))
+                } else if !session.canTravel(exit), session.hasVisited(def.id) || session.hasVisited(exit.to) {
+                    marks.append(Mark(id: "lock \(def.id) \(exit.to)", kind: .lock, place: exit.to, cell: crossing))
+                }
             }
         }
-        .frame(width: atlasSize.width, height: atlasSize.height)
+        if let here = hereCell { marks.append(Mark(id: "here", kind: .here, place: session.data.mapID, cell: here)) }
+        return marks
+    }
+
+    /// Where a road leaves a land through `exit`, on the continent.
+    private static func crossing(of exit: MapDef.Exit, in land: Land) -> GridPoint {
+        let def = land.def
+        let length = exit.edge == .east || exit.edge == .west ? def.height : def.width
+        let along = length / 2 + (exit.meets ?? exit.at ?? 0)
+        let local: GridPoint = switch exit.edge {
+        case .east: GridPoint(col: def.width - 1, row: along)
+        case .west: GridPoint(col: 0, row: along)
+        case .north: GridPoint(col: along, row: def.height - 1)
+        case .south: GridPoint(col: along, row: 0)
+        }
+        return GridPoint(col: land.origin.col + local.col, row: land.origin.row + local.row)
+    }
+
+    /// Where you are on the continent: in a land, where you stand; in a cave, where it opens.
+    private var hereCell: GridPoint? {
+        let id = session.data.mapID
+        if let origin = Content.shared.world[id] {
+            guard let position = session.playerPosition else { return nil }
+            let grid = WorldMap.unproject(position)
+            return GridPoint(col: origin.col + Int((grid.x / WorldMap.tileSize).rounded(.down)),
+                             row: origin.row + Int((grid.y / WorldMap.tileSize).rounded(.down)))
+        }
+        for land in lands {
+            if let exit = land.def.exits.first(where: { $0.to == id }) { return Self.crossing(of: exit, in: land) }
+        }
+        return nil
+    }
+
+    @ViewBuilder
+    private func view(of mark: Mark) -> some View {
+        switch mark.kind {
+        case .here:
+            ZStack {
+                Circle().fill(HUDStyle.gold.opacity(0.35)).frame(width: pulse ? 26 : 16, height: pulse ? 26 : 16)
+                Circle().fill(HUDStyle.gold).frame(width: 10, height: 10).overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
+            }
+            .allowsHitTesting(false)
+            .accessibilityLabel(L("Where you are"))
+        case .lock:
+            IconImage(.lock, size: 10)
+                .foregroundStyle(HUDStyle.ink)
+                .frame(width: 18, height: 18)
+                .background(Circle().fill(HUDStyle.gold))
+                .allowsHitTesting(false)
+        case .cave:
+            let known = session.hasVisited(mark.place)
+            VStack(spacing: 1) {
+                Circle()
+                    .fill(HUDStyle.ink)
+                    .frame(width: 12, height: 12)
+                    .overlay(Circle().strokeBorder(selected == mark.place ? HUDStyle.gold : HUDStyle.cream.opacity(0.8), lineWidth: 1.5))
+                if scale >= 1.2 || selected == mark.place {
+                    label(known ? Content.shared.map(mark.place)?.name ?? "" : "???", size: 8, color: HUDStyle.cream.opacity(known ? 1 : 0.6))
+                }
+            }
+            .allowsHitTesting(false)
+        case .land:
+            if let def = Content.shared.map(mark.place) {
+                let state = status(of: def)
+                let known = state == .here || state == .visited
+                // Out where the whole continent shows, only where you are and what you tapped.
+                if scale >= 0.45 || state == .here || selected == def.id {
+                    HStack(spacing: 3) {
+                        if known, def.fence == true { IconImage(.star, size: 9).foregroundStyle(HUDStyle.gold) }
+                        label(known ? def.name : "???", size: 10,
+                              color: selected == def.id || state == .here ? HUDStyle.gold : HUDStyle.cream.opacity(known ? 1 : 0.7))
+                    }
+                    .allowsHitTesting(false)
+                    .accessibilityLabel(known ? def.name : L("Undiscovered place"))
+                }
+            }
+        }
+    }
+
+    private func label(_ text: String, size: CGFloat, color: Color) -> some View {
+        Text(text)
+            .font(HUDStyle.font(size))
+            .foregroundStyle(color)
+            .lineLimit(1)
+            .fixedSize()
+            .shadow(color: HUDStyle.ink, radius: 0, x: 1, y: 1)
+            .shadow(color: HUDStyle.ink.opacity(0.6), radius: 1.5)
+    }
+
+    // MARK: The picture
+
+    /// The continent in one picture, a pixel a cell, north up: the sea, and each land's own map (a
+    /// rough patch of its ground's colour until that's drawn), faded where you haven't been, fogged
+    /// where a dark land's still unseen.
+    private func compose() -> CGImage? {
+        let (low, columns, rows) = bounds
+        guard columns > 0, rows > 0,
+              let context = CGContext(data: nil, width: columns, height: rows, bitsPerComponent: 8, bytesPerRow: columns * 4,
+                                      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        context.interpolationQuality = .none
+        let sea = Self.seaColor
+        context.setFillColor(red: CGFloat(sea.r) / 255, green: CGFloat(sea.g) / 255, blue: CGFloat(sea.b) / 255, alpha: 1)
+        context.fill(CGRect(x: 0, y: 0, width: columns, height: rows))
+        for land in lands {
+            let def = land.def
+            let rect = CGRect(x: land.origin.col - low.col, y: land.origin.row - low.row, width: def.width, height: def.height)
+            guard var image = overview.images[def.id] else {
+                let tint = Self.tint(of: def)
+                context.setFillColor(red: tint.r, green: tint.g, blue: tint.b, alpha: 0.55)
+                context.fill(rect.insetBy(dx: 4, dy: 4))
+                continue
+            }
+            if def.ambience?.darkness != nil,
+               let fogged = WorldScene.fog(UIImage(cgImage: image), seen: session.explored(def.id), columns: def.width, rows: def.height).cgImage {
+                image = fogged
+            }
+            if !session.hasVisited(def.id), def.id != session.data.mapID, let faded = Self.faded(image) { image = faded }
+            context.draw(image, in: rect)
+        }
+        return context.makeImage()
+    }
+
+    /// A land's picture faded toward grey, its sea left as it is: a place you haven't been to yet.
+    private static func faded(_ image: CGImage) -> CGImage? {
+        let width = image.width, height = image.height
+        guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+                                      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
+              let data = context.data
+        else { return nil }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        let pixels = data.bindMemory(to: UInt8.self, capacity: width * height * 4)
+        let sea = seaColor
+        for index in stride(from: 0, to: width * height * 4, by: 4) {
+            if pixels[index] == sea.r, pixels[index + 1] == sea.g, pixels[index + 2] == sea.b { continue }
+            for channel in 0..<3 {
+                pixels[index + channel] = UInt8((Double(pixels[index + channel]) * 0.45 + 150 * 0.55).rounded())
+            }
+        }
+        return context.makeImage()
+    }
+
+    /// A colour for a land not drawn yet, from its ground.
+    private static func tint(of map: MapDef) -> (r: CGFloat, g: CGFloat, b: CGFloat) {
+        let ground = map.theme.ground
+        if map.fence == true { return (0.98, 0.78, 0.45) }
+        if ground.contains("snow") { return (0.9, 0.95, 1) }
+        if ground.contains("desert") || ground.contains("sand") { return (0.95, 0.83, 0.5) }
+        if ground.contains("cave") || ground.contains("scree") { return (0.62, 0.64, 0.72) }
+        if ground.contains("dark") { return (0.55, 0.45, 0.75) }
+        if ground.contains("swamp") { return (0.55, 0.62, 0.35) }
+        if ground.contains("forest") { return (0.36, 0.68, 0.36) }
+        return (0.52, 0.82, 0.42)
     }
 
     // MARK: Caption
 
-    /// About the place you tapped. Nothing until you do: the gold badge already says where you are.
+    /// About the place you tapped. Nothing until you do: the gold mark already says where you are.
     private func caption(for map: MapDef) -> some View {
         Text(captionText(for: map))
             .font(HUDStyle.font(11))
@@ -140,7 +434,7 @@ struct WorldAtlas: View {
     /// The roads out of `map` a quest still closes, a line each (the way back in is open).
     private func closedRoads(from map: MapDef) -> String {
         map.exits.compactMap { exit -> String? in
-            guard !session.canTravel(exit), let other = Content.shared.map(exit.to), other.world?.count == 2 else { return nil }
+            guard !session.canTravel(exit), let other = Content.shared.map(exit.to) else { return nil }
             let place = session.hasVisited(other.id) ? other.name : L("an undiscovered place")
             let quest = exit.requires.flatMap { session.content.quest($0)?.title } ?? L("a quest")
             return "\n" + L("The road to {place} opens after “{quest}”; it's open coming the other way.", ["place": place, "quest": quest])
@@ -160,50 +454,18 @@ struct WorldAtlas: View {
         if map.id == session.data.mapID { return .here }
         if session.hasVisited(map.id) { return .visited }
         // Roads into it from places you've been.
-        let roads = maps.filter { session.hasVisited($0.id) }.flatMap { from in from.exits.filter { $0.to == map.id } }
+        let roads = Content.shared.maps.filter { session.hasVisited($0.id) }.flatMap { from in from.exits.filter { $0.to == map.id } }
         if roads.isEmpty || roads.contains(where: { session.canTravel($0) }) { return .undiscovered }
         return .locked(quest: roads.lazy.compactMap(\.requires).first.flatMap { session.content.quest($0)?.title })
     }
-
-    private var roads: [Road] {
-        var seen = Set<String>()
-        var result: [Road] = []
-        for map in maps {
-            for exit in map.exits {
-                guard let other = Content.shared.map(exit.to), other.world?.count == 2 else { continue }
-                let key = [map.id, other.id].sorted().joined(separator: "|")
-                guard seen.insert(key).inserted else { continue }
-                let back = other.exits.filter { $0.to == map.id }
-                var closedFrom: [String] = []
-                if !session.canTravel(exit) { closedFrom.append(map.id) }
-                if back.contains(where: { !session.canTravel($0) }) { closedFrom.append(other.id) }
-                let known = session.hasVisited(map.id) || session.hasVisited(other.id)
-                result.append(Road(a: map, b: other, closedFrom: closedFrom, known: known))
-            }
-        }
-        return result
-    }
-
-    // MARK: Layout
-
-    private func center(of map: MapDef) -> CGPoint {
-        let at = spot(map)
-        return CGPoint(x: (CGFloat(at.across - minAcross) + 0.5) * cell.width,
-                       y: (CGFloat(maxUp - at.up) + 0.5) * cell.height)
-    }
-
-    private func midpoint(_ road: Road) -> CGPoint {
-        let a = center(of: road.a), b = center(of: road.b)
-        return CGPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
-    }
 }
 
-/// A little compass rose, turned like the atlas: N up-left, E up-right.
+/// A little compass rose, turned like the map: N up-left, E up-right.
 private struct AtlasCompass: View {
     var body: some View {
         let reach: CGFloat = 17
-        // The same slant as a step between places on the atlas.
-        let slope: CGFloat = 46.0 / 64.0
+        // The slant of the turned map: a step east is two across for one up.
+        let slope: CGFloat = 0.5
         let dy = reach * slope / (1 + slope * slope).squareRoot()
         let dx = reach / (1 + slope * slope).squareRoot()
         ZStack {
@@ -224,75 +486,5 @@ private struct AtlasCompass: View {
         }
         .frame(width: 54, height: 54)
         .accessibilityHidden(true)
-    }
-}
-
-/// One place on the world map: a coloured badge (themed by its ground) with its name, or a
-/// mystery badge until you've been there.
-private struct PlaceBadge: View {
-    let map: MapDef
-    let status: WorldAtlas.Status
-    let selected: Bool
-    let pulse: Bool
-    /// How wide the name under the badge may run.
-    let labelWidth: CGFloat
-
-    var body: some View {
-        ZStack {
-            if status == .here {
-                Circle().fill(HUDStyle.gold.opacity(0.35)).frame(width: pulse ? 50 : 38, height: pulse ? 50 : 38)
-            }
-            Circle()
-                .fill(known ? tint : HUDStyle.ink.opacity(0.85))
-                .frame(width: 34, height: 34)
-                .overlay(Circle().strokeBorder(ring, lineWidth: status == .here || selected ? 3 : 2))
-            switch status {
-            case .locked:
-                IconImage(.lock, size: 15).foregroundStyle(HUDStyle.cream.opacity(0.8))
-            case .undiscovered:
-                Text("?").font(HUDStyle.font(16)).foregroundStyle(HUDStyle.cream.opacity(0.8))
-            case .here, .visited:
-                if map.fence == true { IconImage(.star, size: 15).foregroundStyle(HUDStyle.ink) }
-            }
-        }
-        .frame(width: 50, height: 50)
-        // The name hangs below, outside the badge's frame, so the badge's middle is the circle's
-        // and .position puts the circle right on the crossroads.
-        .overlay(alignment: .top) {
-            Text(known ? map.name : "???")
-                .font(HUDStyle.font(9))
-                .foregroundStyle(status == .here ? HUDStyle.gold : known ? HUDStyle.cream : HUDStyle.cream.opacity(0.6))
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .shadow(color: HUDStyle.ink, radius: 0, x: 1, y: 1)
-                .frame(width: labelWidth)
-                .fixedSize(horizontal: false, vertical: true)
-                .offset(y: 53)
-                .allowsHitTesting(false)
-        }
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(known ? map.name : L("Undiscovered place"))
-        .accessibilityAddTraits(.isButton)
-    }
-
-    private var known: Bool { status == .here || status == .visited }
-
-    private var ring: Color {
-        if status == .here { return HUDStyle.gold }
-        return selected ? HUDStyle.cream : HUDStyle.cream.opacity(known ? 0.8 : 0.4)
-    }
-
-    /// A colour for the kind of place, from its ground tile.
-    private var tint: Color {
-        let ground = map.theme.ground
-        if map.fence == true { return Color(red: 0.98, green: 0.78, blue: 0.45) }
-        if ground.contains("snow") { return Color(red: 0.9, green: 0.95, blue: 1) }
-        if ground.contains("desert") || ground.contains("sand") { return Color(red: 0.95, green: 0.83, blue: 0.5) }
-        if ground.contains("cave") || ground.contains("scree") { return Color(red: 0.62, green: 0.64, blue: 0.72) }
-        if ground.contains("dark") { return Color(red: 0.55, green: 0.45, blue: 0.75) }
-        if ground.contains("swamp") { return Color(red: 0.55, green: 0.62, blue: 0.35) }
-        if ground.contains("forest") { return Color(red: 0.36, green: 0.68, blue: 0.36) }
-        return Color(red: 0.52, green: 0.82, blue: 0.42)
     }
 }

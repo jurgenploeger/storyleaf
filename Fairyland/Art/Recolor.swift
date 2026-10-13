@@ -80,11 +80,7 @@ enum Recolor {
     /// unless a rule explicitly asks for low saturation.
     nonisolated static func apply(_ rules: [RecolorRule], to image: CGImage) -> CGImage? {
         let width = image.width, height = image.height
-        var pixels = [UInt8](repeating: 0, count: width * height * 4)
-        let space = CGColorSpaceCreateDeviceRGB()
-        let info = CGImageAlphaInfo.premultipliedLast.rawValue
-        guard let context = CGContext(data: &pixels, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4, space: space, bitmapInfo: info) else { return nil }
-        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        guard var pixels = PixelImage.pixels(of: image, width: width, height: height) else { return nil }
 
         for index in stride(from: 0, to: pixels.count, by: 4) {
             let alpha = Double(pixels[index + 3])
@@ -103,7 +99,7 @@ enum Recolor {
             pixels[index + 1] = UInt8(max(0, min(255, (ng * alpha).rounded())))
             pixels[index + 2] = UInt8(max(0, min(255, (nb * alpha).rounded())))
         }
-        return context.makeImage()
+        return PixelImage.make(pixels, width: width, height: height)
     }
 
     /// Grades a sprite with a map's palette: hue swaps, saturation, then coloured shadows and highlights.
@@ -111,11 +107,7 @@ enum Recolor {
         var source = image
         if let rules = palette.recolor, !rules.isEmpty, let swapped = apply(rules, to: image) { source = swapped }
         let width = source.width, height = source.height
-        var pixels = [UInt8](repeating: 0, count: width * height * 4)
-        let space = CGColorSpaceCreateDeviceRGB()
-        let info = CGImageAlphaInfo.premultipliedLast.rawValue
-        guard let context = CGContext(data: &pixels, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4, space: space, bitmapInfo: info) else { return nil }
-        context.draw(source, in: CGRect(x: 0, y: 0, width: width, height: height))
+        guard var pixels = PixelImage.pixels(of: source, width: width, height: height) else { return nil }
 
         let saturation = palette.saturation ?? 1
         let tone = palette.tone ?? 0.35, glow = palette.glow ?? tone
@@ -137,7 +129,7 @@ enum Recolor {
             pixels[index + 1] = UInt8(max(0, min(1, g)) * alpha)
             pixels[index + 2] = UInt8(max(0, min(1, b)) * alpha)
         }
-        return context.makeImage()
+        return PixelImage.make(pixels, width: width, height: height)
     }
 
     /// A hex colour's difference from the grey of the same brightness.

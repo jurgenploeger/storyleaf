@@ -1,11 +1,13 @@
 import CoreGraphics
 
 /// The lands as one continent (content/world.json, laid out by tools/world_layout.py): where each
-/// lies, which touch, and where you can walk across. Lands a road joins are open along the border
-/// they share; a road a quest opens crosses a fence through a gate, shut until the quest is done;
-/// every other border is walled off. All round the lands, where no land lies, is the sea, fading into
-/// haze further out. Caves aren't on it: you go into them through their mouths, behind a loading
-/// card, as ever.
+/// lies, which touch, and where you can walk across. You walk from one land into the next anywhere
+/// along the border they share, once you can: where a quest opens the road between them, a fence
+/// stands along it with a barred gate on the road until the quest is done; where no road crosses, a
+/// fence stands until the roads you can take join the two lands some other way (`joined`), so no
+/// border lets you round a quest. A town keeps its city wall, a gate in it where a quest opens the
+/// road. All round the lands, where no land lies, is the sea, fading into haze further out. Caves
+/// aren't on it: you go into them through their mouths, behind a loading card, as ever.
 enum Continent {
     /// A land beside another (`here`), as `here` sees it.
     struct Neighbour {
@@ -25,19 +27,37 @@ enum Continent {
         /// The quest that opens the road, from either side (maps.json gives it on the side you
         /// come from first; the border's the same gate both ways).
         let quest: String?
+        /// Whether either land is a town, walled in: you go in and out through its gates.
+        let town: Bool
 
         /// Whether you can walk across where the border is `along` (a cell along it, as `span`
-        /// counts): anywhere along a road's border; through its gate, only once its quest is done,
-        /// where a quest opens the road; nowhere where no road crosses.
-        func isOpen(at along: Int, done: (String) -> Bool) -> Bool {
-            guard exit != nil, span.contains(along) else { return false }
+        /// counts). `done`: whether you've done a quest; `joined`: whether the roads you can take
+        /// join the two lands already (`Continent.joined`). Anywhere along it once you can cross
+        /// at all (`isCrossable`); along a town's wall only where a road crosses, through its gate
+        /// once the quest's done where a quest opens it.
+        func isOpen(at along: Int, done: (String) -> Bool, joined: Bool) -> Bool {
+            guard span.contains(along) else { return false }
+            guard town else { return isCrossable(done: done, joined: joined) }
+            guard exit != nil else { return false }
             guard let quest else { return true }
             guard let road else { return false }
             return abs(along - road) <= Continent.gateReach && done(quest)
         }
 
-        /// Whether the whole border is walled off (only a gate, if that, in it): no road, or a quest's.
-        var isWalled: Bool { exit == nil || quest != nil }
+        /// Whether you can walk across it anywhere: a road crosses it with no quest, or its quest
+        /// is done; where no road crosses, once the roads you can take join the two lands (`joined`),
+        /// so it never takes you round a quest. Not beside a town (only through its gates).
+        func isCrossable(done: (String) -> Bool, joined: Bool) -> Bool {
+            if let quest { return done(quest) }
+            guard !town else { return exit != nil }
+            return exit != nil || joined
+        }
+
+        /// Whether a wall stands along it (`BorderArt`): a town's, wherever no road crosses or a
+        /// quest's does; any other, until you can walk across.
+        func isWalled(done: (String) -> Bool, joined: Bool) -> Bool {
+            town ? exit == nil || quest != nil : !isCrossable(done: done, joined: joined)
+        }
 
         /// A cell of `here`, in this land's own cells.
         func local(_ cell: GridPoint) -> GridPoint {
@@ -104,9 +124,91 @@ enum Continent {
             let length = edge == .east || edge == .west ? here.height : here.width
             let road = exit.map { length / 2 + ($0.meets ?? $0.at ?? 0) }
             found.append(Neighbour(def: def, offset: GridPoint(col: dx, row: dy), edge: edge, span: span, exit: exit, road: road,
-                                   quest: exit == nil ? nil : exit?.requires ?? back?.requires))
+                                   quest: exit == nil ? nil : exit?.requires ?? back?.requires, town: here.fence == true || def.fence == true))
         }
         return found
+    }
+
+    /// Whether the roads you can take now join two maps (`done`: whether you've done a quest): roads
+    /// between lands and into caves and out, each both ways, a road a quest opens once it's done.
+    static func joined(_ first: String, _ second: String, done: (String) -> Bool) -> Bool {
+        reachable(from: first, done: done).contains(second)
+    }
+
+    /// The maps the roads you can take now lead to from `start` (`joined`), it among them.
+    static func reachable(from start: String, done: (String) -> Bool) -> Set<String> {
+        let content = Content.shared
+        var roads: [String: Set<String>] = [:]
+        for def in content.maps {
+            for exit in def.exits {
+                let back = content.map(exit.to)?.exits.first { $0.to == def.id }
+                guard (exit.requires ?? back?.requires).map(done) ?? true else { continue }
+                roads[def.id, default: []].insert(exit.to)
+                roads[exit.to, default: []].insert(def.id)
+            }
+        }
+        var seen: Set<String> = [start]
+        var queue = [start]
+        while let id = queue.popLast() {
+            for next in roads[id] ?? [] where !seen.contains(next) {
+                seen.insert(next)
+                queue.append(next)
+            }
+        }
+        return seen
+    }
+
+    /// Where `here` lies among the lands, for the sea to come in over its coast (`Coast`): the lands
+    /// near it and where roads cross between them, in its cells; and the wandering lines it meets
+    /// the lands beside it along (`Seam`), but a town's. Nil for a cave.
+    static func coast(of here: MapDef) -> Coast? {
+        guard let origin = origin(of: here) else { return nil }
+        let reach = Coast.margin
+        var near: [Coast.Land] = []
+        var crossings: [GridPoint] = []
+        for (def, there) in lands {
+            let low = GridPoint(col: there.col - origin.col, row: there.row - origin.row)
+            let high = GridPoint(col: low.col + def.width - 1, row: low.row + def.height - 1)
+            guard high.col >= -reach, high.row >= -reach, low.col < here.width + reach, low.row < here.height + reach else { continue }
+            near.append(Coast.Land(low: low, high: high, town: def.fence == true))
+            for exit in def.exits where Content.shared.world[exit.to] != nil {
+                let length = exit.edge == .east || exit.edge == .west ? def.height : def.width
+                let along = length / 2 + (exit.meets ?? exit.at ?? 0)
+                let cell: GridPoint = switch exit.edge {
+                case .east: GridPoint(col: high.col, row: low.row + along)
+                case .west: GridPoint(col: low.col, row: low.row + along)
+                case .north: GridPoint(col: low.col + along, row: high.row)
+                case .south: GridPoint(col: low.col + along, row: low.row)
+                }
+                crossings.append(cell)
+            }
+        }
+        let seams = neighbours(of: here).compactMap { neighbour -> Seam? in
+            guard !neighbour.town else { return nil }
+            let vertical = neighbour.edge == .east || neighbour.edge == .west
+            let line: Int = switch neighbour.edge {
+            case .east: origin.col + here.width
+            case .west: origin.col
+            case .north: origin.row + here.height
+            case .south: origin.row
+            }
+            return Seam(neighbour: neighbour.def.id, edge: neighbour.edge, span: neighbour.span, columns: here.width, rows: here.height,
+                        start: vertical ? origin.row : origin.col, line: line, sign: here.id < neighbour.def.id ? 1 : -1)
+        }
+        return Coast(origin: origin, lands: near, crossings: crossings, seams: seams)
+    }
+
+    /// The other lands within `reach` cells of `here`'s edges, each with its south-west cell in
+    /// `here`'s cells (none for a cave): what shows round it on the minimap.
+    static func lands(near here: MapDef, within reach: Int) -> [(def: MapDef, offset: GridPoint)] {
+        guard let origin = origin(of: here) else { return [] }
+        return lands.compactMap { land in
+            guard land.def.id != here.id else { return nil }
+            let low = GridPoint(col: land.origin.col - origin.col, row: land.origin.row - origin.row)
+            guard low.col + land.def.width > -reach, low.row + land.def.height > -reach,
+                  low.col < here.width + reach, low.row < here.height + reach else { return nil }
+            return (land.def, low)
+        }
     }
 
     /// Whether a cell of `here` (in its cells, past its edges) lies in any land.
