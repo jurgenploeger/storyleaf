@@ -629,6 +629,9 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let requires: String?
         /// Where along its edge the road leaves, in cells from the middle of the edge (east/north positive).
         let at: Int?
+        /// Where it meets the next land across the border, if not at `at` (content/world.json lines the
+        /// two sides up): the road is laid toward `at` as ever, its last stretch bending to here.
+        let meets: Int?
         /// Waypoints the road winds through on its way out, as [x, y] cell offsets from the centre.
         let via: [[Int]]?
     }
@@ -1038,6 +1041,7 @@ private nonisolated struct MapsFile: Decodable { let start: String; let maps: [M
 private nonisolated struct MusicFile: Decodable { let songs: [SongDef]; let instruments: [InstrumentDef]? }
 private nonisolated struct ChangelogFile: Decodable { let releases: [ReleaseNote] }
 private nonisolated struct TitlesFile: Decodable { let titles: [TitleDef] }
+private nonisolated struct WorldFile: Decodable { let lands: [String: [Int]] }
 
 /// All game data from the bundled content/ folder. Edit the JSON, rebuild, done. Text is read in
 /// the player's language (`Localizer`): the fields content/i18n/fields.json names are swapped for
@@ -1063,6 +1067,8 @@ final class Content {
         let releases: [ReleaseNote]
         let titles: [TitleDef]
         let rewards: RewardsDef
+        /// Where each outdoor land lies on the continent (content/world.json).
+        let world: [String: GridPoint]
         /// Each monster's card level (`cardLevel`), worked out once.
         let cardLevels: [String: Int]
         /// Quest treasures (`questGiving`): each one's quest.
@@ -1092,6 +1098,9 @@ final class Content {
     var releases: [ReleaseNote] { loaded.releases }
     var titles: [TitleDef] { loaded.titles }
     var rewards: RewardsDef { loaded.rewards }
+    /// Where each outdoor land lies on the one continent (content/world.json): the world cell its
+    /// south-west cell sits on, columns east and rows north. Caves aren't on it.
+    var world: [String: GridPoint] { loaded.world }
 
     /// `strings`: read the data with these translations instead of the chosen language's (tests).
     init(bundle: Bundle = .main, strings: [String: String]? = nil) {
@@ -1163,6 +1172,7 @@ final class Content {
             releases: (load("changelog") as ChangelogFile).releases,
             titles: (load("titles") as TitlesFile).titles,
             rewards: load("rewards"),
+            world: (load("world") as WorldFile).lands.mapValues { GridPoint(col: $0.first ?? 0, row: $0.count > 1 ? $0[1] : 0) },
             cardLevels: cardLevels,
             questTreasures: questTreasures,
             chestTreasures: chestTreasures

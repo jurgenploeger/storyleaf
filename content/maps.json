@@ -379,7 +379,8 @@
       "exits": [
         {
           "edge": "east",
-          "to": "sunny_meadow"
+          "to": "sunny_meadow",
+          "meets": -20
         },
         {
           "edge": "north",
@@ -1526,7 +1527,8 @@
         {
           "edge": "west",
           "to": "meadowbrook",
-          "at": -15
+          "at": -15,
+          "meets": 26
         },
         {
           "edge": "north",
@@ -1570,7 +1572,8 @@
               -36,
               -27
             ]
-          ]
+          ],
+          "meets": -22
         }
       ],
       "encounters": {
@@ -1913,7 +1916,8 @@
         {
           "edge": "south",
           "to": "sunny_meadow",
-          "at": 18
+          "at": 18,
+          "meets": 19
         },
         {
           "edge": "north",
@@ -1933,7 +1937,8 @@
         },
         {
           "edge": "west",
-          "to": "northern_grassland"
+          "to": "northern_grassland",
+          "meets": 2
         }
       ],
       "encounters": {
@@ -2353,7 +2358,8 @@
               -45,
               33
             ]
-          ]
+          ],
+          "meets": 34
         },
         {
           "edge": "south",
@@ -2377,11 +2383,13 @@
         },
         {
           "edge": "north",
-          "to": "swan_lake"
+          "to": "swan_lake",
+          "meets": 5
         },
         {
           "edge": "east",
-          "to": "lotus_land"
+          "to": "lotus_land",
+          "meets": 36
         }
       ],
       "encounters": {
@@ -2977,7 +2985,8 @@
               -12,
               39
             ]
-          ]
+          ],
+          "meets": -7
         },
         {
           "edge": "east",
@@ -3962,11 +3971,13 @@
       "exits": [
         {
           "edge": "south",
-          "to": "smiling_forest"
+          "to": "smiling_forest",
+          "meets": 32
         },
         {
           "edge": "west",
-          "to": "bluebird"
+          "to": "bluebird",
+          "meets": -23
         }
       ],
       "npcs": [
@@ -4416,7 +4427,8 @@
         {
           "edge": "west",
           "to": "smiling_forest",
-          "at": -15
+          "at": -15,
+          "meets": 8
         },
         {
           "edge": "south",
@@ -5221,7 +5233,8 @@
               -12,
               30
             ]
-          ]
+          ],
+          "meets": 27
         },
         {
           "edge": "west",
@@ -5232,7 +5245,8 @@
               -33,
               12
             ]
-          ]
+          ],
+          "meets": 49
         },
         {
           "edge": "east",
@@ -5255,7 +5269,8 @@
               21,
               -33
             ]
-          ]
+          ],
+          "meets": -16
         }
       ],
       "encounters": {
@@ -6077,7 +6092,8 @@
       "exits": [
         {
           "edge": "north",
-          "to": "valley_of_fear"
+          "to": "valley_of_fear",
+          "meets": 29
         },
         {
           "edge": "east",
@@ -6086,11 +6102,13 @@
         {
           "edge": "south",
           "to": "crystal_mountain",
-          "requires": "dragon_hangover"
+          "requires": "dragon_hangover",
+          "meets": -20
         },
         {
           "edge": "west",
-          "to": "goldburg_lake"
+          "to": "goldburg_lake",
+          "meets": 17
         }
       ],
       "npcs": [
@@ -6710,7 +6728,8 @@
         {
           "edge": "west",
           "to": "goldburg",
-          "at": 3
+          "at": 3,
+          "meets": 29
         },
         {
           "edge": "east",
@@ -7169,11 +7188,13 @@
         },
         {
           "edge": "east",
-          "to": "secret_plain"
+          "to": "secret_plain",
+          "meets": -9
         },
         {
           "edge": "west",
-          "to": "rosen_lake"
+          "to": "rosen_lake",
+          "meets": 8
         }
       ],
       "encounters": {
@@ -7578,7 +7599,8 @@
               -24,
               21
             ]
-          ]
+          ],
+          "meets": -4
         },
         {
           "edge": "east",
@@ -7586,7 +7608,8 @@
         },
         {
           "edge": "west",
-          "to": "water_temple"
+          "to": "water_temple",
+          "meets": 29
         },
         {
           "edge": "south",
@@ -8203,7 +8226,8 @@
         },
         {
           "edge": "north",
-          "to": "candy_mountain"
+          "to": "candy_mountain",
+          "meets": -19
         }
       ],
       "encounters": {
@@ -9001,7 +9025,8 @@
         },
         {
           "edge": "east",
-          "to": "smiling_forest"
+          "to": "smiling_forest",
+          "meets": 22
         },
         {
           "edge": "west",
@@ -9009,7 +9034,8 @@
         },
         {
           "edge": "north",
-          "to": "bluebird"
+          "to": "bluebird",
+          "meets": 35
         }
       ],
       "encounters": {
@@ -10174,7 +10200,8 @@
         },
         {
           "edge": "east",
-          "to": "rainbow_city"
+          "to": "rainbow_city",
+          "meets": 15
         }
       ],
       "world": [
@@ -10663,7 +10690,8 @@
         },
         {
           "edge": "north",
-          "to": "snow_white_forest"
+          "to": "snow_white_forest",
+          "meets": 6
         },
         {
           "edge": "east",
@@ -11735,7 +11763,8 @@
         },
         {
           "edge": "south",
-          "to": "rosen_lake"
+          "to": "rosen_lake",
+          "meets": -16
         }
       ],
       "encounters": {
@@ -12535,11 +12564,13 @@
       "exits": [
         {
           "edge": "north",
-          "to": "genie_desert"
+          "to": "genie_desert",
+          "meets": 27
         },
         {
           "edge": "west",
-          "to": "crystal_mountain"
+          "to": "crystal_mountain",
+          "meets": 29
         },
         {
           "edge": "south",
@@ -12887,11 +12918,13 @@
       "exits": [
         {
           "edge": "north",
-          "to": "secret_plain"
+          "to": "secret_plain",
+          "meets": 20
         },
         {
           "edge": "west",
-          "to": "moonglow"
+          "to": "moonglow",
+          "meets": 1
         }
       ],
       "encounters": {
@@ -13302,7 +13335,8 @@
       "exits": [
         {
           "edge": "north",
-          "to": "goldburg_lake"
+          "to": "goldburg_lake",
+          "meets": 54
         },
         {
           "edge": "east",
@@ -13310,7 +13344,8 @@
         },
         {
           "edge": "south",
-          "to": "water_temple"
+          "to": "water_temple",
+          "meets": 15
         }
       ],
       "encounters": {

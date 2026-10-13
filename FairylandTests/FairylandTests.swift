@@ -188,6 +188,42 @@ struct ContentTests {
         #expect(WorldMap(def: try #require(content.map("sunny_meadow"))).crags.isEmpty)
     }
 
+    /// Lands a road joins touch on the continent (content/world.json), and the road runs on across
+    /// the border: where it leaves one land it comes into the next, on the same world cells.
+    @Test func roadsRunOnIntoTheNextLand() throws {
+        var maps: [String: WorldMap] = [:]
+        func grid(_ def: MapDef) -> WorldMap {
+            if let known = maps[def.id] { return known }
+            let made = WorldMap(def: def)
+            maps[def.id] = made
+            return made
+        }
+        for def in content.maps {
+            guard let origin = content.world[def.id] else { continue }
+            for exit in def.exits where exit.edge == .east || exit.edge == .north {
+                guard let next = content.map(exit.to), let there = content.world[next.id] else { continue }
+                let map = grid(def), other = grid(next)
+                // The road's cells along the border, in world cells, on either side of it.
+                let mine: Set<Int>, theirs: Set<Int>
+                if exit.edge == .east {
+                    #expect(origin.col + map.columns == there.col, "\(next.id) doesn't start where \(def.id) ends")
+                    mine = Set((0..<map.rows).filter { map.ground[$0][map.columns - 1] == .path }.map { $0 + origin.row })
+                    theirs = Set((0..<other.rows).filter { other.ground[$0][0] == .path }.map { $0 + there.row })
+                } else {
+                    #expect(origin.row + map.rows == there.row, "\(next.id) doesn't start where \(def.id) ends")
+                    mine = Set((0..<map.columns).filter { map.ground[map.rows - 1][$0] == .path }.map { $0 + origin.col })
+                    theirs = Set((0..<other.columns).filter { other.ground[0][$0] == .path }.map { $0 + there.col })
+                }
+                #expect(mine.intersection(theirs).count >= 2,
+                        "\(def.id) → \(next.id): the road doesn't run on (\(mine.sorted()) meets \(theirs.sorted()))")
+            }
+        }
+        // Every land outside the caves is on the continent.
+        for def in content.maps where def.theme.cave == nil {
+            #expect(content.world[def.id] != nil, "\(def.id) has no place on the continent")
+        }
+    }
+
     @Test func everyMapHasRoomToWalk() {
         for def in content.maps {
             let map = WorldMap(def: def)

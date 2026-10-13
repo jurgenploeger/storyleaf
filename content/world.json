@@ -1,0 +1,32 @@
+{
+  "_about": "Where each outdoor land lies on the one continent, in world cells: the world cell its south-west cell sits on (x east, y north, as a map's own columns and rows run). Lands a road joins touch along that edge and the road meets itself across the border; borders without a road are walled off, and where no land lies are the wilds. Laid out by tools/world_layout.py; check_content.py checks it still fits maps.json.",
+  "lands": {
+    "rainbow_city": [91, 272],
+    "bluebird": [21, 240],
+    "smiling_forest": [91, 152],
+    "wolf_lair": [-149, 150],
+    "candy_mountain": [-49, 140],
+    "snow_white_forest": [256, 126],
+    "northern_grassland": [-15, 60],
+    "pineapple_shore": [95, 44],
+    "puppet_hill": [395, 34],
+    "swan_lake": [255, 22],
+    "meadowbrook": [0, 0],
+    "lotus_land": [395, -38],
+    "sunny_meadow": [80, -76],
+    "twilight_woods": [245, -98],
+    "frog_swamp": [95, -184],
+    "valley_of_fear": [245, -218],
+    "goldburg_lake": [105, -280],
+    "goldburg": [235, -280],
+    "sleepy_town": [480, -318],
+    "genie_desert": [315, -338],
+    "rosen_lake": [35, -384],
+    "crystal_mountain": [165, -400],
+    "secret_plain": [315, -418],
+    "water_temple": [65, -464],
+    "hachoo_island": [300, -490],
+    "moonglow": [165, -505],
+    "emerald_road": [265, -689]
+  }
+}

@@ -611,21 +611,29 @@ final class WorldMap {
     /// A road from the hub (the centre unless the map says otherwise) out through an exit, via
     /// any waypoints the map gives it, winding along a smooth curve and swelling and narrowing a
     /// little (towns keep theirs tidier). The last stretch runs straight at the edge so exits and
-    /// arrivals line up.
+    /// arrivals line up. Where it meets the next land elsewhere along the border (`meets`), it's
+    /// still laid toward `at`, with the same random drift, so the rest of the map comes out as it
+    /// did; only its last stretch eases over to where it crosses.
     private func carveRoad(for exit: MapDef.Exit, _ rng: inout SeededRandom) {
+        let end = roadEnd(exit.edge, at: exit.at ?? 0)
+        let approach = end.point + end.inward * 5
+        let stops = [point(def.hub ?? [0, 0])] + (exit.via ?? []).map(point) + [approach]
+        let meets = exit.meets.map { roadEnd(exit.edge, at: $0).point - end.point } ?? .zero
+        carve(through: stops, then: [end.point], halfWidth: 1.05, bend: meets, &rng)
+    }
+
+    /// Where a road `at` cells along `edge` from its middle crosses it, and the way into the map.
+    private func roadEnd(_ edge: Edge, at: Int) -> (point: CGPoint, inward: CGVector) {
         let middle = point([0, 0])
-        let along = CGFloat(exit.at ?? 0)
+        let along = CGFloat(at)
         let x = min(max(middle.x + along, 4), CGFloat(columns - 4))
         let y = min(max(middle.y + along, 4), CGFloat(rows - 4))
-        let (end, inward): (CGPoint, CGVector) = switch exit.edge {
+        return switch edge {
         case .east: (CGPoint(x: CGFloat(columns), y: y), CGVector(dx: -1, dy: 0))
         case .west: (CGPoint(x: 0, y: y), CGVector(dx: 1, dy: 0))
         case .north: (CGPoint(x: x, y: CGFloat(rows)), CGVector(dx: 0, dy: -1))
         case .south: (CGPoint(x: x, y: 0), CGVector(dx: 0, dy: 1))
         }
-        let approach = end + inward * 5
-        let stops = [point(def.hub ?? [0, 0])] + (exit.via ?? []).map(point) + [approach]
-        carve(through: stops, then: [end], halfWidth: 1.05, &rng)
     }
 
     /// A narrower path to somewhere worth visiting, from the hub (or `from`) via any waypoints.
@@ -634,13 +642,19 @@ final class WorldMap {
         carve(through: stops, then: [], halfWidth: 0.8, &rng)
     }
 
-    private func carve(through stops: [CGPoint], then tail: [CGPoint], halfWidth base: CGFloat, _ rng: inout SeededRandom) {
+    /// `bend`: how far the last stop and the tail move, the stretch from the stop before eased
+    /// over to them (`carveRoad`'s `meets`), after the drift's drawn, so it draws the same numbers.
+    private func carve(through stops: [CGPoint], then tail: [CGPoint], halfWidth base: CGFloat, bend: CGVector = .zero,
+                       _ rng: inout SeededRandom) {
         let fenced = def.fence == true
         // Waypoints between the stops, pushed sideways by a smooth random drift.
         var points = [stops[0]]
         var drift: CGFloat = 0
         let sway: CGFloat = fenced ? 1 : 6
+        // Where the last stretch begins among the points.
+        var lastStretch = 0
         for (a, b) in zip(stops, stops.dropFirst()) {
+            lastStretch = points.count - 1
             let length = a.distance(to: b)
             let back = length > 0 ? CGVector(dx: (a.x - b.x) / length, dy: (a.y - b.y) / length) : CGVector(dx: 0, dy: 1)
             let side = CGVector(dx: -back.dy, dy: back.dx)
@@ -655,7 +669,17 @@ final class WorldMap {
             }
             points.append(b)
         }
-        points += tail
+        if bend != .zero {
+            let last = points.count - 1
+            for index in lastStretch...last {
+                let t = CGFloat(index - lastStretch) / CGFloat(max(1, last - lastStretch))
+                var point = points[index] + bend * (t * t * (3 - 2 * t))
+                point.x = min(max(point.x, 4), CGFloat(columns - 4))
+                point.y = min(max(point.y, 4), CGFloat(rows - 4))
+                points[index] = point
+            }
+        }
+        points += tail.map { $0 + bend }
 
         // Paint along a Catmull-Rom curve through the waypoints.
         var travelled: CGFloat = 0

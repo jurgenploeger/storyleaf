@@ -608,9 +608,14 @@ for map_def in maps.values():
     if "hub" in map_def: inside(map_def["hub"], "hub")
     for exit in map_def["exits"]:
         for point in exit.get("via", []): inside(point, f"road to {exit['to']} waypoint")
-        if "at" in exit:
-            limit = (half_h if exit["edge"] in ("east", "west") else half_w) - 5
-            check(abs(exit["at"]) <= limit, f"map {map_def['id']} exit to {exit['to']}: at {exit['at']} is off the edge")
+        for key in ("at", "meets"):
+            if key in exit:
+                limit = (half_h if exit["edge"] in ("east", "west") else half_w) - 5
+                check(isinstance(exit[key], int) and abs(exit[key]) <= limit,
+                      f"map {map_def['id']} exit to {exit['to']}: {key} {exit[key]} is off the edge")
+        if "meets" in exit:
+            check("cave" not in (maps.get(exit["to"]) or {}).get("theme", {}),
+                  f"map {map_def['id']} exit to {exit['to']}: a road into a cave meets no land (no `meets`)")
     for trail in map_def.get("trails", []):
         inside(trail.get("to"), "trail end")
         for point in trail.get("via", []) + ([trail["from"]] if "from" in trail else []): inside(point, "trail waypoint")
@@ -712,6 +717,13 @@ for map_def in maps.values():
             dx, dy = STEP[exit_def["edge"]]
             check([a[0] + dx, a[1] + dy] == b,
                   f"map {map_def['id']} {exit_def['edge']} exit → {exit_def['to']} isn't one step {exit_def['edge']} on the world map")
+
+# The continent (content/world.json, tools/world_layout.py): every outdoor land has its place, lands a
+# road joins touch with the road meeting itself across the border, and none overlap.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import world_layout  # noqa: E402
+outdoor = {i: m for i, m in maps.items() if "cave" not in m["theme"]}
+errors += world_layout.verify(maps, outdoor, load("content/world.json"))
 
 # Titles (content/titles.json): unique ids, a kind GameSession+Rewards knows, a count above 0 where
 # one's needed (lands and book may leave it out: every one), and a boss's NPC id for `boss`.

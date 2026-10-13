@@ -239,6 +239,7 @@ final class WorldScene: SKScene {
         }
         session.playerPosition = player.position
         lantern?.follow(player.position)
+        showChunks()
         explore()
         isBuilt = true
         progress(1)
@@ -761,7 +762,7 @@ final class WorldScene: SKScene {
                 // Just behind the lamp: whoever stands in front hides the glow, whoever is behind is lit.
                 glow.zPosition = lamp.zPosition - 0.5
                 glow.run(.repeatForever(.sequence([.fadeAlpha(to: 0.5, duration: 1.4), .fadeAlpha(to: 0.3, duration: 1.4)])))
-                world.addChild(glow)
+                chunk(at: glow.position).addChild(glow)
             }
         }
         placeTerraces()
@@ -911,7 +912,7 @@ final class WorldScene: SKScene {
                         node.anchorPoint = slanted.anchor
                         node.position = map.center(of: cell) + up
                         node.zPosition = -map.center(of: cell).y
-                        world.addChild(node)
+                        chunk(at: node.position).addChild(node)
                         continue
                     }
                     let sprite = corner ? pillar : rail
@@ -921,7 +922,7 @@ final class WorldScene: SKScene {
                     // Railings follow the edge they're on.
                     if !corner, col == o.col || col == last.col { node.xScale = -1 }
                     node.zPosition = -map.base(of: cell).y
-                    world.addChild(node)
+                    chunk(at: node.position).addChild(node)
                 }
             }
         }
@@ -1039,13 +1040,13 @@ final class WorldScene: SKScene {
                                 return (from: start + map.height(at: CGPoint(x: node.position.x, y: start)),
                                         z: strip.z + CGFloat(step) * HillArt.stripHeight)
                             }
-                            shadows.append(Lighting.Shadow(under: node, in: world, layers: layers))
+                            shadows.append(Lighting.Shadow(under: node, in: chunk(at: node.position), layers: layers))
                         } else {
-                            shadows.append(Lighting.Shadow(under: node, in: world))
+                            shadows.append(Lighting.Shadow(under: node, in: chunk(at: node.position)))
                         }
                     }
                     if let hex = placement.glow, let color = UIColor(hex: hex) {
-                        Lighting.glow(behind: node, color: color, in: world, rng: &rng)
+                        Lighting.glow(behind: node, color: color, in: chunk(at: node.position), rng: &rng)
                         lantern?.glint(at: node.position + CGVector(dx: 0, dy: node.size.height * 0.4), color: color, width: node.size.width * 1.6)
                     }
                     inGroup += 1
@@ -1067,7 +1068,8 @@ final class WorldScene: SKScene {
             }
             addScenery(sprite, at: anchor, sway: decor.art.contains("tree") || decor.art.contains("flower"))
             if decor.art.contains("fountain") {
-                Ambience.twinkle(around: map.center(of: anchor) + CGVector(dx: 0, dy: 30), radius: 30, count: 4, in: world)
+                let sparkle = map.center(of: anchor) + CGVector(dx: 0, dy: 30)
+                Ambience.twinkle(around: sparkle, radius: 30, count: 4, in: chunk(at: sparkle))
             }
         }
     }
@@ -1089,9 +1091,9 @@ final class WorldScene: SKScene {
                     node.anchorPoint = CGPoint(x: 0.5, y: 0.1)
                     node.position = origin + CGVector(dx: cos(angle) * 52, dy: sin(angle) * 36)
                     node.zPosition = -node.position.y
-                    world.addChild(node)
+                    chunk(at: origin).addChild(node)
                 }
-                Ambience.twinkle(around: origin, radius: 26, count: 5, in: world)
+                Ambience.twinkle(around: origin, radius: 26, count: 5, in: chunk(at: origin))
                 break
             }
         }
@@ -1114,7 +1116,7 @@ final class WorldScene: SKScene {
                     .rotate(toAngle: 0.08, duration: 2.2, shortestUnitArc: true),
                     .rotate(toAngle: -0.08, duration: 2.2, shortestUnitArc: true),
                 ])))
-                world.addChild(node)
+                chunk(at: node.position).addChild(node)
             }
         }
     }
@@ -1295,9 +1297,55 @@ final class WorldScene: SKScene {
             node.zRotation = .random(in: -lean...lean, using: &rng)
             node.run(.repeatForever(.sequence([left, right])))
         }
-        world.addChild(node)
+        chunk(at: node.position).addChild(node)
         focus.add(node)
         return node
+    }
+
+    // MARK: - Chunks
+
+    /// Scenery in square pieces of the screen-space map (`chunk(at:)`), only those near the camera in
+    /// the scene (`showChunks`): a wooded map's thousands of trees, their shadows, glows and sways
+    /// cost nothing while they're out of sight (launch audit: 10-12k nodes, a few hundred on screen).
+    private var chunks: [GridPoint: SKNode] = [:]
+    /// The span of chunks around the camera now in the scene, until the camera moves into another.
+    private var shownChunks: (low: GridPoint, high: GridPoint)?
+    private static let chunkSize: CGFloat = 400
+    /// How far past the screen's edges a chunk is kept: scenery stands up from where it's rooted
+    /// (a mountain's trees as high as its summits), and long shadows reach out from it.
+    private static let chunkMargin: CGFloat = 360
+
+    /// The piece of the map holding scenery at `position` (where it's drawn).
+    private func chunk(at position: CGPoint) -> SKNode {
+        let key = GridPoint(col: Int((position.x / Self.chunkSize).rounded(.down)), row: Int((position.y / Self.chunkSize).rounded(.down)))
+        if let known = chunks[key] { return known }
+        let node = SKNode()
+        node.name = "chunk"
+        chunks[key] = node
+        // Shown (or not) when the chunks are looked at next.
+        shownChunks = nil
+        return node
+    }
+
+    /// Puts the chunks near the camera in the scene and takes the rest out (their actions wait).
+    private func showChunks() {
+        let reach = CGSize(width: size.width / 2 * cam.xScale + Self.chunkMargin, height: size.height / 2 * cam.yScale + Self.chunkMargin)
+        func key(_ x: CGFloat, _ y: CGFloat) -> GridPoint {
+            GridPoint(col: Int((x / Self.chunkSize).rounded(.down)), row: Int((y / Self.chunkSize).rounded(.down)))
+        }
+        let low = key(cam.position.x - reach.width, cam.position.y - reach.height)
+        let high = key(cam.position.x + reach.width, cam.position.y + reach.height)
+        if let shown = shownChunks, shown.low == low, shown.high == high { return }
+        shownChunks = (low, high)
+        for (spot, node) in chunks {
+            let near = spot.col >= low.col && spot.col <= high.col && spot.row >= low.row && spot.row <= high.row
+            if near, node.parent == nil {
+                world.addChild(node)
+            } else if !near, node.parent != nil {
+                node.removeFromParent()
+            }
+        }
+        focus.refocus()
     }
 
     private var feet: [ObjectIdentifier: CGFloat] = [:]
@@ -1990,6 +2038,7 @@ final class WorldScene: SKScene {
             }
         }
         updateCamera(dt)
+        showChunks()
         updateEdgeFade(dt)
     }
 
