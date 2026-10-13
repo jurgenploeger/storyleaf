@@ -59,11 +59,14 @@ nonisolated struct Coast: Sendable {
     func field(columns: Int, rows: Int) -> Field {
         let margin = Self.margin
         let width = columns + margin * 2, height = rows + margin * 2
+        // Each land's rectangle filled in, as far as it reaches into the window.
         var land = [Bool](repeating: false, count: width * height)
-        for y in 0..<height {
-            for x in 0..<width {
-                let cell = GridPoint(col: x - margin, row: y - margin)
-                land[y * width + x] = lands.contains { $0.contains(cell) }
+        for rectangle in lands {
+            let left = max(0, rectangle.low.col + margin), right = min(width - 1, rectangle.high.col + margin)
+            let bottom = max(0, rectangle.low.row + margin), top = min(height - 1, rectangle.high.row + margin)
+            guard left <= right, bottom <= top else { continue }
+            for y in bottom...top {
+                for x in left...right { land[y * width + x] = true }
             }
         }
         // How far each cell is from the open sea, and how far from the lands' outline with its
