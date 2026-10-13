@@ -27,7 +27,7 @@ nonisolated enum Direction: String, CaseIterable {
     }
 }
 
-extension CGPoint {
+nonisolated extension CGPoint {
     static func + (point: CGPoint, vector: CGVector) -> CGPoint {
         CGPoint(x: point.x + vector.dx, y: point.y + vector.dy)
     }
@@ -41,7 +41,7 @@ extension CGPoint {
     }
 }
 
-extension CGVector {
+nonisolated extension CGVector {
     var length: CGFloat { hypot(dx, dy) }
 
     var normalized: CGVector {
@@ -54,7 +54,7 @@ extension CGVector {
     }
 }
 
-extension CGSize {
+nonisolated extension CGSize {
     static func * (size: CGSize, scale: CGFloat) -> CGSize {
         CGSize(width: size.width * scale, height: size.height * scale)
     }

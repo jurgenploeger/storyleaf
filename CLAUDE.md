@@ -13,6 +13,11 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - Brand guidelines: the Figma file `521ECWenGbx2IP3rLgtIWo`, pages Cover to 09 Voice & Tone (logo, colour, type, icons,
   assets, game UI, App Store, voice). Its colours are variables (the Storyleaf collection, with their Swift names);
   `Brand` in `Fairyland/UI/BrandSky.swift` holds the same values, so change both together.
+- `content/world.json` + `tools/world_layout.py`: the lands as one continent (where each lies, in world cells); the
+  tool solves it so roads meet across borders (an exit's `meets`) and `check_content.py` checks it. Rerun it after
+  changing a map's size or exits. `Fairyland/World/Continent.swift` reads it: neighbours, open and walled borders,
+  and the sea all round (`BorderArt` draws the fences, rocks and city walls). Lands next door are built in the background and shown past the border (`WorldScene.show(_:as:)`);
+  you walk over with no loading card (`takeOver`). Caves still load behind the card.
 - `content/*.json`: all game data (maps, monsters, skills, items, quests, music, looks, crowd, announcements, titles,
   rewards: the daily gift, bounties, Monster Book milestones and monster cards). Data-driven;
   most features are a JSON edit.

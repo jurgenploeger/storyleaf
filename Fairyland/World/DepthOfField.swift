@@ -26,7 +26,13 @@ final class DepthOfField {
         let pad: CGSize
     }
 
-    private var entries: [Entry] = []
+    /// The sprites, by what holds them: a map's scenery is in chunks (`WorldScene.chunk(at:)`), and
+    /// only those in the scene are refocused.
+    private struct Group {
+        weak var holder: SKNode?
+        var entries: [Entry] = []
+    }
+    private var groups: [ObjectIdentifier: Group] = [:]
     private var cache: [ObjectIdentifier: [Look]] = [:]
     /// Strongest blur, in points.
     private let blur: Double
@@ -47,7 +53,13 @@ final class DepthOfField {
     /// Lets a scenery sprite drift in and out of focus. Call once it has its texture, size and anchor.
     func add(_ node: SKSpriteNode) {
         guard blur > 0, let texture = node.texture else { return }
-        entries.append(Entry(node: node, sharp: texture, size: node.size, anchor: node.anchorPoint))
+        let key = node.parent.map { ObjectIdentifier($0) } ?? ObjectIdentifier(DepthOfField.self)
+        groups[key, default: Group(holder: node.parent)].entries.append(Entry(node: node, sharp: texture, size: node.size, anchor: node.anchorPoint))
+    }
+
+    /// Refocuses everything on the next `update`, moved or not: chunks have come into the scene.
+    func refocus() {
+        lastCamera = CGPoint(x: CGFloat.infinity, y: CGFloat.infinity)
     }
 
     /// Refocuses around the camera. `halfHeight` is half the visible height in world points.
@@ -57,6 +69,14 @@ final class DepthOfField {
         guard moved >= 1 || abs(halfHeight - lastHalfHeight) > 0.5 else { return }
         lastCamera = camera
         lastHalfHeight = halfHeight
+        for key in Array(groups.keys) {
+            // A chunk out of the scene waits until it's back.
+            if let holder = groups[key]?.holder, holder.parent == nil { continue }
+            refocus(&groups[key]!.entries, camera: camera, halfHeight: halfHeight)
+        }
+    }
+
+    private func refocus(_ entries: inout [Entry], camera: CGPoint, halfHeight: CGFloat) {
         for index in entries.indices {
             let entry = entries[index]
             // Where the sprite's middle sits on screen: 0 on the hero's line, ±1 at the screen's edges.

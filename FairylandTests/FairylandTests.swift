@@ -188,6 +188,68 @@ struct ContentTests {
         #expect(WorldMap(def: try #require(content.map("sunny_meadow"))).crags.isEmpty)
     }
 
+    /// Lands a road joins touch on the continent (content/world.json), and the road runs on across
+    /// the border: where it leaves one land it comes into the next, on the same world cells, as wide.
+    @Test func roadsRunOnIntoTheNextLand() throws {
+        var maps: [String: WorldMap] = [:]
+        func grid(_ def: MapDef) -> WorldMap {
+            if let known = maps[def.id] { return known }
+            let made = WorldMap(def: def)
+            maps[def.id] = made
+            return made
+        }
+        for def in content.maps {
+            guard let origin = content.world[def.id] else { continue }
+            for exit in def.exits where exit.edge == .east || exit.edge == .north {
+                guard let next = content.map(exit.to), let there = content.world[next.id] else { continue }
+                let map = grid(def), other = grid(next)
+                // The road's cells along the border, in world cells, on either side of it.
+                // Only near where it crosses, so another road along the same edge doesn't count.
+                let road = (exit.edge == .east ? map.rows : map.columns) / 2 + (exit.meets ?? exit.at ?? 0)
+                let mine: Set<Int>, theirs: Set<Int>
+                if exit.edge == .east {
+                    #expect(origin.col + map.columns == there.col, "\(next.id) doesn't start where \(def.id) ends")
+                    mine = Set((0..<map.rows).filter { map.ground[$0][map.columns - 1] == .path }.map { $0 + origin.row })
+                    theirs = Set((0..<other.rows).filter { other.ground[$0][0] == .path }.map { $0 + there.row })
+                } else {
+                    #expect(origin.row + map.rows == there.row, "\(next.id) doesn't start where \(def.id) ends")
+                    mine = Set((0..<map.columns).filter { map.ground[map.rows - 1][$0] == .path }.map { $0 + origin.col })
+                    theirs = Set((0..<other.columns).filter { other.ground[0][$0] == .path }.map { $0 + there.col })
+                }
+                let crossing = road + (exit.edge == .east ? origin.row : origin.col)
+                let near = (crossing - 4)...(crossing + 4)
+                let ours = mine.filter { near.contains($0) }, across = theirs.filter { near.contains($0) }
+                #expect(!ours.isEmpty && ours == across,
+                        "\(def.id) → \(next.id): the road doesn't run on (\(ours.sorted()) meets \(across.sorted()))")
+            }
+        }
+        // Every land outside the caves is on the continent.
+        for def in content.maps where def.theme.cave == nil {
+            #expect(content.world[def.id] != nil, "\(def.id) has no place on the continent")
+        }
+    }
+
+    /// Two lands see the border they share the same from either side: as long, the same road and
+    /// quest across it, open on the same cells, so you can walk back the way you came.
+    @Test func bordersAreTheSameFromEitherSide() {
+        for def in content.maps where content.world[def.id] != nil {
+            for here in Continent.neighbours(of: def) {
+                guard let back = Continent.neighbours(of: here.def).first(where: { $0.def.id == def.id }) else {
+                    Issue.record("\(here.def.id) doesn't see \(def.id) next door")
+                    continue
+                }
+                #expect(here.span.count == back.span.count, "\(def.id) | \(here.def.id): not as long from both sides")
+                #expect(here.quest == back.quest, "\(def.id) | \(here.def.id): a different quest from each side")
+                #expect((here.exit == nil) == (back.exit == nil), "\(def.id) | \(here.def.id): a road from one side only")
+                let shift = here.edge == .east || here.edge == .west ? here.offset.row : here.offset.col
+                for along in here.span {
+                    #expect(here.isOpen(at: along, done: { _ in true }) == back.isOpen(at: along - shift, done: { _ in true }),
+                            "\(def.id) | \(here.def.id): open on one side only, \(along) along")
+                }
+            }
+        }
+    }
+
     @Test func everyMapHasRoomToWalk() {
         for def in content.maps {
             let map = WorldMap(def: def)
@@ -2446,6 +2508,24 @@ struct PerformanceTests {
     #else
     static let mapBuildLimit: Duration = .seconds(3)
     #endif
+
+    /// A land next door builds in the background, giving the frame back every few milliseconds;
+    /// this prints the longest it kept the game waiting in one go (⏱), on a big wooded land. In a
+    /// debug build on a CI simulator it's many times what a phone takes.
+    @Test func landsNextDoorBuildAFewMillisecondsAtATime() async {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        for id in ["smiling_forest"] {
+            guard let def = Content.shared.map(id) else { continue }
+            let clock = ContinuousClock()
+            let start = clock.now
+            let grid = WorldMap(def: def)
+            let laidOut = clock.now - start
+            let scene = WorldScene(map: def, session: session, input: InputState(), entry: nil, grid: grid, nextDoor: true)
+            await scene.build(pace: .background) { _ in }
+            #expect(scene.isBuilt)
+            print("⏱ \(id) next door: laid out \(laidOut) (off the main thread), longest slice \(scene.longestSlice), in all \(clock.now - start)")
+        }
+    }
 
     /// Every map must build, and quickly; this prints how long each one takes.
     @Test func mapsBuildQuickly() async {

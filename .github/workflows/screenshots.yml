@@ -26,7 +26,9 @@ jobs:
   # red or green in a few minutes.
   tests:
     runs-on: macos-26
-    timeout-minutes: 30
+    # The suite builds every map several times in a debug build: 23 minutes on 2026-10-12, and
+    # over 30 with the continent's tests, so it was cut off before it could report.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 

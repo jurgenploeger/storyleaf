@@ -9,7 +9,7 @@ nonisolated struct GridPoint: Hashable {
     var row: Int
 }
 
-extension GridPoint {
+nonisolated extension GridPoint {
     init(_ vector: vector_int2) {
         self.init(col: Int(vector.x), row: Int(vector.y))
     }
@@ -22,7 +22,10 @@ extension GridPoint {
 /// Fairyland Online was 2.5D, not flat top-down: the grid is turned 45° and squashed to half
 /// height (a 2:1 isometric diamond). Game logic works on the square grid; `project` and
 /// `unproject` convert to and from on-screen positions.
-final class WorldMap {
+///
+/// Laid out off the main thread when a land is built in the background, as you walk toward it
+/// (`WorldScene.Pace.background`); after that only the main thread touches it.
+nonisolated final class WorldMap: @unchecked Sendable {
     /// Size of a grid cell before projection (on screen a cell is a ~62×31 diamond).
     static let tileSize: CGFloat = 44
 
@@ -172,8 +175,19 @@ final class WorldMap {
         return CGRect(x: xs.min()!, y: ys.min()!, width: xs.max()! - xs.min()!, height: ys.max()! - ys.min()!)
     }
 
-    /// `caveOf`: the cave a map is, if it is one (by its id), for the roads that lead into caves.
-    init(def: MapDef, caveOf: (String) -> MapDef.Cave? = { Content.shared.map($0)?.theme.cave }) {
+    /// The caves the game's maps are, by map id, for the roads that lead into them.
+    @MainActor static var caves: [String: MapDef.Cave] {
+        var caves: [String: MapDef.Cave] = [:]
+        for map in Content.shared.maps { caves[map.id] = map.theme.cave }
+        return caves
+    }
+
+    @MainActor convenience init(def: MapDef) {
+        self.init(def: def, caves: Self.caves)
+    }
+
+    /// `caves`: the caves among the maps, by id (`WorldMap.caves`), for the roads that lead into them.
+    init(def: MapDef, caves: [String: MapDef.Cave]) {
         self.def = def
         columns = def.width
         rows = def.height
@@ -207,7 +221,7 @@ final class WorldMap {
             // Its own random numbers, so the rest of the map comes out as it did before.
             var cragRNG = SeededRandom(text: def.id + "/crags")
             for exit in def.exits {
-                guard let cave = caveOf(exit.to), let range = raiseCrags(along: exit.edge, &cragRNG) else { continue }
+                guard let cave = caves[exit.to], let range = raiseCrags(along: exit.edge, &cragRNG) else { continue }
                 ranges.append((exit.edge, cave, range))
             }
         }
@@ -611,21 +625,29 @@ final class WorldMap {
     /// A road from the hub (the centre unless the map says otherwise) out through an exit, via
     /// any waypoints the map gives it, winding along a smooth curve and swelling and narrowing a
     /// little (towns keep theirs tidier). The last stretch runs straight at the edge so exits and
-    /// arrivals line up.
+    /// arrivals line up. Where it meets the next land elsewhere along the border (`meets`), it's
+    /// still laid toward `at`, with the same random drift, so the rest of the map comes out as it
+    /// did; only its last stretch eases over to where it crosses.
     private func carveRoad(for exit: MapDef.Exit, _ rng: inout SeededRandom) {
+        let end = roadEnd(exit.edge, at: exit.at ?? 0)
+        let approach = end.point + end.inward * 5
+        let stops = [point(def.hub ?? [0, 0])] + (exit.via ?? []).map(point) + [approach]
+        let meets = exit.meets.map { roadEnd(exit.edge, at: $0).point - end.point } ?? .zero
+        carve(through: stops, then: [end.point], halfWidth: 1.05, bend: meets, &rng)
+    }
+
+    /// Where a road `at` cells along `edge` from its middle crosses it, and the way into the map.
+    private func roadEnd(_ edge: Edge, at: Int) -> (point: CGPoint, inward: CGVector) {
         let middle = point([0, 0])
-        let along = CGFloat(exit.at ?? 0)
+        let along = CGFloat(at)
         let x = min(max(middle.x + along, 4), CGFloat(columns - 4))
         let y = min(max(middle.y + along, 4), CGFloat(rows - 4))
-        let (end, inward): (CGPoint, CGVector) = switch exit.edge {
+        return switch edge {
         case .east: (CGPoint(x: CGFloat(columns), y: y), CGVector(dx: -1, dy: 0))
         case .west: (CGPoint(x: 0, y: y), CGVector(dx: 1, dy: 0))
         case .north: (CGPoint(x: x, y: CGFloat(rows)), CGVector(dx: 0, dy: -1))
         case .south: (CGPoint(x: x, y: 0), CGVector(dx: 0, dy: 1))
         }
-        let approach = end + inward * 5
-        let stops = [point(def.hub ?? [0, 0])] + (exit.via ?? []).map(point) + [approach]
-        carve(through: stops, then: [end], halfWidth: 1.05, &rng)
     }
 
     /// A narrower path to somewhere worth visiting, from the hub (or `from`) via any waypoints.
@@ -634,13 +656,19 @@ final class WorldMap {
         carve(through: stops, then: [], halfWidth: 0.8, &rng)
     }
 
-    private func carve(through stops: [CGPoint], then tail: [CGPoint], halfWidth base: CGFloat, _ rng: inout SeededRandom) {
+    /// `bend`: how far the last stop and the tail move, the stretch from the stop before eased
+    /// over to them (`carveRoad`'s `meets`), after the drift's drawn, so it draws the same numbers.
+    private func carve(through stops: [CGPoint], then tail: [CGPoint], halfWidth base: CGFloat, bend: CGVector = .zero,
+                       _ rng: inout SeededRandom) {
         let fenced = def.fence == true
         // Waypoints between the stops, pushed sideways by a smooth random drift.
         var points = [stops[0]]
         var drift: CGFloat = 0
         let sway: CGFloat = fenced ? 1 : 6
+        // Where the last stretch begins among the points.
+        var lastStretch = 0
         for (a, b) in zip(stops, stops.dropFirst()) {
+            lastStretch = points.count - 1
             let length = a.distance(to: b)
             let back = length > 0 ? CGVector(dx: (a.x - b.x) / length, dy: (a.y - b.y) / length) : CGVector(dx: 0, dy: 1)
             let side = CGVector(dx: -back.dy, dy: back.dx)
@@ -655,18 +683,33 @@ final class WorldMap {
             }
             points.append(b)
         }
-        points += tail
+        if bend != .zero {
+            let last = points.count - 1
+            for index in lastStretch...last {
+                let t = CGFloat(index - lastStretch) / CGFloat(max(1, last - lastStretch))
+                var point = points[index] + bend * (t * t * (3 - 2 * t))
+                point.x = min(max(point.x, 4), CGFloat(columns - 4))
+                point.y = min(max(point.y, 4), CGFloat(rows - 4))
+                points[index] = point
+            }
+        }
+        points += tail.map { $0 + bend }
+        // Where a road crosses into the next land: its last stretch runs dead straight and it settles
+        // to its plain width there, so the road's as wide on both sides of the line.
+        let crossing = tail.isEmpty ? nil : points.last
 
         // Paint along a Catmull-Rom curve through the waypoints.
         var travelled: CGFloat = 0
         for index in 0..<(points.count - 1) {
             let p0 = points[max(0, index - 1)], p1 = points[index], p2 = points[index + 1], p3 = points[min(points.count - 1, index + 2)]
+            let straight = crossing != nil && index == points.count - 2
             let steps = max(4, Int(p1.distance(to: p2) * 4))
             for step in 0...steps {
                 let t = CGFloat(step) / CGFloat(steps)
-                let point = Self.catmullRom(p0, p1, p2, p3, t)
+                let point = straight ? CGPoint(x: p1.x + (p2.x - p1.x) * t, y: p1.y + (p2.y - p1.y) * t) : Self.catmullRom(p0, p1, p2, p3, t)
                 travelled += p1.distance(to: p2) / CGFloat(steps)
-                let halfWidth = fenced ? base : base + base / 3 * sin(travelled / 6)
+                let settle = crossing.map { min(1, point.distance(to: $0) / 8) } ?? 1
+                let halfWidth = fenced ? base : base + base / 3 * sin(travelled / 6) * settle
                 paintRoad(around: point, radius: halfWidth)
             }
         }
@@ -1374,7 +1417,7 @@ final class WorldMap {
 
     /// How a range's trails wind (`Hill.traceTrail`): the angle their feet aim at (round the front),
     /// which way round they go first, how much further round than they need, and how they bend.
-    private struct Winding {
+    private nonisolated struct Winding {
         let aim, way, stretch, phase: Double
         let bends: Int
     }
@@ -1733,7 +1776,7 @@ final class WorldMap {
     }
 
     /// The cheapest cell first (a binary heap), for `layFootpaths`.
-    private struct CostQueue {
+    private nonisolated struct CostQueue {
         private var heap: [(cell: GridPoint, cost: Double)] = []
 
         mutating func push(_ cell: GridPoint, _ cost: Double) {
@@ -2307,7 +2350,7 @@ final class WorldMap {
     /// One pixel per tile, for the map screen.
     /// `tileColor` gives a tile's colour as the map really shows it (the scene averages its graded
     /// tiles, so the minimap matches the map's palette); without it, rough colours by tile name.
-    func overviewImage(tileColor: ((String) -> PixelColor)? = nil) -> CGImage {
+    @MainActor func overviewImage(tileColor: ((String) -> PixelColor)? = nil) -> CGImage {
         // First match wins, so more specific names come first.
         let tileColors: [(String, UInt32)] = [
             ("snow_path", 0xC9D6E8), ("snow", 0xF2F6FA), ("cave_rock", 0x2B2F3A), ("cave", 0x4A4F5C), ("scree", 0x8C9099),

@@ -2,6 +2,18 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.5.0",
+      "date": "2026-10-13",
+      "title": "One continent",
+      "notes": [
+        "The lands lie side by side as one continent: walk from one into the next with no loading screen. Only caves still have one, going in and coming out.",
+        "Near a border you can see the land next door, and the ground and its colours blend from one land into the other.",
+        "Borders with no road are walled off: by a fence, by rocks on rocky ground, or by a stone city wall with towers beside a town. A road that a quest opens goes through a gate, barred until the quest is done.",
+        "All round the lands lies the sea, lapping at their shores and fading into the haze.",
+        "Big forests only draw the trees near you, so there's much less on screen at once."
+      ]
+    },
+    {
       "version": "0.4.14",
       "date": "2026-10-12",
       "title": "Taller hills, who's who on the minimap",
