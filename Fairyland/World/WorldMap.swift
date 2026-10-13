@@ -169,8 +169,8 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// The coast round the land, on the continent (`Coast`): what the sea would take with nothing
     /// to hold it back, out to `Coast.margin` past the edges. Nil for a cave.
     let coast: Coast.Field?
-    /// Whether the sea's coast came in over the land (false if it would have cut something off,
-    /// `carveCoast`).
+    /// Whether the sea's coast was laid over the land, as far as what's on it lets the sea in
+    /// (false if it would have cut something off, `carveCoast`).
     private(set) var hasCoast = false
     /// The wandering lines the land meets the lands beside it along (`Seam`; none for a cave).
     let seams: [Seam]
@@ -340,7 +340,12 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 sea[index] = field.shape[at] < depth
             }
         }
-        guard sea.contains(true) else { return }
+        // What's on the land holds the sea back everywhere it would come in (a town's ring, round
+        // its fence, beside a little sea between lands): the coast's laid, and it's straight.
+        guard sea.contains(true) else {
+            hasCoast = true
+            return
+        }
         // The land still in one piece: what you could walk to before (round the water and the
         // buildings, over the bridges) that the sea cuts off goes under too, unless something on it
         // matters, when the sea stays out altogether.
