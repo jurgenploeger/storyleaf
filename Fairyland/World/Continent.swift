@@ -109,6 +109,33 @@ enum Continent {
         return found
     }
 
+    /// Where `here` lies among the lands, for the sea to come in over its coast (`Coast`): the lands
+    /// near it and where roads cross between them, in its cells. Nil for a cave.
+    static func coast(of here: MapDef) -> Coast? {
+        guard let origin = origin(of: here) else { return nil }
+        let reach = Coast.margin
+        var near: [Coast.Land] = []
+        var crossings: [GridPoint] = []
+        for (def, there) in lands {
+            let low = GridPoint(col: there.col - origin.col, row: there.row - origin.row)
+            let high = GridPoint(col: low.col + def.width - 1, row: low.row + def.height - 1)
+            guard high.col >= -reach, high.row >= -reach, low.col < here.width + reach, low.row < here.height + reach else { continue }
+            near.append(Coast.Land(low: low, high: high, town: def.fence == true))
+            for exit in def.exits where Content.shared.world[exit.to] != nil {
+                let length = exit.edge == .east || exit.edge == .west ? def.height : def.width
+                let along = length / 2 + (exit.meets ?? exit.at ?? 0)
+                let cell: GridPoint = switch exit.edge {
+                case .east: GridPoint(col: high.col, row: low.row + along)
+                case .west: GridPoint(col: low.col, row: low.row + along)
+                case .north: GridPoint(col: low.col + along, row: high.row)
+                case .south: GridPoint(col: low.col + along, row: low.row)
+                }
+                crossings.append(cell)
+            }
+        }
+        return Coast(origin: origin, lands: near, crossings: crossings)
+    }
+
     /// Whether a cell of `here` (in its cells, past its edges) lies in any land.
     static func isLand(_ cell: GridPoint, from here: MapDef) -> Bool {
         guard let origin = origin(of: here) else { return false }

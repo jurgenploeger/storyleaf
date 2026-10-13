@@ -17,6 +17,10 @@ lakes and hills it was placed for, and only its last stretch bends: `WorldMap.ca
     python3 tools/world_layout.py               # solve, write content/world.json and the roads' `at`
     python3 tools/world_layout.py --check       # only report whether world.json still fits maps.json
     python3 tools/world_layout.py --preview out.png   # a picture of the continent (needs pillow)
+    python3 tools/world_layout.py --check --preview out.png   # the same, of world.json as it is
+
+The preview draws the coasts as the game lets the sea in over them (`coast`, after
+Fairyland/World/Coast.swift: keep the two in step).
 
 Needs numpy and scipy.
 """
@@ -287,25 +291,104 @@ def write(data, lands, origins, roads):
                      + ",\n".join(lines) + "\n  }\n}\n")
 
 
+# The coast (Fairyland/World/Coast.swift): the lands' outer corners rounded to ROUNDING cells, and
+# the sea in over their coasts from SHALLOWEST to DEEPEST cells (TOWN_DEPTH beside a town), in two
+# waves of noise over the continent; none within reach of a road over a border.
+ROUNDING = 30
+SHALLOWEST, DEEPEST, TOWN_DEPTH = 3.0, 30.0, 1.25
+PROTECTION, RING = 0.8, 8.5
+MASK64 = (1 << 64) - 1
+
+
+def _hash(x, y, seed):
+    h = ((x & MASK64) * 0x9E3779B97F4A7C15) & MASK64
+    h ^= ((y & MASK64) * 0xC2B2AE3D27D4EB4F) & MASK64
+    h ^= seed
+    h ^= h >> 29
+    h = (h * 0xBF58476D1CE4E5B9) & MASK64
+    h ^= h >> 32
+    return (h % 1000000) / 1000000.0
+
+
+def _value(x, y, every, seed):
+    import math
+    gx, gy = x / every, y / every
+    i, j = math.floor(gx), math.floor(gy)
+    fx, fy = gx - i, gy - j
+    sx, sy = fx * fx * (3 - 2 * fx), fy * fy * (3 - 2 * fy)
+    a, b, c, d = _hash(i, j, seed), _hash(i + 1, j, seed), _hash(i, j + 1, seed), _hash(i + 1, j + 1, seed)
+    return (a * (1 - sx) + b * sx) * (1 - sy) + (c * (1 - sx) + d * sx) * sy
+
+
+def coast(lands, origins, left, bottom, width, height):
+    """Where the sea is over the continent's cells from (left, bottom), width x height: True for sea.
+
+    Without what's on each land (roads, water, hills and people hold the sea back in the game), and
+    with straight-line distances where the game steps cell by cell: near enough to tune by."""
+    import numpy as np
+    from scipy import ndimage
+    land = np.zeros((height, width), bool)
+    town = np.zeros((height, width), bool)
+    for land_id, (x, y) in origins.items():
+        spec = lands[land_id]
+        land[y - bottom:y - bottom + spec["height"], x - left:x - left + spec["width"]] = True
+        if spec.get("fence"):
+            town[y - bottom:y - bottom + spec["height"], x - left:x - left + spec["width"]] = True
+    to_sea = ndimage.distance_transform_edt(land)
+    to_core = ndimage.distance_transform_edt(to_sea < ROUNDING)
+    shape = np.where(to_sea >= ROUNDING, to_sea, ROUNDING - to_core)
+    crossings = np.ones((height, width), bool)
+    for land_id, (x, y) in origins.items():
+        spec = lands[land_id]
+        for exit in spec["exits"]:
+            if exit["to"] not in origins:
+                continue
+            edge, along = exit["edge"], road_offset(spec, exit["edge"], crossing(exit))
+            cx, cy = {"east": (x + spec["width"] - 1, y + along), "west": (x, y + along),
+                      "north": (x + along, y + spec["height"] - 1), "south": (x + along, y)}[edge]
+            crossings[cy - bottom, cx - left] = False
+    to_crossing = ndimage.distance_transform_edt(crossings)
+    to_town = ndimage.distance_transform_edt(~town) if town.any() else np.full((height, width), 1e9)
+    sea = ~land
+    for row, col in zip(*np.nonzero(land & (shape < DEEPEST))):
+        x, y = col + left + 0.5, row + bottom + 0.5
+        wave = (_value(x, y, 64, 0x51) + _value(x, y, 24, 0xA7) * 0.4) / 1.4
+        depth = SHALLOWEST + (DEEPEST - SHALLOWEST) * wave
+        t = min(1.0, max(0.0, (to_town[row, col] - 1) / 12))
+        depth = TOWN_DEPTH + (depth - TOWN_DEPTH) * t * t * (3 - 2 * t)
+        depth = min(depth, PROTECTION * to_crossing[row, col] - RING)
+        sea[row, col] = shape[row, col] < depth
+    return sea
+
+
 def preview(lands, origins, path):
+    import numpy as np
     from PIL import Image, ImageDraw
     xs = [origins[i][0] for i in origins] + [origins[i][0] + lands[i]["width"] for i in origins]
     ys = [origins[i][1] for i in origins] + [origins[i][1] + lands[i]["height"] for i in origins]
     left, right, bottom, top = min(xs) - 40, max(xs) + 40, min(ys) - 40, max(ys) + 40
     scale = 2
-    image = Image.new("RGB", ((right - left) * scale, (top - bottom) * scale), (40, 60, 90))
-    draw = ImageDraw.Draw(image)
     colours = {"tile_grass": (120, 190, 90), "tile_sand": (230, 210, 150), "tile_dark_grass": (70, 120, 70),
                "tile_forest_floor": (90, 130, 60), "tile_snow": (235, 240, 250), "tile_swamp": (100, 120, 80),
                "tile_desert": (220, 190, 120), "tile_scree": (150, 150, 160)}
+    sea = coast(lands, origins, left, bottom, right - left, top - bottom)
+    cells = np.zeros((top - bottom, right - left, 3), np.uint8)
+    cells[:] = (59, 127, 192)
+    for land_id, (x, y) in origins.items():
+        land = lands[land_id]
+        rows, cols = slice(y - bottom, y - bottom + land["height"]), slice(x - left, x - left + land["width"])
+        ground = cells[rows, cols]
+        ground[~sea[rows, cols]] = colours.get(land["theme"]["ground"], (200, 200, 200))
+    # North up: the picture's rows run top down.
+    image = Image.fromarray(cells[::-1]).resize(((right - left) * scale, (top - bottom) * scale), Image.NEAREST)
+    draw = ImageDraw.Draw(image)
 
     def box(x, y, w, h):
         return [(x - left) * scale, (top - y - h) * scale, (x + w - left) * scale - 1, (top - y - 1) * scale]
 
     for land_id, (x, y) in origins.items():
         land = lands[land_id]
-        draw.rectangle(box(x, y, land["width"], land["height"]), fill=colours.get(land["theme"]["ground"], (200, 200, 200)),
-                       outline=(0, 0, 0))
+        draw.rectangle(box(x, y, land["width"], land["height"]), outline=(0, 0, 0, 60))
         draw.text(((x - left + 3) * scale, (top - y - land["height"] + 3) * scale), land_id, fill=(0, 0, 0))
         for exit in land["exits"]:
             edge, at = exit["edge"], crossing(exit)
@@ -381,8 +464,12 @@ def main():
     args = parser.parse_args()
     data, maps, lands = load_maps()
     if args.check:
-        problems = verify(maps, lands, json.loads(WORLD.read_text()))
+        world = json.loads(WORLD.read_text())
+        problems = verify(maps, lands, world)
         print("\n".join(problems) or "world.json fits maps.json")
+        if args.preview:
+            preview(lands, {k: tuple(v) for k, v in world["lands"].items() if k in lands}, args.preview)
+            print(f"preview: {args.preview}")
         sys.exit(1 if problems else 0)
     origins, roads, result = solve(maps, lands)
     print(f"{result.message} (cost {result.fun:.1f})")

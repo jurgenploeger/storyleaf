@@ -2,6 +2,16 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.5.1",
+      "date": "2026-10-13",
+      "title": "Coasts and the world map",
+      "notes": [
+        "The lands are natural shapes now: the sea comes in over their coasts in bays and headlands, and the continent's corners round off.",
+        "The sea lies lower than the land, below a bank of earth with foam at its foot, and you can't walk out onto it any more.",
+        "Tap the minimap for the world map: the whole continent as it really looks, with where you are. Drag to look round, pinch to zoom."
+      ]
+    },
+    {
       "version": "0.5.0",
       "date": "2026-10-13",
       "title": "One continent",

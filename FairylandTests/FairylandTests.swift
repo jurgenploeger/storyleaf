@@ -232,6 +232,14 @@ struct ContentTests {
     /// Two lands see the border they share the same from either side: as long, the same road and
     /// quest across it, open on the same cells, so you can walk back the way you came.
     @Test func bordersAreTheSameFromEitherSide() {
+        // Each land's coast (`Coast.Field`), worked out once.
+        var coasts: [String: Coast.Field] = [:]
+        func coast(of def: MapDef) -> Coast.Field? {
+            if let known = coasts[def.id] { return known }
+            let field = Continent.coast(of: def)?.field(columns: def.width, rows: def.height)
+            coasts[def.id] = field
+            return field
+        }
         for def in content.maps where content.world[def.id] != nil {
             for here in Continent.neighbours(of: def) {
                 guard let back = Continent.neighbours(of: here.def).first(where: { $0.def.id == def.id }) else {
@@ -246,6 +254,23 @@ struct ContentTests {
                     #expect(here.isOpen(at: along, done: { _ in true }) == back.isOpen(at: along - shift, done: { _ in true }),
                             "\(def.id) | \(here.def.id): open on one side only, \(along) along")
                 }
+                // The sea comes in the same at the line from either side (`Coast`), so the wall along
+                // it stops in the same place and you can't step over into the sea.
+                guard let mine = coast(of: def), let theirs = coast(of: here.def) else {
+                    Issue.record("\(def.id) | \(here.def.id): no coast worked out")
+                    continue
+                }
+                for along in here.span {
+                    let line: (inside: GridPoint, outside: GridPoint) = switch here.edge {
+                    case .east: (GridPoint(col: def.width - 1, row: along), GridPoint(col: def.width, row: along))
+                    case .west: (GridPoint(col: 0, row: along), GridPoint(col: -1, row: along))
+                    case .north: (GridPoint(col: along, row: def.height - 1), GridPoint(col: along, row: def.height))
+                    case .south: (GridPoint(col: along, row: 0), GridPoint(col: along, row: -1))
+                    }
+                    #expect(mine.isSea(line.inside) == theirs.isSea(here.local(line.inside))
+                            && mine.isSea(line.outside) == theirs.isSea(here.local(line.outside)),
+                            "\(def.id) | \(here.def.id): the sea comes in differently from each side, \(along) along")
+                }
             }
         }
     }
@@ -256,7 +281,28 @@ struct ContentTests {
             for exit in def.exits {
                 #expect(map.isWalkable(map.entryCell(from: exit.edge)), "map \(def.id) entry from \(exit.edge) is blocked")
             }
+            // The sea comes in over a land's coast (`WorldMap.carveCoast`) without cutting anything off
+            // (where it would, it stays out and the land keeps its straight edges), and nobody stands in it.
+            if let field = map.coast,
+               (0..<def.height).contains(where: { row in (0..<def.width).contains { field.isSea(GridPoint(col: $0, row: row)) } }) {
+                #expect(map.hasCoast, "map \(def.id): the sea would cut something off, so its coast stays straight")
+            }
+            for npc in def.npcs ?? [] {
+                let spot = map.spot(of: npc)
+                #expect(!map.contains(spot) || map.ground[spot.row][spot.col] != .sea, "map \(def.id): \(npc.id) stands in the sea")
+            }
         }
+    }
+
+    /// A tap out past the land's edge, on the sea, walks you to the dry land nearest it, not out onto
+    /// the water (the tapped cell clamped to the edge used to count as the spot itself).
+    @Test func tapsOnTheSeaStopAtTheShore() throws {
+        let def = try #require(content.map("meadowbrook"))
+        let map = WorldMap(def: def)
+        let start = map.center(of: map.entryCell(from: try #require(def.exits.first).edge))
+        let sea = WorldMap.project(CGPoint(x: -3 * WorldMap.tileSize, y: CGFloat(map.rows / 2) * WorldMap.tileSize))
+        let end = try #require(map.path(from: start, to: sea).last)
+        #expect(map.isWalkable(map.rawCell(at: end)), "a tap on the sea walked you out to \(map.rawCell(at: end))")
     }
 
     @Test func lakesAndRiversLeaveEverywhereInReach() throws {

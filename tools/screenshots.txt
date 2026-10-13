@@ -34,6 +34,11 @@ border_rocks | newgame,map=genie_desert,border=valley_of_fear,landscape,weather=
 border_fence | newgame,map=frog_swamp,border=twilight_woods,landscape,weather=clear,hour=12 | 6
 border_sand  | newgame,map=northern_grassland,border=pineapple_shore,weather=clear,hour=12 | 6
 coast        | newgame,map=meadowbrook,edge=west,landscape,weather=clear,hour=12 | 6
+# The sea come in over a wild coast, lower than the land: the bank facing you (a bay in the swamp's
+# west), from behind (the snowy wood's north), and where the sea used to let you walk out (the lair's south).
+coast_bay    | newgame,map=frog_swamp,edge=west,landscape,weather=clear,hour=12 | 6
+coast_north  | newgame,map=snow_white_forest,edge=north,landscape,weather=clear,hour=12 | 6
+coast_lair   | newgame,map=wolf_lair,edge=south,landscape,weather=clear,hour=12 | 6
 city_wall    | newgame,map=bluebird,border=smiling_forest,landscape,weather=clear,hour=12 | 6
 city_gate    | newgame,map=goldburg,border=valley_of_fear,landscape,weather=clear,hour=12 | 6
 battle       | newgame,map=sunny_meadow,battle   | 15
@@ -253,7 +258,8 @@ party_open   | newgame,level=43,class=fighter,pet=pineapple,friends=2,map=twilig
 party_pet    | newgame,level=43,class=fighter,pet=pineapple,map=twilight_woods | 15
 party_landscape | newgame,level=43,class=fighter,pet=pineapple,friends=2,map=meadowbrook,landscape | 8
 quests       | newgame,menu=quests                                 | 8
-worldmap     | newgame,worldmap                                    | 8
+# The first world map lays every land out in the background (later ones read them back from disk).
+worldmap     | newgame,worldmap                                    | 180
 monster_book | newgame,book                                        | 8
 bounties     | newgame,level=12,map=northern_grassland,bounties=1,menu=quests,sub=daily | 8
 quests_dot   | newgame,level=12,map=northern_grassland,bounties=1,menu=quests | 8
@@ -307,7 +313,7 @@ card_duel_fr | newgame,level=45,class=fighter,map=wolf_lair,meet=1,lang=fr | 10
 battle_items      | newgame,level=30,bag=seal_stone+seal_stone,map=sunny_meadow,battle=3,items | 15
 battle_skills     | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,map=sunny_meadow,battle=3,skills | 15
 # Every window in landscape (402 pt tall on the simulator): nothing may run off the top or bottom.
-worldmap_land     | newgame,level=30,map=pineapple_shore,worldmap,landscape | 8
+worldmap_land     | newgame,level=30,map=pineapple_shore,visited=all,worldmap,landscape | 8
 character_land    | newgame,level=40,class=fighter,equip=iron_plate+steel_sword,menu=character,landscape | 8
 skills_land       | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,menu=character,sub=skills,landscape | 8
 equip_change_land | newgame,class=fighter,level=16,equip=leather_vest,bag=cloth_tunic+chain_mail+silk_robe+mossy_leather_vest+dragon_mail,menu=character,change=armor,landscape | 8

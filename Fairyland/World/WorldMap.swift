@@ -1,7 +1,8 @@
 import GameplayKit
 
 nonisolated enum Ground {
-    case ground, path, accent, border, water
+    /// `sea`: where the sea's come in over the land's coast (`WorldMap.carveCoast`), lower than the land.
+    case ground, path, accent, border, water, sea
 }
 
 nonisolated struct GridPoint: Hashable {
@@ -165,6 +166,12 @@ nonisolated final class WorldMap: @unchecked Sendable {
     private var occupied: Set<GridPoint> = []
     private var blocked: Set<GridPoint> = []
     private let graph: GKGridGraph<GKGridGraphNode>
+    /// The coast round the land, on the continent (`Coast`): what the sea would take with nothing
+    /// to hold it back, out to `Coast.margin` past the edges. Nil for a cave.
+    let coast: Coast.Field?
+    /// Whether the sea's coast came in over the land (false if it would have cut something off,
+    /// `carveCoast`).
+    private(set) var hasCoast = false
 
     /// The projected map's on-screen bounding box.
     var bounds: CGRect {
@@ -183,12 +190,15 @@ nonisolated final class WorldMap: @unchecked Sendable {
     }
 
     @MainActor convenience init(def: MapDef) {
-        self.init(def: def, caves: Self.caves)
+        self.init(def: def, caves: Self.caves, coast: Continent.coast(of: def))
     }
 
     /// `caves`: the caves among the maps, by id (`WorldMap.caves`), for the roads that lead into them.
-    init(def: MapDef, caves: [String: MapDef.Cave]) {
+    /// `coast`: where the land lies among the others, for the sea to come in over its coast
+    /// (`Continent.coast(of:)`); nil for a cave.
+    init(def: MapDef, caves: [String: MapDef.Cave], coast: Coast?) {
         self.def = def
+        self.coast = coast?.field(columns: def.width, rows: def.height)
         columns = def.width
         rows = def.height
         center = GridPoint(col: def.width / 2, row: def.height / 2)
@@ -262,6 +272,106 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 scatterAccents(&rng)
             }
         }
+        // Last, round everything that's on the land.
+        if let field = self.coast { carveCoast(field) }
+    }
+
+    // MARK: Coast
+
+    /// Lets the sea in over the land's coasts (`Coast`), round what it mustn't take: the roads and
+    /// paths, ponds and lakes (not the river, which runs out into it), bridges, hills and terraces,
+    /// buildings, a town's fence, where people stand and where you arrive. Round each of those the
+    /// sea comes in less (`Coast.protection`), so a ring of dry land is left round it. The sea's cells
+    /// are blocked like water. Land the sea would cut off goes under too, if nothing's on it; a pool
+    /// it would leave inland stays land; and if it'd cut off something that matters, the sea stays out.
+    private func carveCoast(_ field: Coast.Field) {
+        var keep = [Bool](repeating: false, count: columns * rows)
+        func hold(_ cell: GridPoint) {
+            if contains(cell) { keep[cell.row * columns + cell.col] = true }
+        }
+        for row in 0..<rows {
+            for col in 0..<columns {
+                let cell = GridPoint(col: col, row: row)
+                let kind = ground[row][col]
+                if kind == .path || (kind == .water && !river.contains(cell)) || occupied.contains(cell) || hillOf[cell] != nil
+                    || plateauOf[cell] != nil || bridgeCells.contains(cell) || cragGround.contains(cell) {
+                    hold(cell)
+                }
+            }
+        }
+        for cell in fenceCells + landings + entryCells + [center] { hold(cell) }
+        for npc in def.npcs ?? [] { hold(spot(of: npc)) }
+        for lake in lakes { lake.island.forEach(hold) }
+        let held = Coast.distances(width: columns, height: rows, from: keep)
+        var sea = [Bool](repeating: false, count: columns * rows)
+        for row in 0..<rows {
+            for col in 0..<columns {
+                let index = row * columns + col
+                guard !keep[index], let at = field.index(of: GridPoint(col: col, row: row)), field.land[at] else { continue }
+                let depth = min(field.depth[at], Float(Coast.protection) * held[index] - Float(Coast.ring))
+                sea[index] = field.shape[at] < depth
+            }
+        }
+        guard sea.contains(true) else { return }
+        // The land still in one piece: what you could walk to before (round the water and the
+        // buildings, over the bridges) that the sea cuts off goes under too, unless something on it
+        // matters, when the sea stays out altogether.
+        func passable(_ index: Int) -> Bool {
+            let cell = GridPoint(col: index % columns, row: index / columns)
+            return !blocked.contains(cell) || bridgeCells.contains(cell)
+        }
+        let start = (entryCells + [center]).first { contains($0) && passable($0.row * columns + $0.col) } ?? center
+        let from = start.row * columns + start.col
+        let before = Self.region(from: from, columns: columns, rows: rows, diagonals: true, inside: passable)
+        let after = Self.region(from: from, columns: columns, rows: rows, diagonals: true) { !sea[$0] && passable($0) }
+        for index in before where !sea[index] && !after.contains(index) {
+            if keep[index] { return }
+            sea[index] = true
+        }
+        // And no pools inland: sea the open sea doesn't reach is land again.
+        var open = Set<Int>()
+        for index in 0..<(columns * rows) where sea[index] && !open.contains(index) {
+            let col = index % columns, row = index / columns
+            let outside = [GridPoint(col: col - 1, row: row), GridPoint(col: col + 1, row: row),
+                           GridPoint(col: col, row: row - 1), GridPoint(col: col, row: row + 1)]
+            guard outside.contains(where: { !contains($0) && field.isSea($0) }) else { continue }
+            open.formUnion(Self.region(from: index, columns: columns, rows: rows, diagonals: false) { sea[$0] })
+        }
+        for index in 0..<(columns * rows) where sea[index] && open.contains(index) {
+            let cell = GridPoint(col: index % columns, row: index / columns)
+            ground[cell.row][cell.col] = .sea
+            occupy(cell, blocking: true)
+        }
+        hasCoast = true
+    }
+
+    /// The cells (as indices, row by row) joined to `start` through cells that are `inside`.
+    private static func region(from start: Int, columns: Int, rows: Int, diagonals: Bool, inside: (Int) -> Bool) -> Set<Int> {
+        guard inside(start) else { return [] }
+        var found: Set<Int> = [start]
+        var queue = [start]
+        while let index = queue.popLast() {
+            let col = index % columns, row = index / columns
+            for dr in -1...1 {
+                for dc in -1...1 where (dr != 0 || dc != 0) && (diagonals || dr == 0 || dc == 0) {
+                    let c = col + dc, r = row + dr
+                    guard c >= 0, r >= 0, c < columns, r < rows else { continue }
+                    let next = r * columns + c
+                    if !found.contains(next), inside(next) {
+                        found.insert(next)
+                        queue.append(next)
+                    }
+                }
+            }
+        }
+        return found
+    }
+
+    /// Whether the sea's at `cell` (here or past the edge) as every land that sees it works it
+    /// out, before anything on a land holds it back (`Coast.Field.isSea`): what the borders between
+    /// lands are drawn by, so both sides draw them the same. Off the continent, anywhere past the edge.
+    func isOpenSea(_ cell: GridPoint) -> Bool {
+        coast?.isSea(cell) ?? !contains(cell)
     }
 
     // MARK: Coordinates
@@ -576,8 +686,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
               let to = graph.node(atGridPosition: goalCell.vector)
         else { return [] }
 
-        // Stop exactly where the player tapped when that spot is walkable.
-        let goal = goalCell == cell(at: end) ? end : center(of: goalCell)
+        // Stop exactly where the player tapped when that spot is walkable. The tapped cell unclamped:
+        // a tap out past the edge (on the sea) clamps to the edge cell, which would walk you out to it.
+        let goal = goalCell == rawCell(at: end) ? end : center(of: goalCell)
         if startCell == goalCell { return [goal] }
 
         let nodes = graph.findPath(from: from, to: to).compactMap { $0 as? GKGridGraphNode }
@@ -587,9 +698,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
         return points
     }
 
-    func nearestWalkable(to cell: GridPoint) -> GridPoint? {
+    func nearestWalkable(to cell: GridPoint, within reach: Int = 8) -> GridPoint? {
         if isWalkable(cell) { return cell }
-        for radius in 1...8 {
+        for radius in 1...reach {
             for dr in -radius...radius {
                 for dc in -radius...radius where max(abs(dr), abs(dc)) == radius {
                     let candidate = GridPoint(col: cell.col + dc, row: cell.row + dr)
@@ -2347,6 +2458,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
 
     // MARK: Map screen
 
+    /// The sea on the minimap and the world map: the same blue round every land.
+    static let seaColor = PixelColor(0x3B7FC0)
+
     /// One pixel per tile, for the map screen.
     /// `tileColor` gives a tile's colour as the map really shows it (the scene averages its graded
     /// tiles, so the minimap matches the map's palette); without it, rough colours by tile name.
@@ -2378,6 +2492,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 case .path: tileColor == nil && theme.path == "tile_path" ? PixelColor(0xE8C98C) : color(forTile: theme.path).shaded(1.15)
                 case .border: color(forTile: theme.border ?? theme.ground)
                 case .water: tileColor == nil ? PixelColor(0x4FA3E0) : color(forTile: theme.water ?? "tile_water")
+                case .sea: Self.seaColor
                 }
                 if rock.contains(cell) {
                     pixel = color(forTile: theme.cave?.rock ?? "cave_rock").shaded(0.5)
@@ -2398,11 +2513,11 @@ nonisolated final class WorldMap: @unchecked Sendable {
                     var tone: Double = up >= 130 ? 1.3 : up >= 66 ? 1.2 : 1.1
                     if lit, !away { tone = 1.24 } else if away, !lit { tone = 0.8 }
                     pixel = pixel.shaded(tone)
-                } else if blocked.contains(cell), ground[row][col] != .water {
+                } else if blocked.contains(cell), ground[row][col] != .water, ground[row][col] != .sea {
                     pixel = pixel.shaded(0.55)
                 }
                 // The ground just past a hill's shaded edge lies in its shadow.
-                if hillOf[cell] == nil, !rock.contains(cell), onHill(col - 1, row) || onHill(col, row + 1) {
+                if hillOf[cell] == nil, !rock.contains(cell), ground[row][col] != .sea, onHill(col - 1, row) || onHill(col, row + 1) {
                     pixel = pixel.shaded(0.88)
                 }
                 // PixelCanvas is top-down; the map is bottom-up.

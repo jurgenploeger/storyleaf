@@ -320,9 +320,10 @@ final class WorldScene: SKScene {
 
         if !isNextDoor {
             // Don't start on top of scenery (e.g. an old save).
-            // (A save from before a cave's walls went up can even be deep inside the rock.)
-            if !map.isWalkable(lastCell),
-               let open = map.nearestWalkable(to: lastCell) ?? map.nearestWalkable(to: map.entryCell(from: def.exits.first?.edge ?? .south)) {
+            // (A save from before a cave's walls went up can even be deep inside the rock, and one from
+            // before the sea came in over the coasts out at sea, even off the map.)
+            if !map.isWalkable(lastCell) || !map.contains(map.rawCell(at: player.position)),
+               let open = map.nearestWalkable(to: lastCell, within: 48) ?? map.nearestWalkable(to: map.entryCell(from: def.exits.first?.edge ?? .south)) {
                 player.position = map.center(of: open)
                 lastCell = open
                 cam.position = player.position
@@ -447,14 +448,17 @@ final class WorldScene: SKScene {
             group("\(id)#\(variant)") { art.tileVariant(id, variant) }
         }
         let full = 0b111_111_111, sides = 0b010_101_010
-        // The sea round the land (on the continent): its shore curves in over the land's outer cells,
-        // as a lake's does, out of the same water as the open sea (`Self.seaTile`).
+        // The sea (on the continent), round the land and where it's come in over the coast
+        // (`WorldMap.carveCoast`). It lies lower than the land (`Self.seaDrop`; `placeSea` draws it),
+        // so its cells have no ground, and the land's edge along it is cut clear, curving as a lake's
+        // shore does, a bank of earth under it (`bank`).
         var sea: Set<GridPoint> = []
-        if Continent.origin(of: def) != nil {
+        if map.coast != nil {
             for row in -2..<(map.rows + 2) {
-                for col in -2..<(map.columns + 2) where row < 0 || col < 0 || row >= map.rows || col >= map.columns {
+                for col in -2..<(map.columns + 2) {
                     let cell = GridPoint(col: col, row: row)
-                    if !Continent.isLand(cell, from: def) { sea.insert(cell) }
+                    let open = map.contains(cell) ? map.ground[row][col] == .sea : map.isOpenSea(cell)
+                    if open { sea.insert(cell) }
                 }
             }
         }
@@ -473,12 +477,18 @@ final class WorldScene: SKScene {
             }
             return bits
         }
-        var picks: [(col: Int, row: Int, group: SKTileGroup)] = []
+        var picks: [(col: Int, row: Int, group: SKTileGroup?)] = []
+        // The land's cells within two of the sea, for its bank.
+        var shoreline: [(col: Int, row: Int)] = []
         for row in 0..<map.rows {
             if row % 4 == 3 { await breathe() }
             for col in 0..<map.columns {
                 let cell = GridPoint(col: col, row: row)
                 let kind = map.ground[row][col]
+                guard kind != .sea else {
+                    picks.append((col, row, nil))
+                    continue
+                }
                 let road = mask(cell, .path), pond = mask(cell, .water)
                 let variant = Self.variant(of: cell)
                 let patch = patchAccent ? mask(cell, .accent) : 0
@@ -494,16 +504,18 @@ final class WorldScene: SKScene {
                 if patch != 0, let accent = theme.accent { layers.append(.init(tile: accent, mask: patch, style: .patch)) }
                 if road != 0 { layers.append(.init(tile: theme.path, mask: road, style: .road)) }
                 if pond != 0 { layers.append(.init(tile: waterID, mask: poolMask(cell), style: .water)) }
-                let coast = sea.isEmpty ? 0 : shore(cell)
-                if coast != 0 { layers.append(.init(tile: Self.seaTile, mask: seaPool(cell), style: .water)) }
+                let near = sea.isEmpty ? 0 : seaPool(cell)
+                if near != 0 { shoreline.append((col, row)) }
+                let coast = near == 0 ? 0 : shore(cell)
+                if coast != 0 { layers.append(.init(tile: base, mask: near, style: .cut)) }
                 let chosen: SKTileGroup
-                if pond == full {
+                if pond == full, coast == 0 {
                     chosen = waterVaries ? plain(waterID, variant) : water
-                } else if road == full, pond == 0 {
+                } else if road == full, pond == 0, coast == 0 {
                     chosen = plain(theme.path, variant)
                 } else if layers.isEmpty {
                     chosen = plain(base, variant)
-                } else if let accent = theme.accent, patch == full, road == 0, pond == 0 {
+                } else if let accent = theme.accent, patch == full, road == 0, pond == 0, coast == 0 {
                     chosen = plain(accent, variant)
                 } else {
                     // Shorelines depend on where they are (see organicTile), so each gets its own tile.
@@ -518,7 +530,7 @@ final class WorldScene: SKScene {
         let tileMap = SKTileMapNode(tileSet: tileSet, columns: map.columns, rows: map.rows, tileSize: tileSize)
         tileMap.anchorPoint = .zero
         for pick in picks {
-            tileMap.setTileGroup(pick.group, forColumn: pick.col, row: pick.row)
+            if let group = pick.group { tileMap.setTileGroup(group, forColumn: pick.col, row: pick.row) }
         }
         // A raised terrace: its own tiles again, drawn its height up (`placePlateaus` sets them
         // down). The stairs are drawn as slopes instead.
@@ -528,8 +540,8 @@ final class WorldScene: SKScene {
             top.anchorPoint = .zero
             for pick in picks {
                 let cell = GridPoint(col: pick.col, row: pick.row)
-                guard plateau.cells.contains(cell), plateau.ramps[cell] == nil else { continue }
-                top.setTileGroup(pick.group, forColumn: pick.col - low.col, row: pick.row - low.row)
+                guard let group = pick.group, plateau.cells.contains(cell), plateau.ramps[cell] == nil else { continue }
+                top.setTileGroup(group, forColumn: pick.col - low.col, row: pick.row - low.row)
             }
             top.position = CGPoint(x: CGFloat(low.col) * WorldMap.tileSize, y: CGFloat(low.row) * WorldMap.tileSize)
             let grid = SKNode()
@@ -541,7 +553,8 @@ final class WorldScene: SKScene {
         // Soft patches of colour over the whole ground, so it isn't one flat colour.
         let grid = SKNode()
         grid.addChild(tileMap)
-        let variation = Lighting.groundVariation(columns: map.columns, rows: map.rows, tile: WorldMap.tileSize, palette: theme.palette, seed: def.id)
+        let variation = Lighting.groundVariation(columns: map.columns, rows: map.rows, tile: WorldMap.tileSize, palette: theme.palette,
+                                                 seed: def.id) { col, row in self.map.ground[row][col] != .sea }
         if let variation {
             variation.zPosition = 1
             grid.addChild(variation)
@@ -582,9 +595,8 @@ final class WorldScene: SKScene {
             let beyond = tiles(theme.border ?? theme.ground)
             let look = HillArt.Look(
                 ground: { cell in
-                    guard self.map.contains(cell) else { return beyond(cell) }
-                    let pick = picks[cell.row * self.map.columns + cell.col]
-                    return picture("\(ObjectIdentifier(pick.group).hashValue)") { pictures[ObjectIdentifier(pick.group)] }
+                    guard self.map.contains(cell), let group = picks[cell.row * self.map.columns + cell.col].group else { return beyond(cell) }
+                    return picture("\(ObjectIdentifier(group).hashValue)") { pictures[ObjectIdentifier(group)] }
                 },
                 trail: tiles(theme.path),
                 bank: rock.map(tiles),
@@ -637,9 +649,52 @@ final class WorldScene: SKScene {
                 }
             }
         }
-        let ground = projected(grid)
+        let ground = SKNode()
         ground.zPosition = -100_000
+        ground.addChild(projected(grid))
+        if !shoreline.isEmpty {
+            for layer in await bank(under: shoreline, picks: picks, tiles: tileSet) { ground.addChild(layer) }
+        }
         return ground
+    }
+
+    /// How far the sea lies below the land, in points.
+    static let seaDrop: CGFloat = 14
+
+    /// The bank of earth along the land's edge over the sea, which lies `seaDrop` lower: the land's
+    /// outline along the shore (`cells`, with the tiles they show, cut along it) drawn again a little
+    /// lower each time, in layers of soil darkening toward the water, and a line of foam at its foot.
+    /// Under the land, so it shows only where the land's edge faces you.
+    private func bank(under cells: [(col: Int, row: Int)], picks: [(col: Int, row: Int, group: SKTileGroup?)],
+                      tiles: SKTileSet) async -> [SKNode] {
+        let tileSize = CGSize(width: WorldMap.tileSize, height: WorldMap.tileSize)
+        let soil = (r: CGFloat(0.43), g: CGFloat(0.32), b: CGFloat(0.22))
+        // The land's own ground colour, darkened, leans the soil its way (sandy under sand, grey under scree).
+        let ground = art.gradedTile(def.theme.ground, palette: def.theme.palette).map { Self.averageColor(of: $0) } ?? (0.4, 0.5, 0.3)
+        let top = (r: soil.r * 0.6 + ground.0 * 0.3, g: soil.g * 0.6 + ground.1 * 0.3, b: soil.b * 0.6 + ground.2 * 0.3)
+        let steps = 7
+        var layers: [SKNode] = []
+        for step in 0...steps {
+            let foam = step == steps
+            let shade = 1 - 0.45 * CGFloat(step) / CGFloat(steps - 1)
+            let outline = SKTileMapNode(tileSet: tiles, columns: map.columns, rows: map.rows, tileSize: tileSize)
+            outline.anchorPoint = .zero
+            for cell in cells {
+                if let group = picks[cell.row * map.columns + cell.col].group { outline.setTileGroup(group, forColumn: cell.col, row: cell.row) }
+            }
+            outline.color = foam ? .white : UIColor(red: top.r * shade, green: top.g * shade, blue: top.b * shade, alpha: 1)
+            outline.colorBlendFactor = 1
+            outline.alpha = foam ? 0.5 : 1
+            let grid = SKNode()
+            grid.addChild(outline)
+            let layer = projected(grid)
+            // Each lower than the last, the foam just below the bottom one, all under the land.
+            layer.position.y = foam ? -Self.seaDrop - 1.5 : -Self.seaDrop * CGFloat(step + 1) / CGFloat(steps)
+            layer.zPosition = -0.1 - 0.05 * CGFloat(step)
+            layers.append(layer)
+            await breathe()
+        }
+        return layers
     }
 
     /// How many cells in from a border the land next door's colour reaches (`makeGround`).
@@ -648,26 +703,52 @@ final class WorldScene: SKScene {
     /// A wash of the land next door's ground colour (graded by its palette) along the border with
     /// it, strongest on the line between them and fading to nothing `blendReach` cells in, laid
     /// on the ground (grid space). The land next door lays the same wash of this land's colour on
-    /// its side, so at the line both show half of each.
+    /// its side, so at the line both show half of each. One pixel a cell, smoothed: none over the
+    /// sea or the land's edge along it (its bank shows there), and fading out toward the ends of the
+    /// stretch they share.
     private func blendBand(toward neighbour: Continent.Neighbour) -> SKNode {
         let tile = WorldMap.tileSize
         let image = art.gradedTile(neighbour.def.theme.ground, palette: neighbour.def.theme.palette)
         let (r, g, b) = image.map { Self.averageColor(of: $0) } ?? (0.5, 0.5, 0.5)
-        let length = CGFloat(neighbour.span.count) * tile, depth = CGFloat(Self.blendReach) * tile
-        let middle = (CGFloat(neighbour.span.lowerBound) + CGFloat(neighbour.span.count) / 2) * tile
-        // The texture is solid along its top edge: turned so that edge lies on the border.
-        let band = SKSpriteNode(texture: Self.fogTexture, color: UIColor(red: r, green: g, blue: b, alpha: 1),
-                                size: CGSize(width: length, height: depth))
-        band.colorBlendFactor = 1
-        band.alpha = 0.5
-        band.zPosition = 1.5
-        let columns = CGFloat(map.columns) * tile, rows = CGFloat(map.rows) * tile
-        switch neighbour.edge {
-        case .north: band.position = CGPoint(x: middle, y: rows - depth / 2)
-        case .south: band.position = CGPoint(x: middle, y: depth / 2); band.zRotation = .pi
-        case .east: band.position = CGPoint(x: columns - depth / 2, y: middle); band.zRotation = -.pi / 2
-        case .west: band.position = CGPoint(x: depth / 2, y: middle); band.zRotation = .pi / 2
+        let columns = map.columns, rows = map.rows
+        func nearSea(_ cell: GridPoint) -> Bool {
+            for dr in -1...1 {
+                for dc in -1...1 {
+                    let next = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                    let open = map.contains(next) ? map.ground[next.row][next.col] == .sea : map.isOpenSea(next)
+                    if open { return true }
+                }
+            }
+            return false
         }
+        var pixels = [UInt8](repeating: 0, count: columns * rows * 4)
+        let reach = CGFloat(Self.blendReach)
+        for row in 0..<rows {
+            for col in 0..<columns {
+                let cell = GridPoint(col: col, row: row)
+                let place = Continent.place(of: cell, from: neighbour.edge, columns: columns, rows: rows)
+                guard place.inward < Self.blendReach, neighbour.span.contains(place.along), !nearSea(cell) else { continue }
+                let t = 1 - (CGFloat(place.inward) + 0.5) / reach
+                let end = min(1, (CGFloat(min(place.along - neighbour.span.lowerBound, neighbour.span.upperBound - place.along)) + 0.5) / 4)
+                let alpha = 0.5 * t * t * (3 - 2 * t) * end * end * (3 - 2 * end)
+                // The bitmap's rows run north to south; the grid's count up from the south.
+                let index = ((rows - 1 - row) * columns + col) * 4
+                pixels[index] = UInt8((r * alpha * 255).rounded())
+                pixels[index + 1] = UInt8((g * alpha * 255).rounded())
+                pixels[index + 2] = UInt8((b * alpha * 255).rounded())
+                pixels[index + 3] = UInt8((alpha * 255).rounded())
+            }
+        }
+        let made = pixels.withUnsafeMutableBytes { buffer -> CGImage? in
+            CGContext(data: buffer.baseAddress, width: columns, height: rows, bitsPerComponent: 8, bytesPerRow: columns * 4,
+                      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)?.makeImage()
+        }
+        guard let made else { return SKNode() }
+        let texture = SKTexture(cgImage: made)
+        texture.filteringMode = .linear
+        let band = SKSpriteNode(texture: texture, size: CGSize(width: CGFloat(columns) * tile, height: CGFloat(rows) * tile))
+        band.anchorPoint = .zero
+        band.zPosition = 1.5
         return band
     }
 
@@ -750,9 +831,10 @@ final class WorldScene: SKScene {
     private static let seaTile = "raw:tile_water"
 
     /// The sea round a land on the continent (`Continent.sea`, as much of it as is this land's to
-    /// draw): water out to the haze, which thickens with distance from any land until the scene's
-    /// background, the same colour, takes over. Where a road leads into a cave, its range rises out
-    /// of it on rock.
+    /// draw) and where it's come in over the land's coast (`WorldMap.carveCoast`): water out to the
+    /// haze, which thickens with distance from any land until the scene's background, the same
+    /// colour, takes over, `seaDrop` lower than the land (`bank` draws the land's edge down to it).
+    /// Where a road leads into a cave, its range rises out of it on rock.
     private func placeSea(_ sea: [GridPoint: Double], margin: Int) {
         let tile = WorldMap.tileSize
         let tileSize = CGSize(width: tile, height: tile)
@@ -767,12 +849,18 @@ final class WorldScene: SKScene {
             let group = ranges.contains { $0.cells.contains(cell) } ? rock : water
             surroundings.setTileGroup(group, forColumn: cell.col + margin, row: cell.row + margin)
         }
+        for row in 0..<map.rows {
+            for col in 0..<map.columns where map.ground[row][col] == .sea {
+                surroundings.setTileGroup(water, forColumn: col + margin, row: row + margin)
+            }
+        }
         let haze = Self.fogColor(from: art.tileTexture(Self.seaTile), cave: false)
         backgroundColor = haze
         let ground = SKNode()
         ground.addChild(surroundings)
         if let mist = mist(over: sea, margin: margin, color: haze) { ground.addChild(mist) }
         let projectedSea = projected(ground)
+        projectedSea.position.y = -Self.seaDrop
         projectedSea.zPosition = -100_001
         world.addChild(projectedSea)
     }
@@ -1431,7 +1519,17 @@ final class WorldScene: SKScene {
     private func placeBorders() {
         for neighbour in neighbours where neighbour.isWalled {
             let open = neighbour.quest.map(session.hasCompleted) ?? false
-            let bar = BorderArt.place(neighbour, of: def, open: open, art: art) { [unowned self] in self.chunk(at: $0) }
+            let columns = map.columns, rows = map.rows
+            let dry = { [unowned self] (along: Int) -> Bool in
+                let line: (inside: GridPoint, outside: GridPoint) = switch neighbour.edge {
+                case .east: (GridPoint(col: columns - 1, row: along), GridPoint(col: columns, row: along))
+                case .west: (GridPoint(col: 0, row: along), GridPoint(col: -1, row: along))
+                case .north: (GridPoint(col: along, row: rows - 1), GridPoint(col: along, row: rows))
+                case .south: (GridPoint(col: along, row: 0), GridPoint(col: along, row: -1))
+                }
+                return !self.map.isOpenSea(line.inside) && !self.map.isOpenSea(line.outside)
+            }
+            let bar = BorderArt.place(neighbour, of: def, open: open, art: art, dry: dry) { [unowned self] in self.chunk(at: $0) }
             if !bar.isEmpty { gates.append((neighbour, bar)) }
         }
         placeBarricades()
@@ -1756,7 +1854,7 @@ final class WorldScene: SKScene {
     }
 
     /// `image` with every cell you haven't seen painted the minimap window's own dark blue.
-    private static func fog(_ image: UIImage, seen: Data?, columns: Int, rows: Int) -> UIImage {
+    static func fog(_ image: UIImage, seen: Data?, columns: Int, rows: Int) -> UIImage {
         guard let source = image.cgImage, source.width == columns, source.height == rows,
               let context = CGContext(data: nil, width: columns, height: rows, bitsPerComponent: 8, bytesPerRow: columns * 4,
                                       space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
@@ -1780,24 +1878,29 @@ final class WorldScene: SKScene {
         return UIImage(cgImage: output)
     }
 
-    /// One pixel per tile, for the HUD minimap.
+    /// One pixel per tile, for the HUD minimap (and the world map, `WorldOverview`).
     private(set) lazy var minimap: UIImage = {
-        // The map's own (palette-graded) tiles, averaged: a purple wood looks purple here too.
-        // Graded with this map's palette itself: the HUD asks for the minimap as soon as the scene
-        // exists, while the art library still grades for the map you came from (until `build`).
-        let art = self.art
-        let palette = def.theme.palette
-        let waterID = def.theme.water ?? "tile_water"
-        return UIImage(cgImage: map.overviewImage { id in
+        let image = Self.overview(of: map, art: art)
+        if Continent.origin(of: def) != nil { WorldOverview.shared.remember(def.id, image) }
+        return UIImage(cgImage: image)
+    }()
+
+    /// A map one pixel a cell, in its own (palette-graded) tiles, averaged: a purple wood looks
+    /// purple here too. Graded with the map's palette itself: the HUD asks for the minimap as soon as
+    /// the scene exists, while the art library still grades for the map you came from (until `build`).
+    static func overview(of map: WorldMap, art: ArtLibrary) -> CGImage {
+        let palette = map.def.theme.palette
+        let waterID = map.def.theme.water ?? "tile_water"
+        return map.overviewImage { id in
             let color: (CGFloat, CGFloat, CGFloat)
             if let image = art.gradedTile(id, palette: palette) {
-                color = Self.averageColor(of: image)
+                color = averageColor(of: image)
             } else {
-                color = Self.averageColor(of: id == waterID ? art.waterFrames(id).first ?? art.tileTexture(id) : art.tileTexture(id))
+                color = averageColor(of: id == waterID ? art.waterFrames(id).first ?? art.tileTexture(id) : art.tileTexture(id))
             }
             return PixelColor(r: UInt8(color.0 * 255), g: UInt8(color.1 * 255), b: UInt8(color.2 * 255))
-        })
-    }()
+        }
+    }
 
 
     // MARK: - Companion
@@ -2293,7 +2396,8 @@ final class WorldScene: SKScene {
         guard let neighbour = neighbour(holding: cell) else { return false }
         let place = Continent.place(of: cell, from: neighbour.edge, columns: map.columns, rows: map.rows)
         guard place.inward == -1, neighbour.isOpen(at: place.along, done: session.hasCompleted) else { return false }
-        guard let land = nextDoor[neighbour.def.id]?.scene else { return true }
+        // Not built yet: anywhere the sea hasn't come in over its coast (`Coast`).
+        guard let land = nextDoor[neighbour.def.id]?.scene else { return !map.isOpenSea(cell) }
         return land.map.isWalkable(neighbour.local(cell))
     }
 

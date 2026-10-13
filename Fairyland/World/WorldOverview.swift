@@ -1,0 +1,93 @@
+import Observation
+import UIKit
+
+/// Every land's map for the world map (`WorldAtlas`): the same picture as its minimap, one pixel a
+/// cell (`WorldScene.overview(of:art:)`). A land you're in hands its minimap over; the rest are laid
+/// out one at a time in the background the first time the world map opens, and kept on disk after
+/// (for this build of the game and its maps), so the world map opens on the whole continent.
+@MainActor @Observable
+final class WorldOverview {
+    static let shared = WorldOverview()
+
+    /// Each land's picture, by id.
+    private(set) var images: [String: CGImage] = [:]
+    @ObservationIgnored private var making = false
+
+    /// A land's picture, drawn already (its minimap).
+    func remember(_ id: String, _ image: CGImage) {
+        guard images[id] == nil else { return }
+        images[id] = image
+        save(id, image)
+    }
+
+    /// Fills in every land on the continent that isn't drawn yet: from disk, else laid out in the
+    /// background, one at a time, each showing as it's done.
+    func prepare() {
+        let content = Content.shared
+        let missing = content.maps.filter { content.world[$0.id] != nil && images[$0.id] == nil }
+        for def in missing {
+            if let image = load(def.id) { images[def.id] = image }
+        }
+        guard !making else { return }
+        let jobs = missing.filter { images[$0.id] == nil }.map { (def: $0, coast: Continent.coast(of: $0)) }
+        guard !jobs.isEmpty else { return }
+        making = true
+        let caves = WorldMap.caves
+        Task {
+            for job in jobs where images[job.def.id] == nil {
+                let def = job.def, coast = job.coast
+                let map = await Task.detached(priority: .utility) { WorldMap(def: def, caves: caves, coast: coast) }.value
+                remember(def.id, WorldScene.overview(of: map, art: ArtLibrary.shared))
+            }
+            making = false
+        }
+    }
+
+    // MARK: On disk
+
+    /// Where the pictures are kept: a folder for this build of the game and its maps, so a new
+    /// version draws them afresh (and the old folders go).
+    @ObservationIgnored private lazy var folder: URL? = {
+        guard let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else { return nil }
+        let root = caches.appendingPathComponent("world-map", isDirectory: true)
+        let here = root.appendingPathComponent(Self.stamp, isDirectory: true)
+        let manager = FileManager.default
+        for old in (try? manager.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? [] where old.lastPathComponent != Self.stamp {
+            try? manager.removeItem(at: old)
+        }
+        try? manager.createDirectory(at: here, withIntermediateDirectories: true)
+        return here
+    }()
+
+    private func load(_ id: String) -> CGImage? {
+        guard let url = folder?.appendingPathComponent(id + ".png") else { return nil }
+        return UIImage(contentsOfFile: url.path)?.cgImage
+    }
+
+    private func save(_ id: String, _ image: CGImage) {
+        guard let url = folder?.appendingPathComponent(id + ".png"), let data = UIImage(cgImage: image).pngData() else { return }
+        try? data.write(to: url, options: .atomic)
+    }
+
+    /// This build of the game and its maps: the version, the build, and a hash of the maps and the
+    /// continent (FNV-1a).
+    private static let stamp: String = {
+        let info = Bundle.main.infoDictionary
+        var hash: UInt64 = 0xCBF2_9CE4_8422_2325
+        func mix(_ data: Data) {
+            for byte in data {
+                hash ^= UInt64(byte)
+                hash = hash &* 0x100_0000_01B3
+            }
+        }
+        for name in ["maps", "world"] {
+            if let url = Bundle.main.url(forResource: name, withExtension: "json", subdirectory: "content"),
+               let data = try? Data(contentsOf: url) {
+                mix(data)
+            }
+        }
+        let version = (info?["CFBundleShortVersionString"] as? String ?? "") + "-" + (info?["CFBundleVersion"] as? String ?? "")
+        mix(Data(version.utf8))
+        return String(hash, radix: 16)
+    }()
+}

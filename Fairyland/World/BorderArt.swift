@@ -44,10 +44,12 @@ enum BorderArt {
     }
 
     /// Sets the wall along `neighbour`'s border with `here` into `parent(at:)` (`here`'s chunks).
-    /// `open`: a quest's gate is open already. Returns the bar across a shut gate and its sign, to
-    /// take away once the quest is done.
+    /// `open`: a quest's gate is open already. `dry`: whether there's land either side of the line at
+    /// a cell along it (`WorldMap.isOpenSea`, the same from both lands): no wall where the sea's come
+    /// in over the coast. Returns the bar across a shut gate and its sign, to take away once the quest
+    /// is done.
     static func place(_ neighbour: Continent.Neighbour, of here: MapDef, open: Bool, art: ArtLibrary,
-                      into parent: (CGPoint) -> SKNode) -> [SKNode] {
+                      dry: (Int) -> Bool, into parent: (CGPoint) -> SKNode) -> [SKNode] {
         guard neighbour.isWalled, let origin = Continent.origin(of: here) else { return [] }
         let columns = here.width, rows = here.height, edge = neighbour.edge
         let palette = sharedPalette(here, neighbour.def)
@@ -65,16 +67,21 @@ enum BorderArt {
             guard let stones = wallPicture(palette: palette),
                   let wall = TownFence.railing(stones, posts: (0, 1), height: wallHeight, alongColumns: alongColumns),
                   let tower = towerPicture(palette: palette) else { return [] }
-            for index in neighbour.span where gate?.contains(index) != true {
+            for index in neighbour.span where gate?.contains(index) != true && dry(index) {
                 let node = SKSpriteNode(texture: wall.texture, size: wall.size)
                 node.anchorPoint = wall.anchor
                 node.position = point(along: index, of: edge, columns: columns, rows: rows)
                 put(node)
             }
-            var towers: Set<Int> = [neighbour.span.lowerBound, neighbour.span.upperBound + 1]
-            for along in stride(from: neighbour.span.lowerBound + 8, to: neighbour.span.upperBound - 3, by: 8) {
-                if let gate, ((gate.lowerBound - 3)...(gate.upperBound + 4)).contains(along) { continue }
-                towers.insert(along)
+            // A tower at each end of each stretch of wall (the coast can cut it short), and every 8 between.
+            var towers: Set<Int> = []
+            for run in runs(neighbour.span.filter(dry)) {
+                towers.insert(run.lowerBound)
+                towers.insert(run.upperBound + 1)
+                for along in stride(from: run.lowerBound + 8, to: run.upperBound - 3, by: 8) {
+                    if let gate, ((gate.lowerBound - 3)...(gate.upperBound + 4)).contains(along) { continue }
+                    towers.insert(along)
+                }
             }
             if let gate {
                 towers.insert(gate.lowerBound)
@@ -102,7 +109,7 @@ enum BorderArt {
                 return (texture, art.sprite(id).size)
             }
             guard !kinds.isEmpty else { return [] }
-            for index in neighbour.span {
+            for index in neighbour.span where dry(index) {
                 let world: GridPoint = switch edge {
                 case .east: GridPoint(col: origin.col + columns, row: origin.row + index)
                 case .west: GridPoint(col: origin.col, row: origin.row + index)
@@ -125,7 +132,7 @@ enum BorderArt {
         // A fence: the pickets slanted along the line, a picture a cell, like a town's.
         guard let pickets = art.gradedTile("fence", palette: palette),
               let rail = TownFence.railing(pickets, posts: (0, 1), height: 21, alongColumns: alongColumns) else { return [] }
-        for index in neighbour.span where gate?.contains(index) != true {
+        for index in neighbour.span where gate?.contains(index) != true && dry(index) {
             let node = SKSpriteNode(texture: rail.texture, size: rail.size)
             node.anchorPoint = rail.anchor
             node.position = point(along: index, of: edge, columns: columns, rows: rows)
@@ -133,6 +140,19 @@ enum BorderArt {
         }
         guard let gate else { return [] }
         return gateway(gate, neighbour, columns: columns, rows: rows, open: open, palette: palette, art: art, into: parent)
+    }
+
+    /// Cells along a border in unbroken stretches, each from its first to its last.
+    private static func runs(_ cells: [Int]) -> [ClosedRange<Int>] {
+        var runs: [ClosedRange<Int>] = []
+        for cell in cells.sorted() {
+            if let last = runs.last, last.upperBound + 1 == cell {
+                runs[runs.count - 1] = last.lowerBound...cell
+            } else {
+                runs.append(cell...cell)
+            }
+        }
+        return runs
     }
 
     /// A quest's way through a wall: a stone arch over the road, and while the quest isn't done a

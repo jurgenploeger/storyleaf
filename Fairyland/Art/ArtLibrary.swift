@@ -283,7 +283,8 @@ final class ArtLibrary {
 
     /// One layer of an organic ground tile (see `organicTile`).
     nonisolated struct GroundLayer: Sendable {
-        nonisolated enum Style: Sendable { case road, patch, water }
+        /// `cut`: the land's edge over the sea, which lies lower: the pixels past the shore left clear.
+        nonisolated enum Style: Sendable { case road, patch, water, cut }
         let tile: String
         /// Roads and patches: bit `row * 3 + col` is set where that cell of the 3×3 around this one
         /// holds the layer (row 0 north, col 0 west; bit 4 is the cell itself). Water: the same for
@@ -348,7 +349,7 @@ final class ArtLibrary {
     /// neighbouring tiles meet seamlessly. Roads get a darker rim, water a foamy edge and a damp bank.
     /// Shoreline tiles are unique anyway, so they also use tile variant `variant`.
     func organicTile(base: String, layers: [GroundLayer], cell: GridPoint, variant: Int) -> SKTexture {
-        let hasWater = layers.contains { $0.style == .water }
+        let hasWater = layers.contains { $0.style == .water || $0.style == .cut }
         let place = hasWater ? "@\(cell.col),\(cell.row)#\(variant)" : ""
         let key = "organic|\(base)|" + layers.map { "\($0.tile):\($0.mask):\($0.style)" }.joined(separator: "|") + place
         if let cached = blended[key] { return cached }
@@ -357,13 +358,14 @@ final class ArtLibrary {
         var out = variantPixels(base, pick, size: size)
         let rim = 1.2 / Double(size)
         for layer in layers {
-            let texels = variantPixels(layer.tile, pick, size: size)
-            let segments: [(x0: Double, y0: Double, x1: Double, y1: Double)] = layer.style == .water ? [] : Self.strokes(mask: layer.mask)
-            let pools: [(x: Double, y: Double)] = layer.style == .water ? Self.pools(mask: layer.mask) : []
+            let shore = layer.style == .water || layer.style == .cut
+            let texels = layer.style == .cut ? [] : variantPixels(layer.tile, pick, size: size)
+            let segments: [(x0: Double, y0: Double, x1: Double, y1: Double)] = shore ? [] : Self.strokes(mask: layer.mask)
+            let pools: [(x: Double, y: Double)] = shore ? Self.pools(mask: layer.mask) : []
             let radius: Double = switch layer.style {
             case .road: 0.36
             case .patch: 0.42
-            case .water: 0
+            case .water, .cut: 0
             }
             for py in 0..<size {
                 for px in 0..<size {
@@ -371,7 +373,7 @@ final class ArtLibrary {
                     let x = (Double(px) + 0.5) / Double(size) - 0.5, y = 0.5 - (Double(py) + 0.5) / Double(size)
                     let wobble = Self.wobble(x, y, style: layer.style, cell: cell)
                     let depth: Double
-                    if layer.style == .water {
+                    if shore {
                         depth = Self.waterDepth(x, y, pools: pools, wobble: wobble)
                     } else {
                         var distance = Double.infinity
@@ -395,6 +397,13 @@ final class ArtLibrary {
                             out[index + 3] = 255
                         } else if depth > -0.06 {
                             for c in 0..<3 { out[index + c] = UInt8(Double(out[index + c]) * 0.8) }
+                        }
+                    case .cut:
+                        // Clear past the shore; the lip of the land along it a shade darker.
+                        if depth > 0 {
+                            for c in 0..<4 { out[index + c] = 0 }
+                        } else if depth > -0.05 {
+                            for c in 0..<3 { out[index + c] = UInt8(Double(out[index + c]) * 0.82) }
                         }
                     }
                 }
@@ -466,7 +475,7 @@ final class ArtLibrary {
     /// shorelines follow the point's place on the map, so lakes meander.
     nonisolated private static func wobble(_ x: Double, _ y: Double, style: GroundLayer.Style, cell: GridPoint) -> Double {
         let turn: Double = 2 * Double.pi
-        if style == .water {
+        if style == .water || style == .cut {
             let gx: Double = Double(cell.col) + x
             let gy: Double = Double(cell.row) + y
             let a: Double = sin(1.7 * gx + 0.9 * gy)
