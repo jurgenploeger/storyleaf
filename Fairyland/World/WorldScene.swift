@@ -597,6 +597,15 @@ final class WorldScene: SKScene {
             crag.strata = 14
             // Its road stays a road all the way up to the cave's mouth.
             crag.road = { cell in self.map.contains(cell) && self.map.ground[cell.row][cell.col] == .path }
+            // Out past the ends of its edge, it stops where a land next door lies.
+            var elsewhere: [GridPoint: Bool] = [:]
+            crag.hidden = { cell in
+                guard !self.map.contains(cell) else { return false }
+                if let known = elsewhere[cell] { return known }
+                let land = Continent.isLand(cell, from: self.def)
+                elsewhere[cell] = land
+                return land
+            }
             // A range with a mountain in it: bare layered rock from partway up (its foothills'
             // tops below that), in deeper shade and brighter sun, so its height shows.
             var mountain = look
@@ -876,15 +885,29 @@ final class WorldScene: SKScene {
                 return hill.height(atCells: Double(cell.col) + 0.5, Double(cell.row) + 0.5)
             }
             let lift = heights.reduce(0, +) / CGFloat(max(1, heights.count))
-            // In the ground's own terms: `from` cells past the edge to all mist 8 further, and on.
-            let wide = (CGFloat(length) + 80) * tile, deep = 8 * tile, beyond = 60 * tile
+            // In the ground's own terms: `from` cells past the edge to all mist 8 further, and on to
+            // where the range ends (the continent keeps the lands next door clear that far). Past
+            // the ends of the edge it reaches as far as the range does, but not over a land there.
+            func clear(_ alongs: StrideTo<Int>) -> Bool {
+                alongs.allSatisfy { along in
+                    stride(from: -4, through: -32, by: -7).allSatisfy { inward in
+                        !Continent.isLand(map.cell(on: crag.edge, along: along, inward: inward), from: def)
+                    }
+                }
+            }
+            let low: CGFloat = clear(stride(from: -2, to: -22, by: -5)) ? 20 : 0
+            let high: CGFloat = clear(stride(from: length + 1, to: length + 21, by: 5)) ? 20 : 0
+            let wide = (CGFloat(length) + low + high) * tile, deep = 8 * tile, beyond = 8 * tile
+            // Along the edge, the way its cells count, from the middle: which way that is once turned.
+            let toward: CGFloat = crag.edge == .north || crag.edge == .west ? 1 : -1
+            let off = (high - low) / 2 * tile * toward
             let fog = SKNode()
             let band = SKSpriteNode(texture: Self.fogTexture, color: colour, size: CGSize(width: wide, height: deep))
             band.colorBlendFactor = 1
             let mist = SKSpriteNode(color: colour, size: CGSize(width: wide, height: beyond))
             // Laid out for the north edge, then turned to the crag's.
-            band.position = CGPoint(x: 0, y: (from + 4) * tile)
-            mist.position = CGPoint(x: 0, y: (from + 8) * tile + beyond / 2)
+            band.position = CGPoint(x: off, y: (from + 4) * tile)
+            mist.position = CGPoint(x: off, y: (from + 8) * tile + beyond / 2)
             let turned = SKNode()
             turned.addChild(band)
             turned.addChild(mist)
@@ -909,6 +932,8 @@ final class WorldScene: SKScene {
     private func strewStones(on hill: WorldMap.Hill) {
         var random = SeededRandom(text: def.id + "/crag stones")
         for cell in hill.cells.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }) where !map.contains(cell) {
+            // Not on a land next door, where the range past the edge's end would reach into it.
+            if Continent.isLand(cell, from: def) { continue }
             let x = Double(cell.col) + 0.5, y = Double(cell.row) + 0.5
             if let mouth = hill.mouth {
                 let dx = x - mouth.x, dy = y - mouth.y

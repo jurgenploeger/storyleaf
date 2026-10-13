@@ -46,6 +46,9 @@ enum HillArt {
         /// Slopes in shade lean toward this colour, sunny ones toward the highlight.
         let shadow: (r: Double, g: Double, b: Double)
         let highlight: (r: Double, g: Double, b: Double)
+        /// Cells it isn't drawn over, if any: a land next door, where a cave's range out past the
+        /// map's edge would reach into it past the edge's end.
+        var hidden: ((GridPoint) -> Bool)? = nil
     }
 
     /// How lit a hill's slopes facing away from the midday sun still are, on a map as rocky as
@@ -152,6 +155,7 @@ enum HillArt {
                 // Image rows run top down.
                 let index = ((sh - 1 - j) * sw + i) * 4
                 let field = hill.field(x, y)
+                if let hidden = look.hidden, hidden(GridPoint(col: Int(x.rounded(.down)), row: Int(y.rounded(.down)))) { continue }
                 let trailDistance = Double(nearness[j * sw + i])
                 // Its outline, softened, and its trails' starts out on the ground in front.
                 var edge = min(1, max(0, (field + 0.06) / 0.25))

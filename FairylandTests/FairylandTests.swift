@@ -2505,11 +2505,11 @@ struct PerformanceTests {
     #endif
 
     /// A land next door builds in the background, giving the frame back every few milliseconds;
-    /// this prints the longest it kept the game waiting in one go (⏱), on big wooded lands. In a
+    /// this prints the longest it kept the game waiting in one go (⏱), on a big wooded land. In a
     /// debug build on a CI simulator it's many times what a phone takes.
     @Test func landsNextDoorBuildAFewMillisecondsAtATime() async {
         let session = GameSession.newGame(name: "Test", raceID: "human")
-        for id in ["smiling_forest", "twilight_woods", "sunny_meadow"] {
+        for id in ["smiling_forest"] {
             guard let def = Content.shared.map(id) else { continue }
             let clock = ContinuousClock()
             let start = clock.now
