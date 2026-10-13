@@ -73,6 +73,7 @@ import SpriteKit
 ///   info=<item>    with npc=<a shop>: open that item's info card
 ///   worldmap       open the world map
 ///   visited=a+b    those lands visited (`all`: every one), for the world map
+///   far            the lands next door aren't built: past the borders, their world map pictures
 ///   travel         every town visited, and the window for where a Homeward Feather takes you open
 ///   book           open the Monster Book, with the first 24 monsters already met
 ///   page=<monster> with book: open that monster's page
@@ -712,6 +713,8 @@ enum DebugLaunch {
                 }
             }
         }
+        // `far`: the lands next door are left as they look before they're built (`placeFarLands`).
+        if flags["far"] != nil { coordinator.holdsNextDoor = true }
         // `border=<land>`: once the map is on screen, the land next door is built and shown (and with
         // `cross` you walk over into it); only then is the scene ready for its screenshot.
         #if DEBUG

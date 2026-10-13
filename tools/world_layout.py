@@ -20,8 +20,8 @@ lakes and hills it was placed for, and only its last stretch bends: `WorldMap.ca
     python3 tools/world_layout.py --check --preview out.png   # the same, of world.json as it is
 
 The preview draws the coasts as the game lets the sea in over them (`coast`, after
-Fairyland/World/Coast.swift) and the wandering lines two lands' ground meets along (`seam_offset`,
-after Fairyland/World/Seam.swift): keep them in step.
+Fairyland/World/Coast.swift) and the bands where one land gives way to the next (`looks`, after
+Fairyland/World/Seam.swift): keep them in step.
 
 Needs numpy and scipy.
 """
@@ -362,25 +362,45 @@ def coast(lands, origins, left, bottom, width, height):
     return sea
 
 
-# Where two lands meet, the line between them wanders up to SEAM_REACH cells either side of the
-# straight border, in two waves of noise along it (every SEAM_WAVES cells), coming back to the
-# border over the last SEAM_TAPER cells at either end of the stretch they share. Not beside a town,
-# whose walls stand on the border.
-SEAM_REACH, SEAM_TAPER = 16.0, 16.0
+# Where two lands meet, one gives way to the other across a band: SEAM_BLEND cells either side of a
+# middle line that wanders up to SEAM_REACH cells either side of the straight border, in waves of
+# noise along it (every SEAM_WAVES cells), coming back to the border over the last SEAM_TAPER cells
+# at either end of the stretch they share. Across the band the other land's ground comes in
+# patches (`patch`), more and more of them. Not beside a town, whose walls stand on the border.
+SEAM_REACH, SEAM_TAPER, SEAM_BLEND = 10.0, 16.0, 20.0
 SEAM_WAVES = ((52, 0x5EA, 1.0), (18, 0x5EB, 0.5), (7, 0x5EC, 0.18))
 
 
+def seam_fade(along, low, high):
+    """How far the band reaches at `along`: none at the ends of the stretch two lands share
+    (low...high, world cells), all of it SEAM_TAPER in (`Seam.fade`)."""
+    t = min(1.0, max(0.0, min(along - low, high - along) / SEAM_TAPER))
+    return t * t * (3 - 2 * t)
+
+
 def seam_offset(along, line, low, high, sign):
-    """How far into the land `sign` is +1 for (the first of the two by id) the line between two
-    lands lies at `along` (in world cells along the border, which lies at `line` across it; the two
-    share low...high): `Seam.offset` in Fairyland/World/Seam.swift (keep the two in step)."""
-    end = min(along - low, high - along)
-    if end <= 0:
+    """How far into the land `sign` is +1 for (the first of the two by id) the middle line lies at
+    `along` (in world cells along the border, which lies at `line` across it; the two share
+    low...high): `Seam.offset` in Fairyland/World/Seam.swift (keep the two in step)."""
+    fade = seam_fade(along, low, high)
+    if fade <= 0:
         return 0.0
-    t = min(1.0, end / SEAM_TAPER)
     wave = sum(_value(along, line, every, seed) * weight for every, seed, weight in SEAM_WAVES)
     wave /= sum(weight for _, _, weight in SEAM_WAVES)
-    return sign * (wave * 2 - 1) * SEAM_REACH * t * t * (3 - 2 * t)
+    return sign * (wave * 2 - 1) * SEAM_REACH * fade
+
+
+def seam_share(side, width):
+    """How much of the ground is the other land's `side` cells this side of the middle line, the
+    band `width` either side of it (`Seam.share`)."""
+    t = min(1.0, max(0.0, (width - side) / (2 * width)))
+    return t * t * (3 - 2 * t)
+
+
+def seam_patch(x, y):
+    """Patchy noise over the continent's cells, 0.02...0.98 (`Seam.patch`)."""
+    raw = (_value(x, y, 3.4, 0x9A1) + _value(x, y, 1.5, 0x9A2) * 0.5) / 1.5
+    return min(0.98, max(0.02, 0.5 + (raw - 0.5) * 1.8))
 
 
 def borders(lands, origins):
@@ -409,27 +429,27 @@ def borders(lands, origins):
 
 def looks(lands, origins, left, bottom, width, height):
     """Which land's ground shows at each cell from (left, bottom): its index in sorted(origins), or
-    -1 in no land. Each land's own, but past the wandering line between two lands, the other's."""
+    -1 in no land. Each land's own, but across the band between two lands, the other's in patches
+    (`Seam.showsOther`)."""
     import numpy as np
     ids = sorted(origins)
     look = np.full((height, width), -1, int)
     for index, land_id in enumerate(ids):
         x, y = origins[land_id]
         look[y - bottom:y - bottom + lands[land_id]["height"], x - left:x - left + lands[land_id]["width"]] = index
+    depth = int(SEAM_REACH + SEAM_BLEND) + 1
     for a, b, edge, line, (low, high) in borders(lands, origins):
         for along in range(low, high):
             offset = seam_offset(along + 0.5, line, low, high, 1)
-            for cell in range(line - int(SEAM_REACH) - 2, line + int(SEAM_REACH) + 2):
+            spread = SEAM_BLEND * max(0.1, seam_fade(along + 0.5, low, high))
+            for cell in range(line - depth, line + depth):
                 # How far the cell's middle is into the first land, from the border.
                 inward = (line - cell - 0.5) if edge in ("east", "north") else (cell + 0.5 - line)
-                if 0 < inward < offset:
-                    shown = ids.index(b)
-                elif offset < inward < 0:
-                    shown = ids.index(a)
-                else:
-                    continue
-                col, row = (cell - left, along - bottom) if edge in ("east", "west") else (along - left, cell - bottom)
-                if 0 <= row < height and 0 <= col < width:
+                share = seam_share(inward - offset, spread)  # the second land's share
+                cx, cy = (cell + 0.5, along + 0.5) if edge in ("east", "west") else (along + 0.5, cell + 0.5)
+                shown = ids.index(b) if share > seam_patch(cx, cy) else ids.index(a)
+                col, row = int(cx - 0.5) - left, int(cy - 0.5) - bottom
+                if 0 <= row < height and 0 <= col < width and look[row, col] in (ids.index(a), ids.index(b)):
                     look[row, col] = shown
     return look
 

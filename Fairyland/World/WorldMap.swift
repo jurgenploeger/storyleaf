@@ -172,11 +172,10 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// Whether the sea's coast was laid over the land, as far as what's on it lets the sea in
     /// (false if it would have cut something off, `carveCoast`).
     private(set) var hasCoast = false
-    /// The wandering lines the land meets the lands beside it along (`Seam`; none for a cave).
+    /// The bands the land gives way to the lands beside it over (`Seam`; none for a cave).
     let seams: [Seam]
-    /// The cells whose middles lie past one of them, where the land next door's ground shows: by
-    /// cell, which of `seams` (the one it's furthest past). Still this land's cells, to walk and
-    /// to set things on.
+    /// The cells that show a land next door's ground, in its patches across a band: by cell, which
+    /// of `seams`. Still this land's cells, to walk and to set things on.
     private(set) var foreign: [GridPoint: Int] = [:]
 
     /// The projected map's on-screen bounding box.
@@ -284,20 +283,21 @@ nonisolated final class WorldMap: @unchecked Sendable {
         markForeign()
     }
 
-    /// Finds the cells past the lines the land meets its neighbours along (`foreign`). The land's
-    /// accent (its flower patches, its moss) stops a cell short of them, so it never spills over.
+    /// Finds the cells that show a land next door's ground (`foreign`): where two bands overlap
+    /// near a corner, the land with the larger share. The land's accent (its flower patches, its
+    /// moss) keeps out of the band, so it never spills into the other land's.
     private func markForeign() {
-        let depth = Int(Seam.reach) + 2
-        var furthest: [GridPoint: Double] = [:]
+        var strongest: [GridPoint: Double] = [:]
         for (index, seam) in seams.enumerated() {
             for along in seam.span {
-                for inward in 0..<depth {
+                for inward in 0..<Seam.depth {
                     let spot = cell(on: seam.edge, along: along, inward: inward)
                     guard contains(spot) else { continue }
-                    let side = seam.side(x: Double(spot.col) + 0.5, y: Double(spot.row) + 0.5)
-                    if side < 1.5, ground[spot.row][spot.col] == .accent { ground[spot.row][spot.col] = .ground }
-                    guard side < 0, side < furthest[spot] ?? 0 else { continue }
-                    furthest[spot] = side
+                    let share = seam.share(x: Double(spot.col) + 0.5, y: Double(spot.row) + 0.5)
+                    guard share > 0 else { continue }
+                    if share > 0.03, ground[spot.row][spot.col] == .accent { ground[spot.row][spot.col] = .ground }
+                    guard seam.showsOther(spot), share > strongest[spot] ?? 0 else { continue }
+                    strongest[spot] = share
                     foreign[spot] = index
                 }
             }

@@ -92,6 +92,16 @@ final class WorldScene: SKScene {
     private(set) var isNextDoor: Bool
     /// The lands next door shown past this one's borders, by id.
     private var nextDoor: [String: (scene: WorldScene, neighbour: Continent.Neighbour)] = [:]
+    /// The lands round this one, each as its picture on the world map (`WorldOverview`) laid flat
+    /// on the ground, under everything, while it isn't shown next door (not built yet, or let go):
+    /// so past a border there's always the land next door, if not yet its trees, never nothing.
+    /// By id (`placeFarLands`).
+    private var farLands: [String: SKNode] = [:]
+    /// Whether a land round this one had no picture yet when they were laid (they come in from
+    /// the background, `WorldOverview.prepare`).
+    private var farLandsMissing = false
+    /// How far round the land they're laid, in cells.
+    private static let farReach = 64
     /// The lands sharing a border with this one (none for a cave).
     private(set) lazy var neighbours: [Continent.Neighbour] = Continent.neighbours(of: def)
     /// The land you've just walked in from, whose place this one takes as it shows (`didMove(to:)`).
@@ -252,6 +262,7 @@ final class WorldScene: SKScene {
         placePlateaus()
         await reached(0.3, progress)
         await placeSurroundings()
+        placeFarLands()
         await reached(0.45, progress)
         if let cave = def.theme.cave {
             caveWalls = CaveWalls(map: map, cave: cave, world: world, art: art, margin: Self.surroundingsMargin)
@@ -481,23 +492,34 @@ final class WorldScene: SKScene {
             }
             return bits
         }
-        // Where a land next door's ground comes over the line onto this one (`Seam`): past it, its
-        // ground, graded as it is there; across a cell the line runs through, the two either side of
-        // it, chequered along it (`ArtLibrary.Over`).
-        let seams: [(seam: Seam, land: MapDef)] = map.seams.compactMap { seam in Content.shared.map(seam.neighbour).map { (seam: seam, land: $0) } }
-        let blend = 0.05
-        func across(_ cell: GridPoint) -> (seam: Seam, land: MapDef, all: Bool)? {
-            var best: (seam: Seam, land: MapDef, low: Double, high: Double)?
-            for (seam, land) in seams {
-                guard let sides = seam.sides(of: cell), sides.low < blend else { continue }
-                if let known = best, known.low <= sides.low { continue }
-                best = (seam, land, sides.low, sides.high)
-            }
-            guard let best else { return nil }
-            return (best.seam, best.land, best.high < -blend)
+        // Across the band where this land gives way to the one next door (`Seam`), that land's
+        // ground in patches (`WorldMap.foreign`), graded as it is there: soft rounded blobs, as an
+        // accent's patches are, joining where they touch (`ArtLibrary.GroundLayer.from`). Which land's
+        // ground shows at a cell, as the index of its seam: inside the map as laid out, just past the
+        // edge as the band runs on into the land next door.
+        let others: [(land: MapDef, from: ArtLibrary.Foreign)?] = map.seams.map { seam in
+            Content.shared.map(seam.neighbour).map { (land: $0, from: ArtLibrary.Foreign(land: $0.id, palette: $0.theme.palette)) }
         }
-        // The cells the line runs through are drawn a pixel at a time: a breath every so many.
-        var crossed = 0
+        var lookPast: [GridPoint: Int?] = [:]
+        func otherLook(_ cell: GridPoint) -> Int? {
+            if map.contains(cell) { return map.foreign[cell] }
+            if let known = lookPast[cell] { return known }
+            let found = map.seams.indices.first { map.seams[$0].covers(cell) && map.seams[$0].showsOther(cell) }
+            lookPast[cell] = found
+            return found
+        }
+        /// The land next door whose patches reach `cell` (its own, or one round it), and which cells
+        /// of the 3×3 round it show that land (bit row * 3 + col, row 0 north).
+        func patches(_ cell: GridPoint) -> (seam: Int, mask: Int)? {
+            var looks: [Int?] = []
+            for dy in -1...1 {
+                for dx in -1...1 { looks.append(otherLook(GridPoint(col: cell.col + dx, row: cell.row - dy))) }
+            }
+            guard let seam = looks[4] ?? looks.compactMap({ $0 }).first else { return nil }
+            var bits = 0
+            for (bit, look) in looks.enumerated() where look == seam { bits |= 1 << bit }
+            return (seam, bits)
+        }
         var picks: [(col: Int, row: Int, group: SKTileGroup?)] = []
         // The land's cells within two of the sea, for its bank.
         var shoreline: [(col: Int, row: Int)] = []
@@ -522,6 +544,12 @@ final class WorldScene: SKScene {
                 default: mask(cell, .border) & sides != 0 ? (theme.border ?? theme.ground) : theme.ground
                 }
                 var layers: [ArtLibrary.GroundLayer] = []
+                // The land next door's patches first, under everything of this land's.
+                let other = map.seams.isEmpty ? nil : patches(cell)
+                let otherLand = other.flatMap { others[$0.seam] }
+                if let other, let otherLand {
+                    layers.append(.init(tile: otherLand.land.theme.ground, mask: other.mask, style: .patch, from: otherLand.from))
+                }
                 if patch != 0, let accent = theme.accent { layers.append(.init(tile: accent, mask: patch, style: .patch)) }
                 if road != 0 { layers.append(.init(tile: theme.path, mask: road, style: .road)) }
                 if pond != 0 { layers.append(.init(tile: waterID, mask: poolMask(cell), style: .water)) }
@@ -529,28 +557,17 @@ final class WorldScene: SKScene {
                 if near != 0 { shoreline.append((col, row)) }
                 let coast = near == 0 ? 0 : shore(cell)
                 if coast != 0 { layers.append(.init(tile: base, mask: near, style: .cut)) }
-                let over = across(cell)
                 let chosen: SKTileGroup
                 if pond == full, coast == 0 {
                     chosen = waterVaries ? plain(waterID, variant) : water
                 } else if road == full, pond == 0, coast == 0 {
                     chosen = plain(theme.path, variant)
-                } else if let over, over.all, layers.isEmpty {
-                    let land = over.land
+                } else if let other, let otherLand, other.mask == full, layers.count == 1 {
+                    // All the land next door's ground.
+                    let land = otherLand.land
                     chosen = group("foreign|\(land.id)#\(variant)") {
                         art.foreignTile(land.theme.ground, palette: land.theme.palette, from: land.id, variant: variant, base: base)
                     }
-                } else if let over {
-                    // Unique, as a shoreline's is: the line runs its own way through every cell.
-                    let land = over.land
-                    let side = over.seam.side(across: cell)
-                    let key = base + "|" + layers.map { "\($0.style)\($0.mask)" }.joined(separator: "|") + "@\(col),\(row)|over:" + land.id
-                    chosen = group(key) {
-                        art.organicTile(base: base, layers: layers, cell: cell, variant: variant,
-                                        over: ArtLibrary.Over(land: land.id, tile: land.theme.ground, palette: land.theme.palette, side: side))
-                    }
-                    crossed += 1
-                    if crossed % 32 == 0 { await breathe() }
                 } else if layers.isEmpty {
                     chosen = plain(base, variant)
                 } else if let accent = theme.accent, patch == full, road == 0, pond == 0, coast == 0 {
@@ -558,16 +575,18 @@ final class WorldScene: SKScene {
                 } else {
                     // Shorelines depend on where they are (see organicTile), so each gets its own tile.
                     let place = pond != 0 || coast != 0 ? "@\(col),\(row)" : ""
-                    let key = base + "|" + layers.map { "\($0.style)\($0.mask)" }.joined(separator: "|") + place
+                    let key = base + "|" + layers.map { "\($0.style)\($0.mask)\($0.from?.land ?? "")" }.joined(separator: "|") + place
                     chosen = group(key) { art.organicTile(base: base, layers: layers, cell: cell, variant: variant) }
                 }
                 picks.append((col, row, chosen))
             }
         }
+        await breathe()
         let tileSet = SKTileSet(tileGroups: Array(groups.values))
         let tileMap = SKTileMapNode(tileSet: tileSet, columns: map.columns, rows: map.rows, tileSize: tileSize)
         tileMap.anchorPoint = .zero
-        for pick in picks {
+        for (index, pick) in picks.enumerated() {
+            if index % 4096 == 4095 { await breathe() }
             if let group = pick.group { tileMap.setTileGroup(group, forColumn: pick.col, row: pick.row) }
         }
         // A raised terrace: its own tiles again, drawn its height up (`placePlateaus` sets them
@@ -591,17 +610,17 @@ final class WorldScene: SKScene {
         // Soft patches of colour over the whole ground, so it isn't one flat colour.
         let grid = SKNode()
         grid.addChild(tileMap)
+        await breathe()
         let variation = Lighting.groundVariation(columns: map.columns, rows: map.rows, tile: WorldMap.tileSize, palette: theme.palette,
                                                  seed: def.id) { col, row in self.map.ground[row][col] != .sea }
         if let variation {
             variation.zPosition = 1
             grid.addChild(variation)
         }
-        // And a wash of the land next door's colour over the ground along each border, fading in, so
-        // the two lands' colours meet on the line (as RuneScape blends its ground's colours, keeping
-        // the tiles themselves whole: tiles of the land next door scattered in read as a checkerboard
-        // where the two differ).
+        // And a wash of the two lands' colours over the band along each border, so the patches of
+        // each land's ground run into each other (as RuneScape blends its ground's colours).
         for neighbour in neighbours {
+            await breathe()
             grid.addChild(blendBand(toward: neighbour, seam: map.seams.first { $0.neighbour == neighbour.def.id }))
         }
         // Bridges' decks lie on the water with the ground (`BridgeArt`; their rails stand in the
@@ -735,24 +754,25 @@ final class WorldScene: SKScene {
         return layers
     }
 
-    /// How many cells in from a border the land next door's colour reaches (`makeGround`).
-    private static let blendReach = 9
-    /// How many texels a cell the wash has across, so it turns from one land's colour to the
-    /// other's where the line runs through a cell, not at the cell's edge.
+    /// How many texels a cell the wash has across, so it follows the band's middle line through
+    /// the cells, not their edges.
     private static let blendFineness = 4
+    /// How strong the wash is in the middle of the band, where the two lands' ground is half each.
+    private static let blendStrength: CGFloat = 0.35
 
-    /// A wash of the land next door's ground colour (graded by its palette) along the border with
-    /// it, strongest on the line between them and fading to nothing `blendReach` cells in, laid
-    /// on the ground (grid space). The land next door lays the same wash of this land's colour on
-    /// its side, so at the line both show half of each. Where the line wanders (`seam`), it follows
-    /// it: past it, over the land next door's ground come onto this one, a wash of this land's
-    /// colour instead, as the land next door lays over its own ground there. Over the band along the
-    /// border only, `blendFineness` texels a cell, smoothed: none over the sea or the land's edge
-    /// along it (its bank shows there), and fading out toward the ends of the stretch they share.
+    /// A wash over the band where this land gives way to the one next door (`Seam`), in the two
+    /// lands' ground colours (each graded by its palette) mixed as their ground is there: this
+    /// land's colour where its own ground's most of it, the other's where the other's is, half
+    /// each on the middle line. Strongest there, where the two grounds' patches are half and half,
+    /// and fading to nothing either side as one land's ground takes over, so the patches' colours
+    /// run into each other. The land next door lays the same wash on its side, so the two meet
+    /// without a seam. Along a town's wall the band's middle is the border itself. Over the band
+    /// only, `blendFineness` texels a cell, smoothed: none over the sea or the land's edge along it
+    /// (its bank shows there), and fading out toward the ends of the stretch they share.
     private func blendBand(toward neighbour: Continent.Neighbour, seam: Seam?) -> SKNode {
         let tile = WorldMap.tileSize
         let image = art.gradedTile(neighbour.def.theme.ground, palette: neighbour.def.theme.palette)
-        let (r, g, b) = image.map { Self.averageColor(of: $0) } ?? (0.5, 0.5, 0.5)
+        let other = image.map { Self.averageColor(of: $0) } ?? (0.5, 0.5, 0.5)
         let own = art.gradedTile(def.theme.ground, palette: def.theme.palette).map { Self.averageColor(of: $0) } ?? (0.5, 0.5, 0.5)
         let columns = map.columns, rows = map.rows
         func nearSea(_ cell: GridPoint) -> Bool {
@@ -766,10 +786,10 @@ final class WorldScene: SKScene {
             return false
         }
         // The band the wash covers: the stretch the two share, and in from the edge as far as the
-        // line wanders and the wash past it.
+        // band reaches.
         let edge = neighbour.edge, span = neighbour.span
         let across = edge == .east || edge == .west
-        let depth = min(Self.blendReach + Int(Seam.reach) + 1, across ? columns : rows)
+        let depth = min(Seam.depth, across ? columns : rows)
         let low: GridPoint = switch edge {
         case .north: GridPoint(col: span.lowerBound, row: rows - depth)
         case .south: GridPoint(col: span.lowerBound, row: 0)
@@ -779,11 +799,11 @@ final class WorldScene: SKScene {
         let cells = (width: across ? depth : span.count, height: across ? span.count : depth)
         let fine = Self.blendFineness
         let width = cells.width * fine, height = cells.height * fine
-        // The line's offset from the border at each texel along it (none along a town's wall).
-        let offsets: [Double] = (0..<(span.count * fine)).map { step in
-            seam?.offset(at: Double(span.lowerBound) + (Double(step) + 0.5) / Double(fine)) ?? 0
-        }
-        let reach = Double(Self.blendReach)
+        // The middle line's offset from the border at each texel along it, and the band's width
+        // either side of it (along a town's wall, the border itself and the full width).
+        let alongs = (0..<(span.count * fine)).map { Double(span.lowerBound) + (Double($0) + 0.5) / Double(fine) }
+        let offsets: [Double] = alongs.map { seam?.offset(at: $0) ?? 0 }
+        let widths: [Double] = alongs.map { seam?.width(at: $0) ?? Seam.blend }
         var wet: [GridPoint: Bool] = [:]
         var pixels = [UInt8](repeating: 0, count: width * height * 4)
         for y in 0..<height {
@@ -800,9 +820,9 @@ final class WorldScene: SKScene {
                 case .west: (gx, height - 1 - y)
                 }
                 let step = spot.step
-                // How far it is from the line between the two lands: below 0 past it.
-                let side = spot.inward - offsets[step]
-                guard abs(side) < reach else { continue }
+                // How much of the ground is the other land's here (`Seam.share`).
+                let share = CGFloat(Seam.share(at: spot.inward - offsets[step], width: widths[step]))
+                guard share > 0.001, share < 0.999 else { continue }
                 let cell = GridPoint(col: Int(gx.rounded(.down)), row: Int(gy.rounded(.down)))
                 let near: Bool
                 if let known = wet[cell] {
@@ -812,11 +832,10 @@ final class WorldScene: SKScene {
                     wet[cell] = near
                 }
                 guard !near else { continue }
-                let color = side >= 0 ? (r, g, b) : own
-                let t = 1 - abs(side) / reach
+                let color = (own.0 + (other.0 - own.0) * share, own.1 + (other.1 - own.1) * share, own.2 + (other.2 - own.2) * share)
                 let along = (Double(step) + 0.5) / Double(fine)
-                let end = min(1, min(along, Double(span.count) - along) / 4)
-                let alpha = CGFloat(0.5 * t * t * (3 - 2 * t) * end * end * (3 - 2 * end))
+                let end = CGFloat(min(1, min(along, Double(span.count) - along) / 4))
+                let alpha = Self.blendStrength * 4 * share * (1 - share) * end * end * (3 - 2 * end)
                 let index = (y * width + x) * 4
                 pixels[index] = UInt8((color.0 * alpha * 255).rounded())
                 pixels[index + 1] = UInt8((color.1 * alpha * 255).rounded())
@@ -2565,13 +2584,45 @@ final class WorldScene: SKScene {
         land.world.zPosition = -shift.dy
         lands.addChild(land.world)
         nextDoor[land.def.id] = (land, neighbour)
+        farLands[land.def.id]?.isHidden = true
         land.follow(sunShown ?? .noon)
+    }
+
+    /// Lays the lands round this one flat on the ground as their world map pictures (`farLands`),
+    /// those not laid yet; one with no picture yet waits for `WorldOverview` to draw it (looked for
+    /// again every so often, `lookAround`). Not for a land shown next door, nor round a cave.
+    private func placeFarLands() {
+        guard !isNextDoor, Continent.origin(of: def) != nil else { return }
+        let drawn = WorldOverview.shared.images
+        var missing = false
+        let tile = WorldMap.tileSize
+        for (land, offset) in Continent.lands(near: def, within: Self.farReach) where farLands[land.id] == nil {
+            guard let image = drawn[land.id] else {
+                missing = true
+                continue
+            }
+            let texture = SKTexture(cgImage: image)
+            texture.filteringMode = .linear
+            let picture = SKSpriteNode(texture: texture, size: CGSize(width: CGFloat(land.width) * tile, height: CGFloat(land.height) * tile))
+            picture.anchorPoint = .zero
+            picture.position = CGPoint(x: CGFloat(offset.col) * tile, y: CGFloat(offset.row) * tile)
+            let grid = SKNode()
+            grid.addChild(picture)
+            let layer = projected(grid)
+            layer.zPosition = -1_000_000
+            layer.isHidden = nextDoor[land.id] != nil
+            lands.addChild(layer)
+            farLands[land.id] = layer
+        }
+        farLandsMissing = missing
+        if missing { WorldOverview.shared.prepare() }
     }
 
     /// Takes a land next door away again (too far to see), its layer back in its own scene.
     @discardableResult
     func hide(_ id: String) -> WorldScene? {
         guard let land = nextDoor.removeValue(forKey: id)?.scene else { return nil }
+        farLands[id]?.isHidden = false
         land.world.removeFromParent()
         land.world.position = .zero
         land.world.zPosition = 0
@@ -2614,6 +2665,7 @@ final class WorldScene: SKScene {
     private func lookAround() {
         // Not once you've stepped over (this land's on its way to being next door).
         guard !isNextDoor, !hasLeft, let onLandsNear, !neighbours.isEmpty else { return }
+        if farLandsMissing { placeFarLands() }
         let here = map.cell(at: player.position)
         let near = neighbours
             .map { (neighbour: $0, distance: $0.distance(from: here, columns: map.columns, rows: map.rows)) }
@@ -2678,6 +2730,7 @@ final class WorldScene: SKScene {
             if let neighbour = neighbours.first(where: { $0.def.id == id }) { show(land, as: neighbour) }
         }
         isNextDoor = false
+        placeFarLands()
         art.use(palette: def.theme.palette, for: def.id)
         Walker.light = Self.light(of: def)
 
@@ -2753,7 +2806,10 @@ final class WorldScene: SKScene {
             self.onFirstFrame = nil
             onFirstFrame()
         }
-        let dt = lastUpdate == 0 ? 0 : min(currentTime - lastUpdate, 1.0 / 20)
+        // As much time as has passed, up to an eighth of a second: a frame that comes late (a land
+        // next door being built in the background) doesn't slow your walking, and only a long
+        // stall (a pause, a menu) skips ahead no more than that.
+        let dt = lastUpdate == 0 ? 0 : min(currentTime - lastUpdate, 1.0 / 8)
         lastUpdate = currentTime
 
         if isInputLocked {

@@ -79,9 +79,9 @@ final class WorldOverview {
         try? data.write(to: url, options: .atomic)
     }
 
-    /// How the lands are drawn on it: one more each time that changes (the lines between lands
-    /// wander now, `Seam`), so the pictures kept are drawn afresh even in the same build.
-    private static let look = 2
+    /// How the lands are drawn on it: one more each time that changes (the lands give way to each
+    /// other in patches now, `Seam`), so the pictures kept are drawn afresh even in the same build.
+    private static let look = 3
 
     /// This build of the game and its maps: the version, the build, how they're drawn (`look`) and
     /// a hash of the maps and the continent (FNV-1a).
