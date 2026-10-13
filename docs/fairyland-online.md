@@ -299,9 +299,14 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     Until then (since 0.5.2, playtesting 2026-10-13: "the maps are broken and still not one big
     continuous map", from a screenshot of nothing past the border at night) every land within 64 cells
     lies flat on the ground as its world map picture (`WorldScene.placeFarLands`), so there's never a
-    gap. Movement goes by the time that's passed up to an eighth of a second a frame (it was a
-    twentieth), so a frame the background build makes late doesn't slow your walking ("walking around
-    feels slower").
+    gap. Since 0.5.3 (playtesting 2026-10-14, the same border still empty and no way over it), that
+    picture doesn't wait its turn: the lands you share a border with are drawn first
+    (`WorldOverview.prepare(first:)`), one next door hands its own over as soon as it's laid out, and
+    a land with none yet lies there in its ground's colour, on the minimap too (it showed open sea).
+    Tapping past a border walks you over even before that land is built (it only worked once it was
+    shown; the stick always did). Movement goes by the time that's passed up to an eighth of a second a
+    frame (it was a twentieth), so a frame the background build makes late doesn't slow your walking
+    ("walking around feels slower").
     Walking over hands the scene over with no card (`takeOver`): the hero, companion, party and camera
     carry on where they were, the land you left shows next door in its turn. Not built yet when you step
     over: behind the card as before, where you crossed.

@@ -236,6 +236,9 @@ final class GameCoordinator {
         Task { [weak self] in
             let grid = await Task.detached(priority: .userInitiated) { WorldMap(def: def, caves: caves, coast: coast) }.value
             guard let self else { return }
+            // Its picture at once, from the layout, to lie past the border (`WorldScene.placeFarLands`)
+            // and on the minimap while the land itself is built.
+            WorldOverview.shared.remember(def.id, WorldScene.overview(of: grid, art: ArtLibrary.shared))
             let land = WorldScene(map: def, session: session, input: input, entry: nil, grid: grid, nextDoor: true)
             land.friendsElsewhere = away
             nextDoor[def.id] = land
