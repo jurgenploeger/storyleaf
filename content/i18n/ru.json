@@ -805,6 +805,7 @@
     "Climbing a hill or a mountain, the camera follows you up, so you stay in the middle of the screen.": "Когда ты поднимаешься на холм или гору, камера следует за тобой, и ты остаёшься в центре экрана.",
     "The minimap shows what's round the land you're in too: the lands next door and the sea.": "Мини-карта теперь показывает и то, что вокруг земли, где ты находишься: соседние земли и море.",
     "The screen no longer darkens as you near the edge of a land or a cave's mouth.": "Экран больше не темнеет, когда ты подходишь к краю земли или ко входу в пещеру.",
+    "Fixed recoloured art sometimes coming out with blocks of garbled pixels, like a Jelly Puff in battle.": "Исправлено: перекрашенные картинки иногда выходили с блоками мусорных пикселей, как Jelly Puff в бою.",
     "One continent": "Один континент",
     "The lands lie side by side as one continent: walk from one into the next with no loading screen. Only caves still have one, going in and coming out.": "Земли теперь лежат рядом, на одном континенте: из одной в другую переходишь без экрана загрузки. Он остался только у пещер, на входе и на выходе.",
     "Near a border you can see the land next door, and the ground and its colours blend from one land into the other.": "У границы видна соседняя земля, а почва и её цвета плавно переходят из одной земли в другую.",

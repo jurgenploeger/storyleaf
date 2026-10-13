@@ -407,12 +407,7 @@ enum GearOverlay {
         }
 
         func image() -> CGImage? {
-            let w = width, h = height
-            var copy = pixels
-            return copy.withUnsafeMutableBytes { buffer in
-                CGContext(data: buffer.baseAddress, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
-                          space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)?.makeImage()
-            }
+            PixelImage.make(pixels, width: width, height: height)
         }
     }
 }

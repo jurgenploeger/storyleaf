@@ -805,6 +805,7 @@
     "Climbing a hill or a mountain, the camera follows you up, so you stay in the middle of the screen.": "爬上山丘或高山时，镜头会跟着你，让你始终在屏幕中央。",
     "The minimap shows what's round the land you're in too: the lands next door and the sea.": "小地图现在也会显示你所在土地的周围：相邻的土地和大海。",
     "The screen no longer darkens as you near the edge of a land or a cave's mouth.": "走近土地边缘或洞口时，画面不会再变暗了。",
+    "Fixed recoloured art sometimes coming out with blocks of garbled pixels, like a Jelly Puff in battle.": "修复了重新上色的图像有时会出现乱码像素块的问题，比如战斗中的 Jelly Puff。",
     "One continent": "同一片大陆",
     "The lands lie side by side as one continent: walk from one into the next with no loading screen. Only caves still have one, going in and coming out.": "各片土地如今相邻相连，组成同一片大陆：从一片土地走到下一片，不再有加载画面。只有进出洞穴时还有。",
     "Near a border you can see the land next door, and the ground and its colours blend from one land into the other.": "走近边界时能看到相邻的土地，地面和色彩会从一片土地自然过渡到另一片。",

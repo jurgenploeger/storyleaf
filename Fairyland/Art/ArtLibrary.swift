@@ -446,12 +446,7 @@ final class ArtLibrary {
 
     /// An image's pixels (premultiplied RGBA), scaled to `size` × `size`.
     nonisolated private static func pixels(_ image: CGImage, size: Int) -> [UInt8] {
-        var buffer = [UInt8](repeating: 0, count: size * size * 4)
-        let context = CGContext(data: &buffer, width: size, height: size, bitsPerComponent: 8, bytesPerRow: size * 4,
-                                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
-        context.interpolationQuality = .none
-        context.draw(image, in: CGRect(x: 0, y: 0, width: size, height: size))
-        return buffer
+        PixelImage.pixels(of: image, width: size, height: size) ?? [UInt8](repeating: 0, count: size * size * 4)
     }
 
     /// The strokes a layer is drawn with: a dot on every cell that holds it, and a line to each

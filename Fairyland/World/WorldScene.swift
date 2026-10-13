@@ -742,11 +742,7 @@ final class WorldScene: SKScene {
                 pixels[index + 3] = UInt8((alpha * 255).rounded())
             }
         }
-        let made = pixels.withUnsafeMutableBytes { buffer -> CGImage? in
-            CGContext(data: buffer.baseAddress, width: columns, height: rows, bitsPerComponent: 8, bytesPerRow: columns * 4,
-                      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)?.makeImage()
-        }
-        guard let made else { return SKNode() }
+        guard let made = PixelImage.make(pixels, width: columns, height: rows) else { return SKNode() }
         let texture = SKTexture(cgImage: made)
         texture.filteringMode = .linear
         let band = SKSpriteNode(texture: texture, size: CGSize(width: CGFloat(columns) * tile, height: CGFloat(rows) * tile))
@@ -882,11 +878,7 @@ final class WorldScene: SKScene {
             let index = ((rows - 1 - (cell.row + margin)) * columns + cell.col + margin) * 4
             for channel in 0..<4 { pixels[index + channel] = alpha }   // premultiplied white
         }
-        let image = pixels.withUnsafeMutableBytes { buffer -> CGImage? in
-            CGContext(data: buffer.baseAddress, width: columns, height: rows, bitsPerComponent: 8, bytesPerRow: columns * 4,
-                      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)?.makeImage()
-        }
-        guard let image else { return nil }
+        guard let image = PixelImage.make(pixels, width: columns, height: rows) else { return nil }
         let texture = SKTexture(cgImage: image)
         texture.filteringMode = .linear
         let tile = WorldMap.tileSize
@@ -989,11 +981,7 @@ final class WorldScene: SKScene {
             let alpha = UInt8((t * t * (3 - 2 * t) * 255).rounded())     // smoothstep
             for channel in 0..<4 { pixels[row * 4 + channel] = alpha }   // premultiplied white
         }
-        let image = pixels.withUnsafeMutableBytes { buffer -> CGImage? in
-            CGContext(data: buffer.baseAddress, width: 1, height: height, bitsPerComponent: 8, bytesPerRow: 4,
-                      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)?.makeImage()
-        }
-        let texture = image.map { SKTexture(cgImage: $0) } ?? SKTexture()
+        let texture = PixelImage.make(pixels, width: 1, height: height).map { SKTexture(cgImage: $0) } ?? SKTexture()
         texture.filteringMode = .linear
         return texture
     }()
