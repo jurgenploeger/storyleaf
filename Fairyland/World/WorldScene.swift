@@ -447,19 +447,6 @@ final class WorldScene: SKScene {
             group("\(id)#\(variant)") { art.tileVariant(id, variant) }
         }
         let full = 0b111_111_111, sides = 0b010_101_010
-        // Near a border, the land next door's own ground creeps in, a cell here and there, the more
-        // the nearer it is, as this land's creeps into it from the other side: the two blend into
-        // each other instead of meeting on a line (`Self.blendReach`).
-        let borders = neighbours.map { neighbour in
-            (neighbour: neighbour, ground: group("next door|\(neighbour.def.id)") {
-                guard let image = art.gradedTile(neighbour.def.theme.ground, palette: neighbour.def.theme.palette) else {
-                    return art.tileTexture(theme.ground)
-                }
-                let texture = SKTexture(cgImage: image)
-                texture.filteringMode = .nearest
-                return texture
-            })
-        }
         // The sea round the land (on the continent): its shore curves in over the land's outer cells,
         // as a lake's does, out of the same water as the open sea (`Self.seaTile`).
         var sea: Set<GridPoint> = []
@@ -485,15 +472,6 @@ final class WorldScene: SKScene {
                 for dx in -2...2 where sea.contains(GridPoint(col: cell.col + dx, row: cell.row + dy)) { bits |= 1 << ((2 - dy) * 5 + dx + 2) }
             }
             return bits
-        }
-        func blended(_ cell: GridPoint) -> SKTileGroup? {
-            for border in borders {
-                let distance = border.neighbour.distance(from: cell, columns: map.columns, rows: map.rows)
-                guard distance < Self.blendReach else { continue }
-                let near = 1 - Double(distance) / Double(Self.blendReach)
-                if Self.noise(cell) < 0.5 * near * near { return border.ground }
-            }
-            return nil
         }
         var picks: [(col: Int, row: Int, group: SKTileGroup)] = []
         for row in 0..<map.rows {
@@ -524,7 +502,7 @@ final class WorldScene: SKScene {
                 } else if road == full, pond == 0 {
                     chosen = plain(theme.path, variant)
                 } else if layers.isEmpty {
-                    chosen = kind == .ground || kind == .border ? blended(cell) ?? plain(base, variant) : plain(base, variant)
+                    chosen = plain(base, variant)
                 } else if let accent = theme.accent, patch == full, road == 0, pond == 0 {
                     chosen = plain(accent, variant)
                 } else {
@@ -568,7 +546,10 @@ final class WorldScene: SKScene {
             variation.zPosition = 1
             grid.addChild(variation)
         }
-        // And a wash of the land next door's colour over the ground along each border, fading in.
+        // And a wash of the land next door's colour over the ground along each border, fading in, so
+        // the two lands' colours meet on the line (as RuneScape blends its ground's colours, keeping
+        // the tiles themselves whole: tiles of the land next door scattered in read as a checkerboard
+        // where the two differ).
         for neighbour in neighbours {
             grid.addChild(blendBand(toward: neighbour))
         }
@@ -661,7 +642,7 @@ final class WorldScene: SKScene {
         return ground
     }
 
-    /// How many cells in from a border the land next door's ground and colour reach (`makeGround`).
+    /// How many cells in from a border the land next door's colour reaches (`makeGround`).
     private static let blendReach = 9
 
     /// A wash of the land next door's ground colour (graded by its palette) along the border with
@@ -688,16 +669,6 @@ final class WorldScene: SKScene {
         case .west: band.position = CGPoint(x: depth / 2, y: middle); band.zRotation = .pi / 2
         }
         return band
-    }
-
-    /// A number 0..<1 for a cell, the same every time: a hash, like `variant(of:)`'s.
-    private static func noise(_ cell: GridPoint) -> Double {
-        var hash = UInt64(bitPattern: Int64(cell.col)) &* 0xD6E8_FEB8_6659_FD93
-        hash ^= UInt64(bitPattern: Int64(cell.row)) &* 0xA076_1D64_78BD_642F
-        hash ^= hash >> 31
-        hash = hash &* 0x9E37_79B9_7F4A_7C15
-        hash ^= hash >> 29
-        return Double(hash % 10_000) / 10_000
     }
 
     /// Which of a tile's four versions a cell shows: a hash, so neighbours differ without a pattern.

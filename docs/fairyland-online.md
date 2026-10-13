@@ -306,8 +306,9 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     either side of its gate (asked for in playtesting 2026-10-13: "if a city has blocked path, there
     should be a city wall"; drawn in code, the grey of the town gate's stone). `BorderArt` draws them
     the same from both lands, on the line between them. A town's own picket fence stays inside.
-    Near a border the next land's ground tile shows in a few cells, more the nearer it is, and a wash of
-    its colour fades in over the last 9 cells (`WorldScene.blendBand`); the tint, haze, sun flare,
+    Near a border a wash of the next land's colour fades in over the last 9 cells (`WorldScene.blendBand`),
+    as RuneScape blends its ground's colours and keeps the tiles whole (0.5.0's first draft also scattered
+    the next land's own ground tiles there, which read as a checkerboard where the two differ); the tint, haze, sun flare,
     particles and weather fade out over the last 10 cells toward an open border and in again past it
     (`mood`), and the light and cloud shade carry on across.
   - The sea (playtesting 2026-10-13: "everything outside of the land should be sea"): all round the
