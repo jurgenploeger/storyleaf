@@ -165,8 +165,11 @@ struct ContentTests {
                 // its road): the ground just past the edge rises nearly all along it.
                 let road = Int((exit.edge == .north || exit.edge == .south ? mouth.x : mouth.y).rounded(.down))
                 let reach = Int(WorldMap.cragStretch) - 12
+                // On the continent, only where the edge is its own: where a land next door meets it
+                // instead, past the end of its coast, it has no range (`raiseCrags`).
                 let spots = map.region == nil ? Array(stride(from: 0, to: length, by: 3))
                     : Array(stride(from: max(0, road - reach), to: min(length, road + reach), by: 3))
+                        .filter { map.owns(map.cell(on: exit.edge, along: $0, inward: 0)) }
                 let raised = spots.filter { along in
                     let cell = map.cell(on: exit.edge, along: along, inward: -3)
                     return hill.height(atCells: Double(cell.col) + 0.5, Double(cell.row) + 0.5) > 10
@@ -426,13 +429,18 @@ struct ContentTests {
                 #expect(lake.water.allSatisfy { abs(height($0) + WorldMap.lakeDrop) < 1 },
                         "map \(def.id): a lake isn't down at its water's level")
             }
-            // The land along the coast, at the sea's level (but by a hill, which it rises to meet).
+            // The land along the coast, at the sea's level (but by a hill, which it rises to meet
+            // over a couple of cells, `WorldMap.layShore`).
             var coast = 0, low = 0
             for row in 0..<map.rows {
                 for col in 0..<map.columns {
                     let cell = GridPoint(col: col, row: row)
-                    guard map.owns(cell), map.hillIndex(at: cell) == nil,
+                    guard map.owns(cell),
                           [Edge.east, .west, .north, .south].contains(where: { map.isOpenSea(cell.stepped($0)) }) else { continue }
+                    let byHill = (-2...2).contains { dr in
+                        (-2...2).contains { dc in map.hillIndex(at: GridPoint(col: col + dc, row: row + dr)) != nil }
+                    }
+                    guard !byHill else { continue }
                     coast += 1
                     if height(cell) < -WorldMap.seaDrop + 1 { low += 1 }
                 }
