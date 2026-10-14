@@ -161,8 +161,12 @@ struct ContentTests {
                 // Partway up a slope, so it shows: not up in the air, and the hill rising behind it.
                 #expect(height(out: 0) < 70, "map \(def.id): the cave's mouth stands \(height(out: 0)) up")
                 #expect(height(out: mouth.depth) - height(out: 0) > 10, "map \(def.id): the cave's mouth is on the flat")
-                // It runs along the whole side: the ground just past the edge rises nearly all along it.
-                let spots = Array(stride(from: 0, to: length, by: 3))
+                // It runs along the side (on the continent, the straight stretch of coast either side of
+                // its road): the ground just past the edge rises nearly all along it.
+                let road = Int((exit.edge == .north || exit.edge == .south ? mouth.x : mouth.y).rounded(.down))
+                let reach = Int(WorldMap.cragStretch) - 6
+                let spots = map.region == nil ? Array(stride(from: 0, to: length, by: 3))
+                    : Array(stride(from: max(0, road - reach), to: min(length, road + reach), by: 3))
                 let raised = spots.filter { along in
                     let cell = map.cell(on: exit.edge, along: along, inward: -3)
                     return hill.height(atCells: Double(cell.col) + 0.5, Double(cell.row) + 0.5) > 10
@@ -198,47 +202,48 @@ struct ContentTests {
             maps[def.id] = made
             return made
         }
+        /// The road's cells on `map` along the line through `cell` across the way `edge` goes (within
+        /// 5 of it), in world cells along the line.
+        func road(on map: WorldMap, at cell: GridPoint, across edge: Edge, origin: GridPoint) -> Set<Int> {
+            let alongColumns = edge == .north || edge == .south
+            return Set((-5...5).compactMap { step -> Int? in
+                let spot = alongColumns ? GridPoint(col: cell.col + step, row: cell.row) : GridPoint(col: cell.col, row: cell.row + step)
+                guard map.owns(spot), map.ground[spot.row][spot.col] == .path else { return nil }
+                return alongColumns ? spot.col + origin.col : spot.row + origin.row
+            })
+        }
         for def in content.maps {
-            guard let origin = content.world[def.id] else { continue }
-            for exit in def.exits where exit.edge == .east || exit.edge == .north {
-                guard let next = content.map(exit.to), let there = content.world[next.id] else { continue }
+            guard let origin = content.world[def.id], let region = content.regions[def.id] else { continue }
+            for exit in def.exits {
+                guard let next = content.map(exit.to), let there = content.world[next.id],
+                      let crossing = region.roads[exit.to], let back = content.regions[next.id]?.roads[def.id] else { continue }
+                // The two crossings are side by side, over the line the way the exit goes.
+                let over = crossing.at.stepped(exit.edge)
+                #expect(GridPoint(col: over.col + origin.col - there.col, row: over.row + origin.row - there.row) == back.at,
+                        "\(def.id) → \(next.id): the roads cross the border in different places")
                 let map = grid(def), other = grid(next)
-                // The road's cells along the border, in world cells, on either side of it.
-                // Only near where it crosses, so another road along the same edge doesn't count.
-                let road = (exit.edge == .east ? map.rows : map.columns) / 2 + (exit.meets ?? exit.at ?? 0)
-                let mine: Set<Int>, theirs: Set<Int>
-                if exit.edge == .east {
-                    #expect(origin.col + map.columns == there.col, "\(next.id) doesn't start where \(def.id) ends")
-                    mine = Set((0..<map.rows).filter { map.ground[$0][map.columns - 1] == .path }.map { $0 + origin.row })
-                    theirs = Set((0..<other.rows).filter { other.ground[$0][0] == .path }.map { $0 + there.row })
-                } else {
-                    #expect(origin.row + map.rows == there.row, "\(next.id) doesn't start where \(def.id) ends")
-                    mine = Set((0..<map.columns).filter { map.ground[map.rows - 1][$0] == .path }.map { $0 + origin.col })
-                    theirs = Set((0..<other.columns).filter { other.ground[0][$0] == .path }.map { $0 + there.col })
-                }
-                let crossing = road + (exit.edge == .east ? origin.row : origin.col)
-                let near = (crossing - 4)...(crossing + 4)
-                let ours = mine.filter { near.contains($0) }, across = theirs.filter { near.contains($0) }
+                let ours = road(on: map, at: crossing.at, across: exit.edge, origin: origin)
+                let across = road(on: other, at: back.at, across: exit.edge, origin: there)
                 #expect(!ours.isEmpty && ours == across,
                         "\(def.id) → \(next.id): the road doesn't run on (\(ours.sorted()) meets \(across.sorted()))")
             }
         }
-        // Every land outside the caves is on the continent.
+        // Every land outside the caves is on the continent, with its shape.
         for def in content.maps where def.theme.cave == nil {
-            #expect(content.world[def.id] != nil, "\(def.id) has no place on the continent")
+            #expect(content.world[def.id] != nil && content.regions[def.id] != nil, "\(def.id) has no place on the continent")
         }
     }
 
-    /// Two lands see the border they share the same from either side: as long, the same road and
-    /// quest across it, open on the same cells, so you can walk back the way you came.
+    /// Two lands see the border they share the same from either side: the same cells along it, the
+    /// same road and quest across it, open on the same cells, so you can walk back the way you came;
+    /// and the band where one gives way to the other shows the same land's ground at every cell.
     @Test func bordersAreTheSameFromEitherSide() {
-        // Each land's coast (`Coast.Field`), worked out once.
-        var coasts: [String: Coast.Field] = [:]
-        func coast(of def: MapDef) -> Coast.Field? {
-            if let known = coasts[def.id] { return known }
-            let field = Continent.coast(of: def)?.field(columns: def.width, rows: def.height)
-            coasts[def.id] = field
-            return field
+        var maps: [String: WorldMap] = [:]
+        func grid(_ def: MapDef) -> WorldMap {
+            if let known = maps[def.id] { return known }
+            let made = WorldMap(def: def)
+            maps[def.id] = made
+            return made
         }
         for def in content.maps where content.world[def.id] != nil {
             for here in Continent.neighbours(of: def) {
@@ -246,61 +251,42 @@ struct ContentTests {
                     Issue.record("\(here.def.id) doesn't see \(def.id) next door")
                     continue
                 }
-                #expect(here.span.count == back.span.count, "\(def.id) | \(here.def.id): not as long from both sides")
+                // The same pieces of border, in this land's cells.
+                func key(_ a: GridPoint, _ b: GridPoint) -> [Int] { [a.col, a.row, b.col, b.row] }
+                let ours = Set(here.border.map { key($0.inside, $0.outside) })
+                let theirs = Set(back.border.map { pair in
+                    key(GridPoint(col: pair.outside.col + here.offset.col, row: pair.outside.row + here.offset.row),
+                        GridPoint(col: pair.inside.col + here.offset.col, row: pair.inside.row + here.offset.row))
+                })
+                #expect(ours == theirs, "\(def.id) | \(here.def.id): not the same border from both sides")
                 #expect(here.quest == back.quest, "\(def.id) | \(here.def.id): a different quest from each side")
                 #expect((here.exit == nil) == (back.exit == nil), "\(def.id) | \(here.def.id): a road from one side only")
                 #expect(here.town == back.town, "\(def.id) | \(here.def.id): a town's wall from one side only")
-                let shift = here.edge == .east || here.edge == .west ? here.offset.row : here.offset.col
-                for along in here.span {
+                for pair in here.border {
+                    let mine = here.local(pair.inside)
                     for (done, joined) in [(true, true), (false, true), (true, false), (false, false)] {
-                        #expect(here.isOpen(at: along, done: { _ in done }, joined: joined) == back.isOpen(at: along - shift, done: { _ in done }, joined: joined),
-                                "\(def.id) | \(here.def.id): open on one side only, \(along) along")
+                        #expect(here.isOpen(over: pair.outside, done: { _ in done }, joined: joined) == back.isOpen(over: mine, done: { _ in done }, joined: joined),
+                                "\(def.id) | \(here.def.id): open on one side only at \(pair.inside)")
                     }
                 }
-                // The band where one gives way to the other is the same from either side (`Seam`):
-                // its middle line wanders the same, turned round, and every cell across it shows
-                // the same land's ground whichever of the two works it out.
-                let seam = Continent.coast(of: def)?.seams.first { $0.neighbour == here.def.id }
-                let other = Continent.coast(of: here.def)?.seams.first { $0.neighbour == def.id }
+                // The band: every cell either side shows the same land's ground whichever of the two
+                // works it out, and there's one between lands, none beside a town.
+                let seam = grid(def).seams.first { $0.neighbour == here.def.id }
+                let other = grid(here.def).seams.first { $0.neighbour == def.id }
                 #expect((seam == nil) == (other == nil), "\(def.id) | \(here.def.id): a band from one side only")
                 #expect((seam == nil) == here.town, "\(def.id) | \(here.def.id): a band beside a town, or none between lands")
-                if let seam, let other {
-                    for step in 0...(here.span.count * 4) {
-                        let along = Double(here.span.lowerBound) + Double(step) / 4
-                        #expect(abs(seam.offset(at: along) + other.offset(at: along - Double(shift))) < 1e-9,
-                                "\(def.id) | \(here.def.id): the band's middle differs from each side, \(along) along")
-                    }
-                    var differ = 0
-                    for along in stride(from: here.span.lowerBound, through: here.span.upperBound, by: 2) {
-                        for inward in -Seam.depth..<Seam.depth {
-                            let cell: GridPoint = switch here.edge {
-                            case .east: GridPoint(col: def.width - 1 - inward, row: along)
-                            case .west: GridPoint(col: inward, row: along)
-                            case .north: GridPoint(col: along, row: def.height - 1 - inward)
-                            case .south: GridPoint(col: along, row: inward)
-                            }
+                guard let seam, let other else { continue }
+                var differ = 0
+                for pair in here.border where (pair.inside.col + pair.inside.row) % 2 == 0 {
+                    for dr in stride(from: -Seam.depth, through: Seam.depth, by: 3) {
+                        for dc in stride(from: -Seam.depth, through: Seam.depth, by: 3) {
+                            let cell = GridPoint(col: pair.inside.col + dc, row: pair.inside.row + dr)
+                            guard seam.side(cell) != nil, other.side(here.local(cell)) != nil else { continue }
                             if seam.showsOther(cell) == other.showsOther(here.local(cell)) { differ += 1 }
                         }
                     }
-                    #expect(differ == 0, "\(def.id) | \(here.def.id): \(differ) cells of the band show a different land from each side")
                 }
-                // The sea comes in the same at the line from either side (`Coast`), so the wall along
-                // it stops in the same place and you can't step over into the sea.
-                guard let mine = coast(of: def), let theirs = coast(of: here.def) else {
-                    Issue.record("\(def.id) | \(here.def.id): no coast worked out")
-                    continue
-                }
-                for along in here.span {
-                    let line: (inside: GridPoint, outside: GridPoint) = switch here.edge {
-                    case .east: (GridPoint(col: def.width - 1, row: along), GridPoint(col: def.width, row: along))
-                    case .west: (GridPoint(col: 0, row: along), GridPoint(col: -1, row: along))
-                    case .north: (GridPoint(col: along, row: def.height - 1), GridPoint(col: along, row: def.height))
-                    case .south: (GridPoint(col: along, row: 0), GridPoint(col: along, row: -1))
-                    }
-                    #expect(mine.isSea(line.inside) == theirs.isSea(here.local(line.inside))
-                            && mine.isSea(line.outside) == theirs.isSea(here.local(line.outside)),
-                            "\(def.id) | \(here.def.id): the sea comes in differently from each side, \(along) along")
-                }
+                #expect(differ == 0, "\(def.id) | \(here.def.id): \(differ) cells of the band show a different land from each side")
             }
         }
     }
@@ -326,20 +312,16 @@ struct ContentTests {
     }
 
     /// Where a road crosses a border with no quest on it, you can step over before the land past
-    /// it is built (`WorldScene.canCross`): it's open there, and the sea's in on neither side.
+    /// it is built (`WorldScene.canCross`): it's open there, onto that land.
     @Test func roadsOverBordersCanBeWalkedBeforeTheLandIsBuilt() {
         for def in content.maps where content.world[def.id] != nil {
-            guard let field = Continent.coast(of: def)?.field(columns: def.width, rows: def.height) else { continue }
             for neighbour in Continent.neighbours(of: def) where neighbour.exit != nil && neighbour.quest == nil {
-                guard let road = neighbour.road else { continue }
-                #expect(neighbour.isOpen(at: road, done: { _ in false }, joined: false), "\(def.id) | \(neighbour.def.id): shut where the road crosses")
-                let cells: (inside: GridPoint, past: GridPoint) = switch neighbour.edge {
-                case .east: (GridPoint(col: def.width - 1, row: road), GridPoint(col: def.width, row: road))
-                case .west: (GridPoint(col: 0, row: road), GridPoint(col: -1, row: road))
-                case .north: (GridPoint(col: road, row: def.height - 1), GridPoint(col: road, row: def.height))
-                case .south: (GridPoint(col: road, row: 0), GridPoint(col: road, row: -1))
+                guard let exit = neighbour.exit, let gate = neighbour.gate(of: exit) else {
+                    Issue.record("\(def.id) | \(neighbour.def.id): no crossing for the road")
+                    continue
                 }
-                #expect(!field.isSea(cells.inside) && !field.isSea(cells.past), "\(def.id) | \(neighbour.def.id): the sea's in where the road crosses")
+                #expect(neighbour.isOpen(over: gate, done: { _ in false }, joined: false), "\(def.id) | \(neighbour.def.id): shut where the road crosses")
+                #expect(Continent.owner(of: gate, from: def)?.id == neighbour.def.id, "\(def.id) | \(neighbour.def.id): the road crosses onto another land")
             }
         }
     }
@@ -359,15 +341,9 @@ struct ContentTests {
             for exit in def.exits {
                 #expect(map.isWalkable(map.entryCell(from: exit.edge)), "map \(def.id) entry from \(exit.edge) is blocked")
             }
-            // The sea comes in over a land's coast (`WorldMap.carveCoast`) without cutting anything off
-            // (where it would, it stays out and the land keeps its straight edges), and nobody stands in it.
-            if let field = map.coast,
-               (0..<def.height).contains(where: { row in (0..<def.width).contains { field.isSea(GridPoint(col: $0, row: row)) } }) {
-                #expect(map.hasCoast, "map \(def.id): the sea would cut something off, so its coast stays straight")
-            }
+            // Everyone stands on the land itself (`Region`), not in the sea or a land next door.
             for npc in def.npcs ?? [] {
-                let spot = map.spot(of: npc)
-                #expect(!map.contains(spot) || map.ground[spot.row][spot.col] != .sea, "map \(def.id): \(npc.id) stands in the sea")
+                #expect(map.owns(map.spot(of: npc)), "map \(def.id): \(npc.id) stands off its land")
             }
         }
     }

@@ -28,25 +28,25 @@ moonglow     | newgame,map=moonglow              | 15
 # The continent: a land next door shown past the border (built before the shot), its wall or
 # gate, the ground blending across, and walking over into it with no loading card.
 border_open  | newgame,map=sunny_meadow,border=meadowbrook,landscape,weather=clear,hour=12 | 6
-border_gate  | newgame,map=sunny_meadow,border=pineapple_shore,landscape,weather=clear,hour=12 | 6
+border_gate  | newgame,map=sunny_meadow,border=frog_swamp,landscape,weather=clear,hour=12 | 6
 border_cross | newgame,map=sunny_meadow,border=twilight_woods,done=pineapple_harvest,cross,landscape,weather=clear,hour=12 | 6
-border_rocks | newgame,map=genie_desert,border=valley_of_fear,landscape,weather=clear,hour=12 | 6
+border_rocks | newgame,map=sunny_meadow,border=pineapple_shore,landscape,weather=clear,hour=12 | 6
 border_fence | newgame,map=frog_swamp,border=twilight_woods,landscape,weather=clear,hour=12 | 6
-border_sand  | newgame,map=northern_grassland,border=pineapple_shore,weather=clear,hour=12 | 6
+border_sand  | newgame,map=frog_swamp,border=goldburg_lake,weather=clear,hour=12 | 6
 # The swamp's border with the dark woods once roads join the two (both quests done): its fence gone,
 # you walk over anywhere, and the two grounds meet along a winding line, each one's trees on its own.
 border_joined | newgame,map=frog_swamp,border=twilight_woods,done=new_friend+pineapple_harvest,landscape,weather=clear,hour=12 | 6
 seam_snow    | newgame,map=snow_white_forest,border=swan_lake,landscape,weather=clear,hour=12 | 6
-# Where playtesting stood when it saw nothing past the border: the downs giving way to the sand at
-# night, the land next door built; and the same border before it's built (`far`: its world map
-# picture laid flat, once the world map's pictures are drawn).
-band_night   | newgame,map=northern_grassland,border=pineapple_shore,landscape,weather=clear,hour=23 | 6
+# A land giving way to the next at night, the land next door built (the swamp into the sandy lake
+# shore); and the lands past the downs' east coast before they're built (`far`: their world map
+# pictures laid flat, once the world map's pictures are drawn).
+band_night   | newgame,map=frog_swamp,border=goldburg_lake,landscape,weather=clear,hour=23 | 6
 far_land     | newgame,map=northern_grassland,edge=east,far,landscape,weather=clear,hour=12 | 90
 coast        | newgame,map=meadowbrook,edge=west,landscape,weather=clear,hour=12 | 6
-# The sea come in over a wild coast, lower than the land: the bank facing you (a bay in the swamp's
-# west), from behind (the snowy wood's north), and where the sea used to let you walk out (the lair's south).
-coast_bay    | newgame,map=frog_swamp,edge=west,landscape,weather=clear,hour=12 | 6
-coast_north  | newgame,map=snow_white_forest,edge=north,landscape,weather=clear,hour=12 | 6
+# The sea round a wild coast, lower than the land: the bank facing you (the sandy lake shore's
+# west), from behind (the snowy lake's north), and where the sea used to let you walk out (the lair's south).
+coast_bay    | newgame,map=goldburg_lake,edge=west,landscape,weather=clear,hour=12 | 6
+coast_north  | newgame,map=rosen_lake,edge=north,landscape,weather=clear,hour=12 | 6
 coast_lair   | newgame,map=wolf_lair,edge=south,landscape,weather=clear,hour=12 | 6
 # The land next door built as the game builds it, in the background a few milliseconds a frame (the
 # border scenes above build it at once): the lair's border with the candy land, where playtesting

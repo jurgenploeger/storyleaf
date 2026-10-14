@@ -1,8 +1,10 @@
 import GameplayKit
 
 nonisolated enum Ground {
-    /// `sea`: where the sea's come in over the land's coast (`WorldMap.carveCoast`), lower than the land.
-    case ground, path, accent, border, water, sea
+    /// `sea`: the sea, over the land's box past its coast (`Region`), lower than the land. `away`: a
+    /// land next door's, in this land's box where their shapes fit into each other: nothing of this
+    /// land's goes there (it's that land's to lay out and draw).
+    case ground, path, accent, border, water, sea, away
 }
 
 nonisolated struct GridPoint: Hashable {
@@ -166,13 +168,13 @@ nonisolated final class WorldMap: @unchecked Sendable {
     private var occupied: Set<GridPoint> = []
     private var blocked: Set<GridPoint> = []
     private let graph: GKGridGraph<GKGridGraphNode>
-    /// The coast round the land, on the continent (`Coast`): what the sea would take with nothing
-    /// to hold it back, out to `Coast.margin` past the edges. Nil for a cave.
-    let coast: Coast.Field?
-    /// Whether the sea's coast was laid over the land, as far as what's on it lets the sea in
-    /// (false if it would have cut something off, `carveCoast`).
-    private(set) var hasCoast = false
-    /// The bands the land gives way to the lands beside it over (`Seam`; none for a cave).
+    /// The land's shape on the continent (`Region`): its own cells of its box, the sea round it, its
+    /// middle and where its roads cross its border. Nil for a cave: all its box is its own.
+    let region: Region?
+    /// Which land holds each cell round it (`Neighbourhood`). Nil for a cave.
+    let neighbourhood: Neighbourhood?
+    /// The bands the land gives way to the lands beside it over (`Seam`; none for a cave, nor
+    /// beside a town).
     let seams: [Seam]
     /// The cells that show a land next door's ground, in its patches across a band: by cell, which
     /// of `seams`. Still this land's cells, to walk and to set things on.
@@ -195,19 +197,20 @@ nonisolated final class WorldMap: @unchecked Sendable {
     }
 
     @MainActor convenience init(def: MapDef) {
-        self.init(def: def, caves: Self.caves, coast: Continent.coast(of: def))
+        self.init(def: def, caves: Self.caves, around: Continent.neighbourhood(of: def))
     }
 
     /// `caves`: the caves among the maps, by id (`WorldMap.caves`), for the roads that lead into them.
-    /// `coast`: where the land lies among the others, for the sea to come in over its coast
-    /// (`Continent.coast(of:)`); nil for a cave.
-    init(def: MapDef, caves: [String: MapDef.Cave], coast: Coast?) {
+    /// `around`: where the land lies among the others (`Continent.neighbourhood(of:)`): its shape,
+    /// and whose each cell round it is; nil for a cave.
+    init(def: MapDef, caves: [String: MapDef.Cave], around: Neighbourhood?) {
         self.def = def
-        self.coast = coast?.field(columns: def.width, rows: def.height)
-        seams = coast?.seams ?? []
+        region = around?.region
+        neighbourhood = around
+        seams = Self.bands(of: def, in: around)
         columns = def.width
         rows = def.height
-        center = GridPoint(col: def.width / 2, row: def.height / 2)
+        center = around?.region.middle ?? GridPoint(col: def.width / 2, row: def.height / 2)
         ground = Array(repeating: Array(repeating: .ground, count: def.width), count: def.height)
         graph = GKGridGraph(
             fromGridStartingAt: vector_int2(0, 0),
@@ -217,6 +220,8 @@ nonisolated final class WorldMap: @unchecked Sendable {
         )
         // Seeded by the map id, so every map looks the same each time you visit.
         var rng = SeededRandom(text: def.id)
+        // Only the land's own cells are its: the sea and the lands next door have the rest of its box.
+        if let around { layOutShape(around) }
         if def.fence == true { layOutTownBorder() }
         for exit in def.exits { carveRoad(for: exit, &rng) }
         for trail in def.trails ?? [] { carveTrail(trail, &rng) }
@@ -278,24 +283,57 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 scatterAccents(&rng)
             }
         }
-        // Last, round everything that's on the land.
-        if let field = self.coast { carveCoast(field) }
         markForeign()
+    }
+
+    /// Over the land's box, the cells that aren't its own (`Region`) are the sea's or a land next
+    /// door's: nothing of this land's goes there, and you can't walk there from it (you walk over
+    /// into a land next door, `WorldScene.canCross`).
+    private func layOutShape(_ around: Neighbourhood) {
+        var nodes: [GKGridGraphNode] = []
+        for row in 0..<rows {
+            for col in 0..<columns {
+                let cell = GridPoint(col: col, row: row)
+                guard !around.region.owns(cell) else { continue }
+                ground[row][col] = around.isLand(cell) ? .away : .sea
+                occupied.insert(cell)
+                blocked.insert(cell)
+                if let node = graph.node(atGridPosition: cell.vector) { nodes.append(node) }
+            }
+        }
+        // All at once: one at a time, the graph rebuilds round each.
+        graph.remove(nodes)
+    }
+
+    /// The bands a land gives way to the lands beside it over (`Seam`): every land it shares a
+    /// border with, but none beside a town, whose wall stands on the border.
+    private static func bands(of def: MapDef, in around: Neighbourhood?) -> [Seam] {
+        guard let around, def.fence != true, let here = around.lands.firstIndex(of: def.id) else { return [] }
+        var touching: Set<Int> = []
+        for row in 0..<def.height {
+            for col in 0..<def.width {
+                let cell = GridPoint(col: col, row: row)
+                guard around.owner(cell) == here else { continue }
+                for edge in [Edge.east, .west, .north, .south] {
+                    if let other = around.owner(cell.stepped(edge)), other != here { touching.insert(other) }
+                }
+            }
+        }
+        return touching.sorted().filter { !around.towns.contains($0) }.map { Seam(between: here, and: $0, in: around) }
     }
 
     /// Finds the cells that show a land next door's ground (`foreign`): where two bands overlap
     /// near a corner, the land with the larger share. The land's accent (its flower patches, its
     /// moss) keeps out of the band, so it never spills into the other land's.
     private func markForeign() {
+        guard !seams.isEmpty else { return }
         var strongest: [GridPoint: Double] = [:]
         for (index, seam) in seams.enumerated() {
-            for along in seam.span {
-                for inward in 0..<Seam.depth {
-                    let spot = cell(on: seam.edge, along: along, inward: inward)
-                    guard contains(spot) else { continue }
-                    let share = seam.share(x: Double(spot.col) + 0.5, y: Double(spot.row) + 0.5)
-                    guard share > 0 else { continue }
-                    if share > 0.03, ground[spot.row][spot.col] == .accent { ground[spot.row][spot.col] = .ground }
+            for row in 0..<rows {
+                for col in 0..<columns {
+                    let spot = GridPoint(col: col, row: row)
+                    guard ground[row][col] != .away, ground[row][col] != .sea, let share = seam.share(spot), share > 0 else { continue }
+                    if share > 0.03, ground[row][col] == .accent { ground[row][col] = .ground }
                     guard seam.showsOther(spot), share > strongest[spot] ?? 0 else { continue }
                     strongest[spot] = share
                     foreign[spot] = index
@@ -304,107 +342,10 @@ nonisolated final class WorldMap: @unchecked Sendable {
         }
     }
 
-    // MARK: Coast
-
-    /// Lets the sea in over the land's coasts (`Coast`), round what it mustn't take: the roads and
-    /// paths, ponds and lakes (not the river, which runs out into it), bridges, hills and terraces,
-    /// buildings, a town's fence, where people stand and where you arrive. Round each of those the
-    /// sea comes in less (`Coast.protection`), so a ring of dry land is left round it. The sea's cells
-    /// are blocked like water. Land the sea would cut off goes under too, if nothing's on it; a pool
-    /// it would leave inland stays land; and if it'd cut off something that matters, the sea stays out.
-    private func carveCoast(_ field: Coast.Field) {
-        var keep = [Bool](repeating: false, count: columns * rows)
-        func hold(_ cell: GridPoint) {
-            if contains(cell) { keep[cell.row * columns + cell.col] = true }
-        }
-        for row in 0..<rows {
-            for col in 0..<columns {
-                let cell = GridPoint(col: col, row: row)
-                let kind = ground[row][col]
-                if kind == .path || (kind == .water && !river.contains(cell)) || occupied.contains(cell) || hillOf[cell] != nil
-                    || plateauOf[cell] != nil || bridgeCells.contains(cell) || cragGround.contains(cell) {
-                    hold(cell)
-                }
-            }
-        }
-        for cell in fenceCells + landings + entryCells + [center] { hold(cell) }
-        for npc in def.npcs ?? [] { hold(spot(of: npc)) }
-        for lake in lakes { lake.island.forEach(hold) }
-        let held = Coast.distances(width: columns, height: rows, from: keep)
-        var sea = [Bool](repeating: false, count: columns * rows)
-        for row in 0..<rows {
-            for col in 0..<columns {
-                let index = row * columns + col
-                guard !keep[index], let at = field.index(of: GridPoint(col: col, row: row)), field.land[at] else { continue }
-                let depth = min(field.depth[at], Float(Coast.protection) * held[index] - Float(Coast.ring))
-                sea[index] = field.shape[at] < depth
-            }
-        }
-        // What's on the land holds the sea back everywhere it would come in (a town's ring, round
-        // its fence, beside a little sea between lands): the coast's laid, and it's straight.
-        guard sea.contains(true) else {
-            hasCoast = true
-            return
-        }
-        // The land still in one piece: what you could walk to before (round the water and the
-        // buildings, over the bridges) that the sea cuts off goes under too, unless something on it
-        // matters, when the sea stays out altogether.
-        func passable(_ index: Int) -> Bool {
-            let cell = GridPoint(col: index % columns, row: index / columns)
-            return !blocked.contains(cell) || bridgeCells.contains(cell)
-        }
-        let start = (entryCells + [center]).first { contains($0) && passable($0.row * columns + $0.col) } ?? center
-        let from = start.row * columns + start.col
-        let before = Self.region(from: from, columns: columns, rows: rows, diagonals: true, inside: passable)
-        let after = Self.region(from: from, columns: columns, rows: rows, diagonals: true) { !sea[$0] && passable($0) }
-        for index in before where !sea[index] && !after.contains(index) {
-            if keep[index] { return }
-            sea[index] = true
-        }
-        // And no pools inland: sea the open sea doesn't reach is land again.
-        var open = Set<Int>()
-        for index in 0..<(columns * rows) where sea[index] && !open.contains(index) {
-            let col = index % columns, row = index / columns
-            let outside = [GridPoint(col: col - 1, row: row), GridPoint(col: col + 1, row: row),
-                           GridPoint(col: col, row: row - 1), GridPoint(col: col, row: row + 1)]
-            guard outside.contains(where: { !contains($0) && field.isSea($0) }) else { continue }
-            open.formUnion(Self.region(from: index, columns: columns, rows: rows, diagonals: false) { sea[$0] })
-        }
-        for index in 0..<(columns * rows) where sea[index] && open.contains(index) {
-            let cell = GridPoint(col: index % columns, row: index / columns)
-            ground[cell.row][cell.col] = .sea
-            occupy(cell, blocking: true)
-        }
-        hasCoast = true
-    }
-
-    /// The cells (as indices, row by row) joined to `start` through cells that are `inside`.
-    private static func region(from start: Int, columns: Int, rows: Int, diagonals: Bool, inside: (Int) -> Bool) -> Set<Int> {
-        guard inside(start) else { return [] }
-        var found: Set<Int> = [start]
-        var queue = [start]
-        while let index = queue.popLast() {
-            let col = index % columns, row = index / columns
-            for dr in -1...1 {
-                for dc in -1...1 where (dr != 0 || dc != 0) && (diagonals || dr == 0 || dc == 0) {
-                    let c = col + dc, r = row + dr
-                    guard c >= 0, r >= 0, c < columns, r < rows else { continue }
-                    let next = r * columns + c
-                    if !found.contains(next), inside(next) {
-                        found.insert(next)
-                        queue.append(next)
-                    }
-                }
-            }
-        }
-        return found
-    }
-
-    /// Whether the sea's at `cell` (here or past the edge) as every land that sees it works it
-    /// out, before anything on a land holds it back (`Coast.Field.isSea`): what the borders between
-    /// lands are drawn by, so both sides draw them the same. Off the continent, anywhere past the edge.
+    /// Whether no land lies at `cell` (in the box or past it, in this land's cells): the sea, as every
+    /// land that sees it has it. Off the continent (a cave), anywhere past the edge.
     func isOpenSea(_ cell: GridPoint) -> Bool {
-        coast?.isSea(cell) ?? !contains(cell)
+        neighbourhood.map { !$0.isLand(cell) } ?? !contains(cell)
     }
 
     // MARK: Coordinates
@@ -546,6 +487,11 @@ nonisolated final class WorldMap: @unchecked Sendable {
         cell.col >= 0 && cell.row >= 0 && cell.col < columns && cell.row < rows
     }
 
+    /// Whether a cell is the land's own: in its box, and on the continent in its shape (`Region`).
+    func owns(_ cell: GridPoint) -> Bool {
+        contains(cell) && region?.owns(cell) != false
+    }
+
     func isWalkable(_ cell: GridPoint) -> Bool {
         contains(cell) && !blocked.contains(cell)
     }
@@ -599,6 +545,10 @@ nonisolated final class WorldMap: @unchecked Sendable {
             let front = GridPoint(col: Int((opening.x - opening.into.x * 2).rounded(.down)),
                                   row: Int((opening.y - opening.into.y * 2).rounded(.down)))
             return nearestWalkable(to: front) ?? center
+        }
+        // On the continent, a couple of cells in from where the road crosses the border.
+        if let exit = def.exits.first(where: { $0.edge == edge }), let road = region?.roads[exit.to] {
+            return nearestWalkable(to: road.at.stepped(edge.opposite, by: 2)) ?? center
         }
         let cell = switch edge {
         case .north: GridPoint(col: roadColumn(near: rows - 3), row: rows - 3)
@@ -749,17 +699,23 @@ nonisolated final class WorldMap: @unchecked Sendable {
     }
 
     /// A road from the hub (the centre unless the map says otherwise) out through an exit, via
-    /// any waypoints the map gives it, winding along a smooth curve and swelling and narrowing a
-    /// little (towns keep theirs tidier). The last stretch runs straight at the edge so exits and
-    /// arrivals line up. Where it meets the next land elsewhere along the border (`meets`), it's
-    /// still laid toward `at`, with the same random drift, so the rest of the map comes out as it
-    /// did; only its last stretch eases over to where it crosses.
+    /// any waypoints it has, winding along a smooth curve and swelling and narrowing a little
+    /// (towns keep theirs tidier). The last stretch runs straight at the border so exits and
+    /// arrivals line up, and the road meets itself across it.
     private func carveRoad(for exit: MapDef.Exit, _ rng: inout SeededRandom) {
+        if let road = region?.roads[exit.to] {
+            // On the continent: to where the painting has it cross the border (`Region.Road`), through
+            // the turns it found through the middle of the land, straight over the line at the end.
+            let out = Self.outward(exit.edge)
+            let end = CGPoint(x: CGFloat(road.at.col) + 0.5 + out.dx / 2, y: CGFloat(road.at.row) + 0.5 + out.dy / 2)
+            let stops = [point(def.hub ?? [0, 0])] + road.via.map(point) + [end + out * -5]
+            carve(through: stops, then: [end], halfWidth: 1.05, &rng)
+            return
+        }
         let end = roadEnd(exit.edge, at: exit.at ?? 0)
         let approach = end.point + end.inward * 5
         let stops = [point(def.hub ?? [0, 0])] + (exit.via ?? []).map(point) + [approach]
-        let meets = exit.meets.map { roadEnd(exit.edge, at: $0).point - end.point } ?? .zero
-        carve(through: stops, then: [end.point], halfWidth: 1.05, bend: meets, &rng)
+        carve(through: stops, then: [end.point], halfWidth: 1.05, &rng)
     }
 
     /// Where a road `at` cells along `edge` from its middle crosses it, and the way into the map.
@@ -847,7 +803,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
         for dr in -reach...reach {
             for dc in -reach...reach {
                 let cell = GridPoint(col: middle.col + dc, row: middle.row + dr)
-                guard contains(cell) else { continue }
+                guard owns(cell) else { continue }
                 let cellCenter = CGPoint(x: CGFloat(cell.col) + 0.5, y: CGFloat(cell.row) + 0.5)
                 guard cellCenter.distance(to: point) <= radius else { continue }
                 ground[cell.row][cell.col] = .path
@@ -1189,6 +1145,11 @@ nonisolated final class WorldMap: @unchecked Sendable {
         }
         guard !road.isEmpty else { return nil }
         let middle = Double(road[road.count / 2]) + 0.5
+        // How far along the edge it runs: all of it in a land of its own; on the continent, only
+        // the stretch either side of the road where the coast runs straight along the edge
+        // (tools/world_layout.py `CAVE_ALONG`), the land curving away from it past that.
+        let stretch: ClosedRange<Double> = region == nil ? -8...(Double(length) + 8)
+            : max(-8, middle - Self.cragStretch)...min(Double(length) + 8, middle + Self.cragStretch)
         // Grid directions along the edge and out past it, and where the edge begins.
         let along: (x: Double, y: Double) = edge == .north || edge == .south ? (1, 0) : (0, 1)
         let out: (x: Double, y: Double) = switch edge {
@@ -1235,8 +1196,8 @@ nonisolated final class WorldMap: @unchecked Sendable {
         }
         // Along the edge and a little past its ends, summits of all sizes, close enough that it
         // rises all along the edge, not in humps with flats between.
-        var a = -8.0
-        while a < Double(length) + 8 {
+        var a = stretch.lowerBound
+        while a < stretch.upperBound {
             let reach = Double.random(in: 5...11, using: &rng)
             let depth = facesYou ? Double.random(in: 9...16, using: &rng) : Double.random(in: 6...10, using: &rng)
             let peak = Double.random(in: 65...125, using: &rng)
@@ -1253,8 +1214,8 @@ nonisolated final class WorldMap: @unchecked Sendable {
         // Taller ones behind the face, out past the edge (a ridge facing away has none: they'd stand
         // in front of it).
         if facesYou {
-            a = -4
-            while a < Double(length) + 4 {
+            a = stretch.lowerBound + 4
+            while a < stretch.upperBound - 4 {
                 let reach = Double.random(in: 9...13, using: &rng)
                 let depth = Double.random(in: 12...16, using: &rng)
                 let peak = Double.random(in: 110...150, using: &rng)
@@ -1300,7 +1261,8 @@ nonisolated final class WorldMap: @unchecked Sendable {
         // (`WorldScene.placeCrags`: from 14 cells out, or 13 past a ridge, and all mist 8 further),
         // and on the south and west far enough in for the crag.
         let far = facesYou ? 30.0 : 24.0, near = facesYou ? -6.0 : -11.0
-        let corners = [point(-20, near), point(Double(length) + 20, near), point(-20, far), point(Double(length) + 20, far)]
+        let corners = [point(stretch.lowerBound - 12, near), point(stretch.upperBound + 12, near),
+                       point(stretch.lowerBound - 12, far), point(stretch.upperBound + 12, far)]
         let xs = corners.map { $0.x }, ys = corners.map { $0.y }
         let low = GridPoint(col: Int(xs.min()!.rounded(.down)), row: Int(ys.min()!.rounded(.down)))
         let high = GridPoint(col: Int(xs.max()!.rounded(.up)), row: Int(ys.max()!.rounded(.up)))
@@ -1340,6 +1302,8 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// How high a range where a road leads into a cave stands where its rock begins, the wall you
     /// can't climb (points): its foot below that you can walk on.
     static let cragFoot: CGFloat = 12
+    /// On the continent, how far along the edge either side of the road a cave's range reaches.
+    static let cragStretch: Double = 24
 
     /// Walls off whatever of a cave's range in the map you can't reach from the hub any more
     /// (a dip between its summits, behind their rock), so nothing walkable is shut in.
@@ -1983,24 +1947,32 @@ nonisolated final class WorldMap: @unchecked Sendable {
         let width = CGFloat(min(6, max(2, spec.width ?? 3)))
         let hub = point(def.hub ?? [0, 0])
         let arrivals = def.exits.map { entryCell(from: $0.edge) }
-        // Where the roads leave over the edges.
-        var ends: [CGPoint] = []
+        // Where the roads leave over the edges (on the continent, where they cross its border).
+        var ends: [CGPoint] = region.map { shape in shape.roads.values.map { CGPoint(x: CGFloat($0.at.col) + 0.5, y: CGFloat($0.at.row) + 0.5) } } ?? []
         for col in 0..<columns {
             for row in [0, rows - 1] where ground[row][col] == .path { ends.append(CGPoint(x: CGFloat(col) + 0.5, y: CGFloat(row) + 0.5)) }
         }
         for row in 0..<rows {
             for col in [0, columns - 1] where ground[row][col] == .path { ends.append(CGPoint(x: CGFloat(col) + 0.5, y: CGFloat(row) + 0.5)) }
         }
-        /// Somewhere along `edge`, well clear of the roads leaving over it.
+        /// Somewhere along `edge`, well clear of the roads leaving over it: on the continent, in from
+        /// there to the land's own shore, where the sea is if it can be (it runs out into it).
         func edgePoint(_ edge: Edge) -> CGPoint? {
             let length = CGFloat(edge == .north || edge == .south ? columns : rows)
-            for _ in 0..<50 {
+            for attempt in 0..<50 {
                 let along = CGFloat.random(in: 0.15...0.85, using: &rng) * length
-                let spot: CGPoint = switch edge {
+                var spot: CGPoint = switch edge {
                 case .north: CGPoint(x: along, y: CGFloat(rows))
                 case .south: CGPoint(x: along, y: 0)
                 case .east: CGPoint(x: CGFloat(columns), y: along)
                 case .west: CGPoint(x: 0, y: along)
+                }
+                if region != nil {
+                    guard let landfall = shore(from: spot, on: edge) else { continue }
+                    let out = Self.outward(edge)
+                    let past = GridPoint(col: Int((landfall.x + out.dx * 0.5).rounded(.down)), row: Int((landfall.y + out.dy * 0.5).rounded(.down)))
+                    guard attempt >= 30 || isOpenSea(past) else { continue }
+                    spot = landfall
                 }
                 if ends.allSatisfy({ $0.distance(to: spot) > 12 }) { return spot }
             }
@@ -2070,12 +2042,26 @@ nonisolated final class WorldMap: @unchecked Sendable {
         }
     }
 
+    /// In from a point on the box's `edge` (the side it's on), straight across, the edge of the land's
+    /// own ground: the side of its first own cell facing out that way. Nil if the line never meets it.
+    private func shore(from spot: CGPoint, on edge: Edge) -> CGPoint? {
+        let out = Self.outward(edge)
+        var cell = GridPoint(col: Int((spot.x - out.dx * 0.5).rounded(.down)), row: Int((spot.y - out.dy * 0.5).rounded(.down)))
+        while contains(cell) {
+            if owns(cell) {
+                return CGPoint(x: CGFloat(cell.col) + 0.5 + out.dx * 0.5, y: CGFloat(cell.row) + 0.5 + out.dy * 0.5)
+            }
+            cell = cell.stepped(edge.opposite)
+        }
+        return nil
+    }
+
     /// Cells row by row from the south, west to east in each: an order for cells kept in sets.
     static func inOrder(_ a: GridPoint, _ b: GridPoint) -> Bool {
         (a.row, a.col) < (b.row, b.col)
     }
 
-    /// The cells whose middles lie within `radius` of `spot`, on the map.
+    /// The cells whose middles lie within `radius` of `spot`, on the land.
     private func cells(around spot: CGPoint, radius: CGFloat) -> [GridPoint] {
         let reach = Int(radius.rounded(.up)) + 1
         let middle = GridPoint(col: Int(spot.x.rounded(.down)), row: Int(spot.y.rounded(.down)))
@@ -2083,7 +2069,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
         for dr in -reach...reach {
             for dc in -reach...reach {
                 let cell = GridPoint(col: middle.col + dc, row: middle.row + dr)
-                guard contains(cell), CGPoint(x: CGFloat(cell.col) + 0.5, y: CGFloat(cell.row) + 0.5).distance(to: spot) <= radius else { continue }
+                guard owns(cell), CGPoint(x: CGFloat(cell.col) + 0.5, y: CGFloat(cell.row) + 0.5).distance(to: spot) <= radius else { continue }
                 found.append(cell)
             }
         }
@@ -2447,7 +2433,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
                     }
                 }
                 let clear = cells.allSatisfy { cell in
-                    contains(cell) && !rock.contains(cell) && !cragGround.contains(cell)
+                    owns(cell) && !rock.contains(cell) && !cragGround.contains(cell)
                         && !isNear(cell, within: 2) { $0 == .path || $0 == .water }
                 }
                 guard clear, !cells.isEmpty else { continue }
@@ -2516,7 +2502,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 case .path: tileColor == nil && theme.path == "tile_path" ? PixelColor(0xE8C98C) : color(forTile: theme.path).shaded(1.15)
                 case .border: color(forTile: theme.border ?? theme.ground)
                 case .water: tileColor == nil ? PixelColor(0x4FA3E0) : color(forTile: theme.water ?? "tile_water")
-                case .sea: Self.seaColor
+                // The sea it draws (`Region`), and none of a land next door's: those draw their own.
+                case .sea: region?.drawsSea(at: cell) == false ? .clear : Self.seaColor
+                case .away: .clear
                 }
                 // Past the line it meets a land next door along, that land's ground.
                 if let seam = foreign[cell], ground[row][col] != .sea, ground[row][col] != .water, ground[row][col] != .path,
@@ -2566,7 +2554,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
 actor MapLayouts {
     nonisolated static let shared = MapLayouts()
 
-    func lay(_ def: MapDef, caves: [String: MapDef.Cave], coast: Coast?) -> WorldMap {
-        WorldMap(def: def, caves: caves, coast: coast)
+    func lay(_ def: MapDef, caves: [String: MapDef.Cave], around: Neighbourhood?) -> WorldMap {
+        WorldMap(def: def, caves: caves, around: around)
     }
 }
