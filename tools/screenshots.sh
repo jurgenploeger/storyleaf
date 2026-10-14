@@ -43,9 +43,8 @@ grep -vE '^\s*(#|$)' "$SCENES" | while IFS='|' read -r name flags wait; do
     ready="$(xcrun simctl get_app_container "$SIM" "$BUNDLE" data 2>/dev/null)/Documents/debug-ready"
   fi
   if [[ ",$flags," == *",clip="* ]]; then poll=0.5; fi
-  # The continent as one place (`continent`) is laid out after the land you start in is built.
-  limit=240
-  if [[ ",$flags," == *",continent,"* ]]; then limit=480; fi
+  # The continent lays out the lands round you before its first frame (several on CI's simulator).
+  limit=480
   sleep "$poll"
   while :; do
     if [ -n "$ready" ]; then

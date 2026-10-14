@@ -33,6 +33,10 @@ final class WorldOverview {
 
     /// The lands round where you are, nearest first: drawn before the rest (`prepare(first:)`).
     @ObservationIgnored private var wanted: [String] = []
+    /// While the continent lays out the lands round you (`ContinentScene.buildWanted`), which come
+    /// first: lands are laid out one at a time (`MapLayouts`), so these wait. Those it lays out, it
+    /// hands in (`remember`), and they aren't laid out again.
+    @ObservationIgnored var isHeld = false
 
     /// Fills in every land on the continent that isn't drawn yet: from disk, else laid out in the
     /// background, one at a time, each showing as it's done. `first`: the lands round where you
@@ -53,6 +57,7 @@ final class WorldOverview {
         Task {
             var left = jobs
             while !left.isEmpty {
+                while isHeld { try? await Task.sleep(for: .milliseconds(500)) }
                 let next = wanted.compactMap { id in left.firstIndex { $0.id == id } }.first ?? 0
                 let def = left.remove(at: next)
                 guard images[def.id] == nil, pending[def.id] == nil else { continue }

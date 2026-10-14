@@ -2,6 +2,16 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.0",
+      "date": "2026-10-14",
+      "title": "One continent",
+      "notes": [
+        "The lands are one world now: walk anywhere on the continent with no loading screen and no stop at a border, the ground, music, weather and monsters changing as you go.",
+        "As you walk into a land, its name shows at the top of the screen.",
+        "Borders a quest keeps closed still have their fence or rocks until you've done it, and caves still load behind their card."
+      ]
+    },
+    {
       "version": "0.6.1",
       "date": "2026-10-14",
       "title": "Any way round",
