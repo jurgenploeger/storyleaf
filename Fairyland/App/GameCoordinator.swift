@@ -147,7 +147,7 @@ final class GameCoordinator {
     #if DEBUG
     /// Debug launches (`continent`): the continent as one place, from where you stand, once the chunks
     /// round you are drawn.
-    func showContinentForDebug() async {
+    func showContinentForDebug(walkInto land: String? = nil) async {
         guard let origin = Continent.origin(of: world.def) else { return }
         let local = session.playerPosition ?? .zero
         let shift = WorldMap.project(CGPoint(x: CGFloat(origin.col) * WorldMap.tileSize, y: CGFloat(origin.row) * WorldMap.tileSize))
@@ -155,8 +155,9 @@ final class GameCoordinator {
         continent = scene
         for _ in 0..<600 {
             try? await Task.sleep(for: .milliseconds(500))
-            if scene.isReady { return }
+            if scene.isReady { break }
         }
+        if let land { await scene.walkIntoForDebug(land) }
     }
     #endif
 

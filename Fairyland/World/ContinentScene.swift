@@ -3,7 +3,8 @@ import SpriteKit
 /// The continent as one place, with no borders (docs/continuous-world.md, step 2): every land on it
 /// drawn a chunk at a time round the camera (`World.chunkSize` cells a side), from the lands' own
 /// layouts and plans, each laid out as you come near it. So far its ground, sea, hills, shore,
-/// bridges and scenery, and you walking about on it; a debug launch shows it (`continent`) until it
+/// bridges and scenery, and you walking about on it (with the stick, or tapping where to go) from
+/// one land into the next, each greeting you by name; a debug launch shows it (`continent`) until it
 /// takes over from the lands' own scenes.
 final class ContinentScene: SKScene {
     private let session: GameSession
@@ -85,6 +86,16 @@ final class ContinentScene: SKScene {
     private var painting = false
     /// When the work under way last had the frame back (`breathe`).
     private var sliceStart = ContinuousClock.now
+    /// The land you're in (`arrive(in:)`): the one that owns where you stand, once you're a cell
+    /// over its line.
+    private(set) var here: MapDef?
+    /// The world cell you last stood in.
+    private var lastCell: GridPoint?
+    private var leftFoot = false
+    /// The name of the land you've just walked into, at the top of the screen for a moment.
+    private var banner: SKNode?
+    private var pinchStartZoom: CGFloat = 1
+    private lazy var pinch = UIPinchGestureRecognizer(target: self, action: #selector(pinched(_:)))
 
     /// `point`: where you start, in the continent's points.
     init(session: GameSession, input: InputState, at point: CGPoint) {
@@ -113,6 +124,23 @@ final class ContinentScene: SKScene {
     }
 
     required init?(coder aDecoder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    override func didMove(to view: SKView) {
+        view.addGestureRecognizer(pinch)
+        cam.setScale(1 / WorldScene.zoom)
+        lastUpdate = 0
+    }
+
+    override func willMove(from view: SKView) {
+        view.removeGestureRecognizer(pinch)
+    }
+
+    /// Pinch to zoom, as on a land of its own (`WorldScene.zoom`, kept from one to the other).
+    @objc private func pinched(_ gesture: UIPinchGestureRecognizer) {
+        if gesture.state == .began { pinchStartZoom = WorldScene.zoom }
+        WorldScene.zoom = min(WorldScene.zoomRange.upperBound, max(WorldScene.zoomRange.lowerBound, pinchStartZoom * gesture.scale))
+        cam.setScale(1 / WorldScene.zoom)
+    }
 
     /// Where a land's own points lie in the continent's: its origin, projected.
     static func shift(of land: World.Land) -> CGVector {
@@ -157,6 +185,7 @@ final class ContinentScene: SKScene {
         lastUpdate = currentTime
         let stick = input.move
         if stick.length > 0.15 {
+            player.path = []
             let step = stick * (walkSpeed * CGFloat(dt))
             var next = player.position
             // Each axis on its own, so you slide along what you can't walk through.
@@ -169,8 +198,11 @@ final class ContinentScene: SKScene {
             player.face(Direction(stick, current: player.facing))
             player.setWalking(true)
         } else {
-            player.setWalking(false)
+            player.setWalking(player.followPath(dt: dt) || !player.path.isEmpty)
+            player.zPosition = -player.position.y
         }
+        checkCell()
+        player.settle()
         cam.position = player.position + CGVector(dx: 0, dy: player.lift)
         if currentTime - lookedAround > 0.25 {
             lookedAround = currentTime
@@ -181,6 +213,135 @@ final class ContinentScene: SKScene {
     /// Whether you can stand on a point: on ground a land's laid out and you can walk on.
     private func canStand(at point: CGPoint) -> Bool {
         store.isWalkable(Self.cell(at: point))
+    }
+
+    /// Tapping the ground walks you there, the shortest way within reach (`World.path`), to the very
+    /// spot if you can stand on it.
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let point = touches.first?.location(in: layer) else { return }
+        // A tap on a hilltop means the top, not the ground it hides: worked out by the land there.
+        var ground = point
+        if let owner = store.land(at: Self.cell(at: point)), let land = lands[owner.id] {
+            let local = CGPoint(x: point.x - land.shift.dx, y: point.y - land.shift.dy)
+            ground = land.map.groundPoint(under: local) + land.shift
+        }
+        let tapped = Self.cell(at: ground)
+        guard let start = store.nearestWalkable(to: Self.cell(at: player.position), within: 2),
+              let goal = store.nearestWalkable(to: tapped) else { return }
+        var points = store.path(from: start, to: goal).map { Self.center(of: $0) }
+        guard !points.isEmpty || start == goal else { return }
+        if goal == tapped {
+            if points.isEmpty { points = [ground] } else { points[points.count - 1] = ground }
+        }
+        player.path = points
+        if let end = points.last {
+            Effects.tapMarker(at: end + CGVector(dx: 0, dy: groundHeight(at: end)), in: layer)
+        }
+    }
+
+    // MARK: The land you're in
+
+    /// Each step onto a new cell: footsteps, the land you're in, and where you stand there for the
+    /// game to keep (its own points and cell, as on a land of its own).
+    private func checkCell() {
+        let cell = Self.cell(at: player.position)
+        // Till the land you start in is laid out, you're in none, standing still or not.
+        let starting = here == nil
+        if starting { checkLand(at: cell) }
+        guard cell != lastCell || (starting && here != nil) else { return }
+        lastCell = cell
+        if GameSettings.footsteps, !starting {
+            // Alternate feet, a touch louder and softer.
+            leftFoot.toggle()
+            SoundEffects.shared.play(.step, volume: leftFoot ? 0.6 : 0.45)
+        }
+        if !starting { checkLand(at: cell) }
+        guard let here, let land = lands[here.id] else { return }
+        session.playerPosition = CGPoint(x: player.position.x - land.shift.dx, y: player.position.y - land.shift.dy)
+        session.mapCell = store.local(cell, in: land.place)
+    }
+
+    /// Into the land that owns `cell`, once it's laid out, if you aren't in it already: a cell in from
+    /// its line, so walking along the line doesn't flick from one to the other.
+    private func checkLand(at cell: GridPoint) {
+        guard let owner = store.land(at: cell), owner.id != here?.id, lands[owner.id] != nil,
+              let def = Content.shared.map(owner.id) else { return }
+        if here != nil {
+            for dr in -1...1 {
+                for dc in -1...1 {
+                    if let other = store.land(at: GridPoint(col: cell.col + dc, row: cell.row + dr)), other.id != owner.id { return }
+                }
+            }
+        }
+        arrive(in: def)
+    }
+
+    /// You've walked into a land: its light on everyone, its music, and the game knows you're there
+    /// (its checkpoint, the map you're on); and, new to you since you were last in it, its name at
+    /// the top of the screen and in the chat (as `WorldScene.didMove` greets you).
+    private func arrive(in def: MapDef) {
+        let walkedIn = here != nil
+        here = def
+        Walker.light = WorldScene.light(of: def)
+        player.relight()
+        MusicPlayer.shared.play(def.music)
+        session.data.mapID = def.id
+        session.markVisited(def.id)
+        session.reachCheckpoint(def)
+        if walkedIn { session.bossesBeatenHere = [] }
+        guard session.mapName != def.name else { return }
+        session.post(L("You arrive at {map}.", ["map": def.name]))
+        if def.danger == true {
+            session.post(L("⚔ Danger zone! Adventurers here may pick a fight."), .battle)
+        }
+        session.startChat(on: def.name)
+        session.mapName = def.name
+        showBanner(def.name)
+    }
+
+    #if DEBUG
+    /// Debug launches (`continent,near=<land>,crossing`): walks you over the line into that land, to
+    /// the nearest cell of it you can walk to with its own land all round it, and returns once
+    /// you're in it (or after half a minute).
+    func walkIntoForDebug(_ id: String) async {
+        let from = Self.cell(at: player.position)
+        func inside(_ cell: GridPoint) -> Bool {
+            guard store.isWalkable(cell) else { return false }
+            for dr in -2...2 {
+                for dc in -2...2 where store.land(at: GridPoint(col: cell.col + dc, row: cell.row + dr))?.id != id { return false }
+            }
+            return true
+        }
+        var goal: GridPoint?
+        search: for radius in 1...48 {
+            for dr in -radius...radius {
+                for dc in -radius...radius where max(abs(dr), abs(dc)) == radius {
+                    let cell = GridPoint(col: from.col + dc, row: from.row + dr)
+                    if inside(cell) {
+                        goal = cell
+                        break search
+                    }
+                }
+            }
+        }
+        guard let goal, let start = store.nearestWalkable(to: from, within: 2) else { return }
+        player.path = store.path(from: start, to: goal).map { Self.center(of: $0) }
+        for _ in 0..<120 where here?.id != id {
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+    }
+    #endif
+
+    /// A land's name at the top of the screen as you walk into it, fading in and away.
+    private func showBanner(_ name: String) {
+        banner?.removeFromParent()
+        let tag = NameTag(name, color: Nodes.gold, size: 20)
+        tag.position = CGPoint(x: 0, y: size.height / 2 - 90)
+        tag.zPosition = 45_000
+        tag.alpha = 0
+        cam.addChild(tag)
+        tag.run(.sequence([.fadeIn(withDuration: 0.6), .wait(forDuration: 2.4), .fadeOut(withDuration: 0.9), .removeFromParent()]))
+        banner = tag
     }
 
     // MARK: Chunks

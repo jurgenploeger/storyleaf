@@ -34,6 +34,8 @@ border_open  | newgame,map=sunny_meadow,border=meadowbrook,landscape,weather=cle
 continent_meadow | newgame,map=sunny_meadow,continent,landscape,weather=clear,hour=12 | 8
 continent_border | newgame,map=sunny_meadow,near=meadowbrook,continent,landscape,weather=clear,hour=12 | 8
 continent_coast | newgame,map=pineapple_shore,at=-10_-47,continent,landscape,weather=clear,hour=12 | 8
+# Walking over the line into Meadowbrook on it: no card, no wait, its name at the top as you arrive.
+continent_crossing | newgame,map=sunny_meadow,near=meadowbrook,continent,crossing,landscape,weather=clear,hour=12 | 1
 border_gate  | newgame,map=sunny_meadow,border=frog_swamp,landscape,weather=clear,hour=12 | 6
 border_cross | newgame,map=sunny_meadow,border=twilight_woods,done=pineapple_harvest,cross,landscape,weather=clear,hour=12 | 6
 border_rocks | newgame,map=sunny_meadow,border=pineapple_shore,landscape,weather=clear,hour=12 | 6

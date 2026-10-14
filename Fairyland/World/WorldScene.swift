@@ -128,8 +128,8 @@ final class WorldScene: SKScene {
     private let talkRange: CGFloat = 50
 
     /// Pinch to zoom in on the ground around you, or out for a wider view. Kept from map to map.
-    private static var zoom: CGFloat = 1
-    private static let zoomRange: ClosedRange<CGFloat> = 0.85...2.2
+    static var zoom: CGFloat = 1
+    static let zoomRange: ClosedRange<CGFloat> = 0.85...2.2
     private var pinchStartZoom: CGFloat = 1
     private lazy var pinch = UIPinchGestureRecognizer(target: self, action: #selector(pinched(_:)))
 
@@ -194,7 +194,7 @@ final class WorldScene: SKScene {
     }
 
     /// The light a land casts on everyone in it (`Walker.light`, its palette's `light`).
-    private static func light(of def: MapDef) -> (color: UIColor, strength: CGFloat)? {
+    static func light(of def: MapDef) -> (color: UIColor, strength: CGFloat)? {
         guard let palette = def.theme.palette, let hex = palette.light, let color = UIColor(hex: hex) else { return nil }
         return (color, CGFloat(palette.lightStrength ?? 0.4))
     }
