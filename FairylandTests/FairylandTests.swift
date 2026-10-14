@@ -261,7 +261,6 @@ struct ContentTests {
                 #expect(ours == theirs, "\(def.id) | \(here.def.id): not the same border from both sides")
                 #expect(here.quest == back.quest, "\(def.id) | \(here.def.id): a different quest from each side")
                 #expect((here.exit == nil) == (back.exit == nil), "\(def.id) | \(here.def.id): a road from one side only")
-                #expect(here.town == back.town, "\(def.id) | \(here.def.id): a town's wall from one side only")
                 for pair in here.border {
                     let mine = here.local(pair.inside)
                     for (done, joined) in [(true, true), (false, true), (true, false), (false, false)] {
@@ -270,11 +269,10 @@ struct ContentTests {
                     }
                 }
                 // The band: every cell either side shows the same land's ground whichever of the two
-                // works it out, and there's one between lands, none beside a town.
+                // works it out, and there's one between every two lands (a town's countryside too).
                 let seam = grid(def).seams.first { $0.neighbour == here.def.id }
                 let other = grid(here.def).seams.first { $0.neighbour == def.id }
-                #expect((seam == nil) == (other == nil), "\(def.id) | \(here.def.id): a band from one side only")
-                #expect((seam == nil) == here.town, "\(def.id) | \(here.def.id): a band beside a town, or none between lands")
+                #expect(seam != nil && other != nil, "\(def.id) | \(here.def.id): no band between them, or from one side only")
                 guard let seam, let other else { continue }
                 var differ = 0
                 for pair in here.border where (pair.inside.col + pair.inside.row) % 2 == 0 {
@@ -417,7 +415,7 @@ struct ContentTests {
         // at the water's level beside it, never folding out of view going up the screen.
         let tile = WorldMap.tileSize
         var sloping = 0
-        for def in content.maps where Continent.region(of: def) != nil && def.town == nil && def.theme.cave == nil {
+        for def in content.maps where Continent.region(of: def) != nil && def.theme.cave == nil {
             let map = WorldMap(def: def)
             guard let shore = map.shore else { continue }
             sloping += 1

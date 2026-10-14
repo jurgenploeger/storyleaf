@@ -313,9 +313,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
     }
 
     /// The bands a land gives way to the lands beside it over (`Seam`): every land it shares a
-    /// border with, but none beside a town, whose wall stands on the border.
+    /// border with.
     private static func bands(of def: MapDef, in around: Neighbourhood?) -> [Seam] {
-        guard let around, def.fence != true, let here = around.lands.firstIndex(of: def.id) else { return [] }
+        guard let around, let here = around.lands.firstIndex(of: def.id) else { return [] }
         var touching: Set<Int> = []
         for row in 0..<def.height {
             for col in 0..<def.width {
@@ -326,7 +326,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 }
             }
         }
-        return touching.sorted().filter { !around.towns.contains($0) }.map { Seam(between: here, and: $0, in: around) }
+        return touching.sorted().map { Seam(between: here, and: $0, in: around) }
     }
 
     /// Finds the cells that show a land next door's ground (`foreign`): where two bands overlap
@@ -339,7 +339,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
             for row in 0..<rows {
                 for col in 0..<columns {
                     let spot = GridPoint(col: col, row: row)
-                    guard ground[row][col] != .away, ground[row][col] != .sea, let share = seam.share(spot), share > 0 else { continue }
+                    guard isCountryside(spot), let share = seam.share(spot), share > 0 else { continue }
                     if share > 0.03, ground[row][col] == .accent { ground[row][col] = .ground }
                     guard seam.showsOther(spot), share > strongest[spot] ?? 0 else { continue }
                     strongest[spot] = share
@@ -694,11 +694,30 @@ nonisolated final class WorldMap: @unchecked Sendable {
     // MARK: Generation
 
     /// Towns: a grass ring around the edge with a fence just inside it and gates at the exits.
+    /// Whether a cell is the land's own and out in its fields, where the land next door's ground
+    /// can show (`Seam`): a town's grass round its fence, not inside it.
+    func isCountryside(_ cell: GridPoint) -> Bool {
+        guard contains(cell) else { return false }
+        let kind = ground[cell.row][cell.col]
+        return kind != .away && kind != .sea && (def.fence != true || kind == .border)
+    }
+
+    /// A town's walled square, in its cells (`MapDef.Town.size`, round its middle): everything set
+    /// down by hand is in it. The whole map off the continent.
+    var townSquare: (origin: GridPoint, width: Int, height: Int) {
+        guard let size = def.town?.size, size.count == 2 else { return (GridPoint(col: 0, row: 0), columns, rows) }
+        return (GridPoint(col: center.col - size[0] / 2, row: center.row - size[1] / 2), size[0], size[1])
+    }
+
+    /// A town's fence (or wall) round its square, `townBorder` in from its edge; the grass ring
+    /// outside it and the countryside all round, `.border`.
     private func layOutTownBorder() {
         let ring = Self.townBorder
+        let square = townSquare
         for row in 0..<rows {
-            for col in 0..<columns {
-                let inset = min(col, row, columns - 1 - col, rows - 1 - row)
+            for col in 0..<columns where owns(GridPoint(col: col, row: row)) {
+                let across = col - square.origin.col, up = row - square.origin.row
+                let inset = min(across, up, square.width - 1 - across, square.height - 1 - up)
                 if inset < ring {
                     ground[row][col] = .border
                 } else if inset == ring {
@@ -1956,11 +1975,10 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// them) lie at the water's level, and the land rises evenly from there over `seaSlope` or
     /// `lakeSlope` cells to its own. Never under a hill: it rises to meet one over the few cells
     /// short of it. A lake's slope doesn't run over the border either (the land next door doesn't
-    /// sink with it); the sea's does, as the land next door slopes down to the same sea. Out in the
-    /// fields, not in a town (whose wall stands over the sea on a bank) or a cave. Gentle, 14 points
-    /// over 4 cells at most, so it never folds out of view (`Hill.foldLimit`).
+    /// sink with it); the sea's does, as the land next door slopes down to the same sea. Not in a
+    /// cave. Gentle, 14 points over 4 cells at most, so it never folds out of view (`Hill.foldLimit`).
     private func layShore() {
-        guard region != nil, def.town == nil, def.theme.cave == nil else { return }
+        guard region != nil, def.theme.cave == nil else { return }
         let lakeWater = Set(lakes.flatMap(\.water))
         // Over the box and a few cells round it, for the sea past its edges.
         let pad = 8

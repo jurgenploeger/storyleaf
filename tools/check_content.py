@@ -279,6 +279,12 @@ for map_def in maps.values():
         check(map_def["battleMusic"] in songs, f"map {map_def['id']} → unknown battle song {map_def['battleMusic']}")
     theme = map_def["theme"]
     town = map_def.get("town") or {}
+    if map_def.get("fence") is True:
+        # A town's walled square (`WorldMap.townSquare`), its countryside painted round it on the continent.
+        size = town.get("size")
+        check(isinstance(size, list) and len(size) == 2 and all(isinstance(v, int) and v >= 20 for v in size),
+              f"map {map_def['id']} town → size must be [width, height] of its walled square, 20 or more each")
+        check(town.get("walls") in (None, "stone"), f"map {map_def['id']} town → walls must be \"stone\" (a city's) or left out (a fence)")
     tiles = [theme["ground"], theme["path"]] + [theme[k] for k in ("accent", "border", "water") if theme.get(k)]
     if "cave" in theme:
         cave = theme["cave"]

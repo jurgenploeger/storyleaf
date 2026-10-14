@@ -838,7 +838,9 @@ final class WorldScene: SKScene {
         let tile = WorldMap.tileSize
         let image = art.gradedTile(other.theme.ground, palette: other.theme.palette)
         let theirs = image.map { Self.averageColor(of: $0) } ?? (0.5, 0.5, 0.5)
-        let own = art.gradedTile(def.theme.ground, palette: def.theme.palette).map { Self.averageColor(of: $0) } ?? (0.5, 0.5, 0.5)
+        // A town's own, the grass round its fence.
+        let ownGround = def.fence == true ? def.theme.border ?? def.theme.ground : def.theme.ground
+        let own = art.gradedTile(ownGround, palette: def.theme.palette).map { Self.averageColor(of: $0) } ?? (0.5, 0.5, 0.5)
         func nearSea(_ cell: GridPoint) -> Bool {
             (-1...1).contains { dr in (-1...1).contains { dc in map.isOpenSea(GridPoint(col: cell.col + dc, row: cell.row + dr)) } }
         }
@@ -847,7 +849,7 @@ final class WorldScene: SKScene {
         for row in 0..<map.rows {
             for col in 0..<map.columns {
                 let cell = GridPoint(col: col, row: row)
-                guard map.owns(cell), let side = seam.side(cell), side < Seam.blend + 1 else { continue }
+                guard map.isCountryside(cell), let side = seam.side(cell), side < Seam.blend + 1 else { continue }
                 low = GridPoint(col: min(low.col, col), row: min(low.row, row))
                 high = GridPoint(col: max(high.col, col), row: max(high.row, row))
             }
@@ -880,7 +882,7 @@ final class WorldScene: SKScene {
                 let gx = Double(low.col) + (Double(x) + 0.5) / Double(fine)
                 let gy = Double(low.row + cells.height) - (Double(y) + 0.5) / Double(fine)
                 let cell = GridPoint(col: Int(gx.rounded(.down)), row: Int(gy.rounded(.down)))
-                guard map.owns(cell), let at = side(gx, gy) else { continue }
+                guard map.isCountryside(cell), let at = side(gx, gy) else { continue }
                 // How much of the ground is the other land's here (`Seam.share`).
                 let share = CGFloat(Seam.share(at: at))
                 guard share > 0.001, share < 0.999 else { continue }
@@ -1204,7 +1206,7 @@ final class WorldScene: SKScene {
     private func placeFence() {
         guard !map.fenceCells.isEmpty else { return }
         for cell in map.fenceCells { map.occupy(cell, blocking: true) }
-        TownFence.place(cells: map.fenceCells, map: map, world: world, art: art)
+        TownFence.place(cells: map.fenceCells, map: map, world: world, art: art, stone: def.town?.walls == "stone")
     }
 
     /// Houses take a 3×2 footprint above their anchor tile.
@@ -1833,9 +1835,7 @@ final class WorldScene: SKScene {
         }
         gates.removeAll { gate in
             let neighbour = gate.neighbour
-            let opened = neighbour.town ? neighbour.quest.map(session.hasCompleted) ?? false
-                : !neighbour.isWalled(done: session.hasCompleted, joined: isJoined(neighbour))
-            guard opened else { return false }
+            guard !neighbour.isWalled(done: session.hasCompleted, joined: isJoined(neighbour)) else { return false }
             for node in gate.bar {
                 if let parent = node.parent { SkillEffects.smoke(at: node.position, in: parent) }
                 node.run(.sequence([.fadeOut(withDuration: 0.4), .removeFromParent()]))

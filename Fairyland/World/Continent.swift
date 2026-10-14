@@ -6,8 +6,9 @@ import CoreGraphics
 /// along the border they share, once you can: where a quest opens the road between them, a fence
 /// stands along it with a barred gate on the road until the quest is done; where no road crosses, a
 /// fence stands until the roads you can take join the two lands some other way (`joined`), so no
-/// border lets you round a quest. A town keeps its city wall, a gate in it where a quest opens the
-/// road. Caves aren't on it: you go into them through their mouths, behind a loading card, as ever.
+/// border lets you round a quest. A town is a land like any other, its walled square in the middle
+/// of its own countryside. Caves aren't on it: you go into them through their mouths, behind a
+/// loading card, as ever.
 enum Continent {
     /// A land beside another (`here`), as `here` sees it.
     struct Neighbour {
@@ -22,8 +23,6 @@ enum Continent {
         /// The quest that opens the road, from either side (maps.json gives it on the side you
         /// come from first; the border's the same gate both ways).
         let quest: String?
-        /// Whether either land is a town, walled in: you go in and out through its gates.
-        let town: Bool
         /// Where the two meet: each cell of `here` along the border, with the cell of this land beside
         /// it (east, west, north or south of it), in `here`'s cells.
         let border: [(inside: GridPoint, outside: GridPoint)]
@@ -31,17 +30,9 @@ enum Continent {
         /// Whether you can step over onto `cell` (one of this land's, beside one of `here`'s, in
         /// `here`'s cells). `done`: whether you've done a quest; `joined`: whether the roads you can
         /// take join the two lands already (`Continent.joined`). Anywhere along the border once you can
-        /// cross at all (`isCrossable`); out of or into a town only through its gate where a quest
-        /// opens the road (`gateReach` either side of it), once the quest's done.
+        /// cross at all (`isCrossable`).
         func isOpen(over cell: GridPoint, done: (String) -> Bool, joined: Bool) -> Bool {
-            guard town else { return isCrossable(done: done, joined: joined) }
-            guard let exit else { return false }
-            guard let quest else { return true }
-            guard done(quest), let gate = gate(of: exit) else { return false }
-            let across = exit.edge == .east || exit.edge == .west
-            let along = across ? abs(cell.row - gate.row) : abs(cell.col - gate.col)
-            let past = across ? abs(cell.col - gate.col) : abs(cell.row - gate.row)
-            return along <= Continent.gateReach && past == 0
+            isCrossable(done: done, joined: joined)
         }
 
         /// The cell the road crosses onto, this land's (in `here`'s cells).
@@ -51,17 +42,15 @@ enum Continent {
 
         /// Whether you can walk across it anywhere: a road crosses it with no quest, or its quest
         /// is done; where no road crosses, once the roads you can take join the two lands (`joined`),
-        /// so it never takes you round a quest. Not beside a town (only through its gates).
+        /// so it never takes you round a quest.
         func isCrossable(done: (String) -> Bool, joined: Bool) -> Bool {
             if let quest { return done(quest) }
-            guard !town else { return exit != nil }
             return exit != nil || joined
         }
 
-        /// Whether a wall stands along it (`BorderArt`): a town's, wherever no road crosses or a
-        /// quest's does; any other, until you can walk across.
+        /// Whether a wall stands along it (`BorderArt`): until you can walk across.
         func isWalled(done: (String) -> Bool, joined: Bool) -> Bool {
-            town ? exit == nil || quest != nil : !isCrossable(done: done, joined: joined)
+            !isCrossable(done: done, joined: joined)
         }
 
         /// A cell of `here`, in this land's own cells.
@@ -150,8 +139,7 @@ enum Continent {
             let exit = here.exits.first { $0.to == land.def.id }
             let back = land.def.exits.first { $0.to == here.id }
             return Neighbour(def: land.def, offset: land.offset, exit: exit, road: exit.flatMap { region.roads[$0.to]?.at },
-                             quest: exit == nil ? nil : exit?.requires ?? back?.requires, town: here.fence == true || land.def.fence == true,
-                             border: border)
+                             quest: exit == nil ? nil : exit?.requires ?? back?.requires, border: border)
         }
     }
 
@@ -193,7 +181,6 @@ enum Continent {
         let width = here.width + 2 * margin, height = here.height + 2 * margin
         var owners = [Int16](repeating: -1, count: width * height)
         var ids: [String] = []
-        var towns: Set<Int> = []
         for land in lands {
             guard let shape = regions[land.def.id] else { continue }
             // Its box in this window's cells.
@@ -210,10 +197,9 @@ enum Continent {
                 }
             }
             guard any else { continue }
-            if land.def.fence == true { towns.insert(ids.count) }
             ids.append(land.def.id)
         }
-        return Neighbourhood(region: region, origin: origin, lands: ids, towns: towns, owners: owners)
+        return Neighbourhood(region: region, origin: origin, lands: ids, owners: owners)
     }
 
     /// The other lands within `reach` cells of `here`'s box, each with its box's south-west cell in
@@ -238,17 +224,14 @@ nonisolated struct Neighbourhood: Sendable {
     let origin: GridPoint
     /// The lands holding any cell of the window, this one among them, by id.
     let lands: [String]
-    /// Which of `lands` are towns.
-    let towns: Set<Int>
     /// Which of `lands` holds each cell of the window (the box and `region.margin` round it, row by
     /// row from the south), -1 none: the sea.
     private let owners: [Int16]
 
-    init(region: Region, origin: GridPoint, lands: [String], towns: Set<Int>, owners: [Int16]) {
+    init(region: Region, origin: GridPoint, lands: [String], owners: [Int16]) {
         self.region = region
         self.origin = origin
         self.lands = lands
-        self.towns = towns
         self.owners = owners
     }
 

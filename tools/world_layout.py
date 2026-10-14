@@ -19,7 +19,8 @@ middle of that side). Where a road leads into a cave, that side of the land is a
 (`CAVE_ALONG` either side of the road) with open sea past it for the mountains the cave is in.
 
 Rivers (world.json `rivers`) run from a spring to the sea through the turns of their `course`,
-meandering a little (`RIVER_WOBBLE`) and widening as they go, some from one land on into the next.
+meandering a little (`RIVER_WOBBLE`) and widening as they go, some from one land on into the next;
+one with a `lake` ends in a lake of its own that wide instead, where it has no way to the sea.
 They keep clear of towns, the roads' crossings, the middles and everything set down by hand; a road
 or trail crossing one gets a bridge in the game, so it has to cross squarely, where the river's
 narrow and away from the sea; and bits of land a river cuts off with no road over go under water if
@@ -60,6 +61,20 @@ WARPS = ((110, 22.0, 0xA11, 0xA12), (40, 10.0, 0xA13, 0xA14), (14, 3.0, 0xA15, 0
 COAST_WOBBLE = ((28, 0.13, 0xC01), (9, 0.05, 0xC02))
 # Where a road crosses between two lands, the border runs straight this far either side of it,
 # and this far back into each land.
+# The whole continent's outline: the lands' shapes blurred together this much (cells) and cut at
+# `BODY_CUT`, a little raggedly ((every, share, seed)), so it's one landmass with one coast that runs
+# on past the borders, not a coast of each land's own.
+BODY_BLUR = 24.0
+BODY_CUT = 0.3
+BODY_WOBBLE = ((60, 0.10, 0xB01), (22, 0.06, 0xB02), (8, 0.025, 0xB03))
+# How far round its walls a town's own countryside reaches at least (no other land's nearer), and
+# land of some kind (never the sea); and how far out from its gate a town's road runs straight
+# before it turns for the border.
+TOWN_OWN = 8
+TOWN_RING = 16
+TOWN_GATE = 5
+# How far round each land's middle the painting looks, in cells.
+EXTENT = 170
 CROSSING = 8
 CROSSING_DEEP = 9
 # Where a road leads into a cave: the coast runs straight this far either side of it, the land
@@ -190,52 +205,44 @@ class Canvas:
             self.owner[r, c] = value
 
 
+def gate(land, box, exit):
+    """Where a town's road leaves through its wall (`exit`'s side, its middle and `at` along it):
+    the wall's cell, in world cells."""
+    x, y, w, h = box
+    at = exit.get("at", 0)
+    return {"east": (x + w - 1, y + h // 2 + at), "west": (x, y + h // 2 + at),
+            "north": (x + w // 2 + at, y + h - 1), "south": (x + w // 2 + at, y)}[exit["edge"]]
+
+
 def town_box(land, at):
-    """A town's rectangle: (left, bottom, width, height) in world cells, its middle cell at `at` as
-    a map's middle is (`WorldMap.center`: width / 2, height / 2)."""
-    w, h = land["width"], land["height"]
+    """A town's walled square (maps.json `town.size`): (left, bottom, width, height) in world cells,
+    its middle cell at `at` as the town's middle is (`WorldMap.walls`: width / 2, height / 2 in)."""
+    w, h = land["town"]["size"]
     return at[0] - w // 2, at[1] - h // 2, w, h
 
 
 def lobes(design, lands):
     """Every land's lobes on the continent: (x, y, across, up, turn in radians), its own and one
     toward each land a road joins it to, so the two always meet (most of the way along the line
-    between their middles; to a town, just outside its gate)."""
+    between their middles). A town's are its countryside round its walls."""
     found = {i: [] for i in design}
     for land_id, spec in design.items():
-        if is_town(lands[land_id]):
-            continue
         cx, cy = spec["at"]
         for lobe in spec["lobes"]:
             found[land_id].append((cx + lobe[0], cy + lobe[1], lobe[2], lobe[3], math.radians(lobe[4]) if len(lobe) > 4 else 0.0))
     for land_id, exit in road_pairs(lands):
         other = exit["to"]
-        a, b = design[land_id]["at"], design[other]["at"]
-        for here, there, town in ((land_id, other, other), (other, land_id, land_id)):
-            if is_town(lands[here]):
-                continue
+        for here, there in ((land_id, other), (other, land_id)):
             hx, hy = design[here]["at"]
-            if is_town(lands[town]):
-                # Just outside the town's gate, on the side toward this land.
-                edge = exit["edge"] if town == other else OPPOSITE[exit["edge"]]
-                x, y, w, h = town_box(lands[town], design[town]["at"])
-                texit = next(e for e in lands[town]["exits"] if e["to"] == here)
-                at = texit.get("at", 0)
-                back = OPPOSITE[edge]
-                gx, gy = {"east": (x + w + 12, y + h // 2 + at), "west": (x - 13, y + h // 2 + at),
-                          "north": (x + w // 2 + at, y + h + 12), "south": (x + w // 2 + at, y - 13)}[back]
-                found[here].append((gx, gy, 16, 16, 0.0))
-            else:
-                tx, ty = design[there]["at"]
-                length = math.hypot(tx - hx, ty - hy)
-                found[here].append((hx + (tx - hx) * 0.4, hy + (ty - hy) * 0.4, length * 0.32, length * 0.32, 0.0))
+            tx, ty = design[there]["at"]
+            length = math.hypot(tx - hx, ty - hy)
+            found[here].append((hx + (tx - hx) * 0.4, hy + (ty - hy) * 0.4, length * 0.32, length * 0.32, 0.0))
     return found
 
 
 def reach(shapes, ids, xs, ys, scales):
     """How easily each land's lobes reach every cell: its distance over their size (below 1
-    inside them), for the cells at world (xs, ys), already bent. A town reaches nowhere (its
-    rectangle is laid over the rest)."""
+    inside them), for the cells at world (xs, ys), already bent."""
     import numpy as np
     big = np.full((len(ids),) + xs.shape, np.inf)
     for k, land_id in enumerate(ids):
@@ -250,16 +257,17 @@ def reach(shapes, ids, xs, ys, scales):
 
 
 def paint(design, lands):
-    """The continent, painted, before it's tidied."""
+    """The continent, painted, before it's tidied: one landmass (`BODY_BLUR`), each cell of it the
+    land that reaches it most easily, a town's walled square its own, with its countryside round."""
     import numpy as np
+    from scipy import ndimage
     ids = sorted(design)
     left = bottom = 10 ** 9
     right = top = -10 ** 9
     for land_id in ids:
         cx, cy = design[land_id]["at"]
-        extent = max(lands[land_id]["width"], lands[land_id]["height"]) * 1.4 + 60
-        left, right = min(left, int(cx - extent)), max(right, int(cx + extent))
-        bottom, top = min(bottom, int(cy - extent)), max(top, int(cy + extent))
+        left, right = min(left, cx - EXTENT), max(right, cx + EXTENT)
+        bottom, top = min(bottom, cy - EXTENT), max(top, cy + EXTENT)
     canvas = Canvas(ids, left, bottom, right - left, top - bottom)
     ys, xs = np.mgrid[bottom:top, left:right].astype(np.float64)
     xs += 0.5
@@ -271,6 +279,26 @@ def paint(design, lands):
     wobble = np.zeros_like(xs)
     for every, far, seed in COAST_WOBBLE:
         wobble += (_value_np(xs, ys, every, seed) * 2 - 1) * far
+    ragged = np.zeros_like(xs)
+    for every, far, seed in BODY_WOBBLE:
+        ragged += (_value_np(xs, ys, every, seed) * 2 - 1) * far
+    # The towns' walled squares, and the countryside every town has round them.
+    cores = np.zeros(xs.shape, bool)
+    for land_id in ids:
+        if is_town(lands[land_id]):
+            x, y, w, h = town_box(lands[land_id], design[land_id]["at"])
+            r, c = canvas.index(x, y)
+            cores[r:r + h, c:c + w] = True
+    countryside = ndimage.distance_transform_edt(~cores) <= TOWN_RING
+    # Each town's square and its own countryside right round it.
+    owned = {}
+    for land_id in ids:
+        if is_town(lands[land_id]):
+            x, y, w, h = town_box(lands[land_id], design[land_id]["at"])
+            r, c = canvas.index(x, y)
+            square = np.zeros(xs.shape, bool)
+            square[r:r + h, c:c + w] = True
+            owned[land_id] = ndimage.distance_transform_cdt(~square, metric="chessboard") <= TOWN_OWN
     targets = {i: design[i].get("area", 0) for i in ids}
     scales = {i: 1.0 for i in ids}
     shapes = lobes(design, lands)
@@ -278,18 +306,20 @@ def paint(design, lands):
         near = reach(shapes, ids, bent_x, bent_y, scales)
         best = near.argmin(axis=0)
         least = near.min(axis=0)
-        owner = np.where(least < 1 + wobble, best, -1).astype(np.int32)
-        # The towns, their rectangles exactly.
+        # One landmass: the lands' shapes blurred together and cut again a little raggedly, so the
+        # gaps and notches where two lands meet fill in and the coast runs on past every border,
+        # no sea inland.
+        inside = (least < 1 + wobble).astype(np.float64)
+        body = ndimage.gaussian_filter(inside, BODY_BLUR) > BODY_CUT + ragged
+        body = ndimage.binary_fill_holes(body | countryside)
+        owner = np.where(body, best, -1).astype(np.int32)
         for k, land_id in enumerate(ids):
             if is_town(lands[land_id]):
-                x, y, w, h = town_box(lands[land_id], design[land_id]["at"])
-                r, c = canvas.index(x, y)
-                owner[r:r + h, c:c + w] = k
+                owner[owned[land_id]] = k
         areas = np.bincount(owner[owner >= 0].ravel(), minlength=len(ids))
         for k, land_id in enumerate(ids):
-            if is_town(lands[land_id]) or areas[k] == 0:
-                continue
-            scales[land_id] *= (targets[land_id] / areas[k]) ** 0.5
+            if areas[k]:
+                scales[land_id] *= (targets[land_id] / areas[k]) ** 0.5
     canvas.owner = owner
     return canvas
 
@@ -413,49 +443,31 @@ def crossings(canvas, design, lands, maps, keep):
         edge = exit["edge"]
         a, b = index[land_id], index[other]
         dx, dy = STEP[edge]
-        town_a, town_b = is_town(lands[land_id]), is_town(lands[other])
-        if town_a or town_b:
-            # Through a town's wall where its exit says: the middle of that side, plus `at`.
-            town, back = (land_id, edge) if town_a else (other, OPPOSITE[edge])
-            x, y, w, h = town_box(lands[town], design[town]["at"])
-            texit = next(e for e in lands[town]["exits"] if e["to"] in (land_id, other) and e["to"] != town)
-            at = texit.get("at", 0)
-            gate = {"east": (x + w - 1, y + h // 2 + at), "west": (x, y + h // 2 + at),
-                    "north": (x + w // 2 + at, y + h - 1), "south": (x + w // 2 + at, y)}[back]
-            tx, ty = STEP[back]
-            outside = (gate[0] + tx, gate[1] + ty)
-            if town_a and town_b:
-                pass
-            else:
-                straighten(canvas, keep, index[town], index[other if town_a else land_id], gate, back,
-                           CROSSING, CROSSING_DEEP, only="b")
-            cell = gate if town_a else outside
+        # The middle of the stretch of border facing the way the exit goes, nearest where the
+        # exit wants it (`at` from the land's middle), else between the two middles.
+        r, c = np.nonzero(canvas.owner == a)
+        xs, ys = c + canvas.left, r + canvas.bottom
+        nx, ny = xs + dx, ys + dy
+        ok = np.array([canvas.get(x, y) == b for x, y in zip(nx, ny)]) if len(xs) else np.array([], bool)
+        if not ok.any():
+            problems.append(f"{land_id} doesn't touch {other} on its {edge} side, where a road joins them")
+            continue
+        xs, ys = xs[ok], ys[ok]
+        (ax, ay), (bx, by) = design[land_id]["at"], design[other]["at"]
+        if edge in ("east", "west"):
+            want = ay + exit["at"] if "at" in exit else (ay + by) / 2
+            spread = ys
         else:
-            # The middle of the stretch of border facing the way the exit goes, nearest where the
-            # exit wants it (`at` from the land's middle), else between the two middles.
-            r, c = np.nonzero(canvas.owner == a)
-            xs, ys = c + canvas.left, r + canvas.bottom
-            nx, ny = xs + dx, ys + dy
-            ok = np.array([canvas.get(x, y) == b for x, y in zip(nx, ny)]) if len(xs) else np.array([], bool)
-            if not ok.any():
-                problems.append(f"{land_id} doesn't touch {other} on its {edge} side, where a road joins them")
-                continue
-            xs, ys = xs[ok], ys[ok]
-            (ax, ay), (bx, by) = design[land_id]["at"], design[other]["at"]
-            if edge in ("east", "west"):
-                want = ay + exit["at"] if "at" in exit else (ay + by) / 2
-                spread = ys
-            else:
-                want = ax + exit["at"] if "at" in exit else (ax + bx) / 2
-                spread = xs
-            # Prefer the middle of a long stretch: how much border there is near each cell.
-            score = []
-            for x, y, s in zip(xs, ys, spread):
-                near = np.abs(spread - s) <= CROSSING
-                score.append(abs(s - want) - 3 * near.sum())
-            pick = int(np.argmin(score))
-            cell = (int(xs[pick]), int(ys[pick]))
-            straighten(canvas, keep, a, b, cell, edge, CROSSING, CROSSING_DEEP)
+            want = ax + exit["at"] if "at" in exit else (ax + bx) / 2
+            spread = xs
+        # Prefer the middle of a long stretch: how much border there is near each cell.
+        score = []
+        for x, y, s in zip(xs, ys, spread):
+            near = np.abs(spread - s) <= CROSSING
+            score.append(abs(s - want) - 3 * near.sum())
+        pick = int(np.argmin(score))
+        cell = (int(xs[pick]), int(ys[pick]))
+        straighten(canvas, keep, a, b, cell, edge, CROSSING, CROSSING_DEEP)
         found[land_id][other] = cell
         found[other][land_id] = (cell[0] + dx, cell[1] + dy)
         # Kept from here on.
@@ -514,10 +526,6 @@ def boxes(canvas, design, lands):
     import numpy as np
     found = {}
     for k, land_id in enumerate(canvas.ids):
-        land = lands[land_id]
-        if is_town(land):
-            found[land_id] = town_box(land, design[land_id]["at"])
-            continue
         r, c = np.nonzero(canvas.owner == k)
         xs, ys = c + canvas.left, r + canvas.bottom
         found[land_id] = (int(xs.min()), int(ys.min()), int(xs.max() - xs.min() + 1), int(ys.max() - ys.min() + 1))
@@ -671,7 +679,13 @@ def rivers(canvas, world_rivers, design, lands, grids, found, routes):
     index = {land_id: k for k, land_id in enumerate(ids)}
     under = np.zeros_like(canvas.owner, bool)
     lines, problems = [], []
-    towns = np.isin(canvas.owner, [index[i] for i in ids if is_town(lands[i])])
+    # Never through a town's walls; out in its countryside like any land's.
+    towns = np.zeros_like(canvas.owner, bool)
+    for land_id in ids:
+        if is_town(lands[land_id]):
+            x, y, w, h = town_box(lands[land_id], design[land_id]["at"])
+            r, c = canvas.index(x, y)
+            towns[r:r + h, c:c + w] = True
     for number, river in enumerate(world_rivers):
         name = river.get("name", f"river {number}")
         line = river_line(river, number)
@@ -679,10 +693,15 @@ def rivers(canvas, world_rivers, design, lands, grids, found, routes):
         x1, y1 = line[-1][:2]
         if canvas.get(int(math.floor(x0)), int(math.floor(y0))) < 0:
             problems.append(f"{name}'s spring isn't on land")
-        if canvas.get(int(math.floor(x1)), int(math.floor(y1))) >= 0:
-            problems.append(f"{name} doesn't run out into the sea")
+        pool = river.get("lake", 0)
+        if not pool and canvas.get(int(math.floor(x1)), int(math.floor(y1))) >= 0:
+            problems.append(f"{name} doesn't run out into the sea (or into a lake of its own)")
+        total = line[-1][3]
         for x, y, width, s in line:
             radius = width / 2 + SPRING * max(0.0, 1 - s / 6)
+            if pool:
+                # Widening into the lake it ends in.
+                radius = max(radius, pool * min(1.0, max(0.0, 1 - (total - s) / pool)))
             reach = int(radius) + 2
             cx, cy = int(math.floor(x)), int(math.floor(y))
             for j in range(cy - reach, cy + reach + 1):
@@ -712,8 +731,6 @@ def rivers(canvas, world_rivers, design, lands, grids, found, routes):
         mx, my = design[land_id]["at"]
         for to, (cx, cy) in found[land_id].items():
             clear(cx, cy, RIVER_CAVE if to not in lands else RIVER_CROSSING, f"{land_id}'s road to {to}'s crossing")
-        if is_town(land):
-            continue
         clear(mx, my, RIVER_MIDDLE, f"{land_id}'s middle")
         for (dx, dy), what in content_spots(land):
             clear(mx + dx, my + dy, RIVER_CONTENT + CONTENT_MARGIN if what != "hub" else RIVER_MIDDLE, f"{land_id}'s {what}")
@@ -729,8 +746,6 @@ def rivers(canvas, world_rivers, design, lands, grids, found, routes):
 
     for land_id in ids:
         land = lands[land_id]
-        if is_town(land):
-            continue
         roads_here = road_lines(land_id, land, design[land_id]["at"], found[land_id], routes[land_id])
         for x, y in bridged(roads_here, wet):
             r, c = canvas.index(x, y)
@@ -839,19 +854,28 @@ def ways(canvas, design, lands, grids, found):
     for k, land_id in enumerate(canvas.ids):
         land = lands[land_id]
         found_ways[land_id] = {}
-        if is_town(land):
-            continue
         x0, y0, w, h = grids[land_id]
         r0, c0 = canvas.index(x0, y0)
         mine = canvas.owner[r0:r0 + h, c0:c0 + w] == k
+        town = town_box(land, design[land_id]["at"]) if is_town(land) else None
+        if town:
+            # Out of a town through the gate in its wall, never back over it.
+            tx, ty, tw, th = town
+            mine[ty - y0:ty - y0 + th, tx - x0:tx - x0 + tw] = False
         depth = ndimage.distance_transform_edt(np.pad(mine, 1))[1:-1, 1:-1]
         mx, my = design[land_id]["at"][0] - x0, design[land_id]["at"][1] - y0
         hub = land.get("hub") or [0, 0]
-        start = (mx + hub[0], my + hub[1])
         for to, (cx, cy) in found[land_id].items():
             exit = next(e for e in land["exits"] if e["to"] == to)
             dx, dy = STEP[exit["edge"]]
             goal = (cx - x0 - dx * 5, cy - y0 - dy * 5)
+            lead = []
+            if town:
+                gx, gy = gate(land, town, exit)
+                start = (gx + dx * TOWN_GATE - x0, gy + dy * TOWN_GATE - y0)
+                lead = [start]
+            else:
+                start = (mx + hub[0], my + hub[1])
             if not (0 <= goal[0] < w and 0 <= goal[1] < h and mine[goal[1], goal[0]] and mine[start[1], start[0]]):
                 problems.append(f"{land_id}'s road to {to} has nowhere to start or end on its land")
                 continue
@@ -909,7 +933,7 @@ def ways(canvas, design, lands, grids, found):
                 i = j
             # The last stretch to the border is the game's (`WorldMap.carveRoad`).
             via = [v for v in via if max(abs(v[0] - goal[0]), abs(v[1] - goal[1])) > 6]
-            found_ways[land_id][to] = [[px - mx, py - my] for px, py in via]
+            found_ways[land_id][to] = [[px - mx, py - my] for px, py in lead + via]
     return found_ways, problems
 
 
@@ -940,7 +964,7 @@ def write(data, lands, design, grids, roads, routes, shapes, lines):
     out += ["  },", '  "rivers": [']
     blocks = []
     for river, line in zip(old.get("rivers", []), lines):
-        spec = {key: river[key] for key in ("name", "width", "course")}
+        spec = {key: river[key] for key in ("name", "width", "lake", "course") if key in river}
         text = json.dumps(spec, separators=(", ", ": "))[:-1]
         blocks.append(f"    {text},\n      \"line\": {json.dumps(line, separators=(',', ':'))}}}")
     out.append(",\n".join(blocks))
@@ -957,15 +981,17 @@ def write(data, lands, design, grids, roads, routes, shapes, lines):
 def solve(data, maps, lands, design, world_rivers):
     import numpy as np
     canvas = paint(design, lands)
+    # The towns' walled squares and the countryside right round them stay as they are; the rest of
+    # their countryside is tidied as any land is.
     keep = np.zeros_like(canvas.owner, bool)
-    towns = set()
-    for k, land_id in enumerate(canvas.ids):
+    for land_id in canvas.ids:
         if is_town(lands[land_id]):
-            keep |= canvas.owner == k
-            towns.add(k)
-    tidy(canvas, keep, towns)
+            x, y, w, h = town_box(lands[land_id], design[land_id]["at"])
+            r, c = canvas.index(x - TOWN_OWN, y - TOWN_OWN)
+            keep[r:r + h + 2 * TOWN_OWN, c:c + w + 2 * TOWN_OWN] = True
+    tidy(canvas, keep, set())
     found, problems = crossings(canvas, design, lands, maps, keep)
-    tidy(canvas, keep, towns)
+    tidy(canvas, keep, set())
     grids = boxes(canvas, design, lands)
     routes, more = ways(canvas, design, lands, grids, found)
     river, lines, wet = rivers(canvas, world_rivers, design, lands, grids, found, routes)
@@ -1016,6 +1042,7 @@ def verify(maps, lands, world):
     if problems:
         return problems
     own, sea, wet, away = unpack(world, lands)
+    sea_cells = set().union(*sea.values()) if sea else set()
     owner = {}
     for land_id, cells in sorted(own.items()):
         land = lands[land_id]
@@ -1032,13 +1059,17 @@ def verify(maps, lands, world):
                 problems.append(f"world.json: {land_id} and {owner[cell]} both claim the cell {list(cell)}")
                 break
             owner[cell] = land_id
-        if is_town(land):
-            if len(cells) != w * h:
-                problems.append(f"world.json: town {land_id} isn't its whole rectangle")
-            if world["middles"][land_id] != [w // 2, h // 2]:
-                problems.append(f"world.json: town {land_id}'s middle isn't its square's")
         mc, mr = world["middles"][land_id]
         middle = (x0 + mc, y0 + mr)
+        if is_town(land):
+            # Its walled square all its own, round its middle, with its land round it.
+            tx, ty, tw, th = town_box(land, middle)
+            if any((x, y) not in cells for x in range(tx, tx + tw) for y in range(ty, ty + th)):
+                problems.append(f"world.json: town {land_id}'s walled square isn't all its own")
+            ring = [(x, y) for x in range(tx - 2, tx + tw + 2) for y in range(ty - 2, ty + th + 2)
+                    if not (tx <= x < tx + tw and ty <= y < ty + th)]
+            if any((x, y) in sea_cells for x, y in ring):
+                problems.append(f"world.json: town {land_id}'s wall stands by the sea, with no land round it")
         if middle not in cells:
             problems.append(f"world.json: {land_id}'s middle isn't on its land")
         for (dx, dy), what in content_spots(land):
@@ -1081,8 +1112,6 @@ def verify(maps, lands, world):
                     problems.append(f"world.json: past {land_id}'s road {exit['edge']} isn't {exit['to']}")
             elif over in owner:
                 problems.append(f"world.json: past {land_id}'s road into the cave {exit['to']} is land")
-            if is_town(land):
-                continue
             hub = land.get("hub") or [0, 0]
             stops = [hub] + road.get("via", [])
             points = [(middle[0] + x, middle[1] + y) for x, y in stops] + [(here[0] - dx * 5, here[1] - dy * 5)]
@@ -1142,8 +1171,10 @@ def verify_rivers(lands, world, own, wet, away):
                 and y0 - MARGIN <= cell[1] < y0 + h + MARGIN and owner.get(cell) not in (None, land_id)}
         if seen != away[land_id]:
             problems.append(f"world.json: {land_id}'s shape doesn't show the rivers round it as the lands they run through do")
-        if is_town(land) and wet[land_id]:
-            problems.append(f"world.json: a river runs through the town {land_id}")
+        if is_town(land):
+            tx, ty, tw, th = town_box(land, (x0 + world["middles"][land_id][0], y0 + world["middles"][land_id][1]))
+            if any(tx - RIVER_TOWN <= x < tx + tw + RIVER_TOWN and ty - RIVER_TOWN <= y < ty + th + RIVER_TOWN for x, y in water):
+                problems.append(f"world.json: a river runs within {RIVER_TOWN} cells of the town {land_id}'s walls")
         mc, mr = world["middles"][land_id]
         middle = (x0 + mc, y0 + mr)
 
@@ -1154,8 +1185,6 @@ def verify_rivers(lands, world, own, wet, away):
             reach = RIVER_CROSSING if to in lands else RIVER_CAVE
             if near((x0 + road["at"][0], y0 + road["at"][1]), reach):
                 problems.append(f"world.json: a river runs within {reach} cells of where {land_id}'s road to {to} crosses")
-        if is_town(land):
-            continue
         if near(middle, RIVER_MIDDLE):
             problems.append(f"world.json: a river runs within {RIVER_MIDDLE} cells of {land_id}'s middle")
         for (dx, dy), what in content_spots(land):
@@ -1205,12 +1234,16 @@ def preview(lands, world, path, names=None):
     pixels = image.load()
     owner = {}
     for land_id, cells in own.items():
-        colour = COLOURS.get(lands[land_id]["theme"]["ground"], (200, 200, 200))
-        if is_town(lands[land_id]):
-            colour = (196, 160, 120)
+        land = lands[land_id]
+        colour = COLOURS.get(land["theme"].get("border") if is_town(land) else land["theme"]["ground"], (200, 200, 200))
+        walls = None
+        if is_town(land):
+            x0, y0 = origins[land_id]
+            walls = town_box(land, (x0 + world["middles"][land_id][0], y0 + world["middles"][land_id][1]))
         for x, y in cells:
             owner[(x, y)] = land_id
-            pixels[x - left, top - 1 - y] = colour
+            inside = walls and walls[0] <= x < walls[0] + walls[2] and walls[1] <= y < walls[1] + walls[3]
+            pixels[x - left, top - 1 - y] = (196, 160, 120) if inside else colour
     # Borders between lands, dark; the rivers.
     for (x, y), land_id in owner.items():
         for dx, dy in ((1, 0), (0, 1)):

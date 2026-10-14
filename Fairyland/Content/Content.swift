@@ -676,6 +676,11 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
     let town: Town?
 
     nonisolated struct Town: Decodable, Sendable {
+        /// Its walled square, [width, height] round its middle (`WorldMap.townSquare`), its own
+        /// countryside all round it on the continent; the whole map when not given.
+        let size: [Int]?
+        /// What its wall is: "stone" a city's, with towers; else a village's picket fence.
+        let walls: String?
         /// Straight streets as [x1, y1, x2, y2] offsets from the centre.
         let streets: [[Int]]?
         /// Radius of the cobbled plaza in the middle.

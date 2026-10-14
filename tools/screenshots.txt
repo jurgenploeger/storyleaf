@@ -43,9 +43,10 @@ seam_snow    | newgame,map=snow_white_forest,border=swan_lake,landscape,weather=
 band_night   | newgame,map=frog_swamp,border=goldburg_lake,landscape,weather=clear,hour=23 | 6
 far_land     | newgame,map=northern_grassland,edge=east,far,landscape,weather=clear,hour=12 | 90
 coast        | newgame,map=meadowbrook,edge=west,landscape,weather=clear,hour=12 | 6
-# The sea round a wild coast, lower than the land, the land sloping down to it (`WorldMap.shore`): the
-# slope facing you (the sandy lake shore's west, Pineapple Shore's beach), from behind (the snowy lake's
-# north), and where the sea used to let you walk out (the lair's south). Meadowbrook (`coast`) keeps its bank.
+# The sea round the continent, lower than the land, the land sloping down to it (`WorldMap.shore`):
+# Meadowbrook's countryside down to it (`coast`), the slope facing you (the sandy lake shore's west,
+# Pineapple Shore's beach), from behind (the snowy lake's north), and where the sea used to let you walk
+# out (the lair's south).
 coast_bay    | newgame,map=goldburg_lake,edge=west,landscape,weather=clear,hour=12 | 6
 coast_beach  | newgame,map=pineapple_shore,at=-10_-47,landscape,weather=clear,hour=12 | 6
 coast_north  | newgame,map=rosen_lake,edge=north,landscape,weather=clear,hour=12 | 6
@@ -54,7 +55,11 @@ coast_lair   | newgame,map=wolf_lair,edge=south,landscape,weather=clear,hour=12 
 # border scenes above build it at once): the lair's border with the candy land, where playtesting
 # saw its ground missing past the line.
 border_built | newgame,map=wolf_lair,edge=east,landscape,weather=clear,hour=12 | 180
-city_wall    | newgame,map=bluebird,border=smiling_forest,landscape,weather=clear,hour=12 | 6
+# A town in its own countryside: Prismhaven's stone city wall and its south gate from the fields
+# outside it, Larkspur's village fence, and Ingothold's countryside where a quest's road leaves it,
+# barred at the border.
+city_wall    | newgame,map=rainbow_city,at=10_-39,landscape,weather=clear,hour=12 | 6
+village_fence | newgame,map=bluebird,at=8_-33,landscape,weather=clear,hour=12 | 6
 city_gate    | newgame,map=goldburg,border=valley_of_fear,landscape,weather=clear,hour=12 | 6
 battle       | newgame,map=sunny_meadow,battle   | 15
 night        | newgame,map=meadowbrook,hour=22,weather=clear | 8

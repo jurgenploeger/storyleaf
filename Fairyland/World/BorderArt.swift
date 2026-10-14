@@ -1,12 +1,12 @@
 import SpriteKit
 
 /// What stands on a border between two lands (`Continent.Neighbour`), as RuneScape walls off what
-/// you can't reach yet: a wooden fence along a border you can't cross yet, a line of boulders where
-/// either land's ground is rocky (sand, snow, scree, desert), or beside a town a stone city wall
-/// with towers; the same with a stone arch over a road a quest opens, barred and signed "Closed"
-/// until it's done. A fence or boulders come down as a whole once you can cross (the quest's done,
-/// or the roads you can take join the two lands); a city wall stays, its gate opening. Nothing
-/// along a border open from the start, where the two lands simply meet.
+/// you can't reach yet: a wooden fence along a border you can't cross yet, or a line of boulders
+/// where either land's ground is rocky (sand, snow, scree, desert); the same with a stone arch over a
+/// road a quest opens, barred and signed "Closed" until it's done. They come down as a whole once you
+/// can cross (the quest's done, or the roads you can take join the two lands). Nothing along a
+/// border open from the start, where the two lands simply meet. And a city's stone wall
+/// (`wallPicture`, `towerPicture`), which `TownFence` stands round its square.
 ///
 /// It stands on the line between the two lands, winding along the sides of the cells where their
 /// shapes meet, drawn the same by both (the same pictures, graded with the same land's palette, the
@@ -77,11 +77,6 @@ enum BorderArt {
         [a, b].contains { def in ["desert", "sand", "scree", "snow"].contains { def.theme.ground.contains($0) } }
     }
 
-    /// Whether a border is walled with a city wall: one of the two lands is a town.
-    static func isTown(_ a: MapDef, _ b: MapDef) -> Bool {
-        a.fence == true || b.fence == true
-    }
-
     /// The palette both lands draw a border's wall in: the first of the two by id.
     private static func sharedPalette(_ a: MapDef, _ b: MapDef) -> MapPalette? {
         (a.id < b.id ? a : b).theme.palette
@@ -90,8 +85,7 @@ enum BorderArt {
     /// Sets the wall along `neighbour`'s border with `here` into `parent(at:)` (`here`'s chunks), where
     /// it's walled (`Continent.Neighbour.isWalled`): a piece along each side of a cell where the two
     /// lands meet, so it winds as their border does. `open`: a quest's gate is open already. Returns
-    /// what's taken away once you can cross: a town's, the bar across its shut gate and its sign; any
-    /// other, all of it.
+    /// what's taken away once you can cross: all of it.
     /// `ground`: how high the ground lies under a spot on screen (where the land slopes down to the
     /// sea, `WorldMap.shore`), for the wall to stand on.
     static func place(_ neighbour: Continent.Neighbour, of here: MapDef, open: Bool, art: ArtLibrary,
@@ -103,7 +97,7 @@ enum BorderArt {
         let segments = neighbour.border.filter { pair in
             region.map { !$0.isRiver(pair.inside) && !$0.isRiver(pair.outside) } ?? true
         }.map(Segment.init)
-        // Everything set down (but a town's wall), to take away once you can cross.
+        // Everything set down, to take away once you can cross.
         var placed: [SKNode] = []
         func put(_ node: SKNode) {
             let foot = node.position
@@ -113,46 +107,6 @@ enum BorderArt {
             placed.append(node)
         }
         let gate: Gate? = neighbour.quest == nil ? nil : neighbour.exit.flatMap { exit in neighbour.road.map { Gate(road: $0, edge: exit.edge) } }
-
-        if isTown(here, neighbour.def) {
-            // A city wall: a stretch of stone a cell, its blocks running on from one to the next, and
-            // towers at the ends of each straight stretch, every 8 cells between and either side of a gate.
-            guard let stones = wallPicture(palette: palette), let tower = towerPicture(palette: palette) else { return [] }
-            let walls = rails(stones, height: wallHeight)
-            for segment in segments where gate?.covers(segment) != true {
-                guard let wall = walls[segment.alongColumns] else { continue }
-                let node = SKSpriteNode(texture: wall.texture, size: wall.size)
-                node.anchorPoint = wall.anchor
-                node.position = segment.middle
-                put(node)
-            }
-            // At the corners between cells, as whole cells.
-            var towers: Set<GridPoint> = []
-            func corner(_ point: CGPoint) -> GridPoint { GridPoint(col: Int(point.x.rounded()), row: Int(point.y.rounded())) }
-            for run in runs(segments) {
-                towers.insert(corner(run.grid(CGFloat(run.along.lowerBound))))
-                towers.insert(corner(run.grid(CGFloat(run.along.upperBound + 1))))
-                for along in stride(from: run.along.lowerBound + 8, to: run.along.upperBound - 3, by: 8) {
-                    if let gate, gate.alongColumns == run.alongColumns, gate.line == run.line,
-                       ((gate.along.lowerBound - 3)...(gate.along.upperBound + 4)).contains(along) { continue }
-                    towers.insert(corner(run.grid(CGFloat(along))))
-                }
-            }
-            if let gate {
-                towers.insert(corner(gate.grid(CGFloat(gate.along.lowerBound))))
-                towers.insert(corner(gate.grid(CGFloat(gate.along.upperBound + 1))))
-            }
-            let texture = SKTexture(cgImage: tower)
-            texture.filteringMode = .nearest
-            for spot in towers.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }) {
-                let node = SKSpriteNode(texture: texture, size: towerSize)
-                node.anchorPoint = CGPoint(x: 0.5, y: 0.06)
-                node.position = screen(CGPoint(x: spot.col, y: spot.row))
-                put(node)
-            }
-            guard let gate else { return [] }
-            return gateway(gate, open: open, palette: palette, art: art, into: parent).bar
-        }
 
         if gate == nil, isRocky(here, neighbour.def) {
             // A tumble of boulders along the line, the same stones from either side: each picked by
@@ -203,37 +157,6 @@ enum BorderArt {
         return found
     }
 
-    /// A straight stretch of border: its pieces one after another along the same line.
-    private struct Run {
-        let alongColumns: Bool
-        let line: Int
-        let along: ClosedRange<Int>
-
-        func grid(_ at: CGFloat) -> CGPoint {
-            alongColumns ? CGPoint(x: at, y: CGFloat(line)) : CGPoint(x: CGFloat(line), y: at)
-        }
-    }
-
-    /// A border's pieces in unbroken straight stretches.
-    private static func runs(_ segments: [Segment]) -> [Run] {
-        var runs: [Run] = []
-        let lines = Dictionary(grouping: segments) { "\($0.alongColumns) \($0.line)" }
-        for key in lines.keys.sorted() {
-            guard let pieces = lines[key], let first = pieces.first else { continue }
-            var current: ClosedRange<Int>?
-            for start in pieces.map(\.start).sorted() {
-                if let open = current, open.upperBound + 1 == start {
-                    current = open.lowerBound...start
-                } else {
-                    if let open = current { runs.append(Run(alongColumns: first.alongColumns, line: first.line, along: open)) }
-                    current = start...start
-                }
-            }
-            if let open = current { runs.append(Run(alongColumns: first.alongColumns, line: first.line, along: open)) }
-        }
-        return runs
-    }
-
     /// A quest's way through a wall: a stone arch over the road, and while the quest isn't done a
     /// bar of pickets across it and "Closed" over it (to take away once it's done).
     private static func gateway(_ gate: Gate, open: Bool, palette: MapPalette?, art: ArtLibrary,
@@ -271,9 +194,9 @@ enum BorderArt {
 
     // MARK: City walls
 
-    /// How tall the city wall stands, to the top of its battlements (points), and its towers.
-    private static let wallHeight: CGFloat = 32
-    private static let towerSize = CGSize(width: 30, height: 60)
+    /// How tall a city's wall stands, to the top of its battlements (points), and its towers.
+    static let wallHeight: CGFloat = 32
+    static let towerSize = CGSize(width: 30, height: 60)
 
     /// The wall's stones, as the town gate's arch has them: grey blocks, a lit lip, mortar between.
     private static let mortar = PixelColor(0x4C4F5A)
@@ -282,10 +205,10 @@ enum BorderArt {
     private static let foot = PixelColor(0x5A5D68)
     private static let moss = PixelColor(0x5D7A3C)
 
-    /// One cell's stretch of city wall, face on, to be slanted along the border (`TownFence.railing`):
+    /// One cell's stretch of city wall, face on, to be slanted along its line (`TownFence`):
     /// battlements along the top, courses of staggered blocks, a darker foot with moss on it. Its
     /// pattern repeats every 32 pixels, so stretches side by side run on as one wall.
-    private static func wallPicture(palette: MapPalette?) -> CGImage? {
+    static func wallPicture(palette: MapPalette?) -> CGImage? {
         var canvas = PixelCanvas(width: 32, height: 30)
         // Battlements: merlons 5 wide every 8, lit on top and shaded down their right side.
         for x in stride(from: 0, to: 32, by: 8) {
@@ -318,7 +241,7 @@ enum BorderArt {
 
     /// A round tower of the same stone, standing up from the wall: battlements, an arrow slit, its
     /// right side in shade.
-    private static func towerPicture(palette: MapPalette?) -> CGImage? {
+    static func towerPicture(palette: MapPalette?) -> CGImage? {
         var canvas = PixelCanvas(width: 20, height: 40)
         for x in stride(from: 0, to: 20, by: 8) {
             canvas.fill(x, 0, 4, 5, blocks[0])
