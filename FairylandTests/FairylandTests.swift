@@ -2632,7 +2632,11 @@ struct RulesTests {
 
     @Test func questsOpenRoads() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
-        let road = Content.shared.map("sunny_meadow")!.exits.first { $0.to == "pineapple_shore" }!
+        // Since 0.6.0 the road to Pineapple Shore leaves from Meadowbrook (it was Sunny Meadow's).
+        guard let road = Content.shared.map("meadowbrook")?.exits.first(where: { $0.to == "pineapple_shore" }) else {
+            Issue.record("no road from Meadowbrook to Pineapple Shore")
+            return
+        }
         #expect(!session.canTravel(road))
         session.data.quests["jelly_trouble"] = QuestProgress(state: .completed, count: 3)
         #expect(session.canTravel(road))
