@@ -78,9 +78,11 @@ final class GameCoordinator {
     /// The day's gift, given and waiting to be shown (GameView's DailyGiftCard).
     var dailyGift: GameSession.DailyGift?
 
-    init(session: GameSession) {
+    /// `grid`: the land the save starts in, laid out already off the main thread (`layOut`), which
+    /// began at `began`.
+    init(session: GameSession, grid: WorldMap? = nil, began: Date? = nil) {
         let input = InputState()
-        let map = Content.shared.map(session.data.mapID) ?? Content.shared.maps[0]
+        let map = Self.startingMap(of: session)
         self.session = session
         self.input = input
         announcer = Announcer(session: session)
@@ -93,8 +95,8 @@ final class GameCoordinator {
         session.claimBookMilestones()
         session.refreshBounties()
         dailyGift = session.collectDailyGift()
-        let began = Date()
-        world = WorldScene(map: map, session: session, input: input, entry: nil)
+        let began = began ?? Date()
+        world = WorldScene(map: map, session: session, input: input, entry: nil, grid: grid?.def.id == map.id ? grid : nil)
         wire(world)
         build(world, mapID: map.id, began: began)
         startAutosave()
@@ -102,6 +104,19 @@ final class GameCoordinator {
         session.onCastField = { [weak self] skill in self?.castField(skill) }
         session.onTravel = { [weak self] item in self?.travel(with: item) }
         SoundEffects.shared.preload()
+    }
+
+    /// The land a save starts in.
+    static func startingMap(of session: GameSession) -> MapDef {
+        Content.shared.map(session.data.mapID) ?? Content.shared.maps[0]
+    }
+
+    /// Lays a land out off the main thread: the one piece of a load that can't be cut finer, so the
+    /// screen still turns with the phone (and the loading card with it) meanwhile.
+    static func layOut(_ def: MapDef) async -> WorldMap {
+        let caves = WorldMap.caves
+        let around = Continent.neighbourhood(of: def)
+        return await Task.detached(priority: .userInitiated) { await MapLayouts.shared.lay(def, caves: caves, around: around) }.value
     }
 
     /// Saves quietly every 20 seconds while exploring (and after every important moment elsewhere).
@@ -192,7 +207,8 @@ final class GameCoordinator {
     /// built yet starts building, the built ones near enough show past their borders, and those
     /// left far behind are let go.
     private func landsNear(_ near: [(neighbour: Continent.Neighbour, distance: Int)]) {
-        guard !holdsNextDoor else { return }
+        // Not from the land you're leaving while the next one loads (it lays out off the main thread).
+        guard !holdsNextDoor, loadingMapName == nil else { return }
         let here = world
         let shown = here.shownNextDoor
         for (neighbour, distance) in near {
@@ -230,11 +246,9 @@ final class GameCoordinator {
     /// Lays a land next door out off the main thread, then builds it a few milliseconds a frame.
     private func buildNextDoor(_ def: MapDef) {
         buildingNextDoor = def.id
-        let caves = WorldMap.caves
-        let around = Continent.neighbourhood(of: def)
         let away = world.visitingFriends
         Task { [weak self] in
-            let grid = await Task.detached(priority: .userInitiated) { await MapLayouts.shared.lay(def, caves: caves, around: around) }.value
+            let grid = await GameCoordinator.layOut(def)
             guard let self else { return }
             // Its picture at once, from the layout, to lie past the border (`WorldScene.placeFarLands`)
             // and on the minimap while the land itself is built.
@@ -300,7 +314,9 @@ final class GameCoordinator {
         isReady = false
         Task {
             try? await Task.sleep(for: .milliseconds(280))
-            loadMap(map, entry: entry, arrival: arrival)
+            let began = Date()
+            let grid = await GameCoordinator.layOut(map)
+            loadMap(map, grid: grid, began: began, entry: entry, arrival: arrival)
         }
     }
 
@@ -327,7 +343,7 @@ final class GameCoordinator {
         }
     }
 
-    private func loadMap(_ map: MapDef, entry: Edge?, arrival: CGPoint? = nil) {
+    private func loadMap(_ map: MapDef, grid: WorldMap, began: Date, entry: Edge?, arrival: CGPoint? = nil) {
         session.data.mapID = map.id
         session.markVisited(map.id)
         session.bossesBeatenHere = []
@@ -338,8 +354,7 @@ final class GameCoordinator {
         for id in nextDoor.keys { ArtLibrary.shared.release(map: id) }
         nextDoor = [:]
         buildingNextDoor = nil
-        let began = Date()
-        let scene = WorldScene(map: map, session: session, input: input, entry: entry, arrival: arrival)
+        let scene = WorldScene(map: map, session: session, input: input, entry: entry, arrival: arrival, grid: grid)
         wire(scene)
         build(scene, mapID: map.id, began: began)
         input.move = .zero
