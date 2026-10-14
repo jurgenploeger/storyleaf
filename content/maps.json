@@ -43,7 +43,7 @@
         "props": [
           {
             "art": "blossom_tree",
-            "count": 32,
+            "count": 64,
             "blocking": true,
             "cluster": 3,
             "sway": true,
@@ -55,7 +55,7 @@
           },
           {
             "art": "tree",
-            "count": 44,
+            "count": 88,
             "blocking": true,
             "cluster": 4,
             "sway": true,
@@ -67,7 +67,7 @@
           },
           {
             "art": "mushroom",
-            "count": 10,
+            "count": 20,
             "blocking": false,
             "size": [
               0.75,
@@ -76,7 +76,7 @@
           },
           {
             "art": "bush",
-            "count": 40,
+            "count": 80,
             "blocking": true,
             "cluster": 3,
             "size": [
@@ -87,7 +87,7 @@
           },
           {
             "art": "flowering_bush",
-            "count": 20,
+            "count": 40,
             "blocking": true,
             "cluster": 2,
             "size": [
@@ -98,7 +98,7 @@
           },
           {
             "art": "daisy",
-            "count": 24,
+            "count": 48,
             "blocking": false,
             "cluster": 5,
             "sway": true,
@@ -109,7 +109,7 @@
           },
           {
             "art": "daisy_yellow",
-            "count": 24,
+            "count": 48,
             "blocking": false,
             "cluster": 5,
             "sway": true,
@@ -120,7 +120,7 @@
           },
           {
             "art": "daisy_blue",
-            "count": 12,
+            "count": 24,
             "blocking": false,
             "cluster": 4,
             "sway": true,
@@ -179,7 +179,7 @@
           },
           {
             "art": "lilac_bush",
-            "count": 12,
+            "count": 24,
             "blocking": true,
             "cluster": 3,
             "size": [
@@ -190,7 +190,7 @@
           },
           {
             "art": "pebbles",
-            "count": 16,
+            "count": 32,
             "blocking": false,
             "cluster": 2,
             "size": [
@@ -3025,7 +3025,7 @@
         "props": [
           {
             "art": "blossom_tree",
-            "count": 40,
+            "count": 80,
             "blocking": true,
             "cluster": 3,
             "sway": true,
@@ -3037,7 +3037,7 @@
           },
           {
             "art": "tree",
-            "count": 40,
+            "count": 80,
             "blocking": true,
             "cluster": 4,
             "sway": true,
@@ -3049,7 +3049,7 @@
           },
           {
             "art": "flowering_bush",
-            "count": 40,
+            "count": 80,
             "blocking": true,
             "cluster": 2,
             "size": [
@@ -3060,7 +3060,7 @@
           },
           {
             "art": "bush",
-            "count": 30,
+            "count": 60,
             "blocking": true,
             "cluster": 2,
             "size": [
@@ -3071,7 +3071,7 @@
           },
           {
             "art": "daisy",
-            "count": 30,
+            "count": 60,
             "blocking": false,
             "cluster": 5,
             "sway": true,
@@ -3082,7 +3082,7 @@
           },
           {
             "art": "daisy_yellow",
-            "count": 30,
+            "count": 60,
             "blocking": false,
             "cluster": 5,
             "sway": true,
@@ -3093,7 +3093,7 @@
           },
           {
             "art": "daisy_blue",
-            "count": 15,
+            "count": 30,
             "blocking": false,
             "cluster": 4,
             "sway": true,
@@ -3164,7 +3164,7 @@
           },
           {
             "art": "lilac_tree",
-            "count": 12,
+            "count": 24,
             "blocking": true,
             "cluster": 3,
             "sway": true,
@@ -3176,7 +3176,7 @@
           },
           {
             "art": "lilac_bush",
-            "count": 16,
+            "count": 32,
             "blocking": true,
             "cluster": 3,
             "size": [
@@ -5544,7 +5544,7 @@
         "props": [
           {
             "art": "boulder",
-            "count": 24,
+            "count": 48,
             "blocking": true,
             "cluster": 3,
             "size": [
@@ -5560,7 +5560,7 @@
           },
           {
             "art": "dry_bush",
-            "count": 24,
+            "count": 48,
             "blocking": true,
             "cluster": 3,
             "size": [
@@ -5571,7 +5571,7 @@
           },
           {
             "art": "sandstone_boulder",
-            "count": 10,
+            "count": 20,
             "blocking": true,
             "cluster": 2,
             "size": [
@@ -5582,7 +5582,7 @@
           },
           {
             "art": "red_rock",
-            "count": 20,
+            "count": 40,
             "blocking": true,
             "cluster": 2,
             "size": [
@@ -5603,7 +5603,7 @@
           },
           {
             "art": "tumbleweed",
-            "count": 4,
+            "count": 8,
             "blocking": false,
             "size": [
               0.8,
@@ -9264,7 +9264,7 @@
         "props": [
           {
             "art": "blossom_tree",
-            "count": 40,
+            "count": 80,
             "blocking": true,
             "cluster": 3,
             "sway": true,
@@ -9276,7 +9276,7 @@
           },
           {
             "art": "tree",
-            "count": 40,
+            "count": 80,
             "blocking": true,
             "cluster": 4,
             "sway": true,
@@ -9288,7 +9288,7 @@
           },
           {
             "art": "flowering_bush",
-            "count": 40,
+            "count": 80,
             "blocking": true,
             "cluster": 2,
             "size": [
@@ -9299,7 +9299,7 @@
           },
           {
             "art": "bush",
-            "count": 30,
+            "count": 60,
             "blocking": true,
             "cluster": 2,
             "size": [
@@ -9310,7 +9310,7 @@
           },
           {
             "art": "daisy",
-            "count": 30,
+            "count": 60,
             "blocking": false,
             "cluster": 5,
             "sway": true,
@@ -9321,7 +9321,7 @@
           },
           {
             "art": "daisy_yellow",
-            "count": 30,
+            "count": 60,
             "blocking": false,
             "cluster": 5,
             "sway": true,
@@ -9332,7 +9332,7 @@
           },
           {
             "art": "daisy_blue",
-            "count": 15,
+            "count": 30,
             "blocking": false,
             "cluster": 4,
             "sway": true,
@@ -9343,7 +9343,7 @@
           },
           {
             "art": "lilac_tree",
-            "count": 12,
+            "count": 24,
             "blocking": true,
             "cluster": 3,
             "sway": true,
@@ -9355,7 +9355,7 @@
           },
           {
             "art": "lilac_bush",
-            "count": 16,
+            "count": 32,
             "blocking": true,
             "cluster": 3,
             "size": [

@@ -13,9 +13,10 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - Brand guidelines: the Figma file `521ECWenGbx2IP3rLgtIWo`, pages Cover to 09 Voice & Tone (logo, colour, type, icons,
   assets, game UI, App Store, voice). Its colours are variables (the Storyleaf collection, with their Swift names);
   `Brand` in `Fairyland/UI/BrandSky.swift` holds the same values, so change both together.
-- `content/world.json` + `tools/world_layout.py`: the lands as one continent, each a shape of its own (RuneScape-like
-  regions, cold north, desert south). Edit world.json's `design` (each land's middle and lobes round it; a town is
-  its rectangle) and `rivers` (each one's course from its spring to the sea) and rerun the tool (numpy + scipy): it
+- `content/world.json` + `tools/world_layout.py`: the lands as one continent, one landmass with one coast, each land a
+  shape of its own (RuneScape-like regions, cold north, desert south). Edit world.json's `design` (each land's middle
+  and lobes round it; a town's walled square, maps.json `town.size`, sits in its own countryside) and `rivers` (each
+  one's course from its spring to the sea, or to a `lake` of its own) and rerun the tool (numpy + scipy): it
   paints the shapes and rivers, writes each land's box (maps.json `width`/`height`), middle, road crossings with
   their turns, and shape (`regions`, rivers in it), and `check_content.py` checks it (everything set down by hand on
   its land and clear of the rivers, roads meeting, nothing cut off by a river). Rerun it after changing exits or

@@ -3,19 +3,21 @@
 RuneScape's regions are, not a rectangle.
 
 The design (world.json `design`) gives each land its middle on the continent (`at`, in world cells,
-x east and y north) and, but for a town, one or more lobes round it: ellipses `[dx, dy, across,
-up, turn°]` out from its middle. Every cell goes to the land whose lobes reach it most easily (its
-distance over their size), the lands pushing against each other where they meet; where none
-reaches, the sea. The lobes are scaled so each land comes out as many cells as its `area` (about
-as big as its map was), and the whole continent is bent by smooth noise first
-(`WARPS`), so coasts and borders wander: bays, headlands and capes instead of straight lines.
-A town is its rectangle exactly, its wall all round.
+x east and y north) and one or more lobes round it: ellipses `[dx, dy, across, up, turn°]` out
+from its middle. The continent is one landmass: the lands' lobes, blurred together and cut again a
+little raggedly (`BODY_BLUR`), so there's no sea inland and no notch where two lands meet, one coast
+running on past the borders. Every cell of it goes to the land whose lobes reach it most easily (its
+distance over their size), the lands pushing against each other where they meet. The lobes are
+scaled so each land comes out as many cells as its `area` (about as big as its map was), and the
+whole continent is bent by smooth noise first (`WARPS`), so coasts and borders wander. A town's
+walled square (maps.json `town.size`) is its own exactly, with its own countryside right round it
+(`TOWN_OWN`) and land of some kind beyond (`TOWN_RING`), never the sea; its roads leave through
+the gates in its wall (`gate`) and cross the fields to its border as any land's do.
 
 Then it's tidied: stray cells and slivers go to the land round them, a land in more than one piece
 keeps its biggest, pools inland fill in. Where a road crosses from one land into the next, the
 border runs straight for a stretch (`CROSSING`), across the way the exit goes, so the road meets
-itself and a quest's gate fits; a town's road crosses its wall where its exit says (`at`, from the
-middle of that side). Where a road leads into a cave, that side of the land is a straight coast
+itself and a quest's gate fits. Where a road leads into a cave, that side of the land is a straight coast
 (`CAVE_ALONG` either side of the road) with open sea past it for the mountains the cave is in.
 
 Rivers (world.json `rivers`) run from a spring to the sea through the turns of their `course`,

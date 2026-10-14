@@ -199,10 +199,11 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   lakes and interesting pathways and landscapes"); nothing here records whether FO's fields had them.
   Since 0.6.0 the rivers are the continent's (playtesting 2026-10-14: "there should still be rivers running
   through the lands"), painted with it by `tools/world_layout.py` from world.json `rivers`: each from a
-  spring (a pool a little wider than the river) out to the sea, through the turns of its `course`, meandering
-  a little and widening as it goes; two run on over a border into the next land, as RuneScape's rivers run
-  through its regions (the Snow White Forest into Swan Lake, Sunny Meadow into Frog Swamp), and Sunny Meadow,
-  the Smiling Forest, Briarmere and the Twilight Woods have one of their own. The tool keeps them clear of
+  spring (a pool a little wider than the river) out to the sea, or where it has no way to the sea into a
+  lake of its own (`lake`), through the turns of its `course`, meandering a little and widening as it
+  goes; two run on over a border into the next land, as RuneScape's rivers run through its regions (the
+  Snow White Forest into Swan Lake's lake, Sunny Meadow through Frog Swamp to the west coast), and the
+  Smiling Forest, Briarmere and the Twilight Woods have one of their own. The tool keeps them clear of
   towns, the roads' crossings, the middles and everything set down by hand, crosses roads square on where a
   river's narrow and away from the sea, and checks nothing is cut off with no road over; the game lays them
   where they're painted (`WorldMap.layRivers`, region codes 3 and 4), and no fence stands across one where it
@@ -297,8 +298,16 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     landscapes like the desert"): every land is a shape of its own (`Region`), painted by
     `tools/world_layout.py` from world.json's `design`: each land's middle and lobes round it (ellipses),
     the lands pushing against each other where they meet, the whole continent bent by noise so coasts and
-    borders wander; scaled so each comes out about as big as its map was. A town stays its walled
-    rectangle. A land's map is the box round its shape; the boxes overlap where the shapes fit into each
+    borders wander; scaled so each comes out about as big as its map was. Since then (playtesting
+    2026-10-14: "the shape of the whole maps needs to be one uniform shape, now it still looks like parts
+    go inward or outward at the edges with the map environments") it's one landmass: the lands' shapes
+    blurred together and cut again a little raggedly (`BODY_BLUR`), so the gaps and notches where two
+    lands met fill in, no sea lies inland, and one coast runs on past every border; only Emerald Road
+    stands off it, an island, as it's reached through a cave. And (the same playtest: "the towns should
+    have lands around them, not be a square in the world") a town is a land like any other, its walled
+    square (maps.json `town.size`) in the middle of its own countryside, its roads out through its gates
+    and on across the fields; a city (Prismhaven, Ingothold, `town.walls`) is walled in stone with
+    towers, a village keeps its picket fence (`TownFence`). A land's map is the box round its shape; the boxes overlap where the shapes fit into each
     other, and each land lays out and draws only its own cells (the rest of its box is the sea's, or the
     land next door's, `Ground.away`). Where a road crosses, the border runs straight for 8 cells either
     side and the painting gives the crossing and the road's turns through the middle of the land; a road
@@ -309,7 +318,7 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     desert in the south-east (Ingothold, Genie Desert, Hidden Steppe, like the Kharidian Desert) with
     Sneezle Isle on a sand spit and Pineapple Shore's beaches on the south coast (Karamja's place), the dark
     woods to the east (Morytania's), Gumdrop Peaks and the wolves' lair to the west, Meadowbrook's fields in
-    the middle round an inland sea. Changing the order moved some roads: Pineapple Shore is reached from
+    the middle. Changing the order moved some roads: Pineapple Shore is reached from
     Meadowbrook now (still behind "Jelly Trouble"), the Smiling Forest from Gumdrop Peaks and Prismhaven,
     and Moonwhisper from the Snow White Forest, opened by beating the Big Bad Wolf
     ("Who's Afraid of the Big Bad Wolf?", which fits its levels, 82, better than "Crystal Hearts", 71,
@@ -345,12 +354,11 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     opening those borders outright would have let you round quests (Twilight Woods into Frog Swamp
     without "new_friend", Valley of Fear into Genie Desert without "dragon_hangover"; the test
     `openBordersNeverSkipAQuest` holds it). 0.5.0 opened only a road's border and kept the rest walled.
-    A town keeps a stone city wall with towers every 8 cells and either side of its gate wherever no
-    road crosses or a quest's does (asked for in playtesting 2026-10-13: "if a city has blocked path,
-    there should be a city wall"; drawn in code, the grey of the town gate's stone), the gate opening
-    once the quest's done. `BorderArt` draws them the same from both lands, on the line between them,
-    a piece along each side of a cell where the two meet, so they wind as the border does (since 0.6.0).
-    A town's own picket fence stays inside.
+    `BorderArt` draws them the same from both lands, on the line between them, a piece along each side
+    of a cell where the two meet, so they wind as the border does (since 0.6.0). 0.5.x stood a stone
+    city wall with towers round each town on its border (playtesting 2026-10-13: "if a city has blocked
+    path, there should be a city wall"); since 0.6.0 a city's wall stands round its own square instead,
+    out in its countryside, and the borders round a town are fenced and opened as any are.
   - Seams (since 0.5.2; playtesting 2026-10-13: "the different lands still look too squared, it needs
     to blend together more naturally and in different shapes", then "you shouldn't see a hard line,
     but the environment should change into the other naturally, so the ground slowly shows more of
@@ -364,7 +372,7 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     (`ArtLibrary.GroundLayer.from`). The other land's scenery grows on its patches as thickly as it
     grows there, this land's on its own (`placeSeamProps`), the land's accent keeps out of the band,
     and the minimap and the world map show the patches (`WorldMap.foreign`). Only drawn: whose cells
-    they are still stops at the border. Not beside a town, whose wall stands on the line. 0.5.1 drew
+    they are still stops at the border. In a town only out in its countryside, not inside its wall. 0.5.1 drew
     one winding line instead, each side all one land's: a hard edge, if a curved one.
     A wash of the two lands' colours, mixed as their ground is, lies over the band, strongest on the
     border, so the patches' colours run into each other (`WorldScene.blendBand`, as RuneScape
@@ -387,9 +395,9 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     (`WorldMap.shore`), the cell beside the water at the water's level and rising evenly over 4 cells to
     the land's own, drawn as a hill is but sunk and lit by how it slopes (`HillArt`, `Hill.sunken`), so you
     walk down to the water. The lakes sink 9 points the same way, over 3 cells, their bridges and lily pads
-    with them. Never under a hill (it rises to meet one), and not in a town, whose wall stands over the sea
-    on a bank of earth (the land's outline again in layers darkening toward the water, `bank`), as every
-    coast did before. `tools/world_layout.py --check --preview out.png` draws the continent. The hero had walked out onto the sea by tapping it: a tap past the edge clamped to the edge
+    with them. Never under a hill (it rises to meet one). Before, the land stopped at a bank of earth
+    over the sea (its outline again in layers darkening toward the water, `bank`, kept for a map with no
+    shore). `tools/world_layout.py --check --preview out.png` draws the continent. The hero had walked out onto the sea by tapping it: a tap past the edge clamped to the edge
     cell, which counted as the spot itself (`WorldMap.path`).
   - The world map (since 0.5.1, playtesting 2026-10-13: "the mini map should also open the bigger world
     map, similar to RuneScape"): tapping the minimap opens the continent as it really looks, every land's
