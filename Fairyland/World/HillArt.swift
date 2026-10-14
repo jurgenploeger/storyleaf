@@ -167,21 +167,31 @@ enum HillArt {
                 }
             }
         }
-        for j in 0..<sh {
+        if hill.sunken {
+            // Sunk ground, whole over its cells and the cell round them (the land there at its own
+            // height, drawn just as it is round it), lit only by how it slopes: their samples, not
+            // every one in its box (a coast's shore reaches round much of its land, in a narrow band).
+            for (number, cell) in shown.enumerated() {
+                if number % 256 == 255 { await pause() }
+                let i0 = (cell.col - low.col) * samples, j0 = (cell.row - low.row) * samples
+                let fromI = max(0, i0), toI = min(sw, i0 + samples), fromJ = max(0, j0), toJ = min(sh, j0 + samples)
+                guard fromI < toI, fromJ < toJ else { continue }
+                for j in fromJ..<toJ {
+                    for i in fromI..<toI {
+                        // Image rows run top down.
+                        let index = ((sh - 1 - j) * sw + i) * 4
+                        for channel in 0..<4 { mask[index + channel] = 255 }
+                    }
+                }
+            }
+        }
+        for j in 0..<(hill.sunken ? 0 : sh) {
             if j % 4 == 3 { await pause() }
             for i in 0..<sw {
                 let x = Double(low.col) + (Double(i) + 0.5) / Double(samples)
                 let y = Double(low.row) + (Double(j) + 0.5) / Double(samples)
                 // Image rows run top down.
                 let index = ((sh - 1 - j) * sw + i) * 4
-                if hill.sunken {
-                    // Sunk ground, whole over its cells and the cell round them (the land there at its
-                    // own height, drawn just as it is round it), lit only by how it slopes.
-                    if shown.contains(GridPoint(col: Int(x.rounded(.down)), row: Int(y.rounded(.down)))) {
-                        for channel in 0..<4 { mask[index + channel] = 255 }
-                    }
-                    continue
-                }
                 let field = hill.field(x, y)
                 if let hidden = look.hidden, hidden(GridPoint(col: Int(x.rounded(.down)), row: Int(y.rounded(.down)))) { continue }
                 let trailDistance = Double(nearness[j * sw + i])
