@@ -8,6 +8,7 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 ## Layout
 - `docs/fairyland-online.md`: how the original game (and Tales of Mysteria, its 2026 relaunch) worked, with
   sources, and where we differ. Read it before inventing a system; add facts you verify, with their source.
+- `docs/continuous-world.md`: the plan for one continuous world (no borders, chunks streamed round you), in steps.
 - `docs/launch-audit.md`: the pre-launch audit (2026-10-06): App Store checklist, open bugs and balance issues
   ranked, and gamification ideas. Tick items off or remove them as they're done.
 - Brand guidelines: the Figma file `521ECWenGbx2IP3rLgtIWo`, pages Cover to 09 Voice & Tone (logo, colour, type, icons,
