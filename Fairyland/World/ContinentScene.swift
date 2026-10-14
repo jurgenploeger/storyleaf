@@ -154,6 +154,7 @@ final class ContinentScene: SKScene {
         layer.addChild(groundLayer)
         addChild(layer)
         player.tagMode = .whenStill
+        player.fidgets = true
         player.position = point
         player.zPosition = -point.y
         layer.addChild(player)
@@ -904,6 +905,50 @@ final class ContinentScene: SKScene {
     }
     #endif
 
+    // MARK: Being put somewhere
+
+    /// Puts you somewhere on the continent at once (a new game, out of a cave, a Homeward Feather,
+    /// waking at your checkpoint): on `def`'s land at `arrival` (its own points), or just inside
+    /// where its road from `entry` comes in, or in its middle, on ground you can stand on, as a land's
+    /// own scene starts you (`WorldScene.init`). The chunks round there are drawn afresh; `isReady`
+    /// once they are, and you're in that land.
+    func place(on def: MapDef, entry: Edge?, arrival: CGPoint?) async {
+        guard store.land(def.id) != nil else { return }
+        isReady = false
+        here = nil
+        lastCell = nil
+        layOut(def.id)
+        while lands[def.id] == nil {
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        guard let land = lands[def.id] else { return }
+        let map = land.map
+        var local = map.center(of: map.center)
+        if let arrival {
+            local = arrival
+        } else if let entry {
+            local = map.center(of: map.entryCell(from: entry))
+        }
+        if !map.isWalkable(map.rawCell(at: local)), let open = map.nearestWalkable(to: map.cell(at: local), within: 48) {
+            local = map.center(of: open)
+        }
+        move(to: local + land.shift)
+        lookAround()
+    }
+
+    /// You, your companion and the friends walking with you, somewhere else at once, the camera with
+    /// you.
+    private func move(to point: CGPoint) {
+        player.path = []
+        talkTarget = nil
+        player.position = point
+        player.zPosition = -point.y
+        follower?.position = point + CGVector(dx: -30, dy: 0)
+        for ally in allies where ally.waiting == nil { move(ally, to: point + CGVector(dx: -40, dy: -10)) }
+        cam.position = point
+        lastUpdate = 0
+    }
+
     /// The HUD's minimap of the land you're in, with what's round it, as its own scene draws it
     /// (`WorldScene.minimapPicture`): the lands nearby as their own minimaps show them
     /// (`WorldOverview`; till one's drawn, its shape in its ground's colour) and the sea between.
@@ -1050,6 +1095,11 @@ final class ContinentScene: SKScene {
             let land = Land(def: def, place: place, map: map, tiles: tiles, painters: painters, stage: stage)
             lands[id] = land
             laying.remove(id)
+            // Don't stand on top of scenery, or out at sea (an old save): onto the nearest ground.
+            let standing = Self.cell(at: player.position)
+            if store.land(at: standing)?.id == id, !store.isWalkable(standing), let open = store.nearestWalkable(to: standing, within: 48) {
+                move(to: Self.center(of: open))
+            }
             for chunk in chunks.keys { paintSquares(of: land, in: chunk) }
         }
     }
