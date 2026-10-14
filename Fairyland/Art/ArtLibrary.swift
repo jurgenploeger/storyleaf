@@ -210,6 +210,7 @@ final class ArtLibrary {
         guard let image = gradedImage(id) else { return nil }
         let texture = SKTexture(cgImage: image)
         texture.filteringMode = .nearest
+        remember(image, for: texture)
         if Self.gradedKinds.contains(kind(of: id)) {
             gradedTextures[id] = texture
         } else {
@@ -310,7 +311,7 @@ final class ArtLibrary {
         if let cached = blended[key] { return cached }
         let image = tileImage(id)
         let size = max(image.width, 16)
-        let texture = Self.makeTexture(variantPixels(id, index, size: size), size: size)
+        let texture = makeTexture(variantPixels(id, index, size: size), size: size)
         blended[key] = texture
         return texture
     }
@@ -373,7 +374,7 @@ final class ArtLibrary {
         let key = "foreign|\(land)|\(id)|\(variant % 4)"
         if let cached = blended[key] { return cached }
         let size = max(tileImage(base).width, 16)
-        let texture = Self.makeTexture(foreignPixels(id, palette: palette, from: land, variant: variant, size: size), size: size)
+        let texture = makeTexture(foreignPixels(id, palette: palette, from: land, variant: variant, size: size), size: size)
         blended[key] = texture
         return texture
     }
@@ -454,19 +455,48 @@ final class ArtLibrary {
                 }
             }
         }
-        let texture = Self.makeTexture(out, size: size)
+        let texture = makeTexture(out, size: size)
         blended[key] = texture
         return texture
     }
 
-    private static func makeTexture(_ bytes: [UInt8], size: Int) -> SKTexture {
+    private func makeTexture(_ bytes: [UInt8], size: Int) -> SKTexture {
         let provider = CGDataProvider(data: Data(bytes) as CFData)!
         let image = CGImage(width: size, height: size, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: size * 4,
                             space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
                             provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)!
         let texture = SKTexture(cgImage: image)
         texture.filteringMode = .nearest
+        remember(image, for: texture)
         return texture
+    }
+
+    /// The image each texture the library made was drawn from (`picture(of:)`), while the texture
+    /// lives.
+    private struct Source {
+        weak var texture: SKTexture?
+        let image: CGImage
+    }
+    private var sources: [ObjectIdentifier: Source] = [:]
+    /// How many `sources` there may be before those of textures gone are let go.
+    private var sourcesPrunedAt = 4096
+
+    /// The image `texture` shows: for a texture the library made, the image it was made from.
+    /// `SKTexture.cgImage()` sets up a Core Image context every time it's called, and once for
+    /// each tile along a coast that slopes to the sea (each its own, `organicTile`) that held a
+    /// land's build up for many seconds on a phone, long enough for the watchdog to kill the game
+    /// when the phone turned meanwhile.
+    func picture(of texture: SKTexture) -> CGImage {
+        if let known = sources[ObjectIdentifier(texture)], known.texture === texture { return known.image }
+        return texture.cgImage()
+    }
+
+    private func remember(_ image: CGImage, for texture: SKTexture) {
+        sources[ObjectIdentifier(texture)] = Source(texture: texture, image: image)
+        if sources.count > sourcesPrunedAt {
+            sources = sources.filter { $0.value.texture != nil }
+            sourcesPrunedAt = max(4096, sources.count * 2)
+        }
     }
 
     /// Centres of the water cells in a 5×5 mask, relative to the middle cell (x east, y north).

@@ -46,9 +46,12 @@ struct RootView: View {
             } else if let pending {
                 LoadingCurtain()
                     .task {
-                        // Let the curtain draw before the (heavier) map build starts.
+                        // Let the curtain draw before the (heavier) map build starts. The land is laid
+                        // out off the main thread, so the screen still turns with the phone meanwhile.
                         try? await Task.sleep(for: .milliseconds(60))
-                        let game = GameCoordinator(session: pending)
+                        let began = Date()
+                        let grid = await GameCoordinator.layOut(GameCoordinator.startingMap(of: pending))
+                        let game = GameCoordinator(session: pending, grid: grid, began: began)
                         game.onQuitToTitle = { quitToTitle() }
                         coordinator = game
                     }

@@ -242,18 +242,19 @@ final class WorldScene: SKScene {
     /// True once `build(progress:)` has finished; until then the scene sits still under the loading bar.
     private(set) var isBuilt = false
 
-    /// How a land is built: all at once behind the loading card, or a few milliseconds a frame in
+    /// How a land is built: behind the loading card in long slices, or a few milliseconds a frame in
     /// the background while you walk toward it (a land next door), the frame given back between;
     /// `hurried`, the same in longer slices (debug screenshots of a border, which can't wait).
     enum Pace { case foreground, background, hurried }
     private var pace = Pace.foreground
-    /// When this slice of a background build began.
+    /// When this slice of the build began.
     private var sliceStart = ContinuousClock.now
     /// The look the art library and walkers had before this slice (the land you're in), given back
     /// between slices (`breathe`).
     private var outerLook: (palette: MapPalette?, map: String?, light: (color: UIColor, strength: CGFloat)?)?
 
-    /// Builds the map a piece at a time, pausing between pieces so the loading bar can move.
+    /// Builds the map a piece at a time, pausing between pieces so the loading bar can move, and
+    /// within them whenever a slice has run long, so the screen still turns with the phone.
     /// `progress` gets 0...1 as the pieces are done (weighted by roughly how long each takes).
     /// In the `background`, it gives the frame back every few milliseconds instead.
     func build(pace: Pace = .foreground, progress: (Double) -> Void) async {
@@ -371,6 +372,7 @@ final class WorldScene: SKScene {
             await breathe(line: line)
         } else {
             try? await Task.sleep(for: .milliseconds(10))
+            sliceStart = .now
         }
     }
 
@@ -393,10 +395,11 @@ final class WorldScene: SKScene {
     }
 
     /// In a background build: once this slice has had its few milliseconds, gives the frame back,
-    /// and the land you're in its look, till the next. Nothing at all in the foreground.
+    /// and the land you're in its look, till the next. Behind the loading card, the same in longer
+    /// slices: a phone turned mid-load turns the card with it (it waited for the whole piece).
     private func breathe(line: Int = #line) async {
-        guard pace != .foreground, ContinuousClock.now - sliceStart > (pace == .hurried ? .milliseconds(250) : Self.sliceLength) else { return }
-        endSlice(at: line)
+        guard ContinuousClock.now - sliceStart > Self.sliceLength(pace) else { return }
+        if pace != .foreground { endSlice(at: line) }
         giveLookBack()
         try? await Task.sleep(for: .milliseconds(10))
         takeLook()
@@ -415,8 +418,16 @@ final class WorldScene: SKScene {
         sliceFrom = line
     }
 
-    /// How long a background build works before giving a frame back.
-    private static let sliceLength: Duration = .milliseconds(5)
+    /// How long a build works before giving a frame back: a few milliseconds in the background;
+    /// behind the loading card, long enough to cost the load little, short enough for the screen
+    /// to turn with the phone.
+    private static func sliceLength(_ pace: Pace) -> Duration {
+        switch pace {
+        case .background: return .milliseconds(5)
+        case .hurried: return .milliseconds(250)
+        case .foreground: return .milliseconds(120)
+        }
+    }
     /// The longest a background build kept the frame in one go (the tests print it): what can't be
     /// cut finer than one step.
     private(set) var longestSlice: Duration = .zero
@@ -651,6 +662,8 @@ final class WorldScene: SKScene {
             variation.zPosition = 1
             grid.addChild(variation)
         }
+        // Its picture, for the hills and the shore, made once (`SKTexture.cgImage()` is slow).
+        let variationPicture = map.hills.isEmpty && map.shore == nil ? nil : variation?.texture?.cgImage()
         // And a wash of the two lands' colours over the band along each border, so the patches of
         // each land's ground run into each other (as RuneScape blends its ground's colours).
         for seam in map.seams {
@@ -662,7 +675,7 @@ final class WorldScene: SKScene {
         // world, `placeBridges`); out over a sunk lake, with the shore (below).
         var sunkDecks: [(image: CGImage, frame: CGRect)] = []
         if !map.bridges.isEmpty {
-            let pixels = art.tileTexture(theme.ground).cgImage().width
+            let pixels = art.picture(of: art.tileTexture(theme.ground)).width
             for bridge in map.bridges {
                 await breathe()
                 if bridge.cells.contains(where: { sunk.contains($0) }) {
@@ -680,7 +693,7 @@ final class WorldScene: SKScene {
             var images: [String: CGImage] = [:]
             func picture(_ key: String, _ texture: () -> SKTexture?) -> CGImage? {
                 if let known = images[key] { return known }
-                let made = texture()?.cgImage()
+                let made = texture().map { art.picture(of: $0) }
                 images[key] = made
                 return made
             }
@@ -700,7 +713,7 @@ final class WorldScene: SKScene {
                 trail: tiles(theme.path),
                 bank: rock.map(tiles),
                 rocky: map.rockiness,
-                variation: variation?.texture?.cgImage(),
+                variation: variationPicture,
                 mapSize: (map.columns, map.rows),
                 shadow: Lighting.rgb(palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
                 highlight: Lighting.rgb(palette?.highlight) ?? (r: 1, g: 0.95, b: 0.8))
@@ -758,14 +771,14 @@ final class WorldScene: SKScene {
                 ground: { cell in
                     guard self.map.owns(cell), let group = picks[cell.row * self.map.columns + cell.col].group else { return nil }
                     if let known = images[ObjectIdentifier(group)] { return known }
-                    let made = pictures[ObjectIdentifier(group)]?.cgImage()
+                    let made = pictures[ObjectIdentifier(group)].map { self.art.picture(of: $0) }
                     images[ObjectIdentifier(group)] = made
                     return made
                 },
                 trail: { _ in nil },
                 bank: nil,
                 rocky: 0,
-                variation: variation?.texture?.cgImage(),
+                variation: variationPicture,
                 mapSize: (map.columns, map.rows),
                 shadow: Lighting.rgb(theme.palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
                 highlight: Lighting.rgb(theme.palette?.highlight) ?? (r: 1, g: 0.95, b: 0.8),
@@ -1644,7 +1657,7 @@ final class WorldScene: SKScene {
     /// The bridges' posts and rails (`BridgeArt`; their decks lie with the ground, `makeGround`).
     private func placeBridges() {
         guard !map.bridges.isEmpty else { return }
-        let pixels = art.tileTexture(def.theme.ground).cgImage().width
+        let pixels = art.picture(of: art.tileTexture(def.theme.ground)).width
         for bridge in map.bridges {
             BridgeArt.rails(for: bridge, pixels: pixels, palette: def.theme.palette, in: world) { self.map.height(at: $0) }
             // Nothing grows right beside a deck either, on the bank its planks and rails reach over,

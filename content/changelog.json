@@ -2,6 +2,15 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.6.1",
+      "date": "2026-10-14",
+      "title": "Any way round",
+      "notes": [
+        "Turning your phone while a land loads no longer closes the game, and the loading screen turns with it.",
+        "Lands along the coast and round the lakes load faster."
+      ]
+    },
+    {
       "version": "0.6.0",
       "date": "2026-10-14",
       "title": "A world of shapes",
