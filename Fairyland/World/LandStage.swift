@@ -61,6 +61,33 @@ final class LandStage {
         world.stage = self
     }
 
+    /// A layer of its own over everything that stands on the continent, for its air's parts that a
+    /// land's scene puts over everything (`Ambience`'s butterflies and clouds' shadows, `Lighting`'s
+    /// pools of light and sunbeams, and the particles drifting about): their depths, lifted
+    /// `above`, keep their order there.
+    private(set) lazy var air: SKNode = {
+        let node = SKNode()
+        node.zPosition = self.shift.dy + Self.above
+        self.world.addChild(node)
+        return node
+    }()
+
+    /// A point of its box brought onto the land itself, as `WorldScene.onLand` does: one past an
+    /// edge mirrored back in, one off its shape moved in toward its middle.
+    func onLand(_ point: CGPoint) -> CGPoint {
+        let tile = WorldMap.tileSize
+        let grid = WorldMap.unproject(point)
+        func fold(_ value: CGFloat, _ length: CGFloat) -> CGFloat {
+            value < 0 ? min(length, -value) : value > length ? max(0, 2 * length - value) : value
+        }
+        var spot = WorldMap.project(CGPoint(x: fold(grid.x, CGFloat(map.columns) * tile), y: fold(grid.y, CGFloat(map.rows) * tile)))
+        let middle = map.center(of: map.center)
+        for _ in 0..<6 where !map.owns(map.rawCell(at: spot)) {
+            spot = CGPoint(x: (spot.x + middle.x) / 2, y: (spot.y + middle.y) / 2)
+        }
+        return spot
+    }
+
     /// How high its ground stands under a point of its own (a hilltop, a terrace, down the shore).
     func groundHeight(at point: CGPoint) -> CGFloat { map.height(at: point) }
 

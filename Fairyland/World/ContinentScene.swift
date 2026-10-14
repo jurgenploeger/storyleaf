@@ -98,6 +98,14 @@ final class ContinentScene: SKScene {
     /// Debug launches walking you about (`crossing`): no battles on the way.
     var holdsEncounters = false
     private var stepsSinceBattle = 0
+    /// Your companion, walking behind you, and what you and it were last drawn as (`refreshHero`,
+    /// `refreshFollower`).
+    private var follower: Walker?
+    private var followerKey: String?
+    private var heroKey: String?
+    /// The air of each land you've been in (`Air`), by its id.
+    private var airs: [String: Air] = [:]
+    private var sunTimer: TimeInterval = 0
     private var pinchStartZoom: CGFloat = 1
     private lazy var pinch = UIPinchGestureRecognizer(target: self, action: #selector(pinched(_:)))
 
@@ -128,6 +136,72 @@ final class ContinentScene: SKScene {
     }
 
     required init?(coder aDecoder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    /// A land's air as on its own map: drifting particles, butterflies and clouds' shadows, its
+    /// colour mood and vignette (`Ambience`), its sunbeams, pools of light, haze and the sun's flare
+    /// (`Lighting`), and its time of day and weather (`Sky`). Its parts on the screen hang in a layer
+    /// of their own on the camera (an `SKCameraNode` the scene doesn't look through, as those take a
+    /// camera); `mood` fades it in while you're in the land and out as you walk into the next, whose
+    /// own comes in.
+    private final class Air {
+        let layer = SKCameraNode()
+        let ambience: Ambience?
+        let lighting: Lighting?
+        let sky: Sky?
+        var mood: CGFloat = 0
+
+        init(stage: LandStage, camera: SKCameraNode, start: Date?, screen: CGSize) {
+            let def = stage.def
+            camera.addChild(layer)
+            ambience = Ambience(def.ambience, world: stage.air, camera: layer, bounds: stage.map.bounds, seed: def.id,
+                                inside: { [weak stage] in stage?.onLand($0) ?? $0 })
+            lighting = Lighting(def.ambience, world: stage.air, camera: layer, bounds: stage.map.bounds, seed: def.id,
+                                inside: { [weak stage] in stage?.onLand($0) ?? $0 })
+            sky = Sky(map: def, camera: layer, start: start)
+            ambience?.resize(to: screen)
+            lighting?.resize(to: screen)
+            if let sky { lighting?.sunlight(sky.sunlight) }
+            lighting?.follow(sky?.sun ?? .noon)
+            set(mood: 0)
+        }
+
+        func set(mood: CGFloat) {
+            self.mood = mood
+            layer.alpha = mood
+            layer.isHidden = mood <= 0.01
+            ambience?.setMood(mood)
+            lighting?.setMood(mood)
+            sky?.setMood(mood)
+        }
+    }
+
+    override func didChangeSize(_ oldSize: CGSize) {
+        for air in airs.values {
+            air.ambience?.resize(to: size)
+            air.lighting?.resize(to: size)
+        }
+    }
+
+    /// The airs ease toward the land you're in's (over a second or so), its time of day and weather
+    /// going on, its sun moved every half second.
+    private func updateAir(_ dt: TimeInterval) {
+        sunTimer -= dt
+        let follow = sunTimer <= 0
+        if follow { sunTimer = 0.5 }
+        for (id, air) in airs {
+            let goal: CGFloat = id == here?.id ? 1 : 0
+            if air.mood != goal {
+                let eased = air.mood + (goal - air.mood) * CGFloat(min(1, dt / 0.6))
+                air.set(mood: abs(goal - eased) < 0.01 ? goal : eased)
+            }
+            guard air.mood > 0 else { continue }
+            if let sky = air.sky {
+                sky.update(dt)
+                air.lighting?.sunlight(sky.sunlight)
+                if follow { air.lighting?.follow(sky.sun) }
+            }
+        }
+    }
 
     override func didMove(to view: SKView) {
         view.addGestureRecognizer(pinch)
@@ -212,11 +286,20 @@ final class ContinentScene: SKScene {
             checkCell()
             checkTalkTarget()
         }
+        // Your companion keeps to ground it can stand on, never into water or through a wall.
+        player.markFootstep()
+        if let follower {
+            follower.follow(player, dt: dt, footstep: player.footstep(behind: 36),
+                            canStand: { [unowned self] in self.store.isWalkable(Self.cell(at: $0)) })
+            follower.zPosition = -follower.position.y
+            follower.settle()
+        }
         player.settle()
         cam.position = player.position + CGVector(dx: 0, dy: player.lift)
         for land in lands.values {
             land.stage.update(dt: dt, player: player.position, camera: cam.position, scale: cam.xScale, screen: size)
         }
+        updateAir(dt)
         if currentTime - lookedAround > 0.25 {
             lookedAround = currentTime
             lookAround()
@@ -370,18 +453,60 @@ final class ContinentScene: SKScene {
     func battleBackdrop(hiding npcID: String?) -> SKTexture? {
         let visible = CGRect(x: cam.position.x - size.width / 2, y: cam.position.y - size.height / 2, width: size.width, height: size.height)
         let boss: [SKNode] = lands.values.flatMap { land in land.stage.npcs.filter { $0.def.id == npcID }.map(\.node) }
-        let hidden: [SKNode] = [player] + boss + layer.children.filter { $0.name == Effects.tapMarkerName }
+        var hidden: [SKNode] = [player]
+        if let follower { hidden.append(follower) }
+        hidden += boss
+        hidden += layer.children.filter { $0.name == Effects.tapMarkerName }
         hidden.forEach { $0.isHidden = true }
         defer { hidden.forEach { $0.isHidden = false } }
         return view?.texture(from: layer, crop: visible)
     }
 
-    /// Back from a battle or a window (`MapScene`): you can walk again.
+    /// Back from a battle or a window (`MapScene`): you can walk again, as whoever you've become.
     func resume() {
         openBorders = [:]
         isInputLocked = false
         lastUpdate = 0
         input.move = .zero
+        refreshHero()
+        refreshFollower()
+    }
+
+    /// Picks up a new look or name from the Character screen, the title you wear, a reborn hero's
+    /// colour and what's in your hands (`WorldScene.refreshHero`).
+    private func refreshHero() {
+        let key = "\(session.data.hero.name)|\(session.heroLookKey)|\(session.data.title ?? "")|\(session.rebirths)"
+        guard key != heroKey else { return }
+        if heroKey != nil {
+            player.setCycle(art.walkCycle(GameSession.heroArt))
+            player.setLabel(session.data.hero.name)
+        }
+        player.setTitle(session.wornTitle)
+        player.setLabelColor(WorldScene.nameColor(rebirths: session.rebirths))
+        player.setGear(weapon: session.equipped(.weapon), accessory: session.equipped(.accessory))
+        heroKey = key
+    }
+
+    /// Keeps your companion in step: switched, renamed or recoloured; a fainted one out of sight
+    /// till it's healed (`WorldScene.refreshFollower`).
+    private func refreshFollower() {
+        let pet = session.activePet.flatMap { $0.hp > 0 ? $0 : nil }
+        let key = pet.map { "\($0.id)|\($0.name)" }
+        guard key != followerKey else { return }
+        followerKey = key
+        let previous = follower?.position
+        follower?.removeFromParent()
+        follower = nil
+        guard let pet else { return }
+        let node = Walker(cycle: art.walkCycle(session.artID(for: pet)), label: pet.name)
+        node.motion = IdleMotion.of(art: session.artID(for: pet))
+        // Its name gives way to yours where the two would print over each other.
+        node.tagMode = .whenClear
+        let beside = player.position + CGVector(dx: -30, dy: 0)
+        node.position = previous ?? (store.isWalkable(Self.cell(at: beside)) ? beside : player.position)
+        node.walkSpeed = 110
+        layer.addChild(node)
+        follower = node
     }
 
     /// Into the land that owns `cell`, once it's laid out, if you aren't in it already: a cell in from
@@ -404,8 +529,17 @@ final class ContinentScene: SKScene {
     /// the top of the screen and in the chat (as `WorldScene.didMove` greets you).
     private func arrive(in def: MapDef) {
         let walkedIn = here != nil
+        let before = here.flatMap { airs[$0.id] }
         here = def
         for land in lands.values { land.stage.isHere = land.def.id == def.id }
+        // Its air: made the first time you're in it, and in full at once where you start.
+        if airs[def.id] == nil, let stage = lands[def.id]?.stage {
+            let air = Air(stage: stage, camera: cam, start: session.data.startedAt, screen: size)
+            // The light and the weather's shade go on from where they were, toward this land's own.
+            if let sky = air.sky, let previous = before?.sky { sky.carryOn(from: previous) }
+            airs[def.id] = air
+        }
+        if !walkedIn { airs[def.id]?.set(mood: 1) }
         Walker.light = WorldScene.light(of: def)
         player.relight()
         MusicPlayer.shared.play(def.music)
@@ -491,6 +625,8 @@ final class ContinentScene: SKScene {
             }
         }
         if missing == 0, waiting.isEmpty, !painting { isReady = true }
+        refreshHero()
+        refreshFollower()
         // The lands' people: their quest marks, and townsfolk watching you pass.
         for land in lands.values { _ = land.stage.updateNotices(player: player.position, reach: talkRange + 12) }
         for chunk in chunks.keys where max(abs(chunk.col - here.col), abs(chunk.row - here.row)) > Self.keep {
