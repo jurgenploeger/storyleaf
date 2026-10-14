@@ -234,7 +234,7 @@ final class GameCoordinator {
         let coast = Continent.coast(of: def)
         let away = world.visitingFriends
         Task { [weak self] in
-            let grid = await Task.detached(priority: .userInitiated) { WorldMap(def: def, caves: caves, coast: coast) }.value
+            let grid = await Task.detached(priority: .userInitiated) { await MapLayouts.shared.lay(def, caves: caves, coast: coast) }.value
             guard let self else { return }
             // Its picture at once, from the layout, to lie past the border (`WorldScene.placeFarLands`)
             // and on the minimap while the land itself is built.

@@ -57,7 +57,7 @@ final class WorldOverview {
                 let def = left.remove(at: next)
                 guard images[def.id] == nil, pending[def.id] == nil else { continue }
                 let coast = Continent.coast(of: def)
-                let map = await Task.detached(priority: .utility) { WorldMap(def: def, caves: caves, coast: coast) }.value
+                let map = await Task.detached(priority: .utility) { await MapLayouts.shared.lay(def, caves: caves, coast: coast) }.value
                 remember(def.id, WorldScene.overview(of: map, art: ArtLibrary.shared))
             }
             making = false

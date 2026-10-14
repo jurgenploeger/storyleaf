@@ -52,6 +52,9 @@ coast_lair   | newgame,map=wolf_lair,edge=south,landscape,weather=clear,hour=12 
 # border scenes above build it at once): the lair's border with the candy land, where playtesting
 # saw its ground missing past the line.
 border_built | newgame,map=wolf_lair,edge=east,landscape,weather=clear,hour=12 | 180
+# Temporary: the same twice more, to see whether its crash of 2026-10-14 comes back (drop once it's settled).
+border_built_2 | newgame,map=wolf_lair,edge=east,landscape,weather=clear,hour=12 | 180
+border_built_3 | newgame,map=wolf_lair,edge=east,landscape,weather=clear,hour=12 | 180
 city_wall    | newgame,map=bluebird,border=smiling_forest,landscape,weather=clear,hour=12 | 6
 city_gate    | newgame,map=goldburg,border=valley_of_fear,landscape,weather=clear,hour=12 | 6
 battle       | newgame,map=sunny_meadow,battle   | 15
