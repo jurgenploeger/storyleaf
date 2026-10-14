@@ -534,77 +534,25 @@ final class WorldScene: SKScene {
                 grid.addChild(deck)
             }
         }
+        // Each cell's own tile picture, for the hills and the shore; none on the sea or a land next
+        // door's cells.
+        var images: [ObjectIdentifier: CGImage] = [:]
+        let tilePicture: (GridPoint) -> CGImage? = { cell in
+            guard self.map.contains(cell), let group = picks[cell.row * self.map.columns + cell.col].group else { return nil }
+            if let known = images[ObjectIdentifier(group)] { return known }
+            let made = pictures[ObjectIdentifier(group)].map { self.art.picture(of: $0) }
+            images[ObjectIdentifier(group)] = made
+            return made
+        }
         // Hills: the same ground again, lit and lifted (`HillArt`; `placePlateaus` sets them down).
         if !map.hills.isEmpty {
             await breathe()
-            var images: [String: CGImage] = [:]
-            func picture(_ key: String, _ texture: () -> SKTexture?) -> CGImage? {
-                if let known = images[key] { return known }
-                let made = texture().map { art.picture(of: $0) }
-                images[key] = made
-                return made
-            }
-            func tiles(_ id: String) -> (GridPoint) -> CGImage? {
-                { cell in picture("\(id)#\(Self.variant(of: cell))") { self.art.tileVariant(id, Self.variant(of: cell)) } }
-            }
-            let palette = theme.palette
-            // Rock shows on the slopes of all but the gentlest hills: the map's own bank, or scree.
-            let rock: String? = theme.hills?.bank ?? (map.rockiness >= 0.2 ? "tile_scree" : nil)
-            // Past the map's edge (a range where a road leads into a cave), the land out there.
-            let beyond = tiles(theme.border ?? theme.ground)
-            let look = HillArt.Look(
-                ground: { cell in
-                    guard self.map.contains(cell), let group = picks[cell.row * self.map.columns + cell.col].group else { return beyond(cell) }
-                    return picture("\(ObjectIdentifier(group).hashValue)") { pictures[ObjectIdentifier(group)] }
-                },
-                trail: tiles(theme.path),
-                bank: rock.map(tiles),
-                rocky: map.rockiness,
-                variation: variationPicture,
-                mapSize: (map.columns, map.rows),
-                shadow: Lighting.rgb(palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
-                highlight: Lighting.rgb(palette?.highlight) ?? (r: 1, g: 0.95, b: 0.8))
-            // A range where a road leads into a cave is a mountain of layered rock, its foot grassy,
-            // in deeper shade and brighter sun; out past the map's edge the ground is rock too.
-            let scree = tiles(theme.hills?.bank ?? "tile_scree")
-            var crag = look
-            crag.ground = { cell in self.map.contains(cell) ? look.ground(cell) : scree(cell) }
-            crag.bank = scree
-            crag.rocky = 1
-            crag.rockAbove = 0.2
-            crag.ambient = Self.cragShade
-            crag.brightest = 1.3
-            crag.strata = 14
-            // Its road stays a road all the way up to the cave's mouth.
-            crag.road = { cell in self.map.contains(cell) && self.map.ground[cell.row][cell.col] == .path }
-            // Out past the ends of its edge, it stops where a land next door lies.
-            var elsewhere: [GridPoint: Bool] = [:]
-            crag.hidden = { cell in
-                guard !self.map.owns(cell) else { return false }
-                if let known = elsewhere[cell] { return known }
-                let land = Continent.isLand(cell, from: self.def)
-                elsewhere[cell] = land
-                return land
-            }
-            // A range with a mountain in it: bare layered rock from partway up (its foothills'
-            // tops below that), in deeper shade and brighter sun, so its height shows.
-            var mountain = look
-            mountain.bank = look.bank ?? scree
-            mountain.ambient = Self.cragShade
-            mountain.brightest = 1.2
-            mountain.strata = 14
+            let looks = HillLooks(map: map, art: art, ground: tilePicture, variation: variationPicture)
             // Already where they show on screen (they lift themselves) and sorted, so straight into
             // the world.
             for hill in map.hills {
                 await breathe()
-                var style = look
-                if hill.isCrag {
-                    style = crag
-                } else if hill.hasMountain {
-                    style = mountain
-                    style.rockFrom = Double(hill.peak) * 0.4
-                }
-                let sprites = await HillArt.sprites(for: hill, look: style, pause: { await self.breathe() })
+                let sprites = await HillArt.sprites(for: hill, look: looks.look(for: hill), pause: { await self.breathe() })
                 raisedHills += sprites as [SKNode]
             }
         }
@@ -613,23 +561,7 @@ final class WorldScene: SKScene {
         // sunk lake.
         if let shore = map.shore {
             await breathe()
-            var images: [ObjectIdentifier: CGImage] = [:]
-            let look = HillArt.Look(
-                ground: { cell in
-                    guard self.map.owns(cell), let group = picks[cell.row * self.map.columns + cell.col].group else { return nil }
-                    if let known = images[ObjectIdentifier(group)] { return known }
-                    let made = pictures[ObjectIdentifier(group)].map { self.art.picture(of: $0) }
-                    images[ObjectIdentifier(group)] = made
-                    return made
-                },
-                trail: { _ in nil },
-                bank: nil,
-                rocky: 0,
-                variation: variationPicture,
-                mapSize: (map.columns, map.rows),
-                shadow: Lighting.rgb(theme.palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
-                highlight: Lighting.rgb(theme.palette?.highlight) ?? (r: 1, g: 0.95, b: 0.8),
-                overlays: sunkDecks)
+            let look = HillLooks.shore(of: map, ground: tilePicture, variation: variationPicture, overlays: sunkDecks)
             let sprites = await HillArt.sprites(for: shore, look: look, pause: { await self.breathe() })
             raisedHills += sprites as [SKNode]
         }
@@ -1627,9 +1559,8 @@ final class WorldScene: SKScene {
 
     private var feet: [ObjectIdentifier: CGFloat] = [:]
 
-    /// How lit a cave's range is turned from the sun (`HillArt.Look.ambient`): deeper shade than
-    /// other hills, so a mountain's shape shows.
-    private static let cragShade = 0.25
+    /// How lit a cave's range is turned from the sun (`HillLooks.cragShade`).
+    private static let cragShade = HillLooks.cragShade
 
     /// Scenery on a hill, with how the ground under it rises a cell across and up the map (as
     /// `HillArt.sunlight` takes it) and how lit it is there turned from the midday sun: shaded

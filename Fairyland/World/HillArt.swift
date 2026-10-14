@@ -107,12 +107,33 @@ enum HillArt {
         return (-(band + 1) * height - 0.75, band * height)
     }
 
+    /// A range made ready to draw (`painter(for:look:)`): what's the same all over it worked out once
+    /// (its outline, light, trails and heights), so its squares can be drawn one at a time as they're
+    /// wanted (the continent draws those of the chunks round you, `ContinentScene`).
+    struct Painter {
+        /// The south-west corners of its squares that show any of it, in the map's cells.
+        let corners: [GridPoint]
+        /// One square's sprites (at one of `corners`), in the map's own space, each already sorted.
+        let draw: (_ corner: GridPoint, _ pause: @escaping () async -> Void) async -> [SKSpriteNode]
+    }
+
     /// The range as sprites in the map's own space (put them straight in the world), each already
     /// sorted; none if it can't be drawn.
     /// `pause`: called every so often, for a land built in the background to give the frame back
     /// (`WorldScene.breathe`): a range takes far too long to draw in one go.
     static func sprites(for hill: WorldMap.Hill, look: Look, pause: @escaping () async -> Void = {}) async -> [SKSpriteNode] {
-        guard let first = hill.cells.first, let sample = look.ground(first) else { return [] }
+        guard let ready = await Self.painter(for: hill, look: look, pause: pause) else { return [] }
+        var sprites: [SKSpriteNode] = []
+        for corner in ready.corners {
+            await pause()
+            sprites += await ready.draw(corner, pause)
+        }
+        return sprites
+    }
+
+    /// The range made ready to draw a square at a time (`Painter`); nil if it can't be drawn.
+    static func painter(for hill: WorldMap.Hill, look: Look, pause: @escaping () async -> Void = {}) async -> Painter? {
+        guard let first = hill.cells.first, let sample = look.ground(first) else { return nil }
         let tile = WorldMap.tileSize
         let px = sample.width
         let scale = CGFloat(px)
@@ -294,7 +315,7 @@ enum HillArt {
             CGPoint(x: (point.x - CGFloat(low.col)) * scale, y: (point.y - CGFloat(low.row)) * scale)
         }
         let side = square * px
-        func paint(_ corner: GridPoint) async -> CGImage? {
+        func paint(_ corner: GridPoint, pause: @escaping () async -> Void) async -> CGImage? {
             guard let context = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
                                           space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
             else { return nil }
@@ -389,7 +410,7 @@ enum HillArt {
                 levels[index + 3] = 255
             }
         }
-        guard let heightImage = image(levels, width: lattice.columns, height: lattice.rows) else { return [] }
+        guard let heightImage = image(levels, width: lattice.columns, height: lattice.rows) else { return nil }
         let heights = SKTexture(cgImage: heightImage)
         heights.filteringMode = .linear
         let shader = SKShader(source: Self.lifting)
@@ -411,76 +432,83 @@ enum HillArt {
         ]
 
         let across = WorldMap.project(CGPoint(x: tile, y: 0)).x
-        var sprites: [SKSpriteNode] = []
+        /// The cells of the square from `corner` that show any of it.
+        func cellsShown(from corner: GridPoint) -> [GridPoint] {
+            shown.filter { cell in
+                let dc = cell.col - corner.col, dr = cell.row - corner.row
+                return dc >= 0 && dr >= 0 && dc < square && dr < square
+            }
+        }
+        var corners: [GridPoint] = []
         for top in stride(from: low.row, to: low.row + rows, by: square) {
             for left in stride(from: low.col, to: low.col + columns, by: square) {
                 let corner = GridPoint(col: left, row: top)
-                let own = shown.filter { cell in
-                    let dc = cell.col - corner.col, dr = cell.row - corner.row
-                    return dc >= 0 && dr >= 0 && dc < square && dr < square
-                }
-                guard !own.isEmpty else { continue }
-                await pause()
-                guard let picture = await paint(corner) else { continue }
-                let texture = SKTexture(cgImage: picture)
-                texture.filteringMode = .nearest
-                // The strips a cell reaches into: a cell spans two of the map's diagonals.
-                var bands: Set<Int> = []
-                for cell in own {
-                    bands.insert((cell.col + cell.row) / depthOfStrips)
-                    bands.insert((cell.col + cell.row + 1) / depthOfStrips)
-                }
-                // How low and high the ground stands in each strip of the square: from the lattice's
-                // points round it, the ground between them never higher or lower.
-                var lifts: [Int: (low: Float, high: Float)] = [:]
-                let i0 = max(0, (corner.col - low.col) * samples - 1), i1 = min(lattice.columns - 1, (corner.col + square - low.col) * samples + 1)
-                let j0 = max(0, (corner.row - low.row) * samples - 1), j1 = min(lattice.rows - 1, (corner.row + square - low.row) * samples + 1)
-                for j in j0...j1 {
-                    for i in i0...i1 {
-                        let sum = Double(low.col + low.row) + Double(i + j) / Double(samples)
-                        let level = hill.heights[j * lattice.columns + i]
-                        let depth = Double(depthOfStrips)
-                        let first = Int(((sum - 0.5 - depth) / depth).rounded(.up)), last = Int(((sum + 0.5) / depth).rounded(.down))
-                        guard first <= last else { continue }
-                        for band in first...last {
-                            let known = lifts[band] ?? (low: level, high: level)
-                            lifts[band] = (low: min(known.low, level), high: max(known.high, level))
-                        }
-                    }
-                }
-                for band in bands.sorted() {
-                    let lift = lifts[band] ?? (low: 0, high: 0)
-                    // Across the screen, where the strip crosses the square (in cells, column less row).
-                    let from = Double(band * depthOfStrips), to = Double((band + 1) * depthOfStrips)
-                    let c0 = Double(corner.col), r0 = Double(corner.row), size = Double(square)
-                    var least = Double.infinity, most = -Double.infinity
-                    for sum in [from, to, c0 + r0 + size] where sum >= from && sum <= to {
-                        let lowest = max(r0, sum - c0 - size), highest = min(r0 + size, sum - c0)
-                        guard lowest <= highest else { continue }
-                        least = min(least, sum - 2 * highest)
-                        most = max(most, sum - 2 * lowest)
-                    }
-                    guard least <= most else { continue }
-                    let box = CGRect(x: CGFloat(least) * across - 1, y: CGFloat(from) * depthStep + CGFloat(lift.low) - 1,
-                                     width: CGFloat(most - least) * across + 2,
-                                     height: CGFloat(to - from) * depthStep + CGFloat(lift.high - lift.low) + 2)
-                    let sprite = SKSpriteNode(texture: texture, size: box.size)
-                    sprite.anchorPoint = .zero
-                    sprite.position = box.origin
-                    // Just behind its back edge, as `strip(at:)` says.
-                    sprite.zPosition = -CGFloat(to) * depthStep - 0.75
-                    sprite.shader = shader
-                    sprite.setValue(SKAttributeValue(vectorFloat4: SIMD4(Float(box.minX), Float(box.minY), Float(box.width), Float(box.height))),
-                                    forAttribute: "a_box")
-                    sprite.setValue(SKAttributeValue(vectorFloat4: SIMD4(Float(corner.col), Float(corner.row), Float(square), Float(square))),
-                                    forAttribute: "a_area")
-                    let reach: SIMD4<Float> = [Float(CGFloat(from) * depthStep), Float(CGFloat(to) * depthStep), lift.low - 0.5, lift.high + 0.5]
-                    sprite.setValue(SKAttributeValue(vectorFloat4: reach), forAttribute: "a_band")
-                    sprites.append(sprite)
-                }
+                if !cellsShown(from: corner).isEmpty { corners.append(corner) }
             }
         }
-        return sprites
+        func drawSquare(at corner: GridPoint, pause: @escaping () async -> Void) async -> [SKSpriteNode] {
+            let own = cellsShown(from: corner)
+            guard let picture = await paint(corner, pause: pause) else { return [] }
+            var sprites: [SKSpriteNode] = []
+            let texture = SKTexture(cgImage: picture)
+            texture.filteringMode = .nearest
+            // The strips a cell reaches into: a cell spans two of the map's diagonals.
+            var bands: Set<Int> = []
+            for cell in own {
+                bands.insert((cell.col + cell.row) / depthOfStrips)
+                bands.insert((cell.col + cell.row + 1) / depthOfStrips)
+            }
+            // How low and high the ground stands in each strip of the square: from the lattice's
+            // points round it, the ground between them never higher or lower.
+            var lifts: [Int: (low: Float, high: Float)] = [:]
+            let i0 = max(0, (corner.col - low.col) * samples - 1), i1 = min(lattice.columns - 1, (corner.col + square - low.col) * samples + 1)
+            let j0 = max(0, (corner.row - low.row) * samples - 1), j1 = min(lattice.rows - 1, (corner.row + square - low.row) * samples + 1)
+            for j in j0...j1 {
+                for i in i0...i1 {
+                    let sum = Double(low.col + low.row) + Double(i + j) / Double(samples)
+                    let level = hill.heights[j * lattice.columns + i]
+                    let depth = Double(depthOfStrips)
+                    let first = Int(((sum - 0.5 - depth) / depth).rounded(.up)), last = Int(((sum + 0.5) / depth).rounded(.down))
+                    guard first <= last else { continue }
+                    for band in first...last {
+                        let known = lifts[band] ?? (low: level, high: level)
+                        lifts[band] = (low: min(known.low, level), high: max(known.high, level))
+                    }
+                }
+            }
+            for band in bands.sorted() {
+                let lift = lifts[band] ?? (low: 0, high: 0)
+                // Across the screen, where the strip crosses the square (in cells, column less row).
+                let from = Double(band * depthOfStrips), to = Double((band + 1) * depthOfStrips)
+                let c0 = Double(corner.col), r0 = Double(corner.row), size = Double(square)
+                var least = Double.infinity, most = -Double.infinity
+                for sum in [from, to, c0 + r0 + size] where sum >= from && sum <= to {
+                    let lowest = max(r0, sum - c0 - size), highest = min(r0 + size, sum - c0)
+                    guard lowest <= highest else { continue }
+                    least = min(least, sum - 2 * highest)
+                    most = max(most, sum - 2 * lowest)
+                }
+                guard least <= most else { continue }
+                let box = CGRect(x: CGFloat(least) * across - 1, y: CGFloat(from) * depthStep + CGFloat(lift.low) - 1,
+                                 width: CGFloat(most - least) * across + 2,
+                                 height: CGFloat(to - from) * depthStep + CGFloat(lift.high - lift.low) + 2)
+                let sprite = SKSpriteNode(texture: texture, size: box.size)
+                sprite.anchorPoint = .zero
+                sprite.position = box.origin
+                // Just behind its back edge, as `strip(at:)` says.
+                sprite.zPosition = -CGFloat(to) * depthStep - 0.75
+                sprite.shader = shader
+                sprite.setValue(SKAttributeValue(vectorFloat4: SIMD4(Float(box.minX), Float(box.minY), Float(box.width), Float(box.height))),
+                                forAttribute: "a_box")
+                sprite.setValue(SKAttributeValue(vectorFloat4: SIMD4(Float(corner.col), Float(corner.row), Float(square), Float(square))),
+                                forAttribute: "a_area")
+                let reach: SIMD4<Float> = [Float(CGFloat(from) * depthStep), Float(CGFloat(to) * depthStep), lift.low - 0.5, lift.high + 0.5]
+                sprite.setValue(SKAttributeValue(vectorFloat4: reach), forAttribute: "a_band")
+                sprites.append(sprite)
+            }
+            return sprites
+        }
+        return Painter(corners: corners, draw: drawSquare)
     }
 
     /// Each pixel of a strip's sprite: the ground point that rises to it, found by halving (the ground

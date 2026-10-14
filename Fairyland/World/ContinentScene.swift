@@ -2,9 +2,9 @@ import SpriteKit
 
 /// The continent as one place, with no borders (docs/continuous-world.md, step 2): every land on it
 /// drawn a chunk at a time round the camera (`World.chunkSize` cells a side), from the lands' own
-/// layouts and plans, each laid out as you come near it. So far its ground, sea and scenery, and you
-/// walking about on it; a debug launch shows it (`continent`) until it takes over from the lands'
-/// own scenes.
+/// layouts and plans, each laid out as you come near it. So far its ground, sea, hills, shore,
+/// bridges and scenery, and you walking about on it; a debug launch shows it (`continent`) until it
+/// takes over from the lands' own scenes.
 final class ContinentScene: SKScene {
     private let session: GameSession
     private let input: InputState
@@ -24,7 +24,8 @@ final class ContinentScene: SKScene {
     private var lastUpdate: TimeInterval = 0
 
     /// A land near you, laid out and planned: its own map, what it sets down (by chunk), how its
-    /// ground is tiled, and where its own points lie in the continent's.
+    /// ground is tiled, its hills and shore ready to draw, and where its own points lie in the
+    /// continent's.
     private final class Land {
         let def: MapDef
         let place: World.Land
@@ -33,14 +34,20 @@ final class ContinentScene: SKScene {
         let shift: CGVector
         /// Its scenery, by the chunk each piece stands in.
         let scenery: [GridPoint: [Placement]]
+        /// Its hills and its shore, each ready to draw a square at a time (`HillArt.Painter`), and the
+        /// squares each chunk draws: those whose south-west corner is in it.
+        let painters: [HillArt.Painter]
+        let squares: [GridPoint: [(painter: Int, corner: GridPoint)]]
+        /// Its shore's cells, drawn sunk with it rather than flat (`WorldMap.shore`).
+        let sunk: Set<GridPoint>
 
-        init(def: MapDef, place: World.Land, map: WorldMap, plan: LandPlan, tiles: GroundTiles) {
+        init(def: MapDef, place: World.Land, map: WorldMap, plan: LandPlan, tiles: GroundTiles, painters: [HillArt.Painter]) {
             self.def = def
             self.place = place
             self.map = map
             self.tiles = tiles
-            let origin = WorldMap.project(CGPoint(x: CGFloat(place.origin.col) * WorldMap.tileSize, y: CGFloat(place.origin.row) * WorldMap.tileSize))
-            shift = CGVector(dx: origin.x, dy: origin.y)
+            self.painters = painters
+            shift = ContinentScene.shift(of: place)
             var scenery: [GridPoint: [Placement]] = [:]
             let all = plan.reeds + plan.lots + plan.streetDecor + plan.buildings + plan.decor + plan.localProps + plan.outcrops
                 + plan.props + plan.seamProps
@@ -49,6 +56,15 @@ final class ContinentScene: SKScene {
                 scenery[World.chunk(of: world), default: []].append(piece)
             }
             self.scenery = scenery
+            var squares: [GridPoint: [(painter: Int, corner: GridPoint)]] = [:]
+            for (number, painter) in painters.enumerated() {
+                for corner in painter.corners {
+                    let world = GridPoint(col: corner.col + place.origin.col, row: corner.row + place.origin.row)
+                    squares[World.chunk(of: world), default: []].append((number, corner))
+                }
+            }
+            self.squares = squares
+            sunk = map.shore?.cells ?? []
         }
     }
     private var lands: [String: Land] = [:]
@@ -64,6 +80,11 @@ final class ContinentScene: SKScene {
     private(set) var isReady = false
     private var feet: [ObjectIdentifier: CGFloat] = [:]
     private let seaTile = "raw:tile_water"
+    /// Squares of hills and shore waiting to be drawn (nearest first), and whether they're being drawn.
+    private var waiting: [(chunk: GridPoint, land: String, painter: Int, corner: GridPoint)] = []
+    private var painting = false
+    /// When the work under way last had the frame back (`breathe`).
+    private var sliceStart = ContinuousClock.now
 
     /// `point`: where you start, in the continent's points.
     init(session: GameSession, input: InputState, at point: CGPoint) {
@@ -92,6 +113,12 @@ final class ContinentScene: SKScene {
     }
 
     required init?(coder aDecoder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    /// Where a land's own points lie in the continent's: its origin, projected.
+    static func shift(of land: World.Land) -> CGVector {
+        let origin = WorldMap.project(CGPoint(x: CGFloat(land.origin.col) * WorldMap.tileSize, y: CGFloat(land.origin.row) * WorldMap.tileSize))
+        return CGVector(dx: origin.x, dy: origin.y)
+    }
 
     /// A world cell's middle, in the continent's points.
     static func center(of cell: GridPoint) -> CGPoint {
@@ -177,12 +204,13 @@ final class ContinentScene: SKScene {
                 }
             }
         }
-        if missing == 0 { isReady = true }
+        if missing == 0, waiting.isEmpty, !painting { isReady = true }
         for chunk in chunks.keys where max(abs(chunk.col - here.col), abs(chunk.row - here.row)) > Self.keep {
             if let gone = chunks.removeValue(forKey: chunk) {
                 gone.ground.removeFromParent()
                 gone.sea.removeFromParent()
                 gone.things.removeFromParent()
+                waiting.removeAll { $0.chunk == chunk }
             }
         }
     }
@@ -192,21 +220,142 @@ final class ContinentScene: SKScene {
         Set(World.cells(in: chunk).compactMap { store.land(at: $0)?.id })
     }
 
-    /// Lays a land out off the main thread, then plans its scenery, and takes it into the store.
+    /// Lays a land out off the main thread, then plans its scenery, takes it into the store and makes
+    /// its hills and shore ready to draw; then draws its squares in the chunks already drawn.
     private func layOut(_ id: String) {
         guard !laying.contains(id), let def = Content.shared.map(id), let place = store.land(id) else { return }
         laying.insert(id)
         Task { [weak self] in
             let map = await GameCoordinator.layOut(def)
             guard let self else { return }
-            let planner = LandPlanner(def: def, map: map, art: art)
-            await planner.planUpToLocals(pause: {})
-            await planner.planTheRest(pause: {})
-            store.add(map)
+            let rest = self.pause(for: def)
             art.use(palette: def.theme.palette, for: def.id)
-            lands[id] = Land(def: def, place: place, map: map, plan: planner.plan, tiles: GroundTiles(map: map, art: art))
+            let planner = LandPlanner(def: def, map: map, art: art)
+            await planner.planUpToLocals(pause: rest)
+            await planner.planTheRest(pause: rest)
+            store.add(map)
+            let tiles = GroundTiles(map: map, art: art)
+            let painters = await ranges(of: map, tiles: tiles, place: place, pause: rest)
+            let land = Land(def: def, place: place, map: map, plan: planner.plan, tiles: tiles, painters: painters)
+            lands[id] = land
             laying.remove(id)
+            for chunk in chunks.keys { paintSquares(of: land, in: chunk) }
         }
+    }
+
+    /// A pause in work on `def`'s land: gives the frame back once the work's had it a while, then
+    /// grades with that land's palette again, as other work may have changed it meanwhile.
+    private func pause(for def: MapDef) -> () async -> Void {
+        { [weak self] in
+            guard let self else { return }
+            await breathe()
+            art.use(palette: def.theme.palette, for: def.id)
+        }
+    }
+
+    /// Gives the frame back once work's had it for a few milliseconds; for longer before the chunks
+    /// round where you started are drawn, as there's nothing yet to keep smooth.
+    private func breathe() async {
+        let slice: Duration = isReady ? .milliseconds(6) : .milliseconds(40)
+        guard ContinuousClock.now - sliceStart > slice else { return }
+        try? await Task.sleep(for: .milliseconds(10))
+        sliceStart = ContinuousClock.now
+    }
+
+    /// A land's hills and its shore, made ready to draw a square at a time as its own scene draws them
+    /// (`HillLooks`), over its colour patches and with its bridges' decks out over a sunk lake. And,
+    /// for the whole land at once (they're light), its colour patches and bridges' decks on the
+    /// ground and its bridges' rails in the world.
+    private func ranges(of map: WorldMap, tiles: GroundTiles, place: World.Land, pause: @escaping () async -> Void) async -> [HillArt.Painter] {
+        let def = map.def, theme = def.theme, tile = WorldMap.tileSize
+        // On the ground, in the land's own grid points: its soft colour patches over its own cells
+        // (`Lighting.groundVariation`), and its bridges' decks lying on the water.
+        let flat = SKNode()
+        flat.position = CGPoint(x: CGFloat(place.origin.col) * tile, y: CGFloat(place.origin.row) * tile)
+        let variation = Lighting.groundVariation(columns: map.columns, rows: map.rows, tile: tile, palette: theme.palette,
+                                                 seed: def.id) { col, row in map.owns(GridPoint(col: col, row: row)) }
+        if let variation {
+            variation.zPosition = 1
+            flat.addChild(variation)
+        }
+        groundGrid.addChild(flat)
+        await pause()
+        // Its picture, for the hills and the shore, made once (`SKTexture.cgImage()` is slow).
+        let variationPicture = map.hills.isEmpty && map.shore == nil ? nil : variation?.texture?.cgImage()
+        // In the world, at the land's shift: its bridges' rails, and over a sunk lake their decks too,
+        // with the shore.
+        let standing = SKNode()
+        standing.position = CGPoint(x: Self.shift(of: place).dx, y: Self.shift(of: place).dy)
+        standing.zPosition = -Self.shift(of: place).dy
+        layer.addChild(standing)
+        let sunk = map.shore?.cells ?? []
+        var sunkDecks: [(image: CGImage, frame: CGRect)] = []
+        if !map.bridges.isEmpty {
+            let pixels = art.picture(of: art.tileTexture(theme.ground)).width
+            for bridge in map.bridges {
+                if bridge.cells.contains(where: { sunk.contains($0) }) {
+                    if let deck = BridgeArt.deckPicture(for: bridge, pixels: pixels, palette: theme.palette) { sunkDecks.append(deck) }
+                } else if let deck = BridgeArt.deck(for: bridge, pixels: pixels, palette: theme.palette) {
+                    deck.zPosition = 2
+                    flat.addChild(deck)
+                }
+                BridgeArt.rails(for: bridge, pixels: pixels, palette: theme.palette, in: standing) { map.height(at: $0) }
+            }
+            await pause()
+        }
+        // Each cell's own tile picture, as the land's ground shows it.
+        var images: [ObjectIdentifier: CGImage] = [:]
+        let tilePicture: (GridPoint) -> CGImage? = { [weak self] cell in
+            guard let self, map.contains(cell), let group = tiles.pick(cell).group else { return nil }
+            if let known = images[ObjectIdentifier(group)] { return known }
+            let made = tiles.pictures[ObjectIdentifier(group)].map { self.art.picture(of: $0) }
+            images[ObjectIdentifier(group)] = made
+            return made
+        }
+        var painters: [HillArt.Painter] = []
+        if !map.hills.isEmpty {
+            let looks = HillLooks(map: map, art: art, ground: tilePicture, variation: variationPicture)
+            for hill in map.hills {
+                await pause()
+                if let painter = await HillArt.painter(for: hill, look: looks.look(for: hill), pause: pause) { painters.append(painter) }
+            }
+        }
+        if let shore = map.shore {
+            await pause()
+            let look = HillLooks.shore(of: map, ground: tilePicture, variation: variationPicture, overlays: sunkDecks)
+            if let painter = await HillArt.painter(for: shore, look: look, pause: pause) { painters.append(painter) }
+        }
+        return painters
+    }
+
+    /// Draws a land's squares of hills and shore in a chunk, nearest the camera first, in the
+    /// background: each lifts itself and is sorted among what stands there (`HillArt`).
+    private func paintSquares(of land: Land, in chunk: GridPoint) {
+        for square in land.squares[chunk] ?? [] { waiting.append((chunk, land.def.id, square.painter, square.corner)) }
+        guard !painting, !waiting.isEmpty else { return }
+        painting = true
+        Task { [weak self] in await self?.paintWaiting() }
+    }
+
+    private func paintWaiting() async {
+        while !waiting.isEmpty {
+            let here = World.chunk(of: Self.cell(at: cam.position))
+            func away(_ chunk: GridPoint) -> Int { max(abs(chunk.col - here.col), abs(chunk.row - here.row)) }
+            guard let next = waiting.indices.min(by: { away(waiting[$0].chunk) < away(waiting[$1].chunk) }) else { break }
+            let job = waiting.remove(at: next)
+            guard let things = chunks[job.chunk]?.things, let land = lands[job.land] else { continue }
+            art.use(palette: land.def.theme.palette, for: land.def.id)
+            let sprites = await land.painters[job.painter].draw(job.corner, self.pause(for: land.def))
+            // Unless the chunk's been let go meanwhile (and maybe drawn again, with its own).
+            guard chunks[job.chunk]?.things === things else { continue }
+            for sprite in sprites {
+                sprite.position = sprite.position + land.shift
+                sprite.zPosition -= land.shift.dy
+                things.addChild(sprite)
+            }
+            await breathe()
+        }
+        painting = false
     }
 
     /// Draws a chunk: each land's cells in it with that land's tiles, graded with its palette; the
@@ -226,7 +375,9 @@ final class ContinentScene: SKScene {
             guard let land = lands[id] else { continue }
             art.use(palette: land.def.theme.palette, for: id)
             for cell in cells {
-                guard let group = land.tiles.pick(store.local(cell, in: land.place)).group else { continue }
+                // The shore's drawn sunk, with its hills (`paintSquares`).
+                let local = store.local(cell, in: land.place)
+                guard !land.sunk.contains(local), let group = land.tiles.pick(local).group else { continue }
                 picks.append((cell.col - origin.col, cell.row - origin.row, group))
                 groups[ObjectIdentifier(group)] = group
             }
@@ -248,6 +399,7 @@ final class ContinentScene: SKScene {
         seaGrid.addChild(waters)
         layer.addChild(things)
         chunks[chunk] = (ground, waters, things)
+        for land in lands.values { paintSquares(of: land, in: chunk) }
     }
 
     /// A piece of scenery as its land's plan set it down (`LandPlanner`), where it stands on the
