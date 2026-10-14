@@ -453,182 +453,23 @@ final class WorldScene: SKScene {
     private func makeGround() async -> SKNode {
         let tileSize = CGSize(width: WorldMap.tileSize, height: WorldMap.tileSize)
         let theme = def.theme
-        let waterID = theme.water ?? "tile_water"
-        let water = SKTileGroup(tileDefinition: SKTileDefinition(textures: art.waterFrames(waterID), size: tileSize, timePerFrame: 0.9))
-        var groups: [String: SKTileGroup] = ["water": water]
-        // Each group's picture, for drawing hills (`HillArt`).
-        var pictures: [ObjectIdentifier: SKTexture] = [ObjectIdentifier(water): art.waterFrames(waterID).first ?? SKTexture()]
-        func group(_ key: String, _ texture: () -> SKTexture) -> SKTileGroup {
-            if let known = groups[key] { return known }
-            let picture = texture()
-            let made = SKTileGroup(tileDefinition: SKTileDefinition(texture: picture, size: tileSize))
-            groups[key] = made
-            pictures[ObjectIdentifier(made)] = picture
-            return made
-        }
-        // Accent patches (flower meadows, moss) blend in as soft blobs. Not in towns, where the
-        // accent is terrace paving and stays square.
-        let patchAccent = (theme.accentPatches ?? 0) > 0 && theme.accent != nil && theme.accent != theme.ground
-        /// Whether the ground past the land's edge at `cell` is water: where a river runs on into the
-        /// land next door (`Region`).
-        func waterBeyond(_ cell: GridPoint) -> Bool {
-            map.region?.isRiver(cell) ?? false
-        }
-        /// Which cells of the 3×3 around `cell` are `kind` (bit row * 3 + col, row 0 north).
-        func mask(_ cell: GridPoint, _ kind: Ground) -> Int {
-            let own = map.ground[cell.row][cell.col] == kind
-            var bits = 0
-            for dy in -1...1 {
-                for dx in -1...1 {
-                    let next = GridPoint(col: cell.col + dx, row: cell.row + dy)
-                    // Off the land (past its box, or a land next door's) a road or patch carries on;
-                    // water only where a river runs off it.
-                    let hit = map.contains(next) && map.ground[next.row][next.col] != .away ? map.ground[next.row][next.col] == kind
-                        : kind == .water ? waterBeyond(next) : own
-                    if hit { bits |= 1 << ((1 - dy) * 3 + dx + 1) }
-                }
-            }
-            return bits
-        }
-        /// The water cells of the 5×5 around `cell` (bit row * 5 + col, row 0 north), for shorelines.
-        func poolMask(_ cell: GridPoint) -> Int {
-            var bits = 0
-            for dy in -2...2 {
-                for dx in -2...2 {
-                    let next = GridPoint(col: cell.col + dx, row: cell.row + dy)
-                    let water = map.contains(next) && map.ground[next.row][next.col] != .away ? map.ground[next.row][next.col] == .water : waterBeyond(next)
-                    if water { bits |= 1 << ((2 - dy) * 5 + dx + 2) }
-                }
-            }
-            return bits
-        }
-        // Plain tiles come in four versions that fit together in any order, so big areas don't
-        // repeat. Animated placeholder water keeps its single animated tile.
-        let waterVaries = art.waterFrames(waterID).count == 1
-        func plain(_ id: String, _ variant: Int) -> SKTileGroup {
-            group("\(id)#\(variant)") { art.tileVariant(id, variant) }
-        }
-        let full = 0b111_111_111, sides = 0b010_101_010
-        // The sea (on the continent), round the land and in over its box past its coast (`Region`).
-        // It lies lower than the land (`WorldMap.seaDrop`; `placeSea` draws it), so its cells have no
-        // ground, and the land's edge along it is cut clear, curving as a lake's shore does, a bank
-        // of earth under it (`bank`).
-        var sea: Set<GridPoint> = []
-        if map.region != nil {
-            for row in -2..<(map.rows + 2) {
-                for col in -2..<(map.columns + 2) {
-                    let cell = GridPoint(col: col, row: row)
-                    let open = map.contains(cell) ? map.ground[row][col] == .sea : map.isOpenSea(cell)
-                    if open { sea.insert(cell) }
-                }
-            }
-        }
-        /// The sea's cells of the 3×3 around `cell` (as `mask`), and of the 5×5 (as `poolMask`).
-        func shore(_ cell: GridPoint) -> Int {
-            var bits = 0
-            for dy in -1...1 {
-                for dx in -1...1 where sea.contains(GridPoint(col: cell.col + dx, row: cell.row + dy)) { bits |= 1 << ((1 - dy) * 3 + dx + 1) }
-            }
-            return bits
-        }
-        func seaPool(_ cell: GridPoint) -> Int {
-            var bits = 0
-            for dy in -2...2 {
-                for dx in -2...2 where sea.contains(GridPoint(col: cell.col + dx, row: cell.row + dy)) { bits |= 1 << ((2 - dy) * 5 + dx + 2) }
-            }
-            return bits
-        }
-        // Across the band where this land gives way to the one next door (`Seam`), that land's
-        // ground in patches (`WorldMap.foreign`), graded as it is there: soft rounded blobs, as an
-        // accent's patches are, joining where they touch (`ArtLibrary.GroundLayer.from`). Which land's
-        // ground shows at a cell, as the index of its seam: on this land as laid out, just over the
-        // border as the band runs on into the land next door.
-        let others: [(land: MapDef, from: ArtLibrary.Foreign)?] = map.seams.map { seam in
-            Content.shared.map(seam.neighbour).map { (land: $0, from: ArtLibrary.Foreign(land: $0.id, palette: $0.theme.palette)) }
-        }
-        var lookPast: [GridPoint: Int?] = [:]
-        func otherLook(_ cell: GridPoint) -> Int? {
-            if map.owns(cell) { return map.foreign[cell] }
-            if let known = lookPast[cell] { return known }
-            let found = map.seams.indices.first { map.seams[$0].covers(cell) && map.seams[$0].showsOther(cell) }
-            lookPast[cell] = found
-            return found
-        }
-        /// The land next door whose patches reach `cell` (its own, or one round it), and which cells
-        /// of the 3×3 round it show that land (bit row * 3 + col, row 0 north).
-        func patches(_ cell: GridPoint) -> (seam: Int, mask: Int)? {
-            var looks: [Int?] = []
-            for dy in -1...1 {
-                for dx in -1...1 { looks.append(otherLook(GridPoint(col: cell.col + dx, row: cell.row - dy))) }
-            }
-            guard let seam = looks[4] ?? looks.compactMap({ $0 }).first else { return nil }
-            var bits = 0
-            for (bit, look) in looks.enumerated() where look == seam { bits |= 1 << bit }
-            return (seam, bits)
-        }
+        // Each cell's tile, from the cells round it (`GroundTiles`).
+        let tiles = GroundTiles(map: map, art: art)
         var picks: [(col: Int, row: Int, group: SKTileGroup?)] = []
         // The land's cells within two of the sea, for its bank.
         var shoreline: [(col: Int, row: Int)] = []
         for row in 0..<map.rows {
             if row % 4 == 3 { await breathe() }
             for col in 0..<map.columns {
-                let cell = GridPoint(col: col, row: row)
-                let kind = map.ground[row][col]
-                guard kind != .sea, kind != .away else {
-                    picks.append((col, row, nil))
-                    continue
-                }
-                let road = mask(cell, .path), pond = mask(cell, .water)
-                let variant = Self.variant(of: cell)
-                let patch = patchAccent ? mask(cell, .accent) : 0
-                // What shows between the soft shapes: the cell's own ground, or for a road, pond or
-                // patch cell the ground around it.
-                let base: String = switch kind {
-                case .ground: theme.ground
-                case .border: theme.border ?? theme.ground
-                case .accent where !patchAccent: theme.accent ?? theme.ground
-                default: mask(cell, .border) & sides != 0 ? (theme.border ?? theme.ground) : theme.ground
-                }
-                var layers: [ArtLibrary.GroundLayer] = []
-                // The land next door's patches first, under everything of this land's.
-                let other = map.seams.isEmpty ? nil : patches(cell)
-                let otherLand = other.flatMap { others[$0.seam] }
-                if let other, let otherLand {
-                    layers.append(.init(tile: otherLand.land.theme.ground, mask: other.mask, style: .patch, from: otherLand.from))
-                }
-                if patch != 0, let accent = theme.accent { layers.append(.init(tile: accent, mask: patch, style: .patch)) }
-                if road != 0 { layers.append(.init(tile: theme.path, mask: road, style: .road)) }
-                if pond != 0 { layers.append(.init(tile: waterID, mask: poolMask(cell), style: .water)) }
-                let near = sea.isEmpty ? 0 : seaPool(cell)
-                if near != 0 { shoreline.append((col, row)) }
-                let coast = near == 0 ? 0 : shore(cell)
-                if coast != 0 { layers.append(.init(tile: base, mask: near, style: .cut)) }
-                let chosen: SKTileGroup
-                if pond == full, coast == 0 {
-                    chosen = waterVaries ? plain(waterID, variant) : water
-                } else if road == full, pond == 0, coast == 0 {
-                    chosen = plain(theme.path, variant)
-                } else if let other, let otherLand, other.mask == full, layers.count == 1 {
-                    // All the land next door's ground.
-                    let land = otherLand.land
-                    chosen = group("foreign|\(land.id)#\(variant)") {
-                        art.foreignTile(land.theme.ground, palette: land.theme.palette, from: land.id, variant: variant, base: base)
-                    }
-                } else if layers.isEmpty {
-                    chosen = plain(base, variant)
-                } else if let accent = theme.accent, patch == full, road == 0, pond == 0, coast == 0 {
-                    chosen = plain(accent, variant)
-                } else {
-                    // Shorelines depend on where they are (see organicTile), so each gets its own tile.
-                    let place = pond != 0 || coast != 0 ? "@\(col),\(row)" : ""
-                    let key = base + "|" + layers.map { "\($0.style)\($0.mask)\($0.from?.land ?? "")" }.joined(separator: "|") + place
-                    chosen = group(key) { art.organicTile(base: base, layers: layers, cell: cell, variant: variant) }
-                }
-                picks.append((col, row, chosen))
+                let pick = tiles.pick(GridPoint(col: col, row: row))
+                if pick.nearSea { shoreline.append((col, row)) }
+                picks.append((col, row, pick.group))
             }
         }
         await breathe()
-        let tileSet = SKTileSet(tileGroups: Array(groups.values))
+        let tileSet = SKTileSet(tileGroups: tiles.allGroups)
+        // Each tile's picture, for drawing hills (`HillArt`).
+        let pictures = tiles.pictures
         let tileMap = SKTileMapNode(tileSet: tileSet, columns: map.columns, rows: map.rows, tileSize: tileSize)
         tileMap.anchorPoint = .zero
         // The shore's cells are drawn sunk (`WorldMap.shore`, below), not here.
