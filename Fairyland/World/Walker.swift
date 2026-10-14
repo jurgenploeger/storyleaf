@@ -72,12 +72,16 @@ final class Walker: SKNode {
         didSet { settle() }
     }
 
+    /// The ground it stands on, when it's set down in a land's own points on the continent
+    /// (`LandStage`): that land's.
+    var standsOn: ((CGPoint) -> CGFloat)?
+
     /// Up onto the ground under its spot: as it walks, and once it's on the map.
     func settle() {
         // Its own land's ground, even shown past the border of the land you're in.
         let land = (parent as? LandNode)?.land ?? (scene as? WorldScene)
         // Or on the continent as one place (`ContinentScene`).
-        let height = land?.groundHeight(at: position) ?? (scene as? ContinentScene)?.groundHeight(at: position) ?? 0
+        let height = standsOn?(position) ?? land?.groundHeight(at: position) ?? (scene as? ContinentScene)?.groundHeight(at: position) ?? 0
         guard height != lift else { return }
         lift = height
         body.position.y = height

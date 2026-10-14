@@ -24,8 +24,8 @@ final class ContinentScene: SKScene {
     private let walkSpeed: CGFloat = 88
     private var lastUpdate: TimeInterval = 0
 
-    /// A land near you, laid out and planned: its own map, what it sets down (by chunk), how its
-    /// ground is tiled, its hills and shore ready to draw, and where its own points lie in the
+    /// A land near you, laid out and planned: its own map, how its ground is tiled, its hills and
+    /// shore ready to draw, what it sets down (`LandStage`), and where its own points lie in the
     /// continent's.
     private final class Land {
         let def: MapDef
@@ -33,8 +33,7 @@ final class ContinentScene: SKScene {
         let map: WorldMap
         let tiles: GroundTiles
         let shift: CGVector
-        /// Its scenery, by the chunk each piece stands in.
-        let scenery: [GridPoint: [Placement]]
+        let stage: LandStage
         /// Its hills and its shore, each ready to draw a square at a time (`HillArt.Painter`), and the
         /// squares each chunk draws: those whose south-west corner is in it.
         let painters: [HillArt.Painter]
@@ -42,21 +41,14 @@ final class ContinentScene: SKScene {
         /// Its shore's cells, drawn sunk with it rather than flat (`WorldMap.shore`).
         let sunk: Set<GridPoint>
 
-        init(def: MapDef, place: World.Land, map: WorldMap, plan: LandPlan, tiles: GroundTiles, painters: [HillArt.Painter]) {
+        init(def: MapDef, place: World.Land, map: WorldMap, tiles: GroundTiles, painters: [HillArt.Painter], stage: LandStage) {
             self.def = def
             self.place = place
             self.map = map
             self.tiles = tiles
             self.painters = painters
+            self.stage = stage
             shift = ContinentScene.shift(of: place)
-            var scenery: [GridPoint: [Placement]] = [:]
-            let all = plan.reeds + plan.lots + plan.streetDecor + plan.buildings + plan.decor + plan.localProps + plan.outcrops
-                + plan.props + plan.seamProps
-            for piece in all {
-                let world = GridPoint(col: piece.cell.col + place.origin.col, row: piece.cell.row + place.origin.row)
-                scenery[World.chunk(of: world), default: []].append(piece)
-            }
-            self.scenery = scenery
             var squares: [GridPoint: [(painter: Int, corner: GridPoint)]] = [:]
             for (number, painter) in painters.enumerated() {
                 for corner in painter.corners {
@@ -79,7 +71,6 @@ final class ContinentScene: SKScene {
     private var lookedAround: TimeInterval = 0
     /// True once the chunks round where you started are drawn (a debug launch's screenshot waits).
     private(set) var isReady = false
-    private var feet: [ObjectIdentifier: CGFloat] = [:]
     private let seaTile = "raw:tile_water"
     /// Squares of hills and shore waiting to be drawn (nearest first), and whether they're being drawn.
     private var waiting: [(chunk: GridPoint, land: String, painter: Int, corner: GridPoint)] = []
@@ -161,7 +152,7 @@ final class ContinentScene: SKScene {
 
     /// Grid points (cells × `WorldMap.tileSize`) squashed and turned onto the screen, as a land's
     /// ground is (`WorldScene.projected`).
-    private static func projected(_ node: SKNode) -> SKNode {
+    static func projected(_ node: SKNode) -> SKNode {
         let squash = SKNode()
         squash.yScale = 0.5
         let turn = SKNode()
@@ -204,6 +195,7 @@ final class ContinentScene: SKScene {
         checkCell()
         player.settle()
         cam.position = player.position + CGVector(dx: 0, dy: player.lift)
+        for land in lands.values { land.stage.show(around: cam.position, scale: cam.xScale, screen: size) }
         if currentTime - lookedAround > 0.25 {
             lookedAround = currentTime
             lookAround()
@@ -397,7 +389,10 @@ final class ContinentScene: SKScene {
             store.add(map)
             let tiles = GroundTiles(map: map, art: art)
             let painters = await ranges(of: map, tiles: tiles, place: place, pause: rest)
-            let land = Land(def: def, place: place, map: map, plan: planner.plan, tiles: tiles, painters: painters)
+            let stage = LandStage(def: def, map: map, plan: planner.plan, tiles: tiles, art: art, session: session, shift: Self.shift(of: place))
+            await stage.build(pause: rest)
+            layer.addChild(stage.world)
+            let land = Land(def: def, place: place, map: map, tiles: tiles, painters: painters, stage: stage)
             lands[id] = land
             laying.remove(id)
             for chunk in chunks.keys { paintSquares(of: land, in: chunk) }
@@ -426,7 +421,7 @@ final class ContinentScene: SKScene {
     /// A land's hills and its shore, made ready to draw a square at a time as its own scene draws them
     /// (`HillLooks`), over its colour patches and with its bridges' decks out over a sunk lake. And,
     /// for the whole land at once (they're light), its colour patches and bridges' decks on the
-    /// ground and its bridges' rails in the world.
+    /// ground (their rails stand with the rest of what it sets down, `LandStage`).
     private func ranges(of map: WorldMap, tiles: GroundTiles, place: World.Land, pause: @escaping () async -> Void) async -> [HillArt.Painter] {
         let def = map.def, theme = def.theme, tile = WorldMap.tileSize
         // On the ground, in the land's own grid points: its soft colour patches over its own cells
@@ -443,12 +438,7 @@ final class ContinentScene: SKScene {
         await pause()
         // Its picture, for the hills and the shore, made once (`SKTexture.cgImage()` is slow).
         let variationPicture = map.hills.isEmpty && map.shore == nil ? nil : variation?.texture?.cgImage()
-        // In the world, at the land's shift: its bridges' rails, and over a sunk lake their decks too,
-        // with the shore.
-        let standing = SKNode()
-        standing.position = CGPoint(x: Self.shift(of: place).dx, y: Self.shift(of: place).dy)
-        standing.zPosition = -Self.shift(of: place).dy
-        layer.addChild(standing)
+        // Over a sunk lake, the bridges' decks are drawn with the shore.
         let sunk = map.shore?.cells ?? []
         var sunkDecks: [(image: CGImage, frame: CGRect)] = []
         if !map.bridges.isEmpty {
@@ -460,7 +450,6 @@ final class ContinentScene: SKScene {
                     deck.zPosition = 2
                     flat.addChild(deck)
                 }
-                BridgeArt.rails(for: bridge, pixels: pixels, palette: theme.palette, in: standing) { map.height(at: $0) }
             }
             await pause()
         }
@@ -520,7 +509,8 @@ final class ContinentScene: SKScene {
     }
 
     /// Draws a chunk: each land's cells in it with that land's tiles, graded with its palette; the
-    /// sea where no land is; and the scenery that stands in it.
+    /// sea where no land is; and (in the background) its squares of hills and shore. What the lands
+    /// set down on it is theirs to show (`LandStage.show`).
     private func draw(_ chunk: GridPoint) {
         let size = World.chunkSize, tile = WorldMap.tileSize
         let origin = GridPoint(col: chunk.col * size, row: chunk.row * size)
@@ -542,7 +532,6 @@ final class ContinentScene: SKScene {
                 picks.append((cell.col - origin.col, cell.row - origin.row, group))
                 groups[ObjectIdentifier(group)] = group
             }
-            for piece in land.scenery[chunk] ?? [] { things.addChild(scenery(piece, of: land)) }
         }
         let ground = SKTileMapNode(tileSet: SKTileSet(tileGroups: Array(groups.values)), columns: size, rows: size, tileSize: tileSize)
         ground.anchorPoint = .zero
@@ -561,57 +550,5 @@ final class ContinentScene: SKScene {
         layer.addChild(things)
         chunks[chunk] = (ground, waters, things)
         for land in lands.values { paintSquares(of: land, in: chunk) }
-    }
-
-    /// A piece of scenery as its land's plan set it down (`LandPlanner`), where it stands on the
-    /// continent: on its cell, nudged, up on the ground there, swaying.
-    private func scenery(_ piece: Placement, of land: Land) -> SKSpriteNode {
-        let sprite = art.sprite(piece.art)
-        let node = SKSpriteNode(texture: sprite.texture, size: CGSize(width: sprite.size.width * piece.scale, height: sprite.size.height * piece.scale))
-        node.anchorPoint = CGPoint(x: 0.5, y: min(0.5, 0.05 + foot(of: sprite.texture)))
-        var position = land.map.base(of: piece.cell) + land.shift
-        if let nudge = piece.nudge {
-            position.x += nudge.dx
-            position.y += nudge.dy
-        }
-        let ground = position.y
-        position.y += land.map.height(at: land.map.center(of: piece.cell))
-        node.position = position
-        node.zPosition = -ground
-        if let sway = piece.sway {
-            let left = SKAction.rotate(toAngle: sway.lean, duration: sway.duration, shortestUnitArc: true)
-            let right = SKAction.rotate(toAngle: -sway.lean, duration: sway.duration, shortestUnitArc: true)
-            left.timingMode = .easeInEaseOut
-            right.timingMode = .easeInEaseOut
-            node.zRotation = sway.start
-            node.run(.repeatForever(.sequence([left, right])))
-        }
-        return node
-    }
-
-    /// How far up its picture a sprite's lowest opaque pixel sits (0...1), so scenery drawn with
-    /// empty rows under it stands on its cell (`WorldScene.foot(of:)`).
-    private func foot(of texture: SKTexture) -> CGFloat {
-        let key = ObjectIdentifier(texture)
-        if let known = feet[key] { return known }
-        let image = art.picture(of: texture)
-        let width = image.width, height = image.height
-        var foot: CGFloat = 0
-        if width > 0, height > 0,
-           let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
-                                   space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
-           let data = context.data {
-            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
-            let pixels = data.bindMemory(to: UInt8.self, capacity: width * height * 4)
-            // The bitmap's rows run top to bottom, so search up from the last one.
-            search: for row in stride(from: height - 1, through: 0, by: -1) {
-                for col in 0..<width where pixels[(row * width + col) * 4 + 3] > 127 {
-                    foot = CGFloat(height - 1 - row) / CGFloat(height)
-                    break search
-                }
-            }
-        }
-        feet[key] = foot
-        return foot
     }
 }
