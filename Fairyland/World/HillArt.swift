@@ -188,21 +188,31 @@ enum HillArt {
                 }
             }
         }
-        for j in 0..<sh {
+        if hill.sunken {
+            // Sunk ground, whole over its cells and the cell round them (the land there at its own
+            // height, drawn just as it is round it), lit only by how it slopes: their samples, not
+            // every one in its box (a coast's shore reaches round much of its land, in a narrow band).
+            for (number, cell) in shown.enumerated() {
+                if number % 256 == 255 { await pause() }
+                let i0 = (cell.col - low.col) * samples, j0 = (cell.row - low.row) * samples
+                let fromI = max(0, i0), toI = min(sw, i0 + samples), fromJ = max(0, j0), toJ = min(sh, j0 + samples)
+                guard fromI < toI, fromJ < toJ else { continue }
+                for j in fromJ..<toJ {
+                    for i in fromI..<toI {
+                        // Image rows run top down.
+                        let index = ((sh - 1 - j) * sw + i) * 4
+                        for channel in 0..<4 { mask[index + channel] = 255 }
+                    }
+                }
+            }
+        }
+        for j in 0..<(hill.sunken ? 0 : sh) {
             if j % 4 == 3 { await pause() }
             for i in 0..<sw {
                 let x = Double(low.col) + (Double(i) + 0.5) / Double(samples)
                 let y = Double(low.row) + (Double(j) + 0.5) / Double(samples)
                 // Image rows run top down.
                 let index = ((sh - 1 - j) * sw + i) * 4
-                if hill.sunken {
-                    // Sunk ground, whole over its cells and the cell round them (the land there at its
-                    // own height, drawn just as it is round it), lit only by how it slopes.
-                    if shown.contains(GridPoint(col: Int(x.rounded(.down)), row: Int(y.rounded(.down)))) {
-                        for channel in 0..<4 { mask[index + channel] = 255 }
-                    }
-                    continue
-                }
                 let field = hill.field(x, y)
                 if let hidden = look.hidden, hidden(GridPoint(col: Int(x.rounded(.down)), row: Int(y.rounded(.down)))) { continue }
                 let trailDistance = Double(nearness[j * sw + i])
@@ -382,8 +392,11 @@ enum HillArt {
                 }
                 context.interpolationQuality = .medium
             }
-            await shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint,
-                        brightest: Float(look.brightest), pause: pause)
+            // Sunk ground is lit only by the shader (its `light` is 1 all over: nothing to shade).
+            if !hill.sunken {
+                await shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint,
+                            brightest: Float(look.brightest), pause: pause)
+            }
             if let doorway { Self.cave(doorway, in: context, at: { spot($0) }) }
             if let outline {
                 context.setBlendMode(.destinationIn)
@@ -432,12 +445,15 @@ enum HillArt {
         ]
 
         let across = WorldMap.project(CGPoint(x: tile, y: 0)).x
+        // The cells that show in each square, by its corner, sorted out once (not the whole range
+        // gone through again for every square: a coast's shore has thousands).
+        func floored(_ value: Int) -> Int { value >= 0 ? value / square : -((-value + square - 1) / square) }
+        let bySquare = Dictionary(grouping: shown) { cell in
+            GridPoint(col: low.col + floored(cell.col - low.col) * square, row: low.row + floored(cell.row - low.row) * square)
+        }
         /// The cells of the square from `corner` that show any of it.
         func cellsShown(from corner: GridPoint) -> [GridPoint] {
-            shown.filter { cell in
-                let dc = cell.col - corner.col, dr = cell.row - corner.row
-                return dc >= 0 && dr >= 0 && dc < square && dr < square
-            }
+            bySquare[corner] ?? []
         }
         var corners: [GridPoint] = []
         for top in stride(from: low.row, to: low.row + rows, by: square) {

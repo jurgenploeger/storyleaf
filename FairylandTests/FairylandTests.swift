@@ -130,7 +130,7 @@ struct ContentTests {
         // and on past its edge, the road climbing a little to the cave's mouth in a wall of rock.
         let tile = WorldMap.tileSize
         for def in content.maps where def.theme.cave == nil && def.town == nil {
-            let map = WorldMap(def: def)
+            let map = Layouts.of(def)
             for exit in def.exits where content.map(exit.to)?.theme.cave != nil {
                 let crag = map.crags.first { $0.edge == exit.edge }
                 #expect(crag != nil, "map \(def.id): no range where its road leads into \(exit.to)")
@@ -189,7 +189,7 @@ struct ContentTests {
             }
         }
         // Nowhere else: no road from the meadow leads into a cave.
-        #expect(WorldMap(def: try #require(content.map("sunny_meadow"))).crags.isEmpty)
+        #expect(Layouts.of(try #require(content.map("sunny_meadow"))).crags.isEmpty)
     }
 
     /// Lands a road joins touch on the continent (content/world.json), and the road runs on across
@@ -198,7 +198,7 @@ struct ContentTests {
         var maps: [String: WorldMap] = [:]
         func grid(_ def: MapDef) -> WorldMap {
             if let known = maps[def.id] { return known }
-            let made = WorldMap(def: def)
+            let made = Layouts.of(def)
             maps[def.id] = made
             return made
         }
@@ -241,7 +241,7 @@ struct ContentTests {
         var maps: [String: WorldMap] = [:]
         func grid(_ def: MapDef) -> WorldMap {
             if let known = maps[def.id] { return known }
-            let made = WorldMap(def: def)
+            let made = Layouts.of(def)
             maps[def.id] = made
             return made
         }
@@ -335,7 +335,7 @@ struct ContentTests {
 
     @Test func everyMapHasRoomToWalk() {
         for def in content.maps {
-            let map = WorldMap(def: def)
+            let map = Layouts.of(def)
             for exit in def.exits {
                 #expect(map.isWalkable(map.entryCell(from: exit.edge)), "map \(def.id) entry from \(exit.edge) is blocked")
             }
@@ -350,7 +350,7 @@ struct ContentTests {
     /// the water (the tapped cell clamped to the edge used to count as the spot itself).
     @Test func tapsOnTheSeaStopAtTheShore() throws {
         let def = try #require(content.map("meadowbrook"))
-        let map = WorldMap(def: def)
+        let map = Layouts.of(def)
         let start = map.center(of: map.entryCell(from: try #require(def.exits.first).edge))
         let sea = WorldMap.project(CGPoint(x: -3 * WorldMap.tileSize, y: CGFloat(map.rows / 2) * WorldMap.tileSize))
         let end = try #require(map.path(from: start, to: sea).last)
@@ -359,7 +359,7 @@ struct ContentTests {
 
     @Test func lakesAndRiversLeaveEverywhereInReach() throws {
         for def in content.maps where def.theme.lakes != nil || Continent.region(of: def)?.hasRiver == true {
-            let map = WorldMap(def: def)
+            let map = Layouts.of(def)
             // What each map got, for the log (the tests job lists these lines).
             let lakes = map.lakes.map { "lake \($0.water.count)" + ($0.island.isEmpty ? "" : " with an island of \($0.island.count)") }
             let bridges = map.bridges.map { "\($0.kind) \($0.end - $0.start + 1)" }
@@ -416,7 +416,7 @@ struct ContentTests {
         let tile = WorldMap.tileSize
         var sloping = 0
         for def in content.maps where Continent.region(of: def) != nil && def.theme.cave == nil {
-            let map = WorldMap(def: def)
+            let map = Layouts.of(def)
             guard let shore = map.shore else { continue }
             sloping += 1
             func height(_ cell: GridPoint) -> CGFloat {
@@ -460,7 +460,7 @@ struct ContentTests {
     @Test func hillsRiseWithATrailUp() throws {
         let tile = WorldMap.tileSize
         for def in content.maps where def.theme.hills != nil {
-            let map = WorldMap(def: def)
+            let map = Layouts.of(def)
             // Its own hills, not a range where a road leads into a cave (`roadsIntoCavesRunIntoAMountain`).
             let fields = map.hills.filter { !$0.isCrag }
             #expect(!fields.isEmpty, "map \(def.id) has no hills")
@@ -530,13 +530,13 @@ struct ContentTests {
         }
         // The more dangerous the map, the rockier and steeper its hills: grassy slopes in the meadow,
         // crags where the monsters are strongest.
-        let meadow = WorldMap(def: try #require(content.map("sunny_meadow")))
-        let steppe = WorldMap(def: try #require(content.map("secret_plain")))
+        let meadow = Layouts.of(try #require(content.map("sunny_meadow")))
+        let steppe = Layouts.of(try #require(content.map("secret_plain")))
         #expect(meadow.rockiness == 0 && steppe.rockiness == 1)
         #expect(meadow.hills.allSatisfy { $0.steepness < steppe.hills.first?.steepness ?? 0 })
         // A town's terraces stand up too, their stairs climbing to the top.
         for def in content.maps where def.town?.terraces?.isEmpty == false {
-            let map = WorldMap(def: def)
+            let map = Layouts.of(def)
             #expect(map.plateaus.contains { $0.height == WorldMap.terraceHeight }, "map \(def.id): terraces lie flat")
         }
     }
@@ -548,7 +548,7 @@ struct ContentTests {
         for def in content.maps {
             let up = (def.npcs ?? []).filter { $0.summit != nil }
             guard !up.isEmpty else { continue }
-            let map = WorldMap(def: def)
+            let map = Layouts.of(def)
             let hub = map.offset(def.hub?.first ?? 0, def.hub?.last ?? 0)
             for npc in up {
                 let summit = try #require(npc.summit)
@@ -573,7 +573,7 @@ struct ContentTests {
         // roads meet.
         for def in content.maps {
             guard let locals = def.locals, !locals.isEmpty else { continue }
-            let map = WorldMap(def: def)
+            let map = Layouts.of(def)
             let hub = map.center(of: map.offset(def.hub?.first ?? 0, def.hub?.last ?? 0))
             for local in locals {
                 for place in [local.home] + (local.walk.map { [$0] } ?? []) {
@@ -593,7 +593,7 @@ struct ContentTests {
 
     @Test func housesStandOffTheRoads() {
         for def in content.maps {
-            let map = WorldMap(def: def)
+            let map = Layouts.of(def)
             #expect(map.buildings.count == (def.buildings ?? []).count, "map \(def.id) lost a building")
             // The map's own buildings and the shops along the streets: on plain ground or a terrace's
             // paved top, never on a road, and never on each other.
@@ -616,7 +616,7 @@ struct ContentTests {
         // No house on a townsperson's spot or just in front of it (lower on screen), where its roof
         // would hide them: WorldMap.planTown keeps the 4×4 cells from two in front to one behind clear.
         for def in content.maps where def.town != nil {
-            let map = WorldMap(def: def)
+            let map = Layouts.of(def)
             let houses = map.buildings.map { ($0.art, $0.anchor) } + map.lots.map { ($0.art, $0.anchor) }
             for npc in def.npcs ?? [] {
                 let spot = map.offset(npc.x, npc.y)
@@ -2684,20 +2684,23 @@ struct PerformanceTests {
         }
     }
 
-    /// Every map must build, and quickly; this prints how long each one takes.
-    @Test func mapsBuildQuickly() async {
+    /// Every map must build, and quickly; this prints how long each one takes: laying it out (the
+    /// grid, off the main thread in the game) and building its scene on that layout, as the game
+    /// does (the scene isn't made to lay it out again).
+    @Test func mapsBuildQuickly() async throws {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         for def in Content.shared.maps {
             let clock = ContinuousClock()
-            var grid: WorldMap?
-            let gridTime = clock.measure { grid = WorldMap(def: def) }
+            var laidOut: WorldMap?
+            let gridTime = clock.measure { laidOut = WorldMap(def: def) }
+            let grid = try #require(laidOut)
             let start = clock.now
-            let scene = WorldScene(map: def, session: session, input: InputState(), entry: nil)
+            let scene = WorldScene(map: def, session: session, input: InputState(), entry: nil, grid: grid)
             await scene.build { _ in }
             let sceneTime = clock.now - start
             #expect(scene.isBuilt)
-            print("⏱ \(def.id): grid \(gridTime), scene \(sceneTime), cells \(grid!.columns * grid!.rows)")
-            #expect(sceneTime < Self.mapBuildLimit, "\(def.id) took \(sceneTime) to build")
+            print("⏱ \(def.id): grid \(gridTime), scene \(sceneTime), cells \(grid.columns * grid.rows)")
+            #expect(gridTime + sceneTime < Self.mapBuildLimit, "\(def.id) took \(gridTime + sceneTime) to build")
         }
     }
 }
@@ -2908,6 +2911,22 @@ struct RewardTests {
         let names = Set((0..<40).compactMap { _ in GameSession.botTitle(level: 70, id: UUID())?.name })
         #expect(names.isSubset(of: [Content.shared.title("veteran")?.name].compactMap { $0 }))
         #expect(!names.isEmpty)
+    }
+}
+
+/// Each land laid out once for all the tests that only look at its layout (`ContentTests`): laying
+/// one out takes seconds on CI, and those tests went through every land again and again, six of them
+/// a quarter of an hour each, so the suite ran past its time. Don't change what they hand back: the
+/// other tests see it too. (Tests that build scenes or plans on a land lay out their own.)
+@MainActor
+enum Layouts {
+    private static var made: [String: WorldMap] = [:]
+
+    static func of(_ def: MapDef) -> WorldMap {
+        if let known = made[def.id] { return known }
+        let map = WorldMap(def: def)
+        made[def.id] = map
+        return map
     }
 }
 
