@@ -244,8 +244,9 @@ final class WorldScene: SKScene {
 
     /// How a land is built: behind the loading card in long slices, or a few milliseconds a frame in
     /// the background while you walk toward it (a land next door), the frame given back between;
-    /// `hurried`, the same in longer slices (debug screenshots of a border, which can't wait).
-    enum Pace { case foreground, background, hurried }
+    /// `near`, more of each frame, as you come close to its border before it's done; `hurried`, in
+    /// long slices, while you wait at its border (and for debug screenshots of one, which can't wait).
+    enum Pace { case foreground, background, near, hurried }
     private var pace = Pace.foreground
     /// When this slice of the build began.
     private var sliceStart = ContinuousClock.now
@@ -424,9 +425,25 @@ final class WorldScene: SKScene {
     private static func sliceLength(_ pace: Pace) -> Duration {
         switch pace {
         case .background: return .milliseconds(5)
+        case .near: return .milliseconds(12)
         case .hurried: return .milliseconds(250)
         case .foreground: return .milliseconds(120)
         }
+    }
+
+    /// Builds a land next door that's under way faster from now on (`near`, `hurried`); never
+    /// slower than it's going, and not one behind the loading card.
+    func hurry(_ faster: Pace) {
+        func rank(_ pace: Pace) -> Int {
+            switch pace {
+            case .background: return 0
+            case .near: return 1
+            case .hurried: return 2
+            case .foreground: return 3
+            }
+        }
+        guard !isBuilt, pace != .foreground, rank(faster) > rank(pace) else { return }
+        pace = faster
     }
     /// The longest a background build kept the frame in one go (the tests print it): what can't be
     /// cut finer than one step.
@@ -2319,8 +2336,8 @@ final class WorldScene: SKScene {
         }
         crowd?.greet(at: point, from: player.position)
         // A tap over the border, in a land next door: there by the nearest way over, and on to the
-        // spot once you're across (`takeOver`). Into one not built yet too: over behind the
-        // loading card, where you step across (`cross(into:)`).
+        // spot once you're across (`takeOver`). Into one not built yet too: you wait at the line
+        // till it's shown (`waitsBeforeStepping`).
         let ground = map.groundPoint(under: point)
         let tapped = map.rawCell(at: ground)
         tapOverBorder = nil
@@ -2805,7 +2822,7 @@ final class WorldScene: SKScene {
 
     /// Whether you can step from this land onto `cell`, a land next door's: straight over from a cell
     /// of this one beside it, across a border open there, onto ground you can stand on there (if it's
-    /// built yet; if not, the coordinator takes you there behind the loading card as you step).
+    /// built yet; if not, you wait at the line till it is, `waitsBeforeStepping`).
     private func canCross(into cell: GridPoint) -> Bool {
         // Not into a river where it runs on over the border.
         guard map.region?.isRiver(cell) != true, let neighbour = neighbour(holding: cell),
@@ -2816,9 +2833,11 @@ final class WorldScene: SKScene {
     }
 
     /// You've stepped over the border: on into the land next door, there already if it's shown
-    /// (`takeOver`, with no loading card), or behind the card if it isn't built yet.
+    /// (`takeOver`, with no loading card), or behind the card if it still isn't built after you've
+    /// waited `longestWait` at the line.
     private func cross(into neighbour: Continent.Neighbour) {
         hasLeft = true
+        waiting = nil
         let land = nextDoor[neighbour.def.id]?.scene
         walkingOver = land != nil
         if land == nil { isInputLocked = true }
@@ -3074,14 +3093,46 @@ final class WorldScene: SKScene {
             player.face(Direction(stick, current: player.facing))
             player.setWalking(true)
         } else {
+            // A walk over the border (a tap past it) waits at the line too, till the land's shown.
+            if let next = player.path.first {
+                let cell = map.rawCell(at: next)
+                if !map.owns(cell), waitsBeforeStepping(onto: cell) {
+                    player.setWalking(false)
+                    return
+                }
+            }
             player.setWalking(player.followPath(dt: dt) || !player.path.isEmpty)
         }
     }
 
     private func canStand(at point: CGPoint) -> Bool {
         let cell = map.rawCell(at: point)
-        guard map.owns(cell) else { return canCross(into: cell) }
+        guard map.owns(cell) else { return canCross(into: cell) && !waitsBeforeStepping(onto: cell) }
         return map.isWalkable(cell) && !barricades.contains { $0.cells.contains(cell) }
+    }
+
+    /// You're held at the border of a land next door that isn't shown yet (still being built): the
+    /// coordinator builds it as fast as it can and shows it the moment it's done, and you walk on
+    /// over with no loading card (`GameCoordinator.waiting`).
+    var onWaiting: (@MainActor (Continent.Neighbour) -> Void)?
+    /// The land you're waiting at the border of, since when, and when you last pressed on.
+    private var waiting: (land: String, since: Date, last: Date)?
+    /// How long you wait at a border before going over behind the loading card after all (only if
+    /// the land's build has stalled: it's hurried the whole time you wait).
+    private static let longestWait: TimeInterval = 30
+
+    /// Whether to wait before stepping onto `cell`, a land next door's: while that land isn't shown
+    /// yet, up to `longestWait` (counted from when you came up to its border this time).
+    private func waitsBeforeStepping(onto cell: GridPoint) -> Bool {
+        guard let neighbour = neighbour(holding: cell), nextDoor[neighbour.def.id] == nil else { return false }
+        let now = Date(), id = neighbour.def.id
+        if let known = waiting, known.land == id, now.timeIntervalSince(known.last) < 1 {
+            waiting = (land: id, since: known.since, last: now)
+        } else {
+            waiting = (land: id, since: now, last: now)
+        }
+        onWaiting?(neighbour)
+        return now.timeIntervalSince(waiting?.since ?? now) < Self.longestWait
     }
 
     private func checkTalkTarget() {

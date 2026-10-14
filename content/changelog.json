@@ -2,6 +2,15 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.6.2",
+      "date": "2026-10-14",
+      "title": "Straight over",
+      "notes": [
+        "Walking over a border never brings up a loading screen: if the land over it isn't ready yet, you wait at the line a moment and walk straight on.",
+        "The land ahead is got ready faster as you come near its border."
+      ]
+    },
+    {
       "version": "0.6.1",
       "date": "2026-10-14",
       "title": "Any way round",

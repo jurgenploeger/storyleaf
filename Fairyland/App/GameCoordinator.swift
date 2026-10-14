@@ -186,6 +186,7 @@ final class GameCoordinator {
         scene.onInspect = { [weak self] profile in self?.open(.profile(profile)) }
         scene.onLandsNear = { [weak self] near in self?.landsNear(near) }
         scene.onCross = { [weak self] neighbour, land, point in self?.cross(neighbour, into: land, at: point) }
+        scene.onWaiting = { [weak self] neighbour in self?.waiting(at: neighbour) }
     }
 
     // MARK: Next door
@@ -199,6 +200,11 @@ final class GameCoordinator {
     /// you can see past it, with time to build it at a walk), and how far you go before it's let go.
     private static let buildWithin = 48
     private static let keepWithin = 64
+    /// How near a land not built yet you come before the one under way gets more of each frame
+    /// (`WorldScene.Pace.near`), in cells: a few seconds' walk from its border.
+    private static let hurryWithin = 16
+    /// The land next door whose border you're waiting at till it's shown (`waiting(at:)`).
+    @ObservationIgnored private var waitingFor: String?
     /// Debug launches (`border`): the land next door is built at once for the screenshot
     /// (`showNextDoorForDebug`), not in the background as you near it.
     @ObservationIgnored var holdsNextDoor = false
@@ -211,6 +217,15 @@ final class GameCoordinator {
         guard !holdsNextDoor, loadingMapName == nil else { return }
         let here = world
         let shown = here.shownNextDoor
+        // Coming close to a land not built yet: the one under way gets more of each frame, so it's
+        // done (and the next one started) before you're there.
+        let unbuiltNearby = near.contains { item in
+            let id = item.neighbour.def.id
+            return item.distance <= Self.hurryWithin && shown[id] == nil && nextDoor[id]?.isBuilt != true
+        }
+        if unbuiltNearby, let building = buildingNextDoor { nextDoor[building]?.hurry(.near) }
+        // Walked off from the border you were waiting at.
+        if let id = waitingFor, (near.first(where: { $0.neighbour.def.id == id })?.distance ?? .max) > 3 { waitingFor = nil }
         for (neighbour, distance) in near {
             let id = neighbour.def.id
             if let land = nextDoor[id] ?? shown[id] {
@@ -256,10 +271,31 @@ final class GameCoordinator {
             let land = WorldScene(map: def, session: session, input: input, entry: nil, grid: grid, nextDoor: true)
             land.friendsElsewhere = away
             nextDoor[def.id] = land
-            await land.build(pace: .background) { _ in }
+            await land.build(pace: waitingFor == def.id ? .hurried : .background) { _ in }
             // Its picture for the minimap and the world map (`WorldOverview`).
             _ = land.minimap
             if buildingNextDoor == def.id { buildingNextDoor = nil }
+            // You're waiting at its border: shown now, not at the next look round.
+            if waitingFor == def.id, let neighbour = world.neighbours.first(where: { $0.def.id == def.id }) {
+                world.show(land, as: neighbour)
+            }
+        }
+    }
+
+    /// You're waiting at the border of a land next door that isn't shown yet (`WorldScene`'s
+    /// `waitsBeforeStepping`): shown at once if it's built, else built as fast as it can be (the
+    /// one under way first, if it's another) and shown the moment it's done, and you walk on over
+    /// with no loading card.
+    private func waiting(at neighbour: Continent.Neighbour) {
+        let id = neighbour.def.id
+        guard !holdsNextDoor, loadingMapName == nil, world.neighbours.contains(where: { $0.def.id == id }) else { return }
+        waitingFor = id
+        if let land = nextDoor[id], land.isBuilt {
+            world.show(land, as: neighbour)
+        } else if let building = buildingNextDoor {
+            nextDoor[building]?.hurry(.hurried)
+        } else {
+            buildNextDoor(neighbour.def)
         }
     }
 
@@ -272,6 +308,7 @@ final class GameCoordinator {
             go(to: neighbour.def, entry: nil, arrival: point)
             return
         }
+        waitingFor = nil
         let previous = world
         previous.isInputLocked = true
         land.walkedInFrom = previous
@@ -354,6 +391,7 @@ final class GameCoordinator {
         for id in nextDoor.keys { ArtLibrary.shared.release(map: id) }
         nextDoor = [:]
         buildingNextDoor = nil
+        waitingFor = nil
         let scene = WorldScene(map: map, session: session, input: input, entry: entry, arrival: arrival, grid: grid)
         wire(scene)
         build(scene, mapID: map.id, began: began)

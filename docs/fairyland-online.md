@@ -344,7 +344,11 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     doesn't slow your walking ("walking around feels slower").
     Walking over hands the scene over with no card (`takeOver`): the hero, companion, party and camera
     carry on where they were, the land you left shows next door in its turn. Not built yet when you step
-    over: behind the card as before, where you crossed.
+    over: behind the card at first; since 0.6.2 (playtesting 2026-10-14: "it still shows a loading state
+    when going into a different area, that shouldn't be the case") you wait at the line instead while
+    it's built in long slices (`Pace.hurried`) and walk straight on when it's shown, the build under way
+    getting more of each frame from 16 cells out (`Pace.near`). The card only if it hasn't come after
+    30 seconds (a build that stalled).
   - Borders (since 0.5.1, playtesting 2026-10-13: "with lands I should be able to walk freely from one
     to the other, not just one opening"): you walk over anywhere along the border two lands share, once
     you can. A road a quest opens crosses a fence through a stone arch, barred and signed "Closed" until

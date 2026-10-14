@@ -29,7 +29,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   draws only its own cells (`WorldMap.owns`; the rest is `.sea` or `.away`). `Seam.swift` is the band where one
   land's ground and scenery give way to the next's in patches, measured from the border.
   The world map (`WorldAtlas`) shows every land's minimap where it lies (`WorldOverview`, cached on disk). Lands next door are built in the background and shown past the border (`WorldScene.show(_:as:)`);
-  you walk over with no loading card (`takeOver`). Caves still load behind the card.
+  you walk over with no loading card (`takeOver`); reach a border before its land is built and you wait at the line
+  while it's hurried (`WorldScene.waitsBeforeStepping`, `GameCoordinator.waiting`). Caves still load behind the card.
 - `content/*.json`: all game data (maps, monsters, skills, items, quests, music, looks, crowd, announcements, titles,
   rewards: the daily gift, bounties, Monster Book milestones and monster cards). Data-driven;
   most features are a JSON edit.
