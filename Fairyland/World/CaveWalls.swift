@@ -48,8 +48,8 @@ final class CaveWalls {
          rows: Range<Int>? = nil, columns: Range<Int>? = nil, isRock: (GridPoint) -> Bool) {
         let tile = WorldMap.tileSize
         // Every top uses the same tile, lined up with the flat layer, so they meet seamlessly.
-        let top = art.tileVariant(rock, 0).cgImage()
-        let side = art.tileVariant(rock, 1).cgImage()
+        let top = art.picture(of: art.tileVariant(rock, 0))
+        let side = art.picture(of: art.tileVariant(rock, 1))
 
         let topTexture = SKTexture(cgImage: top)
         topTexture.filteringMode = .nearest

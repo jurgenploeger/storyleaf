@@ -662,6 +662,8 @@ final class WorldScene: SKScene {
             variation.zPosition = 1
             grid.addChild(variation)
         }
+        // Its picture, for the hills and the shore, made once (`SKTexture.cgImage()` is slow).
+        let variationPicture = map.hills.isEmpty && map.shore == nil ? nil : variation?.texture?.cgImage()
         // And a wash of the two lands' colours over the band along each border, so the patches of
         // each land's ground run into each other (as RuneScape blends its ground's colours).
         for seam in map.seams {
@@ -673,7 +675,7 @@ final class WorldScene: SKScene {
         // world, `placeBridges`); out over a sunk lake, with the shore (below).
         var sunkDecks: [(image: CGImage, frame: CGRect)] = []
         if !map.bridges.isEmpty {
-            let pixels = art.tileTexture(theme.ground).cgImage().width
+            let pixels = art.picture(of: art.tileTexture(theme.ground)).width
             for bridge in map.bridges {
                 await breathe()
                 if bridge.cells.contains(where: { sunk.contains($0) }) {
@@ -691,7 +693,7 @@ final class WorldScene: SKScene {
             var images: [String: CGImage] = [:]
             func picture(_ key: String, _ texture: () -> SKTexture?) -> CGImage? {
                 if let known = images[key] { return known }
-                let made = texture()?.cgImage()
+                let made = texture().map { art.picture(of: $0) }
                 images[key] = made
                 return made
             }
@@ -711,7 +713,7 @@ final class WorldScene: SKScene {
                 trail: tiles(theme.path),
                 bank: rock.map(tiles),
                 rocky: map.rockiness,
-                variation: variation?.texture?.cgImage(),
+                variation: variationPicture,
                 mapSize: (map.columns, map.rows),
                 shadow: Lighting.rgb(palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
                 highlight: Lighting.rgb(palette?.highlight) ?? (r: 1, g: 0.95, b: 0.8))
@@ -769,14 +771,14 @@ final class WorldScene: SKScene {
                 ground: { cell in
                     guard self.map.owns(cell), let group = picks[cell.row * self.map.columns + cell.col].group else { return nil }
                     if let known = images[ObjectIdentifier(group)] { return known }
-                    let made = pictures[ObjectIdentifier(group)]?.cgImage()
+                    let made = pictures[ObjectIdentifier(group)].map { self.art.picture(of: $0) }
                     images[ObjectIdentifier(group)] = made
                     return made
                 },
                 trail: { _ in nil },
                 bank: nil,
                 rocky: 0,
-                variation: variation?.texture?.cgImage(),
+                variation: variationPicture,
                 mapSize: (map.columns, map.rows),
                 shadow: Lighting.rgb(theme.palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
                 highlight: Lighting.rgb(theme.palette?.highlight) ?? (r: 1, g: 0.95, b: 0.8),
@@ -1655,7 +1657,7 @@ final class WorldScene: SKScene {
     /// The bridges' posts and rails (`BridgeArt`; their decks lie with the ground, `makeGround`).
     private func placeBridges() {
         guard !map.bridges.isEmpty else { return }
-        let pixels = art.tileTexture(def.theme.ground).cgImage().width
+        let pixels = art.picture(of: art.tileTexture(def.theme.ground)).width
         for bridge in map.bridges {
             BridgeArt.rails(for: bridge, pixels: pixels, palette: def.theme.palette, in: world) { self.map.height(at: $0) }
             // Nothing grows right beside a deck either, on the bank its planks and rails reach over,
