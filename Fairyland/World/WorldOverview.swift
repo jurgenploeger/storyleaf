@@ -2,9 +2,10 @@ import Observation
 import UIKit
 
 /// Every land's map for the world map (`WorldAtlas`): the same picture as its minimap, one pixel a
-/// cell (`WorldScene.overview(of:art:)`). A land you're in hands its minimap over; the rest are laid
-/// out one at a time in the background the first time the world map opens, and kept on disk after
-/// (for this build of the game and its maps), so the world map opens on the whole continent.
+/// cell (`WorldScene.overview(of:art:)`). A land you're in hands its minimap over, and one next door
+/// its own as soon as it's laid out (`GameCoordinator.buildNextDoor`); the rest are laid out one at
+/// a time in the background, those round you first, and kept on disk after (for this build of the
+/// game and its maps), so the world map opens on the whole continent.
 @MainActor @Observable
 final class WorldOverview {
     static let shared = WorldOverview()
@@ -30,23 +31,33 @@ final class WorldOverview {
         pending = [:]
     }
 
+    /// The lands round where you are, nearest first: drawn before the rest (`prepare(first:)`).
+    @ObservationIgnored private var wanted: [String] = []
+
     /// Fills in every land on the continent that isn't drawn yet: from disk, else laid out in the
-    /// background, one at a time, each showing as it's done.
-    func prepare() {
+    /// background, one at a time, each showing as it's done. `first`: the lands round where you
+    /// are, nearest first, drawn before the rest even once it's under way, as the ground past
+    /// your borders waits on them (`WorldScene.placeFarLands`).
+    func prepare(first: [String] = []) {
+        if !first.isEmpty { wanted = first }
         let content = Content.shared
         let missing = content.maps.filter { content.world[$0.id] != nil && images[$0.id] == nil && pending[$0.id] == nil }
         for def in missing {
             if let image = load(def.id) { images[def.id] = image }
         }
         guard !making else { return }
-        let jobs = missing.filter { images[$0.id] == nil }.map { (def: $0, coast: Continent.coast(of: $0)) }
+        let jobs = missing.filter { images[$0.id] == nil }
         guard !jobs.isEmpty else { return }
         making = true
         let caves = WorldMap.caves
         Task {
-            for job in jobs where images[job.def.id] == nil && pending[job.def.id] == nil {
-                let def = job.def, coast = job.coast
-                let map = await Task.detached(priority: .utility) { WorldMap(def: def, caves: caves, coast: coast) }.value
+            var left = jobs
+            while !left.isEmpty {
+                let next = wanted.compactMap { id in left.firstIndex { $0.id == id } }.first ?? 0
+                let def = left.remove(at: next)
+                guard images[def.id] == nil, pending[def.id] == nil else { continue }
+                let coast = Continent.coast(of: def)
+                let map = await Task.detached(priority: .utility) { await MapLayouts.shared.lay(def, caves: caves, coast: coast) }.value
                 remember(def.id, WorldScene.overview(of: map, art: ArtLibrary.shared))
             }
             making = false

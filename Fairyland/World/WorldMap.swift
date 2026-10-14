@@ -2556,3 +2556,17 @@ nonisolated final class WorldMap: @unchecked Sendable {
         return canvas.cgImage()
     }
 }
+
+/// Lays maps out off the main thread, one at a time: the lands next door
+/// (`GameCoordinator.buildNextDoor`) and the world map's pictures (`WorldOverview.prepare`) take
+/// turns. Two at once came with a crash (CI's border_built, 2026-10-14: the game's memory found
+/// corrupted while a land next door was built), and each layout builds a GameplayKit path graph,
+/// which Apple doesn't document as safe on two threads at once; on a phone they'd only compete
+/// for the same cores anyway. Each call runs at its caller's priority.
+actor MapLayouts {
+    nonisolated static let shared = MapLayouts()
+
+    func lay(_ def: MapDef, caves: [String: MapDef.Cave], coast: Coast?) -> WorldMap {
+        WorldMap(def: def, caves: caves, coast: coast)
+    }
+}

@@ -325,6 +325,34 @@ struct ContentTests {
         }
     }
 
+    /// Where a road crosses a border with no quest on it, you can step over before the land past
+    /// it is built (`WorldScene.canCross`): it's open there, and the sea's in on neither side.
+    @Test func roadsOverBordersCanBeWalkedBeforeTheLandIsBuilt() {
+        for def in content.maps where content.world[def.id] != nil {
+            guard let field = Continent.coast(of: def)?.field(columns: def.width, rows: def.height) else { continue }
+            for neighbour in Continent.neighbours(of: def) where neighbour.exit != nil && neighbour.quest == nil {
+                guard let road = neighbour.road else { continue }
+                #expect(neighbour.isOpen(at: road, done: { _ in false }, joined: false), "\(def.id) | \(neighbour.def.id): shut where the road crosses")
+                let cells: (inside: GridPoint, past: GridPoint) = switch neighbour.edge {
+                case .east: (GridPoint(col: def.width - 1, row: road), GridPoint(col: def.width, row: road))
+                case .west: (GridPoint(col: 0, row: road), GridPoint(col: -1, row: road))
+                case .north: (GridPoint(col: road, row: def.height - 1), GridPoint(col: road, row: def.height))
+                case .south: (GridPoint(col: road, row: 0), GridPoint(col: road, row: -1))
+                }
+                #expect(!field.isSea(cells.inside) && !field.isSea(cells.past), "\(def.id) | \(neighbour.def.id): the sea's in where the road crosses")
+            }
+        }
+    }
+
+    /// Every land has a colour to lie past the border in till its picture's drawn
+    /// (`WorldScene.groundColor`): its ground's, not black.
+    @Test func everyLandHasAGroundColourToStandInForIt() {
+        for def in content.maps where content.world[def.id] != nil {
+            let (red, green, blue) = WorldScene.groundColor(of: def, art: ArtLibrary.shared)
+            #expect(red + green + blue > 0.15, "\(def.id): its ground's colour came out black")
+        }
+    }
+
     @Test func everyMapHasRoomToWalk() {
         for def in content.maps {
             let map = WorldMap(def: def)
@@ -2597,20 +2625,22 @@ struct RulesTests {
 struct PerformanceTests {
     /// How long one map may take to build. An optimised build, like the App Store's, should do it in
     /// a few seconds. A debug build runs this code many times slower: in the CI tests job (a simulator
-    /// on a shared runner) the biggest maps took up to 48 s, so there the bound only catches a map
-    /// that's become pathologically slow, and the job's log lists every map's time (⏱) to watch.
+    /// on a shared runner) the biggest maps took 50 to 91 s across runs of the same code (the runner's
+    /// speed swings that much), so there the bound only catches a map that's become pathologically
+    /// slow, and the job's log lists every map's time (⏱) to watch.
     #if DEBUG
-    static let mapBuildLimit: Duration = .seconds(90)
+    static let mapBuildLimit: Duration = .seconds(150)
     #else
     static let mapBuildLimit: Duration = .seconds(3)
     #endif
 
     /// A land next door builds in the background, giving the frame back every few milliseconds;
-    /// this prints the longest it kept the game waiting in one go (⏱), on a big wooded land. In a
-    /// debug build on a CI simulator it's many times what a phone takes.
+    /// this prints the longest it kept the game waiting in one go and where (⏱), on a big wooded
+    /// land and on the sand coast past the downs. In a debug build on a CI simulator it's many
+    /// times what a phone takes.
     @Test func landsNextDoorBuildAFewMillisecondsAtATime() async {
         let session = GameSession.newGame(name: "Test", raceID: "human")
-        for id in ["smiling_forest"] {
+        for id in ["smiling_forest", "pineapple_shore"] {
             guard let def = Content.shared.map(id) else { continue }
             let clock = ContinuousClock()
             let start = clock.now
@@ -2619,7 +2649,8 @@ struct PerformanceTests {
             let scene = WorldScene(map: def, session: session, input: InputState(), entry: nil, grid: grid, nextDoor: true)
             await scene.build(pace: .background) { _ in }
             #expect(scene.isBuilt)
-            print("⏱ \(id) next door: laid out \(laidOut) (off the main thread), longest slice \(scene.longestSlice), in all \(clock.now - start)")
+            let slices = scene.longestSlices.map { "\($0.time) (lines \($0.from) to \($0.to))" }.joined(separator: ", ")
+            print("⏱ \(id) next door: laid out \(laidOut) (off the main thread), longest slice \(scene.longestSlice), in all \(clock.now - start); longest in WorldScene.swift: \(slices)")
         }
     }
 

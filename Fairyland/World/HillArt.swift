@@ -100,7 +100,9 @@ enum HillArt {
 
     /// The range as sprites in the map's own space (put them straight in the world), each already
     /// sorted; none if it can't be drawn.
-    static func sprites(for hill: WorldMap.Hill, look: Look) -> [SKSpriteNode] {
+    /// `pause`: called every so often, for a land built in the background to give the frame back
+    /// (`WorldScene.breathe`): a range takes far too long to draw in one go.
+    static func sprites(for hill: WorldMap.Hill, look: Look, pause: @escaping () async -> Void = {}) async -> [SKSpriteNode] {
         guard let first = hill.cells.first, let sample = look.ground(first) else { return [] }
         let tile = WorldMap.tileSize
         let px = sample.width
@@ -133,7 +135,8 @@ enum HillArt {
         let stamps = Self.stamps(of: hill)
         var nearness = [Float](repeating: .infinity, count: sw * sh)
         let around = Int(1.2 * Double(samples)) + 1
-        for stamp in stamps {
+        for (number, stamp) in stamps.enumerated() {
+            if number % 64 == 63 { await pause() }
             let fx = (stamp.x - Double(low.col)) * Double(samples) - 0.5
             let fy = (stamp.y - Double(low.row)) * Double(samples) - 0.5
             let ci = Int(fx.rounded(.down)), cj = Int(fy.rounded(.down))
@@ -149,6 +152,7 @@ enum HillArt {
             }
         }
         for j in 0..<sh {
+            if j % 4 == 3 { await pause() }
             for i in 0..<sw {
                 let x = Double(low.col) + (Double(i) + 0.5) / Double(samples)
                 let y = Double(low.row) + (Double(j) + 0.5) / Double(samples)
@@ -220,7 +224,8 @@ enum HillArt {
         let pixels = Double(px)
         var marks = [UInt8](repeating: 0, count: stamps.isEmpty ? 0 : wide * high)
         var worn: Set<GridPoint> = []
-        for stamp in stamps {
+        for (number, stamp) in stamps.enumerated() {
+            if number % 32 == 31 { await pause() }
             let cx = (stamp.x - Double(low.col)) * pixels, cy = (stamp.y - Double(low.row)) * pixels
             let half = stamp.width * pixels, band = 2.5 * stamp.cut
             let inner = half * 0.85, outer = half * 1.15 + band
@@ -265,7 +270,7 @@ enum HillArt {
             CGPoint(x: (point.x - CGFloat(low.col)) * scale, y: (point.y - CGFloat(low.row)) * scale)
         }
         let side = square * px
-        func paint(_ corner: GridPoint) -> CGImage? {
+        func paint(_ corner: GridPoint) async -> CGImage? {
             guard let context = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
                                           space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
             else { return nil }
@@ -285,9 +290,11 @@ enum HillArt {
                 }
             }
 
-            // The ground, tile by tile as the map has it.
+            // The ground, tile by tile as the map has it: a few at a time, as the first sight of each
+            // tile's picture is slow (a texture drawn into an image), and most of a coast's are its own.
             context.interpolationQuality = .none
-            for cell in area {
+            for (number, cell) in area.enumerated() {
+                if number % 16 == 15 { await pause() }
                 if let picture = look.ground(cell) { context.draw(picture, in: rect(cell)) }
             }
             if let bank = look.bank, let patches {
@@ -313,7 +320,7 @@ enum HillArt {
                 for cell in area where worn.contains(cell) {
                     if let picture = look.trail(cell) { road.draw(picture, in: rect(cell)) }
                 }
-                wear(context, road: road, marks: marks, wide: wide, offset: offset)
+                await wear(context, road: road, marks: marks, wide: wide, offset: offset, pause: pause)
             }
             // The colour patches the rest of the ground has, then the light, then its outline.
             context.interpolationQuality = .medium
@@ -321,8 +328,8 @@ enum HillArt {
                 context.draw(variation, in: CGRect(x: -CGFloat(low.col) * scale, y: -CGFloat(low.row) * scale,
                                                    width: CGFloat(look.mapSize.columns) * scale, height: CGFloat(look.mapSize.rows) * scale))
             }
-            shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint,
-                  brightest: Float(look.brightest))
+            await shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint,
+                        brightest: Float(look.brightest), pause: pause)
             if let doorway { Self.cave(doorway, in: context, at: { spot($0) }) }
             if let outline {
                 context.setBlendMode(.destinationIn)
@@ -382,7 +389,9 @@ enum HillArt {
                     let dc = cell.col - corner.col, dr = cell.row - corner.row
                     return dc >= 0 && dr >= 0 && dc < square && dr < square
                 }
-                guard !own.isEmpty, let picture = paint(corner) else { continue }
+                guard !own.isEmpty else { continue }
+                await pause()
+                guard let picture = await paint(corner) else { continue }
                 let texture = SKTexture(cgImage: picture)
                 texture.filteringMode = .nearest
                 // The strips a cell reaches into: a cell spans two of the map's diagonals.
@@ -562,45 +571,52 @@ enum HillArt {
     /// Wears the trails into a square's picture (`marks`, over the range's pixels `wide` across, bottom
     /// row first): the trail's pixels from `road` but for a few where the grass grows through, its
     /// uphill edge in shadow and its downhill edge a little lighter.
-    /// `offset`: where the square's corner is in the range's pixels.
-    private static func wear(_ context: CGContext, road: CGContext, marks: [UInt8], wide: Int, offset: (x: Int, y: Int)) {
+    /// `offset`: where the square's corner is in the range's pixels. `pause`: called every few rows.
+    private static func wear(_ context: CGContext, road: CGContext, marks: [UInt8], wide: Int, offset: (x: Int, y: Int),
+                             pause: () async -> Void) async {
         guard let data = context.data, let paved = road.data, wide > 0 else { return }
         let width = context.width, height = context.height
         let rowBytes = context.bytesPerRow, roadRowBytes = road.bytesPerRow
         let bytes = data.bindMemory(to: UInt8.self, capacity: rowBytes * height)
         let paving = paved.bindMemory(to: UInt8.self, capacity: roadRowBytes * height)
         let high = marks.count / wide
-        marks.withUnsafeBufferPointer { marks in
-            for y in 0..<height {
-                // Memory rows run top down; marks bottom up.
-                let row = height - 1 - y + offset.y
-                guard row >= 0, row < high else { continue }
-                for x in 0..<width {
-                    let column = x + offset.x
-                    guard column < wide else { break }
-                    let mark = marks[row * wide + column]
-                    guard mark > 0 else { continue }
-                    let index = y * rowBytes + x * 4
-                    guard bytes[index + 3] > 0 else { continue }
-                    if mark == 3 {
-                        // A tuft of grass here and there.
-                        guard noise(column >> 1, row >> 1, 7) < 0.97 else { continue }
-                        let from = y * roadRowBytes + x * 4
-                        let cover = 1 - Float(paving[from + 3]) / 255
-                        for channel in 0..<4 {
-                            bytes[index + channel] = UInt8(min(255, Float(paving[from + channel]) + Float(bytes[index + channel]) * cover))
+        for first in stride(from: 0, to: height, by: rowsAtATime) {
+            await pause()
+            marks.withUnsafeBufferPointer { marks in
+                for y in first..<min(height, first + rowsAtATime) {
+                    // Memory rows run top down; marks bottom up.
+                    let row = height - 1 - y + offset.y
+                    guard row >= 0, row < high else { continue }
+                    for x in 0..<width {
+                        let column = x + offset.x
+                        guard column < wide else { break }
+                        let mark = marks[row * wide + column]
+                        guard mark > 0 else { continue }
+                        let index = y * rowBytes + x * 4
+                        guard bytes[index + 3] > 0 else { continue }
+                        if mark == 3 {
+                            // A tuft of grass here and there.
+                            guard noise(column >> 1, row >> 1, 7) < 0.97 else { continue }
+                            let from = y * roadRowBytes + x * 4
+                            let cover = 1 - Float(paving[from + 3]) / 255
+                            for channel in 0..<4 {
+                                bytes[index + channel] = UInt8(min(255, Float(paving[from + channel]) + Float(bytes[index + channel]) * cover))
+                            }
+                        } else if mark == 2 {
+                            for channel in 0..<3 { bytes[index + channel] = UInt8(Float(bytes[index + channel]) * 0.75) }
+                        } else {
+                            // Premultiplied: no channel brighter than the pixel is opaque.
+                            let alpha = Float(bytes[index + 3])
+                            for channel in 0..<3 { bytes[index + channel] = UInt8(min(alpha, Float(bytes[index + channel]) * 1.1)) }
                         }
-                    } else if mark == 2 {
-                        for channel in 0..<3 { bytes[index + channel] = UInt8(Float(bytes[index + channel]) * 0.75) }
-                    } else {
-                        // Premultiplied: no channel brighter than the pixel is opaque.
-                        let alpha = Float(bytes[index + 3])
-                        for channel in 0..<3 { bytes[index + channel] = UInt8(min(alpha, Float(bytes[index + channel]) * 1.1)) }
                     }
                 }
             }
         }
     }
+
+    /// How many rows of a square's pixels `wear` and `shade` work through between pauses.
+    private static let rowsAtATime = 32
 
     /// A steady scatter from 0 to 1 for a spot (`x`, `y`), a different one for each `kind`.
     private static func noise(_ x: Int, _ y: Int, _ kind: Int) -> Double {
@@ -711,9 +727,10 @@ enum HillArt {
     /// shades a hill in a few flat tones. A smooth gradient over pixel-art ground read as gloss.
     /// Shade leans toward the map's shadow colour (`tint`, its channels over its brightest).
     /// `offset`: where the square's corner is in the range's pixels, which `light` covers.
-    /// `brightest`: no sunny slope lighter than this (`Look.brightest`).
+    /// `brightest`: no sunny slope lighter than this (`Look.brightest`). `pause`: called every few rows.
     private static func shade(_ context: CGContext, light: [Float], samples: (columns: Int, rows: Int), perSample: Float,
-                              offset: (x: Int, y: Int), tint: (Double, Double, Double), brightest: Float) {
+                              offset: (x: Int, y: Int), tint: (Double, Double, Double), brightest: Float,
+                              pause: () async -> Void) async {
         guard let data = context.data else { return }
         let width = context.width, height = context.height, rowBytes = context.bytesPerRow
         let bytes = data.bindMemory(to: UInt8.self, capacity: rowBytes * height)
@@ -721,38 +738,41 @@ enum HillArt {
         let step: Float = 0.06
         let lean = (Float(1 - tint.0), Float(1 - tint.1), Float(1 - tint.2))
         let sw = samples.columns, sh = samples.rows
-        light.withUnsafeBufferPointer { light in
-            for y in 0..<height {
-                // Memory rows run top down; samples bottom up.
-                let fy = (Float(height - 1 - y + offset.y) + 0.5) / perSample - 0.5
-                let j = max(0, min(sh - 2, Int(fy.rounded(.down))))
-                let ty = min(1, max(0, fy - Float(j)))
-                for x in 0..<width {
-                    let index = y * rowBytes + x * 4
-                    guard bytes[index + 3] > 0 else { continue }
-                    let fx = (Float(x + offset.x) + 0.5) / perSample - 0.5
-                    let i = max(0, min(sw - 2, Int(fx.rounded(.down))))
-                    let a = light[j * sw + i], b = light[j * sw + i + 1]
-                    let c = light[(j + 1) * sw + i], d = light[(j + 1) * sw + i + 1]
-                    // Flat ground stays as it is.
-                    if a == 1, b == 1, c == 1, d == 1 { continue }
-                    let tx = min(1, max(0, fx - Float(i)))
-                    let near = a + (b - a) * tx, far = c + (d - c) * tx
-                    let lit = near + (far - near) * ty
-                    let steps = ((lit - 1) / step + dither[(y % 4) * 4 + x % 4]).rounded()
-                    guard steps != 0 else { continue }
-                    let s = min(brightest, 1 + steps * step)
-                    if s < 1 {
-                        let toward = (1 - s) * 0.4
-                        bytes[index] = UInt8(min(255, Float(bytes[index]) * s * (1 - toward * lean.0)))
-                        bytes[index + 1] = UInt8(min(255, Float(bytes[index + 1]) * s * (1 - toward * lean.1)))
-                        bytes[index + 2] = UInt8(min(255, Float(bytes[index + 2]) * s * (1 - toward * lean.2)))
-                    } else {
-                        // Premultiplied: no channel brighter than the pixel is opaque.
-                        let alpha = Float(bytes[index + 3])
-                        bytes[index] = UInt8(min(alpha, Float(bytes[index]) * s))
-                        bytes[index + 1] = UInt8(min(alpha, Float(bytes[index + 1]) * s))
-                        bytes[index + 2] = UInt8(min(alpha, Float(bytes[index + 2]) * s))
+        for first in stride(from: 0, to: height, by: rowsAtATime) {
+            await pause()
+            light.withUnsafeBufferPointer { light in
+                for y in first..<min(height, first + rowsAtATime) {
+                    // Memory rows run top down; samples bottom up.
+                    let fy = (Float(height - 1 - y + offset.y) + 0.5) / perSample - 0.5
+                    let j = max(0, min(sh - 2, Int(fy.rounded(.down))))
+                    let ty = min(1, max(0, fy - Float(j)))
+                    for x in 0..<width {
+                        let index = y * rowBytes + x * 4
+                        guard bytes[index + 3] > 0 else { continue }
+                        let fx = (Float(x + offset.x) + 0.5) / perSample - 0.5
+                        let i = max(0, min(sw - 2, Int(fx.rounded(.down))))
+                        let a = light[j * sw + i], b = light[j * sw + i + 1]
+                        let c = light[(j + 1) * sw + i], d = light[(j + 1) * sw + i + 1]
+                        // Flat ground stays as it is.
+                        if a == 1, b == 1, c == 1, d == 1 { continue }
+                        let tx = min(1, max(0, fx - Float(i)))
+                        let near = a + (b - a) * tx, far = c + (d - c) * tx
+                        let lit = near + (far - near) * ty
+                        let steps = ((lit - 1) / step + dither[(y % 4) * 4 + x % 4]).rounded()
+                        guard steps != 0 else { continue }
+                        let s = min(brightest, 1 + steps * step)
+                        if s < 1 {
+                            let toward = (1 - s) * 0.4
+                            bytes[index] = UInt8(min(255, Float(bytes[index]) * s * (1 - toward * lean.0)))
+                            bytes[index + 1] = UInt8(min(255, Float(bytes[index + 1]) * s * (1 - toward * lean.1)))
+                            bytes[index + 2] = UInt8(min(255, Float(bytes[index + 2]) * s * (1 - toward * lean.2)))
+                        } else {
+                            // Premultiplied: no channel brighter than the pixel is opaque.
+                            let alpha = Float(bytes[index + 3])
+                            bytes[index] = UInt8(min(alpha, Float(bytes[index]) * s))
+                            bytes[index + 1] = UInt8(min(alpha, Float(bytes[index + 1]) * s))
+                            bytes[index + 2] = UInt8(min(alpha, Float(bytes[index + 2]) * s))
+                        }
                     }
                 }
             }

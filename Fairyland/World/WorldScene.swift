@@ -100,6 +100,8 @@ final class WorldScene: SKScene {
     /// Whether a land round this one had no picture yet when they were laid (they come in from
     /// the background, `WorldOverview.prepare`).
     private var farLandsMissing = false
+    /// The lands among them laid in their ground's colour, waiting for their pictures.
+    private var plainLands: Set<String> = []
     /// How far round the land they're laid, in cells.
     private static let farReach = 64
     /// The lands sharing a border with this one (none for a cave).
@@ -348,7 +350,7 @@ final class WorldScene: SKScene {
             showChunks()
             explore()
         }
-        if pace != .foreground { longestSlice = max(longestSlice, ContinuousClock.now - sliceStart) }
+        if pace != .foreground { endSlice(at: #line) }
         giveLookBack()
         isBuilt = true
         progress(1)
@@ -356,10 +358,10 @@ final class WorldScene: SKScene {
 
     /// Reports progress, then gives the screen a moment to draw it before the next piece (in the
     /// background, only once this slice has had its time).
-    private func reached(_ fraction: Double, _ progress: (Double) -> Void) async {
+    private func reached(_ fraction: Double, _ progress: (Double) -> Void, line: Int = #line) async {
         progress(fraction)
         if pace != .foreground {
-            await breathe()
+            await breathe(line: line)
         } else {
             try? await Task.sleep(for: .milliseconds(10))
         }
@@ -385,12 +387,25 @@ final class WorldScene: SKScene {
 
     /// In a background build: once this slice has had its few milliseconds, gives the frame back,
     /// and the land you're in its look, till the next. Nothing at all in the foreground.
-    private func breathe() async {
+    private func breathe(line: Int = #line) async {
         guard pace != .foreground, ContinuousClock.now - sliceStart > (pace == .hurried ? .milliseconds(250) : Self.sliceLength) else { return }
-        longestSlice = max(longestSlice, ContinuousClock.now - sliceStart)
+        endSlice(at: line)
         giveLookBack()
         try? await Task.sleep(for: .milliseconds(10))
         takeLook()
+    }
+
+    /// Notes how long this slice of a background build kept the frame, and where in this file it
+    /// began and ended (`longestSlices`).
+    private func endSlice(at line: Int) {
+        let slice = ContinuousClock.now - sliceStart
+        longestSlice = max(longestSlice, slice)
+        if longestSlices.count < 5 || slice > longestSlices[longestSlices.count - 1].time {
+            longestSlices.append((slice, sliceFrom, line))
+            longestSlices.sort { $0.time > $1.time }
+            if longestSlices.count > 5 { longestSlices.removeLast() }
+        }
+        sliceFrom = line
     }
 
     /// How long a background build works before giving a frame back.
@@ -398,6 +413,12 @@ final class WorldScene: SKScene {
     /// The longest a background build kept the frame in one go (the tests print it): what can't be
     /// cut finer than one step.
     private(set) var longestSlice: Duration = .zero
+    /// The five longest slices, longest first, with the lines of this file where each began (the
+    /// `breathe` before it; 0, the build's start) and ended: the tests print them, to show which
+    /// steps to cut finer.
+    private(set) var longestSlices: [(time: Duration, from: Int, to: Int)] = []
+    /// The line of the `breathe` this slice began after.
+    private var sliceFrom = 0
 
     override func didChangeSize(_ oldSize: CGSize) {
         edgeFade.size = CGSize(width: size.width * 1.2, height: size.height * 1.2)
@@ -586,7 +607,8 @@ final class WorldScene: SKScene {
         let tileMap = SKTileMapNode(tileSet: tileSet, columns: map.columns, rows: map.rows, tileSize: tileSize)
         tileMap.anchorPoint = .zero
         for (index, pick) in picks.enumerated() {
-            if index % 4096 == 4095 { await breathe() }
+            // SpriteKit takes its time over each tile (a fifth of a millisecond in the tests), so a few at a time.
+            if index % 32 == 31 { await breathe() }
             if let group = pick.group { tileMap.setTileGroup(group, forColumn: pick.col, row: pick.row) }
         }
         // A raised terrace: its own tiles again, drawn its height up (`placePlateaus` sets them
@@ -621,13 +643,15 @@ final class WorldScene: SKScene {
         // each land's ground run into each other (as RuneScape blends its ground's colours).
         for neighbour in neighbours {
             await breathe()
-            grid.addChild(blendBand(toward: neighbour, seam: map.seams.first { $0.neighbour == neighbour.def.id }))
+            let band = await blendBand(toward: neighbour, seam: map.seams.first { $0.neighbour == neighbour.def.id })
+            grid.addChild(band)
         }
         // Bridges' decks lie on the water with the ground (`BridgeArt`; their rails stand in the
         // world, `placeBridges`).
         if !map.bridges.isEmpty {
             let pixels = art.tileTexture(theme.ground).cgImage().width
             for bridge in map.bridges {
+                await breathe()
                 guard let deck = BridgeArt.deck(for: bridge, pixels: pixels, palette: theme.palette) else { continue }
                 deck.zPosition = 2
                 grid.addChild(deck)
@@ -635,6 +659,7 @@ final class WorldScene: SKScene {
         }
         // Hills: the same ground again, lit and lifted (`HillArt`; `placePlateaus` sets them down).
         if !map.hills.isEmpty {
+            await breathe()
             var images: [String: CGImage] = [:]
             func picture(_ key: String, _ texture: () -> SKTexture?) -> CGImage? {
                 if let known = images[key] { return known }
@@ -695,15 +720,15 @@ final class WorldScene: SKScene {
             // the world.
             for hill in map.hills {
                 await breathe()
+                var style = look
                 if hill.isCrag {
-                    raisedHills += HillArt.sprites(for: hill, look: crag) as [SKNode]
+                    style = crag
                 } else if hill.hasMountain {
-                    var high = mountain
-                    high.rockFrom = Double(hill.peak) * 0.4
-                    raisedHills += HillArt.sprites(for: hill, look: high) as [SKNode]
-                } else {
-                    raisedHills += HillArt.sprites(for: hill, look: look) as [SKNode]
+                    style = mountain
+                    style.rockFrom = Double(hill.peak) * 0.4
                 }
+                let sprites = await HillArt.sprites(for: hill, look: style, pause: { await self.breathe() })
+                raisedHills += sprites as [SKNode]
             }
         }
         let ground = SKNode()
@@ -736,7 +761,8 @@ final class WorldScene: SKScene {
             let shade = 1 - 0.45 * CGFloat(step) / CGFloat(steps - 1)
             let outline = SKTileMapNode(tileSet: tiles, columns: map.columns, rows: map.rows, tileSize: tileSize)
             outline.anchorPoint = .zero
-            for cell in cells {
+            for (number, cell) in cells.enumerated() {
+                if number % 32 == 31 { await breathe() }
                 if let group = picks[cell.row * map.columns + cell.col].group { outline.setTileGroup(group, forColumn: cell.col, row: cell.row) }
             }
             outline.color = foam ? .white : UIColor(red: top.r * shade, green: top.g * shade, blue: top.b * shade, alpha: 1)
@@ -769,7 +795,7 @@ final class WorldScene: SKScene {
     /// without a seam. Along a town's wall the band's middle is the border itself. Over the band
     /// only, `blendFineness` texels a cell, smoothed: none over the sea or the land's edge along it
     /// (its bank shows there), and fading out toward the ends of the stretch they share.
-    private func blendBand(toward neighbour: Continent.Neighbour, seam: Seam?) -> SKNode {
+    private func blendBand(toward neighbour: Continent.Neighbour, seam: Seam?) async -> SKNode {
         let tile = WorldMap.tileSize
         let image = art.gradedTile(neighbour.def.theme.ground, palette: neighbour.def.theme.palette)
         let other = image.map { Self.averageColor(of: $0) } ?? (0.5, 0.5, 0.5)
@@ -807,6 +833,7 @@ final class WorldScene: SKScene {
         var wet: [GridPoint: Bool] = [:]
         var pixels = [UInt8](repeating: 0, count: width * height * 4)
         for y in 0..<height {
+            if y % 16 == 15 { await breathe() }
             for x in 0..<width {
                 // The texel's middle in the land's cells: the bitmap's rows run north to south, the
                 // grid's count up from the south.
@@ -887,7 +914,7 @@ final class WorldScene: SKScene {
         let margin = Self.surroundingsMargin
         let around = Continent.sea(round: def, margin: margin)
         if Continent.origin(of: def) != nil {
-            placeSea(around, margin: margin)
+            await placeSea(around, margin: margin)
             return
         }
         let tile = WorldMap.tileSize
@@ -936,7 +963,7 @@ final class WorldScene: SKScene {
     /// haze, which thickens with distance from any land until the scene's background, the same
     /// colour, takes over, `seaDrop` lower than the land (`bank` draws the land's edge down to it).
     /// Where a road leads into a cave, its range rises out of it on rock.
-    private func placeSea(_ sea: [GridPoint: Double], margin: Int) {
+    private func placeSea(_ sea: [GridPoint: Double], margin: Int) async {
         let tile = WorldMap.tileSize
         let tileSize = CGSize(width: tile, height: tile)
         let water = SKTileGroup(tileDefinition: SKTileDefinition(texture: art.tileTexture(Self.seaTile), size: tileSize))
@@ -946,11 +973,14 @@ final class WorldScene: SKScene {
         surroundings.anchorPoint = .zero
         surroundings.position = CGPoint(x: -CGFloat(margin) * tile, y: -CGFloat(margin) * tile)
         let ranges = map.crags.map { map.hills[$0.hill] }
-        for cell in sea.keys {
+        // A few tiles at a time, as SpriteKit takes its time over each (`makeGround`).
+        for (number, cell) in sea.keys.enumerated() {
+            if number % 32 == 31 { await breathe() }
             let group = ranges.contains { $0.cells.contains(cell) } ? rock : water
             surroundings.setTileGroup(group, forColumn: cell.col + margin, row: cell.row + margin)
         }
         for row in 0..<map.rows {
+            if row % 4 == 3 { await breathe() }
             for col in 0..<map.columns where map.ground[row][col] == .sea {
                 surroundings.setTileGroup(water, forColumn: col + margin, row: row + margin)
             }
@@ -1420,7 +1450,7 @@ final class WorldScene: SKScene {
         var sprites: [String: SpriteArt] = [:]
         let lands = map.seams.map { Content.shared.map($0.neighbour) }
         for (number, cell) in map.foreign.keys.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }).enumerated() {
-            if number % 64 == 63 { await breathe() }
+            if number % 8 == 7 { await breathe() }
             guard let seam = map.foreign[cell], let land = lands[seam] else { continue }
             let area = Double(land.width * land.height)
             for placement in land.theme.props where placement.within == nil {
@@ -2046,7 +2076,11 @@ final class WorldScene: SKScene {
         var missing = false
         for (land, offset) in Continent.lands(near: def, within: margin) {
             guard var image = drawn[land.id] else {
+                // Till it's drawn, its ground's colour: land, not sea.
                 missing = true
+                let (red, green, blue) = Self.groundColor(of: land, art: art)
+                context.setFillColor(red: red, green: green, blue: blue, alpha: 1)
+                context.fill(CGRect(x: offset.col + margin, y: offset.row + margin, width: land.width, height: land.height))
                 continue
             }
             if land.ambience?.darkness != nil,
@@ -2057,7 +2091,10 @@ final class WorldScene: SKScene {
         }
         // Lands not drawn yet are laid out in the background (once the HUD's drawn), and the
         // minimap's drawn again as they come.
-        if missing { Task { WorldOverview.shared.prepare() } }
+        if missing {
+            let first = overviewsFirst
+            Task { WorldOverview.shared.prepare(first: first) }
+        }
         if let image = own.cgImage { context.draw(image, in: CGRect(x: margin, y: margin, width: map.columns, height: map.rows)) }
         let made = context.makeImage().map { UIImage(cgImage: $0) } ?? own
         let picture = MinimapPicture(image: made, origin: GridPoint(col: -margin, row: -margin), columns: columns, rows: rows)
@@ -2203,12 +2240,12 @@ final class WorldScene: SKScene {
         }
         crowd?.greet(at: point, from: player.position)
         // A tap over the border, in a land next door: there by the nearest way over, and on to the
-        // spot once you're across (`takeOver`).
+        // spot once you're across (`takeOver`). Into one not built yet too: over behind the
+        // loading card, where you step across (`cross(into:)`).
         let ground = map.groundPoint(under: point)
         let tapped = map.rawCell(at: ground)
         tapOverBorder = nil
-        if !map.contains(tapped), let neighbour = neighbour(holding: tapped), nextDoor[neighbour.def.id] != nil,
-           let way = wayOver(to: tapped, into: neighbour) {
+        if !map.contains(tapped), let neighbour = neighbour(holding: tapped), let way = wayOver(to: tapped, into: neighbour) {
             player.path = map.path(from: player.position, to: map.center(of: way.inside)) + [way.over]
             tapOverBorder = ground
             Effects.tapMarker(at: ground, z: -50_000, in: world)
@@ -2589,21 +2626,30 @@ final class WorldScene: SKScene {
     }
 
     /// Lays the lands round this one flat on the ground as their world map pictures (`farLands`),
-    /// those not laid yet; one with no picture yet waits for `WorldOverview` to draw it (looked for
-    /// again every so often, `lookAround`). Not for a land shown next door, nor round a cave.
+    /// those not laid yet. One with no picture yet lies there in its ground's colour till
+    /// `WorldOverview` draws it (looked for again every so often, `lookAround`), so there's never
+    /// nothing past a border. Not for a land shown next door, nor round a cave.
     private func placeFarLands() {
         guard !isNextDoor, Continent.origin(of: def) != nil else { return }
         let drawn = WorldOverview.shared.images
         var missing = false
         let tile = WorldMap.tileSize
-        for (land, offset) in Continent.lands(near: def, within: Self.farReach) where farLands[land.id] == nil {
-            guard let image = drawn[land.id] else {
+        for (land, offset) in Continent.lands(near: def, within: Self.farReach) where farLands[land.id] == nil || plainLands.contains(land.id) {
+            let size = CGSize(width: CGFloat(land.width) * tile, height: CGFloat(land.height) * tile)
+            let picture: SKSpriteNode
+            if let image = drawn[land.id] {
+                let texture = SKTexture(cgImage: image)
+                texture.filteringMode = .linear
+                picture = SKSpriteNode(texture: texture, size: size)
+                farLands.removeValue(forKey: land.id)?.removeFromParent()
+                plainLands.remove(land.id)
+            } else {
                 missing = true
-                continue
+                guard farLands[land.id] == nil else { continue }
+                let (red, green, blue) = Self.groundColor(of: land, art: art)
+                picture = SKSpriteNode(color: UIColor(red: red, green: green, blue: blue, alpha: 1), size: size)
+                plainLands.insert(land.id)
             }
-            let texture = SKTexture(cgImage: image)
-            texture.filteringMode = .linear
-            let picture = SKSpriteNode(texture: texture, size: CGSize(width: CGFloat(land.width) * tile, height: CGFloat(land.height) * tile))
             picture.anchorPoint = .zero
             picture.position = CGPoint(x: CGFloat(offset.col) * tile, y: CGFloat(offset.row) * tile)
             let grid = SKNode()
@@ -2615,8 +2661,34 @@ final class WorldScene: SKScene {
             farLands[land.id] = layer
         }
         farLandsMissing = missing
-        if missing { WorldOverview.shared.prepare() }
+        if missing { WorldOverview.shared.prepare(first: overviewsFirst) }
     }
+
+    /// The lands whose pictures this one wants first (`WorldOverview.prepare(first:)`): those it
+    /// shares a border with, the nearest to you first.
+    private var overviewsFirst: [String] {
+        let here = map.cell(at: player.position)
+        return neighbours
+            .map { (id: $0.def.id, distance: $0.distance(from: here, columns: map.columns, rows: map.rows)) }
+            .sorted { $0.distance < $1.distance }
+            .map(\.id)
+    }
+
+    /// A land's ground colour, as it's graded there: what lies past the border till its picture's
+    /// drawn (`placeFarLands`, `minimapPicture`).
+    static func groundColor(of land: MapDef, art: ArtLibrary) -> (CGFloat, CGFloat, CGFloat) {
+        if let known = groundColors[land.id] { return known }
+        let color: (CGFloat, CGFloat, CGFloat)
+        if let image = art.gradedTile(land.theme.ground, palette: land.theme.palette) {
+            color = averageColor(of: image)
+        } else {
+            color = averageColor(of: art.tileTexture(land.theme.ground))
+        }
+        groundColors[land.id] = color
+        return color
+    }
+
+    private static var groundColors: [String: (CGFloat, CGFloat, CGFloat)] = [:]
 
     /// Takes a land next door away again (too far to see), its layer back in its own scene.
     @discardableResult

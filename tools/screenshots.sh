@@ -85,11 +85,24 @@ for source, lines in (body.get("asi") or {}).items():
     print("  ", source, lines)
 images = body.get("usedImages") or []
 thread = (body.get("threads") or [{}])[body.get("faultingThread", 0)]
-for frame in (thread.get("frames") or [])[:30]:
+def show(frame):
     index = frame.get("imageIndex")
     image = images[index].get("name", "?") if index is not None and index < len(images) else "?"
     where = f"{frame.get('sourceFile', '')}:{frame.get('sourceLine', '')}" if frame.get("sourceFile") else ""
     print(f"    {image:<28} {frame.get('symbol', hex(frame.get('imageOffset', 0)))} {where}")
+for frame in (thread.get("frames") or [])[:30]:
+    show(frame)
+# Any other thread that was in the app's own code then (a race shows up here), its frames there.
+for number, other in enumerate(body.get("threads") or []):
+    if number == body.get("faultingThread", 0):
+        continue
+    ours = [f for f in other.get("frames") or []
+            if f.get("imageIndex") is not None and f["imageIndex"] < len(images)
+            and "Fairyland" in images[f["imageIndex"]].get("name", "")]
+    if ours:
+        print(f"  thread {number} ({other.get('queue') or other.get('name') or '?'}):")
+        for frame in ours[:12]:
+            show(frame)
 PY
   done || true
 done
