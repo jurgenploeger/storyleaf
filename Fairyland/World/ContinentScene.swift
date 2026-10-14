@@ -946,11 +946,12 @@ final class ContinentScene: SKScene {
     /// you're in it (or after half a minute).
     func walkIntoForDebug(_ id: String) async {
         // Once that land's laid out (it's near, so it's wanted), or a couple of minutes.
+        let hurried = hurries
         hurries = true
         for _ in 0..<480 where lands[id] == nil {
             try? await Task.sleep(for: .milliseconds(250))
         }
-        hurries = false
+        hurries = hurried
         let from = Self.cell(at: player.position)
         func inside(_ cell: GridPoint) -> Bool {
             guard store.isWalkable(cell) else { return false }
@@ -1019,8 +1020,10 @@ final class ContinentScene: SKScene {
     func place(on def: MapDef, entry: Edge?, arrival: CGPoint?) async {
         guard store.land(def.id) != nil else { return }
         isReady = false
-        // Nothing round where you were is wanted now (`lookAround` waits): this land comes first.
+        // Nothing round where you were is wanted now (`lookAround` waits): this land comes first,
+        // and the world map's layouts wait for it (`buildWanted`).
         placed = false
+        WorldOverview.shared.isHeld = true
         here = nil
         lastCell = nil
         wanted = [def.id: -1]
@@ -1194,7 +1197,13 @@ final class ContinentScene: SKScene {
     private func buildWanted() {
         guard building == nil else { return }
         let next = wanted.filter { lands[$0.key] == nil }.min { ($0.value, $0.key) < ($1.value, $1.key) }?.key
-        WorldOverview.shared.isHeld = next != nil
+        // Held while there's one to lay out; let go once there's none, unless you're being put
+        // somewhere (`place`), where those round you come next.
+        if next != nil {
+            WorldOverview.shared.isHeld = true
+        } else if placed {
+            WorldOverview.shared.isHeld = false
+        }
         guard let next else { return }
         wanted[next] = nil
         building = next
@@ -1266,11 +1275,13 @@ final class ContinentScene: SKScene {
         }
     }
 
-    /// Gives the frame back once work's had it for a few milliseconds; for longer before the land
-    /// you start in is drawn round you, as there's nothing yet to keep smooth (and while a debug
-    /// launch `hurries`).
+    /// Gives the frame back once work's had it for a few milliseconds. Behind the loading card,
+    /// before the land you start in is drawn round you, only every 120 (as a land's own scene did,
+    /// `WorldScene.sliceLength`): the card still turns with the phone, and the work isn't held up
+    /// by a pause every few milliseconds (each a good deal longer than asked on a busy phone). And
+    /// so too while a debug launch `hurries`.
     private func breathe() async {
-        let slice: Duration = isReady && !hurries ? .milliseconds(6) : .milliseconds(40)
+        let slice: Duration = isReady && !hurries ? .milliseconds(6) : .milliseconds(120)
         guard ContinuousClock.now - sliceStart > slice else { return }
         try? await Task.sleep(for: .milliseconds(10))
         sliceStart = ContinuousClock.now
