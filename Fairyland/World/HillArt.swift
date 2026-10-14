@@ -290,9 +290,11 @@ enum HillArt {
                 }
             }
 
-            // The ground, tile by tile as the map has it.
+            // The ground, tile by tile as the map has it: a few at a time, as the first sight of each
+            // tile's picture is slow (a texture drawn into an image), and most of a coast's are its own.
             context.interpolationQuality = .none
-            for cell in area {
+            for (number, cell) in area.enumerated() {
+                if number % 16 == 15 { await pause() }
                 if let picture = look.ground(cell) { context.draw(picture, in: rect(cell)) }
             }
             if let bank = look.bank, let patches {

@@ -651,6 +651,7 @@ final class WorldScene: SKScene {
         if !map.bridges.isEmpty {
             let pixels = art.tileTexture(theme.ground).cgImage().width
             for bridge in map.bridges {
+                await breathe()
                 guard let deck = BridgeArt.deck(for: bridge, pixels: pixels, palette: theme.palette) else { continue }
                 deck.zPosition = 2
                 grid.addChild(deck)
@@ -658,6 +659,7 @@ final class WorldScene: SKScene {
         }
         // Hills: the same ground again, lit and lifted (`HillArt`; `placePlateaus` sets them down).
         if !map.hills.isEmpty {
+            await breathe()
             var images: [String: CGImage] = [:]
             func picture(_ key: String, _ texture: () -> SKTexture?) -> CGImage? {
                 if let known = images[key] { return known }
