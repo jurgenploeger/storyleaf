@@ -28,31 +28,38 @@ moonglow     | newgame,map=moonglow              | 15
 # The continent: a land next door shown past the border (built before the shot), its wall or
 # gate, the ground blending across, and walking over into it with no loading card.
 border_open  | newgame,map=sunny_meadow,border=meadowbrook,landscape,weather=clear,hour=12 | 6
-border_gate  | newgame,map=sunny_meadow,border=pineapple_shore,landscape,weather=clear,hour=12 | 6
+border_gate  | newgame,map=sunny_meadow,border=frog_swamp,landscape,weather=clear,hour=12 | 6
 border_cross | newgame,map=sunny_meadow,border=twilight_woods,done=pineapple_harvest,cross,landscape,weather=clear,hour=12 | 6
-border_rocks | newgame,map=genie_desert,border=valley_of_fear,landscape,weather=clear,hour=12 | 6
+border_rocks | newgame,map=sunny_meadow,border=pineapple_shore,landscape,weather=clear,hour=12 | 6
 border_fence | newgame,map=frog_swamp,border=twilight_woods,landscape,weather=clear,hour=12 | 6
-border_sand  | newgame,map=northern_grassland,border=pineapple_shore,weather=clear,hour=12 | 6
+border_sand  | newgame,map=frog_swamp,border=goldburg_lake,weather=clear,hour=12 | 6
 # The swamp's border with the dark woods once roads join the two (both quests done): its fence gone,
 # you walk over anywhere, and the two grounds meet along a winding line, each one's trees on its own.
 border_joined | newgame,map=frog_swamp,border=twilight_woods,done=new_friend+pineapple_harvest,landscape,weather=clear,hour=12 | 6
 seam_snow    | newgame,map=snow_white_forest,border=swan_lake,landscape,weather=clear,hour=12 | 6
-# Where playtesting stood when it saw nothing past the border: the downs giving way to the sand at
-# night, the land next door built; and the same border before it's built (`far`: its world map
-# picture laid flat, once the world map's pictures are drawn).
-band_night   | newgame,map=northern_grassland,border=pineapple_shore,landscape,weather=clear,hour=23 | 6
+# A land giving way to the next at night, the land next door built (the swamp into the sandy lake
+# shore); and the lands past the downs' east coast before they're built (`far`: their world map
+# pictures laid flat, once the world map's pictures are drawn).
+band_night   | newgame,map=frog_swamp,border=goldburg_lake,landscape,weather=clear,hour=23 | 6
 far_land     | newgame,map=northern_grassland,edge=east,far,landscape,weather=clear,hour=12 | 90
 coast        | newgame,map=meadowbrook,edge=west,landscape,weather=clear,hour=12 | 6
-# The sea come in over a wild coast, lower than the land: the bank facing you (a bay in the swamp's
-# west), from behind (the snowy wood's north), and where the sea used to let you walk out (the lair's south).
-coast_bay    | newgame,map=frog_swamp,edge=west,landscape,weather=clear,hour=12 | 6
-coast_north  | newgame,map=snow_white_forest,edge=north,landscape,weather=clear,hour=12 | 6
+# The sea round the continent, lower than the land, the land sloping down to it (`WorldMap.shore`):
+# Meadowbrook's countryside down to it (`coast`), the slope facing you (the sandy lake shore's west,
+# Pineapple Shore's beach), from behind (the snowy lake's north), and where the sea used to let you walk
+# out (the lair's south).
+coast_bay    | newgame,map=goldburg_lake,edge=west,landscape,weather=clear,hour=12 | 6
+coast_beach  | newgame,map=pineapple_shore,at=-10_-47,landscape,weather=clear,hour=12 | 6
+coast_north  | newgame,map=rosen_lake,edge=north,landscape,weather=clear,hour=12 | 6
 coast_lair   | newgame,map=wolf_lair,edge=south,landscape,weather=clear,hour=12 | 6
 # The land next door built as the game builds it, in the background a few milliseconds a frame (the
 # border scenes above build it at once): the lair's border with the candy land, where playtesting
 # saw its ground missing past the line.
 border_built | newgame,map=wolf_lair,edge=east,landscape,weather=clear,hour=12 | 180
-city_wall    | newgame,map=bluebird,border=smiling_forest,landscape,weather=clear,hour=12 | 6
+# A town in its own countryside: Prismhaven's stone city wall and its south gate from the fields
+# outside it, Larkspur's village fence, and Ingothold's countryside where a quest's road leaves it,
+# barred at the border.
+city_wall    | newgame,map=rainbow_city,at=10_-39,landscape,weather=clear,hour=12 | 6
+village_fence | newgame,map=bluebird,at=8_-33,landscape,weather=clear,hour=12 | 6
 city_gate    | newgame,map=goldburg,border=valley_of_fear,landscape,weather=clear,hour=12 | 6
 battle       | newgame,map=sunny_meadow,battle   | 15
 night        | newgame,map=meadowbrook,hour=22,weather=clear | 8
@@ -206,8 +213,9 @@ sun_evening    | newgame,map=sunny_meadow,hill=0,hour=16,weather=clear | 8
 sun_moon       | newgame,map=sunny_meadow,hill=0,hour=22,weather=clear | 8
 sun_mountain_morning | newgame,level=90,map=crystal_mountain,hill=tallest,hour=8,weather=clear | 8
 sun_mountain_evening | newgame,level=90,map=crystal_mountain,hill=tallest,hour=16,weather=clear | 8
-# Lakes and rivers (`WorldMap.carveRiver`, `digLakes`): a road's bridge over the meadow's river, a lake's
-# footbridge out to its island and its jetty, the swamp's lakes, and Briarmere's river and lake.
+# Lakes and rivers (`WorldMap.layRivers`, `digLakes`): a road's bridge over the meadow's river, a lake's
+# footbridge out to its island and its jetty, the swamp's lakes, Briarmere's river and lake, and the
+# snowmelt running on over the border from the Snow White Forest into Swan Lake.
 river_bridge   | newgame,map=sunny_meadow,bridge=0,hour=10,weather=clear | 8
 river_bridge_land | newgame,map=sunny_meadow,bridge=1,hour=10,weather=clear,landscape | 8
 lake_island    | newgame,level=60,map=swan_lake,bridge=0,hour=10,weather=clear | 8
@@ -215,6 +223,7 @@ lake_jetty     | newgame,level=60,map=swan_lake,bridge=1,hour=10,weather=clear |
 lake_swamp     | newgame,level=20,map=frog_swamp,bridge=0,hour=10,weather=clear | 8
 lake_briarmere_land | newgame,level=110,map=rosen_lake,bridge=1,hour=10,weather=clear,landscape | 8
 river_forest   | newgame,level=26,map=smiling_forest,bridge=0,hour=10,weather=clear | 8
+river_border   | newgame,level=60,map=swan_lake,at=16_50,hour=10,weather=clear | 8
 # Where a road leads into a cave its rock rises along that side of the map, the road running into a
 # dark mouth (north and east) or under an arch into a dark cleft (south and west).
 crag_east      | newgame,level=30,map=valley_of_fear,at=70_-24    | 8

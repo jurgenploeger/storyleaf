@@ -18,6 +18,8 @@ final class Critters {
         let flight: SKTexture?
         let shadow: SKSpriteNode
         let home: CGPoint
+        /// How far it floats over its shadow (a wisp), bobbing.
+        let hover: CGFloat
         /// How far one hop goes, how high it jumps (0 for a scuttle) and how long it takes.
         let reach: CGFloat
         let height: CGFloat
@@ -40,6 +42,7 @@ final class Critters {
             self.height = height
             self.time = time
             self.rest = rest
+            self.hover = hover
             home = point
             let body = SKSpriteNode(texture: frames[0])
             self.body = body
@@ -79,11 +82,15 @@ final class Critters {
 
     private let world: SKNode
     private var critters: [Critter] = []
+    /// How high the ground lies under a spot on screen (`WorldMap.height(at:)`): on a hill, or down
+    /// the shore's slope (`WorldMap.shore`), they sit on it.
+    private let ground: (CGPoint) -> CGFloat
     private let birds: String?
     private var untilFlock: TimeInterval
 
     init(_ def: MapDef.Ambience?, world: SKNode, map: WorldMap, seed: String) {
         self.world = world
+        ground = { map.height(at: $0) }
         birds = def?.birds
         var rng = SeededRandom(text: seed + "/critters")
         untilFlock = .random(in: 4...10, using: &rng)
@@ -93,6 +100,10 @@ final class Critters {
                 guard let cell = Self.home(for: group.kind, map: map, water: water, rng: &rng),
                       let critter = Self.make(group.kind, at: map.base(of: cell), rng: &rng) else { continue }
                 critter.node.zPosition = -critter.node.position.y
+                // Up (or down) on the ground there.
+                let lift = height(of: critter, at: critter.node.position)
+                critter.body.position.y += lift
+                critter.shadow.position.y = lift
                 world.addChild(critter.node)
                 critters.append(critter)
             }
@@ -149,6 +160,11 @@ final class Critters {
     }
 
     // MARK: Critters
+
+    /// How high the ground lies under `point`, in `critter`'s own units (it's scaled).
+    private func height(of critter: Critter, at point: CGPoint) -> CGFloat {
+        ground(point) / max(critter.node.yScale, 0.01)
+    }
 
     /// Where one lives: frogs and crabs by the water, the rest anywhere in the open.
     private static func home(for kind: String, map: WorldMap, water: [GridPoint], rng: inout SeededRandom) -> GridPoint? {
@@ -245,10 +261,13 @@ final class Critters {
             move.timingMode = .easeInEaseOut
             critter.node.run(move, withKey: "hop")
             if way.dx != 0 { critter.body.xScale = way.dx < 0 ? -1 : 1 }
+            // Onto the ground where it lands, up a hill or down the shore.
+            let from = height(of: critter, at: start), lands = height(of: critter, at: target)
+            critter.shadow.run(.moveTo(y: lands, duration: time), withKey: "hop")
             if critter.height > 0 {
-                let up = SKAction.moveTo(y: critter.height, duration: time / 2)
+                let up = SKAction.moveTo(y: max(from, lands) + critter.height, duration: time / 2)
                 up.timingMode = .easeOut
-                let down = SKAction.moveTo(y: 0, duration: time / 2)
+                let down = SKAction.moveTo(y: lands, duration: time / 2)
                 down.timingMode = .easeIn
                 critter.body.run(.group([
                     .sequence([up, down]),
@@ -257,7 +276,10 @@ final class Critters {
             } else {
                 // A crab scuttles, claws clacking as it goes; a lizard or mouse patters along.
                 let clack = SKAction.animate(with: critter.frames, timePerFrame: 0.08)
-                critter.body.run(.sequence([.repeat(clack, count: max(1, Int(time / 0.16))), .setTexture(critter.frames[0])]), withKey: "hop")
+                critter.body.run(.group([
+                    .sequence([.repeat(clack, count: max(1, Int(time / 0.16))), .setTexture(critter.frames[0])]),
+                    .moveBy(x: 0, y: lands - from, duration: time),
+                ]), withKey: "hop")
             }
             critter.busy = time + (running ? 0.05 : 0.25)
             return
@@ -290,9 +312,11 @@ final class Critters {
         critter.node.zPosition = -critter.home.y
         let side: CGFloat = Bool.random() ? 1 : -1
         critter.body.xScale = side
-        critter.body.position = CGPoint(x: -side * 70, y: 110)
+        let lift = height(of: critter, at: critter.home)
+        critter.body.position = CGPoint(x: -side * 70, y: 110 + lift)
         critter.body.texture = flight
-        let glide = SKAction.move(to: .zero, duration: 0.9)
+        critter.shadow.position.y = lift
+        let glide = SKAction.move(to: CGPoint(x: 0, y: lift + critter.hover), duration: 0.9)
         glide.timingMode = .easeOut
         let flap = SKAction.animate(with: [flight, critter.frames[1]], timePerFrame: 0.1)
         critter.body.run(.sequence([

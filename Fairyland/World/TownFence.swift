@@ -1,16 +1,23 @@
 import SpriteKit
 
-/// A town's fence as one continuous picket fence along the town's edges: the picket art is
-/// slanted onto each edge's diagonal so neighbouring pieces join up and turn at the corners,
-/// and a stone gate arch stands over every road that runs through it.
+/// A town's fence as one continuous picket fence round its square: the picket art is slanted onto
+/// each edge's diagonal so neighbouring pieces join up and turn at the corners, and a stone gate
+/// arch stands over every road that runs through it. A city's is a wall of stone instead, round
+/// towers at its corners, either side of each gate and along it between (`stone`).
 enum TownFence {
     /// Pickets are drawn one picture per cell, this tall (points).
     private static let height: CGFloat = 21
     private static let gateHeight: CGFloat = 51
+    /// A city wall's towers stand at most this many cells apart along a straight stretch.
+    private static let towerEvery = 8
 
-    static func place(cells: [GridPoint], map: WorldMap, world: SKNode, art: ArtLibrary) {
+    /// `stone`: a city's wall (`BorderArt.wallPicture`) rather than a village's pickets.
+    static func place(cells: [GridPoint], map: WorldMap, world: SKNode, art: ArtLibrary, stone: Bool = false) {
         let fence = Set(cells)
-        guard !fence.isEmpty, let pickets = cropped(art.sprite("fence").texture.cgImage()) else { return }
+        let palette = map.def.theme.palette
+        let source = stone ? BorderArt.wallPicture(palette: palette) : art.sprite("fence").texture.cgImage()
+        let height = stone ? BorderArt.wallHeight : Self.height
+        guard !fence.isEmpty, let source, let pickets = cropped(source) else { return }
         let tile = WorldMap.tileSize
         let c = CGFloat(0.5).squareRoot()
         // Half a cell along the grid's x axis on screen; along y it's (-dx, dy).
@@ -47,6 +54,29 @@ enum TownFence {
             node.position = map.center(of: cell)
             node.zPosition = -node.position.y
             world.addChild(node)
+        }
+
+        // A city wall's towers: at its corners and either side of each gate, and along each straight
+        // stretch between, no two closer than half the stretch they're spread along.
+        if stone, let tower = BorderArt.towerPicture(palette: palette) {
+            let texture = SKTexture(cgImage: tower)
+            texture.filteringMode = .nearest
+            var spots: [GridPoint] = []
+            for cell in cells.sorted(by: WorldMap.inOrder) {
+                let east = has(1, 0, cell) || has(-1, 0, cell), north = has(0, 1, cell) || has(0, -1, cell)
+                let ends = [(1, 0), (0, 1), (-1, 0), (0, -1)].filter { has($0.0, $0.1, cell) }.count < 2
+                let along = east && !north ? cell.col : !east && north ? cell.row : 0
+                guard (east && north) || ends || along % towerEvery == 0 else { continue }
+                guard spots.allSatisfy({ max(abs($0.col - cell.col), abs($0.row - cell.row)) > 3 }) || east && north || ends else { continue }
+                spots.append(cell)
+            }
+            for cell in spots {
+                let node = SKSpriteNode(texture: texture, size: BorderArt.towerSize)
+                node.anchorPoint = CGPoint(x: 0.5, y: 0.06)
+                node.position = map.center(of: cell)
+                node.zPosition = -node.position.y + 0.01
+                world.addChild(node)
+            }
         }
 
         // Gates: the two ends of each gap where a road runs through, joined by an arch.

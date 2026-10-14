@@ -24,7 +24,7 @@ struct WorldAtlas: View {
         case locked(quest: String?)
     }
 
-    /// A land on the continent and its south-west cell there.
+    /// A land on the continent and its box's south-west cell there.
     private struct Land {
         let def: MapDef
         let origin: GridPoint
@@ -218,11 +218,7 @@ struct WorldAtlas: View {
             selected = cave.place
             return
         }
-        let spot = cell(at: location)
-        selected = lands.first { land in
-            spot.col >= land.origin.col && spot.row >= land.origin.row
-                && spot.col < land.origin.col + land.def.width && spot.row < land.origin.row + land.def.height
-        }?.def.id
+        selected = Continent.owner(atWorld: cell(at: location))?.id
     }
 
     // MARK: Marks
@@ -243,8 +239,9 @@ struct WorldAtlas: View {
         let content = Content.shared
         for land in lands {
             let def = land.def
+            let middle = content.regions[def.id]?.middle ?? GridPoint(col: def.width / 2, row: def.height / 2)
             marks.append(Mark(id: "land " + def.id, kind: .land, place: def.id,
-                              cell: GridPoint(col: land.origin.col + def.width / 2, row: land.origin.row + def.height / 2)))
+                              cell: GridPoint(col: land.origin.col + middle.col, row: land.origin.row + middle.row)))
             for exit in def.exits {
                 let crossing = Self.crossing(of: exit, in: land)
                 if content.world[exit.to] == nil, content.map(exit.to) != nil {
@@ -258,11 +255,15 @@ struct WorldAtlas: View {
         return marks
     }
 
-    /// Where a road leaves a land through `exit`, on the continent.
+    /// Where a road leaves a land through `exit`, on the continent: where it crosses the land's border
+    /// (`Region.Road`), else (a land with no shape) where it leaves its edge.
     private static func crossing(of exit: MapDef.Exit, in land: Land) -> GridPoint {
         let def = land.def
+        if let road = Content.shared.regions[def.id]?.roads[exit.to] {
+            return GridPoint(col: land.origin.col + road.at.col, row: land.origin.row + road.at.row)
+        }
         let length = exit.edge == .east || exit.edge == .west ? def.height : def.width
-        let along = length / 2 + (exit.meets ?? exit.at ?? 0)
+        let along = length / 2 + (exit.at ?? 0)
         let local: GridPoint = switch exit.edge {
         case .east: GridPoint(col: def.width - 1, row: along)
         case .west: GridPoint(col: 0, row: along)
@@ -362,9 +363,13 @@ struct WorldAtlas: View {
             let def = land.def
             let rect = CGRect(x: land.origin.col - low.col, y: land.origin.row - low.row, width: def.width, height: def.height)
             guard var image = overview.images[def.id] else {
+                // Its shape in a colour from its ground, till it's drawn.
                 let tint = Self.tint(of: def)
-                context.setFillColor(red: tint.r, green: tint.g, blue: tint.b, alpha: 0.55)
-                context.fill(rect.insetBy(dx: 4, dy: 4))
+                if let shape = WorldScene.silhouette(of: def, color: PixelColor(r: UInt8(tint.r * 255), g: UInt8(tint.g * 255), b: UInt8(tint.b * 255))) {
+                    context.setAlpha(0.55)
+                    context.draw(shape, in: rect)
+                    context.setAlpha(1)
+                }
                 continue
             }
             if def.ambience?.darkness != nil,
@@ -388,7 +393,8 @@ struct WorldAtlas: View {
         let pixels = data.bindMemory(to: UInt8.self, capacity: width * height * 4)
         let sea = seaColor
         for index in stride(from: 0, to: width * height * 4, by: 4) {
-            if pixels[index] == sea.r, pixels[index + 1] == sea.g, pixels[index + 2] == sea.b { continue }
+            // Not the sea, nor where it's clear (a land next door's, in this one's box).
+            if pixels[index + 3] == 0 || (pixels[index] == sea.r && pixels[index + 1] == sea.g && pixels[index + 2] == sea.b) { continue }
             for channel in 0..<3 {
                 pixels[index + channel] = UInt8((Double(pixels[index + channel]) * 0.45 + 150 * 0.55).rounded())
             }

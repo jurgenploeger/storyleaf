@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 // MARK: - Stats & elements
@@ -434,8 +435,6 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let ponds: Int?
         /// Big lakes, besides the ponds (not in towns or caves).
         let lakes: Lakes?
-        /// A river across the map, bridged where roads cross it (not in towns or caves).
-        let river: River?
         let fairyRings: FairyRings?
         let props: [PropPlacement]
         /// The map's colour mood for ground, scenery and buildings.
@@ -485,15 +484,6 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let size: [Double]
         /// How many of them have an island in the middle, a footbridge out to it.
         let islands: Int?
-    }
-
-    /// A river across the map (`WorldMap.carveRiver`): in over one edge and out over another,
-    /// winding, a bridge wherever a road crosses it.
-    nonisolated struct River: Decodable, Sendable {
-        let from: Edge
-        let to: Edge
-        /// How wide it runs, in cells (3 when not given).
-        let width: Double?
     }
 
     /// Solid rock everywhere except galleries along the roads and trails, chambers off them and
@@ -627,12 +617,12 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let to: String
         /// A quest you must finish before this road opens.
         let requires: String?
-        /// Where along its edge the road leaves, in cells from the middle of the edge (east/north positive).
+        /// Where along its edge the road leaves, in cells from the middle of the edge (east/north
+        /// positive): a cave's roads, and a town's gates. Out on the continent the painting places the
+        /// rest (content/world.json `roads`, `Region.Road`).
         let at: Int?
-        /// Where it meets the next land across the border, if not at `at` (content/world.json lines the
-        /// two sides up): the road is laid toward `at` as ever, its last stretch bending to here.
-        let meets: Int?
-        /// Waypoints the road winds through on its way out, as [x, y] cell offsets from the centre.
+        /// Waypoints the road winds through on its way out, as [x, y] cell offsets from the centre (a
+        /// cave's; the continent's come from its painting).
         let via: [[Int]]?
     }
 
@@ -668,8 +658,6 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
     let theme: Theme
     let fence: Bool?
     let exits: [Exit]
-    /// Where this place sits on the world map, in steps [east, north] from the start town.
-    let world: [Int]?
     /// Where the roads meet, as an [x, y] cell offset from the centre (the centre by default).
     let hub: [Int]?
     let trails: [Trail]?
@@ -688,6 +676,11 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
     let town: Town?
 
     nonisolated struct Town: Decodable, Sendable {
+        /// Its walled square, [width, height] round its middle (`WorldMap.townSquare`), its own
+        /// countryside all round it on the continent; the whole map when not given.
+        let size: [Int]?
+        /// What its wall is: "stone" a city's, with towers; else a village's picket fence.
+        let walls: String?
         /// Straight streets as [x1, y1, x2, y2] offsets from the centre.
         let streets: [[Int]]?
         /// Radius of the cobbled plaza in the middle.
@@ -1041,7 +1034,25 @@ private nonisolated struct MapsFile: Decodable { let start: String; let maps: [M
 private nonisolated struct MusicFile: Decodable { let songs: [SongDef]; let instruments: [InstrumentDef]? }
 private nonisolated struct ChangelogFile: Decodable { let releases: [ReleaseNote] }
 private nonisolated struct TitlesFile: Decodable { let titles: [TitleDef] }
-private nonisolated struct WorldFile: Decodable { let lands: [String: [Int]] }
+/// content/world.json (tools/world_layout.py): each land's box, middle, roads and shape.
+private nonisolated struct WorldFile: Decodable {
+    nonisolated struct Road: Decodable {
+        let at: [Int]
+        let via: [[Int]]?
+    }
+
+    /// A river from its spring to the sea: its middle, [x, y] in world cells.
+    nonisolated struct River: Decodable {
+        let line: [[Double]]
+    }
+
+    let margin: Int
+    let lands: [String: [Int]]
+    let middles: [String: [Int]]
+    let roads: [String: [String: Road]]
+    let rivers: [River]?
+    let regions: [String: [[Int]]]
+}
 
 /// All game data from the bundled content/ folder. Edit the JSON, rebuild, done. Text is read in
 /// the player's language (`Localizer`): the fields content/i18n/fields.json names are swapped for
@@ -1069,6 +1080,8 @@ final class Content {
         let rewards: RewardsDef
         /// Where each outdoor land lies on the continent (content/world.json).
         let world: [String: GridPoint]
+        /// Each outdoor land's shape there (`Region`).
+        let regions: [String: Region]
         /// Each monster's card level (`cardLevel`), worked out once.
         let cardLevels: [String: Int]
         /// Quest treasures (`questGiving`): each one's quest.
@@ -1101,6 +1114,9 @@ final class Content {
     /// Where each outdoor land lies on the one continent (content/world.json): the world cell its
     /// south-west cell sits on, columns east and rows north. Caves aren't on it.
     var world: [String: GridPoint] { loaded.world }
+    /// Each outdoor land's shape on the continent (`Region`): its own cells, the sea it draws, its
+    /// middle and where its roads cross its border.
+    var regions: [String: Region] { loaded.regions }
 
     /// `strings`: read the data with these translations instead of the chosen language's (tests).
     init(bundle: Bundle = .main, strings: [String: String]? = nil) {
@@ -1154,6 +1170,27 @@ final class Content {
         for npc in mapFile.maps.flatMap({ $0.npcs ?? [] }) where npc.role == .chest {
             if let id = npc.gives, gear.contains(id), !stocked.contains(id), questTreasures[id] == nil { chestTreasures[id] = npc.id }
         }
+        // The continent: each land's box, and its shape over it.
+        let worldFile: WorldFile = load("world")
+        func point(_ pair: [Int]) -> GridPoint { GridPoint(col: pair.first ?? 0, row: pair.count > 1 ? pair[1] : 0) }
+        var regions: [String: Region] = [:]
+        let rivers = (worldFile.rivers ?? []).map { river in
+            river.line.map { CGPoint(x: $0.first ?? 0, y: $0.count > 1 ? $0[1] : 0) }
+        }
+        for map in mapFile.maps {
+            guard let runs = worldFile.regions[map.id], let origin = worldFile.lands[map.id].map(point) else { continue }
+            let roads = (worldFile.roads[map.id] ?? [:]).mapValues { Region.Road(at: point($0.at), via: $0.via ?? []) }
+            // The rivers that come near it, in its cells.
+            let reach = CGFloat(worldFile.margin)
+            let near = rivers.map { line in
+                line.map { CGPoint(x: $0.x - CGFloat(origin.col), y: $0.y - CGFloat(origin.row)) }
+            }.filter { line in
+                line.contains { $0.x >= -reach && $0.y >= -reach && $0.x <= CGFloat(map.width) + reach && $0.y <= CGFloat(map.height) + reach }
+            }
+            regions[map.id] = Region(margin: worldFile.margin, columns: map.width, rows: map.height, runs: runs,
+                                     middle: worldFile.middles[map.id].map(point) ?? GridPoint(col: map.width / 2, row: map.height / 2),
+                                     roads: roads, rivers: near)
+        }
         return Loaded(
             classChoiceLevel: classFile.classChoiceLevel,
             races: classFile.races,
@@ -1172,7 +1209,8 @@ final class Content {
             releases: (load("changelog") as ChangelogFile).releases,
             titles: (load("titles") as TitlesFile).titles,
             rewards: load("rewards"),
-            world: (load("world") as WorldFile).lands.mapValues { GridPoint(col: $0.first ?? 0, row: $0.count > 1 ? $0[1] : 0) },
+            world: worldFile.lands.mapValues(point),
+            regions: regions,
             cardLevels: cardLevels,
             questTreasures: questTreasures,
             chestTreasures: chestTreasures

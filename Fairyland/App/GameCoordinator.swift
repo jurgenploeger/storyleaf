@@ -231,10 +231,10 @@ final class GameCoordinator {
     private func buildNextDoor(_ def: MapDef) {
         buildingNextDoor = def.id
         let caves = WorldMap.caves
-        let coast = Continent.coast(of: def)
+        let around = Continent.neighbourhood(of: def)
         let away = world.visitingFriends
         Task { [weak self] in
-            let grid = await Task.detached(priority: .userInitiated) { await MapLayouts.shared.lay(def, caves: caves, coast: coast) }.value
+            let grid = await Task.detached(priority: .userInitiated) { await MapLayouts.shared.lay(def, caves: caves, around: around) }.value
             guard let self else { return }
             // Its picture at once, from the layout, to lie past the border (`WorldScene.placeFarLands`)
             // and on the minimap while the land itself is built.

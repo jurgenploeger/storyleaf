@@ -241,6 +241,12 @@ for item, given_by in givers.items():
 # only that chest has it: no other chest, no quest, no monster's drop and no smith.
 quest_rewards = {item for quest in quests.values() for item in quest["reward"].get("items", [])}
 holders = {}
+# The lands where a road or trail crosses one of the continent's rivers (a bridge, for the "bridge"
+# landmark below).
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import world_layout  # noqa: E402
+bridged_lands = world_layout.bridged_lands({i: m for i, m in maps.items() if "cave" not in m["theme"]}, load("content/world.json"))
+
 for map_def in maps_file["maps"]:
     for npc in map_def.get("npcs", []):
         item = npc.get("gives")
@@ -273,6 +279,12 @@ for map_def in maps.values():
         check(map_def["battleMusic"] in songs, f"map {map_def['id']} → unknown battle song {map_def['battleMusic']}")
     theme = map_def["theme"]
     town = map_def.get("town") or {}
+    if map_def.get("fence") is True:
+        # A town's walled square (`WorldMap.townSquare`), its countryside painted round it on the continent.
+        size = town.get("size")
+        check(isinstance(size, list) and len(size) == 2 and all(isinstance(v, int) and v >= 20 for v in size),
+              f"map {map_def['id']} town → size must be [width, height] of its walled square, 20 or more each")
+        check(town.get("walls") in (None, "stone"), f"map {map_def['id']} town → walls must be \"stone\" (a city's) or left out (a fence)")
     tiles = [theme["ground"], theme["path"]] + [theme[k] for k in ("accent", "border", "water") if theme.get(k)]
     if "cave" in theme:
         cave = theme["cave"]
@@ -323,16 +335,6 @@ for map_def in maps.values():
               f"{where} → size must be [smallest, biggest] reach in cells, 5 to 24")
         islands = lakes.get("islands", 0)
         check(isinstance(islands, int) and 0 <= islands <= lakes.get("count", 0), f"{where} → islands must be 0 to count")
-    if "river" in theme:
-        river = theme["river"]
-        where = f"map {map_def['id']} river"
-        edges = {"north", "south", "east", "west"}
-        check(isinstance(river, dict) and set(river) <= {"from", "to", "width"}, f"{where} → must be {{from, to, width}}")
-        check(not map_def.get("town") and "cave" not in theme, f"{where} → only out in the fields (not towns or caves)")
-        check("water" in theme, f"{where} → needs the map's water tile")
-        check(river.get("from") in edges and river.get("to") in edges and river.get("from") != river.get("to"),
-              f"{where} → from and to must be two different edges")
-        check(isinstance(river.get("width", 3), (int, float)) and 2 <= river.get("width", 3) <= 6, f"{where} → width must be 2 to 6 cells")
     props = [p["art"] for p in theme["props"]] + town.get("lots", []) + list(town.get("streetDecor", {}))
     props += [b["art"] for b in map_def.get("buildings", [])] + [d["art"] for d in map_def.get("decor", [])]
     for art_id in tiles + props:
@@ -398,7 +400,7 @@ for map_def in maps.values():
         "jetty": bool(lakes),
         "shore": bool(lakes),
         "island": lakes.get("islands", 0) > 0,
-        "bridge": "river" in theme,
+        "bridge": map_def["id"] in bridged_lands,
         "mouth": any("cave" in (maps.get(exit["to"]) or {}).get("theme", {}) for exit in map_def["exits"]) and "cave" not in theme,
     }
     for local in map_def.get("locals", []):
@@ -701,27 +703,21 @@ for song in music["songs"]:
         for token in track["notes"].split():
             if token != "|":
                 check(bool(NOTE_TOKEN.match(token)), f"{where}: bad note {token}")
-STEP = {"east": (1, 0), "west": (-1, 0), "north": (0, 1), "south": (0, -1)}
-places = {}
-for map_def in maps.values():
-    world = map_def.get("world")
-    if not (isinstance(world, list) and len(world) == 2 and all(isinstance(n, int) for n in world)):
-        errors.append(f"map {map_def['id']} → needs \"world\": [east, north] for the world map")
-        continue
-    check(tuple(world) not in places, f"map {map_def['id']} → world spot {world} already taken by {places.get(tuple(world))}")
-    places[tuple(world)] = map_def["id"]
+# A cave's road out comes back in where it left: the way out of a cave is the other side of the
+# way in (`GameCoordinator`: you arrive through the edge opposite the one you left by).
+OPPOSITE = {"east": "west", "west": "east", "north": "south", "south": "north"}
 for map_def in maps.values():
     for exit_def in map_def["exits"]:
-        a, b = map_def.get("world"), maps.get(exit_def["to"], {}).get("world")
-        if a and b:
-            dx, dy = STEP[exit_def["edge"]]
-            check([a[0] + dx, a[1] + dy] == b,
-                  f"map {map_def['id']} {exit_def['edge']} exit → {exit_def['to']} isn't one step {exit_def['edge']} on the world map")
+        back = [e for e in maps.get(exit_def["to"], {}).get("exits", []) if e["to"] == map_def["id"]]
+        check(len(back) == 1, f"map {map_def['id']} → {exit_def['to']} has no single road back")
+        if back and ("cave" in map_def["theme"] or "cave" in maps[exit_def["to"]]["theme"]):
+            check(back[0]["edge"] == OPPOSITE[exit_def["edge"]],
+                  f"map {map_def['id']} {exit_def['edge']} → {exit_def['to']}: its road back should leave by the {OPPOSITE[exit_def['edge']]}")
+    edges = [e["edge"] for e in map_def["exits"]]
+    check(len(edges) == len(set(edges)), f"map {map_def['id']} → two roads leave by the same side")
 
-# The continent (content/world.json, tools/world_layout.py): every outdoor land has its place, lands a
-# road joins touch with the road meeting itself across the border, and none overlap.
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-import world_layout  # noqa: E402
+# The continent (content/world.json, tools/world_layout.py): every outdoor land has its shape, none
+# overlap, a road crosses where the land it leads to takes it on, and what's set down by hand stands on its land.
 outdoor = {i: m for i, m in maps.items() if "cave" not in m["theme"]}
 errors += world_layout.verify(maps, outdoor, load("content/world.json"))
 

@@ -115,6 +115,12 @@ nonisolated extension WorldMap {
         /// How high the ground really stands at its highest, from its samples: where two summits'
         /// tops meet it can stand up to a fifth over `peak`.
         var highest: CGFloat = 0
+        /// How low it lies at its lowest, below 0 where it's sunk (`sunken`).
+        var lowest: CGFloat = 0
+        /// Ground sunk below the land round it rather than raised: the shore sloping down to the sea
+        /// and into the lakes (`WorldMap.shore`). Drawn as a hill is (`HillArt`), over its `cells`
+        /// and a cell round them, with no outline, trails or bare rock of its own.
+        var sunken = false
         /// How steep its summits' sides get halfway up, at most, in points a cell
         /// (`steepness(rockiness:)`).
         let steepness: Double

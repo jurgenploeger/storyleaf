@@ -115,7 +115,8 @@ final class Crowd {
         self.market = market
         let options = Content.shared.crowd
         let town = def.fence == true
-        let spread = max(map.columns, map.rows) / 2
+        // In a town, about its square (its countryside round it is no place for a crowd).
+        let spread = (town ? max(map.townSquare.width, map.townSquare.height) : max(map.columns, map.rows)) / 2
         var adventurerNames = options.adventurerNames.shuffled()
         var villagerNames = options.villagerNames.shuffled()
 

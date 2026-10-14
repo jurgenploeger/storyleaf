@@ -56,8 +56,8 @@ final class WorldOverview {
                 let next = wanted.compactMap { id in left.firstIndex { $0.id == id } }.first ?? 0
                 let def = left.remove(at: next)
                 guard images[def.id] == nil, pending[def.id] == nil else { continue }
-                let coast = Continent.coast(of: def)
-                let map = await Task.detached(priority: .utility) { await MapLayouts.shared.lay(def, caves: caves, coast: coast) }.value
+                let around = Continent.neighbourhood(of: def)
+                let map = await Task.detached(priority: .utility) { await MapLayouts.shared.lay(def, caves: caves, around: around) }.value
                 remember(def.id, WorldScene.overview(of: map, art: ArtLibrary.shared))
             }
             making = false
@@ -90,9 +90,10 @@ final class WorldOverview {
         try? data.write(to: url, options: .atomic)
     }
 
-    /// How the lands are drawn on it: one more each time that changes (the lands give way to each
-    /// other in patches now, `Seam`), so the pictures kept are drawn afresh even in the same build.
-    private static let look = 3
+    /// How the lands are drawn on it: one more each time that changes (each land its own shape now,
+    /// clear where a land next door's is, `Region`), so the pictures kept are drawn afresh even in
+    /// the same build.
+    private static let look = 4
 
     /// This build of the game and its maps: the version, the build, how they're drawn (`look`) and
     /// a hash of the maps and the continent (FNV-1a).

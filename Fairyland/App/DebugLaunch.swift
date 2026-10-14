@@ -440,27 +440,36 @@ enum DebugLaunch {
             session.data.mapID = map
         }
         // `border=<land>`: you start just inside the border with that land next door, on the road
-        // over it if one crosses, looking across (the land next door comes up before the screenshot,
-        // `apply`). `edge=<north|south|east|west>`: just inside that edge, half way along.
+        // over it if one crosses (else halfway along it), looking across (the land next door comes up
+        // before the screenshot, `apply`). `edge=<north|south|east|west>`: halfway along that side of
+        // the land's box, 3 cells in from where its land begins.
         if let here = Content.shared.map(session.data.mapID) {
             let neighbour = flags["border"].flatMap { id in Continent.neighbours(of: here).first { $0.def.id == id } }
-            if let edge = neighbour?.edge ?? flags["edge"].flatMap(Edge.init(rawValue:)) {
-                let length = edge == .north || edge == .south ? here.width : here.height
-                let along = neighbour.map { $0.road ?? ($0.span.lowerBound + $0.span.upperBound) / 2 } ?? length / 2
-                func cell(_ inward: Int) -> GridPoint {
-                    switch edge {
-                    case .east: GridPoint(col: here.width - 1 - inward, row: along)
-                    case .west: GridPoint(col: inward, row: along)
-                    case .north: GridPoint(col: along, row: here.height - 1 - inward)
-                    case .south: GridPoint(col: along, row: inward)
-                    }
-                }
+            let edge = flags["edge"].flatMap(Edge.init(rawValue:))
+            if neighbour != nil || edge != nil {
                 let map = WorldMap(def: here)
-                // Over a border, 5 cells in; at the coast, 3 in from where the sea's come in to.
-                let depth = edge == .north || edge == .south ? here.height : here.width
-                let shore = neighbour == nil ? (0..<(depth / 2)).first(where: { map.isWalkable(cell($0)) }) ?? 0 : 0
-                let spot = cell(neighbour == nil ? shore + 3 : 5)
-                session.playerPosition = map.center(of: map.isWalkable(spot) ? spot : map.nearestWalkable(to: spot) ?? spot)
+                var spot: GridPoint?
+                if let neighbour {
+                    if let exit = neighbour.exit, let road = neighbour.road {
+                        spot = road.stepped(exit.edge.opposite, by: 5)
+                    } else if !neighbour.border.isEmpty {
+                        let pair = neighbour.border[neighbour.border.count / 2]
+                        let inward = (col: pair.inside.col - pair.outside.col, row: pair.inside.row - pair.outside.row)
+                        spot = GridPoint(col: pair.inside.col + inward.col * 5, row: pair.inside.row + inward.row * 5)
+                    }
+                } else if let edge {
+                    var cell: GridPoint = switch edge {
+                    case .east: GridPoint(col: here.width - 1, row: here.height / 2)
+                    case .west: GridPoint(col: 0, row: here.height / 2)
+                    case .north: GridPoint(col: here.width / 2, row: here.height - 1)
+                    case .south: GridPoint(col: here.width / 2, row: 0)
+                    }
+                    while map.contains(cell), !map.isWalkable(cell) { cell = cell.stepped(edge.opposite) }
+                    spot = cell.stepped(edge.opposite, by: 3)
+                }
+                if let spot {
+                    session.playerPosition = map.center(of: map.isWalkable(spot) ? spot : map.nearestWalkable(to: spot) ?? spot)
+                }
             }
         }
         #if DEBUG
