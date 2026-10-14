@@ -13,6 +13,10 @@ on:
         description: "Only these scenes (comma-separated names from tools/screenshots.txt). Empty = all."
         required: false
         default: ""
+      tests:
+        description: "Only these tests (comma-separated, e.g. FairylandTests/ContentTests). Empty = all."
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -42,13 +46,22 @@ jobs:
 
       - name: Run the tests
         timeout-minutes: 85
+        env:
+          ONLY: ${{ inputs.tests }}
         run: |
           UDID=$(xcrun simctl list devices available | grep -m1 -E 'iPhone 1[6-9] Pro \(' | grep -oE '[0-9A-F-]{36}')
           test -n "$UDID" || { xcrun simctl list devices available; exit 1; }
           mkdir -p build
           status=0
+          # A run started by hand can run only some of the tests (`tests`), to try a fix quickly.
+          only=()
+          IFS=',' read -ra picked <<< "${ONLY:-}"
+          for name in "${picked[@]}"; do
+            name=$(echo "$name" | xargs)
+            [ -n "$name" ] && only+=("-only-testing:$name")
+          done
           xcodebuild test -project Fairyland.xcodeproj -scheme Fairyland -destination "id=$UDID" \
-            -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO > build/tests.log 2>&1 || status=$?
+            -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO "${only[@]}" > build/tests.log 2>&1 || status=$?
           # How long each map takes to build (PerformanceTests) and the hills each raised, pass or fail.
           grep -E '⏱|⛰' build/tests.log || true
           if [ "$status" -ne 0 ]; then

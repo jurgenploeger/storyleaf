@@ -291,6 +291,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
         }
         markForeign()
         layShore()
+        if def.theme.cave == nil { sealPockets() }
     }
 
     /// Over the land's box, the cells that aren't its own (`Region`) are the sea's or a land next
@@ -1347,6 +1348,27 @@ nonisolated final class WorldMap: @unchecked Sendable {
         guard reached.contains(true) else { return }
         for cell in cragGround where contains(cell) && !blocked.contains(cell) && !reached[cell.row * columns + cell.col] {
             occupy(cell, blocking: true)
+        }
+    }
+
+    /// The most cells a pocket you can't reach from the hub may have and be walled off
+    /// (`sealPockets`); a bigger piece cut off is a fault in the layout, and the tests say so.
+    static let largestPocket = 9
+
+    /// Walls off the few cells here and there you could stand on but never walk to from the hub (a
+    /// gap between a lake's shore and a hill, say), as `sealCrags` does by a cave's range, so
+    /// nothing walkable is shut in. A cave fills in all it can't reach as it's dug (`digCave`).
+    private func sealPockets() {
+        let reached = reachedFromHub()
+        guard reached.contains(true) else { return }
+        var stranded: Set<GridPoint> = []
+        for row in 0..<rows {
+            for col in 0..<columns where standable(col, row) && !reached[row * columns + col] {
+                stranded.insert(GridPoint(col: col, row: row))
+            }
+        }
+        for pocket in Self.groups(of: stranded) where pocket.count <= Self.largestPocket {
+            for cell in pocket { occupy(cell, blocking: true) }
         }
     }
 

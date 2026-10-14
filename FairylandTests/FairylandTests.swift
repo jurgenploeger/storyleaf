@@ -165,8 +165,11 @@ struct ContentTests {
                 // its road): the ground just past the edge rises nearly all along it.
                 let road = Int((exit.edge == .north || exit.edge == .south ? mouth.x : mouth.y).rounded(.down))
                 let reach = Int(WorldMap.cragStretch) - 12
+                // On the continent, only where the edge is its own: where a land next door meets it
+                // instead, past the end of its coast, it has no range (`raiseCrags`).
                 let spots = map.region == nil ? Array(stride(from: 0, to: length, by: 3))
                     : Array(stride(from: max(0, road - reach), to: min(length, road + reach), by: 3))
+                        .filter { map.owns(map.cell(on: exit.edge, along: $0, inward: 0)) }
                 let raised = spots.filter { along in
                     let cell = map.cell(on: exit.edge, along: along, inward: -3)
                     return hill.height(atCells: Double(cell.col) + 0.5, Double(cell.row) + 0.5) > 10
@@ -426,13 +429,18 @@ struct ContentTests {
                 #expect(lake.water.allSatisfy { abs(height($0) + WorldMap.lakeDrop) < 1 },
                         "map \(def.id): a lake isn't down at its water's level")
             }
-            // The land along the coast, at the sea's level (but by a hill, which it rises to meet).
+            // The land along the coast, at the sea's level (but by a hill, which it rises to meet
+            // over a couple of cells, `WorldMap.layShore`).
             var coast = 0, low = 0
             for row in 0..<map.rows {
                 for col in 0..<map.columns {
                     let cell = GridPoint(col: col, row: row)
-                    guard map.owns(cell), map.hillIndex(at: cell) == nil,
+                    guard map.owns(cell),
                           [Edge.east, .west, .north, .south].contains(where: { map.isOpenSea(cell.stepped($0)) }) else { continue }
+                    let byHill = (-2...2).contains { dr in
+                        (-2...2).contains { dc in map.hillIndex(at: GridPoint(col: col + dc, row: row + dr)) != nil }
+                    }
+                    guard !byHill else { continue }
                     coast += 1
                     if height(cell) < -WorldMap.seaDrop + 1 { low += 1 }
                 }
@@ -2656,10 +2664,11 @@ struct PerformanceTests {
     /// How long one map may take to build. An optimised build, like the App Store's, should do it in
     /// a few seconds. A debug build runs this code many times slower: in the CI tests job (a simulator
     /// on a shared runner) the biggest maps took 50 to 91 s across runs of the same code (the runner's
-    /// speed swings that much), so there the bound only catches a map that's become pathologically
-    /// slow, and the job's log lists every map's time (⏱) to watch.
+    /// speed swings that much), and with the shores (0.6.0) Smiling Forest 145 to 152 s laid out and
+    /// built, so there the bound only catches a map that's become pathologically slow, and the job's
+    /// log lists every map's time (⏱) to watch.
     #if DEBUG
-    static let mapBuildLimit: Duration = .seconds(150)
+    static let mapBuildLimit: Duration = .seconds(200)
     #else
     static let mapBuildLimit: Duration = .seconds(3)
     #endif
