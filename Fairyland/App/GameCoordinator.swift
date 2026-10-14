@@ -138,6 +138,21 @@ final class GameCoordinator {
 
     /// The scene SpriteKit should show right now.
     var scene: SKScene { battle != nil ? (battleScene ?? world) : (continent ?? world) }
+    /// The scene you walk about in: the continent as one place while it's shown (a debug launch,
+    /// `continent`), or the land you're in.
+    private var mapScene: any MapScene {
+        if let continent { return continent }
+        return world
+    }
+
+    /// The HUD's minimap of the land you're in, with what's round it, and that land's size in cells:
+    /// on the continent while it's shown, the land your feet are in there.
+    func minimap(explored version: Int, overviews: Int) -> (picture: WorldScene.MinimapPicture, columns: Int, rows: Int) {
+        if let continent, let here = continent.here, let picture = continent.minimapPicture(overviews: overviews) {
+            return (picture, here.width, here.height)
+        }
+        return (world.minimapPicture(explored: version, overviews: overviews), world.def.width, world.def.height)
+    }
 
     /// The continent as one place (`ContinentScene`, docs/continuous-world.md), shown instead of the
     /// land you're in: only by a debug launch (`continent`) until it takes over from the lands' own
@@ -147,16 +162,26 @@ final class GameCoordinator {
     #if DEBUG
     /// Debug launches (`continent`): the continent as one place, from where you stand, once the chunks
     /// round you are drawn.
-    func showContinentForDebug() async {
+    func showContinentForDebug(walkInto land: String? = nil) async {
         guard let origin = Continent.origin(of: world.def) else { return }
         let local = session.playerPosition ?? .zero
         let shift = WorldMap.project(CGPoint(x: CGFloat(origin.col) * WorldMap.tileSize, y: CGFloat(origin.row) * WorldMap.tileSize))
         let scene = ContinentScene(session: session, input: input, at: CGPoint(x: local.x + shift.x, y: local.y + shift.y))
+        scene.onTalk = { [weak self] npc in self?.open(.npc(npc.id)) }
+        scene.onInspect = { [weak self] profile in self?.open(.profile(profile)) }
+        scene.onEncounter = { [weak self] encounters, backdrop in self?.startBattle(encounters, backdrop: backdrop) }
+        scene.onDuel = { [weak self] rival, backdrop in self?.startDuel(with: rival, backdrop: backdrop) }
+        // Into a cave: the continent's let go, and the cave's built behind the card as ever.
+        scene.onTravel = { [weak self] exit in
+            self?.continent = nil
+            self?.travel(through: exit)
+        }
         continent = scene
         for _ in 0..<600 {
             try? await Task.sleep(for: .milliseconds(500))
-            if scene.isReady { return }
+            if scene.isReady { break }
         }
+        if let land { await scene.walkIntoForDebug(land) }
     }
     #endif
 
@@ -317,7 +342,7 @@ final class GameCoordinator {
 
     private func travel(through exit: MapDef.Exit) {
         guard let destination = Content.shared.map(exit.to) else {
-            world.resume()
+            mapScene.resume()
             return
         }
         SoundEffects.shared.play(.whoosh)
@@ -421,7 +446,7 @@ final class GameCoordinator {
         overlay = nil
         controller.onFinish = { [weak self] outcome in self?.endBattle(outcome) }
         // The map you're standing on, like any fight (without the boss: it's in the battle now).
-        battleScene = BattleScene(controller: controller, size: world.size, backdrop: world.battleBackdrop(hiding: npc.id))
+        battleScene = BattleScene(controller: controller, size: world.size, backdrop: mapScene.battleBackdrop(hiding: npc.id))
         input.move = .zero
         boss = npc
         battle = controller
@@ -432,7 +457,7 @@ final class GameCoordinator {
     /// From the adventurer card: befriend, invite along, or challenge.
     func befriend(_ adventurer: Adventurer) {
         if session.befriend(adventurer) {
-            world.adventurerSays([L("Yay, friends! ^_^"), L("Sure! Let's adventure sometime!"), L("Friends! :D")].randomElement()!, adventurer.id)
+            mapScene.adventurerSays([L("Yay, friends! ^_^"), L("Sure! Let's adventure sometime!"), L("Friends! :D")].randomElement()!, adventurer.id)
         }
     }
 
@@ -446,7 +471,7 @@ final class GameCoordinator {
     }
 
     func challenge(_ adventurer: Adventurer) {
-        world.startDuel(with: adventurer)
+        mapScene.startDuel(with: adventurer)
     }
 
     #if DEBUG
@@ -460,7 +485,7 @@ final class GameCoordinator {
         let fainted = battle?.heroIsDown == true
         battle = nil
         battleScene = nil
-        if let rival, outcome == .victory { world.dismissAdventurer(rival.id) }
+        if let rival, outcome == .victory { mapScene.dismissAdventurer(rival.id) }
         rival = nil
         if let boss, outcome == .victory { session.defeatBoss(boss) }
         boss = nil
@@ -468,7 +493,7 @@ final class GameCoordinator {
             // Fainted (even if your friends won): wake up at the checkpoint.
             go(to: map, entry: session.checkpoint.entry)
         } else {
-            world.resume()
+            mapScene.resume()
         }
         session.save()
     }
@@ -487,7 +512,7 @@ final class GameCoordinator {
             session.postChat(npc.greeting, from: npc.name, kind: .npc)
             session.unreadChat = max(0, session.unreadChat - 1)
         }
-        world.isInputLocked = true
+        mapScene.isInputLocked = true
         input.move = .zero
     }
 
@@ -536,7 +561,7 @@ final class GameCoordinator {
             return
         }
         overlay = .destinations(travel)
-        world.isInputLocked = true
+        mapScene.isInputLocked = true
         input.move = .zero
     }
 
@@ -556,7 +581,7 @@ final class GameCoordinator {
             // the other end (finishLoading).
             overlay = nil
             SoundEffects.shared.play(.whoosh)
-            world.featherAway { [weak self] in
+            mapScene.featherAway { [weak self] in
                 guard let self else { return }
                 arrivesByFeather = true
                 carry(to: map, saying: line, sound: false)
@@ -578,15 +603,15 @@ final class GameCoordinator {
     func closeOverlay() {
         SoundEffects.shared.play(.close, volume: 0.8)
         overlay = nil
-        world.resume()
+        mapScene.resume()
         session.save()
     }
 
     func talkToNearby() {
-        world.talkToNearby()
+        mapScene.talkToNearby()
     }
 
     func say(_ text: String) {
-        world.heroSay(text)
+        mapScene.heroSay(text)
     }
 }

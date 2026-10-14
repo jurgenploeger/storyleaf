@@ -25,14 +25,15 @@ struct WorldHUD: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
             VStack(alignment: .trailing, spacing: 6) {
+                let minimap = coordinator.minimap(explored: session.exploredVersion, overviews: WorldOverview.shared.images.count)
                 MinimapWindow(
-                    picture: coordinator.world.minimapPicture(explored: session.exploredVersion, overviews: WorldOverview.shared.images.count),
+                    picture: minimap.picture,
                     name: session.mapName,
                     cell: session.mapCell,
                     dots: session.minimapDots,
                     marks: session.minimapMarks,
-                    columns: coordinator.world.def.width,
-                    rows: coordinator.world.def.height,
+                    columns: minimap.columns,
+                    rows: minimap.rows,
                     onOpen: { coordinator.open(.worldMap) }
                 )
                 .coachTarget(.minimap)

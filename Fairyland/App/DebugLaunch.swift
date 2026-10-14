@@ -744,13 +744,14 @@ enum DebugLaunch {
         #endif
         // `continent`: once the map is on screen, the continent as one place takes its place
         // (`ContinentScene`, docs/continuous-world.md), ready once the chunks round you are drawn.
+        // With `crossing` (and `near=<land>`), you then walk over into that land.
         #if DEBUG
         if flags["continent"] != nil {
             Task {
                 for _ in 0..<480 {
                     try? await Task.sleep(for: .milliseconds(500))
                     guard coordinator.isReady, coordinator.world.view != nil else { continue }
-                    await coordinator.showContinentForDebug()
+                    await coordinator.showContinentForDebug(walkInto: flags["crossing"] != nil ? flags["near"] : nil)
                     try? await Task.sleep(for: .seconds(1))
                     markReady(nextDoorShown: true)
                     return

@@ -163,4 +163,118 @@ nonisolated final class World: @unchecked Sendable {
         guard let index = index(cell) else { return false }
         return walkable[index]
     }
+
+    // MARK: Paths
+
+    /// The walkable cell nearest `cell` within `reach` cells, nearest ring first (`cell` if it's
+    /// walkable), as `WorldMap.nearestWalkable` finds one on a land.
+    func nearestWalkable(to cell: GridPoint, within reach: Int = 8) -> GridPoint? {
+        if isWalkable(cell) { return cell }
+        for radius in 1...max(1, reach) {
+            for dr in -radius...radius {
+                for dc in -radius...radius where max(abs(dr), abs(dc)) == radius {
+                    let candidate = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                    if isWalkable(candidate) { return candidate }
+                }
+            }
+        }
+        return nil
+    }
+
+    /// The shortest way from one world cell to another over cells you can walk on, within `reach`
+    /// cells of the start either way: the cells after `start`, `goal` last; empty if there's none
+    /// in reach (or `start` is `goal`). A* over the store in a window round you, rather than a graph
+    /// of the whole continent (docs/continuous-world.md, step 3). It steps diagonally too, but only
+    /// where both cells beside the step are open, so it never cuts a corner. `canStep`: whether a
+    /// step from one cell to the next is allowed besides (over a border, only where it's open).
+    func path(from start: GridPoint, to goal: GridPoint, reach: Int = 64,
+              canStep: ((GridPoint, GridPoint) -> Bool)? = nil) -> [GridPoint] {
+        guard start != goal, isWalkable(start), isWalkable(goal),
+              max(abs(goal.col - start.col), abs(goal.row - start.row)) <= reach else { return [] }
+        let side = 2 * reach + 1
+        func slot(_ cell: GridPoint) -> Int? {
+            let x = cell.col - start.col + reach, y = cell.row - start.row + reach
+            guard x >= 0, y >= 0, x < side, y < side else { return nil }
+            return y * side + x
+        }
+        func cell(_ slot: Int) -> GridPoint {
+            GridPoint(col: slot % side - reach + start.col, row: slot / side - reach + start.row)
+        }
+        // Costs in tenths of a cell: 10 a step along, 14 across a corner.
+        func estimate(_ cell: GridPoint) -> Int {
+            let dx = abs(cell.col - goal.col), dy = abs(cell.row - goal.row)
+            return 10 * max(dx, dy) + 4 * min(dx, dy)
+        }
+        guard let first = slot(start), let last = slot(goal) else { return [] }
+        var cost = [Int](repeating: .max, count: side * side)
+        var cameFrom = [Int](repeating: -1, count: side * side)
+        var done = [Bool](repeating: false, count: side * side)
+        var open = Frontier()
+        cost[first] = 0
+        open.push(first, priority: estimate(start))
+        let steps = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)]
+        while let current = open.pop() {
+            if current == last { break }
+            guard !done[current] else { continue }
+            done[current] = true
+            let here = cell(current)
+            for (dc, dr) in steps {
+                let next = GridPoint(col: here.col + dc, row: here.row + dr)
+                guard let index = slot(next), !done[index], isWalkable(next) else { continue }
+                let diagonal = dc != 0 && dr != 0
+                if diagonal, !isWalkable(GridPoint(col: here.col + dc, row: here.row)) || !isWalkable(GridPoint(col: here.col, row: here.row + dr)) {
+                    continue
+                }
+                if let canStep, !canStep(here, next) { continue }
+                let through = cost[current] + (diagonal ? 14 : 10)
+                guard through < cost[index] else { continue }
+                cost[index] = through
+                cameFrom[index] = current
+                open.push(index, priority: through + estimate(next))
+            }
+        }
+        guard cameFrom[last] >= 0 else { return [] }
+        var cells: [GridPoint] = []
+        var at = last
+        while at != first {
+            cells.append(cell(at))
+            at = cameFrom[at]
+        }
+        return cells.reversed()
+    }
+
+    /// The cells A* is yet to look at, the cheapest first: a binary heap.
+    nonisolated private struct Frontier {
+        private var items: [(slot: Int, priority: Int)] = []
+
+        mutating func push(_ slot: Int, priority: Int) {
+            items.append((slot, priority))
+            var child = items.count - 1
+            while child > 0 {
+                let parent = (child - 1) / 2
+                guard items[child].priority < items[parent].priority else { break }
+                items.swapAt(child, parent)
+                child = parent
+            }
+        }
+
+        mutating func pop() -> Int? {
+            guard let top = items.first else { return nil }
+            let end = items.removeLast()
+            if !items.isEmpty {
+                items[0] = end
+                var parent = 0
+                while true {
+                    let left = 2 * parent + 1, right = left + 1
+                    var least = parent
+                    if left < items.count, items[left].priority < items[least].priority { least = left }
+                    if right < items.count, items[right].priority < items[least].priority { least = right }
+                    guard least != parent else { break }
+                    items.swapAt(parent, least)
+                    parent = least
+                }
+            }
+            return top.slot
+        }
+    }
 }

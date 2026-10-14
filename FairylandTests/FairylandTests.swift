@@ -3001,6 +3001,37 @@ struct WorldStoreTests {
         let cell = try #require(empty)
         #expect(world.ground(at: cell) == nil, "Frog Swamp has ground before it's laid out")
     }
+
+    /// A way over the store (`World.path`) steps a cell at a time over ground you can walk on, never
+    /// cutting a corner, and ends where it was asked to; one out of reach is none.
+    @Test func pathsKeepToWalkableGround() throws {
+        let world = World.continent()
+        let def = try #require(content.map("sunny_meadow"))
+        let land = try #require(world.land("sunny_meadow"))
+        let map = WorldMap(def: def)
+        world.add(map)
+        let middle = try #require(world.nearestWalkable(to: world.world(map.center, of: land)))
+        var found = 0
+        for (dc, dr) in [(20, 0), (0, 20), (-25, 10), (15, -30), (30, 30)] {
+            guard let goal = world.nearestWalkable(to: GridPoint(col: middle.col + dc, row: middle.row + dr)) else { continue }
+            let cells = world.path(from: middle, to: goal)
+            guard !cells.isEmpty else { continue }
+            found += 1
+            #expect(cells.last == goal)
+            var at = middle
+            for next in cells {
+                let dx = next.col - at.col, dy = next.row - at.row
+                #expect(max(abs(dx), abs(dy)) == 1 && world.isWalkable(next), "a step from \(at) to \(next)")
+                if dx != 0, dy != 0 {
+                    let open = world.isWalkable(GridPoint(col: at.col + dx, row: at.row)) && world.isWalkable(GridPoint(col: at.col, row: at.row + dy))
+                    #expect(open, "cuts a corner at \(at)")
+                }
+                at = next
+            }
+        }
+        #expect(found >= 2, "only \(found) of the ways across Sunny Meadow found")
+        #expect(world.path(from: middle, to: GridPoint(col: middle.col + 100, row: middle.row), reach: 64).isEmpty)
+    }
 }
 
 /// A land's scenery decided before it's drawn (`LandPlanner`, docs/continuous-world.md step 1b).
