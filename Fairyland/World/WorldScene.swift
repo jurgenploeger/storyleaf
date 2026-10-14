@@ -38,7 +38,9 @@ final class WorldScene: SKScene {
     private let input: InputState
     private let art = ArtLibrary.shared
     private let map: WorldMap
-    private var rng: SeededRandom
+    /// The land's layout as the scene has set it down: what you can walk on once its scenery's
+    /// planned (`LandPlanner`), for the continent's store (`World.add`) and the tests.
+    var layout: WorldMap { map }
     private let world = LandNode()
     /// This land's layer and those of the lands next door shown past its borders (`show(_:as:)`).
     private let lands = SKNode()
@@ -148,7 +150,6 @@ final class WorldScene: SKScene {
         self.input = input
         self.map = map
         self.player = player
-        rng = SeededRandom(text: def.id + "/props")
         focus = DepthOfField(def.ambience?.focus)
 
         var start = map.center(of: map.center)
@@ -281,16 +282,21 @@ final class WorldScene: SKScene {
             placeCrags()
         }
         await breathe()
-        placeLilyPads()
+        // Where the scenery goes, decided before any of it's drawn (`LandPlanner`), so where you
+        // can walk is settled first: the same cells and the same random draws as ever.
+        let planner = LandPlanner(def: def, map: map, art: art)
+        await planner.planUpToLocals(pause: { await self.breathe() })
+        placeLilyPads(planner.plan.lilyPads)
         placeBridges()
-        placeReeds()
+        for reed in planner.plan.reeds { addScenery(reed) }
         await breathe()
         placeFence()
-        placeBuildings()
+        placeBuildings(planner.plan)
         await reached(0.65, progress)
-        placeDecor()
+        placeDecor(planner.plan.decor)
         await reached(0.8, progress)
-        placeNPCs()
+        placeNPCs(planner.plan.npcs)
+        for prop in planner.plan.localProps { addScenery(prop) }
         await breathe()
         // A town's market traders sell what they have today, around your level.
         let market = Crowd.Market(sign: { [weak session] in session?.marketSign(for: $0) },
@@ -299,7 +305,7 @@ final class WorldScene: SKScene {
         let away = friendsElsewhere
         crowd = Crowd(def: def, map: map, world: world, heroLevel: session.data.hero.level,
                       friends: session.friends.filter { !session.isInParty($0) && !away.contains($0.id) }, market: market,
-                      locals: placeLocals())
+                      locals: planner.plan.locals)
         // Next door, nobody's heard yet, and nobody picks a fight with you over the border.
         crowd?.onChat = { [weak self, weak session] speaker, text, kind in
             guard self?.isNextDoor == false else { return }
@@ -311,12 +317,12 @@ final class WorldScene: SKScene {
             self.startDuel(with: rival)
         }
         await breathe()
-        placeFairyRings()
-        placeOutcrops()
+        await planner.planTheRest(pause: { await self.breathe() })
+        placeFairyRings(planner.plan.fairyRings)
+        for rock in planner.plan.outcrops { addScenery(rock) }
         await breathe()
-        await placeProps()
-        await placeSeamProps()
-        placeSignposts()
+        await placeProps(planner.plan.props, seams: planner.plan.seamProps)
+        placeSignposts(planner.plan.signposts)
         placeBorders()
         // Everyone set down before they were on the map stands up on the ground under them.
         for case let walker as Walker in world.children { walker.settle() }
@@ -1218,17 +1224,16 @@ final class WorldScene: SKScene {
 
     private func placeFence() {
         guard !map.fenceCells.isEmpty else { return }
-        for cell in map.fenceCells { map.occupy(cell, blocking: true) }
         TownFence.place(cells: map.fenceCells, map: map, world: world, art: art, stone: def.town?.walls == "stone")
     }
 
     /// Houses take a 3×2 footprint above their anchor tile.
-    private func placeBuildings() {
-        for lot in map.lots {
-            addScenery(art.sprite(lot.art), at: lot.anchor)
+    private func placeBuildings(_ plan: LandPlan) {
+        for lot in plan.lots {
+            addScenery(lot)
         }
-        for decor in map.streetDecor {
-            let lamp = addScenery(art.sprite(decor.art), at: decor.cell)
+        for decor in plan.streetDecor {
+            let lamp = addScenery(decor)
             if decor.art == "street_lamp" {
                 // A warm glow around each lamp.
                 let glow = SKSpriteNode(texture: SoftTextures.glow, size: CGSize(width: 70, height: 50))
@@ -1245,8 +1250,8 @@ final class WorldScene: SKScene {
         }
         placeTerraces()
         // The map's own buildings, already set down clear of the roads (WorldMap.placeOwnBuildings).
-        for building in map.buildings {
-            addScenery(art.sprite(building.art), at: building.anchor)
+        for building in plan.buildings {
+            addScenery(building)
         }
     }
 
@@ -1406,10 +1411,8 @@ final class WorldScene: SKScene {
         }
     }
 
-    private func placeNPCs() {
-        for npc in def.npcs ?? [] {
-            let cell = map.spot(of: npc)
-            map.occupy(cell, blocking: true)
+    private func placeNPCs(_ planned: [(npc: NPCDef, cell: GridPoint)]) {
+        for (npc, cell) in planned {
             let node = Walker(cycle: art.walkCycle(npc.art), label: npc.name)
             node.idles = npc.role != .chest
             node.tagMode = .onDemand
@@ -1431,130 +1434,41 @@ final class WorldScene: SKScene {
         updateNotices()
     }
 
-    /// The people who live here (`MapDef.Local`): where each lives and walks to, their things set
-    /// down around home and home kept clear of scenery, for the crowd to bring them to life.
-    private func placeLocals() -> [Crowd.Local] {
-        var placed: [Crowd.Local] = []
-        for (index, local) in (def.locals ?? []).enumerated() {
-            guard let home = map.spot(of: local.home) else { continue }
-            for prop in local.props ?? [] {
-                let cell = GridPoint(col: home.col + prop.x, row: home.row + prop.y)
-                let blocking = prop.blocking ?? true
-                guard cell != home, map.isFreeForScenery(cell, insideFence: true, blocking: blocking) else { continue }
-                map.occupy(cell, blocking: blocking)
-                addScenery(art.sprite(prop.art), at: cell)
-            }
-            map.occupy(home, blocking: false)
-            let walk = local.walk.flatMap { map.spot(of: $0) }
-            placed.append(Crowd.Local(def: local, index: index, home: home, walk: walk))
+    /// The theme's props, and past the lines the land meets the lands beside it along (`Seam`) theirs,
+    /// graded as they are there (`LandPlanner`).
+    private func placeProps(_ props: [Placement], seams: [Placement]) async {
+        for (number, prop) in props.enumerated() {
+            if number % 32 == 31 { await breathe() }
+            plant(prop)
         }
-        return placed
-    }
-
-    /// Boulders on the slopes of rocky hills (`WorldMap.rockiness`), the more the rockier: the
-    /// map's own rocks (its props named for a boulder or rock), on the steeper cells, off the trails.
-    /// Grassy hills on the gentlest maps get none.
-    private func placeOutcrops() {
-        let rocky = map.rockiness
-        guard rocky >= 0.3, !map.hills.isEmpty else { return }
-        var kinds = def.theme.props.map(\.art).filter { $0.contains("boulder") || $0.hasSuffix("rock") }
-        if kinds.isEmpty { kinds = ["boulder", "small_boulder"] }
-        var rocks = SeededRandom(text: def.id + "/outcrops")
-        for hill in map.hills {
-            for cell in hill.cells.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }) {
-                guard map.rise(across: cell) >= 6, map.isFreeForScenery(cell),
-                      Double.random(in: 0..<1, using: &rocks) < 0.08 * rocky else { continue }
-                let sprite = art.sprite(kinds[Int.random(in: 0..<kinds.count, using: &rocks)])
-                map.occupy(cell, blocking: true)
-                addScenery(sprite, at: cell, jitter: true, scale: CGFloat.random(in: 0.7...1.1, using: &rocks))
-            }
-        }
-    }
-
-    /// Scenery from the theme. Props with `cluster` grow in groves around a random centre. None
-    /// past the lines the land meets the lands beside it along (`WorldMap.foreign`), where theirs
-    /// grows (`placeSeamProps`).
-    private func placeProps() async {
-        for placement in def.theme.props {
-            let sprite = art.sprite(placement.art)
-            let groupSize = max(1, placement.cluster ?? 1)
-            let spread = max(1, placement.spread ?? Int(Double(groupSize).squareRoot().rounded()) + 1)
-            var placed = 0
-            var attempts = 0
-            while placed < placement.count, attempts < placement.count * 3 {
-                attempts += 1
-                await breathe()
-                let found: GridPoint? = if let radius = placement.within {
-                    map.randomFreeCell(within: radius, using: &rng)
-                } else {
-                    map.randomFreeCell(blocking: placement.blocking, using: &rng)
-                }
-                guard let middle = found else { break }
-                let wanted = min(groupSize, placement.count - placed)
-                var inGroup = 0
-                for index in 0..<(wanted * 5) where inGroup < wanted {
-                    let cell = index == 0 ? middle : GridPoint(
-                        col: middle.col + Int.random(in: -spread...spread, using: &rng),
-                        row: middle.row + Int.random(in: -spread...spread, using: &rng)
-                    )
-                    guard map.isFreeForScenery(cell, insideFence: placement.within != nil, blocking: placement.blocking),
-                          map.foreign[cell] == nil else { continue }
-                    var scale: CGFloat = 1
-                    if let range = placement.size, range.count == 2, range[0] <= range[1] {
-                        scale = CGFloat(Double.random(in: range[0]...range[1], using: &rng))
-                    }
-                    plant(sprite, placement, at: cell, scale: scale)
-                    inGroup += 1
-                }
-                placed += inGroup
-            }
-        }
-    }
-
-    /// Past the lines the land meets the lands beside it along (`Seam`), where their ground has come
-    /// over onto this one, their scenery (graded as it is there), as thick as it grows there, so the
-    /// woods and the meadows run on over the line as the ground does.
-    private func placeSeamProps() async {
-        guard !map.foreign.isEmpty else { return }
-        var random = SeededRandom(text: def.id + "/seams")
         var sprites: [String: SpriteArt] = [:]
-        let lands = map.seams.map { Content.shared.map($0.neighbour) }
-        for (number, cell) in map.foreign.keys.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }).enumerated() {
-            if number % 8 == 7 { await breathe() }
-            guard let seam = map.foreign[cell], let land = lands[seam] else { continue }
-            let area = Double(land.width * land.height)
-            for placement in land.theme.props where placement.within == nil {
-                guard Double.random(in: 0..<1, using: &random) < Double(placement.count) / area else { continue }
-                guard map.isFreeForScenery(cell, blocking: placement.blocking) else { break }
-                let key = land.id + "|" + placement.art
-                let sprite: SpriteArt
-                if let known = sprites[key] {
-                    sprite = known
-                } else {
-                    let own = art.sprite(placement.art)
-                    let texture = art.gradedTile(placement.art, palette: land.theme.palette).map { image -> SKTexture in
-                        let made = SKTexture(cgImage: image)
-                        made.filteringMode = .nearest
-                        return made
-                    } ?? own.texture
-                    sprite = SpriteArt(texture: texture, size: own.size)
-                    sprites[key] = sprite
-                }
-                var scale: CGFloat = 1
-                if let range = placement.size, range.count == 2, range[0] <= range[1] {
-                    scale = CGFloat(Double.random(in: range[0]...range[1], using: &random))
-                }
-                plant(sprite, placement, at: cell, scale: scale)
-                break
+        for (number, prop) in seams.enumerated() {
+            if number % 32 == 31 { await breathe() }
+            guard let land = prop.land else { continue }
+            let key = land.id + "|" + prop.art
+            let sprite: SpriteArt
+            if let known = sprites[key] {
+                sprite = known
+            } else {
+                let own = art.sprite(prop.art)
+                let texture = art.gradedTile(prop.art, palette: land.theme.palette).map { image -> SKTexture in
+                    let made = SKTexture(cgImage: image)
+                    made.filteringMode = .nearest
+                    return made
+                } ?? own.texture
+                sprite = SpriteArt(texture: texture, size: own.size)
+                sprites[key] = sprite
             }
+            plant(prop, sprite: sprite)
         }
     }
 
-    /// Sets a prop down at `cell` as its placement says: taking the cell, swaying, bobbing, with its
-    /// shadow and its glow.
-    private func plant(_ sprite: SpriteArt, _ placement: MapDef.PropPlacement, at cell: GridPoint, scale: CGFloat) {
-        map.occupy(cell, blocking: placement.blocking)
-        let node = addScenery(sprite, at: cell, sway: placement.sway == true, jitter: true, scale: scale)
+    /// Draws a prop as its placement says (`LandPlanner.plant`): swaying, bobbing, with its shadow and
+    /// its glow.
+    private func plant(_ planted: Placement, sprite: SpriteArt? = nil) {
+        guard let placement = planted.prop else { return }
+        let cell = planted.cell
+        let node = addScenery(planted, sprite: sprite)
         if placement.bob == true {
             // Unseeded, so the map's layout stays what it was.
             let rise = SKAction.moveBy(x: 0, y: 3, duration: .random(in: 1.3...2))
@@ -1581,23 +1495,17 @@ final class WorldScene: SKScene {
                 shadows.append(Lighting.Shadow(under: node, in: chunk(at: node.position)))
             }
         }
-        if let hex = placement.glow, let color = UIColor(hex: hex) {
-            Lighting.glow(behind: node, color: color, in: chunk(at: node.position), rng: &rng)
+        if let hex = placement.glow, let color = UIColor(hex: hex), let glow = planted.glow {
+            Lighting.glow(behind: node, color: color, in: chunk(at: node.position), alpha: glow.alpha, duration: glow.duration)
             lantern?.glint(at: node.position + CGVector(dx: 0, dy: node.size.height * 0.4), color: color, width: node.size.width * 1.6)
         }
     }
 
     /// Hand-placed decorations (fountains, blossom trees) from the map's `decor` list.
-    private func placeDecor() {
-        for decor in def.decor ?? [] {
-            let anchor = map.spot(x: decor.x, y: decor.y, summit: decor.summit)
-            let sprite = art.sprite(decor.art)
-            let blocking = decor.blocking ?? true
-            let footprint = max(1, Int(sprite.size.width / WorldMap.tileSize * 0.75))
-            for dc in 0..<footprint {
-                map.occupy(GridPoint(col: anchor.col + dc - footprint / 2, row: anchor.row), blocking: blocking)
-            }
-            addScenery(sprite, at: anchor, sway: decor.art.contains("tree") || decor.art.contains("flower"))
+    private func placeDecor(_ planned: [Placement]) {
+        for decor in planned {
+            let anchor = decor.cell
+            addScenery(decor)
             if decor.art.contains("fountain") {
                 let sparkle = map.center(of: anchor) + CGVector(dx: 0, dy: 30)
                 Ambience.twinkle(around: sparkle, radius: 30, count: 4, in: chunk(at: sparkle))
@@ -1606,51 +1514,37 @@ final class WorldScene: SKScene {
     }
 
     /// Circles of mushrooms with a sparkle in the middle, like the ones fairies dance in.
-    private func placeFairyRings() {
-        guard let rings = def.theme.fairyRings else { return }
+    private func placeFairyRings(_ middles: [GridPoint]) {
+        guard let rings = def.theme.fairyRings, !middles.isEmpty else { return }
         let sprite = art.sprite(rings.art)
-        for _ in 0..<rings.count {
-            for _ in 0..<30 {
-                guard let middle = map.randomFreeCell(using: &rng) else { break }
-                let area = (-2...2).flatMap { dr in (-2...2).map { dc in GridPoint(col: middle.col + dc, row: middle.row + dr) } }
-                guard area.allSatisfy({ map.isFreeForScenery($0) && map.height(at: map.center(of: $0)) == 0 }) else { continue }
-                area.forEach { map.occupy($0, blocking: false) }
-                let origin = map.center(of: middle)
-                for index in 0..<9 {
-                    let angle = CGFloat(index) / 9 * 2 * .pi
-                    let node = SKSpriteNode(texture: sprite.texture, size: sprite.size * 0.75)
-                    node.anchorPoint = CGPoint(x: 0.5, y: 0.1)
-                    node.position = origin + CGVector(dx: cos(angle) * 52, dy: sin(angle) * 36)
-                    node.zPosition = -node.position.y
-                    chunk(at: origin).addChild(node)
-                }
-                Ambience.twinkle(around: origin, radius: 26, count: 5, in: chunk(at: origin))
-                break
+        for middle in middles {
+            let origin = map.center(of: middle)
+            for index in 0..<9 {
+                let angle = CGFloat(index) / 9 * 2 * .pi
+                let node = SKSpriteNode(texture: sprite.texture, size: sprite.size * 0.75)
+                node.anchorPoint = CGPoint(x: 0.5, y: 0.1)
+                node.position = origin + CGVector(dx: cos(angle) * 52, dy: sin(angle) * 36)
+                node.zPosition = -node.position.y
+                chunk(at: origin).addChild(node)
             }
+            Ambience.twinkle(around: origin, radius: 26, count: 5, in: chunk(at: origin))
         }
     }
 
-    private func placeLilyPads() {
-        // Frozen ponds and chocolate ones don't grow lily pads.
-        let water = def.theme.water ?? ""
-        guard !water.contains("ice"), !water.contains("chocolate") else { return }
+    private func placeLilyPads(_ pads: [(cell: GridPoint, drift: CGVector)]) {
+        guard !pads.isEmpty else { return }
         let sprite = art.sprite("lily_pad")
-        var padRNG = SeededRandom(text: def.id + "/lilies")
-        for pond in map.ponds {
-            // A few on a pond, more on a lake.
-            for _ in 0..<min(max(4, pond.count / 60), max(1, pond.count / 8)) {
-                guard let cell = pond.randomElement(using: &padRNG), !map.bridgeCells.contains(cell) else { continue }
-                let node = SKSpriteNode(texture: sprite.texture, size: sprite.size)
-                let spot = map.center(of: cell) + CGVector(dx: .random(in: -6...6, using: &padRNG), dy: .random(in: -6...6, using: &padRNG))
-                // On a lake sunk with the shore, down on its water.
-                node.position = CGPoint(x: spot.x, y: spot.y + map.height(at: spot))
-                node.zPosition = map.isSunken(cell) ? flatZ(at: spot) : -99_000
-                node.run(.repeatForever(.sequence([
-                    .rotate(toAngle: 0.08, duration: 2.2, shortestUnitArc: true),
-                    .rotate(toAngle: -0.08, duration: 2.2, shortestUnitArc: true),
-                ])))
-                chunk(at: node.position).addChild(node)
-            }
+        for (cell, drift) in pads {
+            let node = SKSpriteNode(texture: sprite.texture, size: sprite.size)
+            let spot = map.center(of: cell) + drift
+            // On a lake sunk with the shore, down on its water.
+            node.position = CGPoint(x: spot.x, y: spot.y + map.height(at: spot))
+            node.zPosition = map.isSunken(cell) ? flatZ(at: spot) : -99_000
+            node.run(.repeatForever(.sequence([
+                .rotate(toAngle: 0.08, duration: 2.2, shortestUnitArc: true),
+                .rotate(toAngle: -0.08, duration: 2.2, shortestUnitArc: true),
+            ])))
+            chunk(at: node.position).addChild(node)
         }
     }
 
@@ -1660,40 +1554,12 @@ final class WorldScene: SKScene {
         let pixels = art.picture(of: art.tileTexture(def.theme.ground)).width
         for bridge in map.bridges {
             BridgeArt.rails(for: bridge, pixels: pixels, palette: def.theme.palette, in: world) { self.map.height(at: $0) }
-            // Nothing grows right beside a deck either, on the bank its planks and rails reach over,
-            // where a fern or a tree would stand on the bridge.
-            for cell in bridge.cells {
-                for dc in -1...1 {
-                    for dr in -1...1 { map.occupy(GridPoint(col: cell.col + dc, row: cell.row + dr), blocking: false) }
-                }
-            }
         }
     }
 
-    /// Reeds here and there along the lakes' and the river's shores, where the water isn't frozen
-    /// or chocolate.
-    private func placeReeds() {
-        let water = def.theme.water ?? ""
-        guard !water.contains("ice"), !water.contains("chocolate"), !map.lakes.isEmpty || !map.river.isEmpty else { return }
-        let sprite = art.sprite("reeds")
-        var reedRNG = SeededRandom(text: def.id + "/reeds")
-        var seen: Set<GridPoint> = []
-        for shore in map.lakes.map({ $0.water }) + [map.river] {
-            for cell in shore.sorted(by: WorldMap.inOrder) {
-                for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
-                    let land = GridPoint(col: cell.col + dc, row: cell.row + dr)
-                    guard map.contains(land), map.ground[land.row][land.col] != .water, seen.insert(land).inserted else { continue }
-                    guard Double.random(in: 0..<1, using: &reedRNG) < 0.12, map.isFreeForScenery(land, blocking: false) else { continue }
-                    map.occupy(land, blocking: false)
-                    addScenery(sprite, at: land, jitter: true, scale: CGFloat.random(in: 0.75...1, using: &reedRNG))
-                }
-            }
-        }
-    }
-
-    /// A small sign where each road leaves the map.
-    private func placeSignposts() {
-        for exit in def.exits {
+    /// A small sign where each road leaves the map, where the plan put it (`LandPlanner`).
+    private func placeSignposts(_ planned: [(exit: MapDef.Exit, cell: GridPoint)]) {
+        for (exit, cell) in planned {
             guard let destination = Content.shared.map(exit.to) else { continue }
             let text = switch exit.edge {
             // Arrows follow the road on screen: north runs up-left, east up-right.
@@ -1703,9 +1569,7 @@ final class WorldScene: SKScene {
             case .west: "↙ \(destination.name)"
             }
             // A wooden signpost beside the road. Its words only show when you walk up and tap it.
-            let cell = signCell(near: exit) ?? map.entryCell(from: exit.edge)
             let post = addScenery(art.sprite("signpost"), at: cell, scale: 1.6)
-            if map.isWalkable(cell) { map.occupy(cell, blocking: true) }
             let top = map.base(of: cell) + CGVector(dx: 0, dy: post.size.height + 4)
             let label = NameTag(text, color: Nodes.gold, size: 12)
             label.position = top + CGVector(dx: 0, dy: 4)
@@ -1741,32 +1605,6 @@ final class WorldScene: SKScene {
         sign.label.run(.sequence([.fadeIn(withDuration: 0.15), .wait(forDuration: 4), .fadeOut(withDuration: 0.4)]))
         session.post(L("The sign reads: {text}", ["text": sign.text]))
         SoundEffects.shared.play(.talk, volume: 0.5)
-    }
-
-    /// A free cell just off the side of the road out by `exit`, a few tiles in from where it leaves
-    /// (on the continent, from where it crosses the border; else from the edge), for its signpost.
-    private func signCell(near exit: MapDef.Exit, depth: Int = 4) -> GridPoint? {
-        let edge = exit.edge
-        let alongColumns = edge == .north || edge == .south
-        let line: [GridPoint]
-        if let road = map.region?.roads[exit.to] {
-            let middle = road.at.stepped(edge.opposite, by: depth)
-            line = (-12...12).map { alongColumns ? GridPoint(col: middle.col + $0, row: middle.row) : GridPoint(col: middle.col, row: middle.row + $0) }
-        } else {
-            line = switch edge {
-            case .north: (0..<map.columns).map { GridPoint(col: $0, row: map.rows - 1 - depth) }
-            case .south: (0..<map.columns).map { GridPoint(col: $0, row: depth) }
-            case .east: (0..<map.rows).map { GridPoint(col: map.columns - 1 - depth, row: $0) }
-            case .west: (0..<map.rows).map { GridPoint(col: depth, row: $0) }
-            }
-        }
-        let road = line.indices.filter { map.owns(line[$0]) && map.ground[line[$0].row][line[$0].col] == .path }
-        guard let first = road.first, let last = road.last else { return nil }
-        for index in [first - 1, last + 1, first - 2, last + 2] where line.indices.contains(index) {
-            let cell = line[index]
-            if map.isWalkable(cell), map.ground[cell.row][cell.col] != .water { return cell }
-        }
-        return nil
     }
 
     /// What walls the land's borders with the lands next door (`BorderArt`): a town's city wall, and
@@ -1858,15 +1696,22 @@ final class WorldScene: SKScene {
         for land in nextDoor.values { land.scene.openBarricades() }
     }
 
+    /// A piece of scenery as the plan set it down (`LandPlanner`): its own sprite, or `sprite` (a land
+    /// next door's, graded as it is there).
     @discardableResult
-    private func addScenery(_ sprite: SpriteArt, at cell: GridPoint, sway: Bool = false, jitter: Bool = false, scale: CGFloat = 1) -> SKSpriteNode {
+    private func addScenery(_ placement: Placement, sprite: SpriteArt? = nil) -> SKSpriteNode {
+        addScenery(sprite ?? art.sprite(placement.art), at: placement.cell, nudge: placement.nudge, sway: placement.sway, scale: placement.scale)
+    }
+
+    @discardableResult
+    private func addScenery(_ sprite: SpriteArt, at cell: GridPoint, nudge: CGVector? = nil, sway: Placement.Sway? = nil, scale: CGFloat = 1) -> SKSpriteNode {
         let node = SKSpriteNode(texture: sprite.texture, size: CGSize(width: sprite.size.width * scale, height: sprite.size.height * scale))
         node.anchorPoint = CGPoint(x: 0.5, y: min(0.5, 0.05 + foot(of: sprite.texture)))
         var position = map.base(of: cell)
-        if jitter {
-            // Nudge off the grid so groves look planted by nature, not a spreadsheet.
-            position.x += .random(in: -7...7, using: &rng)
-            position.y += .random(in: -5...5, using: &rng)
+        if let nudge {
+            // Nudged off the grid so groves look planted by nature, not a spreadsheet.
+            position.x += nudge.dx
+            position.y += nudge.dy
         }
         // Standing on raised ground (a hilltop, a terrace) it's drawn up there, sorted by its spot.
         let ground = position.y
@@ -1874,14 +1719,12 @@ final class WorldScene: SKScene {
         node.position = position
         node.zPosition = -ground
         shade(node, standingOn: cell)
-        if sway {
-            let duration = TimeInterval.random(in: 1.8...2.8, using: &rng)
-            let lean = CGFloat.random(in: 0.018...0.03, using: &rng)
-            let left = SKAction.rotate(toAngle: lean, duration: duration, shortestUnitArc: true)
-            let right = SKAction.rotate(toAngle: -lean, duration: duration, shortestUnitArc: true)
+        if let sway {
+            let left = SKAction.rotate(toAngle: sway.lean, duration: sway.duration, shortestUnitArc: true)
+            let right = SKAction.rotate(toAngle: -sway.lean, duration: sway.duration, shortestUnitArc: true)
             left.timingMode = .easeInEaseOut
             right.timingMode = .easeInEaseOut
-            node.zRotation = .random(in: -lean...lean, using: &rng)
+            node.zRotation = sway.start
             node.run(.repeatForever(.sequence([left, right])))
         }
         chunk(at: node.position).addChild(node)

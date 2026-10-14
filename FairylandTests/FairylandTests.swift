@@ -2632,7 +2632,11 @@ struct RulesTests {
 
     @Test func questsOpenRoads() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
-        let road = Content.shared.map("sunny_meadow")!.exits.first { $0.to == "pineapple_shore" }!
+        // Since 0.6.0 the road to Pineapple Shore leaves from Meadowbrook (it was Sunny Meadow's).
+        guard let road = Content.shared.map("meadowbrook")?.exits.first(where: { $0.to == "pineapple_shore" }) else {
+            Issue.record("no road from Meadowbrook to Pineapple Shore")
+            return
+        }
         #expect(!session.canTravel(road))
         session.data.quests["jelly_trouble"] = QuestProgress(state: .completed, count: 3)
         #expect(session.canTravel(road))
@@ -2904,5 +2908,144 @@ struct RewardTests {
         let names = Set((0..<40).compactMap { _ in GameSession.botTitle(level: 70, id: UUID())?.name })
         #expect(names.isSubset(of: [Content.shared.title("veteran")?.name].compactMap { $0 }))
         #expect(!names.isEmpty)
+    }
+}
+
+/// The continent as one grid of world cells (`World`, docs/continuous-world.md).
+@MainActor
+struct WorldStoreTests {
+    let content = Content.shared
+
+    /// Every cell a land's shape owns is that land's on the continent's grid, and no cell is two
+    /// lands'.
+    @Test func everyLandCellHasOneOwner() {
+        let world = World.continent()
+        #expect(world.conflicts == 0, "\(world.conflicts) cells claimed by two lands")
+        #expect(world.lands.count == content.maps.filter { content.world[$0.id] != nil }.count)
+        for land in world.lands {
+            guard let region = content.regions[land.id] else {
+                Issue.record("\(land.id): no shape")
+                continue
+            }
+            var owned = 0
+            for row in 0..<land.rows {
+                for col in 0..<land.columns where region.owns(GridPoint(col: col, row: row)) {
+                    owned += 1
+                    let cell = world.world(GridPoint(col: col, row: row), of: land)
+                    if world.land(at: cell)?.id != land.id {
+                        Issue.record("\(land.id): world cell \(cell) is \(world.land(at: cell)?.id ?? "nobody")'s")
+                        return
+                    }
+                }
+            }
+            #expect(owned > 0, "\(land.id) owns no cells")
+        }
+    }
+
+    /// A land's cells and world cells convert back and forth.
+    @Test func worldAndLandCellsConvertBothWays() {
+        let world = World.continent()
+        for land in world.lands {
+            for cell in [GridPoint(col: 0, row: 0), GridPoint(col: land.columns - 1, row: land.rows - 1), GridPoint(col: land.columns / 2, row: 3)] {
+                #expect(world.local(world.world(cell, of: land), in: land) == cell, "\(land.id): \(cell)")
+            }
+        }
+    }
+
+    /// Chunks tile the grid: every cell is in the one chunk whose cells include it, west and south
+    /// of the grid's origin too.
+    @Test func chunksTileTheContinent() {
+        let cells = [GridPoint(col: 0, row: 0), GridPoint(col: 31, row: 31), GridPoint(col: 32, row: 0), GridPoint(col: -1, row: -1),
+                     GridPoint(col: -32, row: -33), GridPoint(col: 548, row: -467)]
+        for cell in cells {
+            let chunk = World.chunk(of: cell)
+            let inside = World.cells(in: chunk)
+            #expect(inside.count == World.chunkSize * World.chunkSize)
+            #expect(inside.contains(cell), "\(cell) isn't in its chunk \(chunk)")
+            #expect(inside.allSatisfy { World.chunk(of: $0) == chunk }, "chunk \(chunk) holds another's cells")
+        }
+        #expect(World.chunk(of: GridPoint(col: -1, row: 0)) == GridPoint(col: -1, row: 0))
+    }
+
+    /// A land laid out into the store gives each of its cells the ground and walking its own map
+    /// has, and the lands not laid out yet stay empty.
+    @Test func aLaidOutLandFillsItsOwnCells() throws {
+        let world = World.continent()
+        let def = try #require(content.map("sunny_meadow"))
+        let land = try #require(world.land("sunny_meadow"))
+        let map = WorldMap(def: def)
+        world.add(map)
+        #expect(world.isLaidOut("sunny_meadow"))
+        #expect(!world.isLaidOut("frog_swamp"))
+        var checked = 0, wrong = 0
+        for row in 0..<map.rows {
+            for col in 0..<map.columns {
+                let cell = GridPoint(col: col, row: row)
+                guard map.owns(cell) else { continue }
+                let there = world.world(cell, of: land)
+                if world.ground(at: there) != map.ground[row][col] || world.isWalkable(there) != map.isWalkable(cell) { wrong += 1 }
+                checked += 1
+            }
+        }
+        #expect(checked > 1000, "only \(checked) cells of Sunny Meadow")
+        #expect(wrong == 0, "\(wrong) of Sunny Meadow's \(checked) cells differ in the store")
+        let other = try #require(world.land("frog_swamp"))
+        let region = try #require(content.regions["frog_swamp"])
+        var empty: GridPoint?
+        search: for row in 0..<other.rows {
+            for col in 0..<other.columns where region.owns(GridPoint(col: col, row: row)) {
+                empty = world.world(GridPoint(col: col, row: row), of: other)
+                break search
+            }
+        }
+        let cell = try #require(empty)
+        #expect(world.ground(at: cell) == nil, "Frog Swamp has ground before it's laid out")
+    }
+}
+
+/// A land's scenery decided before it's drawn (`LandPlanner`, docs/continuous-world.md step 1b).
+@MainActor
+struct LandPlanTests {
+    let content = Content.shared
+
+    private func planned(_ def: MapDef) async -> (map: WorldMap, plan: LandPlan) {
+        let map = WorldMap(def: def)
+        let planner = LandPlanner(def: def, map: map, art: ArtLibrary.shared)
+        await planner.planUpToLocals(pause: {})
+        await planner.planTheRest(pause: {})
+        return (map, planner.plan)
+    }
+
+    /// Building the scene takes no cell the plan didn't: where you can walk is settled once the plan's
+    /// run, so the continent's store can have it without drawing the land.
+    @Test func theSceneTakesNoCellItsPlanDidnt() async throws {
+        let def = try #require(content.map("sunny_meadow"))
+        let plan = await planned(def)
+        let scene = WorldScene(map: def, session: GameSession.newGame(name: "Test", raceID: "human"), input: InputState(), entry: nil)
+        await scene.build { _ in }
+        var differ: [GridPoint] = []
+        for row in 0..<plan.map.rows {
+            for col in 0..<plan.map.columns {
+                let cell = GridPoint(col: col, row: row)
+                if plan.map.isWalkable(cell) != scene.layout.isWalkable(cell) { differ.append(cell) }
+            }
+        }
+        #expect(differ.isEmpty, "\(differ.count) cells differ between the plan and the scene, first \(Array(differ.prefix(5)))")
+        #expect(!plan.plan.props.isEmpty, "Sunny Meadow planned no props")
+    }
+
+    /// The same land plans the same every time: its props, its neighbours' over the line, its people
+    /// and its signposts, on the same cells, nudged the same.
+    @Test func aLandsPlanIsTheSameEveryTime() async throws {
+        let def = try #require(content.map("frog_swamp"))
+        let first = await planned(def).plan
+        let second = await planned(def).plan
+        #expect(first.props.map { $0.cell } == second.props.map { $0.cell })
+        #expect(first.props.map { $0.nudge } == second.props.map { $0.nudge })
+        #expect(first.seamProps.map { $0.cell } == second.seamProps.map { $0.cell })
+        #expect(first.reeds.map { $0.cell } == second.reeds.map { $0.cell })
+        #expect(first.npcs.map { $0.cell } == second.npcs.map { $0.cell })
+        #expect(first.signposts.map { $0.cell } == second.signposts.map { $0.cell })
+        #expect(!first.props.isEmpty, "Frog Swamp planned no props")
     }
 }
