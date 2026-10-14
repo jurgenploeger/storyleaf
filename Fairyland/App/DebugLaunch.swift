@@ -145,9 +145,8 @@ enum DebugLaunch {
     /// play's part, with `clip`), so tools/screenshots.sh knows when to shoot (the loading curtain
     /// alone can look "drawn").
     static func markReady(nextDoorShown: Bool = false) {
-        // `border`: not till the land next door is up too (`apply`); `crossing`, not till you've walked
-        // over into the next land.
-        guard (flags["border"] == nil && flags["crossing"] == nil) || nextDoorShown else { return }
+        // `crossing`: not till you've walked over into the next land (`apply`).
+        guard flags["crossing"] == nil || nextDoorShown else { return }
         guard isActive || introClip != nil, let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
         try? Data().write(to: folder.appending(path: "debug-ready"))
     }
@@ -440,10 +439,9 @@ enum DebugLaunch {
         if let map = flags["map"], Content.shared.map(map) != nil {
             session.data.mapID = map
         }
-        // `border=<land>`: you start just inside the border with that land next door, on the road
-        // over it if one crosses (else halfway along it), looking across (the land next door comes up
-        // before the screenshot, `apply`); `near=<land>` the same on the continent (`crossing` walks
-        // you over). `edge=<north|south|east|west>`: halfway
+        // `border=<land>` (or `near=<land>`): you start just inside the border with that land, on the
+        // road over it if one crosses (else halfway along it), looking across (`crossing` walks you
+        // over). `edge=<north|south|east|west>`: halfway
         // along that side of the land's box, 3 cells in from where its land begins.
         if let here = Content.shared.map(session.data.mapID) {
             let neighbour = (flags["border"] ?? flags["near"]).flatMap { id in Continent.neighbours(of: here).first { $0.def.id == id } }
@@ -724,25 +722,6 @@ enum DebugLaunch {
                 }
             }
         }
-        // `far`: the lands next door are left as they look before they're built (`placeFarLands`).
-        if flags["far"] != nil { coordinator.holdsNextDoor = true }
-        // `border=<land>`: once the map is on screen, the land next door is built and shown (and with
-        // `cross` you walk over into it); only then is the scene ready for its screenshot.
-        #if DEBUG
-        if let id = flags["border"] {
-            coordinator.holdsNextDoor = true
-            Task {
-                for _ in 0..<480 {
-                    try? await Task.sleep(for: .milliseconds(500))
-                    guard coordinator.isReady, coordinator.mapScene.view != nil else { continue }
-                    await coordinator.showNextDoorForDebug(id)
-                    if flags["cross"] != nil { await coordinator.world.walkOverForDebug(into: id) }
-                    markReady(nextDoorShown: true)
-                    return
-                }
-            }
-        }
-        #endif
         // `crossing` (with `near=<land>`): once the continent's drawn round you, you walk over the line
         // into that land; ready as you arrive, its name at the top of the screen.
         #if DEBUG

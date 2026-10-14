@@ -15,10 +15,9 @@ final class LandNode: SKNode {
 /// One map: ground, scenery, NPCs, passers-by, the hero and their companion.
 ///
 /// Like Fairyland, monsters aren't shown on the map — walking through the wild can start
-/// a random battle. The lands lie side by side on one continent (`Continent`): the lands next
-/// door show past the borders (built in the background as you near them, `show(_:as:)`), and you
-/// walk across into them where a road joins them, with no loading card (`onCross`). Caves you
-/// enter through their mouths, behind the card.
+/// a random battle. The lands of the continent are one scene of their own (`ContinentScene`);
+/// this is a cave's, entered through its mouth behind the loading card (and a land's own, for the
+/// tests and the minimap).
 final class WorldScene: SKScene {
     var onEncounter: (@MainActor (MapDef.Encounters, SKTexture?) -> Void)?
     var onTalk: (@MainActor (NPCDef) -> Void)?
@@ -89,40 +88,8 @@ final class WorldScene: SKScene {
     /// Darkens the screen as you walk toward the edge of the map, so leaving is obvious.
     private let edgeFade = SKSpriteNode(color: .black, size: .zero)
 
-    /// Built in the background to show past the border of the land you're in (`show(_:as:)`), not
-    /// walked into yet: none of it reaches the session, the chat or the HUD until you do.
-    private(set) var isNextDoor: Bool
-    /// The lands next door shown past this one's borders, by id.
-    private var nextDoor: [String: (scene: WorldScene, neighbour: Continent.Neighbour)] = [:]
-    /// The lands round this one, each as its picture on the world map (`WorldOverview`) laid flat
-    /// on the ground, under everything, while it isn't shown next door (not built yet, or let go):
-    /// so past a border there's always the land next door, if not yet its trees, never nothing.
-    /// By id (`placeFarLands`).
-    private var farLands: [String: SKNode] = [:]
-    /// Whether a land round this one had no picture yet when they were laid (they come in from
-    /// the background, `WorldOverview.prepare`).
-    private var farLandsMissing = false
-    /// The lands among them laid in their ground's colour, waiting for their pictures.
-    private var plainLands: Set<String> = []
-    /// How far round the land they're laid, in cells.
-    private static let farReach = 64
     /// The lands sharing a border with this one (none for a cave).
     private(set) lazy var neighbours: [Continent.Neighbour] = Continent.neighbours(of: def)
-    /// The land you've just walked in from, whose place this one takes as it shows (`didMove(to:)`).
-    var walkedInFrom: WorldScene?
-    /// Walked into over a border: it's on screen already, so it shows with no fade (`SpriteKitView`).
-    var arrivesOnFoot = false
-    /// You've stepped over the border into a land shown next door, on your way there with no card.
-    private var walkingOver = false
-    /// Friends visiting the land you're in, who don't turn up next door too (set before `build`).
-    var friendsElsewhere: Set<UUID> = []
-    /// Every half second: the lands next door near enough to want built and shown, with how many
-    /// cells away their borders are, nearest first.
-    var onLandsNear: (@MainActor ([(neighbour: Continent.Neighbour, distance: Int)]) -> Void)?
-    /// You've stepped across a border into a land next door: built and shown (its scene), or not
-    /// built yet (nil: the coordinator takes you there behind the loading card), where you stand
-    /// there, in its cells' points.
-    var onCross: (@MainActor (Continent.Neighbour, WorldScene?, CGPoint) -> Void)?
 
     private let walkSpeed: CGFloat = 88
     private let talkRange: CGFloat = 50
@@ -135,12 +102,11 @@ final class WorldScene: SKScene {
 
     /// `entry` is the edge the player walked in through, or nil to use the saved position;
     /// `arrival`, a spot to stand on instead (walked across a border before the land was built).
-    /// `grid`: the land laid out already (off the main thread). `nextDoor`: built to show past the
-    /// border of the land you're in (`isNextDoor`), touching nothing of the session.
+    /// `grid`: the land laid out already (off the main thread).
     init(map def: MapDef, session: GameSession, input: InputState, entry: Edge?, arrival: CGPoint? = nil,
-         grid: WorldMap? = nil, nextDoor: Bool = false) {
-        // Characters made for this map pick up its light (a land next door's, as it's built).
-        if !nextDoor { Walker.light = Self.light(of: def) }
+         grid: WorldMap? = nil) {
+        // Characters made for this map pick up its light.
+        Walker.light = Self.light(of: def)
         let map = grid ?? WorldMap(def: def)
         let player = Walker(cycle: ArtLibrary.shared.walkCycle(GameSession.heroArt), label: session.data.hero.name)
         player.tagMode = .whenStill
@@ -153,9 +119,7 @@ final class WorldScene: SKScene {
         focus = DepthOfField(def.ambience?.focus)
 
         var start = map.center(of: map.center)
-        if nextDoor {
-            // Wherever you walk in from (`takeOver`).
-        } else if let arrival {
+        if let arrival {
             start = arrival
         } else if let entry {
             start = map.center(of: map.entryCell(from: entry))
@@ -164,13 +128,12 @@ final class WorldScene: SKScene {
         }
         player.position = start
         lastCell = map.cell(at: start)
-        isNextDoor = nextDoor
 
         super.init(size: CGSize(width: 874, height: 402))
         world.land = self
         scaleMode = .resizeFill
         backgroundColor = .black
-        if !nextDoor { session.playerPosition = player.position }
+        session.playerPosition = player.position
         // The scenery goes up in `build(progress:)`, a piece at a time, behind the loading bar.
     }
 
@@ -204,10 +167,6 @@ final class WorldScene: SKScene {
     override func didMove(to view: SKView) {
         view.addGestureRecognizer(pinch)
         cam.setScale(1 / Self.zoom)
-        if let previous = walkedInFrom {
-            walkedInFrom = nil
-            takeOver(from: previous)
-        }
         if session.mapName != def.name {
             session.post(L("You arrive at {map}.", ["map": def.name]))
             if def.danger == true {
@@ -273,7 +232,6 @@ final class WorldScene: SKScene {
         placePlateaus()
         await reached(0.3, progress)
         await placeSurroundings()
-        placeFarLands()
         await reached(0.45, progress)
         if let cave = def.theme.cave {
             caveWalls = CaveWalls(map: map, cave: cave, world: world, art: art, margin: Self.surroundingsMargin)
@@ -302,18 +260,15 @@ final class WorldScene: SKScene {
         let market = Crowd.Market(sign: { [weak session] in session?.marketSign(for: $0) },
                                   shout: { [weak session] in session?.marketShout(for: $0) },
                                   level: session.data.hero.level)
-        let away = friendsElsewhere
         crowd = Crowd(def: def, map: map, world: world, heroLevel: session.data.hero.level,
-                      friends: session.friends.filter { !session.isInParty($0) && !away.contains($0.id) }, market: market,
+                      friends: session.friends.filter { !session.isInParty($0) }, market: market,
                       locals: planner.plan.locals)
-        // Next door, nobody's heard yet, and nobody picks a fight with you over the border.
-        crowd?.onChat = { [weak self, weak session] speaker, text, kind in
-            guard self?.isNextDoor == false else { return }
+        crowd?.onChat = { [weak session] speaker, text, kind in
             session?.postChat(text, from: speaker, kind: kind)
         }
         crowd?.dares = { [weak session] rival in session?.dares(rival) ?? false }
         crowd?.onChallenge = { [weak self] rival in
-            guard let self, !self.isInputLocked, !self.isNextDoor else { return }
+            guard let self, !self.isInputLocked else { return }
             self.startDuel(with: rival)
         }
         await breathe()
@@ -328,12 +283,10 @@ final class WorldScene: SKScene {
         for case let walker as Walker in world.children { walker.settle() }
         await reached(0.9, progress)
 
-        if !isNextDoor {
-            world.addChild(player)
-            refreshHero()
-            refreshFollower()
-            refreshAllies()
-        }
+        world.addChild(player)
+        refreshHero()
+        refreshFollower()
+        refreshAllies()
         player.settle()
         cam.position = cameraGoal
         edgeFade.alpha = 0
@@ -349,21 +302,19 @@ final class WorldScene: SKScene {
         if let sky { lighting?.sunlight(sky.sunlight) }
         follow(sky?.sun ?? .noon)
 
-        if !isNextDoor {
-            // Don't start on top of scenery (e.g. an old save).
-            // (A save from before a cave's walls went up can even be deep inside the rock, and one from
-            // before the sea came in over the coasts out at sea, even off the map.)
-            if !map.isWalkable(lastCell) || !map.owns(map.rawCell(at: player.position)),
-               let open = map.nearestWalkable(to: lastCell, within: 48) ?? map.nearestWalkable(to: map.entryCell(from: def.exits.first?.edge ?? .south)) {
-                player.position = map.center(of: open)
-                lastCell = open
-                cam.position = cameraGoal
-            }
-            session.playerPosition = player.position
-            lantern?.follow(player.position)
-            showChunks()
-            explore()
+        // Don't start on top of scenery (e.g. an old save).
+        // (A save from before a cave's walls went up can even be deep inside the rock, and one from
+        // before the sea came in over the coasts out at sea, even off the map.)
+        if !map.isWalkable(lastCell) || !map.owns(map.rawCell(at: player.position)),
+           let open = map.nearestWalkable(to: lastCell, within: 48) ?? map.nearestWalkable(to: map.entryCell(from: def.exits.first?.edge ?? .south)) {
+            player.position = map.center(of: open)
+            lastCell = open
+            cam.position = cameraGoal
         }
+        session.playerPosition = player.position
+        lantern?.follow(player.position)
+        showChunks()
+        explore()
         if pace != .foreground { endSlice(at: #line) }
         giveLookBack()
         isBuilt = true
@@ -1466,7 +1417,6 @@ final class WorldScene: SKScene {
             }
             return true
         }
-        for land in nextDoor.values { land.scene.openBarricades() }
     }
 
     /// A piece of scenery as the plan set it down (`LandPlanner`): its own sprite, or `sprite` (a land
@@ -1616,8 +1566,6 @@ final class WorldScene: SKScene {
         for case let walker as Walker in world.children { walker.cast(from: sun) }
         for spot in onSlopes { Self.shade(spot.node, hx: spot.hx, hy: spot.hy, ambient: spot.ambient, sun: sun) }
         lighting?.follow(sun)
-        // The lands next door are under the same sun.
-        for land in nextDoor.values { land.scene.follow(sun) }
     }
 
     /// How far up its image a sprite's lowest opaque pixel sits (0...1). Scenery is anchored there,
@@ -1933,18 +1881,7 @@ final class WorldScene: SKScene {
             signTarget = index
         }
         crowd?.greet(at: point, from: player.position)
-        // A tap over the border, in a land next door: there by the nearest way over, and on to the
-        // spot once you're across (`takeOver`). Into one not built yet too: over behind the
-        // loading card, where you step across (`cross(into:)`).
         let ground = map.groundPoint(under: point)
-        let tapped = map.rawCell(at: ground)
-        tapOverBorder = nil
-        if !map.owns(tapped), let neighbour = neighbour(holding: tapped), let way = wayOver(to: tapped, into: neighbour) {
-            player.path = map.path(from: player.position, to: map.center(of: way.inside)) + [way.over]
-            tapOverBorder = ground
-            Effects.tapMarker(at: ground, z: -50_000, in: world)
-            return
-        }
         // A tap on a hilltop means the top, not the ground it hides.
         player.path = map.path(from: player.position, to: ground)
         if let destination = player.path.last {
@@ -1952,18 +1889,6 @@ final class WorldScene: SKScene {
         }
     }
 
-    /// Where you tapped over the border, in a land next door (in this land's points): the walk
-    /// there goes on once you're across.
-    private var tapOverBorder: CGPoint?
-
-    /// The way over the border into `neighbour` nearest `cell` (one of that land's): the cell on this
-    /// side to walk to, and a spot just over the line, where it's open and there's ground to stand.
-    private func wayOver(to cell: GridPoint, into neighbour: Continent.Neighbour) -> (inside: GridPoint, over: CGPoint)? {
-        func away(_ other: GridPoint) -> Int { (other.col - cell.col) * (other.col - cell.col) + (other.row - cell.row) * (other.row - cell.row) }
-        let open = neighbour.border.filter { map.isWalkable($0.inside) && canCross(into: $0.outside) }
-        guard let pair = open.min(by: { away($0.outside) < away($1.outside) }) else { return nil }
-        return (pair.inside, map.center(of: pair.outside))
-    }
 
     /// How deep something lying flat on the ground at `point` (a tap's swirl) sorts: on a hill, just
     /// over the strip of raised ground it lies on (`HillArt.strip(at:)`), as the scenery's shadows
@@ -2247,16 +2172,6 @@ final class WorldScene: SKScene {
         crowd?.tellForDebug(near: player.position)
     }
 
-    /// Debug launches (`border=<land>,cross`): you walk over the border into that land, on the
-    /// stick, as you would (the land next door must be shown already).
-    func walkOverForDebug(into id: String) async {
-        guard let neighbour = neighbours.first(where: { $0.def.id == id }) else { return }
-        // Over the road if one crosses, else halfway along the border.
-        let over = neighbour.exit.flatMap { neighbour.gate(of: $0) } ?? neighbour.border[neighbour.border.count / 2].outside
-        input.move = (map.center(of: over) - player.position).normalized
-        try? await Task.sleep(for: .seconds(5))
-        input.move = .zero
-    }
     #endif
 
     func adventurerSays(_ line: String, _ id: UUID) {
@@ -2276,83 +2191,7 @@ final class WorldScene: SKScene {
         startTalking(to: npc.def, node: npc.node)
     }
 
-    // MARK: - Next door
-
-    /// Where a land `offset` cells off (its south-west cell, in this land's cells) lies on screen:
-    /// add it to that land's points for this one's.
-    static func shift(_ offset: GridPoint) -> CGVector {
-        let point = WorldMap.project(CGPoint(x: CGFloat(offset.col) * WorldMap.tileSize, y: CGFloat(offset.row) * WorldMap.tileSize))
-        return CGVector(dx: point.x, dy: point.y)
-    }
-
-    /// The lands next door shown past this one's borders now, by id.
-    var shownNextDoor: [String: WorldScene] { nextDoor.mapValues(\.scene) }
-
-    /// The friends visiting this land, who stay here rather than turn up next door as well.
-    var visitingFriends: Set<UUID> {
-        let friends = Set(session.friends.map(\.id))
-        return Set((crowd?.adventurerPositions ?? []).map(\.profile.id).filter(friends.contains))
-    }
-
-    /// Shows a land next door, built in the background, past the border: its own layer moved into
-    /// this scene, where it lies, sorted in with this land's as if they were one.
-    func show(_ land: WorldScene, as neighbour: Continent.Neighbour) {
-        guard land.isBuilt, land !== self, nextDoor[land.def.id] == nil else { return }
-        let shift = Self.shift(neighbour.offset)
-        land.world.removeFromParent()
-        land.world.position = CGPoint(x: shift.dx, y: shift.dy)
-        land.world.zPosition = -shift.dy
-        lands.addChild(land.world)
-        nextDoor[land.def.id] = (land, neighbour)
-        farLands[land.def.id]?.isHidden = true
-        land.follow(sunShown ?? .noon)
-    }
-
-    /// Lays the lands round this one flat on the ground as their world map pictures (`farLands`),
-    /// those not laid yet. One with no picture yet lies there in its ground's colour till
-    /// `WorldOverview` draws it (looked for again every so often, `lookAround`), so there's never
-    /// nothing past a border. Not for a land shown next door, nor round a cave.
-    private func placeFarLands() {
-        guard !isNextDoor, Continent.origin(of: def) != nil else { return }
-        let drawn = WorldOverview.shared.images
-        var missing = false
-        let tile = WorldMap.tileSize
-        for (land, offset) in Continent.lands(near: def, within: Self.farReach) where farLands[land.id] == nil || plainLands.contains(land.id) {
-            let size = CGSize(width: CGFloat(land.width) * tile, height: CGFloat(land.height) * tile)
-            let picture: SKSpriteNode
-            if let image = drawn[land.id] {
-                let texture = SKTexture(cgImage: image)
-                texture.filteringMode = .linear
-                picture = SKSpriteNode(texture: texture, size: size)
-                farLands.removeValue(forKey: land.id)?.removeFromParent()
-                plainLands.remove(land.id)
-            } else {
-                missing = true
-                guard farLands[land.id] == nil else { continue }
-                let (red, green, blue) = Self.groundColor(of: land, art: art)
-                let color = PixelColor(r: UInt8(red * 255), g: UInt8(green * 255), b: UInt8(blue * 255))
-                if let shape = Self.silhouette(of: land, color: color) {
-                    let texture = SKTexture(cgImage: shape)
-                    texture.filteringMode = .linear
-                    picture = SKSpriteNode(texture: texture, size: size)
-                } else {
-                    picture = SKSpriteNode(color: UIColor(red: red, green: green, blue: blue, alpha: 1), size: size)
-                }
-                plainLands.insert(land.id)
-            }
-            picture.anchorPoint = .zero
-            picture.position = CGPoint(x: CGFloat(offset.col) * tile, y: CGFloat(offset.row) * tile)
-            let grid = SKNode()
-            grid.addChild(picture)
-            let layer = projected(grid)
-            layer.zPosition = -1_000_000
-            layer.isHidden = nextDoor[land.id] != nil
-            lands.addChild(layer)
-            farLands[land.id] = layer
-        }
-        farLandsMissing = missing
-        if missing { WorldOverview.shared.prepare(first: overviewsFirst) }
-    }
+    // MARK: - The lands round
 
     /// The lands whose pictures this one wants first (`WorldOverview.prepare(first:)`): those it
     /// shares a border with, the nearest to you first.
@@ -2365,7 +2204,7 @@ final class WorldScene: SKScene {
     }
 
     /// A land's ground colour, as it's graded there: what lies past the border till its picture's
-    /// drawn (`placeFarLands`, `minimapPicture`).
+    /// drawn (`minimapPicture`).
     static func groundColor(of land: MapDef, art: ArtLibrary) -> (CGFloat, CGFloat, CGFloat) {
         if let known = groundColors[land.id] { return known }
         let color: (CGFloat, CGFloat, CGFloat)
@@ -2398,162 +2237,6 @@ final class WorldScene: SKScene {
             }
         }
         return canvas.cgImage()
-    }
-
-    /// Takes a land next door away again (too far to see), its layer back in its own scene.
-    @discardableResult
-    func hide(_ id: String) -> WorldScene? {
-        guard let land = nextDoor.removeValue(forKey: id)?.scene else { return nil }
-        farLands[id]?.isHidden = false
-        land.world.removeFromParent()
-        land.world.position = .zero
-        land.world.zPosition = 0
-        land.lands.addChild(land.world)
-        return land
-    }
-
-    /// The land next door a cell off this one lies in (built or not), if it's in one.
-    private func neighbour(holding cell: GridPoint) -> Continent.Neighbour? {
-        guard let land = Continent.owner(of: cell, from: def), land.id != def.id else { return nil }
-        return neighbours.first { $0.def.id == land.id }
-    }
-
-    /// Whether you can step from this land onto `cell`, a land next door's: straight over from a cell
-    /// of this one beside it, across a border open there, onto ground you can stand on there (if it's
-    /// built yet; if not, the coordinator takes you there behind the loading card as you step).
-    private func canCross(into cell: GridPoint) -> Bool {
-        // Not into a river where it runs on over the border.
-        guard map.region?.isRiver(cell) != true, let neighbour = neighbour(holding: cell),
-              [Edge.east, .west, .north, .south].contains(where: { map.owns(cell.stepped($0)) }),
-              neighbour.isOpen(over: cell, done: session.hasCompleted, joined: isJoined(neighbour)) else { return false }
-        guard let land = nextDoor[neighbour.def.id]?.scene else { return true }
-        return land.map.isWalkable(neighbour.local(cell))
-    }
-
-    /// You've stepped over the border: on into the land next door, there already if it's shown
-    /// (`takeOver`, with no loading card), or behind the card if it isn't built yet.
-    private func cross(into neighbour: Continent.Neighbour) {
-        hasLeft = true
-        let land = nextDoor[neighbour.def.id]?.scene
-        walkingOver = land != nil
-        if land == nil { isInputLocked = true }
-        onCross?(neighbour, land, player.position + Self.shift(neighbour.offset) * -1)
-    }
-
-    /// Every half second: the lands next door, with how far you are from each one's border, for the
-    /// coordinator to build the near ones in the background and show them, and let far ones go.
-    private func lookAround() {
-        // Not once you've stepped over (this land's on its way to being next door).
-        guard !isNextDoor, !hasLeft, let onLandsNear, !neighbours.isEmpty else { return }
-        if farLandsMissing { placeFarLands() }
-        let here = map.cell(at: player.position)
-        let near = neighbours
-            .map { (neighbour: $0, distance: $0.distance(from: here)) }
-            .sorted { $0.distance < $1.distance }
-        onLandsNear(near)
-    }
-
-    /// The lands next door go on while they're shown: their people stroll, their animals mind you
-    /// as you come near, and their scenery near the camera is in the scene.
-    private func tickNextDoor(_ dt: TimeInterval) {
-        for land in nextDoor.values {
-            let back = Self.shift(land.neighbour.offset) * -1
-            land.scene.carryOn(dt: dt, player: player.position + back, camera: cam.position + back, scale: cam.xScale, screen: size)
-        }
-    }
-
-    /// One frame of a land next door's life, seen from the land you're in (`tickNextDoor`); the
-    /// points are its own.
-    private func carryOn(dt: TimeInterval, player point: CGPoint, camera: CGPoint, scale: CGFloat, screen: CGSize) {
-        // Its people keep to themselves over there: too far off to hear you or pick a fight.
-        crowd?.update(dt: dt, player: CGPoint(x: 1e7, y: 1e7))
-        let visible = CGRect(x: camera.x - screen.width / 2 * scale, y: camera.y - screen.height / 2 * scale,
-                             width: screen.width * scale, height: screen.height * scale)
-        critters?.update(dt: dt, player: point, visible: visible) { self.map.isWalkable(self.map.rawCell(at: $0)) }
-        showChunks(around: camera, scale: scale, screen: screen)
-        focus.update(camera: camera, halfHeight: screen.height / 2 * scale)
-    }
-
-    /// You've walked out over the border: the hero and the friends walking with you leave this
-    /// land's layer (it stays on show next door, friends waiting here included), and it waits.
-    private func leave() {
-        player.removeFromParent()
-        player.path = []
-        follower?.removeFromParent()
-        follower = nil
-        followerKey = nil
-        for ally in allies where ally.waiting == nil {
-            ally.node.removeFromParent()
-            ally.pet?.removeFromParent()
-        }
-        allies.removeAll { $0.waiting == nil }
-        talkTarget = nil
-        signTarget = nil
-        tapOverBorder = nil
-        hasLeft = false
-        walkingOver = false
-        isInputLocked = true
-        isNextDoor = true
-    }
-
-    /// You've walked over the border into this land from `previous`, where it was shown next
-    /// door: it carries on from that very moment, with no loading card. The hero, their companion
-    /// and friends, and the camera are where they were; the lands next door to both stay on show;
-    /// and `previous` shows next door now in its turn.
-    private func takeOver(from previous: WorldScene) {
-        guard let back = neighbours.first(where: { $0.def.id == previous.def.id }) else { return }
-        // Its points plus this, for mine.
-        let shift = Self.shift(back.offset)
-        previous.hide(def.id)
-        for (id, land) in previous.shownNextDoor {
-            previous.hide(id)
-            if let neighbour = neighbours.first(where: { $0.def.id == id }) { show(land, as: neighbour) }
-        }
-        isNextDoor = false
-        placeFarLands()
-        art.use(palette: def.theme.palette, for: def.id)
-        Walker.light = Self.light(of: def)
-
-        if player.parent == nil { world.addChild(player) }
-        player.position = previous.player.position + shift
-        player.face(previous.player.facing)
-        player.path = []
-        heroKey = nil
-        refreshHero()
-        player.relight()
-        // Walking on to where you tapped over the border.
-        if let tapped = previous.tapOverBorder {
-            player.path = map.path(from: player.position, to: tapped + shift)
-        }
-        let companion = previous.follower.map { (position: $0.position + shift, facing: $0.facing) }
-        let party = previous.allies.filter { $0.waiting == nil }.map { (id: $0.id, position: $0.node.position + shift, pet: $0.pet?.position) }
-        previous.leave()
-        show(previous, as: back)
-        refreshFollower()
-        if let companion, let follower {
-            follower.position = companion.position
-            follower.face(companion.facing)
-        }
-        refreshAllies()
-        for (index, ally) in allies.enumerated() {
-            guard let was = party.first(where: { $0.id == ally.id }) else { continue }
-            allies[index].node.position = was.position
-            if let pet = was.pet { allies[index].pet?.position = pet + shift }
-        }
-        cam.position = previous.cam.position + shift
-        lastCell = map.cell(at: player.position)
-        stepsSinceBattle = previous.stepsSinceBattle
-        hasLeft = false
-        isInputLocked = false
-        lastUpdate = 0
-        // The light and the weather's shade go on from where they were, toward this land's own.
-        if let sky, let before = previous.sky { sky.carryOn(from: before) }
-        mood = 0
-        session.playerPosition = player.position
-        session.mapCell = lastCell
-        showChunks()
-        explore()
-        if let sky { follow(sky.sun) }
     }
 
     // MARK: - Mood
@@ -2624,11 +2307,9 @@ final class WorldScene: SKScene {
         let visible = CGRect(x: cam.position.x - size.width / 2, y: cam.position.y - size.height / 2, width: size.width, height: size.height)
         // The animals keep to their own land.
         critters?.update(dt: dt, player: player.position, visible: visible) { self.map.isWalkable(self.map.rawCell(at: $0)) }
-        tickNextDoor(dt)
         noticeTimer -= dt
         if noticeTimer <= 0 {
             noticeTimer = 0.4
-            lookAround()
             updateNotices()
             refreshFollower()
             refreshHero()
@@ -2676,7 +2357,6 @@ final class WorldScene: SKScene {
         let stick = input.move
         if stick.length > 0.15 {
             player.path = []
-            tapOverBorder = nil
             talkTarget = nil
             let step = stick * (walkSpeed * CGFloat(dt))
             var next = player.position
@@ -2695,7 +2375,7 @@ final class WorldScene: SKScene {
 
     private func canStand(at point: CGPoint) -> Bool {
         let cell = map.rawCell(at: point)
-        guard map.owns(cell) else { return canCross(into: cell) }
+        guard map.owns(cell) else { return false }
         return map.isWalkable(cell) && !barricades.contains { $0.cells.contains(cell) }
     }
 
@@ -2719,13 +2399,8 @@ final class WorldScene: SKScene {
     private func checkCell() {
         // Walking up to someone this frame opened their window: no battle or road out under it.
         guard !isInputLocked else { return }
-        // Over a border into the land next door.
-        let raw = map.rawCell(at: player.position)
-        if !map.owns(raw) {
-            if !hasLeft, let neighbour = neighbour(holding: raw) { cross(into: neighbour) }
-            return
-        }
-        let cell = raw
+        let cell = map.rawCell(at: player.position)
+        guard map.owns(cell) else { return }
         guard cell != lastCell else { return }
         if let barricade = barricades.first(where: { $0.cells.contains(cell) || map.exit(at: cell)?.to == $0.exit.to }) {
             // Closed road: back you go, with a hint about which quest opens it.
@@ -2861,13 +2536,11 @@ final class WorldScene: SKScene {
         }
     }
 
-    /// The last few steps toward an open road out fade to black (into a cave, only toward its mouth).
-    /// Not where it runs on into the land next door: you can see where you're going.
+    /// The screen fades to black as you go off behind the loading card (out of a cave). Nearing a
+    /// way out used to darken too, from when every edge was one; playtesting: "the map doesn't need
+    /// to go dark anymore when you switch lands".
     private func updateEdgeFade(_ dt: TimeInterval) {
-        // Only going off behind the loading card (into a cave, or over a border before the land's
-        // built), not walking on over a border. Nearing a way out used to darken too, from when every
-        // edge was one; playtesting: "the map doesn't need to go dark anymore when you switch lands".
-        let target: CGFloat = hasLeft && !walkingOver ? 0.85 : 0
+        let target: CGFloat = hasLeft ? 0.85 : 0
         let t = dt == 0 ? 1 : min(1, CGFloat(dt) * 6)
         edgeFade.alpha += (target - edgeFade.alpha) * t
     }

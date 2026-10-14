@@ -25,19 +25,16 @@ candy_mountain | newgame,map=candy_mountain       | 15
 frog_swamp   | newgame,map=frog_swamp            | 15
 pineapple_shore | newgame,map=pineapple_shore     | 15
 moonglow     | newgame,map=moonglow              | 15
-# The continent: a land next door shown past the border (built before the shot), its wall or
-# gate, the ground blending across, and walking over into it with no loading card.
-border_open  | newgame,map=sunny_meadow,border=meadowbrook,landscape,weather=clear,hour=12 | 6
-# The continent as one place (docs/continuous-world.md, step 2): every land's ground, the sea and
-# the scenery drawn a chunk at a time round you from the lands' own layouts, with no border between
-# them, the hills and the shore sloping down to the sea, its towns and their people (standing still for now).
-continent_meadow | newgame,map=sunny_meadow,continent,landscape,weather=clear,hour=12 | 8
-continent_border | newgame,map=sunny_meadow,near=meadowbrook,continent,landscape,weather=clear,hour=12 | 8
-continent_coast | newgame,map=pineapple_shore,at=-10_-47,continent,landscape,weather=clear,hour=12 | 8
-# Walking over the line into Meadowbrook on it: no card, no wait, its name at the top as you arrive.
-continent_crossing | newgame,map=sunny_meadow,near=meadowbrook,continent,crossing,landscape,weather=clear,hour=12 | 1
+# The continent as one place (docs/continuous-world.md): every land's ground, the sea and the
+# scenery drawn a chunk at a time round you from the lands' own layouts, with no border between
+# them, the hills and the shore sloping down to the sea, the towns and their people.
+continent_meadow | newgame,map=sunny_meadow,landscape,weather=clear,hour=12 | 8
+continent_border | newgame,map=sunny_meadow,near=meadowbrook,landscape,weather=clear,hour=12 | 8
+continent_coast | newgame,map=pineapple_shore,at=-10_-47,landscape,weather=clear,hour=12 | 8
+# Walking over the line into Meadowbrook: no card, no wait, its name at the top as you arrive.
+continent_crossing | newgame,map=sunny_meadow,near=meadowbrook,crossing,landscape,weather=clear,hour=12 | 1
+# The walls along borders you can't cross yet: a quest's barred gate, rocks, a fence.
 border_gate  | newgame,map=sunny_meadow,border=frog_swamp,landscape,weather=clear,hour=12 | 6
-border_cross | newgame,map=sunny_meadow,border=twilight_woods,done=pineapple_harvest,cross,landscape,weather=clear,hour=12 | 6
 border_rocks | newgame,map=sunny_meadow,border=pineapple_shore,landscape,weather=clear,hour=12 | 6
 border_fence | newgame,map=frog_swamp,border=twilight_woods,landscape,weather=clear,hour=12 | 6
 border_sand  | newgame,map=frog_swamp,border=goldburg_lake,weather=clear,hour=12 | 6
@@ -45,11 +42,8 @@ border_sand  | newgame,map=frog_swamp,border=goldburg_lake,weather=clear,hour=12
 # you walk over anywhere, and the two grounds meet along a winding line, each one's trees on its own.
 border_joined | newgame,map=frog_swamp,border=twilight_woods,done=new_friend+pineapple_harvest,landscape,weather=clear,hour=12 | 6
 seam_snow    | newgame,map=snow_white_forest,border=swan_lake,landscape,weather=clear,hour=12 | 6
-# A land giving way to the next at night, the land next door built (the swamp into the sandy lake
-# shore); and the lands past the downs' east coast before they're built (`far`: their world map
-# pictures laid flat, once the world map's pictures are drawn).
+# A land giving way to the next at night (the swamp into the sandy lake shore).
 band_night   | newgame,map=frog_swamp,border=goldburg_lake,landscape,weather=clear,hour=23 | 6
-far_land     | newgame,map=northern_grassland,edge=east,far,landscape,weather=clear,hour=12 | 90
 coast        | newgame,map=meadowbrook,edge=west,landscape,weather=clear,hour=12 | 6
 # The sea round the continent, lower than the land, the land sloping down to it (`WorldMap.shore`):
 # Meadowbrook's countryside down to it (`coast`), the slope facing you (the sandy lake shore's west,
@@ -59,10 +53,8 @@ coast_bay    | newgame,map=goldburg_lake,edge=west,landscape,weather=clear,hour=
 coast_beach  | newgame,map=pineapple_shore,at=-10_-47,landscape,weather=clear,hour=12 | 6
 coast_north  | newgame,map=rosen_lake,edge=north,landscape,weather=clear,hour=12 | 6
 coast_lair   | newgame,map=wolf_lair,edge=south,landscape,weather=clear,hour=12 | 6
-# The land next door built as the game builds it, in the background a few milliseconds a frame (the
-# border scenes above build it at once): the lair's border with the candy land, where playtesting
-# saw its ground missing past the line.
-border_built | newgame,map=wolf_lair,edge=east,landscape,weather=clear,hour=12 | 180
+# The lair's border with the candy land, where playtesting once saw its ground missing past the line.
+border_built | newgame,map=wolf_lair,edge=east,landscape,weather=clear,hour=12 | 8
 # A town in its own countryside: Prismhaven's stone city wall and its south gate from the fields
 # outside it, Larkspur's village fence, and Ingothold's countryside where a quest's road leaves it,
 # barred at the border.

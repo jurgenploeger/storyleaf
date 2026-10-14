@@ -23,12 +23,6 @@ struct SpriteKitView: UIViewRepresentable {
 
     func updateUIView(_ view: SKView, context: Context) {
         guard view.scene !== scene else { return }
-        // Walked over a border into the land next door: it was on screen already, so no fade.
-        if let land = scene as? WorldScene, land.arrivesOnFoot {
-            land.arrivesOnFoot = false
-            view.presentScene(scene)
-            return
-        }
         let transition: SKTransition = scene is BattleScene
             ? .fade(with: .white, duration: 0.45)
             : .fade(withDuration: 0.5)
