@@ -15,10 +15,13 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   `Brand` in `Fairyland/UI/BrandSky.swift` holds the same values, so change both together.
 - `content/world.json` + `tools/world_layout.py`: the lands as one continent, each a shape of its own (RuneScape-like
   regions, cold north, desert south). Edit world.json's `design` (each land's middle and lobes round it; a town is
-  its rectangle) and rerun the tool (numpy + scipy, ~50 s): it paints the shapes, writes each land's box (maps.json
-  `width`/`height`), middle, road crossings with their turns, and shape (`regions`), and `check_content.py` checks
-  it (everything set down by hand on its land, roads meeting). Rerun it after changing exits or anything set down by
-  hand; `--preview out.png` draws it. `Fairyland/World/Region.swift` is a land's shape; `Continent.swift` reads
+  its rectangle) and `rivers` (each one's course from its spring to the sea) and rerun the tool (numpy + scipy): it
+  paints the shapes and rivers, writes each land's box (maps.json `width`/`height`), middle, road crossings with
+  their turns, and shape (`regions`, rivers in it), and `check_content.py` checks it (everything set down by hand on
+  its land and clear of the rivers, roads meeting, nothing cut off by a river). Rerun it after changing exits or
+  anything set down by hand; `--preview out.png` draws it. The game lays the rivers where they're painted, a bridge
+  wherever a road crosses one (`WorldMap.layRivers`); the land slopes down to the sea and into the lakes
+  (`WorldMap.shore`, drawn sunk by `HillArt`). `Fairyland/World/Region.swift` is a land's shape; `Continent.swift` reads
   them: neighbours where shapes touch, open and walled borders (a border opens along its length once a road you can
   take joins the two lands, so none skips a quest), and the sea all round, each cell drawn by the nearest land
   (`BorderArt` draws the fences, rocks and city walls along the cell edges). Boxes overlap: a land lays out and

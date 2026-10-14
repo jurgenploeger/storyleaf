@@ -197,14 +197,19 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   it, and a mountain's upper slopes lighter still.
 - Lakes and rivers (ours, since 0.4.8, asked for in playtesting 2026-10-12: "more like RuneScape, with large
   lakes and interesting pathways and landscapes"); nothing here records whether FO's fields had them.
-  `theme.river` (from, to, width) runs a river in over one edge and out over another
-  (`WorldMap.carveRiver`): a Catmull-Rom curve through waypoints drifting up to 16 cells sideways, swelling and
-  narrowing a little, kept off the hub, the map's people and buildings, the arrivals, where a road leads into a
-  cave and 12 cells clear of where roads leave over the edges, and carrying on straight out into the fog past
-  them. Where it crosses a road, a bridge three lanes wide straight over it along whichever way the tiles run
-  crosses it more squarely, the road on either bank bent to meet it (`bridge(over:along:)`, `meetRoad`). Up to
-  16 tries, kept only if it crosses roads rather than running along them and leaves every bit of land in reach
-  of the hub (`cutOff`). `theme.lakes` (count, size, islands) digs big lakes (`digLakes`): a wobbly round
+  Since 0.6.0 the rivers are the continent's (playtesting 2026-10-14: "there should still be rivers running
+  through the lands"), painted with it by `tools/world_layout.py` from world.json `rivers`: each from a
+  spring (a pool a little wider than the river) out to the sea, through the turns of its `course`, meandering
+  a little and widening as it goes; two run on over a border into the next land, as RuneScape's rivers run
+  through its regions (the Snow White Forest into Swan Lake, Sunny Meadow into Frog Swamp), and Sunny Meadow,
+  the Smiling Forest, Briarmere and the Twilight Woods have one of their own. The tool keeps them clear of
+  towns, the roads' crossings, the middles and everything set down by hand, crosses roads square on where a
+  river's narrow and away from the sea, and checks nothing is cut off with no road over; the game lays them
+  where they're painted (`WorldMap.layRivers`, region codes 3 and 4), and no fence stands across one where it
+  runs over a border. 0.4.8 to 0.5.x drew one per map (`theme.river`: in over one edge and out over another,
+  `carveRiver`), which stopped at the line wherever it ran into another land. Where one crosses a road, a
+  bridge three lanes wide straight over it along whichever way the tiles run crosses it more squarely, the
+  road on either bank bent to meet it (`bridge(over:along:)`, `meetRoad`). `theme.lakes` (count, size, islands) digs big lakes (`digLakes`): a wobbly round
   (three waves round its shore, squashed and turned), where there's room (`clearance`), cut back to keep two and
   a half cells off roads and anything else, so a road passing near runs along its shore; a footbridge two
   lanes wide out to an island in the middle of as many as asked, and on each a jetty out into it from the shore
@@ -217,8 +222,7 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   water came up to its corner posts and it only touched the land. Nothing grows on a bridge or on the bank right
   beside its deck (since 0.4.13: playtesting 2026-10-12 found a fern standing on Smiling Forest's bridge, on a
   bank cell beside the deck that only the cells off its ends were kept clear of); reeds grow here and there along the shores,
-  more lily pads on a lake than a pond, and the minimap shows the bridges. Rivers: Sunny Meadow, Smiling Forest,
-  Briarmere. Lakes: Swan Lake, Ingothold Lake and Briarmere (each grown about 1.3× each way for room: 140×104,
+  more lily pads on a lake than a pond, and the minimap shows the bridges. Lakes: Swan Lake, Ingothold Lake and Briarmere (each grown about 1.3× each way for room: 140×104,
   130×96, 130×104), Frog Swamp, Lotus Land and Sunny Meadow. A lake that should have an island and comes out
   without one (no room for it well out in the water, or no footbridge out to it) is dug again while a try
   could still be big enough for one (since 0.4.9; Lotus Land's lake had none in 0.4.8).
@@ -377,10 +381,15 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     landscape areas with natural curves; the sea part should be lower than the land; I shouldn't be able to
     walk here", from a screenshot of the hero out on the sea): since 0.6.0 the coast is the land's shape
     itself (above); 0.5.x let the sea in over each rectangle's coast round whatever stood on the land. It
-    lies `WorldScene.seaDrop` (14 points) below the land: the land's edge is cut clear along it
-    (`ArtLibrary` style `cut`) over a bank of earth, the land's outline again in layers darkening toward the
-    water, foam at its foot (`bank`). `tools/world_layout.py --check --preview out.png` draws the
-    continent. The hero had walked out onto the sea by tapping it: a tap past the edge clamped to the edge
+    lies `WorldMap.seaDrop` (14 points) below the land, the land's edge cut clear along it (`ArtLibrary`
+    style `cut`), foam at its foot. Since 0.6.0 the land slopes down to it (playtesting 2026-10-14: "when
+    there is a sea or lake there needs to be a slope"): the shore is ground sunk below the land round it
+    (`WorldMap.shore`), the cell beside the water at the water's level and rising evenly over 4 cells to
+    the land's own, drawn as a hill is but sunk and lit by how it slopes (`HillArt`, `Hill.sunken`), so you
+    walk down to the water. The lakes sink 9 points the same way, over 3 cells, their bridges and lily pads
+    with them. Never under a hill (it rises to meet one), and not in a town, whose wall stands over the sea
+    on a bank of earth (the land's outline again in layers darkening toward the water, `bank`), as every
+    coast did before. `tools/world_layout.py --check --preview out.png` draws the continent. The hero had walked out onto the sea by tapping it: a tap past the edge clamped to the edge
     cell, which counted as the spot itself (`WorldMap.path`).
   - The world map (since 0.5.1, playtesting 2026-10-13: "the mini map should also open the bigger world
     map, similar to RuneScape"): tapping the minimap opens the continent as it really looks, every land's
@@ -388,9 +397,6 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     kept on disk), turned like the game, dragged and pinched like RuneScape's. Places you haven't been to
     are faded and named "???", a dark land shows only where you've seen, a quest's shut gate shows its
     lock, caves show where they open. It was a diagram of badges on the roads between places before.
-  - Not yet: a river that runs over a border into another land stops at the line. Since 0.6.0 a river's
-    ends go to its land's own shore, to the sea where it can, so fewer do. The fix is rivers that line up
-    across lands, like the roads.
 - Fairy-tale fields echo the lands: Genie Desert, Lotus Land (with Thumbelina), Gumdrop Peaks, Snow White
   Forest, Emerald Road.
 - Gumdrop Peaks is our nod to the Candy House land (Hansel and Gretel's Grasha Village): a sugar path,
