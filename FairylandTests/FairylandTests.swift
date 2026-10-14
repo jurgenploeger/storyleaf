@@ -2664,10 +2664,11 @@ struct PerformanceTests {
     /// How long one map may take to build. An optimised build, like the App Store's, should do it in
     /// a few seconds. A debug build runs this code many times slower: in the CI tests job (a simulator
     /// on a shared runner) the biggest maps took 50 to 91 s across runs of the same code (the runner's
-    /// speed swings that much), so there the bound only catches a map that's become pathologically
-    /// slow, and the job's log lists every map's time (⏱) to watch.
+    /// speed swings that much), and with the shores (0.6.0) Smiling Forest 145 to 152 s laid out and
+    /// built, so there the bound only catches a map that's become pathologically slow, and the job's
+    /// log lists every map's time (⏱) to watch.
     #if DEBUG
-    static let mapBuildLimit: Duration = .seconds(150)
+    static let mapBuildLimit: Duration = .seconds(200)
     #else
     static let mapBuildLimit: Duration = .seconds(3)
     #endif
