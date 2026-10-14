@@ -111,6 +111,15 @@ From a survey of the code on 2026-10-14:
 - **Depth.** The fixed layers move out of `-y`'s range (to ±60,000 and beyond). At those sizes a
   32-bit float is still finer than a hundredth of a point, which the small depth nudges need.
 
+**How step 2 is built (2026-10-14).** The chunks are drawn from the layouts and plans of the lands
+near you, kept while you're near (`ContinentScene`), each cell with its own land's code:
+- its tile from `GroundTiles` (makeGround's tile choice, moved out unchanged);
+- its scenery from the land's plan (`LandPlanner`);
+- its hills and shore from `HillArt`, for the squares in the chunk.
+
+A land's points sit in the continent's at a fixed shift, its origin projected, as a land next door's
+do today. So the border looks just as it does now, seams and all, with nothing left to stitch.
+
 ### 3. Walking, paths and heights from the store
 
 - **Standing.** `canStand` reads the store's walkable bits, plus closed borders and barricades.
