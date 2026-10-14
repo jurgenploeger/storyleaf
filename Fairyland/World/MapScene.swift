@@ -24,6 +24,16 @@ protocol MapScene: SKScene {
     func featherAway(then done: @escaping () -> Void)
     func awaitFeatherArrival()
     func featherArrive()
+    /// Debug launches walking you about: no battles on the way.
+    var holdsEncounters: Bool { get set }
+
+    #if DEBUG
+    func encounterForDebug()
+    func summonAdventurersForDebug(_ count: Int) -> [Adventurer]
+    func featherAwayForDebug()
+    func sayForDebug(_ text: String)
+    func localTellsForDebug()
+    #endif
 }
 
 extension WorldScene: MapScene {}

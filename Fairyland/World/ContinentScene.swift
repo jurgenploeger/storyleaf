@@ -2,10 +2,10 @@ import SpriteKit
 
 /// The continent as one place, with no borders (docs/continuous-world.md, step 2): every land on it
 /// drawn a chunk at a time round the camera (`World.chunkSize` cells a side), from the lands' own
-/// layouts and plans, each laid out as you come near it. So far its ground, sea, hills, shore,
-/// bridges and scenery, and you walking about on it (with the stick, or tapping where to go) from
-/// one land into the next, each greeting you by name; a debug launch shows it (`continent`) until it
-/// takes over from the lands' own scenes.
+/// layouts and plans, each laid out as you come near it: its ground, sea, hills, shore and scenery,
+/// its people and animals, its air, and you and your party walking about on it from one land into
+/// the next with no border between them, each greeting you by name. Caves keep scenes of their own
+/// (`WorldScene`), behind the loading card.
 final class ContinentScene: SKScene {
     private let session: GameSession
     private let input: InputState
@@ -134,11 +134,18 @@ final class ContinentScene: SKScene {
     /// The air of each land you've been in (`Air`), by its id.
     private var airs: [String: Air] = [:]
     private var sunTimer: TimeInterval = 0
+    /// Whether you've been put somewhere on it (`place`): till then it draws nothing.
+    private var placed = false
+    /// Lands laid out already (`adopt`: the one a save starts in, laid out off the main thread as
+    /// the game opened), taken instead of laying them out again.
+    private var laidOut: [String: WorldMap] = [:]
     private var pinchStartZoom: CGFloat = 1
     private lazy var pinch = UIPinchGestureRecognizer(target: self, action: #selector(pinched(_:)))
 
-    /// `point`: where you start, in the continent's points.
-    init(session: GameSession, input: InputState, at point: CGPoint) {
+    /// `point`: where you start, in the continent's points; none till you're put somewhere (`place`).
+    init(session: GameSession, input: InputState, at start: CGPoint? = nil) {
+        let point = start ?? .zero
+        placed = start != nil
         self.session = session
         self.input = input
         player = Walker(cycle: ArtLibrary.shared.walkCycle(GameSession.heroArt), label: session.data.hero.name)
@@ -872,7 +879,37 @@ final class ContinentScene: SKScene {
     }
 
     #if DEBUG
-    /// Debug launches (`continent,near=<land>,crossing`): walks you over the line into that land, to
+    /// Debug launches (`demo`): a monster jumps out right here, as one does while you walk the wild.
+    func encounterForDebug() {
+        guard !isInputLocked, let encounters = here?.encounters else { return }
+        stepsSinceBattle = 0
+        startEncounter(encounters)
+    }
+
+    /// Debug launches (`invite=n`): the nearest friendly adventurers, brought over to stand by you.
+    func summonAdventurersForDebug(_ count: Int) -> [Adventurer] {
+        guard let here, let stage = lands[here.id]?.stage else { return [] }
+        return stage.crowd?.summonForDebug(count, to: stage.local(player.position)) ?? []
+    }
+
+    /// Debug launches (`feather`): a Homeward Feather's lift without going anywhere, held part-way.
+    func featherAwayForDebug() {
+        featherAway {}
+        run(.sequence([.wait(forDuration: 1.2), .run { [weak self] in self?.isPaused = true }]))
+    }
+
+    /// Debug launches (`say=<text>`): a speech bubble over you that stays.
+    func sayForDebug(_ text: String) {
+        player.say(text, for: 600)
+    }
+
+    /// Debug launches (`local=n`): the local you start beside tells you the first line of their story.
+    func localTellsForDebug() {
+        guard let here, let stage = lands[here.id]?.stage else { return }
+        stage.crowd?.tellForDebug(near: stage.local(player.position))
+    }
+
+    /// Debug launches (`near=<land>,crossing`): walks you over the line into that land, to
     /// the nearest cell of it you can walk to with its own land all round it, and returns once
     /// you're in it (or after half a minute).
     func walkIntoForDebug(_ id: String) async {
@@ -907,6 +944,11 @@ final class ContinentScene: SKScene {
 
     // MARK: Being put somewhere
 
+    /// A land laid out already, to take instead of laying it out again.
+    func adopt(_ map: WorldMap) {
+        laidOut[map.def.id] = map
+    }
+
     /// Puts you somewhere on the continent at once (a new game, out of a cave, a Homeward Feather,
     /// waking at your checkpoint): on `def`'s land at `arrival` (its own points), or just inside
     /// where its road from `entry` comes in, or in its middle, on ground you can stand on, as a land's
@@ -915,6 +957,7 @@ final class ContinentScene: SKScene {
     func place(on def: MapDef, entry: Edge?, arrival: CGPoint?) async {
         guard store.land(def.id) != nil else { return }
         isReady = false
+        placed = true
         here = nil
         lastCell = nil
         layOut(def.id)
@@ -1007,6 +1050,7 @@ final class ContinentScene: SKScene {
     /// Draws the chunks round the camera that aren't yet (laying out the lands they need first),
     /// and lets go of those far off.
     private func lookAround() {
+        guard placed else { return }
         let middle = World.chunk(of: Self.cell(at: cam.position))
         var missing = 0
         for dr in -Self.reach...Self.reach {
@@ -1074,7 +1118,13 @@ final class ContinentScene: SKScene {
         guard !laying.contains(id), let def = Content.shared.map(id), let place = store.land(id) else { return }
         laying.insert(id)
         Task { [weak self] in
-            let map = await GameCoordinator.layOut(def)
+            let ready = self?.laidOut.removeValue(forKey: id)
+            let map: WorldMap
+            if let ready {
+                map = ready
+            } else {
+                map = await GameCoordinator.layOut(def)
+            }
             guard let self else { return }
             let rest = self.pause(for: def)
             art.use(palette: def.theme.palette, for: def.id)

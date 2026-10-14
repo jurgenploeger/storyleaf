@@ -12,7 +12,7 @@ struct AdventurerCard: View {
     var body: some View {
         let stats = session.stats(of: adventurer)
         let content = session.content
-        let danger = coordinator.world.def.danger == true
+        let danger = coordinator.currentLand.danger == true
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 // Their picture opens their stats.
