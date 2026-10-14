@@ -28,8 +28,10 @@ jobs:
     runs-on: macos-26
     # The suite builds every map several times in a debug build: 23 minutes on 2026-10-12, over
     # 30 with the continent's tests, 38 before the coasts (2026-10-13) and past 42 after, so 45
-    # cut it off before it could report.
-    timeout-minutes: 75
+    # cut it off before it could report; 47 at 0.5.3, and past 75 with 0.6.0's shores (2026-10-14).
+    # The tests step has a limit of its own, short of the job's, so `Test timings` still says
+    # where the time went when it runs out.
+    timeout-minutes: 95
     steps:
       - uses: actions/checkout@v4
 
@@ -39,6 +41,7 @@ jobs:
           xcodegen generate
 
       - name: Run the tests
+        timeout-minutes: 85
         run: |
           UDID=$(xcrun simctl list devices available | grep -m1 -E 'iPhone 1[6-9] Pro \(' | grep -oE '[0-9A-F-]{36}')
           test -n "$UDID" || { xcrun simctl list devices available; exit 1; }
@@ -53,6 +56,21 @@ jobs:
             tools/ci_errors.sh build/tests.log; exit 1
           fi
           grep -E 'Test run with|Executed' build/tests.log | tail -3
+
+      # Pass, fail or out of time: the slowest tests, and any that started and never finished.
+      - name: Test timings
+        if: always()
+        run: |
+          [ -f build/tests.log ] || exit 0
+          echo "Slowest tests (seconds):"
+          grep -E '(✔|✘) Test .* after [0-9.]+ seconds' build/tests.log \
+            | sed -E 's/.*Test (.*) (passed|failed) after ([0-9.]+) seconds.*/\3 \1 (\2)/' | sort -rn | head -25 || true
+          grep -oE '◇ Test [A-Za-z0-9_]+\(' build/tests.log | sed -E 's/◇ Test //' | sort -u > build/started.txt || true
+          grep -oE '(✔|✘) Test [A-Za-z0-9_]+\(' build/tests.log | sed -E 's/^(✔|✘) Test //' | sort -u > build/ended.txt || true
+          echo "Started, never finished:"
+          comm -23 build/started.txt build/ended.txt || true
+          echo "The log's last lines:"
+          tail -15 build/tests.log || true
 
   screenshots:
     runs-on: macos-26

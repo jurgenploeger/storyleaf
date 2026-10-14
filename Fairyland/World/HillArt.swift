@@ -361,8 +361,11 @@ enum HillArt {
                 }
                 context.interpolationQuality = .medium
             }
-            await shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint,
-                        brightest: Float(look.brightest), pause: pause)
+            // Sunk ground is lit only by the shader (its `light` is 1 all over: nothing to shade).
+            if !hill.sunken {
+                await shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint,
+                            brightest: Float(look.brightest), pause: pause)
+            }
             if let doorway { Self.cave(doorway, in: context, at: { spot($0) }) }
             if let outline {
                 context.setBlendMode(.destinationIn)
@@ -411,15 +414,19 @@ enum HillArt {
         ]
 
         let across = WorldMap.project(CGPoint(x: tile, y: 0)).x
+        // The cells that show in each square, by its corner, sorted out once (not the whole range
+        // gone through again for every square: a coast's shore has thousands).
+        func floored(_ value: Int) -> Int { value >= 0 ? value / square : -((-value + square - 1) / square) }
+        var bySquare: [GridPoint: [GridPoint]] = [:]
+        for cell in shown {
+            let corner = GridPoint(col: low.col + floored(cell.col - low.col) * square, row: low.row + floored(cell.row - low.row) * square)
+            bySquare[corner, default: []].append(cell)
+        }
         var sprites: [SKSpriteNode] = []
         for top in stride(from: low.row, to: low.row + rows, by: square) {
             for left in stride(from: low.col, to: low.col + columns, by: square) {
                 let corner = GridPoint(col: left, row: top)
-                let own = shown.filter { cell in
-                    let dc = cell.col - corner.col, dr = cell.row - corner.row
-                    return dc >= 0 && dr >= 0 && dc < square && dr < square
-                }
-                guard !own.isEmpty else { continue }
+                guard let own = bySquare[corner], !own.isEmpty else { continue }
                 await pause()
                 guard let picture = await paint(corner) else { continue }
                 let texture = SKTexture(cgImage: picture)
