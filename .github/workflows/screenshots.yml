@@ -69,6 +69,9 @@ jobs:
           grep -oE '(✔|✘) Test [A-Za-z0-9_]+\(' build/tests.log | sed -E 's/^(✔|✘) Test //' | sort -u > build/ended.txt || true
           echo "Started, never finished:"
           comm -23 build/started.txt build/ended.txt || true
+          # Out of time, the step above never gets to say why tests failed: what each one recorded.
+          echo "Issues recorded:"
+          grep -E '✘ Test .*recorded an issue|↳' build/tests.log | sort -u | head -80 || true
           echo "The log's last lines:"
           tail -15 build/tests.log || true
 

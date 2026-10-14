@@ -2684,20 +2684,23 @@ struct PerformanceTests {
         }
     }
 
-    /// Every map must build, and quickly; this prints how long each one takes.
-    @Test func mapsBuildQuickly() async {
+    /// Every map must build, and quickly; this prints how long each one takes: laying it out (the
+    /// grid, off the main thread in the game) and building its scene on that layout, as the game
+    /// does (the scene isn't made to lay it out again).
+    @Test func mapsBuildQuickly() async throws {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         for def in Content.shared.maps {
             let clock = ContinuousClock()
-            var grid: WorldMap?
-            let gridTime = clock.measure { grid = WorldMap(def: def) }
+            var laidOut: WorldMap?
+            let gridTime = clock.measure { laidOut = WorldMap(def: def) }
+            let grid = try #require(laidOut)
             let start = clock.now
-            let scene = WorldScene(map: def, session: session, input: InputState(), entry: nil)
+            let scene = WorldScene(map: def, session: session, input: InputState(), entry: nil, grid: grid)
             await scene.build { _ in }
             let sceneTime = clock.now - start
             #expect(scene.isBuilt)
-            print("⏱ \(def.id): grid \(gridTime), scene \(sceneTime), cells \(grid!.columns * grid!.rows)")
-            #expect(sceneTime < Self.mapBuildLimit, "\(def.id) took \(sceneTime) to build")
+            print("⏱ \(def.id): grid \(gridTime), scene \(sceneTime), cells \(grid.columns * grid.rows)")
+            #expect(gridTime + sceneTime < Self.mapBuildLimit, "\(def.id) took \(gridTime + sceneTime) to build")
         }
     }
 }
