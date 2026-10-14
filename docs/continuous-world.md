@@ -72,6 +72,15 @@ From a survey of the code on 2026-10-14:
   - its height samples;
   - whether you can walk there;
   - the placements in it.
+- **Compact, and the layouts let go.** A laid-out `WorldMap` is several MB with its GameplayKit graph
+  and its hills' height grids, so the 27 can't all stay in memory. Each land is laid out, copied into
+  the store and let go. What the store keeps:
+  - a byte or two a cell for the land and the ground, and a bit for walking: about 1.4 MB for all
+    650,000 cells;
+  - height samples (4 a cell) only for chunks with hills, shore or terraces, as 16-bit floats: 33 KB a
+    chunk, under 21 MB if every chunk had some. On disk, read in for the chunks round you;
+  - the placements, and each hill's own drawing data (its heights, trails and outline), saved with
+    its land and read in by the chunks it covers.
 - **Seams and shore over the continent.** Seams are worked out by the store as distance to the land
   boundary, with the same patch noise. Shore heights come from one distance field to the sea and the
   lakes over the whole continent: 650,000 cells, a fraction of a second.
@@ -167,7 +176,7 @@ Each step is its own PR and leaves the game playable. The old engine stays the d
    - the land you're in (music, light, weather, encounters);
    - NPCs, crowd and critters as you come near.
 
-   A hidden Settings switch turns it on in TestFlight builds.
+   With the banner that names the land you walk into.
 4. **Saves, minimap, world map.** Saves go to version 3 with the conversion and its fixture tests; the
    minimap and the world map come from the store.
 5. **Switch over.** The continent scene becomes the game; caves stay as they are. The border and
@@ -183,15 +192,16 @@ Each step is its own PR and leaves the game playable. The old engine stays the d
   squares each is about 100 MB of pictures at worst; tile maps are small. Check on a phone in step 6.
 - **Determinism.** Each land keeps its own seeds, so it comes out the same every time. If it ever
   doesn't, a save could stand in rock: the repair moves you off it.
-- **Nobody can run the app from a cloud session.** Every step lands behind a flag with CI screenshots
-  first, and you try it on TestFlight before the switch-over.
+- **Nobody can run the app from a cloud session.** Every step lands behind a debug flag with CI
+  screenshots first; TestFlight gets it at the switch-over.
 - **Hand-placed content.** The `at` and `x`/`y` offsets in maps.json stay offsets from each land's
   middle: the tool, the checker and the content don't change.
 
-## Questions for you
+## Decided (2026-10-14)
 
-1. Places a quest keeps you out of: fences or rocks along their edge, as now. Is that right?
-2. Entering a land: a banner with its name fading in at the top of the screen, as well as the chat
-   line?
-3. Step 3 on TestFlight: a hidden switch in Settings to try the new world, or straight to the
-   switch-over once the screenshots look right?
+1. Places a quest keeps you out of keep fences or rocks along their edge, which block you until the
+   quest's done.
+2. Entering a land shows a banner with its name, fading in at the top of the screen, as well as the
+   chat line.
+3. No switch in Settings: steps 2 to 4 are behind a debug flag for CI's screenshots only, and step 5
+   switches the game over once they look right.
