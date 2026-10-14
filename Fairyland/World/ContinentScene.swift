@@ -554,7 +554,13 @@ final class ContinentScene: SKScene {
         hidden += layer.children.filter { $0.name == Effects.tapMarkerName }
         hidden.forEach { $0.isHidden = true }
         defer { hidden.forEach { $0.isHidden = false } }
-        return view?.texture(from: layer, crop: visible)
+        guard let picture = view?.texture(from: layer, crop: visible) else { return nil }
+        // One with nothing in it (as debug launches on CI get), none: the battle's own ground then
+        // rather than its bare colour. The map's ground fills the screen, so a few points tell.
+        let side = 16
+        guard let pixels = PixelCanvas.pixels(of: picture.cgImage(), width: side, height: side),
+              stride(from: 3, to: pixels.count, by: 4).contains(where: { pixels[$0] > 0 }) else { return nil }
+        return picture
     }
 
     // MARK: Talk, duels and the Homeward Feather (`MapScene`)
