@@ -558,7 +558,7 @@ final class ContinentScene: SKScene {
         // One with nothing in it (as debug launches on CI get), none: the battle's own ground then
         // rather than its bare colour. The map's ground fills the screen, so a few points tell.
         let side = 16
-        guard let pixels = PixelCanvas.pixels(of: picture.cgImage(), width: side, height: side),
+        guard let pixels = PixelImage.pixels(of: picture.cgImage(), width: side, height: side),
               stride(from: 3, to: pixels.count, by: 4).contains(where: { pixels[$0] > 0 }) else { return nil }
         return picture
     }
