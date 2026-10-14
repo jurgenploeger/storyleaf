@@ -10,6 +10,20 @@ protocol MapScene: SKScene {
     func resume()
     /// What's on screen for behind a battle, the party (and a boss, `npcID`) left out.
     func battleBackdrop(hiding npcID: String?) -> SKTexture?
+    /// The HUD's Talk button: whoever's near enough.
+    func talkToNearby()
+    /// You said something in the Chat window.
+    func heroSay(_ text: String)
+    /// An adventurer's answer, in a bubble over them.
+    func adventurerSays(_ line: String, _ id: UUID)
+    /// After a duel you won, the rival skulks off.
+    func dismissAdventurer(_ id: UUID)
+    /// A duel with an adventurer, from their card.
+    func startDuel(with rival: Adventurer)
+    /// A Homeward Feather taking you away, then `done`; and bringing you down where you arrive.
+    func featherAway(then done: @escaping () -> Void)
+    func awaitFeatherArrival()
+    func featherArrive()
 }
 
 extension WorldScene: MapScene {}

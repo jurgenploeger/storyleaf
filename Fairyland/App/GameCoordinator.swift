@@ -170,6 +170,7 @@ final class GameCoordinator {
         scene.onTalk = { [weak self] npc in self?.open(.npc(npc.id)) }
         scene.onInspect = { [weak self] profile in self?.open(.profile(profile)) }
         scene.onEncounter = { [weak self] encounters, backdrop in self?.startBattle(encounters, backdrop: backdrop) }
+        scene.onDuel = { [weak self] rival, backdrop in self?.startDuel(with: rival, backdrop: backdrop) }
         // Into a cave: the continent's let go, and the cave's built behind the card as ever.
         scene.onTravel = { [weak self] exit in
             self?.continent = nil
@@ -456,7 +457,7 @@ final class GameCoordinator {
     /// From the adventurer card: befriend, invite along, or challenge.
     func befriend(_ adventurer: Adventurer) {
         if session.befriend(adventurer) {
-            world.adventurerSays([L("Yay, friends! ^_^"), L("Sure! Let's adventure sometime!"), L("Friends! :D")].randomElement()!, adventurer.id)
+            mapScene.adventurerSays([L("Yay, friends! ^_^"), L("Sure! Let's adventure sometime!"), L("Friends! :D")].randomElement()!, adventurer.id)
         }
     }
 
@@ -470,7 +471,7 @@ final class GameCoordinator {
     }
 
     func challenge(_ adventurer: Adventurer) {
-        world.startDuel(with: adventurer)
+        mapScene.startDuel(with: adventurer)
     }
 
     #if DEBUG
@@ -484,7 +485,7 @@ final class GameCoordinator {
         let fainted = battle?.heroIsDown == true
         battle = nil
         battleScene = nil
-        if let rival, outcome == .victory { world.dismissAdventurer(rival.id) }
+        if let rival, outcome == .victory { mapScene.dismissAdventurer(rival.id) }
         rival = nil
         if let boss, outcome == .victory { session.defeatBoss(boss) }
         boss = nil
@@ -580,7 +581,7 @@ final class GameCoordinator {
             // the other end (finishLoading).
             overlay = nil
             SoundEffects.shared.play(.whoosh)
-            world.featherAway { [weak self] in
+            mapScene.featherAway { [weak self] in
                 guard let self else { return }
                 arrivesByFeather = true
                 carry(to: map, saying: line, sound: false)
@@ -607,10 +608,10 @@ final class GameCoordinator {
     }
 
     func talkToNearby() {
-        world.talkToNearby()
+        mapScene.talkToNearby()
     }
 
     func say(_ text: String) {
-        world.heroSay(text)
+        mapScene.heroSay(text)
     }
 }

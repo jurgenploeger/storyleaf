@@ -102,6 +102,12 @@ final class ContinentScene: SKScene {
     var onEncounter: (@MainActor (MapDef.Encounters, SKTexture?) -> Void)?
     /// Into a cave through its mouth (off the continent: behind the card, as ever).
     var onTravel: (@MainActor (MapDef.Exit) -> Void)?
+    /// A duel with an adventurer who dared you (or you them), and what was on screen behind it.
+    var onDuel: (@MainActor (Adventurer, SKTexture?) -> Void)?
+    /// Whoever of the lands' people is near enough to talk to (the HUD's Talk button), by land.
+    private var nearbyTalk: (land: String, npc: String)?
+    /// What happens once a Homeward Feather has lifted you away (`featherAway`).
+    private var onFeatherGone: (() -> Void)?
     /// Set while a window or a battle is up (`MapScene`).
     var isInputLocked = false
     /// Debug launches walking you about (`crossing`): no battles on the way.
@@ -482,6 +488,146 @@ final class ContinentScene: SKScene {
         return view?.texture(from: layer, crop: visible)
     }
 
+    // MARK: Talk, duels and the Homeward Feather (`MapScene`)
+
+    /// The HUD's Talk button: whoever's near enough, unless something else has the map.
+    func talkToNearby() {
+        guard !isInputLocked, let near = nearbyTalk, let stage = lands[near.land]?.stage,
+              let npc = stage.npcs.first(where: { $0.def.id == near.npc }) else { return }
+        talkTarget = nil
+        player.path = []
+        player.setWalking(false)
+        player.face(Direction(npc.node.position + stage.shift - player.position))
+        onTalk?(npc.def)
+    }
+
+    /// You said something in the Chat window: a bubble over your head, and maybe an answer from
+    /// someone about you.
+    func heroSay(_ text: String) {
+        player.say(text)
+        session.postChat(text, from: session.data.hero.name, kind: .you)
+        if let here, let stage = lands[here.id]?.stage { stage.crowd?.reply(near: stage.local(player.position)) }
+    }
+
+    /// An adventurer's answer (befriended, invited), in a bubble over them, wherever they are.
+    func adventurerSays(_ line: String, _ id: UUID) {
+        for land in lands.values { land.stage.crowd?.say(line, from: id) }
+    }
+
+    /// After a duel you won, the rival skulks off.
+    func dismissAdventurer(_ id: UUID) {
+        for land in lands.values { land.stage.crowd?.remove(id, poof: true) }
+        if session.nearbyAdventurer?.id == id { session.nearbyAdventurer = nil }
+    }
+
+    /// A duel: the screen flashes red twice and it begins, where you stand.
+    func startDuel(with rival: Adventurer) {
+        guard !isInputLocked else { return }
+        isInputLocked = true
+        player.path = []
+        talkTarget = nil
+        player.setWalking(false)
+        let flash = SKSpriteNode(color: UIColor(red: 1, green: 0.4, blue: 0.35, alpha: 1), size: size)
+        flash.alpha = 0
+        flash.zPosition = 50_000
+        cam.addChild(flash)
+        Task {
+            await flash.run(.sequence([.fadeAlpha(to: 0.7, duration: 0.1), .fadeAlpha(to: 0, duration: 0.1), .fadeAlpha(to: 0.7, duration: 0.1), .fadeAlpha(to: 0, duration: 0.1)]))
+            flash.removeFromParent()
+            onDuel?(rival, battleBackdrop(hiding: nil))
+        }
+    }
+
+    /// A Homeward Feather's arrival (`featherArrive`), timed as on a land's own map
+    /// (`WorldScene.Feather`); its departure (`featherAway`) is the same played backward.
+    private enum Feather {
+        static let height: CGFloat = 90
+        static let drop = 0.85, appear = 0.45
+        static let hold = 0.5, fade = 0.6
+        static let count = 12
+        static let flight = 1.2, stagger = 0.04
+        static let length = flight + stagger * Double(count - 1)
+        static let light = UIColor(red: 1, green: 0.95, blue: 0.78, alpha: 1)
+    }
+
+    /// A Homeward Feather taking you away: feathers spiral up round you, the column of light shines,
+    /// and you rise into it and fade; then `done`.
+    func featherAway(then done: @escaping () -> Void) {
+        isInputLocked = true
+        player.path = []
+        player.setWalking(false)
+        player.idles = false
+        let column = featherColumn(over: player.position)
+        column.alpha = 0
+        column.run(.sequence([.wait(forDuration: Feather.length - Feather.hold - Feather.fade), .fadeAlpha(to: 0.9, duration: Feather.fade)]))
+        featherGust(around: player.position, backward: true)
+        let lift = SKAction.moveBy(x: 0, y: Feather.height, duration: Feather.drop)
+        lift.timingMode = .easeIn
+        player.sprite.run(.sequence([.wait(forDuration: Feather.length - Feather.drop), lift]), withKey: "feather")
+        player.run(.sequence([.wait(forDuration: Feather.length - Feather.appear), .fadeOut(withDuration: Feather.appear)]))
+        onFeatherGone = done
+        Task {
+            await run(.wait(forDuration: Feather.length))
+            let gone = onFeatherGone
+            onFeatherGone = nil
+            gone?()
+        }
+    }
+
+    /// Before you're shown: you aren't there yet (`featherArrive` brings you down).
+    func awaitFeatherArrival() {
+        player.idles = false
+        player.alpha = 0
+        player.sprite.position = CGPoint(x: 0, y: Feather.height)
+    }
+
+    /// Arriving by Homeward Feather: you float down in the light as the feathers settle.
+    func featherArrive() {
+        let column = featherColumn(over: player.position)
+        column.alpha = 0.9
+        column.run(.sequence([.wait(forDuration: Feather.hold), .fadeOut(withDuration: Feather.fade), .removeFromParent()]))
+        featherGust(around: player.position, backward: false)
+        player.run(.fadeIn(withDuration: Feather.appear))
+        let drop = SKAction.move(to: .zero, duration: Feather.drop)
+        drop.timingMode = .easeOut
+        player.sprite.run(.sequence([drop, .run { [weak self] in self?.player.idles = true }]), withKey: "feather")
+    }
+
+    /// The soft column of light you rise into or come down in.
+    private func featherColumn(over point: CGPoint) -> SKSpriteNode {
+        let column = SkillEffects.glowSprite(Feather.light, size: CGSize(width: 70, height: 230))
+        column.position = point + CGVector(dx: 0, dy: 80)
+        column.zPosition = 30_000
+        layer.addChild(column)
+        return column
+    }
+
+    /// Feathers whirling round `center`: spiralling down from high up and out to settle, one after
+    /// another; `backward`, the same played backward, as you leave.
+    private func featherGust(around center: CGPoint, backward: Bool) {
+        let texture = ArtLibrary.shared.sprite("item_homeward_feather").texture
+        let flight = CGFloat(Feather.flight)
+        for index in 0..<Feather.count {
+            let feather = SKSpriteNode(texture: texture, size: CGSize(width: 18, height: 18))
+            feather.zPosition = 30_001
+            feather.alpha = 0
+            layer.addChild(feather)
+            let phase = CGFloat(index) / CGFloat(Feather.count) * 2 * .pi
+            let spin = SKAction.customAction(withDuration: Feather.flight) { node, elapsed in
+                let t = min(1, elapsed / flight)
+                let s = backward ? 1 - t : t
+                let p = 1 - s
+                let angle = phase + p * 4.4 * .pi
+                let radius = 34 - 14 * p
+                node.position = CGPoint(x: center.x + cos(angle) * radius, y: center.y + 6 + p * 140 + sin(angle) * radius * 0.35)
+                node.zRotation = angle
+                node.alpha = min(1, s * 5, (1 - s) * 4)
+            }
+            let order = backward ? Feather.count - 1 - index : index
+            feather.run(.sequence([.wait(forDuration: Double(order) * Feather.stagger), spin, .removeFromParent()]))
+        }
+    }
+
     /// Back from a battle or a window (`MapScene`): you can walk again, as whoever you've become.
     func resume() {
         openBorders = [:]
@@ -696,8 +842,23 @@ final class ContinentScene: SKScene {
             let marks = stage.minimapMarks()
             if session.minimapMarks != marks { session.minimapMarks = marks }
         }
-        // The lands' people: their quest marks, and townsfolk watching you pass.
-        for land in lands.values { _ = land.stage.updateNotices(player: player.position, reach: talkRange + 12) }
+        // The lands' people: their quest marks, townsfolk watching you pass, and who's near enough to
+        // talk to (the HUD's Talk button); and the adventurers about you in the land you're in.
+        var nearest: (land: String, npc: NPCDef, distance: CGFloat)?
+        for land in lands.values {
+            guard let near = land.stage.updateNotices(player: player.position, reach: talkRange + 12),
+                  near.distance < (nearest?.distance ?? .infinity) else { continue }
+            nearest = (land.def.id, near.npc, near.distance)
+        }
+        nearbyTalk = nearest.map { ($0.land, $0.npc.id) }
+        if session.nearbyNPC != nearest?.npc.id { session.nearbyNPC = nearest?.npc.id }
+        if let here, let stage = lands[here.id]?.stage, let crowd = stage.crowd {
+            let you = stage.local(player.position)
+            let nearby = crowd.adventurer(near: you, within: 80)
+            if session.nearbyAdventurer?.id != nearby?.id { session.nearbyAdventurer = nearby }
+            let around = crowd.adventurers(near: you, within: 320)
+            if session.adventurersAround != around { session.adventurersAround = around }
+        }
         for chunk in chunks.keys where max(abs(chunk.col - here.col), abs(chunk.row - here.row)) > Self.keep {
             if let gone = chunks.removeValue(forKey: chunk) {
                 gone.ground.removeFromParent()
@@ -731,6 +892,11 @@ final class ContinentScene: SKScene {
             let painters = await ranges(of: map, tiles: tiles, place: place, pause: rest)
             let stage = LandStage(def: def, map: map, plan: planner.plan, tiles: tiles, art: art, session: session, shift: Self.shift(of: place))
             await stage.build(pause: rest)
+            // Its adventurers spoiling for a fight dare you only in the land you're in.
+            stage.crowd?.onChallenge = { [weak self, weak stage] rival in
+                guard let self, stage?.isHere == true, !self.isInputLocked else { return }
+                self.startDuel(with: rival)
+            }
             layer.addChild(stage.world)
             let land = Land(def: def, place: place, map: map, tiles: tiles, painters: painters, stage: stage)
             lands[id] = land
