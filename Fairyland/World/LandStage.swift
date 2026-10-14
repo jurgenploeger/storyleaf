@@ -1,11 +1,17 @@
 import SpriteKit
 
+/// What a land's things on the continent are kept in (`LandStage.world`): whoever walks in it stands
+/// on that land's ground (`Walker.settle`).
+final class StageNode: SKNode {
+    weak var stage: LandStage?
+}
+
 /// A land's own things on the continent (`ContinentScene`), set down in its own points where its
 /// plan put them (`LandPlanner`), as its own scene sets them down (`WorldScene.build`): its scenery
 /// and buildings, its town's fence and terraces, lamps and fountains, the crags round a cave's mouth,
 /// lily pads, fairy rings, its bridges' rails, its people, signposts, and the fences along the
-/// borders a quest keeps closed. Its ground, hills and shore are the continent's
-/// (`ContinentScene.draw`).
+/// borders a quest keeps closed; and its passers-by and animals, going about as you come near. Its
+/// ground, hills and shore are the continent's (`ContinentScene.draw`).
 ///
 /// Kept in pieces of the screen (`chunk(at:)`), only those near the camera in the scene (`show`),
 /// as its own scene keeps them: a wooded land's thousands of trees cost nothing out of sight.
@@ -14,14 +20,20 @@ final class LandStage {
     let map: WorldMap
     /// Everything of it, at its shift on the continent: its points are the land's own, and its depth
     /// too (`-y` in its own points, less its shift's), so it sorts among everything else there.
-    let world = SKNode()
+    let world = StageNode()
     /// The people who stand about it (`placeNPCs`), with their quest marks.
     private(set) var npcs: [(def: NPCDef, node: Walker, marker: NameTag)] = []
+    /// Its passers-by, traders and locals (`Crowd`), and its animals (`Critters`).
+    private(set) var crowd: Crowd?
+    private var critters: Critters?
+    /// Whether it's the land you're in: only then do its passers-by's chats reach yours.
+    var isHere = false
+    /// Where its own points lie in the continent's.
+    let shift: CGVector
     private let art: ArtLibrary
     private let session: GameSession
     private let plan: LandPlan
     private let tiles: GroundTiles
-    private let shift: CGVector
     private var chunks: [GridPoint: SKNode] = [:]
     /// Each chunk's layers that keep a depth of the continent's own (`layer(at:lift:)`).
     private var layers: [GridPoint: [CGFloat: SKNode]] = [:]
@@ -46,7 +58,14 @@ final class LandStage {
         self.shift = shift
         world.position = CGPoint(x: shift.dx, y: shift.dy)
         world.zPosition = -shift.dy
+        world.stage = self
     }
+
+    /// How high its ground stands under a point of its own (a hilltop, a terrace, down the shore).
+    func groundHeight(at point: CGPoint) -> CGFloat { map.height(at: point) }
+
+    /// A point of the continent's in its own points.
+    func local(_ point: CGPoint) -> CGPoint { CGPoint(x: point.x - shift.dx, y: point.y - shift.dy) }
 
     /// Sets it all down, a piece at a time (`pause` between them: grading with its own palette).
     func build(pause: @escaping () async -> Void) async {
@@ -71,6 +90,74 @@ final class LandStage {
         placePlateaus()
         placeBorders()
         for npc in npcs { npc.node.settle() }
+        await pause()
+        // A town's market traders sell what they have today, around your level.
+        let market = Crowd.Market(sign: { [weak session] in session?.marketSign(for: $0) },
+                                  shout: { [weak session] in session?.marketShout(for: $0) },
+                                  level: session.data.hero.level)
+        let crowd = Crowd(def: def, map: map, world: world, heroLevel: session.data.hero.level, market: market, locals: plan.locals)
+        crowd.onChat = { [weak self, weak session] speaker, text, kind in
+            guard self?.isHere == true else { return }
+            session?.postChat(text, from: speaker, kind: kind)
+        }
+        crowd.dares = { [weak session] rival in session?.dares(rival) ?? false }
+        self.crowd = crowd
+        critters = Critters(def.ambience, world: world, map: map, seed: def.id)
+    }
+
+    /// A frame of its life (`player` and `camera` in the continent's points, the screen at
+    /// `scale`): its people stroll and its animals mind you as you come near, and its pieces near the
+    /// camera are in the scene.
+    func update(dt: TimeInterval, player: CGPoint, camera: CGPoint, scale: CGFloat, screen: CGSize) {
+        let you = local(player), eye = local(camera)
+        crowd?.update(dt: dt, player: you)
+        let visible = CGRect(x: eye.x - screen.width / 2 * scale, y: eye.y - screen.height / 2 * scale,
+                             width: screen.width * scale, height: screen.height * scale)
+        critters?.update(dt: dt, player: you, visible: visible) { [map] in map.isWalkable(map.rawCell(at: $0)) }
+        show(around: camera, scale: scale, screen: screen)
+    }
+
+    /// Its people's quest marks (`!` news, `?` done), opened chests and beaten bosses, and its
+    /// townsfolk turning to watch you pass (`player` in the continent's points), as
+    /// `WorldScene.updateNotices` has them. The one nearest you within `reach`, if any, and how near.
+    func updateNotices(player: CGPoint, reach: CGFloat) -> (npc: NPCDef, distance: CGFloat)? {
+        let you = local(player)
+        var nearest: (npc: NPCDef, distance: CGFloat)?
+        for npc in npcs {
+            npc.node.isNear = npc.node.position.distance(to: you) < Walker.nameRange
+            if npc.def.role == .chest, session.isOpened(npc.def.id), npc.node.alpha > 0.5 {
+                npc.node.run(.fadeAlpha(to: 0.35, duration: 0.3))
+            }
+            if npc.def.role == .boss, session.isBeatenHere(npc.def) {
+                if !npc.node.isHidden {
+                    SkillEffects.smoke(at: npc.node.position, in: world)
+                    npc.node.isHidden = true
+                }
+                continue
+            }
+            let notice = session.notice(for: npc.def.id)
+            npc.marker.isHidden = notice == nil
+            if let notice { npc.marker.setText(notice == .ready ? "?" : "!") }
+            let distance = you.distance(to: npc.node.position)
+            if distance <= reach, distance < (nearest?.distance ?? .infinity) { nearest = (npc.def, distance) }
+            // Townsfolk at their posts turn to watch you pass, and glance around otherwise.
+            if npc.def.role != .chest, npc.def.role != .boss {
+                if distance < 130 {
+                    npc.node.face(Direction(you - npc.node.position, current: npc.node.facing))
+                } else if Int.random(in: 0..<12) == 0 {
+                    npc.node.face(Direction.allCases.randomElement() ?? .down)
+                }
+            }
+        }
+        return nearest
+    }
+
+    /// Whoever of its people was tapped at `point` (the continent's): one of its own, by where they
+    /// stand (and how high), unless they've gone.
+    func npc(tappedAt point: CGPoint) -> (def: NPCDef, node: Walker)? {
+        let spot = local(point)
+        return npcs.first { !$0.node.isHidden && ($0.node.position + CGVector(dx: 0, dy: 24 + $0.node.lift)).distance(to: spot) < 34 }
+            .map { ($0.def, $0.node) }
     }
 
     // MARK: Chunks
@@ -327,7 +414,6 @@ final class LandStage {
             node.idles = npc.role != .chest
             node.tagMode = .onDemand
             if npc.role == .boss { node.motion = IdleMotion.of(art: npc.art) }
-            node.standsOn = { [map] in map.height(at: $0) }
             node.position = map.center(of: cell)
             node.zPosition = -node.position.y
             let marker = NameTag("!", size: 28)

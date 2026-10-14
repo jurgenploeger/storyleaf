@@ -85,6 +85,19 @@ final class ContinentScene: SKScene {
     private var leftFoot = false
     /// The name of the land you've just walked into, at the top of the screen for a moment.
     private var banner: SKNode?
+    /// Who you're walking up to talk to (a tap on them), by land and id; near enough is `talkRange`.
+    private var talkTarget: (land: String, npc: String)?
+    private let talkRange: CGFloat = 50
+    /// Walking up to someone opens their window; tapping a passer-by shows who they are.
+    var onTalk: (@MainActor (NPCDef) -> Void)?
+    var onInspect: (@MainActor (Profile) -> Void)?
+    /// A random battle with the land's monsters, and what was on screen for behind it.
+    var onEncounter: (@MainActor (MapDef.Encounters, SKTexture?) -> Void)?
+    /// Set while a window or a battle is up (`MapScene`).
+    var isInputLocked = false
+    /// Debug launches walking you about (`crossing`): no battles on the way.
+    var holdsEncounters = false
+    private var stepsSinceBattle = 0
     private var pinchStartZoom: CGFloat = 1
     private lazy var pinch = UIPinchGestureRecognizer(target: self, action: #selector(pinched(_:)))
 
@@ -175,8 +188,11 @@ final class ContinentScene: SKScene {
         let dt = lastUpdate == 0 ? 0 : min(currentTime - lastUpdate, 1.0 / 8)
         lastUpdate = currentTime
         let stick = input.move
-        if stick.length > 0.15 {
+        if isInputLocked {
+            player.setWalking(false)
+        } else if stick.length > 0.15 {
             player.path = []
+            talkTarget = nil
             let step = stick * (walkSpeed * CGFloat(dt))
             var next = player.position
             // Each axis on its own, so you slide along what you can't walk through.
@@ -192,42 +208,111 @@ final class ContinentScene: SKScene {
             player.setWalking(player.followPath(dt: dt) || !player.path.isEmpty)
             player.zPosition = -player.position.y
         }
-        checkCell()
+        if !isInputLocked {
+            checkCell()
+            checkTalkTarget()
+        }
         player.settle()
         cam.position = player.position + CGVector(dx: 0, dy: player.lift)
-        for land in lands.values { land.stage.show(around: cam.position, scale: cam.xScale, screen: size) }
+        for land in lands.values {
+            land.stage.update(dt: dt, player: player.position, camera: cam.position, scale: cam.xScale, screen: size)
+        }
         if currentTime - lookedAround > 0.25 {
             lookedAround = currentTime
             lookAround()
         }
     }
 
-    /// Whether you can stand on a point: on ground a land's laid out and you can walk on.
+    /// Whether you can step onto a point from where you stand: onto ground a land's laid out and you
+    /// can walk on, and over a border only where it's open.
     private func canStand(at point: CGPoint) -> Bool {
-        store.isWalkable(Self.cell(at: point))
+        let cell = Self.cell(at: point)
+        return store.isWalkable(cell) && canCross(from: Self.cell(at: player.position), to: cell)
     }
 
-    /// Tapping the ground walks you there, the shortest way within reach (`World.path`), to the very
-    /// spot if you can stand on it.
+    /// Whether the borders you can walk across, by the two lands' ids (in order), are open: worked
+    /// out when they're wanted, and again after a window closes (a quest may have opened one).
+    private var openBorders: [String: Bool] = [:]
+
+    /// Whether a step from one world cell to the next is allowed: within a land always; from one
+    /// land into another only where you can cross the border between them (`Continent.Neighbour`:
+    /// a road joins them, its quest done), as on the lands' own maps.
+    private func canCross(from: GridPoint, to: GridPoint) -> Bool {
+        guard let a = store.land(at: from)?.id, let b = store.land(at: to)?.id, a != b else { return true }
+        let key = a < b ? a + "|" + b : b + "|" + a
+        if let known = openBorders[key] { return known }
+        var open = false
+        if let def = Content.shared.map(a), let neighbour = Continent.neighbours(of: def).first(where: { $0.def.id == b }) {
+            open = neighbour.isCrossable(done: session.hasCompleted, joined: Continent.joined(a, b, done: session.hasCompleted))
+        }
+        openBorders[key] = open
+        return open
+    }
+
+    /// Tapping someone of a land's walks you up to talk to them; a passer-by turns to you and shows
+    /// who they are; the ground walks you there, the shortest way within reach (`World.path`), to the
+    /// very spot if you can stand on it.
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let point = touches.first?.location(in: layer) else { return }
+        guard !isInputLocked, let point = touches.first?.location(in: layer) else { return }
+        for land in lands.values {
+            guard let npc = land.stage.npc(tappedAt: point) else { continue }
+            talkTarget = (land.def.id, npc.def.id)
+            npc.node.revealTag()
+            walk(to: npc.node.position + land.shift, marked: false)
+            return
+        }
+        talkTarget = nil
+        for land in lands.values {
+            guard let crowd = land.stage.crowd else { continue }
+            let spot = land.stage.local(point)
+            if let adventurer = crowd.adventurer(at: spot) {
+                crowd.greet(at: spot, from: land.stage.local(player.position))
+                player.path = []
+                onInspect?(.adventurer(adventurer))
+                return
+            }
+            crowd.greet(at: spot, from: land.stage.local(player.position))
+        }
         // A tap on a hilltop means the top, not the ground it hides: worked out by the land there.
         var ground = point
         if let owner = store.land(at: Self.cell(at: point)), let land = lands[owner.id] {
             let local = CGPoint(x: point.x - land.shift.dx, y: point.y - land.shift.dy)
             ground = land.map.groundPoint(under: local) + land.shift
         }
+        walk(to: ground, marked: true)
+    }
+
+    /// Walks you to `ground` (the continent's points) the shortest way within reach, to the very
+    /// spot if you can stand on it; `marked`, with the tap's mark where you'll stop.
+    private func walk(to ground: CGPoint, marked: Bool) {
         let tapped = Self.cell(at: ground)
         guard let start = store.nearestWalkable(to: Self.cell(at: player.position), within: 2),
               let goal = store.nearestWalkable(to: tapped) else { return }
-        var points = store.path(from: start, to: goal).map { Self.center(of: $0) }
+        var points = store.path(from: start, to: goal) { [unowned self] in self.canCross(from: $0, to: $1) }.map { Self.center(of: $0) }
         guard !points.isEmpty || start == goal else { return }
         if goal == tapped {
             if points.isEmpty { points = [ground] } else { points[points.count - 1] = ground }
         }
         player.path = points
-        if let end = points.last {
+        if marked, let end = points.last {
             Effects.tapMarker(at: end + CGVector(dx: 0, dy: groundHeight(at: end)), in: layer)
+        }
+    }
+
+    /// Once you're near enough whoever you were walking up to, their window opens; if you stop short
+    /// (the way was blocked), you've given up.
+    private func checkTalkTarget() {
+        guard let target = talkTarget, let stage = lands[target.land]?.stage,
+              let npc = stage.npcs.first(where: { $0.def.id == target.npc }) else { return }
+        let at = npc.node.position + stage.shift
+        if player.position.distance(to: at) <= talkRange {
+            talkTarget = nil
+            player.path = []
+            player.setWalking(false)
+            player.face(Direction(at - player.position))
+            onTalk?(npc.def)
+        } else if player.path.isEmpty {
+            talkTarget = nil
         }
     }
 
@@ -251,6 +336,52 @@ final class ContinentScene: SKScene {
         guard let here, let land = lands[here.id] else { return }
         session.playerPosition = CGPoint(x: player.position.x - land.shift.dx, y: player.position.y - land.shift.dy)
         session.mapCell = store.local(cell, in: land.place)
+        // Out in the wild, now and then, the land's monsters (`MapDef.Encounters`), as on its own map.
+        guard !starting, let encounters = here.encounters else { return }
+        stepsSinceBattle += 1
+        if !holdsEncounters, stepsSinceBattle > encounters.graceSteps, Double.random(in: 0..<1) < encounters.rate {
+            stepsSinceBattle = 0
+            startEncounter(encounters)
+        }
+    }
+
+    /// The screen flashes twice and the battle begins, where you stand (`WorldScene.startEncounter`).
+    private func startEncounter(_ encounters: MapDef.Encounters) {
+        isInputLocked = true
+        player.path = []
+        talkTarget = nil
+        player.setWalking(false)
+        let flash = SKSpriteNode(color: .white, size: size)
+        flash.alpha = 0
+        flash.zPosition = 50_000
+        cam.addChild(flash)
+        Task {
+            await flash.run(.sequence([
+                .fadeAlpha(to: 0.85, duration: 0.08), .fadeAlpha(to: 0, duration: 0.08),
+                .fadeAlpha(to: 0.85, duration: 0.08), .fadeAlpha(to: 0, duration: 0.08),
+            ]))
+            flash.removeFromParent()
+            onEncounter?(encounters, battleBackdrop(hiding: nil))
+        }
+    }
+
+    /// What's on screen right now, for behind a battle: you (and a boss, `npcID`) and the tap marks
+    /// left out, as the battle draws the party itself.
+    func battleBackdrop(hiding npcID: String?) -> SKTexture? {
+        let visible = CGRect(x: cam.position.x - size.width / 2, y: cam.position.y - size.height / 2, width: size.width, height: size.height)
+        let boss: [SKNode] = lands.values.flatMap { land in land.stage.npcs.filter { $0.def.id == npcID }.map(\.node) }
+        let hidden: [SKNode] = [player] + boss + layer.children.filter { $0.name == Effects.tapMarkerName }
+        hidden.forEach { $0.isHidden = true }
+        defer { hidden.forEach { $0.isHidden = false } }
+        return view?.texture(from: layer, crop: visible)
+    }
+
+    /// Back from a battle or a window (`MapScene`): you can walk again.
+    func resume() {
+        openBorders = [:]
+        isInputLocked = false
+        lastUpdate = 0
+        input.move = .zero
     }
 
     /// Into the land that owns `cell`, once it's laid out, if you aren't in it already: a cell in from
@@ -274,6 +405,7 @@ final class ContinentScene: SKScene {
     private func arrive(in def: MapDef) {
         let walkedIn = here != nil
         here = def
+        for land in lands.values { land.stage.isHere = land.def.id == def.id }
         Walker.light = WorldScene.light(of: def)
         player.relight()
         MusicPlayer.shared.play(def.music)
@@ -317,7 +449,8 @@ final class ContinentScene: SKScene {
             }
         }
         guard let goal, let start = store.nearestWalkable(to: from, within: 2) else { return }
-        player.path = store.path(from: start, to: goal).map { Self.center(of: $0) }
+        holdsEncounters = true
+        player.path = store.path(from: start, to: goal) { [unowned self] in self.canCross(from: $0, to: $1) }.map { Self.center(of: $0) }
         for _ in 0..<120 where here?.id != id {
             try? await Task.sleep(for: .milliseconds(250))
         }
@@ -358,6 +491,8 @@ final class ContinentScene: SKScene {
             }
         }
         if missing == 0, waiting.isEmpty, !painting { isReady = true }
+        // The lands' people: their quest marks, and townsfolk watching you pass.
+        for land in lands.values { _ = land.stage.updateNotices(player: player.position, reach: talkRange + 12) }
         for chunk in chunks.keys where max(abs(chunk.col - here.col), abs(chunk.row - here.row)) > Self.keep {
             if let gone = chunks.removeValue(forKey: chunk) {
                 gone.ground.removeFromParent()

@@ -138,6 +138,12 @@ final class GameCoordinator {
 
     /// The scene SpriteKit should show right now.
     var scene: SKScene { battle != nil ? (battleScene ?? world) : (continent ?? world) }
+    /// The scene you walk about in: the continent as one place while it's shown (a debug launch,
+    /// `continent`), or the land you're in.
+    private var mapScene: any MapScene {
+        if let continent { return continent }
+        return world
+    }
 
     /// The continent as one place (`ContinentScene`, docs/continuous-world.md), shown instead of the
     /// land you're in: only by a debug launch (`continent`) until it takes over from the lands' own
@@ -152,6 +158,9 @@ final class GameCoordinator {
         let local = session.playerPosition ?? .zero
         let shift = WorldMap.project(CGPoint(x: CGFloat(origin.col) * WorldMap.tileSize, y: CGFloat(origin.row) * WorldMap.tileSize))
         let scene = ContinentScene(session: session, input: input, at: CGPoint(x: local.x + shift.x, y: local.y + shift.y))
+        scene.onTalk = { [weak self] npc in self?.open(.npc(npc.id)) }
+        scene.onInspect = { [weak self] profile in self?.open(.profile(profile)) }
+        scene.onEncounter = { [weak self] encounters, backdrop in self?.startBattle(encounters, backdrop: backdrop) }
         continent = scene
         for _ in 0..<600 {
             try? await Task.sleep(for: .milliseconds(500))
@@ -318,7 +327,7 @@ final class GameCoordinator {
 
     private func travel(through exit: MapDef.Exit) {
         guard let destination = Content.shared.map(exit.to) else {
-            world.resume()
+            mapScene.resume()
             return
         }
         SoundEffects.shared.play(.whoosh)
@@ -422,7 +431,7 @@ final class GameCoordinator {
         overlay = nil
         controller.onFinish = { [weak self] outcome in self?.endBattle(outcome) }
         // The map you're standing on, like any fight (without the boss: it's in the battle now).
-        battleScene = BattleScene(controller: controller, size: world.size, backdrop: world.battleBackdrop(hiding: npc.id))
+        battleScene = BattleScene(controller: controller, size: world.size, backdrop: mapScene.battleBackdrop(hiding: npc.id))
         input.move = .zero
         boss = npc
         battle = controller
@@ -469,7 +478,7 @@ final class GameCoordinator {
             // Fainted (even if your friends won): wake up at the checkpoint.
             go(to: map, entry: session.checkpoint.entry)
         } else {
-            world.resume()
+            mapScene.resume()
         }
         session.save()
     }
@@ -488,7 +497,7 @@ final class GameCoordinator {
             session.postChat(npc.greeting, from: npc.name, kind: .npc)
             session.unreadChat = max(0, session.unreadChat - 1)
         }
-        world.isInputLocked = true
+        mapScene.isInputLocked = true
         input.move = .zero
     }
 
@@ -537,7 +546,7 @@ final class GameCoordinator {
             return
         }
         overlay = .destinations(travel)
-        world.isInputLocked = true
+        mapScene.isInputLocked = true
         input.move = .zero
     }
 
@@ -579,7 +588,7 @@ final class GameCoordinator {
     func closeOverlay() {
         SoundEffects.shared.play(.close, volume: 0.8)
         overlay = nil
-        world.resume()
+        mapScene.resume()
         session.save()
     }
 

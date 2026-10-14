@@ -185,8 +185,10 @@ nonisolated final class World: @unchecked Sendable {
     /// cells of the start either way: the cells after `start`, `goal` last; empty if there's none
     /// in reach (or `start` is `goal`). A* over the store in a window round you, rather than a graph
     /// of the whole continent (docs/continuous-world.md, step 3). It steps diagonally too, but only
-    /// where both cells beside the step are open, so it never cuts a corner.
-    func path(from start: GridPoint, to goal: GridPoint, reach: Int = 64) -> [GridPoint] {
+    /// where both cells beside the step are open, so it never cuts a corner. `canStep`: whether a
+    /// step from one cell to the next is allowed besides (over a border, only where it's open).
+    func path(from start: GridPoint, to goal: GridPoint, reach: Int = 64,
+              canStep: ((GridPoint, GridPoint) -> Bool)? = nil) -> [GridPoint] {
         guard start != goal, isWalkable(start), isWalkable(goal),
               max(abs(goal.col - start.col), abs(goal.row - start.row)) <= reach else { return [] }
         let side = 2 * reach + 1
@@ -223,6 +225,7 @@ nonisolated final class World: @unchecked Sendable {
                 if diagonal, !isWalkable(GridPoint(col: here.col + dc, row: here.row)) || !isWalkable(GridPoint(col: here.col, row: here.row + dr)) {
                     continue
                 }
+                if let canStep, !canStep(here, next) { continue }
                 let through = cost[current] + (diagonal ? 14 : 10)
                 guard through < cost[index] else { continue }
                 cost[index] = through
