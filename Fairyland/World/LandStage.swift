@@ -41,6 +41,9 @@ final class LandStage {
     private var feet: [ObjectIdentifier: CGFloat] = [:]
     /// Shadows cast by its scenery (`Lighting.Shadow`).
     private var shadows: [Lighting.Shadow] = []
+    /// The walls along its borders that come down once you can cross (`placeBorders`): the border,
+    /// and what's taken away (a gate's bar, or the whole fence).
+    private var gates: [(neighbour: Continent.Neighbour, bar: [SKNode])] = []
     private static let chunkSize: CGFloat = 400
     /// How far past the screen's edges a chunk is kept (`WorldScene.chunkMargin`).
     private static let chunkMargin: CGFloat = 360
@@ -787,15 +790,32 @@ final class LandStage {
     }
 
     /// The fences and rocks along the borders you can't cross (`BorderArt.place`): where a quest
-    /// keeps you out, round a town's walls, and where no road you can take joins the two lands.
+    /// keeps you out, and where no road you can take joins the two lands.
     private func placeBorders() {
-        for neighbour in Continent.neighbours(of: def) {
+        // Both lands would set the same wall down in the same places (`BorderArt.place`): on the
+        // continent, the first of the two by id does.
+        for neighbour in Continent.neighbours(of: def) where def.id < neighbour.def.id {
             let joined = Continent.joined(def.id, neighbour.def.id, done: session.hasCompleted)
             guard neighbour.isWalled(done: session.hasCompleted, joined: joined) else { continue }
             let open = neighbour.quest.map(session.hasCompleted) ?? false
-            _ = BorderArt.place(neighbour, of: def, open: open, art: art, ground: { [map] in map.height(at: $0) }) { [weak self] point in
+            let bar = BorderArt.place(neighbour, of: def, open: open, art: art, ground: { [map] in map.height(at: $0) }) { [weak self] point in
                 self?.chunk(at: point) ?? SKNode()
             }
+            if !bar.isEmpty { gates.append((neighbour, bar)) }
+        }
+    }
+
+    /// A quest done opened a border of its while you were away in a window: the bar across its gate,
+    /// or the fence along it, poofs away (`WorldScene.openBarricades`).
+    func openGates() {
+        gates.removeAll { gate in
+            let joined = Continent.joined(def.id, gate.neighbour.def.id, done: session.hasCompleted)
+            guard !gate.neighbour.isWalled(done: session.hasCompleted, joined: joined) else { return false }
+            for node in gate.bar {
+                if let parent = node.parent { SkillEffects.smoke(at: node.position, in: parent) }
+                node.run(.sequence([.fadeOut(withDuration: 0.4), .removeFromParent()]))
+            }
+            return true
         }
     }
 

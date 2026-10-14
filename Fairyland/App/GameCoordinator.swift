@@ -170,6 +170,11 @@ final class GameCoordinator {
         scene.onTalk = { [weak self] npc in self?.open(.npc(npc.id)) }
         scene.onInspect = { [weak self] profile in self?.open(.profile(profile)) }
         scene.onEncounter = { [weak self] encounters, backdrop in self?.startBattle(encounters, backdrop: backdrop) }
+        // Into a cave: the continent's let go, and the cave's built behind the card as ever.
+        scene.onTravel = { [weak self] exit in
+            self?.continent = nil
+            self?.travel(through: exit)
+        }
         continent = scene
         for _ in 0..<600 {
             try? await Task.sleep(for: .milliseconds(500))

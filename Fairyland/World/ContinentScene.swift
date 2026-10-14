@@ -100,6 +100,8 @@ final class ContinentScene: SKScene {
     var onInspect: (@MainActor (Profile) -> Void)?
     /// A random battle with the land's monsters, and what was on screen for behind it.
     var onEncounter: (@MainActor (MapDef.Encounters, SKTexture?) -> Void)?
+    /// Into a cave through its mouth (off the continent: behind the card, as ever).
+    var onTravel: (@MainActor (MapDef.Exit) -> Void)?
     /// Set while a window or a battle is up (`MapScene`).
     var isInputLocked = false
     /// Debug launches walking you about (`crossing`): no battles on the way.
@@ -428,8 +430,17 @@ final class ContinentScene: SKScene {
         guard let here, let land = lands[here.id] else { return }
         session.playerPosition = CGPoint(x: player.position.x - land.shift.dx, y: player.position.y - land.shift.dy)
         session.mapCell = store.local(cell, in: land.place)
+        guard !starting else { return }
+        // Into a cave through its mouth: off the continent, behind the card.
+        if let exit = land.map.exit(at: session.mapCell), Content.shared.world[exit.to] == nil {
+            isInputLocked = true
+            player.path = []
+            player.setWalking(false)
+            onTravel?(exit)
+            return
+        }
         // Out in the wild, now and then, the land's monsters (`MapDef.Encounters`), as on its own map.
-        guard !starting, let encounters = here.encounters else { return }
+        guard let encounters = here.encounters else { return }
         stepsSinceBattle += 1
         if !holdsEncounters, stepsSinceBattle > encounters.graceSteps, Double.random(in: 0..<1) < encounters.rate {
             stepsSinceBattle = 0
@@ -474,6 +485,7 @@ final class ContinentScene: SKScene {
     /// Back from a battle or a window (`MapScene`): you can walk again, as whoever you've become.
     func resume() {
         openBorders = [:]
+        for land in lands.values { land.stage.openGates() }
         isInputLocked = false
         lastUpdate = 0
         input.move = .zero
