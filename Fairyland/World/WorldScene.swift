@@ -452,11 +452,10 @@ final class WorldScene: SKScene {
         // Accent patches (flower meadows, moss) blend in as soft blobs. Not in towns, where the
         // accent is terrace paving and stays square.
         let patchAccent = (theme.accentPatches ?? 0) > 0 && theme.accent != nil && theme.accent != theme.ground
-        /// Whether the ground past the land's edge at `cell` is water: where a river runs off the map
-        /// it carries on straight (`placeSurroundings`), as the nearest cell on the map is.
+        /// Whether the ground past the land's edge at `cell` is water: where a river runs on into the
+        /// land next door (`Region`).
         func waterBeyond(_ cell: GridPoint) -> Bool {
-            let inside = GridPoint(col: min(max(cell.col, 0), map.columns - 1), row: min(max(cell.row, 0), map.rows - 1))
-            return map.river.contains(inside)
+            map.region?.isRiver(cell) ?? false
         }
         /// Which cells of the 3×3 around `cell` are `kind` (bit row * 3 + col, row 0 north).
         func mask(_ cell: GridPoint, _ kind: Ground) -> Int {
@@ -2723,7 +2722,7 @@ final class WorldScene: SKScene {
                 let cell = GridPoint(col: col, row: row)
                 // PixelCanvas is top-down; the map is bottom-up.
                 if region.owns(cell) {
-                    canvas[col, land.height - 1 - row] = color
+                    canvas[col, land.height - 1 - row] = region.isRiver(cell) ? WorldMap.seaColor : color
                 } else if region.drawsSea(at: cell) {
                     canvas[col, land.height - 1 - row] = WorldMap.seaColor
                 }
@@ -2754,7 +2753,8 @@ final class WorldScene: SKScene {
     /// of this one beside it, across a border open there, onto ground you can stand on there (if it's
     /// built yet; if not, the coordinator takes you there behind the loading card as you step).
     private func canCross(into cell: GridPoint) -> Bool {
-        guard let neighbour = neighbour(holding: cell),
+        // Not into a river where it runs on over the border.
+        guard map.region?.isRiver(cell) != true, let neighbour = neighbour(holding: cell),
               [Edge.east, .west, .north, .south].contains(where: { map.owns(cell.stepped($0)) }),
               neighbour.isOpen(over: cell, done: session.hasCompleted, joined: isJoined(neighbour)) else { return false }
         guard let land = nextDoor[neighbour.def.id]?.scene else { return true }

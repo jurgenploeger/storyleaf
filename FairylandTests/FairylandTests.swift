@@ -360,7 +360,7 @@ struct ContentTests {
     }
 
     @Test func lakesAndRiversLeaveEverywhereInReach() throws {
-        for def in content.maps where def.theme.lakes != nil || def.theme.river != nil {
+        for def in content.maps where def.theme.lakes != nil || Continent.region(of: def)?.hasRiver == true {
             let map = WorldMap(def: def)
             // What each map got, for the log (the tests job lists these lines).
             let lakes = map.lakes.map { "lake \($0.water.count)" + ($0.island.isEmpty ? "" : " with an island of \($0.island.count)") }
@@ -376,9 +376,12 @@ struct ContentTests {
                 #expect(map.bridges.filter { $0.kind == .jetty }.count == map.lakes.count, "map \(def.id): a lake has no jetty")
                 #expect(map.bridges.filter { $0.kind == .foot }.count == map.lakes.filter { !$0.island.isEmpty }.count, "map \(def.id): an island has no footbridge")
             }
-            if def.theme.river != nil {
+            if map.region?.hasRiver == true {
                 #expect(!map.river.isEmpty, "map \(def.id) has no river")
-                #expect(map.bridges.contains { $0.kind == .road }, "map \(def.id): no road crosses its river")
+                // A bridge wherever a road crosses it (a local waits on the bridge on some), never a ford.
+                #expect(map.fords == 0, "map \(def.id): a road fords its river \(map.fords) times, with no room for a bridge")
+                let waits = (def.locals ?? []).contains { $0.home.at == "bridge" || $0.walk?.at == "bridge" }
+                #expect(!waits || map.bridges.contains { $0.kind == .road }, "map \(def.id): no road crosses its river")
                 // The water can't be walked on but over a bridge.
                 #expect(map.river.allSatisfy { map.bridgeCells.contains($0) || !map.isWalkable($0) }, "map \(def.id): you can wade its river")
             }

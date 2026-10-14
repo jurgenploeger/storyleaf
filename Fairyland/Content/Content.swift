@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 // MARK: - Stats & elements
@@ -434,8 +435,6 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let ponds: Int?
         /// Big lakes, besides the ponds (not in towns or caves).
         let lakes: Lakes?
-        /// A river across the map, bridged where roads cross it (not in towns or caves).
-        let river: River?
         let fairyRings: FairyRings?
         let props: [PropPlacement]
         /// The map's colour mood for ground, scenery and buildings.
@@ -485,15 +484,6 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let size: [Double]
         /// How many of them have an island in the middle, a footbridge out to it.
         let islands: Int?
-    }
-
-    /// A river across the map (`WorldMap.carveRiver`): in over one edge and out over another,
-    /// winding, a bridge wherever a road crosses it.
-    nonisolated struct River: Decodable, Sendable {
-        let from: Edge
-        let to: Edge
-        /// How wide it runs, in cells (3 when not given).
-        let width: Double?
     }
 
     /// Solid rock everywhere except galleries along the roads and trails, chambers off them and
@@ -1046,10 +1036,16 @@ private nonisolated struct WorldFile: Decodable {
         let via: [[Int]]?
     }
 
+    /// A river from its spring to the sea: its middle, [x, y] in world cells.
+    nonisolated struct River: Decodable {
+        let line: [[Double]]
+    }
+
     let margin: Int
     let lands: [String: [Int]]
     let middles: [String: [Int]]
     let roads: [String: [String: Road]]
+    let rivers: [River]?
     let regions: [String: [[Int]]]
 }
 
@@ -1173,12 +1169,22 @@ final class Content {
         let worldFile: WorldFile = load("world")
         func point(_ pair: [Int]) -> GridPoint { GridPoint(col: pair.first ?? 0, row: pair.count > 1 ? pair[1] : 0) }
         var regions: [String: Region] = [:]
+        let rivers = (worldFile.rivers ?? []).map { river in
+            river.line.map { CGPoint(x: $0.first ?? 0, y: $0.count > 1 ? $0[1] : 0) }
+        }
         for map in mapFile.maps {
-            guard let runs = worldFile.regions[map.id] else { continue }
+            guard let runs = worldFile.regions[map.id], let origin = worldFile.lands[map.id].map(point) else { continue }
             let roads = (worldFile.roads[map.id] ?? [:]).mapValues { Region.Road(at: point($0.at), via: $0.via ?? []) }
+            // The rivers that come near it, in its cells.
+            let reach = CGFloat(worldFile.margin)
+            let near = rivers.map { line in
+                line.map { CGPoint(x: $0.x - CGFloat(origin.col), y: $0.y - CGFloat(origin.row)) }
+            }.filter { line in
+                line.contains { $0.x >= -reach && $0.y >= -reach && $0.x <= CGFloat(map.width) + reach && $0.y <= CGFloat(map.height) + reach }
+            }
             regions[map.id] = Region(margin: worldFile.margin, columns: map.width, rows: map.height, runs: runs,
                                      middle: worldFile.middles[map.id].map(point) ?? GridPoint(col: map.width / 2, row: map.height / 2),
-                                     roads: roads)
+                                     roads: roads, rivers: near)
         }
         return Loaded(
             classChoiceLevel: classFile.classChoiceLevel,

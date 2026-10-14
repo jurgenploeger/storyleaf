@@ -80,8 +80,10 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// The map's lakes (`theme.lakes`): each one's water, and its island if it has one. Their water
     /// is among the `ponds` too, for lily pads and frogs.
     private(set) var lakes: [(water: Set<GridPoint>, island: Set<GridPoint>)] = []
-    /// The river's water (`theme.river`), in over one edge and out over another.
+    /// The rivers' water (`layRivers`): from springs to the sea, on the continent.
     private(set) var river: Set<GridPoint> = []
+    /// Where a road or trail crosses a river with no room for a bridge, fording it.
+    private(set) var fords = 0
     /// Bridges where roads cross the river, footbridges out to the lakes' islands and jetties.
     private(set) var bridges: [Bridge] = []
     /// The water under the bridges' decks, walked over like the land.
@@ -225,6 +227,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
         if def.fence == true { layOutTownBorder() }
         for exit in def.exits { carveRoad(for: exit, &rng) }
         for trail in def.trails ?? [] { carveTrail(trail, &rng) }
+        layRivers()
         // Caves dig their ponds first and then a chamber around each one.
         let ponds = def.theme.water != nil ? def.theme.ponds : nil
         if let cave = def.theme.cave {
@@ -249,7 +252,6 @@ nonisolated final class WorldMap: @unchecked Sendable {
         if def.theme.cave == nil, def.town == nil {
             // Their own random numbers too.
             var waterRNG = SeededRandom(text: def.id + "/water")
-            if let river = def.theme.river { carveRiver(river, avoiding: ranges.map(\.edge), &waterRNG) }
             if let lakes = def.theme.lakes { digLakes(lakes, &waterRNG) }
             // Nothing grows across a bridge's ends, where it meets the land.
             for bridge in bridges {
@@ -1937,123 +1939,35 @@ nonisolated final class WorldMap: @unchecked Sendable {
         }
     }
 
-    /// A river across the map (`theme.river`): in over one edge and out over the other, winding
-    /// and swelling and narrowing a little as roads do, kept off the hub, the map's people and
-    /// buildings, the arrivals and where a road leads into a cave (`cragEdges`), and clear of where
-    /// roads leave over the edges. A bridge wherever it crosses a road (`bridge(over:along:)`).
-    /// Tried a few ways till one leaves every bit of land in reach of the hub; none if none does.
-    private func carveRiver(_ spec: MapDef.River, avoiding cragEdges: [Edge], _ rng: inout SeededRandom) {
-        guard spec.from != spec.to, !cragEdges.contains(spec.from), !cragEdges.contains(spec.to) else { return }
-        let width = CGFloat(min(6, max(2, spec.width ?? 3)))
-        let hub = point(def.hub ?? [0, 0])
-        let arrivals = def.exits.map { entryCell(from: $0.edge) }
-        // Where the roads leave over the edges (on the continent, where they cross its border).
-        var ends: [CGPoint] = region.map { shape in shape.roads.values.map { CGPoint(x: CGFloat($0.at.col) + 0.5, y: CGFloat($0.at.row) + 0.5) } } ?? []
-        for col in 0..<columns {
-            for row in [0, rows - 1] where ground[row][col] == .path { ends.append(CGPoint(x: CGFloat(col) + 0.5, y: CGFloat(row) + 0.5)) }
-        }
+    /// The rivers running through the land (`Region`: painted on the continent by
+    /// tools/world_layout.py, from springs out to the sea, some from one land on into the next): its
+    /// cells under them water, a bridge wherever one crosses a road or a trail (`bridge(over:along:)`,
+    /// which way it runs there from the river's middle). Where a bridge won't fit, the road fords the
+    /// river on stepping stones of its own ground (`fords`); the painting keeps its crossings square
+    /// and narrow, so none should.
+    private func layRivers() {
+        guard let region, region.hasRiver else { return }
+        var cells: Set<GridPoint> = []
         for row in 0..<rows {
-            for col in [0, columns - 1] where ground[row][col] == .path { ends.append(CGPoint(x: CGFloat(col) + 0.5, y: CGFloat(row) + 0.5)) }
+            for col in 0..<columns {
+                let cell = GridPoint(col: col, row: row)
+                if region.owns(cell), region.isRiver(cell) { cells.insert(cell) }
+            }
         }
-        /// Somewhere along `edge`, well clear of the roads leaving over it: on the continent, in from
-        /// there to the land's own shore, where the sea is if it can be (it runs out into it).
-        func edgePoint(_ edge: Edge) -> CGPoint? {
-            let length = CGFloat(edge == .north || edge == .south ? columns : rows)
-            for attempt in 0..<50 {
-                let along = CGFloat.random(in: 0.15...0.85, using: &rng) * length
-                var spot: CGPoint = switch edge {
-                case .north: CGPoint(x: along, y: CGFloat(rows))
-                case .south: CGPoint(x: along, y: 0)
-                case .east: CGPoint(x: CGFloat(columns), y: along)
-                case .west: CGPoint(x: 0, y: along)
-                }
-                if region != nil {
-                    guard let landfall = shore(from: spot, on: edge) else { continue }
-                    let out = Self.outward(edge)
-                    let past = GridPoint(col: Int((landfall.x + out.dx * 0.5).rounded(.down)), row: Int((landfall.y + out.dy * 0.5).rounded(.down)))
-                    guard attempt >= 30 || isOpenSea(past) else { continue }
-                    spot = landfall
-                }
-                if ends.allSatisfy({ $0.distance(to: spot) > 12 }) { return spot }
-            }
-            return nil
+        let crossings = Self.groups(of: cells.filter { ground[$0.row][$0.col] == .path })
+        for cell in cells { ground[cell.row][cell.col] = .water }
+        for crossing in crossings {
+            // The river it's on: the one whose middle comes nearest.
+            let middle = CGPoint(x: crossing.map { CGFloat($0.col) + 0.5 }.reduce(0, +) / CGFloat(crossing.count),
+                                 y: crossing.map { CGFloat($0.row) + 0.5 }.reduce(0, +) / CGFloat(crossing.count))
+            func nearest(_ line: [CGPoint]) -> CGFloat { line.map { $0.distance(to: middle) }.min() ?? .infinity }
+            let line = region.rivers.min { nearest($0) < nearest($1) } ?? []
+            guard !bridge(over: crossing, along: line) else { continue }
+            for cell in crossing { ground[cell.row][cell.col] = .path }
+            fords += 1
         }
-        let before = cutOff()
-        for attempt in 0..<16 {
-            guard let source = edgePoint(spec.from), let mouth = edgePoint(spec.to) else { continue }
-            let length = source.distance(to: mouth)
-            guard length > 1 else { continue }
-            let ahead = CGVector(dx: (mouth.x - source.x) / length, dy: (mouth.y - source.y) / length)
-            let side = CGVector(dx: -ahead.dy, dy: ahead.dx)
-            // From a little past each edge, so it runs right off the map, through waypoints pushed
-            // sideways by a smooth random drift and kept well off the hub.
-            var points = [source + Self.outward(spec.from) * 4, source]
-            let count = max(2, Int(length / 7))
-            let sway = min(16, length * 0.18)
-            var drift: CGFloat = 0
-            for k in 1..<count {
-                drift = min(max(drift + CGFloat.random(in: -3.5...3.5, using: &rng), -sway), sway)
-                let t = CGFloat(k) / CGFloat(count)
-                var spot = CGPoint(x: source.x + (mouth.x - source.x) * t, y: source.y + (mouth.y - source.y) * t) + side * drift
-                let keep = 9 + width, near = spot.distance(to: hub)
-                if near < keep {
-                    let away: CGFloat = (spot.x - hub.x) * side.dx + (spot.y - hub.y) * side.dy >= 0 ? 1 : -1
-                    spot = spot + side * (away * (keep - near + 1))
-                }
-                points.append(CGPoint(x: min(max(spot.x, 3), CGFloat(columns - 3)), y: min(max(spot.y, 3), CGFloat(rows - 3))))
-            }
-            points += [mouth, mouth + Self.outward(spec.to) * 4]
-            // Along a Catmull-Rom curve through them, a little wider and narrower as it goes.
-            var cells: Set<GridPoint> = []
-            var line: [CGPoint] = []
-            var travelled: CGFloat = 0
-            for index in 0..<(points.count - 1) {
-                let p0 = points[max(0, index - 1)], p1 = points[index], p2 = points[index + 1], p3 = points[min(points.count - 1, index + 2)]
-                let steps = max(4, Int(p1.distance(to: p2) * 4))
-                for step in 0...steps {
-                    let spot = Self.catmullRom(p0, p1, p2, p3, CGFloat(step) / CGFloat(steps))
-                    travelled += p1.distance(to: p2) / CGFloat(steps)
-                    line.append(spot)
-                    let reach = width / 2 * (1 + 0.18 * sin(travelled / 7 + CGFloat(attempt)))
-                    cells.formUnion(self.cells(around: spot, radius: reach))
-                }
-            }
-            // Off the people, buildings and arrivals, the hub and the rock where a road leads into a cave.
-            let clear = cells.allSatisfy { cell in
-                !occupied.contains(cell) && !rock.contains(cell) && !cragGround.contains(cell)
-                    && CGPoint(x: CGFloat(cell.col) + 0.5, y: CGFloat(cell.row) + 0.5).distance(to: hub) >= 7
-                    && arrivals.allSatisfy { max(abs($0.col - cell.col), abs($0.row - cell.row)) > 6 }
-            }
-            guard clear else { continue }
-            // Across the roads, not along them.
-            let crossings = Self.groups(of: cells.filter { ground[$0.row][$0.col] == .path })
-            guard crossings.allSatisfy({ $0.count <= Int(6 * width) }) else { continue }
-            let saved = (ground: ground, bridges: bridges, bridgeCells: bridgeCells)
-            for cell in cells { ground[cell.row][cell.col] = .water }
-            if crossings.allSatisfy({ bridge(over: $0, along: line) }), cutOff() <= before {
-                // Less the banks filled in at the bridges' ends (`bank(_:)`).
-                river = cells.filter { ground[$0.row][$0.col] == .water }
-                for cell in river { occupy(cell, blocking: !bridgeCells.contains(cell)) }
-                return
-            }
-            ground = saved.ground
-            bridges = saved.bridges
-            bridgeCells = saved.bridgeCells
-        }
-    }
-
-    /// In from a point on the box's `edge` (the side it's on), straight across, the edge of the land's
-    /// own ground: the side of its first own cell facing out that way. Nil if the line never meets it.
-    private func shore(from spot: CGPoint, on edge: Edge) -> CGPoint? {
-        let out = Self.outward(edge)
-        var cell = GridPoint(col: Int((spot.x - out.dx * 0.5).rounded(.down)), row: Int((spot.y - out.dy * 0.5).rounded(.down)))
-        while contains(cell) {
-            if owns(cell) {
-                return CGPoint(x: CGFloat(cell.col) + 0.5 + out.dx * 0.5, y: CGFloat(cell.row) + 0.5 + out.dy * 0.5)
-            }
-            cell = cell.stepped(edge.opposite)
-        }
-        return nil
+        river = cells.filter { ground[$0.row][$0.col] == .water }
+        for cell in river { occupy(cell, blocking: !bridgeCells.contains(cell)) }
     }
 
     /// Cells row by row from the south, west to east in each: an order for cells kept in sets.

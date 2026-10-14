@@ -18,12 +18,20 @@ itself and a quest's gate fits; a town's road crosses its wall where its exit sa
 middle of that side). Where a road leads into a cave, that side of the land is a straight coast
 (`CAVE_ALONG` either side of the road) with open sea past it for the mountains the cave is in.
 
+Rivers (world.json `rivers`) run from a spring to the sea through the turns of their `course`,
+meandering a little (`RIVER_WOBBLE`) and widening as they go, some from one land on into the next.
+They keep clear of towns, the roads' crossings, the middles and everything set down by hand; a road
+or trail crossing one gets a bridge in the game, so it has to cross squarely, where the river's
+narrow and away from the sea; and bits of land a river cuts off with no road over go under water if
+they're small (`SLIVER`), else it's a problem to fix in the course.
+
 Each land's map is the box round its shape, its middle at the land's middle (maps.json `width`
 and `height`, which this writes). world.json gets, per land, the cell its box starts on (`lands`),
 where each road crosses its border (`roads`, in its own cells: the last cell on its side, the next
-one over the edge the exit names being the other land's), and its shape (`regions`): row by row
-from the south, over its box and `MARGIN` cells round it, runs of `[code, length]`: 1 its own
-land, 2 the sea it draws (the sea nearest it), 0 neither.
+one over the edge the exit names being the other land's), each river's middle (`line`), and its
+shape (`regions`): row by row from the south, over its box and `MARGIN` cells round it, runs of
+`[code, length]`: 1 its own land, 2 the sea it draws (the sea nearest it), 3 its own land under a
+river, 4 a land next door's under a river, 0 neither.
 
     python3 tools/world_layout.py                     # paint, write content/world.json and the sizes
     python3 tools/world_layout.py --check             # only check world.json against maps.json
@@ -68,6 +76,29 @@ SCRAP = 400
 # hub (or its last waypoint) to where it crosses.
 CONTENT_MARGIN = 3
 ROAD_MARGIN = 3
+# Rivers (world.json `rivers`): a gentle meander sideways off the course drawn ((every, cells,
+# seed), along the river), and a pool round each river's spring this much wider than it.
+RIVER_WOBBLE = ((18, 2.2, 0xD01), (7, 0.7, 0xD02))
+SPRING = 2.0
+# How far a river keeps from where a road crosses a border, from a land's middle and hub, from
+# anything set down by hand, from a town and from where a road leads into a cave, in cells.
+RIVER_CROSSING = 10
+RIVER_MIDDLE = 8
+RIVER_CONTENT = 4
+RIVER_TOWN = 5
+RIVER_CAVE = 30
+# Where a road crosses a river (a bridge, `WorldMap.bridge(over:along:)`): at least this square on
+# (the cosine of the angle between them, at most), no wider than this, and this far from the sea
+# (whose shore slopes down to it), the road's border crossing and its hub.
+BRIDGE_SQUARE = 0.6
+BRIDGE_WIDEST = 8.0
+BRIDGE_SEA = 10
+BRIDGE_END = 10
+# Bits of land a river cuts off from the rest smaller than this go under its water.
+SLIVER = 120
+# Codes in a land's shape (`regions`): its own land, the sea it draws, its own land under a river,
+# and another land's under a river.
+OWN, SEA, RIVER, RIVER_AWAY = 1, 2, 3, 4
 
 STEP = {"east": (1, 0), "west": (-1, 0), "north": (0, 1), "south": (0, -1)}
 OPPOSITE = {"north": "south", "south": "north", "east": "west", "west": "east"}
@@ -522,8 +553,9 @@ def decode(runs):
     return row
 
 
-def regions(canvas, grids):
-    """Each land's shape over its box and MARGIN round it, as rows of runs (`encode`)."""
+def regions(canvas, grids, river):
+    """Each land's shape over its box and MARGIN round it, as rows of runs (`encode`). `river`: the
+    cells under the rivers (a bool array over the canvas)."""
     import numpy as np
     drawn = seas(canvas)
     found = {}
@@ -538,12 +570,242 @@ def regions(canvas, grids):
                 c = c0 + i
                 if 0 <= r < canvas.height and 0 <= c < canvas.width:
                     if canvas.owner[r, c] == k:
-                        codes[i] = 1
+                        codes[i] = RIVER if river[r, c] else OWN
                     elif drawn[r, c] == k:
-                        codes[i] = 2
+                        codes[i] = SEA
+                    elif river[r, c]:
+                        codes[i] = RIVER_AWAY
             rows.append(encode(codes))
         found[land_id] = rows
     return found
+
+
+# MARK: Rivers
+
+def _catmull(p0, p1, p2, p3, t):
+    t2, t3 = t * t, t * t * t
+    return tuple(0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3)
+                 for a, b, c, d in zip(p0, p1, p2, p3))
+
+
+def river_line(river, number):
+    """A river's middle from its spring to the sea, a point every quarter cell: (x, y, how wide it
+    is there, how far along it is in cells). Through its `course` (world cells) on a smooth curve,
+    meandering a little off it (`RIVER_WOBBLE`, not at its ends), widening from the first of its
+    `width` to the second."""
+    course = [tuple(map(float, p)) for p in river["course"]]
+    points = []
+    for n in range(len(course) - 1):
+        p0, p1, p2, p3 = course[max(0, n - 1)], course[n], course[n + 1], course[min(len(course) - 1, n + 2)]
+        steps = max(4, int(math.dist(p1, p2) * 4))
+        for s in range(steps):
+            points.append(_catmull(p0, p1, p2, p3, s / steps))
+    points.append(course[-1])
+    gone = [0.0]
+    for a, b in zip(points, points[1:]):
+        gone.append(gone[-1] + math.dist(a, b))
+    total = max(gone[-1], 1e-9)
+    narrow, wide = river.get("width", [3, 3])
+    line = []
+    for n, (x, y) in enumerate(points):
+        a, b = points[max(0, n - 1)], points[min(len(points) - 1, n + 1)]
+        tx, ty = b[0] - a[0], b[1] - a[1]
+        length = math.hypot(tx, ty) or 1
+        side = (-ty / length, tx / length)
+        s = gone[n]
+        ease = min(1.0, s / 12, (total - s) / 12)
+        drift = sum((_value(s, number * 41.3, every, seed) * 2 - 1) * far for every, far, seed in RIVER_WOBBLE) * ease
+        width = narrow + (wide - narrow) * s / total
+        line.append((x + side[0] * drift, y + side[1] * drift, width, s))
+    return line
+
+
+def road_lines(land_id, land, middle, crossings, routes):
+    """A land's roads (to each crossing, from its hub through `routes`' turns) and trails, as
+    (what, [(x, y), ...]) in world cells: the lines rivers are bridged on."""
+    mx, my = middle
+    hub = land.get("hub") or [0, 0]
+    found = []
+    for to, (cx, cy) in sorted(crossings.items()):
+        exit = next((e for e in land["exits"] if e["to"] == to), None)
+        if exit is None:
+            continue
+        dx, dy = STEP[exit["edge"]]
+        stops = [(mx + hub[0], my + hub[1])] + [(mx + a, my + b) for a, b in routes.get(to) or []]
+        found.append((f"{land_id}'s road to {to}", stops + [(cx - dx * 5, cy - dy * 5), (cx, cy)]))
+    for trail in land.get("trails") or []:
+        stops = [trail.get("from") or hub] + (trail.get("via") or []) + [trail["to"]]
+        found.append((f"{land_id}'s trail", [(mx + a, my + b) for a, b in stops]))
+    return found
+
+
+def along(stops):
+    """Points every half cell along a line through `stops`."""
+    samples = []
+    for a, b in zip(stops, stops[1:]):
+        n = max(2, int(math.dist(a, b) * 2))
+        samples += [(a[0] + (b[0] - a[0]) * t / n, a[1] + (b[1] - a[1]) * t / n) for t in range(n)]
+    return samples + [tuple(stops[-1])]
+
+
+def bridged(lines, wet):
+    """The cells a bridge covers where the lines cross water (`wet(x, y)`): each wet point's cell
+    and the cells round it."""
+    cells = set()
+    for _, stops in lines:
+        for x, y in along(stops):
+            cx, cy = int(math.floor(x)), int(math.floor(y))
+            if wet(cx, cy):
+                cells.update((cx + i, cy + j) for i in (-1, 0, 1) for j in (-1, 0, 1))
+    return cells
+
+
+def rivers(canvas, world_rivers, design, lands, grids, found, routes):
+    """The cells under the rivers (a bool array over the canvas, only land: not a town's), each
+    river's middle as [x, y] a cell apart (for `world.json`), and problems: a river too near
+    something it should keep clear of, a road crossing it badly (askew, where it's wide, near the
+    sea or the road's ends) or running along it, land it cuts off with no road over."""
+    import numpy as np
+    from scipy import ndimage
+    ids = canvas.ids
+    index = {land_id: k for k, land_id in enumerate(ids)}
+    under = np.zeros_like(canvas.owner, bool)
+    lines, problems = [], []
+    towns = np.isin(canvas.owner, [index[i] for i in ids if is_town(lands[i])])
+    for number, river in enumerate(world_rivers):
+        name = river.get("name", f"river {number}")
+        line = river_line(river, number)
+        x0, y0 = line[0][:2]
+        x1, y1 = line[-1][:2]
+        if canvas.get(int(math.floor(x0)), int(math.floor(y0))) < 0:
+            problems.append(f"{name}'s spring isn't on land")
+        if canvas.get(int(math.floor(x1)), int(math.floor(y1))) >= 0:
+            problems.append(f"{name} doesn't run out into the sea")
+        for x, y, width, s in line:
+            radius = width / 2 + SPRING * max(0.0, 1 - s / 6)
+            reach = int(radius) + 2
+            cx, cy = int(math.floor(x)), int(math.floor(y))
+            for j in range(cy - reach, cy + reach + 1):
+                for i in range(cx - reach, cx + reach + 1):
+                    if math.hypot(i + 0.5 - x, j + 0.5 - y) <= radius:
+                        r, c = canvas.index(i, j)
+                        if 0 <= r < canvas.height and 0 <= c < canvas.width:
+                            under[r, c] = True
+        lines.append({"name": name, "points": line})
+    ground = canvas.owner >= 0
+    if (under & towns).any():
+        problems.append("a river runs into a town")
+    under &= ground & ~towns
+    near_town = ndimage.distance_transform_edt(~towns) <= RIVER_TOWN
+    if (under & near_town).any():
+        problems.append(f"a river runs within {RIVER_TOWN} cells of a town")
+    # Clear of the roads' crossings, the middles and hubs, everything set down by hand and the caves.
+    distance = ndimage.distance_transform_edt(~under)
+
+    def clear(x, y, least, what):
+        r, c = canvas.index(x, y)
+        if 0 <= r < canvas.height and 0 <= c < canvas.width and distance[r, c] <= least:
+            problems.append(f"a river runs within {least} cells of {what}")
+
+    for land_id in ids:
+        land = lands[land_id]
+        mx, my = design[land_id]["at"]
+        for to, (cx, cy) in found[land_id].items():
+            clear(cx, cy, RIVER_CAVE if to not in lands else RIVER_CROSSING, f"{land_id}'s road to {to}'s crossing")
+        if is_town(land):
+            continue
+        clear(mx, my, RIVER_MIDDLE, f"{land_id}'s middle")
+        for (dx, dy), what in content_spots(land):
+            clear(mx + dx, my + dy, RIVER_CONTENT + CONTENT_MARGIN if what != "hub" else RIVER_MIDDLE, f"{land_id}'s {what}")
+    # Roads (and trails) over them: square across, narrow, inland, clear of their ends.
+    sea_distance = ndimage.distance_transform_edt(ground)
+    bridges = np.zeros_like(under)
+    middles = [(p[0], p[1], p[2]) for river in lines for p in river["points"]]
+    tree = np.array([(x, y) for x, y, _ in middles])
+
+    def wet(x, y):
+        r, c = canvas.index(x, y)
+        return 0 <= r < canvas.height and 0 <= c < canvas.width and bool(under[r, c])
+
+    for land_id in ids:
+        land = lands[land_id]
+        if is_town(land):
+            continue
+        roads_here = road_lines(land_id, land, design[land_id]["at"], found[land_id], routes[land_id])
+        for x, y in bridged(roads_here, wet):
+            r, c = canvas.index(x, y)
+            bridges[r, c] = True
+        for what, stops in roads_here:
+            samples = along(stops)
+            flags = [wet(int(math.floor(x)), int(math.floor(y))) for x, y in samples]
+            # Each run of samples in the water is a crossing.
+            runs, start = [], None
+            for n, w in enumerate(flags + [False]):
+                if w and start is None:
+                    start = n
+                elif not w and start is not None:
+                    runs.append((start, n - 1))
+                    start = None
+            for first, last in runs:
+                x, y = samples[(first + last) // 2]
+                nearest = int(np.argmin(((tree - (x, y)) ** 2).sum(axis=1)))
+                width = middles[nearest][2]
+                ax, ay = middles[max(0, nearest - 8)][:2]
+                bx, by = middles[min(len(middles) - 1, nearest + 8)][:2]
+                px, py = samples[max(0, first - 4)]
+                qx, qy = samples[min(len(samples) - 1, last + 4)]
+                river_dir, road_dir = (bx - ax, by - ay), (qx - px, qy - py)
+                cosine = abs(river_dir[0] * road_dir[0] + river_dir[1] * road_dir[1]) / (
+                    (math.hypot(*river_dir) * math.hypot(*road_dir)) or 1)
+                spot = f"{what} crosses a river at {[round(x), round(y)]}"
+                if cosine > BRIDGE_SQUARE:
+                    problems.append(f"{spot} askew")
+                if width > BRIDGE_WIDEST:
+                    problems.append(f"{spot} where it's {width:.1f} wide")
+                r, c = canvas.index(int(x), int(y))
+                if sea_distance[r, c] < BRIDGE_SEA:
+                    problems.append(f"{spot} within {BRIDGE_SEA} cells of the sea")
+                if math.dist((x, y), stops[0]) < BRIDGE_END or math.dist((x, y), stops[-1]) < BRIDGE_END:
+                    problems.append(f"{spot} too near its ends")
+            # Along it: nowhere but at its crossings within 2 cells of the water.
+            for n, (x, y) in enumerate(samples):
+                if any(first - 8 <= n <= last + 8 for first, last in runs):
+                    continue
+                r, c = canvas.index(int(math.floor(x)), int(math.floor(y)))
+                if distance[r, c] <= 2.5:
+                    problems.append(f"{what} runs along a river at {[round(x), round(y)]}")
+                    break
+    # Land it cuts off: small bits go under the water, the rest needs a road over.
+    eight = np.ones((3, 3), bool)
+    for land_id in ids:
+        k = index[land_id]
+        mine = canvas.owner == k
+        if not (under & mine).any():
+            continue
+        dry = mine & (~under | bridges)
+        labels, count = ndimage.label(dry, structure=eight)
+        mx, my = design[land_id]["at"]
+        hub = lands[land_id].get("hub") or [0, 0]
+        r, c = canvas.index(mx + hub[0], my + hub[1])
+        home = labels[r, c]
+        sizes = ndimage.sum(np.ones_like(labels), labels, range(1, count + 1))
+        for piece in range(1, count + 1):
+            if piece == home:
+                continue
+            if sizes[piece - 1] < SLIVER:
+                under |= labels == piece
+            else:
+                problems.append(f"a river cuts off {int(sizes[piece - 1])} cells of {land_id} with no road over")
+    out = []
+    for river in lines:
+        points = river["points"]
+        kept, last = [], None
+        for x, y, _, s in points:
+            if last is None or s - last >= 1 or (x, y) == points[-1][:2]:
+                kept.append([round(x, 1), round(y, 1)])
+                last = s
+        out.append(kept)
+    return under, out, sorted(set(problems))
 
 
 def content_spots(land):
@@ -651,7 +913,7 @@ def ways(canvas, design, lands, grids, found):
     return found_ways, problems
 
 
-def write(data, lands, design, grids, roads, routes, shapes):
+def write(data, lands, design, grids, roads, routes, shapes, lines):
     for land_id, (x, y, w, h) in grids.items():
         lands[land_id]["width"], lands[land_id]["height"] = w, h
     MAPS.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
@@ -675,7 +937,14 @@ def write(data, lands, design, grids, roads, routes, shapes):
             entries.append(f'      {json.dumps(to)}: {json.dumps(road, separators=(", ", ": "))}')
         blocks.append(f'    "{i}": {{\n' + ",\n".join(entries) + "\n    }")
     out.append(",\n".join(blocks))
-    out += ["  },", '  "regions": {']
+    out += ["  },", '  "rivers": [']
+    blocks = []
+    for river, line in zip(old.get("rivers", []), lines):
+        spec = {key: river[key] for key in ("name", "width", "course")}
+        text = json.dumps(spec, separators=(", ", ": "))[:-1]
+        blocks.append(f"    {text},\n      \"line\": {json.dumps(line, separators=(',', ':'))}}}")
+    out.append(",\n".join(blocks))
+    out += ["  ],", '  "regions": {']
     blocks = []
     for i in order:
         rows = ",\n".join("      " + json.dumps(row, separators=(",", ":")) for row in shapes[i])
@@ -685,7 +954,7 @@ def write(data, lands, design, grids, roads, routes, shapes):
     WORLD.write_text("\n".join(out) + "\n")
 
 
-def solve(data, maps, lands, design):
+def solve(data, maps, lands, design, world_rivers):
     import numpy as np
     canvas = paint(design, lands)
     keep = np.zeros_like(canvas.owner, bool)
@@ -699,33 +968,35 @@ def solve(data, maps, lands, design):
     tidy(canvas, keep, towns)
     grids = boxes(canvas, design, lands)
     routes, more = ways(canvas, design, lands, grids, found)
+    river, lines, wet = rivers(canvas, world_rivers, design, lands, grids, found, routes)
     # Roads in each land's own cells.
     roads = {i: {to: (x - grids[i][0], y - grids[i][1]) for to, (x, y) in found[i].items()} for i in found}
-    return canvas, grids, roads, routes, regions(canvas, grids), problems + more
+    return canvas, grids, roads, routes, regions(canvas, grids, river), lines, problems + more + wet
 
 
 # MARK: Checking (no numpy: check_content.py runs it)
 
 def unpack(world, lands):
-    """Each land's shape as a set of its own world cells and of the sea it draws, from world.json."""
+    """Each land's shape from world.json: its own world cells, the sea it draws, its own cells under
+    a river and other lands' under a river round it, as sets."""
     margin = world.get("margin", MARGIN)
-    own, sea = {}, {}
+    own, sea, wet, away = {}, {}, {}, {}
     for land_id, rows in world.get("regions", {}).items():
         if land_id not in lands or land_id not in world.get("lands", {}):
             continue
         x0, y0 = world["lands"][land_id]
-        cells, water = set(), set()
+        sets = {OWN: set(), SEA: set(), RIVER: set(), RIVER_AWAY: set()}
         for n, runs in enumerate(rows):
             col = 0
             for k in range(0, len(runs), 2):
                 code, length = runs[k], runs[k + 1]
-                if code:
-                    target = cells if code == 1 else water
+                if code in sets:
                     for i in range(col, col + length):
-                        target.add((x0 - margin + i, y0 - margin + n))
+                        sets[code].add((x0 - margin + i, y0 - margin + n))
                 col += length
-        own[land_id], sea[land_id] = cells, water
-    return own, sea
+        own[land_id] = sets[OWN] | sets[RIVER]
+        sea[land_id], wet[land_id], away[land_id] = sets[SEA], sets[RIVER], sets[RIVER_AWAY]
+    return own, sea, wet, away
 
 
 def verify(maps, lands, world):
@@ -744,7 +1015,7 @@ def verify(maps, lands, world):
             problems.append(f"world.json: {land_id} isn't an outdoor map")
     if problems:
         return problems
-    own, sea = unpack(world, lands)
+    own, sea, wet, away = unpack(world, lands)
     owner = {}
     for land_id, cells in sorted(own.items()):
         land = lands[land_id]
@@ -829,7 +1100,90 @@ def verify(maps, lands, world):
                     problems.append(f"world.json: {land_id}'s road to {exit['to']} runs within {ROAD_MARGIN} cells of "
                                     "its land's edge on the way")
                     break
+    problems += verify_rivers(lands, world, own, wet, away)
     return problems
+
+
+def bridged_lands(lands, world):
+    """The lands where a road or trail crosses a river (and so has a bridge)."""
+    if not world.get("regions"):
+        return set()
+    own, _, wet, _ = unpack(world, lands)
+    water = set().union(*wet.values()) if wet else set()
+    found = set()
+    for land_id, land in lands.items():
+        if land_id not in world.get("lands", {}) or not wet.get(land_id):
+            continue
+        x0, y0 = world["lands"][land_id]
+        mc, mr = world["middles"][land_id]
+        roads = world["roads"].get(land_id, {})
+        crossings = {to: (x0 + r["at"][0], y0 + r["at"][1]) for to, r in roads.items()}
+        lines = road_lines(land_id, land, (x0 + mc, y0 + mr), crossings, {to: r.get("via") for to, r in roads.items()})
+        if bridged(lines, lambda x, y: (x, y) in water) & own[land_id]:
+            found.add(land_id)
+    return found
+
+
+def verify_rivers(lands, world, own, wet, away):
+    """Problems with the rivers: each with its middle drawn, the same cells under them from either
+    side of a border, none in a town, clear of the roads' crossings, the middles and everything set
+    down by hand, and nothing of a land cut off from its hub with no road over."""
+    problems = []
+    origins = world["lands"]
+    for number, river in enumerate(world.get("rivers", [])):
+        if len(river.get("line") or []) < 2:
+            problems.append(f"world.json: river {river.get('name', number)} has no line drawn (run tools/world_layout.py)")
+    water = set().union(*wet.values()) if wet else set()
+    owner = {cell: land_id for land_id, cells in own.items() for cell in cells}
+    for land_id, land in sorted(lands.items()):
+        x0, y0 = origins[land_id]
+        w, h = land["width"], land["height"]
+        seen = {cell for cell in water if x0 - MARGIN <= cell[0] < x0 + w + MARGIN
+                and y0 - MARGIN <= cell[1] < y0 + h + MARGIN and owner.get(cell) not in (None, land_id)}
+        if seen != away[land_id]:
+            problems.append(f"world.json: {land_id}'s shape doesn't show the rivers round it as the lands they run through do")
+        if is_town(land) and wet[land_id]:
+            problems.append(f"world.json: a river runs through the town {land_id}")
+        mc, mr = world["middles"][land_id]
+        middle = (x0 + mc, y0 + mr)
+
+        def near(spot, reach):
+            return any((spot[0] + i, spot[1] + j) in water for i in range(-reach, reach + 1) for j in range(-reach, reach + 1))
+
+        for to, road in world["roads"].get(land_id, {}).items():
+            reach = RIVER_CROSSING if to in lands else RIVER_CAVE
+            if near((x0 + road["at"][0], y0 + road["at"][1]), reach):
+                problems.append(f"world.json: a river runs within {reach} cells of where {land_id}'s road to {to} crosses")
+        if is_town(land):
+            continue
+        if near(middle, RIVER_MIDDLE):
+            problems.append(f"world.json: a river runs within {RIVER_MIDDLE} cells of {land_id}'s middle")
+        for (dx, dy), what in content_spots(land):
+            reach = RIVER_MIDDLE if what == "hub" else RIVER_CONTENT + CONTENT_MARGIN
+            if near((middle[0] + dx, middle[1] + dy), reach):
+                problems.append(f"world.json: a river runs within {reach} cells of {land_id}'s {what} at {[dx, dy]}")
+        if not wet[land_id]:
+            continue
+        crossings = {to: (x0 + r["at"][0], y0 + r["at"][1]) for to, r in world["roads"].get(land_id, {}).items()}
+        routes = {to: r.get("via") for to, r in world["roads"].get(land_id, {}).items()}
+        lines = road_lines(land_id, land, middle, crossings, routes)
+        dry = (own[land_id] - wet[land_id]) | (bridged(lines, lambda x, y: (x, y) in water) & own[land_id])
+        hub = land.get("hub") or [0, 0]
+        start = (middle[0] + hub[0], middle[1] + hub[1])
+        reached, queue = {start}, [start]
+        while queue:
+            x, y = queue.pop()
+            for i in (-1, 0, 1):
+                for j in (-1, 0, 1):
+                    cell = (x + i, y + j)
+                    if cell in dry and cell not in reached:
+                        reached.add(cell)
+                        queue.append(cell)
+        if len(dry - reached):
+            problems.append(f"world.json: a river cuts off {len(dry - reached)} cells of {land_id} from its hub")
+    return problems
+
+
 
 
 # MARK: Preview
@@ -841,7 +1195,7 @@ COLOURS = {"tile_grass": (120, 190, 90), "tile_sand": (230, 210, 150), "tile_dar
 
 def preview(lands, world, path, names=None):
     from PIL import Image, ImageDraw
-    own, _ = unpack(world, lands)
+    own, _, wet, _ = unpack(world, lands)
     origins = world["lands"]
     xs = [x for cells in own.values() for x, _ in cells]
     ys = [y for cells in own.values() for _, y in cells]
@@ -857,12 +1211,15 @@ def preview(lands, world, path, names=None):
         for x, y in cells:
             owner[(x, y)] = land_id
             pixels[x - left, top - 1 - y] = colour
-    # Borders between lands, dark.
+    # Borders between lands, dark; the rivers.
     for (x, y), land_id in owner.items():
         for dx, dy in ((1, 0), (0, 1)):
             other = owner.get((x + dx, y + dy))
             if other and other != land_id:
                 pixels[x - left, top - 1 - y] = (40, 40, 40)
+    for cells in wet.values():
+        for x, y in cells:
+            pixels[x - left, top - 1 - y] = (70, 150, 215)
     scale = 2
     image = image.resize((width * scale, height * scale), Image.NEAREST)
     draw = ImageDraw.Draw(image)
@@ -870,6 +1227,11 @@ def preview(lands, world, path, names=None):
         land = lands[land_id]
         x0, y0 = origins[land_id]
         mx, my = x0 + world["middles"][land_id][0], y0 + world["middles"][land_id][1]
+        # Its roads, as the game lays them out roughly.
+        roads = world["roads"].get(land_id, {})
+        crossings = {to: (x0 + r["at"][0], y0 + r["at"][1]) for to, r in roads.items()}
+        for _, stops in road_lines(land_id, land, (mx, my), crossings, {to: r.get("via") for to, r in roads.items()}):
+            draw.line([((x - left) * scale, (top - y) * scale) for x, y in stops], fill=(140, 100, 60), width=2)
         label = (names or {}).get(land_id, land_id)
         draw.text(((mx - left) * scale - 3 * len(label), (top - my) * scale - 6), label, fill=(0, 0, 0))
         for to, road in world["roads"].get(land_id, {}).items():
@@ -888,10 +1250,10 @@ def main():
     data, maps, lands = load_maps()
     world = json.loads(WORLD.read_text())
     if not args.check:
-        canvas, grids, roads, routes, shapes, problems = solve(data, maps, lands, world["design"])
+        canvas, grids, roads, routes, shapes, lines, problems = solve(data, maps, lands, world["design"], world.get("rivers", []))
         for problem in problems:
             print("  " + problem)
-        write(data, lands, world["design"], grids, roads, routes, shapes)
+        write(data, lands, world["design"], grids, roads, routes, shapes, lines)
         data, maps, lands = load_maps()
         world = json.loads(WORLD.read_text())
     problems = verify(maps, lands, world)

@@ -1132,11 +1132,6 @@
             11
           ]
         },
-        "river": {
-          "from": "north",
-          "to": "south",
-          "width": 4
-        },
         "fairyRings": {
           "count": 9,
           "art": "mushroom"
@@ -2480,11 +2475,6 @@
         "accentPatches": 112,
         "water": "tile_water",
         "ponds": 8,
-        "river": {
-          "from": "north",
-          "to": "south",
-          "width": 3
-        },
         "fairyRings": {
           "count": 14,
           "art": "mushroom"
@@ -12728,11 +12718,6 @@
             18
           ],
           "islands": 1
-        },
-        "river": {
-          "from": "west",
-          "to": "south",
-          "width": 3
         },
         "hills": {
           "count": 2,

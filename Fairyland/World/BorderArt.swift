@@ -96,7 +96,11 @@ enum BorderArt {
                       into parent: (CGPoint) -> SKNode) -> [SKNode] {
         guard let origin = Continent.origin(of: here), !neighbour.border.isEmpty else { return [] }
         let palette = sharedPalette(here, neighbour.def)
-        let segments = neighbour.border.map(Segment.init)
+        // Not across a river where it runs over the border: the water's in the way already.
+        let region = Continent.region(of: here)
+        let segments = neighbour.border.filter { pair in
+            region.map { !$0.isRiver(pair.inside) && !$0.isRiver(pair.outside) } ?? true
+        }.map(Segment.init)
         // Everything set down (but a town's wall), to take away once you can cross.
         var placed: [SKNode] = []
         func put(_ node: SKNode) {

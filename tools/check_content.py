@@ -241,6 +241,12 @@ for item, given_by in givers.items():
 # only that chest has it: no other chest, no quest, no monster's drop and no smith.
 quest_rewards = {item for quest in quests.values() for item in quest["reward"].get("items", [])}
 holders = {}
+# The lands where a road or trail crosses one of the continent's rivers (a bridge, for the "bridge"
+# landmark below).
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import world_layout  # noqa: E402
+bridged_lands = world_layout.bridged_lands({i: m for i, m in maps.items() if "cave" not in m["theme"]}, load("content/world.json"))
+
 for map_def in maps_file["maps"]:
     for npc in map_def.get("npcs", []):
         item = npc.get("gives")
@@ -323,16 +329,6 @@ for map_def in maps.values():
               f"{where} → size must be [smallest, biggest] reach in cells, 5 to 24")
         islands = lakes.get("islands", 0)
         check(isinstance(islands, int) and 0 <= islands <= lakes.get("count", 0), f"{where} → islands must be 0 to count")
-    if "river" in theme:
-        river = theme["river"]
-        where = f"map {map_def['id']} river"
-        edges = {"north", "south", "east", "west"}
-        check(isinstance(river, dict) and set(river) <= {"from", "to", "width"}, f"{where} → must be {{from, to, width}}")
-        check(not map_def.get("town") and "cave" not in theme, f"{where} → only out in the fields (not towns or caves)")
-        check("water" in theme, f"{where} → needs the map's water tile")
-        check(river.get("from") in edges and river.get("to") in edges and river.get("from") != river.get("to"),
-              f"{where} → from and to must be two different edges")
-        check(isinstance(river.get("width", 3), (int, float)) and 2 <= river.get("width", 3) <= 6, f"{where} → width must be 2 to 6 cells")
     props = [p["art"] for p in theme["props"]] + town.get("lots", []) + list(town.get("streetDecor", {}))
     props += [b["art"] for b in map_def.get("buildings", [])] + [d["art"] for d in map_def.get("decor", [])]
     for art_id in tiles + props:
@@ -398,7 +394,7 @@ for map_def in maps.values():
         "jetty": bool(lakes),
         "shore": bool(lakes),
         "island": lakes.get("islands", 0) > 0,
-        "bridge": "river" in theme,
+        "bridge": map_def["id"] in bridged_lands,
         "mouth": any("cave" in (maps.get(exit["to"]) or {}).get("theme", {}) for exit in map_def["exits"]) and "cave" not in theme,
     }
     for local in map_def.get("locals", []):
@@ -716,8 +712,6 @@ for map_def in maps.values():
 
 # The continent (content/world.json, tools/world_layout.py): every outdoor land has its shape, none
 # overlap, a road crosses where the land it leads to takes it on, and what's set down by hand stands on its land.
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-import world_layout  # noqa: E402
 outdoor = {i: m for i, m in maps.items() if "cave" not in m["theme"]}
 errors += world_layout.verify(maps, outdoor, load("content/world.json"))
 
