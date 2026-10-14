@@ -1,5 +1,5 @@
 {
-  "_about": "Where each outdoor land lies on the one continent, in world cells: the world cell its south-west cell sits on (x east, y north, as a map's own columns and rows run). Lands a road joins touch along that edge and the road meets itself across the border; borders without a road are walled off, and where no land lies are the wilds. Laid out by tools/world_layout.py; check_content.py checks it still fits maps.json.",
+  "_about": "The lands as one continent, each a shape of its own, painted by tools/world_layout.py from `design` (edit that and rerun it): each land's middle in world cells (x east, y north) and lobes round it [dx, dy, across, up, turn°]; a town is its rectangle. `lands`: the world cell each land's box (its map, maps.json width × height) starts on, south-west. `middles`: its middle in its own cells. `roads`: where each road crosses its border, the last cell on its side (`at`, its own cells; the next over, the way the exit goes, is the other land's), and the turns it takes there from the hub (`via`, out from the middle). `regions`: its shape over its box and `margin` cells round it, row by row from the south, as runs of [code, length]: 1 its own land, 2 the sea it draws (the sea nearest it), 0 neither. check_content.py checks it fits maps.json.",
   "margin": 18,
   "design": {
     "bluebird": {"at": [2, 200]},
