@@ -699,9 +699,9 @@ final class ContinentScene: SKScene {
         allies = members.enumerated().map { index, friend in
             if var existing = allies.first(where: { $0.id == friend.id }) {
                 // Fainted beside you: off to their checkpoint, to wait for you there.
-                if let spot = friend.waitingAt, spot != existing.waiting, let point = point(for: spot, index: index) {
+                if let spot = friend.waitingAt, spot != existing.waiting, let there = point(for: spot, index: index) {
                     SkillEffects.smoke(at: existing.node.position, in: layer)
-                    move(existing, to: point)
+                    move(existing, to: there)
                 }
                 existing.waiting = friend.waitingAt
                 if existing.pet == nil, let pet = companionWalker(of: friend, beside: existing.node) {
@@ -714,8 +714,8 @@ final class ContinentScene: SKScene {
             node.setGear(weapon: GameSession.weapon(for: friend), accessory: nil)
             node.walkSpeed = 105
             node.tagMode = .whenStill
-            if let spot = friend.waitingAt, let point = point(for: spot, index: index) {
-                node.position = point
+            if let spot = friend.waitingAt, let there = point(for: spot, index: index) {
+                node.position = there
             } else {
                 // Recruited here: they start where they stood.
                 let beside = player.position + CGVector(dx: -40, dy: -10)
