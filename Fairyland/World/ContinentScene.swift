@@ -108,6 +108,17 @@ final class ContinentScene: SKScene {
     private var nearbyTalk: (land: String, npc: String)?
     /// What happens once a Homeward Feather has lifted you away (`featherAway`).
     private var onFeatherGone: (() -> Void)?
+    /// Your party's friends: walking behind you, or waiting where you left them (on a land that's
+    /// laid out) until you walk up to them (`Adventurer.waitingAt`), with their companions.
+    private struct Ally {
+        let id: UUID
+        let node: Walker
+        var pet: Walker?
+        var waiting: Spot?
+    }
+    private var allies: [Ally] = []
+    /// How close you come to a friend waiting for you before they set off with you again.
+    private let rejoinRange: CGFloat = 64
     /// Set while a window or a battle is up (`MapScene`).
     var isInputLocked = false
     /// Debug launches walking you about (`crossing`): no battles on the way.
@@ -305,11 +316,31 @@ final class ContinentScene: SKScene {
         }
         // Your companion keeps to ground it can stand on, never into water or through a wall.
         player.markFootstep()
+        let standable: (CGPoint) -> Bool = { [unowned self] in self.store.isWalkable(Self.cell(at: $0)) }
         if let follower {
-            follower.follow(player, dt: dt, footstep: player.footstep(behind: 36),
-                            canStand: { [unowned self] in self.store.isWalkable(Self.cell(at: $0)) })
+            follower.follow(player, dt: dt, footstep: player.footstep(behind: 36), canStand: standable)
             follower.zPosition = -follower.position.y
             follower.settle()
+        }
+        // Your friends line up behind you; those waiting for you turn to watch you come.
+        var leader: Walker = follower ?? player
+        var place = follower == nil ? 1 : 2
+        for ally in allies {
+            if ally.waiting == nil {
+                let behind = CGFloat(place) * 36
+                ally.node.follow(leader, dt: dt, footstep: player.footstep(behind: behind), canStand: standable)
+                ally.pet?.follow(ally.node, dt: dt, footstep: player.footstep(behind: behind + 18), canStand: standable, beside: true)
+                leader = ally.node
+                place += 1
+            } else if ally.node.position.distance(to: player.position) < Walker.nameRange {
+                ally.node.face(Direction(player.position - ally.node.position, current: ally.node.facing))
+            }
+            ally.node.zPosition = -ally.node.position.y
+            ally.node.settle()
+            if let pet = ally.pet {
+                pet.zPosition = -pet.position.y
+                pet.settle()
+            }
         }
         player.settle()
         cam.position = player.position + CGVector(dx: 0, dy: player.lift)
@@ -481,6 +512,10 @@ final class ContinentScene: SKScene {
         let boss: [SKNode] = lands.values.flatMap { land in land.stage.npcs.filter { $0.def.id == npcID }.map(\.node) }
         var hidden: [SKNode] = [player]
         if let follower { hidden.append(follower) }
+        for ally in allies {
+            hidden.append(ally.node)
+            if let pet = ally.pet { hidden.append(pet) }
+        }
         hidden += boss
         hidden += layer.children.filter { $0.name == Effects.tapMarkerName }
         hidden.forEach { $0.isHidden = true }
@@ -637,6 +672,117 @@ final class ContinentScene: SKScene {
         input.move = .zero
         refreshHero()
         refreshFollower()
+        refreshAllies()
+    }
+
+    // MARK: Your party
+
+    /// Keeps your party on the continent in step with who's in it (`WorldScene.refreshAllies`):
+    /// friends at your side walk behind you, friends waiting for you stand at their spot (once their
+    /// land's laid out), one who left stays about as an adventurer you can invite back.
+    private func refreshAllies() {
+        let members = session.partyMembers.filter { friend in friend.waitingAt.map { lands[$0.mapID] != nil } ?? true }
+        guard members.map(\.id) != allies.map(\.id) || members.map(\.waitingAt) != allies.map(\.waiting)
+                || members.map({ $0.petSpecies != nil }) != allies.map({ $0.pet != nil }) else { return }
+        for ally in allies where !members.contains(where: { $0.id == ally.id }) {
+            if let friend = session.friends.first(where: { $0.id == ally.id }), !session.isInParty(friend),
+               let here, let stage = lands[here.id]?.stage, let crowd = stage.crowd {
+                // Left the party but still a friend: they stay here, so you can invite them back.
+                crowd.rejoin(friend, at: stage.local(ally.node.position), world: stage.world)
+            } else {
+                // Gone: unfriended, or off to wait for you somewhere else.
+                SkillEffects.smoke(at: ally.node.position, in: layer)
+            }
+            ally.node.removeFromParent()
+            ally.pet?.removeFromParent()
+        }
+        allies = members.enumerated().map { index, friend in
+            if var existing = allies.first(where: { $0.id == friend.id }) {
+                // Fainted beside you: off to their checkpoint, to wait for you there.
+                if let spot = friend.waitingAt, spot != existing.waiting, let point = point(for: spot, index: index) {
+                    SkillEffects.smoke(at: existing.node.position, in: layer)
+                    move(existing, to: point)
+                }
+                existing.waiting = friend.waitingAt
+                if existing.pet == nil, let pet = companionWalker(of: friend, beside: existing.node) {
+                    SkillEffects.smoke(at: pet.position, in: layer)
+                    existing.pet = pet
+                }
+                return existing
+            }
+            let node = Walker(cycle: art.walkCycle(session.artID(for: friend)), label: friend.name, labelColor: HUDStyle.partyGreen, badge: .bot)
+            node.setGear(weapon: GameSession.weapon(for: friend), accessory: nil)
+            node.walkSpeed = 105
+            node.tagMode = .whenStill
+            if let spot = friend.waitingAt, let point = point(for: spot, index: index) {
+                node.position = point
+            } else {
+                // Recruited here: they start where they stood.
+                let beside = player.position + CGVector(dx: -40, dy: -10)
+                var start = store.isWalkable(Self.cell(at: beside)) ? beside : player.position
+                for land in lands.values {
+                    guard let crowd = land.stage.crowd, let spot = crowd.position(of: friend.id) else { continue }
+                    start = spot + land.shift
+                    crowd.remove(friend.id, poof: false)
+                    break
+                }
+                node.position = start
+            }
+            layer.addChild(node)
+            return Ally(id: friend.id, node: node, pet: companionWalker(of: friend, beside: node), waiting: friend.waitingAt)
+        }
+    }
+
+    /// A friend's companion, if they have one, set down at their side.
+    private func companionWalker(of friend: Adventurer, beside node: Walker) -> Walker? {
+        guard let species = friend.petSpecies.flatMap(session.content.monster) else { return nil }
+        let walker = Walker(cycle: art.walkCycle(species.art), label: nil)
+        walker.walkSpeed = 110
+        walker.motion = IdleMotion.of(art: species.art)
+        let side = node.position + CGVector(dx: 24, dy: 0)
+        walker.position = store.isWalkable(Self.cell(at: side)) ? side : node.position
+        layer.addChild(walker)
+        walker.settle()
+        return walker
+    }
+
+    /// Puts a friend, and their companion, somewhere else at once.
+    private func move(_ ally: Ally, to point: CGPoint) {
+        ally.node.position = point
+        ally.node.setWalking(false)
+        guard let pet = ally.pet else { return }
+        let side = point + CGVector(dx: 24, dy: 0)
+        pet.position = store.isWalkable(Self.cell(at: side)) ? side : point
+        pet.setWalking(false)
+    }
+
+    /// Where a friend waiting for you stands on the continent (`WorldScene.point(for:index:)`): where
+    /// they were left on their land (a step apart from the others there), or its checkpoint's spot,
+    /// on ground they can stand on. None till that land's laid out.
+    private func point(for spot: Spot, index: Int) -> CGPoint? {
+        guard let land = lands[spot.mapID] else { return nil }
+        let map = land.map
+        var anchor = map.center(of: map.center)
+        if let entry = spot.entry { anchor = map.center(of: map.entryCell(from: entry)) }
+        if let position = spot.position, position.count == 2 { anchor = CGPoint(x: position[0], y: position[1]) }
+        let apart = [CGVector(dx: -36, dy: 10), CGVector(dx: 36, dy: 10), CGVector(dx: -18, dy: -22), CGVector(dx: 18, dy: -22)]
+        let wanted = anchor + apart[index % apart.count]
+        var local = anchor
+        if map.isWalkable(map.rawCell(at: wanted)) {
+            local = wanted
+        } else if let open = map.nearestWalkable(to: map.cell(at: wanted)) {
+            local = map.center(of: open)
+        }
+        return local + land.shift
+    }
+
+    /// Friends waiting for you set off with you again once you reach them.
+    private func rejoinWaitingFriends() {
+        guard !isInputLocked else { return }
+        for ally in allies where ally.waiting != nil && ally.node.position.distance(to: player.position) < rejoinRange {
+            session.rejoin(ally.id)
+            ally.node.say([L("There you are!"), L("Let's go!"), L("Back together!")].randomElement() ?? L("Let's go!"))
+        }
     }
 
     /// Picks up a new look or name from the Character screen, the title you wear, a reborn hero's
@@ -835,9 +981,12 @@ final class ContinentScene: SKScene {
         if missing == 0, waiting.isEmpty, !painting { isReady = true }
         refreshHero()
         refreshFollower()
+        rejoinWaitingFriends()
+        refreshAllies()
         // The minimap's people and their jobs, in the land you're in.
         if let here, let stage = lands[here.id]?.stage {
-            let dots = stage.minimapDots(friends: Set(session.friends.map(\.id)))
+            let party = allies.map { GameSession.MinimapDot(cell: stage.map.cell(at: stage.local($0.node.position)), kind: .party) }
+            let dots = stage.minimapDots(friends: Set(session.friends.map(\.id))) + party
             if session.minimapDots != dots { session.minimapDots = dots }
             let marks = stage.minimapMarks()
             if session.minimapMarks != marks { session.minimapMarks = marks }
