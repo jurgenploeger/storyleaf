@@ -43,9 +43,11 @@ seam_snow    | newgame,map=snow_white_forest,border=swan_lake,landscape,weather=
 band_night   | newgame,map=frog_swamp,border=goldburg_lake,landscape,weather=clear,hour=23 | 6
 far_land     | newgame,map=northern_grassland,edge=east,far,landscape,weather=clear,hour=12 | 90
 coast        | newgame,map=meadowbrook,edge=west,landscape,weather=clear,hour=12 | 6
-# The sea round a wild coast, lower than the land: the bank facing you (the sandy lake shore's
-# west), from behind (the snowy lake's north), and where the sea used to let you walk out (the lair's south).
+# The sea round a wild coast, lower than the land, the land sloping down to it (`WorldMap.shore`): the
+# slope facing you (the sandy lake shore's west, Pineapple Shore's beach), from behind (the snowy lake's
+# north), and where the sea used to let you walk out (the lair's south). Meadowbrook (`coast`) keeps its bank.
 coast_bay    | newgame,map=goldburg_lake,edge=west,landscape,weather=clear,hour=12 | 6
+coast_beach  | newgame,map=pineapple_shore,at=-10_-47,landscape,weather=clear,hour=12 | 6
 coast_north  | newgame,map=rosen_lake,edge=north,landscape,weather=clear,hour=12 | 6
 coast_lair   | newgame,map=wolf_lair,edge=south,landscape,weather=clear,hour=12 | 6
 # The land next door built as the game builds it, in the background a few milliseconds a frame (the
@@ -216,7 +218,7 @@ lake_jetty     | newgame,level=60,map=swan_lake,bridge=1,hour=10,weather=clear |
 lake_swamp     | newgame,level=20,map=frog_swamp,bridge=0,hour=10,weather=clear | 8
 lake_briarmere_land | newgame,level=110,map=rosen_lake,bridge=1,hour=10,weather=clear,landscape | 8
 river_forest   | newgame,level=26,map=smiling_forest,bridge=0,hour=10,weather=clear | 8
-river_border   | newgame,level=60,map=swan_lake,at=21_47,hour=10,weather=clear | 8
+river_border   | newgame,level=60,map=swan_lake,at=16_50,hour=10,weather=clear | 8
 # Where a road leads into a cave its rock rises along that side of the map, the road running into a
 # dark mouth (north and east) or under an arch into a dark cleft (south and west).
 crag_east      | newgame,level=30,map=valley_of_fear,at=70_-24    | 8
