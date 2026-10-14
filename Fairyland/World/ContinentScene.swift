@@ -1007,11 +1007,11 @@ final class ContinentScene: SKScene {
     /// Draws the chunks round the camera that aren't yet (laying out the lands they need first),
     /// and lets go of those far off.
     private func lookAround() {
-        let here = World.chunk(of: Self.cell(at: cam.position))
+        let middle = World.chunk(of: Self.cell(at: cam.position))
         var missing = 0
         for dr in -Self.reach...Self.reach {
             for dc in -Self.reach...Self.reach {
-                let chunk = GridPoint(col: here.col + dc, row: here.row + dr)
+                let chunk = GridPoint(col: middle.col + dc, row: middle.row + dr)
                 guard chunks[chunk] == nil else { continue }
                 missing += 1
                 let needed = owners(of: chunk)
@@ -1053,7 +1053,7 @@ final class ContinentScene: SKScene {
             let around = crowd.adventurers(near: you, within: 320)
             if session.adventurersAround != around { session.adventurersAround = around }
         }
-        for chunk in chunks.keys where max(abs(chunk.col - here.col), abs(chunk.row - here.row)) > Self.keep {
+        for chunk in chunks.keys where max(abs(chunk.col - middle.col), abs(chunk.row - middle.row)) > Self.keep {
             if let gone = chunks.removeValue(forKey: chunk) {
                 gone.ground.removeFromParent()
                 gone.sea.removeFromParent()
