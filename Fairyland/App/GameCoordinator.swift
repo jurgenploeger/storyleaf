@@ -137,7 +137,28 @@ final class GameCoordinator {
     }
 
     /// The scene SpriteKit should show right now.
-    var scene: SKScene { battle != nil ? (battleScene ?? world) : world }
+    var scene: SKScene { battle != nil ? (battleScene ?? world) : (continent ?? world) }
+
+    /// The continent as one place (`ContinentScene`, docs/continuous-world.md), shown instead of the
+    /// land you're in: only by a debug launch (`continent`) until it takes over from the lands' own
+    /// scenes.
+    private(set) var continent: ContinentScene?
+
+    #if DEBUG
+    /// Debug launches (`continent`): the continent as one place, from where you stand, once the chunks
+    /// round you are drawn.
+    func showContinentForDebug() async {
+        guard let origin = Continent.origin(of: world.def) else { return }
+        let local = session.playerPosition ?? .zero
+        let shift = WorldMap.project(CGPoint(x: CGFloat(origin.col) * WorldMap.tileSize, y: CGFloat(origin.row) * WorldMap.tileSize))
+        let scene = ContinentScene(session: session, input: input, at: CGPoint(x: local.x + shift.x, y: local.y + shift.y))
+        continent = scene
+        for _ in 0..<600 {
+            try? await Task.sleep(for: .milliseconds(500))
+            if scene.isReady { return }
+        }
+    }
+    #endif
 
     /// Builds the scenery a piece at a time. The bar follows how long each piece took the last time
     /// this map loaded (on this phone); the first time, the scene's own rough guesses.

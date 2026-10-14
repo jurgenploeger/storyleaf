@@ -145,8 +145,8 @@ enum DebugLaunch {
     /// play's part, with `clip`), so tools/screenshots.sh knows when to shoot (the loading curtain
     /// alone can look "drawn").
     static func markReady(nextDoorShown: Bool = false) {
-        // `border`: not till the land next door is up too (`apply`).
-        guard flags["border"] == nil || nextDoorShown else { return }
+        // `border`: not till the land next door is up too (`apply`); `continent`, the continent.
+        guard (flags["border"] == nil && flags["continent"] == nil) || nextDoorShown else { return }
         guard isActive || introClip != nil, let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
         try? Data().write(to: folder.appending(path: "debug-ready"))
     }
@@ -441,10 +441,11 @@ enum DebugLaunch {
         }
         // `border=<land>`: you start just inside the border with that land next door, on the road
         // over it if one crosses (else halfway along it), looking across (the land next door comes up
-        // before the screenshot, `apply`). `edge=<north|south|east|west>`: halfway along that side of
-        // the land's box, 3 cells in from where its land begins.
+        // before the screenshot, `apply`); `near=<land>` the same without the land next door built
+        // (the continent as one place draws it, `continent`). `edge=<north|south|east|west>`: halfway
+        // along that side of the land's box, 3 cells in from where its land begins.
         if let here = Content.shared.map(session.data.mapID) {
-            let neighbour = flags["border"].flatMap { id in Continent.neighbours(of: here).first { $0.def.id == id } }
+            let neighbour = (flags["border"] ?? flags["near"]).flatMap { id in Continent.neighbours(of: here).first { $0.def.id == id } }
             let edge = flags["edge"].flatMap(Edge.init(rawValue:))
             if neighbour != nil || edge != nil {
                 let map = WorldMap(def: here)
@@ -735,6 +736,22 @@ enum DebugLaunch {
                     guard coordinator.isReady, coordinator.world.view != nil else { continue }
                     await coordinator.showNextDoorForDebug(id)
                     if flags["cross"] != nil { await coordinator.world.walkOverForDebug(into: id) }
+                    markReady(nextDoorShown: true)
+                    return
+                }
+            }
+        }
+        #endif
+        // `continent`: once the map is on screen, the continent as one place takes its place
+        // (`ContinentScene`, docs/continuous-world.md), ready once the chunks round you are drawn.
+        #if DEBUG
+        if flags["continent"] != nil {
+            Task {
+                for _ in 0..<480 {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    guard coordinator.isReady, coordinator.world.view != nil else { continue }
+                    await coordinator.showContinentForDebug()
+                    try? await Task.sleep(for: .seconds(1))
                     markReady(nextDoorShown: true)
                     return
                 }

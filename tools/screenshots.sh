@@ -43,6 +43,9 @@ grep -vE '^\s*(#|$)' "$SCENES" | while IFS='|' read -r name flags wait; do
     ready="$(xcrun simctl get_app_container "$SIM" "$BUNDLE" data 2>/dev/null)/Documents/debug-ready"
   fi
   if [[ ",$flags," == *",clip="* ]]; then poll=0.5; fi
+  # The continent as one place (`continent`) is laid out after the land you start in is built.
+  limit=240
+  if [[ ",$flags," == *",continent,"* ]]; then limit=480; fi
   sleep "$poll"
   while :; do
     if [ -n "$ready" ]; then
@@ -52,7 +55,7 @@ grep -vE '^\s*(#|$)' "$SCENES" | while IFS='|' read -r name flags wait; do
       size=$(stat -f%z "$OUT/$name.png" 2>/dev/null || echo 0)
       [ "$size" -gt 300000 ] && break
     fi
-    if [ $((SECONDS - start)) -gt 240 ]; then echo "  still on the launch screen after 240 s"; break; fi
+    if [ $((SECONDS - start)) -gt "$limit" ]; then echo "  still on the launch screen after $limit s"; break; fi
     sleep "$poll"
   done
   echo "::notice::$name: first frame after $((SECONDS - start)) s"
