@@ -701,25 +701,21 @@ for song in music["songs"]:
         for token in track["notes"].split():
             if token != "|":
                 check(bool(NOTE_TOKEN.match(token)), f"{where}: bad note {token}")
-STEP = {"east": (1, 0), "west": (-1, 0), "north": (0, 1), "south": (0, -1)}
-places = {}
-for map_def in maps.values():
-    world = map_def.get("world")
-    if not (isinstance(world, list) and len(world) == 2 and all(isinstance(n, int) for n in world)):
-        errors.append(f"map {map_def['id']} → needs \"world\": [east, north] for the world map")
-        continue
-    check(tuple(world) not in places, f"map {map_def['id']} → world spot {world} already taken by {places.get(tuple(world))}")
-    places[tuple(world)] = map_def["id"]
+# A cave's road out comes back in where it left: the way out of a cave is the other side of the
+# way in (`GameCoordinator`: you arrive through the edge opposite the one you left by).
+OPPOSITE = {"east": "west", "west": "east", "north": "south", "south": "north"}
 for map_def in maps.values():
     for exit_def in map_def["exits"]:
-        a, b = map_def.get("world"), maps.get(exit_def["to"], {}).get("world")
-        if a and b:
-            dx, dy = STEP[exit_def["edge"]]
-            check([a[0] + dx, a[1] + dy] == b,
-                  f"map {map_def['id']} {exit_def['edge']} exit → {exit_def['to']} isn't one step {exit_def['edge']} on the world map")
+        back = [e for e in maps.get(exit_def["to"], {}).get("exits", []) if e["to"] == map_def["id"]]
+        check(len(back) == 1, f"map {map_def['id']} → {exit_def['to']} has no single road back")
+        if back and ("cave" in map_def["theme"] or "cave" in maps[exit_def["to"]]["theme"]):
+            check(back[0]["edge"] == OPPOSITE[exit_def["edge"]],
+                  f"map {map_def['id']} {exit_def['edge']} → {exit_def['to']}: its road back should leave by the {OPPOSITE[exit_def['edge']]}")
+    edges = [e["edge"] for e in map_def["exits"]]
+    check(len(edges) == len(set(edges)), f"map {map_def['id']} → two roads leave by the same side")
 
-# The continent (content/world.json, tools/world_layout.py): every outdoor land has its place, lands a
-# road joins touch with the road meeting itself across the border, and none overlap.
+# The continent (content/world.json, tools/world_layout.py): every outdoor land has its shape, none
+# overlap, a road crosses where the land it leads to takes it on, and what's set down by hand stands on its land.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import world_layout  # noqa: E402
 outdoor = {i: m for i, m in maps.items() if "cave" not in m["theme"]}

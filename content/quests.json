@@ -135,7 +135,7 @@
         "jelly_trouble"
       ],
       "minLevel": 8,
-      "description": "Pineapple Sprouts have taken over Pineapple Shore, north of Sunny Meadow. Defeat 5.",
+      "description": "Pineapple Sprouts have taken over Pineapple Shore, south of Meadowbrook. Defeat 5.",
       "objective": {
         "type": "defeat",
         "target": "pineapple",
@@ -197,7 +197,7 @@
       "requires": [
         "pineapple_harvest"
       ],
-      "description": "Wood Monkeys from the Smiling Forest, north of Pineapple Shore, keep stealing our apples. Defeat 5.",
+      "description": "Wood Monkeys from the Smiling Forest, east of Gumdrop Peaks, keep stealing our apples. Defeat 5.",
       "objective": {
         "type": "defeat",
         "target": "wood_monkey",
@@ -331,7 +331,7 @@
       "requires": [
         "dragon_hangover"
       ],
-      "description": "A Big Bad Wolf prowls the Snow White Forest, east of the Smiling Forest. Be brave, and be careful.",
+      "description": "A Big Bad Wolf prowls the Snow White Forest, east of the Smiling Forest, and no one dares take the road north to Moonwhisper. Be brave, and be careful.",
       "objective": {
         "type": "defeat",
         "target": "big_bad_wolf",

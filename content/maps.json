@@ -35,10 +35,6 @@
       ],
       "width": 80,
       "height": 60,
-      "world": [
-        0,
-        0
-      ],
       "music": "town",
       "theme": {
         "ground": "tile_grass",
@@ -379,12 +375,16 @@
       "exits": [
         {
           "edge": "east",
-          "to": "sunny_meadow",
-          "meets": -20
+          "to": "sunny_meadow"
         },
         {
           "edge": "north",
           "to": "northern_grassland"
+        },
+        {
+          "edge": "south",
+          "to": "pineapple_shore",
+          "requires": "jelly_trouble"
         }
       ],
       "buildings": [
@@ -1115,12 +1115,8 @@
           ]
         }
       ],
-      "width": 165,
-      "height": 120,
-      "world": [
-        1,
-        0
-      ],
+      "width": 183,
+      "height": 141,
       "music": "meadow",
       "theme": {
         "ground": "tile_grass",
@@ -1527,53 +1523,19 @@
         {
           "edge": "west",
           "to": "meadowbrook",
-          "at": -15,
-          "meets": 26
-        },
-        {
-          "edge": "north",
-          "to": "pineapple_shore",
-          "requires": "jelly_trouble",
-          "at": 27,
-          "via": [
-            [
-              -6,
-              15
-            ],
-            [
-              18,
-              30
-            ]
-          ]
+          "at": -15
         },
         {
           "edge": "east",
           "to": "twilight_woods",
           "requires": "pineapple_harvest",
-          "at": 12,
-          "via": [
-            [
-              21,
-              -21
-            ],
-            [
-              51,
-              -9
-            ]
-          ]
+          "at": 12
         },
         {
           "edge": "south",
           "to": "frog_swamp",
           "requires": "new_friend",
-          "at": -30,
-          "via": [
-            [
-              -36,
-              -27
-            ]
-          ],
-          "meets": -22
+          "at": -30
         }
       ],
       "encounters": {
@@ -1710,12 +1672,8 @@
           ]
         }
       ],
-      "width": 150,
-      "height": 108,
-      "world": [
-        1,
-        1
-      ],
+      "width": 172,
+      "height": 126,
       "music": "shore",
       "theme": {
         "ground": "tile_sand",
@@ -1914,31 +1872,8 @@
       },
       "exits": [
         {
-          "edge": "south",
-          "to": "sunny_meadow",
-          "at": 18,
-          "meets": 19
-        },
-        {
           "edge": "north",
-          "to": "smiling_forest",
-          "requires": "pineapple_harvest",
-          "at": -24,
-          "via": [
-            [
-              42,
-              18
-            ],
-            [
-              9,
-              36
-            ]
-          ]
-        },
-        {
-          "edge": "west",
-          "to": "northern_grassland",
-          "meets": 2
+          "to": "meadowbrook"
         }
       ],
       "encounters": {
@@ -2082,12 +2017,8 @@
         }
       ],
       "danger": true,
-      "width": 150,
-      "height": 120,
-      "world": [
-        2,
-        0
-      ],
+      "width": 171,
+      "height": 121,
       "music": "woods",
       "battleMusic": "battle_dark",
       "theme": {
@@ -2352,44 +2283,21 @@
         {
           "edge": "west",
           "to": "sunny_meadow",
-          "at": 21,
-          "via": [
-            [
-              -45,
-              33
-            ]
-          ],
-          "meets": 34
+          "at": 21
         },
         {
           "edge": "south",
           "to": "valley_of_fear",
           "requires": "bouncy_menace",
-          "at": 27,
-          "via": [
-            [
-              12,
-              -6
-            ],
-            [
-              -24,
-              -27
-            ],
-            [
-              15,
-              -42
-            ]
-          ]
+          "at": 27
         },
         {
           "edge": "north",
-          "to": "swan_lake",
-          "meets": 5
+          "to": "swan_lake"
         },
         {
           "edge": "east",
-          "to": "lotus_land",
-          "meets": 36
+          "to": "lotus_land"
         }
       ],
       "encounters": {
@@ -2493,13 +2401,9 @@
     {
       "id": "smiling_forest",
       "name": "Smiling Forest",
-      "width": 165,
-      "height": 120,
+      "width": 156,
+      "height": 134,
       "music": "forest",
-      "world": [
-        1,
-        2
-      ],
       "crowd": {
         "adventurers": 5
       },
@@ -2962,47 +2866,15 @@
       },
       "exits": [
         {
-          "edge": "south",
-          "to": "pineapple_shore",
-          "at": -27,
-          "via": [
-            [
-              -33,
-              -33
-            ]
-          ]
-        },
-        {
           "edge": "north",
           "to": "rainbow_city",
-          "at": 12,
-          "via": [
-            [
-              -39,
-              15
-            ],
-            [
-              -12,
-              39
-            ]
-          ],
-          "meets": -7
+          "at": 12
         },
         {
           "edge": "east",
           "to": "snow_white_forest",
           "requires": "dragon_hangover",
-          "at": -18,
-          "via": [
-            [
-              21,
-              -27
-            ],
-            [
-              51,
-              -12
-            ]
-          ]
+          "at": -18
         },
         {
           "edge": "west",
@@ -3124,10 +2996,6 @@
       "name": "Prismhaven",
       "width": 86,
       "height": 66,
-      "world": [
-        1,
-        3
-      ],
       "music": "rainbow",
       "fence": true,
       "crowd": {
@@ -3971,13 +3839,11 @@
       "exits": [
         {
           "edge": "south",
-          "to": "smiling_forest",
-          "meets": 32
+          "to": "smiling_forest"
         },
         {
           "edge": "west",
-          "to": "bluebird",
-          "meets": -23
+          "to": "bluebird"
         }
       ],
       "npcs": [
@@ -4089,12 +3955,8 @@
     {
       "id": "snow_white_forest",
       "name": "Snow White Forest",
-      "width": 150,
-      "height": 120,
-      "world": [
-        2,
-        2
-      ],
+      "width": 169,
+      "height": 119,
       "music": "snow",
       "crowd": {
         "adventurers": 3
@@ -4427,12 +4289,16 @@
         {
           "edge": "west",
           "to": "smiling_forest",
-          "at": -15,
-          "meets": 8
+          "at": -15
         },
         {
           "edge": "south",
           "to": "swan_lake"
+        },
+        {
+          "edge": "north",
+          "to": "moonglow",
+          "requires": "wolf_hunt"
         }
       ],
       "npcs": [
@@ -4593,13 +4459,9 @@
     {
       "id": "frog_swamp",
       "name": "Frog Swamp",
-      "width": 150,
-      "height": 108,
+      "width": 180,
+      "height": 123,
       "music": "swamp",
-      "world": [
-        1,
-        -1
-      ],
       "crowd": {
         "adventurers": 3
       },
@@ -4865,33 +4727,13 @@
         {
           "edge": "north",
           "to": "sunny_meadow",
-          "at": -30,
-          "via": [
-            [
-              -15,
-              -3
-            ],
-            [
-              -39,
-              21
-            ]
-          ]
+          "at": -30
         },
         {
           "edge": "east",
           "to": "valley_of_fear",
           "requires": "swamp_song",
-          "at": 21,
-          "via": [
-            [
-              33,
-              -33
-            ],
-            [
-              57,
-              3
-            ]
-          ]
+          "at": 21
         },
         {
           "edge": "south",
@@ -4987,13 +4829,9 @@
     {
       "id": "valley_of_fear",
       "name": "Shiverdell",
-      "width": 150,
-      "height": 120,
+      "width": 172,
+      "height": 121,
       "music": "fear",
-      "world": [
-        2,
-        -1
-      ],
       "battleMusic": "battle_dark",
       "crowd": {
         "adventurers": 4
@@ -5227,50 +5065,23 @@
         {
           "edge": "north",
           "to": "twilight_woods",
-          "at": -21,
-          "via": [
-            [
-              -12,
-              30
-            ]
-          ],
-          "meets": 27
+          "at": -21
         },
         {
           "edge": "west",
           "to": "frog_swamp",
-          "at": 18,
-          "via": [
-            [
-              -33,
-              12
-            ]
-          ],
-          "meets": 49
+          "at": 18
         },
         {
           "edge": "east",
           "to": "rat_cavern",
-          "at": -24,
-          "via": [
-            [
-              36,
-              -18
-            ]
-          ]
+          "at": -24
         },
         {
           "edge": "south",
           "to": "goldburg",
           "requires": "rat_king",
-          "at": 27,
-          "via": [
-            [
-              21,
-              -33
-            ]
-          ],
-          "meets": -16
+          "at": 27
         }
       ],
       "encounters": {
@@ -5402,10 +5213,6 @@
       "name": "Rat Cavern",
       "width": 80,
       "height": 60,
-      "world": [
-        3,
-        -1
-      ],
       "music": "cave",
       "battleMusic": "battle_dark",
       "crowd": {
@@ -5698,10 +5505,6 @@
       "name": "Ingothold",
       "width": 80,
       "height": 62,
-      "world": [
-        2,
-        -2
-      ],
       "music": "goldburg",
       "fence": true,
       "crowd": {
@@ -6092,8 +5895,7 @@
       "exits": [
         {
           "edge": "north",
-          "to": "valley_of_fear",
-          "meets": 29
+          "to": "valley_of_fear"
         },
         {
           "edge": "east",
@@ -6102,13 +5904,11 @@
         {
           "edge": "south",
           "to": "crystal_mountain",
-          "requires": "dragon_hangover",
-          "meets": -20
+          "requires": "dragon_hangover"
         },
         {
           "edge": "west",
-          "to": "goldburg_lake",
-          "meets": 17
+          "to": "goldburg_lake"
         }
       ],
       "npcs": [
@@ -6438,12 +6238,8 @@
     {
       "id": "genie_desert",
       "name": "Genie Desert",
-      "width": 165,
-      "height": 120,
-      "world": [
-        3,
-        -2
-      ],
+      "width": 195,
+      "height": 128,
       "music": "desert",
       "crowd": {
         "adventurers": 3
@@ -6728,8 +6524,7 @@
         {
           "edge": "west",
           "to": "goldburg",
-          "at": 3,
-          "meets": 29
+          "at": 3
         },
         {
           "edge": "east",
@@ -6869,13 +6664,9 @@
     {
       "id": "crystal_mountain",
       "name": "Crystal Mountain",
-      "width": 150,
-      "height": 120,
+      "width": 146,
+      "height": 148,
       "music": "crystal",
-      "world": [
-        2,
-        -3
-      ],
       "battleMusic": "battle_dark",
       "crowd": {
         "adventurers": 3
@@ -6993,8 +6784,8 @@
             "blocking": true
           },
           {
-            "art": "snow_pine",
-            "count": 270,
+            "art": "sandstone_boulder",
+            "count": 180,
             "blocking": true,
             "cluster": 5,
             "size": [
@@ -7004,7 +6795,7 @@
             "shadow": true
           },
           {
-            "art": "snow_bush",
+            "art": "dry_bush",
             "count": 135,
             "blocking": true,
             "cluster": 4,
@@ -7115,7 +6906,7 @@
             "shadow": true
           },
           {
-            "art": "ice_boulder",
+            "art": "red_rock",
             "count": 20,
             "blocking": true,
             "cluster": 3,
@@ -7158,43 +6949,11 @@
         {
           "edge": "north",
           "to": "goldburg",
-          "at": 15,
-          "via": [
-            [
-              -39,
-              18
-            ],
-            [
-              33,
-              33
-            ]
-          ]
-        },
-        {
-          "edge": "south",
-          "to": "moonglow",
-          "requires": "crystal_hearts",
-          "at": -12,
-          "via": [
-            [
-              39,
-              -15
-            ],
-            [
-              -36,
-              -33
-            ]
-          ]
+          "at": 15
         },
         {
           "edge": "east",
-          "to": "secret_plain",
-          "meets": -9
-        },
-        {
-          "edge": "west",
-          "to": "rosen_lake",
-          "meets": 8
+          "to": "secret_plain"
         }
       ],
       "encounters": {
@@ -7219,7 +6978,7 @@
         }
       },
       "ambience": {
-        "particles": "snow+sparkles",
+        "particles": "sparkles",
         "clouds": true,
         "tint": "#8EA0E0",
         "tintAlpha": 0.08,
@@ -7237,10 +6996,9 @@
         "haze": "#C8D0FF",
         "hazeAlpha": 0.25,
         "weather": {
-          "clear": 5,
+          "clear": 6,
           "cloudy": 2,
-          "fog": 1,
-          "snow": 3
+          "fog": 1
         },
         "critters": [
           {
@@ -7303,13 +7061,9 @@
     {
       "id": "moonglow",
       "name": "Moonwhisper",
-      "width": 135,
-      "height": 105,
+      "width": 144,
+      "height": 117,
       "music": "moonglow",
-      "world": [
-        2,
-        -4
-      ],
       "battleMusic": "battle_dark",
       "crowd": {
         "adventurers": 3
@@ -7591,28 +7345,15 @@
       },
       "exits": [
         {
+          "edge": "south",
+          "to": "snow_white_forest"
+        },
+        {
           "edge": "north",
-          "to": "crystal_mountain",
-          "at": -15,
-          "via": [
-            [
-              -24,
-              21
-            ]
-          ],
-          "meets": -4
+          "to": "rosen_lake"
         },
         {
           "edge": "east",
-          "to": "hachoo_island"
-        },
-        {
-          "edge": "west",
-          "to": "water_temple",
-          "meets": 29
-        },
-        {
-          "edge": "south",
           "to": "mysterious_cave"
         }
       ],
@@ -7779,7 +7520,7 @@
           ]
         }
       ],
-      "width": 110,
+      "width": 130,
       "height": 80,
       "music": "meadow",
       "theme": {
@@ -8217,17 +7958,13 @@
           "to": "meadowbrook"
         },
         {
-          "edge": "east",
-          "to": "pineapple_shore"
-        },
-        {
           "edge": "west",
-          "to": "slime_cave"
+          "to": "slime_cave",
+          "at": -20
         },
         {
           "edge": "north",
-          "to": "candy_mountain",
-          "meets": -19
+          "to": "candy_mountain"
         }
       ],
       "encounters": {
@@ -8250,11 +7987,7 @@
           "azure_golden_hamster": 1,
           "starry_hedgehog": 1
         }
-      },
-      "world": [
-        0,
-        1
-      ]
+      }
     },
     {
       "id": "slime_cave",
@@ -8512,10 +8245,6 @@
             ]
           }
         }
-      ],
-      "world": [
-        -1,
-        1
       ]
     },
     {
@@ -8564,8 +8293,8 @@
           ]
         }
       ],
-      "width": 140,
-      "height": 100,
+      "width": 138,
+      "height": 87,
       "music": "meadow",
       "theme": {
         "ground": "tile_grass",
@@ -9025,8 +8754,7 @@
         },
         {
           "edge": "east",
-          "to": "smiling_forest",
-          "meets": 22
+          "to": "smiling_forest"
         },
         {
           "edge": "west",
@@ -9034,8 +8762,7 @@
         },
         {
           "edge": "north",
-          "to": "bluebird",
-          "meets": 35
+          "to": "bluebird"
         }
       ],
       "encounters": {
@@ -9057,10 +8784,6 @@
           "earth_wolf": 1
         }
       },
-      "world": [
-        0,
-        2
-      ],
       "npcs": [
         {
           "id": "gumdrop_summit_chest",
@@ -9136,8 +8859,8 @@
         }
       ],
       "danger": true,
-      "width": 100,
-      "height": 80,
+      "width": 120,
+      "height": 92,
       "music": "cave",
       "theme": {
         "ground": "tile_dark_grass",
@@ -9478,10 +9201,6 @@
             ]
           }
         }
-      ],
-      "world": [
-        -1,
-        2
       ],
       "decor": [
         {
@@ -10200,13 +9919,8 @@
         },
         {
           "edge": "east",
-          "to": "rainbow_city",
-          "meets": 15
+          "to": "rainbow_city"
         }
-      ],
-      "world": [
-        0,
-        3
       ]
     },
     {
@@ -10247,8 +9961,8 @@
           ]
         }
       ],
-      "width": 140,
-      "height": 104,
+      "width": 158,
+      "height": 108,
       "music": "shore",
       "theme": {
         "ground": "tile_grass",
@@ -10690,8 +10404,7 @@
         },
         {
           "edge": "north",
-          "to": "snow_white_forest",
-          "meets": 6
+          "to": "snow_white_forest"
         },
         {
           "edge": "east",
@@ -10734,17 +10447,13 @@
           "y": 3,
           "greeting": "The swans come home in spring. Every one of them was once an ugly duckling."
         }
-      ],
-      "world": [
-        2,
-        1
       ]
     },
     {
       "id": "lotus_land",
       "name": "Lotus Land",
-      "width": 100,
-      "height": 72,
+      "width": 99,
+      "height": 70,
       "music": "woods",
       "crowd": {
         "adventurers": 3
@@ -11042,7 +10751,8 @@
         },
         {
           "edge": "south",
-          "to": "rat_cavern"
+          "to": "rat_cavern",
+          "at": 12
         },
         {
           "edge": "north",
@@ -11079,17 +10789,13 @@
           "y": 3,
           "greeting": "Oh! Hello, giant. Please mind the lily pads, one of them is my house."
         }
-      ],
-      "world": [
-        3,
-        0
       ]
     },
     {
       "id": "puppet_hill",
       "name": "Marionette Rise",
-      "width": 100,
-      "height": 80,
+      "width": 106,
+      "height": 87,
       "music": "cave",
       "crowd": {
         "adventurers": 4
@@ -11458,10 +11164,6 @@
           }
         }
       ],
-      "world": [
-        3,
-        1
-      ],
       "decor": [
         {
           "art": "spooky_lantern",
@@ -11519,8 +11221,8 @@
           ]
         }
       ],
-      "width": 130,
-      "height": 96,
+      "width": 168,
+      "height": 89,
       "music": "shore",
       "theme": {
         "ground": "tile_sand",
@@ -11760,11 +11462,6 @@
         {
           "edge": "east",
           "to": "goldburg"
-        },
-        {
-          "edge": "south",
-          "to": "rosen_lake",
-          "meets": -16
         }
       ],
       "encounters": {
@@ -11802,10 +11499,6 @@
           "y": 3,
           "greeting": "The goddess Liora hid her treasure where only the patient look."
         }
-      ],
-      "world": [
-        1,
-        -2
       ]
     },
     {
@@ -11862,8 +11555,8 @@
         }
       ],
       "danger": true,
-      "width": 100,
-      "height": 80,
+      "width": 99,
+      "height": 99,
       "music": "snow",
       "theme": {
         "ground": "tile_dark_grass",
@@ -12233,17 +11926,13 @@
             ]
           }
         }
-      ],
-      "world": [
-        4,
-        -2
       ]
     },
     {
       "id": "secret_plain",
       "name": "Hidden Steppe",
-      "width": 110,
-      "height": 80,
+      "width": 128,
+      "height": 99,
       "music": "desert",
       "crowd": {
         "adventurers": 3
@@ -12564,13 +12253,11 @@
       "exits": [
         {
           "edge": "north",
-          "to": "genie_desert",
-          "meets": 27
+          "to": "genie_desert"
         },
         {
           "edge": "west",
-          "to": "crystal_mountain",
-          "meets": 29
+          "to": "crystal_mountain"
         },
         {
           "edge": "south",
@@ -12625,10 +12312,6 @@
           "y": 3,
           "greeting": "Moo... there were four of us once, and no lion dared come near."
         }
-      ],
-      "world": [
-        3,
-        -3
       ]
     },
     {
@@ -12688,8 +12371,8 @@
           ]
         }
       ],
-      "width": 100,
-      "height": 72,
+      "width": 104,
+      "height": 83,
       "music": "shore",
       "theme": {
         "ground": "tile_sand",
@@ -12918,13 +12601,7 @@
       "exits": [
         {
           "edge": "north",
-          "to": "secret_plain",
-          "meets": 20
-        },
-        {
-          "edge": "west",
-          "to": "moonglow",
-          "meets": 1
+          "to": "secret_plain"
         }
       ],
       "encounters": {
@@ -12946,10 +12623,6 @@
           "mint_black_kong": 2
         }
       },
-      "world": [
-        3,
-        -4
-      ],
       "npcs": [
         {
           "id": "little_crab",
@@ -12985,8 +12658,8 @@
     {
       "id": "rosen_lake",
       "name": "Briarmere",
-      "width": 130,
-      "height": 104,
+      "width": 147,
+      "height": 126,
       "music": "snow",
       "crowd": {
         "adventurers": 3
@@ -13334,18 +13007,12 @@
       },
       "exits": [
         {
-          "edge": "north",
-          "to": "goldburg_lake",
-          "meets": 54
-        },
-        {
-          "edge": "east",
-          "to": "crystal_mountain"
-        },
-        {
           "edge": "south",
-          "to": "water_temple",
-          "meets": 15
+          "to": "moonglow"
+        },
+        {
+          "edge": "west",
+          "to": "water_temple"
         }
       ],
       "encounters": {
@@ -13391,17 +13058,13 @@
           "y": 3,
           "greeting": "The Tidewater Shrine sank beneath the lake long ago. Something still guards it."
         }
-      ],
-      "world": [
-        1,
-        -3
       ]
     },
     {
       "id": "water_temple",
       "name": "Tidewater Shrine",
-      "width": 100,
-      "height": 80,
+      "width": 94,
+      "height": 98,
       "music": "cave",
       "crowd": {
         "adventurers": 3
@@ -13665,12 +13328,8 @@
       "danger": true,
       "exits": [
         {
-          "edge": "north",
-          "to": "rosen_lake"
-        },
-        {
           "edge": "east",
-          "to": "moonglow"
+          "to": "rosen_lake"
         }
       ],
       "encounters": {
@@ -13711,10 +13370,6 @@
             ]
           }
         }
-      ],
-      "world": [
-        1,
-        -4
       ]
     },
     {
@@ -13944,11 +13599,11 @@
       "danger": true,
       "exits": [
         {
-          "edge": "north",
+          "edge": "west",
           "to": "moonglow"
         },
         {
-          "edge": "south",
+          "edge": "east",
           "to": "emerald_road"
         }
       ],
@@ -13990,17 +13645,13 @@
             ]
           }
         }
-      ],
-      "world": [
-        2,
-        -5
       ]
     },
     {
       "id": "emerald_road",
       "name": "Emerald Road",
-      "width": 110,
-      "height": 80,
+      "width": 98,
+      "height": 102,
       "music": "woods",
       "crowd": {
         "adventurers": 5
@@ -14481,7 +14132,7 @@
       "danger": true,
       "exits": [
         {
-          "edge": "north",
+          "edge": "west",
           "to": "mysterious_cave"
         }
       ],
@@ -14550,10 +14201,6 @@
           "greeting": "A chest, left at the top for whoever climbs this far.",
           "gives": "emerald_crest_gauntlets"
         }
-      ],
-      "world": [
-        2,
-        -6
       ],
       "decor": [
         {
