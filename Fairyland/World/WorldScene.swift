@@ -15,10 +15,9 @@ final class LandNode: SKNode {
 /// One map: ground, scenery, NPCs, passers-by, the hero and their companion.
 ///
 /// Like Fairyland, monsters aren't shown on the map — walking through the wild can start
-/// a random battle. The lands lie side by side on one continent (`Continent`): the lands next
-/// door show past the borders (built in the background as you near them, `show(_:as:)`), and you
-/// walk across into them where a road joins them, with no loading card (`onCross`). Caves you
-/// enter through their mouths, behind the card.
+/// a random battle. The lands of the continent are one scene of their own (`ContinentScene`);
+/// this is a cave's, entered through its mouth behind the loading card (and a land's own, for the
+/// tests and the minimap).
 final class WorldScene: SKScene {
     var onEncounter: (@MainActor (MapDef.Encounters, SKTexture?) -> Void)?
     var onTalk: (@MainActor (NPCDef) -> Void)?
@@ -38,7 +37,9 @@ final class WorldScene: SKScene {
     private let input: InputState
     private let art = ArtLibrary.shared
     private let map: WorldMap
-    private var rng: SeededRandom
+    /// The land's layout as the scene has set it down: what you can walk on once its scenery's
+    /// planned (`LandPlanner`), for the continent's store (`World.add`) and the tests.
+    var layout: WorldMap { map }
     private let world = LandNode()
     /// This land's layer and those of the lands next door shown past its borders (`show(_:as:)`).
     private let lands = SKNode()
@@ -87,58 +88,25 @@ final class WorldScene: SKScene {
     /// Darkens the screen as you walk toward the edge of the map, so leaving is obvious.
     private let edgeFade = SKSpriteNode(color: .black, size: .zero)
 
-    /// Built in the background to show past the border of the land you're in (`show(_:as:)`), not
-    /// walked into yet: none of it reaches the session, the chat or the HUD until you do.
-    private(set) var isNextDoor: Bool
-    /// The lands next door shown past this one's borders, by id.
-    private var nextDoor: [String: (scene: WorldScene, neighbour: Continent.Neighbour)] = [:]
-    /// The lands round this one, each as its picture on the world map (`WorldOverview`) laid flat
-    /// on the ground, under everything, while it isn't shown next door (not built yet, or let go):
-    /// so past a border there's always the land next door, if not yet its trees, never nothing.
-    /// By id (`placeFarLands`).
-    private var farLands: [String: SKNode] = [:]
-    /// Whether a land round this one had no picture yet when they were laid (they come in from
-    /// the background, `WorldOverview.prepare`).
-    private var farLandsMissing = false
-    /// The lands among them laid in their ground's colour, waiting for their pictures.
-    private var plainLands: Set<String> = []
-    /// How far round the land they're laid, in cells.
-    private static let farReach = 64
     /// The lands sharing a border with this one (none for a cave).
     private(set) lazy var neighbours: [Continent.Neighbour] = Continent.neighbours(of: def)
-    /// The land you've just walked in from, whose place this one takes as it shows (`didMove(to:)`).
-    var walkedInFrom: WorldScene?
-    /// Walked into over a border: it's on screen already, so it shows with no fade (`SpriteKitView`).
-    var arrivesOnFoot = false
-    /// You've stepped over the border into a land shown next door, on your way there with no card.
-    private var walkingOver = false
-    /// Friends visiting the land you're in, who don't turn up next door too (set before `build`).
-    var friendsElsewhere: Set<UUID> = []
-    /// Every half second: the lands next door near enough to want built and shown, with how many
-    /// cells away their borders are, nearest first.
-    var onLandsNear: (@MainActor ([(neighbour: Continent.Neighbour, distance: Int)]) -> Void)?
-    /// You've stepped across a border into a land next door: built and shown (its scene), or not
-    /// built yet (nil: the coordinator takes you there behind the loading card), where you stand
-    /// there, in its cells' points.
-    var onCross: (@MainActor (Continent.Neighbour, WorldScene?, CGPoint) -> Void)?
 
     private let walkSpeed: CGFloat = 88
     private let talkRange: CGFloat = 50
 
     /// Pinch to zoom in on the ground around you, or out for a wider view. Kept from map to map.
-    private static var zoom: CGFloat = 1
-    private static let zoomRange: ClosedRange<CGFloat> = 0.85...2.2
+    static var zoom: CGFloat = 1
+    static let zoomRange: ClosedRange<CGFloat> = 0.85...2.2
     private var pinchStartZoom: CGFloat = 1
     private lazy var pinch = UIPinchGestureRecognizer(target: self, action: #selector(pinched(_:)))
 
     /// `entry` is the edge the player walked in through, or nil to use the saved position;
     /// `arrival`, a spot to stand on instead (walked across a border before the land was built).
-    /// `grid`: the land laid out already (off the main thread). `nextDoor`: built to show past the
-    /// border of the land you're in (`isNextDoor`), touching nothing of the session.
+    /// `grid`: the land laid out already (off the main thread).
     init(map def: MapDef, session: GameSession, input: InputState, entry: Edge?, arrival: CGPoint? = nil,
-         grid: WorldMap? = nil, nextDoor: Bool = false) {
-        // Characters made for this map pick up its light (a land next door's, as it's built).
-        if !nextDoor { Walker.light = Self.light(of: def) }
+         grid: WorldMap? = nil) {
+        // Characters made for this map pick up its light.
+        Walker.light = Self.light(of: def)
         let map = grid ?? WorldMap(def: def)
         let player = Walker(cycle: ArtLibrary.shared.walkCycle(GameSession.heroArt), label: session.data.hero.name)
         player.tagMode = .whenStill
@@ -148,13 +116,10 @@ final class WorldScene: SKScene {
         self.input = input
         self.map = map
         self.player = player
-        rng = SeededRandom(text: def.id + "/props")
         focus = DepthOfField(def.ambience?.focus)
 
         var start = map.center(of: map.center)
-        if nextDoor {
-            // Wherever you walk in from (`takeOver`).
-        } else if let arrival {
+        if let arrival {
             start = arrival
         } else if let entry {
             start = map.center(of: map.entryCell(from: entry))
@@ -163,13 +128,12 @@ final class WorldScene: SKScene {
         }
         player.position = start
         lastCell = map.cell(at: start)
-        isNextDoor = nextDoor
 
         super.init(size: CGSize(width: 874, height: 402))
         world.land = self
         scaleMode = .resizeFill
         backgroundColor = .black
-        if !nextDoor { session.playerPosition = player.position }
+        session.playerPosition = player.position
         // The scenery goes up in `build(progress:)`, a piece at a time, behind the loading bar.
     }
 
@@ -193,7 +157,7 @@ final class WorldScene: SKScene {
     }
 
     /// The light a land casts on everyone in it (`Walker.light`, its palette's `light`).
-    private static func light(of def: MapDef) -> (color: UIColor, strength: CGFloat)? {
+    static func light(of def: MapDef) -> (color: UIColor, strength: CGFloat)? {
         guard let palette = def.theme.palette, let hex = palette.light, let color = UIColor(hex: hex) else { return nil }
         return (color, CGFloat(palette.lightStrength ?? 0.4))
     }
@@ -203,10 +167,6 @@ final class WorldScene: SKScene {
     override func didMove(to view: SKView) {
         view.addGestureRecognizer(pinch)
         cam.setScale(1 / Self.zoom)
-        if let previous = walkedInFrom {
-            walkedInFrom = nil
-            takeOver(from: previous)
-        }
         if session.mapName != def.name {
             session.post(L("You arrive at {map}.", ["map": def.name]))
             if def.danger == true {
@@ -272,7 +232,6 @@ final class WorldScene: SKScene {
         placePlateaus()
         await reached(0.3, progress)
         await placeSurroundings()
-        placeFarLands()
         await reached(0.45, progress)
         if let cave = def.theme.cave {
             caveWalls = CaveWalls(map: map, cave: cave, world: world, art: art, margin: Self.surroundingsMargin)
@@ -281,53 +240,53 @@ final class WorldScene: SKScene {
             placeCrags()
         }
         await breathe()
-        placeLilyPads()
+        // Where the scenery goes, decided before any of it's drawn (`LandPlanner`), so where you
+        // can walk is settled first: the same cells and the same random draws as ever.
+        let planner = LandPlanner(def: def, map: map, art: art)
+        await planner.planUpToLocals(pause: { await self.breathe() })
+        placeLilyPads(planner.plan.lilyPads)
         placeBridges()
-        placeReeds()
+        for reed in planner.plan.reeds { addScenery(reed) }
         await breathe()
         placeFence()
-        placeBuildings()
+        placeBuildings(planner.plan)
         await reached(0.65, progress)
-        placeDecor()
+        placeDecor(planner.plan.decor)
         await reached(0.8, progress)
-        placeNPCs()
+        placeNPCs(planner.plan.npcs)
+        for prop in planner.plan.localProps { addScenery(prop) }
         await breathe()
         // A town's market traders sell what they have today, around your level.
         let market = Crowd.Market(sign: { [weak session] in session?.marketSign(for: $0) },
                                   shout: { [weak session] in session?.marketShout(for: $0) },
                                   level: session.data.hero.level)
-        let away = friendsElsewhere
         crowd = Crowd(def: def, map: map, world: world, heroLevel: session.data.hero.level,
-                      friends: session.friends.filter { !session.isInParty($0) && !away.contains($0.id) }, market: market,
-                      locals: placeLocals())
-        // Next door, nobody's heard yet, and nobody picks a fight with you over the border.
-        crowd?.onChat = { [weak self, weak session] speaker, text, kind in
-            guard self?.isNextDoor == false else { return }
+                      friends: session.friends.filter { !session.isInParty($0) }, market: market,
+                      locals: planner.plan.locals)
+        crowd?.onChat = { [weak session] speaker, text, kind in
             session?.postChat(text, from: speaker, kind: kind)
         }
         crowd?.dares = { [weak session] rival in session?.dares(rival) ?? false }
         crowd?.onChallenge = { [weak self] rival in
-            guard let self, !self.isInputLocked, !self.isNextDoor else { return }
+            guard let self, !self.isInputLocked else { return }
             self.startDuel(with: rival)
         }
         await breathe()
-        placeFairyRings()
-        placeOutcrops()
+        await planner.planTheRest(pause: { await self.breathe() })
+        placeFairyRings(planner.plan.fairyRings)
+        for rock in planner.plan.outcrops { addScenery(rock) }
         await breathe()
-        await placeProps()
-        await placeSeamProps()
-        placeSignposts()
+        await placeProps(planner.plan.props, seams: planner.plan.seamProps)
+        placeSignposts(planner.plan.signposts)
         placeBorders()
         // Everyone set down before they were on the map stands up on the ground under them.
         for case let walker as Walker in world.children { walker.settle() }
         await reached(0.9, progress)
 
-        if !isNextDoor {
-            world.addChild(player)
-            refreshHero()
-            refreshFollower()
-            refreshAllies()
-        }
+        world.addChild(player)
+        refreshHero()
+        refreshFollower()
+        refreshAllies()
         player.settle()
         cam.position = cameraGoal
         edgeFade.alpha = 0
@@ -343,21 +302,19 @@ final class WorldScene: SKScene {
         if let sky { lighting?.sunlight(sky.sunlight) }
         follow(sky?.sun ?? .noon)
 
-        if !isNextDoor {
-            // Don't start on top of scenery (e.g. an old save).
-            // (A save from before a cave's walls went up can even be deep inside the rock, and one from
-            // before the sea came in over the coasts out at sea, even off the map.)
-            if !map.isWalkable(lastCell) || !map.owns(map.rawCell(at: player.position)),
-               let open = map.nearestWalkable(to: lastCell, within: 48) ?? map.nearestWalkable(to: map.entryCell(from: def.exits.first?.edge ?? .south)) {
-                player.position = map.center(of: open)
-                lastCell = open
-                cam.position = cameraGoal
-            }
-            session.playerPosition = player.position
-            lantern?.follow(player.position)
-            showChunks()
-            explore()
+        // Don't start on top of scenery (e.g. an old save).
+        // (A save from before a cave's walls went up can even be deep inside the rock, and one from
+        // before the sea came in over the coasts out at sea, even off the map.)
+        if !map.isWalkable(lastCell) || !map.owns(map.rawCell(at: player.position)),
+           let open = map.nearestWalkable(to: lastCell, within: 48) ?? map.nearestWalkable(to: map.entryCell(from: def.exits.first?.edge ?? .south)) {
+            player.position = map.center(of: open)
+            lastCell = open
+            cam.position = cameraGoal
         }
+        session.playerPosition = player.position
+        lantern?.follow(player.position)
+        showChunks()
+        explore()
         if pace != .foreground { endSlice(at: #line) }
         giveLookBack()
         isBuilt = true
@@ -447,182 +404,23 @@ final class WorldScene: SKScene {
     private func makeGround() async -> SKNode {
         let tileSize = CGSize(width: WorldMap.tileSize, height: WorldMap.tileSize)
         let theme = def.theme
-        let waterID = theme.water ?? "tile_water"
-        let water = SKTileGroup(tileDefinition: SKTileDefinition(textures: art.waterFrames(waterID), size: tileSize, timePerFrame: 0.9))
-        var groups: [String: SKTileGroup] = ["water": water]
-        // Each group's picture, for drawing hills (`HillArt`).
-        var pictures: [ObjectIdentifier: SKTexture] = [ObjectIdentifier(water): art.waterFrames(waterID).first ?? SKTexture()]
-        func group(_ key: String, _ texture: () -> SKTexture) -> SKTileGroup {
-            if let known = groups[key] { return known }
-            let picture = texture()
-            let made = SKTileGroup(tileDefinition: SKTileDefinition(texture: picture, size: tileSize))
-            groups[key] = made
-            pictures[ObjectIdentifier(made)] = picture
-            return made
-        }
-        // Accent patches (flower meadows, moss) blend in as soft blobs. Not in towns, where the
-        // accent is terrace paving and stays square.
-        let patchAccent = (theme.accentPatches ?? 0) > 0 && theme.accent != nil && theme.accent != theme.ground
-        /// Whether the ground past the land's edge at `cell` is water: where a river runs on into the
-        /// land next door (`Region`).
-        func waterBeyond(_ cell: GridPoint) -> Bool {
-            map.region?.isRiver(cell) ?? false
-        }
-        /// Which cells of the 3×3 around `cell` are `kind` (bit row * 3 + col, row 0 north).
-        func mask(_ cell: GridPoint, _ kind: Ground) -> Int {
-            let own = map.ground[cell.row][cell.col] == kind
-            var bits = 0
-            for dy in -1...1 {
-                for dx in -1...1 {
-                    let next = GridPoint(col: cell.col + dx, row: cell.row + dy)
-                    // Off the land (past its box, or a land next door's) a road or patch carries on;
-                    // water only where a river runs off it.
-                    let hit = map.contains(next) && map.ground[next.row][next.col] != .away ? map.ground[next.row][next.col] == kind
-                        : kind == .water ? waterBeyond(next) : own
-                    if hit { bits |= 1 << ((1 - dy) * 3 + dx + 1) }
-                }
-            }
-            return bits
-        }
-        /// The water cells of the 5×5 around `cell` (bit row * 5 + col, row 0 north), for shorelines.
-        func poolMask(_ cell: GridPoint) -> Int {
-            var bits = 0
-            for dy in -2...2 {
-                for dx in -2...2 {
-                    let next = GridPoint(col: cell.col + dx, row: cell.row + dy)
-                    let water = map.contains(next) && map.ground[next.row][next.col] != .away ? map.ground[next.row][next.col] == .water : waterBeyond(next)
-                    if water { bits |= 1 << ((2 - dy) * 5 + dx + 2) }
-                }
-            }
-            return bits
-        }
-        // Plain tiles come in four versions that fit together in any order, so big areas don't
-        // repeat. Animated placeholder water keeps its single animated tile.
-        let waterVaries = art.waterFrames(waterID).count == 1
-        func plain(_ id: String, _ variant: Int) -> SKTileGroup {
-            group("\(id)#\(variant)") { art.tileVariant(id, variant) }
-        }
-        let full = 0b111_111_111, sides = 0b010_101_010
-        // The sea (on the continent), round the land and in over its box past its coast (`Region`).
-        // It lies lower than the land (`WorldMap.seaDrop`; `placeSea` draws it), so its cells have no
-        // ground, and the land's edge along it is cut clear, curving as a lake's shore does, a bank
-        // of earth under it (`bank`).
-        var sea: Set<GridPoint> = []
-        if map.region != nil {
-            for row in -2..<(map.rows + 2) {
-                for col in -2..<(map.columns + 2) {
-                    let cell = GridPoint(col: col, row: row)
-                    let open = map.contains(cell) ? map.ground[row][col] == .sea : map.isOpenSea(cell)
-                    if open { sea.insert(cell) }
-                }
-            }
-        }
-        /// The sea's cells of the 3×3 around `cell` (as `mask`), and of the 5×5 (as `poolMask`).
-        func shore(_ cell: GridPoint) -> Int {
-            var bits = 0
-            for dy in -1...1 {
-                for dx in -1...1 where sea.contains(GridPoint(col: cell.col + dx, row: cell.row + dy)) { bits |= 1 << ((1 - dy) * 3 + dx + 1) }
-            }
-            return bits
-        }
-        func seaPool(_ cell: GridPoint) -> Int {
-            var bits = 0
-            for dy in -2...2 {
-                for dx in -2...2 where sea.contains(GridPoint(col: cell.col + dx, row: cell.row + dy)) { bits |= 1 << ((2 - dy) * 5 + dx + 2) }
-            }
-            return bits
-        }
-        // Across the band where this land gives way to the one next door (`Seam`), that land's
-        // ground in patches (`WorldMap.foreign`), graded as it is there: soft rounded blobs, as an
-        // accent's patches are, joining where they touch (`ArtLibrary.GroundLayer.from`). Which land's
-        // ground shows at a cell, as the index of its seam: on this land as laid out, just over the
-        // border as the band runs on into the land next door.
-        let others: [(land: MapDef, from: ArtLibrary.Foreign)?] = map.seams.map { seam in
-            Content.shared.map(seam.neighbour).map { (land: $0, from: ArtLibrary.Foreign(land: $0.id, palette: $0.theme.palette)) }
-        }
-        var lookPast: [GridPoint: Int?] = [:]
-        func otherLook(_ cell: GridPoint) -> Int? {
-            if map.owns(cell) { return map.foreign[cell] }
-            if let known = lookPast[cell] { return known }
-            let found = map.seams.indices.first { map.seams[$0].covers(cell) && map.seams[$0].showsOther(cell) }
-            lookPast[cell] = found
-            return found
-        }
-        /// The land next door whose patches reach `cell` (its own, or one round it), and which cells
-        /// of the 3×3 round it show that land (bit row * 3 + col, row 0 north).
-        func patches(_ cell: GridPoint) -> (seam: Int, mask: Int)? {
-            var looks: [Int?] = []
-            for dy in -1...1 {
-                for dx in -1...1 { looks.append(otherLook(GridPoint(col: cell.col + dx, row: cell.row - dy))) }
-            }
-            guard let seam = looks[4] ?? looks.compactMap({ $0 }).first else { return nil }
-            var bits = 0
-            for (bit, look) in looks.enumerated() where look == seam { bits |= 1 << bit }
-            return (seam, bits)
-        }
+        // Each cell's tile, from the cells round it (`GroundTiles`).
+        let tiles = GroundTiles(map: map, art: art)
         var picks: [(col: Int, row: Int, group: SKTileGroup?)] = []
         // The land's cells within two of the sea, for its bank.
         var shoreline: [(col: Int, row: Int)] = []
         for row in 0..<map.rows {
             if row % 4 == 3 { await breathe() }
             for col in 0..<map.columns {
-                let cell = GridPoint(col: col, row: row)
-                let kind = map.ground[row][col]
-                guard kind != .sea, kind != .away else {
-                    picks.append((col, row, nil))
-                    continue
-                }
-                let road = mask(cell, .path), pond = mask(cell, .water)
-                let variant = Self.variant(of: cell)
-                let patch = patchAccent ? mask(cell, .accent) : 0
-                // What shows between the soft shapes: the cell's own ground, or for a road, pond or
-                // patch cell the ground around it.
-                let base: String = switch kind {
-                case .ground: theme.ground
-                case .border: theme.border ?? theme.ground
-                case .accent where !patchAccent: theme.accent ?? theme.ground
-                default: mask(cell, .border) & sides != 0 ? (theme.border ?? theme.ground) : theme.ground
-                }
-                var layers: [ArtLibrary.GroundLayer] = []
-                // The land next door's patches first, under everything of this land's.
-                let other = map.seams.isEmpty ? nil : patches(cell)
-                let otherLand = other.flatMap { others[$0.seam] }
-                if let other, let otherLand {
-                    layers.append(.init(tile: otherLand.land.theme.ground, mask: other.mask, style: .patch, from: otherLand.from))
-                }
-                if patch != 0, let accent = theme.accent { layers.append(.init(tile: accent, mask: patch, style: .patch)) }
-                if road != 0 { layers.append(.init(tile: theme.path, mask: road, style: .road)) }
-                if pond != 0 { layers.append(.init(tile: waterID, mask: poolMask(cell), style: .water)) }
-                let near = sea.isEmpty ? 0 : seaPool(cell)
-                if near != 0 { shoreline.append((col, row)) }
-                let coast = near == 0 ? 0 : shore(cell)
-                if coast != 0 { layers.append(.init(tile: base, mask: near, style: .cut)) }
-                let chosen: SKTileGroup
-                if pond == full, coast == 0 {
-                    chosen = waterVaries ? plain(waterID, variant) : water
-                } else if road == full, pond == 0, coast == 0 {
-                    chosen = plain(theme.path, variant)
-                } else if let other, let otherLand, other.mask == full, layers.count == 1 {
-                    // All the land next door's ground.
-                    let land = otherLand.land
-                    chosen = group("foreign|\(land.id)#\(variant)") {
-                        art.foreignTile(land.theme.ground, palette: land.theme.palette, from: land.id, variant: variant, base: base)
-                    }
-                } else if layers.isEmpty {
-                    chosen = plain(base, variant)
-                } else if let accent = theme.accent, patch == full, road == 0, pond == 0, coast == 0 {
-                    chosen = plain(accent, variant)
-                } else {
-                    // Shorelines depend on where they are (see organicTile), so each gets its own tile.
-                    let place = pond != 0 || coast != 0 ? "@\(col),\(row)" : ""
-                    let key = base + "|" + layers.map { "\($0.style)\($0.mask)\($0.from?.land ?? "")" }.joined(separator: "|") + place
-                    chosen = group(key) { art.organicTile(base: base, layers: layers, cell: cell, variant: variant) }
-                }
-                picks.append((col, row, chosen))
+                let pick = tiles.pick(GridPoint(col: col, row: row))
+                if pick.nearSea { shoreline.append((col, row)) }
+                picks.append((col, row, pick.group))
             }
         }
         await breathe()
-        let tileSet = SKTileSet(tileGroups: Array(groups.values))
+        let tileSet = SKTileSet(tileGroups: tiles.allGroups)
+        // Each tile's picture, for drawing hills (`HillArt`).
+        let pictures = tiles.pictures
         let tileMap = SKTileMapNode(tileSet: tileSet, columns: map.columns, rows: map.rows, tileSize: tileSize)
         tileMap.anchorPoint = .zero
         // The shore's cells are drawn sunk (`WorldMap.shore`, below), not here.
@@ -687,77 +485,25 @@ final class WorldScene: SKScene {
                 grid.addChild(deck)
             }
         }
+        // Each cell's own tile picture, for the hills and the shore; none on the sea or a land next
+        // door's cells.
+        var images: [ObjectIdentifier: CGImage] = [:]
+        let tilePicture: (GridPoint) -> CGImage? = { cell in
+            guard self.map.contains(cell), let group = picks[cell.row * self.map.columns + cell.col].group else { return nil }
+            if let known = images[ObjectIdentifier(group)] { return known }
+            let made = pictures[ObjectIdentifier(group)].map { self.art.picture(of: $0) }
+            images[ObjectIdentifier(group)] = made
+            return made
+        }
         // Hills: the same ground again, lit and lifted (`HillArt`; `placePlateaus` sets them down).
         if !map.hills.isEmpty {
             await breathe()
-            var images: [String: CGImage] = [:]
-            func picture(_ key: String, _ texture: () -> SKTexture?) -> CGImage? {
-                if let known = images[key] { return known }
-                let made = texture().map { art.picture(of: $0) }
-                images[key] = made
-                return made
-            }
-            func tiles(_ id: String) -> (GridPoint) -> CGImage? {
-                { cell in picture("\(id)#\(Self.variant(of: cell))") { self.art.tileVariant(id, Self.variant(of: cell)) } }
-            }
-            let palette = theme.palette
-            // Rock shows on the slopes of all but the gentlest hills: the map's own bank, or scree.
-            let rock: String? = theme.hills?.bank ?? (map.rockiness >= 0.2 ? "tile_scree" : nil)
-            // Past the map's edge (a range where a road leads into a cave), the land out there.
-            let beyond = tiles(theme.border ?? theme.ground)
-            let look = HillArt.Look(
-                ground: { cell in
-                    guard self.map.contains(cell), let group = picks[cell.row * self.map.columns + cell.col].group else { return beyond(cell) }
-                    return picture("\(ObjectIdentifier(group).hashValue)") { pictures[ObjectIdentifier(group)] }
-                },
-                trail: tiles(theme.path),
-                bank: rock.map(tiles),
-                rocky: map.rockiness,
-                variation: variationPicture,
-                mapSize: (map.columns, map.rows),
-                shadow: Lighting.rgb(palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
-                highlight: Lighting.rgb(palette?.highlight) ?? (r: 1, g: 0.95, b: 0.8))
-            // A range where a road leads into a cave is a mountain of layered rock, its foot grassy,
-            // in deeper shade and brighter sun; out past the map's edge the ground is rock too.
-            let scree = tiles(theme.hills?.bank ?? "tile_scree")
-            var crag = look
-            crag.ground = { cell in self.map.contains(cell) ? look.ground(cell) : scree(cell) }
-            crag.bank = scree
-            crag.rocky = 1
-            crag.rockAbove = 0.2
-            crag.ambient = Self.cragShade
-            crag.brightest = 1.3
-            crag.strata = 14
-            // Its road stays a road all the way up to the cave's mouth.
-            crag.road = { cell in self.map.contains(cell) && self.map.ground[cell.row][cell.col] == .path }
-            // Out past the ends of its edge, it stops where a land next door lies.
-            var elsewhere: [GridPoint: Bool] = [:]
-            crag.hidden = { cell in
-                guard !self.map.owns(cell) else { return false }
-                if let known = elsewhere[cell] { return known }
-                let land = Continent.isLand(cell, from: self.def)
-                elsewhere[cell] = land
-                return land
-            }
-            // A range with a mountain in it: bare layered rock from partway up (its foothills'
-            // tops below that), in deeper shade and brighter sun, so its height shows.
-            var mountain = look
-            mountain.bank = look.bank ?? scree
-            mountain.ambient = Self.cragShade
-            mountain.brightest = 1.2
-            mountain.strata = 14
+            let looks = HillLooks(map: map, art: art, ground: tilePicture, variation: variationPicture)
             // Already where they show on screen (they lift themselves) and sorted, so straight into
             // the world.
             for hill in map.hills {
                 await breathe()
-                var style = look
-                if hill.isCrag {
-                    style = crag
-                } else if hill.hasMountain {
-                    style = mountain
-                    style.rockFrom = Double(hill.peak) * 0.4
-                }
-                let sprites = await HillArt.sprites(for: hill, look: style, pause: { await self.breathe() })
+                let sprites = await HillArt.sprites(for: hill, look: looks.look(for: hill), pause: { await self.breathe() })
                 raisedHills += sprites as [SKNode]
             }
         }
@@ -766,23 +512,7 @@ final class WorldScene: SKScene {
         // sunk lake.
         if let shore = map.shore {
             await breathe()
-            var images: [ObjectIdentifier: CGImage] = [:]
-            let look = HillArt.Look(
-                ground: { cell in
-                    guard self.map.owns(cell), let group = picks[cell.row * self.map.columns + cell.col].group else { return nil }
-                    if let known = images[ObjectIdentifier(group)] { return known }
-                    let made = pictures[ObjectIdentifier(group)].map { self.art.picture(of: $0) }
-                    images[ObjectIdentifier(group)] = made
-                    return made
-                },
-                trail: { _ in nil },
-                bank: nil,
-                rocky: 0,
-                variation: variationPicture,
-                mapSize: (map.columns, map.rows),
-                shadow: Lighting.rgb(theme.palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
-                highlight: Lighting.rgb(theme.palette?.highlight) ?? (r: 1, g: 0.95, b: 0.8),
-                overlays: sunkDecks)
+            let look = HillLooks.shore(of: map, ground: tilePicture, variation: variationPicture, overlays: sunkDecks)
             let sprites = await HillArt.sprites(for: shore, look: look, pause: { await self.breathe() })
             raisedHills += sprites as [SKNode]
         }
@@ -1218,17 +948,16 @@ final class WorldScene: SKScene {
 
     private func placeFence() {
         guard !map.fenceCells.isEmpty else { return }
-        for cell in map.fenceCells { map.occupy(cell, blocking: true) }
         TownFence.place(cells: map.fenceCells, map: map, world: world, art: art, stone: def.town?.walls == "stone")
     }
 
     /// Houses take a 3×2 footprint above their anchor tile.
-    private func placeBuildings() {
-        for lot in map.lots {
-            addScenery(art.sprite(lot.art), at: lot.anchor)
+    private func placeBuildings(_ plan: LandPlan) {
+        for lot in plan.lots {
+            addScenery(lot)
         }
-        for decor in map.streetDecor {
-            let lamp = addScenery(art.sprite(decor.art), at: decor.cell)
+        for decor in plan.streetDecor {
+            let lamp = addScenery(decor)
             if decor.art == "street_lamp" {
                 // A warm glow around each lamp.
                 let glow = SKSpriteNode(texture: SoftTextures.glow, size: CGSize(width: 70, height: 50))
@@ -1245,8 +974,8 @@ final class WorldScene: SKScene {
         }
         placeTerraces()
         // The map's own buildings, already set down clear of the roads (WorldMap.placeOwnBuildings).
-        for building in map.buildings {
-            addScenery(art.sprite(building.art), at: building.anchor)
+        for building in plan.buildings {
+            addScenery(building)
         }
     }
 
@@ -1406,10 +1135,8 @@ final class WorldScene: SKScene {
         }
     }
 
-    private func placeNPCs() {
-        for npc in def.npcs ?? [] {
-            let cell = map.spot(of: npc)
-            map.occupy(cell, blocking: true)
+    private func placeNPCs(_ planned: [(npc: NPCDef, cell: GridPoint)]) {
+        for (npc, cell) in planned {
             let node = Walker(cycle: art.walkCycle(npc.art), label: npc.name)
             node.idles = npc.role != .chest
             node.tagMode = .onDemand
@@ -1431,130 +1158,41 @@ final class WorldScene: SKScene {
         updateNotices()
     }
 
-    /// The people who live here (`MapDef.Local`): where each lives and walks to, their things set
-    /// down around home and home kept clear of scenery, for the crowd to bring them to life.
-    private func placeLocals() -> [Crowd.Local] {
-        var placed: [Crowd.Local] = []
-        for (index, local) in (def.locals ?? []).enumerated() {
-            guard let home = map.spot(of: local.home) else { continue }
-            for prop in local.props ?? [] {
-                let cell = GridPoint(col: home.col + prop.x, row: home.row + prop.y)
-                let blocking = prop.blocking ?? true
-                guard cell != home, map.isFreeForScenery(cell, insideFence: true, blocking: blocking) else { continue }
-                map.occupy(cell, blocking: blocking)
-                addScenery(art.sprite(prop.art), at: cell)
-            }
-            map.occupy(home, blocking: false)
-            let walk = local.walk.flatMap { map.spot(of: $0) }
-            placed.append(Crowd.Local(def: local, index: index, home: home, walk: walk))
+    /// The theme's props, and past the lines the land meets the lands beside it along (`Seam`) theirs,
+    /// graded as they are there (`LandPlanner`).
+    private func placeProps(_ props: [Placement], seams: [Placement]) async {
+        for (number, prop) in props.enumerated() {
+            if number % 32 == 31 { await breathe() }
+            plant(prop)
         }
-        return placed
-    }
-
-    /// Boulders on the slopes of rocky hills (`WorldMap.rockiness`), the more the rockier: the
-    /// map's own rocks (its props named for a boulder or rock), on the steeper cells, off the trails.
-    /// Grassy hills on the gentlest maps get none.
-    private func placeOutcrops() {
-        let rocky = map.rockiness
-        guard rocky >= 0.3, !map.hills.isEmpty else { return }
-        var kinds = def.theme.props.map(\.art).filter { $0.contains("boulder") || $0.hasSuffix("rock") }
-        if kinds.isEmpty { kinds = ["boulder", "small_boulder"] }
-        var rocks = SeededRandom(text: def.id + "/outcrops")
-        for hill in map.hills {
-            for cell in hill.cells.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }) {
-                guard map.rise(across: cell) >= 6, map.isFreeForScenery(cell),
-                      Double.random(in: 0..<1, using: &rocks) < 0.08 * rocky else { continue }
-                let sprite = art.sprite(kinds[Int.random(in: 0..<kinds.count, using: &rocks)])
-                map.occupy(cell, blocking: true)
-                addScenery(sprite, at: cell, jitter: true, scale: CGFloat.random(in: 0.7...1.1, using: &rocks))
-            }
-        }
-    }
-
-    /// Scenery from the theme. Props with `cluster` grow in groves around a random centre. None
-    /// past the lines the land meets the lands beside it along (`WorldMap.foreign`), where theirs
-    /// grows (`placeSeamProps`).
-    private func placeProps() async {
-        for placement in def.theme.props {
-            let sprite = art.sprite(placement.art)
-            let groupSize = max(1, placement.cluster ?? 1)
-            let spread = max(1, placement.spread ?? Int(Double(groupSize).squareRoot().rounded()) + 1)
-            var placed = 0
-            var attempts = 0
-            while placed < placement.count, attempts < placement.count * 3 {
-                attempts += 1
-                await breathe()
-                let found: GridPoint? = if let radius = placement.within {
-                    map.randomFreeCell(within: radius, using: &rng)
-                } else {
-                    map.randomFreeCell(blocking: placement.blocking, using: &rng)
-                }
-                guard let middle = found else { break }
-                let wanted = min(groupSize, placement.count - placed)
-                var inGroup = 0
-                for index in 0..<(wanted * 5) where inGroup < wanted {
-                    let cell = index == 0 ? middle : GridPoint(
-                        col: middle.col + Int.random(in: -spread...spread, using: &rng),
-                        row: middle.row + Int.random(in: -spread...spread, using: &rng)
-                    )
-                    guard map.isFreeForScenery(cell, insideFence: placement.within != nil, blocking: placement.blocking),
-                          map.foreign[cell] == nil else { continue }
-                    var scale: CGFloat = 1
-                    if let range = placement.size, range.count == 2, range[0] <= range[1] {
-                        scale = CGFloat(Double.random(in: range[0]...range[1], using: &rng))
-                    }
-                    plant(sprite, placement, at: cell, scale: scale)
-                    inGroup += 1
-                }
-                placed += inGroup
-            }
-        }
-    }
-
-    /// Past the lines the land meets the lands beside it along (`Seam`), where their ground has come
-    /// over onto this one, their scenery (graded as it is there), as thick as it grows there, so the
-    /// woods and the meadows run on over the line as the ground does.
-    private func placeSeamProps() async {
-        guard !map.foreign.isEmpty else { return }
-        var random = SeededRandom(text: def.id + "/seams")
         var sprites: [String: SpriteArt] = [:]
-        let lands = map.seams.map { Content.shared.map($0.neighbour) }
-        for (number, cell) in map.foreign.keys.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }).enumerated() {
-            if number % 8 == 7 { await breathe() }
-            guard let seam = map.foreign[cell], let land = lands[seam] else { continue }
-            let area = Double(land.width * land.height)
-            for placement in land.theme.props where placement.within == nil {
-                guard Double.random(in: 0..<1, using: &random) < Double(placement.count) / area else { continue }
-                guard map.isFreeForScenery(cell, blocking: placement.blocking) else { break }
-                let key = land.id + "|" + placement.art
-                let sprite: SpriteArt
-                if let known = sprites[key] {
-                    sprite = known
-                } else {
-                    let own = art.sprite(placement.art)
-                    let texture = art.gradedTile(placement.art, palette: land.theme.palette).map { image -> SKTexture in
-                        let made = SKTexture(cgImage: image)
-                        made.filteringMode = .nearest
-                        return made
-                    } ?? own.texture
-                    sprite = SpriteArt(texture: texture, size: own.size)
-                    sprites[key] = sprite
-                }
-                var scale: CGFloat = 1
-                if let range = placement.size, range.count == 2, range[0] <= range[1] {
-                    scale = CGFloat(Double.random(in: range[0]...range[1], using: &random))
-                }
-                plant(sprite, placement, at: cell, scale: scale)
-                break
+        for (number, prop) in seams.enumerated() {
+            if number % 32 == 31 { await breathe() }
+            guard let land = prop.land else { continue }
+            let key = land.id + "|" + prop.art
+            let sprite: SpriteArt
+            if let known = sprites[key] {
+                sprite = known
+            } else {
+                let own = art.sprite(prop.art)
+                let texture = art.gradedTile(prop.art, palette: land.theme.palette).map { image -> SKTexture in
+                    let made = SKTexture(cgImage: image)
+                    made.filteringMode = .nearest
+                    return made
+                } ?? own.texture
+                sprite = SpriteArt(texture: texture, size: own.size)
+                sprites[key] = sprite
             }
+            plant(prop, sprite: sprite)
         }
     }
 
-    /// Sets a prop down at `cell` as its placement says: taking the cell, swaying, bobbing, with its
-    /// shadow and its glow.
-    private func plant(_ sprite: SpriteArt, _ placement: MapDef.PropPlacement, at cell: GridPoint, scale: CGFloat) {
-        map.occupy(cell, blocking: placement.blocking)
-        let node = addScenery(sprite, at: cell, sway: placement.sway == true, jitter: true, scale: scale)
+    /// Draws a prop as its placement says (`LandPlanner.plant`): swaying, bobbing, with its shadow and
+    /// its glow.
+    private func plant(_ planted: Placement, sprite: SpriteArt? = nil) {
+        guard let placement = planted.prop else { return }
+        let cell = planted.cell
+        let node = addScenery(planted, sprite: sprite)
         if placement.bob == true {
             // Unseeded, so the map's layout stays what it was.
             let rise = SKAction.moveBy(x: 0, y: 3, duration: .random(in: 1.3...2))
@@ -1581,23 +1219,17 @@ final class WorldScene: SKScene {
                 shadows.append(Lighting.Shadow(under: node, in: chunk(at: node.position)))
             }
         }
-        if let hex = placement.glow, let color = UIColor(hex: hex) {
-            Lighting.glow(behind: node, color: color, in: chunk(at: node.position), rng: &rng)
+        if let hex = placement.glow, let color = UIColor(hex: hex), let glow = planted.glow {
+            Lighting.glow(behind: node, color: color, in: chunk(at: node.position), alpha: glow.alpha, duration: glow.duration)
             lantern?.glint(at: node.position + CGVector(dx: 0, dy: node.size.height * 0.4), color: color, width: node.size.width * 1.6)
         }
     }
 
     /// Hand-placed decorations (fountains, blossom trees) from the map's `decor` list.
-    private func placeDecor() {
-        for decor in def.decor ?? [] {
-            let anchor = map.spot(x: decor.x, y: decor.y, summit: decor.summit)
-            let sprite = art.sprite(decor.art)
-            let blocking = decor.blocking ?? true
-            let footprint = max(1, Int(sprite.size.width / WorldMap.tileSize * 0.75))
-            for dc in 0..<footprint {
-                map.occupy(GridPoint(col: anchor.col + dc - footprint / 2, row: anchor.row), blocking: blocking)
-            }
-            addScenery(sprite, at: anchor, sway: decor.art.contains("tree") || decor.art.contains("flower"))
+    private func placeDecor(_ planned: [Placement]) {
+        for decor in planned {
+            let anchor = decor.cell
+            addScenery(decor)
             if decor.art.contains("fountain") {
                 let sparkle = map.center(of: anchor) + CGVector(dx: 0, dy: 30)
                 Ambience.twinkle(around: sparkle, radius: 30, count: 4, in: chunk(at: sparkle))
@@ -1606,51 +1238,37 @@ final class WorldScene: SKScene {
     }
 
     /// Circles of mushrooms with a sparkle in the middle, like the ones fairies dance in.
-    private func placeFairyRings() {
-        guard let rings = def.theme.fairyRings else { return }
+    private func placeFairyRings(_ middles: [GridPoint]) {
+        guard let rings = def.theme.fairyRings, !middles.isEmpty else { return }
         let sprite = art.sprite(rings.art)
-        for _ in 0..<rings.count {
-            for _ in 0..<30 {
-                guard let middle = map.randomFreeCell(using: &rng) else { break }
-                let area = (-2...2).flatMap { dr in (-2...2).map { dc in GridPoint(col: middle.col + dc, row: middle.row + dr) } }
-                guard area.allSatisfy({ map.isFreeForScenery($0) && map.height(at: map.center(of: $0)) == 0 }) else { continue }
-                area.forEach { map.occupy($0, blocking: false) }
-                let origin = map.center(of: middle)
-                for index in 0..<9 {
-                    let angle = CGFloat(index) / 9 * 2 * .pi
-                    let node = SKSpriteNode(texture: sprite.texture, size: sprite.size * 0.75)
-                    node.anchorPoint = CGPoint(x: 0.5, y: 0.1)
-                    node.position = origin + CGVector(dx: cos(angle) * 52, dy: sin(angle) * 36)
-                    node.zPosition = -node.position.y
-                    chunk(at: origin).addChild(node)
-                }
-                Ambience.twinkle(around: origin, radius: 26, count: 5, in: chunk(at: origin))
-                break
+        for middle in middles {
+            let origin = map.center(of: middle)
+            for index in 0..<9 {
+                let angle = CGFloat(index) / 9 * 2 * .pi
+                let node = SKSpriteNode(texture: sprite.texture, size: sprite.size * 0.75)
+                node.anchorPoint = CGPoint(x: 0.5, y: 0.1)
+                node.position = origin + CGVector(dx: cos(angle) * 52, dy: sin(angle) * 36)
+                node.zPosition = -node.position.y
+                chunk(at: origin).addChild(node)
             }
+            Ambience.twinkle(around: origin, radius: 26, count: 5, in: chunk(at: origin))
         }
     }
 
-    private func placeLilyPads() {
-        // Frozen ponds and chocolate ones don't grow lily pads.
-        let water = def.theme.water ?? ""
-        guard !water.contains("ice"), !water.contains("chocolate") else { return }
+    private func placeLilyPads(_ pads: [(cell: GridPoint, drift: CGVector)]) {
+        guard !pads.isEmpty else { return }
         let sprite = art.sprite("lily_pad")
-        var padRNG = SeededRandom(text: def.id + "/lilies")
-        for pond in map.ponds {
-            // A few on a pond, more on a lake.
-            for _ in 0..<min(max(4, pond.count / 60), max(1, pond.count / 8)) {
-                guard let cell = pond.randomElement(using: &padRNG), !map.bridgeCells.contains(cell) else { continue }
-                let node = SKSpriteNode(texture: sprite.texture, size: sprite.size)
-                let spot = map.center(of: cell) + CGVector(dx: .random(in: -6...6, using: &padRNG), dy: .random(in: -6...6, using: &padRNG))
-                // On a lake sunk with the shore, down on its water.
-                node.position = CGPoint(x: spot.x, y: spot.y + map.height(at: spot))
-                node.zPosition = map.isSunken(cell) ? flatZ(at: spot) : -99_000
-                node.run(.repeatForever(.sequence([
-                    .rotate(toAngle: 0.08, duration: 2.2, shortestUnitArc: true),
-                    .rotate(toAngle: -0.08, duration: 2.2, shortestUnitArc: true),
-                ])))
-                chunk(at: node.position).addChild(node)
-            }
+        for (cell, drift) in pads {
+            let node = SKSpriteNode(texture: sprite.texture, size: sprite.size)
+            let spot = map.center(of: cell) + drift
+            // On a lake sunk with the shore, down on its water.
+            node.position = CGPoint(x: spot.x, y: spot.y + map.height(at: spot))
+            node.zPosition = map.isSunken(cell) ? flatZ(at: spot) : -99_000
+            node.run(.repeatForever(.sequence([
+                .rotate(toAngle: 0.08, duration: 2.2, shortestUnitArc: true),
+                .rotate(toAngle: -0.08, duration: 2.2, shortestUnitArc: true),
+            ])))
+            chunk(at: node.position).addChild(node)
         }
     }
 
@@ -1660,40 +1278,12 @@ final class WorldScene: SKScene {
         let pixels = art.picture(of: art.tileTexture(def.theme.ground)).width
         for bridge in map.bridges {
             BridgeArt.rails(for: bridge, pixels: pixels, palette: def.theme.palette, in: world) { self.map.height(at: $0) }
-            // Nothing grows right beside a deck either, on the bank its planks and rails reach over,
-            // where a fern or a tree would stand on the bridge.
-            for cell in bridge.cells {
-                for dc in -1...1 {
-                    for dr in -1...1 { map.occupy(GridPoint(col: cell.col + dc, row: cell.row + dr), blocking: false) }
-                }
-            }
         }
     }
 
-    /// Reeds here and there along the lakes' and the river's shores, where the water isn't frozen
-    /// or chocolate.
-    private func placeReeds() {
-        let water = def.theme.water ?? ""
-        guard !water.contains("ice"), !water.contains("chocolate"), !map.lakes.isEmpty || !map.river.isEmpty else { return }
-        let sprite = art.sprite("reeds")
-        var reedRNG = SeededRandom(text: def.id + "/reeds")
-        var seen: Set<GridPoint> = []
-        for shore in map.lakes.map({ $0.water }) + [map.river] {
-            for cell in shore.sorted(by: WorldMap.inOrder) {
-                for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
-                    let land = GridPoint(col: cell.col + dc, row: cell.row + dr)
-                    guard map.contains(land), map.ground[land.row][land.col] != .water, seen.insert(land).inserted else { continue }
-                    guard Double.random(in: 0..<1, using: &reedRNG) < 0.12, map.isFreeForScenery(land, blocking: false) else { continue }
-                    map.occupy(land, blocking: false)
-                    addScenery(sprite, at: land, jitter: true, scale: CGFloat.random(in: 0.75...1, using: &reedRNG))
-                }
-            }
-        }
-    }
-
-    /// A small sign where each road leaves the map.
-    private func placeSignposts() {
-        for exit in def.exits {
+    /// A small sign where each road leaves the map, where the plan put it (`LandPlanner`).
+    private func placeSignposts(_ planned: [(exit: MapDef.Exit, cell: GridPoint)]) {
+        for (exit, cell) in planned {
             guard let destination = Content.shared.map(exit.to) else { continue }
             let text = switch exit.edge {
             // Arrows follow the road on screen: north runs up-left, east up-right.
@@ -1703,9 +1293,7 @@ final class WorldScene: SKScene {
             case .west: "↙ \(destination.name)"
             }
             // A wooden signpost beside the road. Its words only show when you walk up and tap it.
-            let cell = signCell(near: exit) ?? map.entryCell(from: exit.edge)
             let post = addScenery(art.sprite("signpost"), at: cell, scale: 1.6)
-            if map.isWalkable(cell) { map.occupy(cell, blocking: true) }
             let top = map.base(of: cell) + CGVector(dx: 0, dy: post.size.height + 4)
             let label = NameTag(text, color: Nodes.gold, size: 12)
             label.position = top + CGVector(dx: 0, dy: 4)
@@ -1741,32 +1329,6 @@ final class WorldScene: SKScene {
         sign.label.run(.sequence([.fadeIn(withDuration: 0.15), .wait(forDuration: 4), .fadeOut(withDuration: 0.4)]))
         session.post(L("The sign reads: {text}", ["text": sign.text]))
         SoundEffects.shared.play(.talk, volume: 0.5)
-    }
-
-    /// A free cell just off the side of the road out by `exit`, a few tiles in from where it leaves
-    /// (on the continent, from where it crosses the border; else from the edge), for its signpost.
-    private func signCell(near exit: MapDef.Exit, depth: Int = 4) -> GridPoint? {
-        let edge = exit.edge
-        let alongColumns = edge == .north || edge == .south
-        let line: [GridPoint]
-        if let road = map.region?.roads[exit.to] {
-            let middle = road.at.stepped(edge.opposite, by: depth)
-            line = (-12...12).map { alongColumns ? GridPoint(col: middle.col + $0, row: middle.row) : GridPoint(col: middle.col, row: middle.row + $0) }
-        } else {
-            line = switch edge {
-            case .north: (0..<map.columns).map { GridPoint(col: $0, row: map.rows - 1 - depth) }
-            case .south: (0..<map.columns).map { GridPoint(col: $0, row: depth) }
-            case .east: (0..<map.rows).map { GridPoint(col: map.columns - 1 - depth, row: $0) }
-            case .west: (0..<map.rows).map { GridPoint(col: depth, row: $0) }
-            }
-        }
-        let road = line.indices.filter { map.owns(line[$0]) && map.ground[line[$0].row][line[$0].col] == .path }
-        guard let first = road.first, let last = road.last else { return nil }
-        for index in [first - 1, last + 1, first - 2, last + 2] where line.indices.contains(index) {
-            let cell = line[index]
-            if map.isWalkable(cell), map.ground[cell.row][cell.col] != .water { return cell }
-        }
-        return nil
     }
 
     /// What walls the land's borders with the lands next door (`BorderArt`): a town's city wall, and
@@ -1855,18 +1417,24 @@ final class WorldScene: SKScene {
             }
             return true
         }
-        for land in nextDoor.values { land.scene.openBarricades() }
+    }
+
+    /// A piece of scenery as the plan set it down (`LandPlanner`): its own sprite, or `sprite` (a land
+    /// next door's, graded as it is there).
+    @discardableResult
+    private func addScenery(_ placement: Placement, sprite: SpriteArt? = nil) -> SKSpriteNode {
+        addScenery(sprite ?? art.sprite(placement.art), at: placement.cell, nudge: placement.nudge, sway: placement.sway, scale: placement.scale)
     }
 
     @discardableResult
-    private func addScenery(_ sprite: SpriteArt, at cell: GridPoint, sway: Bool = false, jitter: Bool = false, scale: CGFloat = 1) -> SKSpriteNode {
+    private func addScenery(_ sprite: SpriteArt, at cell: GridPoint, nudge: CGVector? = nil, sway: Placement.Sway? = nil, scale: CGFloat = 1) -> SKSpriteNode {
         let node = SKSpriteNode(texture: sprite.texture, size: CGSize(width: sprite.size.width * scale, height: sprite.size.height * scale))
         node.anchorPoint = CGPoint(x: 0.5, y: min(0.5, 0.05 + foot(of: sprite.texture)))
         var position = map.base(of: cell)
-        if jitter {
-            // Nudge off the grid so groves look planted by nature, not a spreadsheet.
-            position.x += .random(in: -7...7, using: &rng)
-            position.y += .random(in: -5...5, using: &rng)
+        if let nudge {
+            // Nudged off the grid so groves look planted by nature, not a spreadsheet.
+            position.x += nudge.dx
+            position.y += nudge.dy
         }
         // Standing on raised ground (a hilltop, a terrace) it's drawn up there, sorted by its spot.
         let ground = position.y
@@ -1874,14 +1442,12 @@ final class WorldScene: SKScene {
         node.position = position
         node.zPosition = -ground
         shade(node, standingOn: cell)
-        if sway {
-            let duration = TimeInterval.random(in: 1.8...2.8, using: &rng)
-            let lean = CGFloat.random(in: 0.018...0.03, using: &rng)
-            let left = SKAction.rotate(toAngle: lean, duration: duration, shortestUnitArc: true)
-            let right = SKAction.rotate(toAngle: -lean, duration: duration, shortestUnitArc: true)
+        if let sway {
+            let left = SKAction.rotate(toAngle: sway.lean, duration: sway.duration, shortestUnitArc: true)
+            let right = SKAction.rotate(toAngle: -sway.lean, duration: sway.duration, shortestUnitArc: true)
             left.timingMode = .easeInEaseOut
             right.timingMode = .easeInEaseOut
-            node.zRotation = .random(in: -lean...lean, using: &rng)
+            node.zRotation = sway.start
             node.run(.repeatForever(.sequence([left, right])))
         }
         chunk(at: node.position).addChild(node)
@@ -1943,9 +1509,8 @@ final class WorldScene: SKScene {
 
     private var feet: [ObjectIdentifier: CGFloat] = [:]
 
-    /// How lit a cave's range is turned from the sun (`HillArt.Look.ambient`): deeper shade than
-    /// other hills, so a mountain's shape shows.
-    private static let cragShade = 0.25
+    /// How lit a cave's range is turned from the sun (`HillLooks.cragShade`).
+    private static let cragShade = HillLooks.cragShade
 
     /// Scenery on a hill, with how the ground under it rises a cell across and up the map (as
     /// `HillArt.sunlight` takes it) and how lit it is there turned from the midday sun: shaded
@@ -2001,8 +1566,6 @@ final class WorldScene: SKScene {
         for case let walker as Walker in world.children { walker.cast(from: sun) }
         for spot in onSlopes { Self.shade(spot.node, hx: spot.hx, hy: spot.hy, ambient: spot.ambient, sun: sun) }
         lighting?.follow(sun)
-        // The lands next door are under the same sun.
-        for land in nextDoor.values { land.scene.follow(sun) }
     }
 
     /// How far up its image a sprite's lowest opaque pixel sits (0...1). Scenery is anchored there,
@@ -2318,18 +1881,7 @@ final class WorldScene: SKScene {
             signTarget = index
         }
         crowd?.greet(at: point, from: player.position)
-        // A tap over the border, in a land next door: there by the nearest way over, and on to the
-        // spot once you're across (`takeOver`). Into one not built yet too: over behind the
-        // loading card, where you step across (`cross(into:)`).
         let ground = map.groundPoint(under: point)
-        let tapped = map.rawCell(at: ground)
-        tapOverBorder = nil
-        if !map.owns(tapped), let neighbour = neighbour(holding: tapped), let way = wayOver(to: tapped, into: neighbour) {
-            player.path = map.path(from: player.position, to: map.center(of: way.inside)) + [way.over]
-            tapOverBorder = ground
-            Effects.tapMarker(at: ground, z: -50_000, in: world)
-            return
-        }
         // A tap on a hilltop means the top, not the ground it hides.
         player.path = map.path(from: player.position, to: ground)
         if let destination = player.path.last {
@@ -2337,18 +1889,6 @@ final class WorldScene: SKScene {
         }
     }
 
-    /// Where you tapped over the border, in a land next door (in this land's points): the walk
-    /// there goes on once you're across.
-    private var tapOverBorder: CGPoint?
-
-    /// The way over the border into `neighbour` nearest `cell` (one of that land's): the cell on this
-    /// side to walk to, and a spot just over the line, where it's open and there's ground to stand.
-    private func wayOver(to cell: GridPoint, into neighbour: Continent.Neighbour) -> (inside: GridPoint, over: CGPoint)? {
-        func away(_ other: GridPoint) -> Int { (other.col - cell.col) * (other.col - cell.col) + (other.row - cell.row) * (other.row - cell.row) }
-        let open = neighbour.border.filter { map.isWalkable($0.inside) && canCross(into: $0.outside) }
-        guard let pair = open.min(by: { away($0.outside) < away($1.outside) }) else { return nil }
-        return (pair.inside, map.center(of: pair.outside))
-    }
 
     /// How deep something lying flat on the ground at `point` (a tap's swirl) sorts: on a hill, just
     /// over the strip of raised ground it lies on (`HillArt.strip(at:)`), as the scenery's shadows
@@ -2632,16 +2172,6 @@ final class WorldScene: SKScene {
         crowd?.tellForDebug(near: player.position)
     }
 
-    /// Debug launches (`border=<land>,cross`): you walk over the border into that land, on the
-    /// stick, as you would (the land next door must be shown already).
-    func walkOverForDebug(into id: String) async {
-        guard let neighbour = neighbours.first(where: { $0.def.id == id }) else { return }
-        // Over the road if one crosses, else halfway along the border.
-        let over = neighbour.exit.flatMap { neighbour.gate(of: $0) } ?? neighbour.border[neighbour.border.count / 2].outside
-        input.move = (map.center(of: over) - player.position).normalized
-        try? await Task.sleep(for: .seconds(5))
-        input.move = .zero
-    }
     #endif
 
     func adventurerSays(_ line: String, _ id: UUID) {
@@ -2661,83 +2191,7 @@ final class WorldScene: SKScene {
         startTalking(to: npc.def, node: npc.node)
     }
 
-    // MARK: - Next door
-
-    /// Where a land `offset` cells off (its south-west cell, in this land's cells) lies on screen:
-    /// add it to that land's points for this one's.
-    static func shift(_ offset: GridPoint) -> CGVector {
-        let point = WorldMap.project(CGPoint(x: CGFloat(offset.col) * WorldMap.tileSize, y: CGFloat(offset.row) * WorldMap.tileSize))
-        return CGVector(dx: point.x, dy: point.y)
-    }
-
-    /// The lands next door shown past this one's borders now, by id.
-    var shownNextDoor: [String: WorldScene] { nextDoor.mapValues(\.scene) }
-
-    /// The friends visiting this land, who stay here rather than turn up next door as well.
-    var visitingFriends: Set<UUID> {
-        let friends = Set(session.friends.map(\.id))
-        return Set((crowd?.adventurerPositions ?? []).map(\.profile.id).filter(friends.contains))
-    }
-
-    /// Shows a land next door, built in the background, past the border: its own layer moved into
-    /// this scene, where it lies, sorted in with this land's as if they were one.
-    func show(_ land: WorldScene, as neighbour: Continent.Neighbour) {
-        guard land.isBuilt, land !== self, nextDoor[land.def.id] == nil else { return }
-        let shift = Self.shift(neighbour.offset)
-        land.world.removeFromParent()
-        land.world.position = CGPoint(x: shift.dx, y: shift.dy)
-        land.world.zPosition = -shift.dy
-        lands.addChild(land.world)
-        nextDoor[land.def.id] = (land, neighbour)
-        farLands[land.def.id]?.isHidden = true
-        land.follow(sunShown ?? .noon)
-    }
-
-    /// Lays the lands round this one flat on the ground as their world map pictures (`farLands`),
-    /// those not laid yet. One with no picture yet lies there in its ground's colour till
-    /// `WorldOverview` draws it (looked for again every so often, `lookAround`), so there's never
-    /// nothing past a border. Not for a land shown next door, nor round a cave.
-    private func placeFarLands() {
-        guard !isNextDoor, Continent.origin(of: def) != nil else { return }
-        let drawn = WorldOverview.shared.images
-        var missing = false
-        let tile = WorldMap.tileSize
-        for (land, offset) in Continent.lands(near: def, within: Self.farReach) where farLands[land.id] == nil || plainLands.contains(land.id) {
-            let size = CGSize(width: CGFloat(land.width) * tile, height: CGFloat(land.height) * tile)
-            let picture: SKSpriteNode
-            if let image = drawn[land.id] {
-                let texture = SKTexture(cgImage: image)
-                texture.filteringMode = .linear
-                picture = SKSpriteNode(texture: texture, size: size)
-                farLands.removeValue(forKey: land.id)?.removeFromParent()
-                plainLands.remove(land.id)
-            } else {
-                missing = true
-                guard farLands[land.id] == nil else { continue }
-                let (red, green, blue) = Self.groundColor(of: land, art: art)
-                let color = PixelColor(r: UInt8(red * 255), g: UInt8(green * 255), b: UInt8(blue * 255))
-                if let shape = Self.silhouette(of: land, color: color) {
-                    let texture = SKTexture(cgImage: shape)
-                    texture.filteringMode = .linear
-                    picture = SKSpriteNode(texture: texture, size: size)
-                } else {
-                    picture = SKSpriteNode(color: UIColor(red: red, green: green, blue: blue, alpha: 1), size: size)
-                }
-                plainLands.insert(land.id)
-            }
-            picture.anchorPoint = .zero
-            picture.position = CGPoint(x: CGFloat(offset.col) * tile, y: CGFloat(offset.row) * tile)
-            let grid = SKNode()
-            grid.addChild(picture)
-            let layer = projected(grid)
-            layer.zPosition = -1_000_000
-            layer.isHidden = nextDoor[land.id] != nil
-            lands.addChild(layer)
-            farLands[land.id] = layer
-        }
-        farLandsMissing = missing
-        if missing { WorldOverview.shared.prepare(first: overviewsFirst) }
-    }
+    // MARK: - The lands round
 
     /// The lands whose pictures this one wants first (`WorldOverview.prepare(first:)`): those it
     /// shares a border with, the nearest to you first.
@@ -2750,7 +2204,7 @@ final class WorldScene: SKScene {
     }
 
     /// A land's ground colour, as it's graded there: what lies past the border till its picture's
-    /// drawn (`placeFarLands`, `minimapPicture`).
+    /// drawn (`minimapPicture`).
     static func groundColor(of land: MapDef, art: ArtLibrary) -> (CGFloat, CGFloat, CGFloat) {
         if let known = groundColors[land.id] { return known }
         let color: (CGFloat, CGFloat, CGFloat)
@@ -2783,162 +2237,6 @@ final class WorldScene: SKScene {
             }
         }
         return canvas.cgImage()
-    }
-
-    /// Takes a land next door away again (too far to see), its layer back in its own scene.
-    @discardableResult
-    func hide(_ id: String) -> WorldScene? {
-        guard let land = nextDoor.removeValue(forKey: id)?.scene else { return nil }
-        farLands[id]?.isHidden = false
-        land.world.removeFromParent()
-        land.world.position = .zero
-        land.world.zPosition = 0
-        land.lands.addChild(land.world)
-        return land
-    }
-
-    /// The land next door a cell off this one lies in (built or not), if it's in one.
-    private func neighbour(holding cell: GridPoint) -> Continent.Neighbour? {
-        guard let land = Continent.owner(of: cell, from: def), land.id != def.id else { return nil }
-        return neighbours.first { $0.def.id == land.id }
-    }
-
-    /// Whether you can step from this land onto `cell`, a land next door's: straight over from a cell
-    /// of this one beside it, across a border open there, onto ground you can stand on there (if it's
-    /// built yet; if not, the coordinator takes you there behind the loading card as you step).
-    private func canCross(into cell: GridPoint) -> Bool {
-        // Not into a river where it runs on over the border.
-        guard map.region?.isRiver(cell) != true, let neighbour = neighbour(holding: cell),
-              [Edge.east, .west, .north, .south].contains(where: { map.owns(cell.stepped($0)) }),
-              neighbour.isOpen(over: cell, done: session.hasCompleted, joined: isJoined(neighbour)) else { return false }
-        guard let land = nextDoor[neighbour.def.id]?.scene else { return true }
-        return land.map.isWalkable(neighbour.local(cell))
-    }
-
-    /// You've stepped over the border: on into the land next door, there already if it's shown
-    /// (`takeOver`, with no loading card), or behind the card if it isn't built yet.
-    private func cross(into neighbour: Continent.Neighbour) {
-        hasLeft = true
-        let land = nextDoor[neighbour.def.id]?.scene
-        walkingOver = land != nil
-        if land == nil { isInputLocked = true }
-        onCross?(neighbour, land, player.position + Self.shift(neighbour.offset) * -1)
-    }
-
-    /// Every half second: the lands next door, with how far you are from each one's border, for the
-    /// coordinator to build the near ones in the background and show them, and let far ones go.
-    private func lookAround() {
-        // Not once you've stepped over (this land's on its way to being next door).
-        guard !isNextDoor, !hasLeft, let onLandsNear, !neighbours.isEmpty else { return }
-        if farLandsMissing { placeFarLands() }
-        let here = map.cell(at: player.position)
-        let near = neighbours
-            .map { (neighbour: $0, distance: $0.distance(from: here)) }
-            .sorted { $0.distance < $1.distance }
-        onLandsNear(near)
-    }
-
-    /// The lands next door go on while they're shown: their people stroll, their animals mind you
-    /// as you come near, and their scenery near the camera is in the scene.
-    private func tickNextDoor(_ dt: TimeInterval) {
-        for land in nextDoor.values {
-            let back = Self.shift(land.neighbour.offset) * -1
-            land.scene.carryOn(dt: dt, player: player.position + back, camera: cam.position + back, scale: cam.xScale, screen: size)
-        }
-    }
-
-    /// One frame of a land next door's life, seen from the land you're in (`tickNextDoor`); the
-    /// points are its own.
-    private func carryOn(dt: TimeInterval, player point: CGPoint, camera: CGPoint, scale: CGFloat, screen: CGSize) {
-        // Its people keep to themselves over there: too far off to hear you or pick a fight.
-        crowd?.update(dt: dt, player: CGPoint(x: 1e7, y: 1e7))
-        let visible = CGRect(x: camera.x - screen.width / 2 * scale, y: camera.y - screen.height / 2 * scale,
-                             width: screen.width * scale, height: screen.height * scale)
-        critters?.update(dt: dt, player: point, visible: visible) { self.map.isWalkable(self.map.rawCell(at: $0)) }
-        showChunks(around: camera, scale: scale, screen: screen)
-        focus.update(camera: camera, halfHeight: screen.height / 2 * scale)
-    }
-
-    /// You've walked out over the border: the hero and the friends walking with you leave this
-    /// land's layer (it stays on show next door, friends waiting here included), and it waits.
-    private func leave() {
-        player.removeFromParent()
-        player.path = []
-        follower?.removeFromParent()
-        follower = nil
-        followerKey = nil
-        for ally in allies where ally.waiting == nil {
-            ally.node.removeFromParent()
-            ally.pet?.removeFromParent()
-        }
-        allies.removeAll { $0.waiting == nil }
-        talkTarget = nil
-        signTarget = nil
-        tapOverBorder = nil
-        hasLeft = false
-        walkingOver = false
-        isInputLocked = true
-        isNextDoor = true
-    }
-
-    /// You've walked over the border into this land from `previous`, where it was shown next
-    /// door: it carries on from that very moment, with no loading card. The hero, their companion
-    /// and friends, and the camera are where they were; the lands next door to both stay on show;
-    /// and `previous` shows next door now in its turn.
-    private func takeOver(from previous: WorldScene) {
-        guard let back = neighbours.first(where: { $0.def.id == previous.def.id }) else { return }
-        // Its points plus this, for mine.
-        let shift = Self.shift(back.offset)
-        previous.hide(def.id)
-        for (id, land) in previous.shownNextDoor {
-            previous.hide(id)
-            if let neighbour = neighbours.first(where: { $0.def.id == id }) { show(land, as: neighbour) }
-        }
-        isNextDoor = false
-        placeFarLands()
-        art.use(palette: def.theme.palette, for: def.id)
-        Walker.light = Self.light(of: def)
-
-        if player.parent == nil { world.addChild(player) }
-        player.position = previous.player.position + shift
-        player.face(previous.player.facing)
-        player.path = []
-        heroKey = nil
-        refreshHero()
-        player.relight()
-        // Walking on to where you tapped over the border.
-        if let tapped = previous.tapOverBorder {
-            player.path = map.path(from: player.position, to: tapped + shift)
-        }
-        let companion = previous.follower.map { (position: $0.position + shift, facing: $0.facing) }
-        let party = previous.allies.filter { $0.waiting == nil }.map { (id: $0.id, position: $0.node.position + shift, pet: $0.pet?.position) }
-        previous.leave()
-        show(previous, as: back)
-        refreshFollower()
-        if let companion, let follower {
-            follower.position = companion.position
-            follower.face(companion.facing)
-        }
-        refreshAllies()
-        for (index, ally) in allies.enumerated() {
-            guard let was = party.first(where: { $0.id == ally.id }) else { continue }
-            allies[index].node.position = was.position
-            if let pet = was.pet { allies[index].pet?.position = pet + shift }
-        }
-        cam.position = previous.cam.position + shift
-        lastCell = map.cell(at: player.position)
-        stepsSinceBattle = previous.stepsSinceBattle
-        hasLeft = false
-        isInputLocked = false
-        lastUpdate = 0
-        // The light and the weather's shade go on from where they were, toward this land's own.
-        if let sky, let before = previous.sky { sky.carryOn(from: before) }
-        mood = 0
-        session.playerPosition = player.position
-        session.mapCell = lastCell
-        showChunks()
-        explore()
-        if let sky { follow(sky.sun) }
     }
 
     // MARK: - Mood
@@ -3009,11 +2307,9 @@ final class WorldScene: SKScene {
         let visible = CGRect(x: cam.position.x - size.width / 2, y: cam.position.y - size.height / 2, width: size.width, height: size.height)
         // The animals keep to their own land.
         critters?.update(dt: dt, player: player.position, visible: visible) { self.map.isWalkable(self.map.rawCell(at: $0)) }
-        tickNextDoor(dt)
         noticeTimer -= dt
         if noticeTimer <= 0 {
             noticeTimer = 0.4
-            lookAround()
             updateNotices()
             refreshFollower()
             refreshHero()
@@ -3061,7 +2357,6 @@ final class WorldScene: SKScene {
         let stick = input.move
         if stick.length > 0.15 {
             player.path = []
-            tapOverBorder = nil
             talkTarget = nil
             let step = stick * (walkSpeed * CGFloat(dt))
             var next = player.position
@@ -3080,7 +2375,7 @@ final class WorldScene: SKScene {
 
     private func canStand(at point: CGPoint) -> Bool {
         let cell = map.rawCell(at: point)
-        guard map.owns(cell) else { return canCross(into: cell) }
+        guard map.owns(cell) else { return false }
         return map.isWalkable(cell) && !barricades.contains { $0.cells.contains(cell) }
     }
 
@@ -3104,13 +2399,8 @@ final class WorldScene: SKScene {
     private func checkCell() {
         // Walking up to someone this frame opened their window: no battle or road out under it.
         guard !isInputLocked else { return }
-        // Over a border into the land next door.
-        let raw = map.rawCell(at: player.position)
-        if !map.owns(raw) {
-            if !hasLeft, let neighbour = neighbour(holding: raw) { cross(into: neighbour) }
-            return
-        }
-        let cell = raw
+        let cell = map.rawCell(at: player.position)
+        guard map.owns(cell) else { return }
         guard cell != lastCell else { return }
         if let barricade = barricades.first(where: { $0.cells.contains(cell) || map.exit(at: cell)?.to == $0.exit.to }) {
             // Closed road: back you go, with a hint about which quest opens it.
@@ -3246,13 +2536,11 @@ final class WorldScene: SKScene {
         }
     }
 
-    /// The last few steps toward an open road out fade to black (into a cave, only toward its mouth).
-    /// Not where it runs on into the land next door: you can see where you're going.
+    /// The screen fades to black as you go off behind the loading card (out of a cave). Nearing a
+    /// way out used to darken too, from when every edge was one; playtesting: "the map doesn't need
+    /// to go dark anymore when you switch lands".
     private func updateEdgeFade(_ dt: TimeInterval) {
-        // Only going off behind the loading card (into a cave, or over a border before the land's
-        // built), not walking on over a border. Nearing a way out used to darken too, from when every
-        // edge was one; playtesting: "the map doesn't need to go dark anymore when you switch lands".
-        let target: CGFloat = hasLeft && !walkingOver ? 0.85 : 0
+        let target: CGFloat = hasLeft ? 0.85 : 0
         let t = dt == 0 ? 1 : min(1, CGFloat(dt) * 6)
         edgeFade.alpha += (target - edgeFade.alpha) * t
     }

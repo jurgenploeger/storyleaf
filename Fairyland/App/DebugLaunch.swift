@@ -145,8 +145,8 @@ enum DebugLaunch {
     /// play's part, with `clip`), so tools/screenshots.sh knows when to shoot (the loading curtain
     /// alone can look "drawn").
     static func markReady(nextDoorShown: Bool = false) {
-        // `border`: not till the land next door is up too (`apply`).
-        guard flags["border"] == nil || nextDoorShown else { return }
+        // `crossing`: not till you've walked over into the next land (`apply`).
+        guard flags["crossing"] == nil || nextDoorShown else { return }
         guard isActive || introClip != nil, let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
         try? Data().write(to: folder.appending(path: "debug-ready"))
     }
@@ -303,7 +303,7 @@ enum DebugLaunch {
         Task {
             func pause(_ seconds: Double) async { try? await Task.sleep(for: .milliseconds(Int(seconds * 1000))) }
             for _ in 0..<240 {
-                if coordinator.isReady, coordinator.world.view != nil { break }
+                if coordinator.isReady, coordinator.mapScene.view != nil { break }
                 await pause(0.25)
             }
             // tools/screenshots.sh starts filming a few seconds after the map is up, so wait for it.
@@ -311,7 +311,7 @@ enum DebugLaunch {
             // A quest giver first, when one stands nearby (the scene starts you beside them): talk as
             // the talk button does, read their offer, and head off.
             // The demo picks its own moment for a fight, so no monster cuts in on the way.
-            coordinator.world.holdsEncounters = true
+            coordinator.mapScene.holdsEncounters = true
             coordinator.input.move = CGVector(dx: 1, dy: 0)
             for _ in 0..<10 where coordinator.session.nearbyNPC == nil { await pause(0.2) }
             coordinator.input.move = .zero
@@ -335,7 +335,7 @@ enum DebugLaunch {
             }
             coordinator.input.move = .zero
             await pause(0.5)
-            coordinator.world.encounterForDebug()
+            coordinator.mapScene.encounterForDebug()
             for _ in 0..<40 where coordinator.battle == nil { await pause(0.25) }
             guard let battle = coordinator.battle else { return }
             // Everyone marches in.
@@ -439,12 +439,12 @@ enum DebugLaunch {
         if let map = flags["map"], Content.shared.map(map) != nil {
             session.data.mapID = map
         }
-        // `border=<land>`: you start just inside the border with that land next door, on the road
-        // over it if one crosses (else halfway along it), looking across (the land next door comes up
-        // before the screenshot, `apply`). `edge=<north|south|east|west>`: halfway along that side of
-        // the land's box, 3 cells in from where its land begins.
+        // `border=<land>` (or `near=<land>`): you start just inside the border with that land, on the
+        // road over it if one crosses (else halfway along it), looking across (`crossing` walks you
+        // over). `edge=<north|south|east|west>`: halfway
+        // along that side of the land's box, 3 cells in from where its land begins.
         if let here = Content.shared.map(session.data.mapID) {
-            let neighbour = flags["border"].flatMap { id in Continent.neighbours(of: here).first { $0.def.id == id } }
+            let neighbour = (flags["border"] ?? flags["near"]).flatMap { id in Continent.neighbours(of: here).first { $0.def.id == id } }
             let edge = flags["edge"].flatMap(Edge.init(rawValue:))
             if neighbour != nil || edge != nil {
                 let map = WorldMap(def: here)
@@ -652,10 +652,10 @@ enum DebugLaunch {
             // you're standing on (WorldScene.battleBackdrop), not on plain grass.
             Task {
                 for _ in 0..<240 {
-                    if coordinator.isReady, coordinator.world.view != nil { break }
+                    if coordinator.isReady, coordinator.mapScene.view != nil { break }
                     try? await Task.sleep(for: .milliseconds(250))
                 }
-                startBattle(on: coordinator, flags: flags, backdrop: coordinator.world.battleBackdrop())
+                startBattle(on: coordinator, flags: flags, backdrop: coordinator.mapScene.battleBackdrop(hiding: nil))
             }
         }
         #if DEBUG
@@ -666,7 +666,7 @@ enum DebugLaunch {
             Task {
                 for _ in 0..<240 {
                     try? await Task.sleep(for: .milliseconds(500))
-                    guard coordinator.isReady, coordinator.world.view != nil else { continue }
+                    guard coordinator.isReady, coordinator.mapScene.view != nil else { continue }
                     try? await Task.sleep(for: .seconds(1))
                     coordinator.fightBoss(npc)
                     // With `win`: the boss and its minions fall, and the first win's story is told.
@@ -683,9 +683,9 @@ enum DebugLaunch {
             Task {
                 for _ in 0..<240 {
                     try? await Task.sleep(for: .milliseconds(500))
-                    guard coordinator.isReady, coordinator.world.view != nil else { continue }
+                    guard coordinator.isReady, coordinator.mapScene.view != nil else { continue }
                     try? await Task.sleep(for: .seconds(1))
-                    let newcomers = coordinator.world.summonAdventurersForDebug(count)
+                    let newcomers = coordinator.mapScene.summonAdventurersForDebug(count)
                     // The map notes who's around every 0.4 s; inviting needs them counted.
                     try? await Task.sleep(for: .seconds(1))
                     for adventurer in newcomers {
@@ -703,9 +703,9 @@ enum DebugLaunch {
             Task {
                 for _ in 0..<240 {
                     try? await Task.sleep(for: .milliseconds(500))
-                    guard coordinator.isReady, coordinator.world.view != nil else { continue }
+                    guard coordinator.isReady, coordinator.mapScene.view != nil else { continue }
                     try? await Task.sleep(for: .seconds(1))
-                    _ = coordinator.world.summonAdventurersForDebug(count)
+                    _ = coordinator.mapScene.summonAdventurersForDebug(count)
                     return
                 }
             }
@@ -715,26 +715,23 @@ enum DebugLaunch {
             Task {
                 for _ in 0..<240 {
                     try? await Task.sleep(for: .milliseconds(500))
-                    guard coordinator.isReady, coordinator.world.view != nil else { continue }
+                    guard coordinator.isReady, coordinator.mapScene.view != nil else { continue }
                     try? await Task.sleep(for: .seconds(1))
-                    coordinator.world.featherAwayForDebug()
+                    coordinator.mapScene.featherAwayForDebug()
                     return
                 }
             }
         }
-        // `far`: the lands next door are left as they look before they're built (`placeFarLands`).
-        if flags["far"] != nil { coordinator.holdsNextDoor = true }
-        // `border=<land>`: once the map is on screen, the land next door is built and shown (and with
-        // `cross` you walk over into it); only then is the scene ready for its screenshot.
+        // `crossing` (with `near=<land>`): once the continent's drawn round you, you walk over the line
+        // into that land; ready as you arrive, its name at the top of the screen.
         #if DEBUG
-        if let id = flags["border"] {
-            coordinator.holdsNextDoor = true
+        if flags["crossing"] != nil, let id = flags["near"] {
             Task {
                 for _ in 0..<480 {
                     try? await Task.sleep(for: .milliseconds(500))
-                    guard coordinator.isReady, coordinator.world.view != nil else { continue }
-                    await coordinator.showNextDoorForDebug(id)
-                    if flags["cross"] != nil { await coordinator.world.walkOverForDebug(into: id) }
+                    guard coordinator.isReady, coordinator.mapScene.view != nil, let continent = coordinator.continent else { continue }
+                    await continent.walkIntoForDebug(id)
+                    try? await Task.sleep(for: .seconds(1))
                     markReady(nextDoorShown: true)
                     return
                 }
@@ -746,9 +743,9 @@ enum DebugLaunch {
             Task {
                 for _ in 0..<240 {
                     try? await Task.sleep(for: .milliseconds(500))
-                    guard coordinator.isReady, coordinator.world.view != nil else { continue }
+                    guard coordinator.isReady, coordinator.mapScene.view != nil else { continue }
                     try? await Task.sleep(for: .seconds(1))
-                    coordinator.world.localTellsForDebug()
+                    coordinator.mapScene.localTellsForDebug()
                     return
                 }
             }
@@ -758,9 +755,9 @@ enum DebugLaunch {
             Task {
                 for _ in 0..<240 {
                     try? await Task.sleep(for: .milliseconds(500))
-                    guard coordinator.isReady, coordinator.world.view != nil else { continue }
+                    guard coordinator.isReady, coordinator.mapScene.view != nil else { continue }
                     try? await Task.sleep(for: .seconds(1))
-                    coordinator.world.sayForDebug(text)
+                    coordinator.mapScene.sayForDebug(text)
                     return
                 }
             }
@@ -774,10 +771,10 @@ enum DebugLaunch {
             let way = walk.split(separator: "_").compactMap { Double($0) }
             if way.count == 2 {
                 Task {
-                    for _ in 0..<240 where !(coordinator.isReady && coordinator.world.view != nil) {
+                    for _ in 0..<240 where !(coordinator.isReady && coordinator.mapScene.view != nil) {
                         try? await Task.sleep(for: .milliseconds(250))
                     }
-                    coordinator.world.holdsEncounters = true
+                    coordinator.mapScene.holdsEncounters = true
                     let legs: [(CGVector, Double)] = [
                         (CGVector(dx: way[0], dy: way[1]), 3), (CGVector(dx: -way[1], dy: way[0]), 1),
                         (CGVector(dx: -way[0], dy: -way[1]), 3), (CGVector(dx: way[1], dy: -way[0]), 1),

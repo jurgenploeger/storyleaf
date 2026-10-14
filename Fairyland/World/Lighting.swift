@@ -151,13 +151,13 @@ final class Lighting {
     /// A soft glow behind a glowing prop (crystals, glowing mushrooms, lanterns), gently pulsing.
     /// It sits just behind the prop, so whatever stands in front hides it and whatever stands
     /// behind is lit by it.
-    static func glow(behind node: SKSpriteNode, color: UIColor, in world: SKNode, rng: inout SeededRandom) {
+    /// `alpha`: how bright it is at its brightest; `duration`: how long each half of a pulse takes
+    /// (`LandPlanner` draws both).
+    static func glow(behind node: SKSpriteNode, color: UIColor, in world: SKNode, alpha: CGFloat, duration: TimeInterval) {
         let glow = soft(color, size: CGSize(width: node.size.width * 1.9, height: node.size.width * 1.5))
         glow.position = node.position + CGVector(dx: 0, dy: node.size.height * 0.4)
         glow.zPosition = node.zPosition - 0.5
-        let alpha = CGFloat.random(in: 0.3...0.45, using: &rng)
         glow.alpha = alpha
-        let duration = Double.random(in: 1.4...2.6, using: &rng)
         glow.run(.repeatForever(.sequence([.fadeAlpha(to: alpha * 0.55, duration: duration), .fadeAlpha(to: alpha, duration: duration)])))
         world.addChild(glow)
     }

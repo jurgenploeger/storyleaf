@@ -1,6 +1,6 @@
 import GameplayKit
 
-nonisolated enum Ground {
+nonisolated enum Ground: UInt8 {
     /// `sea`: the sea, over the land's box past its coast (`Region`), lower than the land. `away`: a
     /// land next door's, in this land's box where their shapes fit into each other: nothing of this
     /// land's goes there (it's that land's to lay out and draw).

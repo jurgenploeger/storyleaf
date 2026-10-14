@@ -76,7 +76,10 @@ final class Walker: SKNode {
     func settle() {
         // Its own land's ground, even shown past the border of the land you're in.
         let land = (parent as? LandNode)?.land ?? (scene as? WorldScene)
-        let height = land?.groundHeight(at: position) ?? 0
+        // Or on the continent as one place (`ContinentScene`): set down in a land's own points
+        // there (`LandStage`), that land's.
+        let height = (parent as? StageNode)?.stage?.groundHeight(at: position) ?? land?.groundHeight(at: position)
+            ?? (scene as? ContinentScene)?.groundHeight(at: position) ?? 0
         guard height != lift else { return }
         lift = height
         body.position.y = height

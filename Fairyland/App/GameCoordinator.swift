@@ -97,8 +97,14 @@ final class GameCoordinator {
         dailyGift = session.collectDailyGift()
         let began = began ?? Date()
         world = WorldScene(map: map, session: session, input: input, entry: nil, grid: grid?.def.id == map.id ? grid : nil)
-        wire(world)
-        build(world, mapID: map.id, began: began)
+        if Continent.origin(of: map) != nil {
+            // A land on the continent: the continent, with you where the save left you there (the
+            // land's scene above only says where that is).
+            startOnContinent(map, grid: grid?.def.id == map.id ? grid : nil, began: began)
+        } else {
+            wire(world)
+            build(world, mapID: map.id, began: began)
+        }
         startAutosave()
         announcer.start()
         session.onCastField = { [weak self] skill in self?.castField(skill) }
@@ -137,7 +143,78 @@ final class GameCoordinator {
     }
 
     /// The scene SpriteKit should show right now.
-    var scene: SKScene { battle != nil ? (battleScene ?? world) : world }
+    var scene: SKScene { battle != nil ? (battleScene ?? mapScene) : mapScene }
+    /// The scene you walk about in: the continent, unless you're in a cave (its own scene, `world`).
+    var mapScene: any MapScene {
+        if showsContinent, let continent { return continent }
+        return world
+    }
+
+    /// The land you're in: on the continent the one your feet are in, in a cave the cave.
+    var currentLand: MapDef {
+        showsContinent ? continent?.here ?? world.def : world.def
+    }
+
+    /// The HUD's minimap of the land you're in, with what's round it, and that land's size in cells.
+    func minimap(explored version: Int, overviews: Int) -> (picture: WorldScene.MinimapPicture, columns: Int, rows: Int) {
+        if showsContinent, let continent, let here = continent.here, let picture = continent.minimapPicture(overviews: overviews) {
+            return (picture, here.width, here.height)
+        }
+        return (world.minimapPicture(explored: version, overviews: overviews), world.def.width, world.def.height)
+    }
+
+    /// The continent as one place (`ContinentScene`, docs/continuous-world.md): every land on it, with
+    /// no border between them. Made once, the first time you're on it, and kept while you're in a
+    /// cave.
+    private(set) var continent: ContinentScene?
+    /// Whether you're on the continent (not in a cave): what's shown and what the HUD asks.
+    private var showsContinent = false
+
+    /// The continent, made and wired the first time it's wanted.
+    private func makeContinent() -> ContinentScene {
+        if let continent { return continent }
+        let scene = ContinentScene(session: session, input: input)
+        scene.onTalk = { [weak self] npc in self?.open(.npc(npc.id)) }
+        scene.onInspect = { [weak self] profile in self?.open(.profile(profile)) }
+        scene.onEncounter = { [weak self] encounters, backdrop in self?.startBattle(encounters, backdrop: backdrop) }
+        scene.onDuel = { [weak self] rival, backdrop in self?.startDuel(with: rival, backdrop: backdrop) }
+        scene.onTravel = { [weak self] exit in self?.travel(through: exit) }
+        continent = scene
+        return scene
+    }
+
+    /// The game starts on the continent: behind the loading card till the chunks round you are drawn.
+    private func startOnContinent(_ map: MapDef, grid: WorldMap?, began: Date) {
+        loadingStarted = began
+        loadProgress = 0.15
+        let scene = makeContinent()
+        // Laid out already, as the game opened.
+        if let grid { scene.adopt(grid) }
+        showsContinent = true
+        let saved = session.playerPosition
+        Task { [weak self] in
+            await scene.place(on: map, entry: nil, arrival: saved)
+            await self?.waitForContinent()
+            self?.finishLoading()
+        }
+    }
+
+    /// Till the land you're in is drawn round you on the continent (or a couple of minutes, should
+    /// it never be), the loading bar creeping on meanwhile. A debug launch's screenshot waits for the
+    /// lands round it too (`isSettled`), a few minutes more at most.
+    private func waitForContinent() async {
+        guard let continent else { return }
+        for _ in 0..<480 where !continent.isReady {
+            try? await Task.sleep(for: .milliseconds(250))
+            loadProgress = min(0.95, loadProgress + 0.01)
+        }
+        guard DebugLaunch.isActive else { return }
+        continent.hurries = true
+        for _ in 0..<960 where !continent.isSettled {
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        continent.hurries = false
+    }
 
     /// Builds the scenery a piece at a time. The bar follows how long each piece took the last time
     /// this map loaded (on this phone); the first time, the scene's own rough guesses.
@@ -184,119 +261,13 @@ final class GameCoordinator {
         scene.onTravel = { [weak self] exit in self?.travel(through: exit) }
         scene.onDuel = { [weak self] rival, backdrop in self?.startDuel(with: rival, backdrop: backdrop) }
         scene.onInspect = { [weak self] profile in self?.open(.profile(profile)) }
-        scene.onLandsNear = { [weak self] near in self?.landsNear(near) }
-        scene.onCross = { [weak self] neighbour, land, point in self?.cross(neighbour, into: land, at: point) }
-    }
-
-    // MARK: Next door
-
-    /// Lands next door, built (or being built) in the background to show past the borders of the
-    /// land you're in, by id.
-    @ObservationIgnored private var nextDoor: [String: WorldScene] = [:]
-    /// The one being built now: one at a time, the nearest first.
-    @ObservationIgnored private var buildingNextDoor: String?
-    /// How near a land's border you come before it's built and shown (in cells: a little more than
-    /// you can see past it, with time to build it at a walk), and how far you go before it's let go.
-    private static let buildWithin = 48
-    private static let keepWithin = 64
-    /// Debug launches (`border`): the land next door is built at once for the screenshot
-    /// (`showNextDoorForDebug`), not in the background as you near it.
-    @ObservationIgnored var holdsNextDoor = false
-
-    /// Every half second, the land you're in says how far each land next door is: the nearest not
-    /// built yet starts building, the built ones near enough show past their borders, and those
-    /// left far behind are let go.
-    private func landsNear(_ near: [(neighbour: Continent.Neighbour, distance: Int)]) {
-        // Not from the land you're leaving while the next one loads (it lays out off the main thread).
-        guard !holdsNextDoor, loadingMapName == nil else { return }
-        let here = world
-        let shown = here.shownNextDoor
-        for (neighbour, distance) in near {
-            let id = neighbour.def.id
-            if let land = nextDoor[id] ?? shown[id] {
-                if land.isBuilt, distance <= Self.keepWithin, shown[id] == nil { here.show(land, as: neighbour) }
-            } else if buildingNextDoor == nil, distance <= Self.buildWithin {
-                buildNextDoor(neighbour.def)
-            }
-        }
-        let wanted = Set(near.filter { $0.distance <= Self.keepWithin }.map(\.neighbour.def.id))
-        for id in Set(nextDoor.keys).union(shown.keys) where !wanted.contains(id) && id != buildingNextDoor {
-            here.hide(id)
-            nextDoor[id] = nil
-            ArtLibrary.shared.release(map: id)
-        }
-    }
-
-    #if DEBUG
-    /// Debug launches (`border=<land>`): that land next door built at once (in long slices) and
-    /// shown, for a screenshot of the border.
-    func showNextDoorForDebug(_ id: String) async {
-        guard let neighbour = world.neighbours.first(where: { $0.def.id == id }) else { return }
-        buildingNextDoor = id
-        let land = WorldScene(map: neighbour.def, session: session, input: input, entry: nil, nextDoor: true)
-        land.friendsElsewhere = world.visitingFriends
-        nextDoor[id] = land
-        await land.build(pace: .hurried) { _ in }
-        _ = land.minimap
-        buildingNextDoor = nil
-        world.show(land, as: neighbour)
-    }
-    #endif
-
-    /// Lays a land next door out off the main thread, then builds it a few milliseconds a frame.
-    private func buildNextDoor(_ def: MapDef) {
-        buildingNextDoor = def.id
-        let away = world.visitingFriends
-        Task { [weak self] in
-            let grid = await GameCoordinator.layOut(def)
-            guard let self else { return }
-            // Its picture at once, from the layout, to lie past the border (`WorldScene.placeFarLands`)
-            // and on the minimap while the land itself is built.
-            WorldOverview.shared.remember(def.id, WorldScene.overview(of: grid, art: ArtLibrary.shared))
-            let land = WorldScene(map: def, session: session, input: input, entry: nil, grid: grid, nextDoor: true)
-            land.friendsElsewhere = away
-            nextDoor[def.id] = land
-            await land.build(pace: .background) { _ in }
-            // Its picture for the minimap and the world map (`WorldOverview`).
-            _ = land.minimap
-            if buildingNextDoor == def.id { buildingNextDoor = nil }
-        }
-    }
-
-    /// You've walked over a border. Into a land shown next door: it simply carries on there, no
-    /// loading card (`WorldScene.takeOver`), and the land you left shows next door in its turn.
-    /// Into one not built yet: there behind the card, where you stepped across.
-    private func cross(_ neighbour: Continent.Neighbour, into land: WorldScene?, at point: CGPoint) {
-        guard let land else {
-            SoundEffects.shared.play(.whoosh)
-            go(to: neighbour.def, entry: nil, arrival: point)
-            return
-        }
-        let previous = world
-        previous.isInputLocked = true
-        land.walkedInFrom = previous
-        land.arrivesOnFoot = true
-        nextDoor[land.def.id] = nil
-        nextDoor[previous.def.id] = previous
-        session.data.mapID = land.def.id
-        session.markVisited(land.def.id)
-        session.bossesBeatenHere = []
-        session.reachCheckpoint(land.def)
-        // Its first frame tells the announcer you've arrived (`finishLoading`), as after a card.
-        wire(land)
-        world = land
-        Task { [weak self] in
-            // Once it's taken over (as it shows), with where you stand there.
-            try? await Task.sleep(for: .milliseconds(300))
-            self?.session.save()
-        }
     }
 
     // MARK: Maps
 
     private func travel(through exit: MapDef.Exit) {
         guard let destination = Content.shared.map(exit.to) else {
-            world.resume()
+            mapScene.resume()
             return
         }
         SoundEffects.shared.play(.whoosh)
@@ -307,11 +278,30 @@ final class GameCoordinator {
     /// there instead of where its road from `entry` comes in.
     private func go(to map: MapDef, entry: Edge?, arrival: CGPoint? = nil) {
         // The map you're leaving stays on screen under the card for a moment: nothing more happens on it.
-        world.isInputLocked = true
+        mapScene.isInputLocked = true
         loadingMapName = map.name
         loadingStarted = Date()
         loadProgress = 0
         isReady = false
+        if Continent.origin(of: map) != nil {
+            // A land on the continent (out of a cave, carried to a town, waking at your checkpoint):
+            // you're put there on it, its chunks drawn behind the card.
+            Task {
+                try? await Task.sleep(for: .milliseconds(280))
+                session.markVisited(map.id)
+                session.bossesBeatenHere = []
+                session.reachCheckpoint(map)
+                let scene = makeContinent()
+                showsContinent = true
+                input.move = .zero
+                await scene.place(on: map, entry: entry, arrival: arrival)
+                await waitForContinent()
+                scene.resume()
+                finishLoading()
+                session.save()
+            }
+            return
+        }
         Task {
             try? await Task.sleep(for: .milliseconds(280))
             let began = Date()
@@ -324,7 +314,7 @@ final class GameCoordinator {
     private func finishLoading() {
         rememberLoadTiming()
         // The map's chat has started over by now (WorldScene.didMove), so the notice stays in it.
-        announcer.arrived(at: world.def)
+        announcer.arrived(at: currentLand)
         let remaining = 0.8 - Date().timeIntervalSince(loadingStarted)
         Task {
             loadProgress = 1
@@ -332,13 +322,13 @@ final class GameCoordinator {
             // Carried by a Homeward Feather: you're not standing there yet when the card lifts.
             let byFeather = arrivesByFeather
             arrivesByFeather = false
-            if byFeather { world.awaitFeatherArrival() }
+            if byFeather { mapScene.awaitFeatherArrival() }
             isReady = true
             DebugLaunch.markReady()
             loadingMapName = nil
             if byFeather {
                 try? await Task.sleep(for: .milliseconds(250))
-                world.featherArrive()
+                mapScene.featherArrive()
             }
         }
     }
@@ -349,16 +339,12 @@ final class GameCoordinator {
         session.bossesBeatenHere = []
         if entry == nil { session.playerPosition = nil }
         session.reachCheckpoint(map)
-        // A new start: the lands next door to wherever you were are let go (the new one's are built
-        // as you walk toward them).
-        for id in nextDoor.keys { ArtLibrary.shared.release(map: id) }
-        nextDoor = [:]
-        buildingNextDoor = nil
         let scene = WorldScene(map: map, session: session, input: input, entry: entry, arrival: arrival, grid: grid)
         wire(scene)
         build(scene, mapID: map.id, began: began)
         input.move = .zero
         world = scene
+        showsContinent = false
         session.save()
     }
 
@@ -370,7 +356,7 @@ final class GameCoordinator {
         let controller = BattleController.encounter(encounters, session: session)
         SoundEffects.shared.play(.encounter)
         controller.onFinish = { [weak self] outcome in self?.endBattle(outcome) }
-        battleScene = BattleScene(controller: controller, size: world.size, backdrop: backdrop)
+        battleScene = BattleScene(controller: controller, size: mapScene.size, backdrop: backdrop)
         input.move = .zero
         battle = controller
         isReady = true
@@ -384,7 +370,7 @@ final class GameCoordinator {
         guard battle == nil else { return }
         let controller = BattleController.duel(with: rival, session: session)
         controller.onFinish = { [weak self] outcome in self?.endBattle(outcome) }
-        battleScene = BattleScene(controller: controller, size: world.size, backdrop: backdrop)
+        battleScene = BattleScene(controller: controller, size: mapScene.size, backdrop: backdrop)
         input.move = .zero
         self.rival = rival
         battle = controller
@@ -396,11 +382,11 @@ final class GameCoordinator {
     private var boss: NPCDef?
 
     func fightBoss(_ npc: NPCDef) {
-        guard battle == nil, let controller = BattleController.boss(npc, encounters: world.def.encounters, session: session) else { return }
+        guard battle == nil, let controller = BattleController.boss(npc, encounters: currentLand.encounters, session: session) else { return }
         overlay = nil
         controller.onFinish = { [weak self] outcome in self?.endBattle(outcome) }
         // The map you're standing on, like any fight (without the boss: it's in the battle now).
-        battleScene = BattleScene(controller: controller, size: world.size, backdrop: world.battleBackdrop(hiding: npc.id))
+        battleScene = BattleScene(controller: controller, size: mapScene.size, backdrop: mapScene.battleBackdrop(hiding: npc.id))
         input.move = .zero
         boss = npc
         battle = controller
@@ -411,7 +397,7 @@ final class GameCoordinator {
     /// From the adventurer card: befriend, invite along, or challenge.
     func befriend(_ adventurer: Adventurer) {
         if session.befriend(adventurer) {
-            world.adventurerSays([L("Yay, friends! ^_^"), L("Sure! Let's adventure sometime!"), L("Friends! :D")].randomElement()!, adventurer.id)
+            mapScene.adventurerSays([L("Yay, friends! ^_^"), L("Sure! Let's adventure sometime!"), L("Friends! :D")].randomElement()!, adventurer.id)
         }
     }
 
@@ -425,7 +411,7 @@ final class GameCoordinator {
     }
 
     func challenge(_ adventurer: Adventurer) {
-        world.startDuel(with: adventurer)
+        mapScene.startDuel(with: adventurer)
     }
 
     #if DEBUG
@@ -439,7 +425,7 @@ final class GameCoordinator {
         let fainted = battle?.heroIsDown == true
         battle = nil
         battleScene = nil
-        if let rival, outcome == .victory { world.dismissAdventurer(rival.id) }
+        if let rival, outcome == .victory { mapScene.dismissAdventurer(rival.id) }
         rival = nil
         if let boss, outcome == .victory { session.defeatBoss(boss) }
         boss = nil
@@ -447,7 +433,7 @@ final class GameCoordinator {
             // Fainted (even if your friends won): wake up at the checkpoint.
             go(to: map, entry: session.checkpoint.entry)
         } else {
-            world.resume()
+            mapScene.resume()
         }
         session.save()
     }
@@ -466,7 +452,7 @@ final class GameCoordinator {
             session.postChat(npc.greeting, from: npc.name, kind: .npc)
             session.unreadChat = max(0, session.unreadChat - 1)
         }
-        world.isInputLocked = true
+        mapScene.isInputLocked = true
         input.move = .zero
     }
 
@@ -515,7 +501,7 @@ final class GameCoordinator {
             return
         }
         overlay = .destinations(travel)
-        world.isInputLocked = true
+        mapScene.isInputLocked = true
         input.move = .zero
     }
 
@@ -535,7 +521,7 @@ final class GameCoordinator {
             // the other end (finishLoading).
             overlay = nil
             SoundEffects.shared.play(.whoosh)
-            world.featherAway { [weak self] in
+            mapScene.featherAway { [weak self] in
                 guard let self else { return }
                 arrivesByFeather = true
                 carry(to: map, saying: line, sound: false)
@@ -557,15 +543,15 @@ final class GameCoordinator {
     func closeOverlay() {
         SoundEffects.shared.play(.close, volume: 0.8)
         overlay = nil
-        world.resume()
+        mapScene.resume()
         session.save()
     }
 
     func talkToNearby() {
-        world.talkToNearby()
+        mapScene.talkToNearby()
     }
 
     func say(_ text: String) {
-        world.heroSay(text)
+        mapScene.heroSay(text)
     }
 }
