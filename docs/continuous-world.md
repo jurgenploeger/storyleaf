@@ -1,6 +1,6 @@
 # One continuous world (design)
 
-Status: proposal, 2026-10-14. Playtesting: "Can't we just have one big map instead of this code that
+Status: being built, 2026-10-14 (see "Where it stands" under Order of work). Playtesting: "Can't we just have one big map instead of this code that
 tries to make it work when you cross a border? There shouldn't really be borders, it should be one
 continuous big map."
 
@@ -174,6 +174,19 @@ That's most of what 0.5.0 to 0.6.2 added to stitch lands together.
 ## Order of work
 
 Each step is its own PR and leaves the game playable. The old engine stays the default until step 5.
+
+**Where it stands (2026-10-14).** The PRs stack, each on the one before:
+- #152, step 1: the store (`World`) and the plan made before drawing (`LandPlanner`).
+- #153, step 2: `ContinentScene` drawing the ground, sea, hills and shore a chunk at a time
+  (`GroundTiles`, `HillArt.painter`, `HillLooks`).
+- #154, steps 3 and 4: walking (`World.path`, A* in a window), the land you're in and its banner,
+  what each land sets down and its people (`LandStage`), talk, battles, duels, closed borders,
+  each land's air, your party, the Homeward Feather and the minimap.
+- #155, step 5: the switch. The continent is the game and caves keep their own scenes; the
+  next-door and handover code is gone; 0.7.0.
+
+Saves didn't need a new version: where you stand is still kept as the land you're in and a spot in
+its own points, which the continent turns into its own (a land's shift) both ways.
 
 1. **Store and settle step, no visible change.** Lands are laid out into the store, and placement
    decisions move into the layout. Tests check that the store matches each land's layout cell for
