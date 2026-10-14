@@ -200,20 +200,13 @@ final class GameCoordinator {
     }
 
     /// Till the land you're in is drawn round you on the continent (or a couple of minutes, should
-    /// it never be), the loading bar creeping on meanwhile. A debug launch's screenshot waits for the
-    /// lands round it too (`isSettled`), a few minutes more at most.
+    /// it never be), the loading bar creeping on meanwhile.
     private func waitForContinent() async {
         guard let continent else { return }
         for _ in 0..<480 where !continent.isReady {
             try? await Task.sleep(for: .milliseconds(250))
             loadProgress = min(0.95, loadProgress + 0.01)
         }
-        guard DebugLaunch.isActive else { return }
-        continent.hurries = true
-        for _ in 0..<960 where !continent.isSettled {
-            try? await Task.sleep(for: .milliseconds(250))
-        }
-        continent.hurries = false
     }
 
     /// Builds the scenery a piece at a time. The bar follows how long each piece took the last time
@@ -324,6 +317,16 @@ final class GameCoordinator {
             arrivesByFeather = false
             if byFeather { mapScene.awaitFeatherArrival() }
             isReady = true
+            // A debug launch's screenshot of the continent waits, the card gone as a player's would
+            // be, for the lands round you to come in too (`isSettled`), a few minutes at most.
+            if DebugLaunch.isActive, showsContinent, !byFeather, let continent {
+                loadingMapName = nil
+                continent.hurries = true
+                for _ in 0..<960 where !continent.isSettled {
+                    try? await Task.sleep(for: .milliseconds(250))
+                }
+                continent.hurries = false
+            }
             DebugLaunch.markReady()
             loadingMapName = nil
             if byFeather {
