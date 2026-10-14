@@ -6,8 +6,8 @@ The design (world.json `design`) gives each land its middle on the continent (`a
 x east and y north) and, but for a town, one or more lobes round it: ellipses `[dx, dy, across,
 up, turn°]` out from its middle. Every cell goes to the land whose lobes reach it most easily (its
 distance over their size), the lands pushing against each other where they meet; where none
-reaches, the sea. The lobes are scaled so each land comes out about as big as its map was
-(`AREA_SHARE` of its old width × height), and the whole continent is bent by smooth noise first
+reaches, the sea. The lobes are scaled so each land comes out as many cells as its `area` (about
+as big as its map was), and the whole continent is bent by smooth noise first
 (`WARPS`), so coasts and borders wander: bays, headlands and capes instead of straight lines.
 A town is its rectangle exactly, its wall all round.
 
@@ -46,8 +46,6 @@ WORLD = ROOT / "content/world.json"
 # How far round each land's box its shape is written: the sea it draws reaches that far
 # (WorldScene.surroundingsMargin).
 MARGIN = 18
-# How big each land comes out, as a share of its map's old width × height.
-AREA_SHARE = 0.82
 # The bends in the continent: (every how many cells, how far, seeds for x and y).
 WARPS = ((110, 22.0, 0xA11, 0xA12), (40, 10.0, 0xA13, 0xA14), (14, 3.0, 0xA15, 0xA16))
 # The coast's own roughness: how far the reach of the lobes wanders at the coast, every how many cells.
@@ -242,7 +240,7 @@ def paint(design, lands):
     wobble = np.zeros_like(xs)
     for every, far, seed in COAST_WOBBLE:
         wobble += (_value_np(xs, ys, every, seed) * 2 - 1) * far
-    targets = {i: lands[i]["width"] * lands[i]["height"] * AREA_SHARE for i in ids}
+    targets = {i: design[i].get("area", 0) for i in ids}
     scales = {i: 1.0 for i in ids}
     shapes = lobes(design, lands)
     for _ in range(10):
