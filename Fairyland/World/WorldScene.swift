@@ -643,7 +643,8 @@ final class WorldScene: SKScene {
         // each land's ground run into each other (as RuneScape blends its ground's colours).
         for neighbour in neighbours {
             await breathe()
-            grid.addChild(blendBand(toward: neighbour, seam: map.seams.first { $0.neighbour == neighbour.def.id }))
+            let band = await blendBand(toward: neighbour, seam: map.seams.first { $0.neighbour == neighbour.def.id })
+            grid.addChild(band)
         }
         // Bridges' decks lie on the water with the ground (`BridgeArt`; their rails stand in the
         // world, `placeBridges`).
@@ -792,7 +793,7 @@ final class WorldScene: SKScene {
     /// without a seam. Along a town's wall the band's middle is the border itself. Over the band
     /// only, `blendFineness` texels a cell, smoothed: none over the sea or the land's edge along it
     /// (its bank shows there), and fading out toward the ends of the stretch they share.
-    private func blendBand(toward neighbour: Continent.Neighbour, seam: Seam?) -> SKNode {
+    private func blendBand(toward neighbour: Continent.Neighbour, seam: Seam?) async -> SKNode {
         let tile = WorldMap.tileSize
         let image = art.gradedTile(neighbour.def.theme.ground, palette: neighbour.def.theme.palette)
         let other = image.map { Self.averageColor(of: $0) } ?? (0.5, 0.5, 0.5)
@@ -830,6 +831,7 @@ final class WorldScene: SKScene {
         var wet: [GridPoint: Bool] = [:]
         var pixels = [UInt8](repeating: 0, count: width * height * 4)
         for y in 0..<height {
+            if y % 16 == 15 { await breathe() }
             for x in 0..<width {
                 // The texel's middle in the land's cells: the bitmap's rows run north to south, the
                 // grid's count up from the south.
@@ -1446,7 +1448,7 @@ final class WorldScene: SKScene {
         var sprites: [String: SpriteArt] = [:]
         let lands = map.seams.map { Content.shared.map($0.neighbour) }
         for (number, cell) in map.foreign.keys.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }).enumerated() {
-            if number % 64 == 63 { await breathe() }
+            if number % 8 == 7 { await breathe() }
             guard let seam = map.foreign[cell], let land = lands[seam] else { continue }
             let area = Double(land.width * land.height)
             for placement in land.theme.props where placement.within == nil {
