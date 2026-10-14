@@ -28,6 +28,12 @@ moonglow     | newgame,map=moonglow              | 15
 # The continent: a land next door shown past the border (built before the shot), its wall or
 # gate, the ground blending across, and walking over into it with no loading card.
 border_open  | newgame,map=sunny_meadow,border=meadowbrook,landscape,weather=clear,hour=12 | 6
+# The continent as one place (docs/continuous-world.md, step 2): every land's ground, the sea and
+# the scenery drawn a chunk at a time round you from the lands' own layouts, with no border between
+# them (no hills, shore slopes or people on it yet).
+continent_meadow | newgame,map=sunny_meadow,continent,landscape,weather=clear,hour=12 | 8
+continent_border | newgame,map=sunny_meadow,near=meadowbrook,continent,landscape,weather=clear,hour=12 | 8
+continent_coast | newgame,map=pineapple_shore,at=-10_-47,continent,landscape,weather=clear,hour=12 | 8
 border_gate  | newgame,map=sunny_meadow,border=frog_swamp,landscape,weather=clear,hour=12 | 6
 border_cross | newgame,map=sunny_meadow,border=twilight_woods,done=pineapple_harvest,cross,landscape,weather=clear,hour=12 | 6
 border_rocks | newgame,map=sunny_meadow,border=pineapple_shore,landscape,weather=clear,hour=12 | 6
