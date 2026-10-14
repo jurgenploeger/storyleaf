@@ -179,6 +179,43 @@ final class LandStage {
         return nearest
     }
 
+    /// Everyone else about it, for the minimap (in its cells): the adventurers walking about (friends
+    /// and those spoiling for a fight marked so) and the folk who live here (`WorldScene.minimapDots`).
+    func minimapDots(friends: Set<UUID>) -> [GameSession.MinimapDot] {
+        let walkers = (crowd?.adventurerPositions ?? []).map { profile, position in
+            GameSession.MinimapDot(cell: map.cell(at: position), kind: profile.hostile ? .hostile : friends.contains(profile.id) ? .friend : .adventurer)
+        }
+        let folk = (crowd?.folkPositions ?? []).map { GameSession.MinimapDot(cell: map.cell(at: $0), kind: .folk) }
+        return folk + walkers
+    }
+
+    /// Who does what about it, for the minimap's icons (`WorldScene.minimapMarks`): quest givers as
+    /// their marks say, the healer, the shop, the smith, the guilds, a chest still to open, a boss
+    /// still to beat.
+    func minimapMarks() -> [GameSession.MinimapMark] {
+        npcs.compactMap { npc -> GameSession.MinimapMark? in
+            guard !npc.node.isHidden else { return nil }
+            let kind: GameSession.MinimapMark.Kind
+            switch npc.def.role {
+            case .healer: kind = .healer
+            case .shop: kind = .shop
+            case .smith: kind = .smith
+            case .guild: kind = .guild
+            case .boss: kind = .boss
+            case .chest:
+                guard !session.isOpened(npc.def.id) else { return nil }
+                kind = .chest
+            case .quests:
+                switch session.notice(for: npc.def.id) {
+                case .ready?: kind = .questReady
+                case nil: kind = .quest
+                default: kind = .questNew
+                }
+            }
+            return GameSession.MinimapMark(cell: map.cell(at: npc.node.position), kind: kind)
+        }
+    }
+
     /// Whoever of its people was tapped at `point` (the continent's): one of its own, by where they
     /// stand (and how high), unless they've gone.
     func npc(tappedAt point: CGPoint) -> (def: NPCDef, node: Walker)? {

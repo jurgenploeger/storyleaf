@@ -145,6 +145,15 @@ final class GameCoordinator {
         return world
     }
 
+    /// The HUD's minimap of the land you're in, with what's round it, and that land's size in cells:
+    /// on the continent while it's shown, the land your feet are in there.
+    func minimap(explored version: Int, overviews: Int) -> (picture: WorldScene.MinimapPicture, columns: Int, rows: Int) {
+        if let continent, let here = continent.here, let picture = continent.minimapPicture(overviews: overviews) {
+            return (picture, here.width, here.height)
+        }
+        return (world.minimapPicture(explored: version, overviews: overviews), world.def.width, world.def.height)
+    }
+
     /// The continent as one place (`ContinentScene`, docs/continuous-world.md), shown instead of the
     /// land you're in: only by a debug launch (`continent`) until it takes over from the lands' own
     /// scenes.

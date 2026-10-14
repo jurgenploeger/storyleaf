@@ -40,6 +40,13 @@ final class ContinentScene: SKScene {
         let squares: [GridPoint: [(painter: Int, corner: GridPoint)]]
         /// Its shore's cells, drawn sunk with it rather than flat (`WorldMap.shore`).
         let sunk: Set<GridPoint>
+        /// Its minimap, one pixel a cell (`WorldScene.overview`), made when it's first wanted; and
+        /// remembered for the world map and the lands round it (`WorldOverview`).
+        lazy var overview: CGImage = {
+            let image = WorldScene.overview(of: self.map, art: ArtLibrary.shared)
+            WorldOverview.shared.remember(self.def.id, image)
+            return image
+        }()
 
         init(def: MapDef, place: World.Land, map: WorldMap, tiles: GroundTiles, painters: [HillArt.Painter], stage: LandStage) {
             self.def = def
@@ -103,6 +110,8 @@ final class ContinentScene: SKScene {
     private var follower: Walker?
     private var followerKey: String?
     private var heroKey: String?
+    /// The minimap of the land you're in, with what's round it, as last drawn (`minimapPicture`).
+    private var surrounded: (land: String, overviews: Int, picture: WorldScene.MinimapPicture)?
     /// The air of each land you've been in (`Air`), by its id.
     private var airs: [String: Air] = [:]
     private var sunTimer: TimeInterval = 0
@@ -591,6 +600,47 @@ final class ContinentScene: SKScene {
     }
     #endif
 
+    /// The HUD's minimap of the land you're in, with what's round it, as its own scene draws it
+    /// (`WorldScene.minimapPicture`): the lands nearby as their own minimaps show them
+    /// (`WorldOverview`; till one's drawn, its shape in its ground's colour) and the sea between.
+    /// None till you're in a land. `overviews`: how many lands `WorldOverview` has drawn, so it's
+    /// drawn again as more come in.
+    func minimapPicture(overviews: Int) -> WorldScene.MinimapPicture? {
+        guard let def = here, let land = lands[def.id] else { return nil }
+        if let surrounded, surrounded.land == def.id, surrounded.overviews == overviews { return surrounded.picture }
+        let margin = 40
+        let columns = def.width + margin * 2, rows = def.height + margin * 2
+        let own = land.overview
+        guard let context = CGContext(data: nil, width: columns, height: rows, bitsPerComponent: 8, bytesPerRow: columns * 4,
+                                      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        context.interpolationQuality = .none
+        let sea = WorldMap.seaColor
+        context.setFillColor(red: CGFloat(sea.r) / 255, green: CGFloat(sea.g) / 255, blue: CGFloat(sea.b) / 255, alpha: 1)
+        context.fill(CGRect(x: 0, y: 0, width: columns, height: rows))
+        let drawn = WorldOverview.shared.images
+        var missing: [String] = []
+        for (other, offset) in Continent.lands(near: def, within: margin) {
+            let frame = CGRect(x: offset.col + margin, y: offset.row + margin, width: other.width, height: other.height)
+            if let image = drawn[other.id] {
+                context.draw(image, in: frame)
+                continue
+            }
+            missing.append(other.id)
+            let (red, green, blue) = WorldScene.groundColor(of: other, art: art)
+            let color = PixelColor(r: UInt8(red * 255), g: UInt8(green * 255), b: UInt8(blue * 255))
+            if let shape = WorldScene.silhouette(of: other, color: color) { context.draw(shape, in: frame) }
+        }
+        // Lands not drawn yet are drawn in the background, and the minimap's drawn again as they come.
+        if !missing.isEmpty { Task { WorldOverview.shared.prepare(first: missing) } }
+        context.draw(own, in: CGRect(x: margin, y: margin, width: def.width, height: def.height))
+        guard let made = context.makeImage() else { return nil }
+        let picture = WorldScene.MinimapPicture(image: UIImage(cgImage: made), origin: GridPoint(col: -margin, row: -margin),
+                                                columns: columns, rows: rows)
+        surrounded = (def.id, overviews, picture)
+        return picture
+    }
+
     /// A land's name at the top of the screen as you walk into it, fading in and away.
     private func showBanner(_ name: String) {
         banner?.removeFromParent()
@@ -627,6 +677,13 @@ final class ContinentScene: SKScene {
         if missing == 0, waiting.isEmpty, !painting { isReady = true }
         refreshHero()
         refreshFollower()
+        // The minimap's people and their jobs, in the land you're in.
+        if let here, let stage = lands[here.id]?.stage {
+            let dots = stage.minimapDots(friends: Set(session.friends.map(\.id)))
+            if session.minimapDots != dots { session.minimapDots = dots }
+            let marks = stage.minimapMarks()
+            if session.minimapMarks != marks { session.minimapMarks = marks }
+        }
         // The lands' people: their quest marks, and townsfolk watching you pass.
         for land in lands.values { _ = land.stage.updateNotices(player: player.position, reach: talkRange + 12) }
         for chunk in chunks.keys where max(abs(chunk.col - here.col), abs(chunk.row - here.row)) > Self.keep {
