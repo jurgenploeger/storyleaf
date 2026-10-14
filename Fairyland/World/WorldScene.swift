@@ -607,7 +607,8 @@ final class WorldScene: SKScene {
         let tileMap = SKTileMapNode(tileSet: tileSet, columns: map.columns, rows: map.rows, tileSize: tileSize)
         tileMap.anchorPoint = .zero
         for (index, pick) in picks.enumerated() {
-            if index % 4096 == 4095 { await breathe() }
+            // SpriteKit takes its time over each tile (a fifth of a millisecond in the tests), so a few at a time.
+            if index % 32 == 31 { await breathe() }
             if let group = pick.group { tileMap.setTileGroup(group, forColumn: pick.col, row: pick.row) }
         }
         // A raised terrace: its own tiles again, drawn its height up (`placePlateaus` sets them
@@ -716,15 +717,15 @@ final class WorldScene: SKScene {
             // the world.
             for hill in map.hills {
                 await breathe()
+                var style = look
                 if hill.isCrag {
-                    raisedHills += HillArt.sprites(for: hill, look: crag) as [SKNode]
+                    style = crag
                 } else if hill.hasMountain {
-                    var high = mountain
-                    high.rockFrom = Double(hill.peak) * 0.4
-                    raisedHills += HillArt.sprites(for: hill, look: high) as [SKNode]
-                } else {
-                    raisedHills += HillArt.sprites(for: hill, look: look) as [SKNode]
+                    style = mountain
+                    style.rockFrom = Double(hill.peak) * 0.4
                 }
+                let sprites = await HillArt.sprites(for: hill, look: style, pause: { await self.breathe() })
+                raisedHills += sprites as [SKNode]
             }
         }
         let ground = SKNode()
@@ -757,7 +758,8 @@ final class WorldScene: SKScene {
             let shade = 1 - 0.45 * CGFloat(step) / CGFloat(steps - 1)
             let outline = SKTileMapNode(tileSet: tiles, columns: map.columns, rows: map.rows, tileSize: tileSize)
             outline.anchorPoint = .zero
-            for cell in cells {
+            for (number, cell) in cells.enumerated() {
+                if number % 32 == 31 { await breathe() }
                 if let group = picks[cell.row * map.columns + cell.col].group { outline.setTileGroup(group, forColumn: cell.col, row: cell.row) }
             }
             outline.color = foam ? .white : UIColor(red: top.r * shade, green: top.g * shade, blue: top.b * shade, alpha: 1)
@@ -908,7 +910,7 @@ final class WorldScene: SKScene {
         let margin = Self.surroundingsMargin
         let around = Continent.sea(round: def, margin: margin)
         if Continent.origin(of: def) != nil {
-            placeSea(around, margin: margin)
+            await placeSea(around, margin: margin)
             return
         }
         let tile = WorldMap.tileSize
@@ -957,7 +959,7 @@ final class WorldScene: SKScene {
     /// haze, which thickens with distance from any land until the scene's background, the same
     /// colour, takes over, `seaDrop` lower than the land (`bank` draws the land's edge down to it).
     /// Where a road leads into a cave, its range rises out of it on rock.
-    private func placeSea(_ sea: [GridPoint: Double], margin: Int) {
+    private func placeSea(_ sea: [GridPoint: Double], margin: Int) async {
         let tile = WorldMap.tileSize
         let tileSize = CGSize(width: tile, height: tile)
         let water = SKTileGroup(tileDefinition: SKTileDefinition(texture: art.tileTexture(Self.seaTile), size: tileSize))
@@ -967,11 +969,14 @@ final class WorldScene: SKScene {
         surroundings.anchorPoint = .zero
         surroundings.position = CGPoint(x: -CGFloat(margin) * tile, y: -CGFloat(margin) * tile)
         let ranges = map.crags.map { map.hills[$0.hill] }
-        for cell in sea.keys {
+        // A few tiles at a time, as SpriteKit takes its time over each (`makeGround`).
+        for (number, cell) in sea.keys.enumerated() {
+            if number % 32 == 31 { await breathe() }
             let group = ranges.contains { $0.cells.contains(cell) } ? rock : water
             surroundings.setTileGroup(group, forColumn: cell.col + margin, row: cell.row + margin)
         }
         for row in 0..<map.rows {
+            if row % 4 == 3 { await breathe() }
             for col in 0..<map.columns where map.ground[row][col] == .sea {
                 surroundings.setTileGroup(water, forColumn: col + margin, row: row + margin)
             }

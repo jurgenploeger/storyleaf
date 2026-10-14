@@ -801,6 +801,7 @@
     "Over every border": "どのさかいめも越えて",
     "The land next door shows past the border from the moment you arrive, on the minimap too: as it looks on the world map at first, never an empty gap or open sea.": "となりの土地は、着いたその時からさかいめの向こうに見えます。ミニマップでも同じです。はじめはワールドマップと同じ姿で、何もない空白や海にはなりません。",
     "Tapping past a border takes you across, even before the land over it has been built.": "さかいめの向こうをタップすると、向こうの土地ができあがる前でも、そのまま渡れます。",
+    "Less stutter while the game builds the land ahead of you, above all where it has hills.": "前にある土地を作っているあいだのカクつきが減りました。とくに丘のある土地で。",
     "Lands that run into each other": "となりあう土地が自然につながる",
     "Where two lands meet there's no line any more: one gives way to the other across a wide band, the other land's ground coming in patches, a few at first, then more and more, with its own trees and plants growing on them.": "土地と土地のさかいめに線はもうありません。広い帯の中で、となりの土地の地面がはじめは少しずつ、やがてどんどん増えるようにまだらに現れ、その上にその土地の木や草花が育ちます。",
     "Past a border there's always the land next door: until it's built, its ground shows as it does on the world map, never an empty gap.": "さかいめの向こうには、いつもとなりの土地があります。できあがるまでは、ワールドマップと同じ地面が見えるので、何もない空白にはなりません。",

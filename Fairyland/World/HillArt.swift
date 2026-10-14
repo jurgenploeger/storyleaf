@@ -100,7 +100,9 @@ enum HillArt {
 
     /// The range as sprites in the map's own space (put them straight in the world), each already
     /// sorted; none if it can't be drawn.
-    static func sprites(for hill: WorldMap.Hill, look: Look) -> [SKSpriteNode] {
+    /// `pause`: called every so often, for a land built in the background to give the frame back
+    /// (`WorldScene.breathe`): a range takes far too long to draw in one go.
+    static func sprites(for hill: WorldMap.Hill, look: Look, pause: () async -> Void = {}) async -> [SKSpriteNode] {
         guard let first = hill.cells.first, let sample = look.ground(first) else { return [] }
         let tile = WorldMap.tileSize
         let px = sample.width
@@ -149,6 +151,7 @@ enum HillArt {
             }
         }
         for j in 0..<sh {
+            if j % 4 == 3 { await pause() }
             for i in 0..<sw {
                 let x = Double(low.col) + (Double(i) + 0.5) / Double(samples)
                 let y = Double(low.row) + (Double(j) + 0.5) / Double(samples)
@@ -220,7 +223,8 @@ enum HillArt {
         let pixels = Double(px)
         var marks = [UInt8](repeating: 0, count: stamps.isEmpty ? 0 : wide * high)
         var worn: Set<GridPoint> = []
-        for stamp in stamps {
+        for (number, stamp) in stamps.enumerated() {
+            if number % 32 == 31 { await pause() }
             let cx = (stamp.x - Double(low.col)) * pixels, cy = (stamp.y - Double(low.row)) * pixels
             let half = stamp.width * pixels, band = 2.5 * stamp.cut
             let inner = half * 0.85, outer = half * 1.15 + band
@@ -382,7 +386,9 @@ enum HillArt {
                     let dc = cell.col - corner.col, dr = cell.row - corner.row
                     return dc >= 0 && dr >= 0 && dc < square && dr < square
                 }
-                guard !own.isEmpty, let picture = paint(corner) else { continue }
+                guard !own.isEmpty else { continue }
+                await pause()
+                guard let picture = paint(corner) else { continue }
                 let texture = SKTexture(cgImage: picture)
                 texture.filteringMode = .nearest
                 // The strips a cell reaches into: a cell spans two of the map's diagonals.
