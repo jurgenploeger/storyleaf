@@ -4502,7 +4502,7 @@
         "accent": "tile_dark_grass",
         "accentPatches": 68,
         "water": "tile_water",
-        "ponds": 24,
+        "ponds": 12,
         "lakes": {
           "count": 3,
           "size": [
@@ -7964,7 +7964,7 @@
         {
           "edge": "west",
           "to": "slime_cave",
-          "at": -26
+          "at": -22
         },
         {
           "edge": "north",
