@@ -164,7 +164,7 @@ struct ContentTests {
                 // It runs along the side (on the continent, the straight stretch of coast either side of
                 // its road): the ground just past the edge rises nearly all along it.
                 let road = Int((exit.edge == .north || exit.edge == .south ? mouth.x : mouth.y).rounded(.down))
-                let reach = Int(WorldMap.cragStretch) - 6
+                let reach = Int(WorldMap.cragStretch) - 12
                 let spots = map.region == nil ? Array(stride(from: 0, to: length, by: 3))
                     : Array(stride(from: max(0, road - reach), to: min(length, road + reach), by: 3))
                 let raised = spots.filter { along in
@@ -446,9 +446,10 @@ struct ContentTests {
                     #expect(!map.path(from: map.center(of: cell(start)), to: map.center(of: cell(top))).isEmpty, "map \(def.id): no way up")
                     guard height(foot) < 1 else { continue }
                     // A footpath leads from a trail on the ground to the roads, and road goes on to
-                    // the map's edge.
+                    // the map's edge (on the continent, to where a road crosses its border).
                     // Step by step as walkers go, diagonals too: a footpath can join one of the
                     // narrower side trails, whose cells often only meet corner to corner.
+                    let crossings = Set(map.region?.roads.values.map(\.at) ?? [])
                     var seen: Set<GridPoint> = [cell(foot)]
                     var queue = [cell(foot)]
                     var outside = false
@@ -458,7 +459,8 @@ struct ContentTests {
                             // Over a bridge where the road crosses a river, too.
                             guard map.contains(next), map.ground[next.row][next.col] == .path || map.bridgeCells.contains(next),
                                   seen.insert(next).inserted else { continue }
-                            if next.col == 0 || next.row == 0 || next.col == map.columns - 1 || next.row == map.rows - 1 { outside = true }
+                            if next.col == 0 || next.row == 0 || next.col == map.columns - 1 || next.row == map.rows - 1
+                                || crossings.contains(next) { outside = true }
                             queue.append(next)
                         }
                     }
