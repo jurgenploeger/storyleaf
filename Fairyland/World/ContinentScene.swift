@@ -68,16 +68,42 @@ final class ContinentScene: SKScene {
         }
     }
     private var lands: [String: Land] = [:]
-    /// Lands being laid out now.
-    private var laying: Set<String> = []
-    /// The chunks drawn: their ground, their sea and what stands on them.
-    private var chunks: [GridPoint: (ground: SKNode, sea: SKNode, things: SKNode)] = [:]
+    /// The lands wanted laid out, by how far off they are (in chunks from the camera's; the land
+    /// you're put in or stand in first), laid out one at a time, nearest first (`buildWanted`); and
+    /// the one being laid out now.
+    private var wanted: [String: Int] = [:]
+    private var building: String?
+    /// A chunk drawn: its ground (a tile map for each land laid out, and one in its ground's colour
+    /// for each land not laid out yet, `placeholders`), its sea, and what stands on it.
+    private final class Chunk {
+        let ground = SKNode()
+        let sea: SKNode
+        let things = SKNode()
+        var placeholders: [String: SKNode] = [:]
+
+        init(sea: SKNode) {
+            self.sea = sea
+        }
+    }
+    private var chunks: [GridPoint: Chunk] = [:]
+    /// Each chunk's lands (they never change), worked out once.
+    private var owned: [GridPoint: Set<String>] = [:]
+    /// Each land's ground colour as a tile, for its cells till it's laid out.
+    private var placeholderTiles: [String: SKTileGroup] = [:]
     /// How many chunks round yours are drawn, and how far off they're let go.
     static let reach = 2
     static let keep = 3
     private var lookedAround: TimeInterval = 0
-    /// True once the chunks round where you started are drawn (a debug launch's screenshot waits).
+    /// True once the land you're in is drawn round you, its hills and shore too (the loading card
+    /// waits); the lands round it come in as they're laid out (`isSettled`).
     private(set) var isReady = false
+    /// True once every land round you is laid out and drawn too (a debug launch's screenshot waits).
+    var isSettled: Bool {
+        isReady && building == nil && wanted.isEmpty && waiting.isEmpty && !painting
+    }
+    /// Debug launches waiting for the lands round you (`isSettled`): the work keeps its longer
+    /// slices till they're in.
+    var hurries = false
     private let seaTile = "raw:tile_water"
     /// Squares of hills and shore waiting to be drawn (nearest first), and whether they're being drawn.
     private var waiting: [(chunk: GridPoint, land: String, painter: Int, corner: GridPoint)] = []
@@ -913,6 +939,12 @@ final class ContinentScene: SKScene {
     /// the nearest cell of it you can walk to with its own land all round it, and returns once
     /// you're in it (or after half a minute).
     func walkIntoForDebug(_ id: String) async {
+        // Once that land's laid out (it's near, so it's wanted), or a couple of minutes.
+        hurries = true
+        for _ in 0..<480 where lands[id] == nil {
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        hurries = false
         let from = Self.cell(at: player.position)
         func inside(_ cell: GridPoint) -> Bool {
             guard store.isWalkable(cell) else { return false }
@@ -940,6 +972,30 @@ final class ContinentScene: SKScene {
             try? await Task.sleep(for: .milliseconds(250))
         }
     }
+
+    /// Debug launches: each land laid out and how long it took, by the frame counter
+    /// (`showProgressForDebug`).
+    private var builtForDebug: [String] = []
+    private var progressForDebug: SKLabelNode?
+
+    /// Debug launches: the lands laid out (and how long each took), the one being laid out, how many
+    /// more are wanted and how many squares of hills and shore wait, at the foot of the screen.
+    private func showProgressForDebug() {
+        guard DebugLaunch.isActive, !DebugLaunch.hidesFrameCounter else { return }
+        if progressForDebug == nil {
+            let label = SKLabelNode(fontNamed: "Menlo-Bold")
+            label.fontSize = 10
+            label.fontColor = .white
+            label.verticalAlignmentMode = .bottom
+            label.zPosition = 1_000_000
+            cam.addChild(label)
+            progressForDebug = label
+        }
+        progressForDebug?.position = CGPoint(x: 0, y: -size.height / 2 + 6)
+        let built = builtForDebug.suffix(4).joined(separator: ", ")
+        progressForDebug?.text = "built \(built) | building \(building ?? "-") | wanted \(wanted.count) | squares \(waiting.count)"
+            + (isReady ? " | ready" : "") + (isSettled ? " | settled" : "")
+    }
     #endif
 
     // MARK: Being put somewhere
@@ -957,10 +1013,12 @@ final class ContinentScene: SKScene {
     func place(on def: MapDef, entry: Edge?, arrival: CGPoint?) async {
         guard store.land(def.id) != nil else { return }
         isReady = false
-        placed = true
+        // Nothing round where you were is wanted now (`lookAround` waits): this land comes first.
+        placed = false
         here = nil
         lastCell = nil
-        layOut(def.id)
+        wanted = [def.id: -1]
+        buildWanted()
         while lands[def.id] == nil {
             try? await Task.sleep(for: .milliseconds(50))
         }
@@ -976,6 +1034,7 @@ final class ContinentScene: SKScene {
             local = map.center(of: open)
         }
         move(to: local + land.shift)
+        placed = true
         lookAround()
     }
 
@@ -1047,27 +1106,35 @@ final class ContinentScene: SKScene {
 
     // MARK: Chunks
 
-    /// Draws the chunks round the camera that aren't yet (laying out the lands they need first),
-    /// and lets go of those far off.
+    /// Draws the chunks round the camera that aren't yet (the lands in them not laid out yet in
+    /// their ground's colour, till they are), lays out those lands, nearest first, and lets go of
+    /// the chunks far off.
     private func lookAround() {
         guard placed else { return }
         let middle = World.chunk(of: Self.cell(at: cam.position))
-        var missing = 0
+        var near: [String: Int] = [:]
         for dr in -Self.reach...Self.reach {
             for dc in -Self.reach...Self.reach {
                 let chunk = GridPoint(col: middle.col + dc, row: middle.row + dr)
-                guard chunks[chunk] == nil else { continue }
-                missing += 1
-                let needed = owners(of: chunk)
-                let notYet = needed.filter { lands[$0] == nil }
-                if notYet.isEmpty {
-                    draw(chunk)
-                } else {
-                    for id in notYet { layOut(id) }
+                if chunks[chunk] == nil { draw(chunk) }
+                for id in owners(of: chunk) where lands[id] == nil {
+                    near[id] = min(near[id] ?? .max, max(abs(dc), abs(dr)))
                 }
             }
         }
-        if missing == 0, waiting.isEmpty, !painting { isReady = true }
+        // The land you stand in before any.
+        let standing = store.land(at: Self.cell(at: cam.position))?.id
+        if let standing, lands[standing] == nil { near[standing] = -1 }
+        wanted = near
+        buildWanted()
+        // Ready once the land you're in is drawn round you, with its hills and shore.
+        if !isReady, standing.map({ lands[$0] != nil }) ?? true,
+           !waiting.contains(where: { max(abs($0.chunk.col - middle.col), abs($0.chunk.row - middle.row)) <= 1 }) {
+            isReady = true
+        }
+        #if DEBUG
+        showProgressForDebug()
+        #endif
         refreshHero()
         refreshFollower()
         rejoinWaitingFriends()
@@ -1109,49 +1176,78 @@ final class ContinentScene: SKScene {
 
     /// The lands owning any cell of a chunk.
     private func owners(of chunk: GridPoint) -> Set<String> {
-        Set(World.cells(in: chunk).compactMap { store.land(at: $0)?.id })
+        if let known = owned[chunk] { return known }
+        let found = Set(World.cells(in: chunk).compactMap { store.land(at: $0)?.id })
+        owned[chunk] = found
+        return found
+    }
+
+    /// Lays out the lands wanted one at a time, nearest first, so the land you're in comes in before
+    /// those round it rather than with them all; the world map's own work waits meanwhile
+    /// (`WorldOverview.isHeld`), as it lays out lands the same way.
+    private func buildWanted() {
+        guard building == nil else { return }
+        let next = wanted.filter { lands[$0.key] == nil }.min { ($0.value, $0.key) < ($1.value, $1.key) }?.key
+        WorldOverview.shared.isHeld = next != nil
+        guard let next else { return }
+        wanted[next] = nil
+        building = next
+        Task { [weak self] in
+            guard let self else {
+                WorldOverview.shared.isHeld = false
+                return
+            }
+            await build(next)
+            building = nil
+            buildWanted()
+        }
     }
 
     /// Lays a land out off the main thread, then plans its scenery, takes it into the store and makes
-    /// its hills and shore ready to draw; then draws its squares in the chunks already drawn.
-    private func layOut(_ id: String) {
-        guard !laying.contains(id), let def = Content.shared.map(id), let place = store.land(id) else { return }
-        laying.insert(id)
-        Task { [weak self] in
-            let ready = self?.laidOut.removeValue(forKey: id)
-            let map: WorldMap
-            if let ready {
-                map = ready
-            } else {
-                map = await GameCoordinator.layOut(def)
-            }
-            guard let self else { return }
-            let rest = self.pause(for: def)
-            art.use(palette: def.theme.palette, for: def.id)
-            let planner = LandPlanner(def: def, map: map, art: art)
-            await planner.planUpToLocals(pause: rest)
-            await planner.planTheRest(pause: rest)
-            store.add(map)
-            let tiles = GroundTiles(map: map, art: art)
-            let painters = await ranges(of: map, tiles: tiles, place: place, pause: rest)
-            let stage = LandStage(def: def, map: map, plan: planner.plan, tiles: tiles, art: art, session: session, shift: Self.shift(of: place))
-            await stage.build(pause: rest)
-            // Its adventurers spoiling for a fight dare you only in the land you're in.
-            stage.crowd?.onChallenge = { [weak self, weak stage] rival in
-                guard let self, stage?.isHere == true, !self.isInputLocked else { return }
-                self.startDuel(with: rival)
-            }
-            layer.addChild(stage.world)
-            let land = Land(def: def, place: place, map: map, tiles: tiles, painters: painters, stage: stage)
-            lands[id] = land
-            laying.remove(id)
-            // Don't stand on top of scenery, or out at sea (an old save): onto the nearest ground.
-            let standing = Self.cell(at: player.position)
-            if store.land(at: standing)?.id == id, !store.isWalkable(standing), let open = store.nearestWalkable(to: standing, within: 48) {
-                move(to: Self.center(of: open))
-            }
-            for chunk in chunks.keys { paintSquares(of: land, in: chunk) }
+    /// its hills and shore ready to draw; then shows its ground and draws its squares in the chunks
+    /// already drawn, and hands its picture to the world map.
+    private func build(_ id: String) async {
+        guard lands[id] == nil, let def = Content.shared.map(id), let place = store.land(id) else { return }
+        #if DEBUG
+        let began = Date()
+        #endif
+        let map: WorldMap
+        if let ready = laidOut.removeValue(forKey: id) {
+            map = ready
+        } else {
+            map = await GameCoordinator.layOut(def)
         }
+        let rest = pause(for: def)
+        art.use(palette: def.theme.palette, for: def.id)
+        let planner = LandPlanner(def: def, map: map, art: art)
+        await planner.planUpToLocals(pause: rest)
+        await planner.planTheRest(pause: rest)
+        store.add(map)
+        let tiles = GroundTiles(map: map, art: art)
+        let painters = await ranges(of: map, tiles: tiles, place: place, pause: rest)
+        let stage = LandStage(def: def, map: map, plan: planner.plan, tiles: tiles, art: art, session: session, shift: Self.shift(of: place))
+        await stage.build(pause: rest)
+        // Its adventurers spoiling for a fight dare you only in the land you're in.
+        stage.crowd?.onChallenge = { [weak self, weak stage] rival in
+            guard let self, stage?.isHere == true, !self.isInputLocked else { return }
+            self.startDuel(with: rival)
+        }
+        layer.addChild(stage.world)
+        let land = Land(def: def, place: place, map: map, tiles: tiles, painters: painters, stage: stage)
+        lands[id] = land
+        #if DEBUG
+        builtForDebug.append("\(id) \(Int(Date().timeIntervalSince(began)))s")
+        #endif
+        for (key, chunk) in chunks where owners(of: key).contains(id) { show(land, in: chunk, at: key) }
+        // Don't stand on top of scenery, or out at sea (an old save): onto the nearest ground.
+        let standing = Self.cell(at: player.position)
+        if store.land(at: standing)?.id == id, !store.isWalkable(standing), let open = store.nearestWalkable(to: standing, within: 48) {
+            move(to: Self.center(of: open))
+        }
+        for chunk in chunks.keys { paintSquares(of: land, in: chunk) }
+        // Its minimap for the world map (`WorldOverview`), so that needn't lay it out again.
+        await rest()
+        _ = land.overview
     }
 
     /// A pause in work on `def`'s land: gives the frame back once the work's had it a while, then
@@ -1164,10 +1260,11 @@ final class ContinentScene: SKScene {
         }
     }
 
-    /// Gives the frame back once work's had it for a few milliseconds; for longer before the chunks
-    /// round where you started are drawn, as there's nothing yet to keep smooth.
+    /// Gives the frame back once work's had it for a few milliseconds; for longer before the land
+    /// you start in is drawn round you, as there's nothing yet to keep smooth (and while a debug
+    /// launch `hurries`).
     private func breathe() async {
-        let slice: Duration = isReady ? .milliseconds(6) : .milliseconds(40)
+        let slice: Duration = isReady && !hurries ? .milliseconds(6) : .milliseconds(40)
         guard ContinuousClock.now - sliceStart > slice else { return }
         try? await Task.sleep(for: .milliseconds(10))
         sliceStart = ContinuousClock.now
@@ -1263,36 +1360,13 @@ final class ContinentScene: SKScene {
         painting = false
     }
 
-    /// Draws a chunk: each land's cells in it with that land's tiles, graded with its palette; the
-    /// sea where no land is; and (in the background) its squares of hills and shore. What the lands
-    /// set down on it is theirs to show (`LandStage.show`).
+    /// Draws a chunk: each land's cells in it with that land's tiles (in its ground's colour till
+    /// it's laid out); the sea where no land is; and (in the background) its squares of hills and
+    /// shore. What the lands set down on it is theirs to show (`LandStage.show`).
     private func draw(_ chunk: GridPoint) {
         let size = World.chunkSize, tile = WorldMap.tileSize
         let origin = GridPoint(col: chunk.col * size, row: chunk.row * size)
         let tileSize = CGSize(width: tile, height: tile)
-        var byLand: [String: [GridPoint]] = [:]
-        for cell in World.cells(in: chunk) {
-            if let owner = store.land(at: cell) { byLand[owner.id, default: []].append(cell) }
-        }
-        var picks: [(col: Int, row: Int, group: SKTileGroup)] = []
-        var groups: [ObjectIdentifier: SKTileGroup] = [:]
-        let things = SKNode()
-        for (id, cells) in byLand.sorted(by: { $0.key < $1.key }) {
-            guard let land = lands[id] else { continue }
-            art.use(palette: land.def.theme.palette, for: id)
-            for cell in cells {
-                // The shore's drawn sunk, with its hills (`paintSquares`).
-                let local = store.local(cell, in: land.place)
-                guard !land.sunk.contains(local), let group = land.tiles.pick(local).group else { continue }
-                picks.append((cell.col - origin.col, cell.row - origin.row, group))
-                groups[ObjectIdentifier(group)] = group
-            }
-        }
-        let ground = SKTileMapNode(tileSet: SKTileSet(tileGroups: Array(groups.values)), columns: size, rows: size, tileSize: tileSize)
-        ground.anchorPoint = .zero
-        for pick in picks { ground.setTileGroup(pick.group, forColumn: pick.col, row: pick.row) }
-        ground.position = CGPoint(x: CGFloat(origin.col) * tile, y: CGFloat(origin.row) * tile)
-        groundGrid.addChild(ground)
         let water = SKTileGroup(tileDefinition: SKTileDefinition(texture: art.tileTexture(seaTile), size: tileSize))
         let waters = SKTileMapNode(tileSet: SKTileSet(tileGroups: [water]), columns: size, rows: size, tileSize: tileSize)
         waters.anchorPoint = .zero
@@ -1300,10 +1374,75 @@ final class ContinentScene: SKScene {
         for cell in World.cells(in: chunk) {
             waters.setTileGroup(water, forColumn: cell.col - origin.col, row: cell.row - origin.row)
         }
-        waters.position = ground.position
+        waters.position = CGPoint(x: CGFloat(origin.col) * tile, y: CGFloat(origin.row) * tile)
         seaGrid.addChild(waters)
-        layer.addChild(things)
-        chunks[chunk] = (ground, waters, things)
+        let drawn = Chunk(sea: waters)
+        drawn.ground.position = waters.position
+        groundGrid.addChild(drawn.ground)
+        layer.addChild(drawn.things)
+        chunks[chunk] = drawn
+        for id in owners(of: chunk).sorted() {
+            if let land = lands[id] {
+                show(land, in: drawn, at: chunk)
+            } else {
+                placehold(id, in: drawn, at: chunk)
+            }
+        }
         for land in lands.values { paintSquares(of: land, in: chunk) }
+    }
+
+    /// A land's cells in a chunk drawn, with its tiles graded with its palette, in place of its
+    /// ground's colour. Its shore's drawn sunk, with its hills (`paintSquares`).
+    private func show(_ land: Land, in drawn: Chunk, at chunk: GridPoint) {
+        drawn.placeholders.removeValue(forKey: land.def.id)?.removeFromParent()
+        let size = World.chunkSize, tile = WorldMap.tileSize
+        let origin = GridPoint(col: chunk.col * size, row: chunk.row * size)
+        art.use(palette: land.def.theme.palette, for: land.def.id)
+        var picks: [(col: Int, row: Int, group: SKTileGroup)] = []
+        var groups: [ObjectIdentifier: SKTileGroup] = [:]
+        for cell in World.cells(in: chunk) where store.land(at: cell)?.id == land.def.id {
+            let local = store.local(cell, in: land.place)
+            guard !land.sunk.contains(local), let group = land.tiles.pick(local).group else { continue }
+            picks.append((cell.col - origin.col, cell.row - origin.row, group))
+            groups[ObjectIdentifier(group)] = group
+        }
+        guard !picks.isEmpty else { return }
+        let ground = SKTileMapNode(tileSet: SKTileSet(tileGroups: Array(groups.values)), columns: size, rows: size,
+                                   tileSize: CGSize(width: tile, height: tile))
+        ground.anchorPoint = .zero
+        for pick in picks { ground.setTileGroup(pick.group, forColumn: pick.col, row: pick.row) }
+        drawn.ground.addChild(ground)
+    }
+
+    /// A land's cells in a chunk in its ground's colour, till it's laid out (`show`): no sea where
+    /// it'll be.
+    private func placehold(_ id: String, in drawn: Chunk, at chunk: GridPoint) {
+        guard let def = Content.shared.map(id) else { return }
+        let size = World.chunkSize, tile = WorldMap.tileSize
+        let origin = GridPoint(col: chunk.col * size, row: chunk.row * size)
+        let tileSize = CGSize(width: tile, height: tile)
+        let group: SKTileGroup
+        if let known = placeholderTiles[id] {
+            group = known
+        } else {
+            let (red, green, blue) = WorldScene.groundColor(of: def, art: art)
+            let color = UIColor(red: red, green: green, blue: blue, alpha: 1)
+            let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { context in
+                color.setFill()
+                context.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
+            }
+            group = SKTileGroup(tileDefinition: SKTileDefinition(texture: SKTexture(image: image), size: tileSize))
+            placeholderTiles[id] = group
+        }
+        let flat = SKTileMapNode(tileSet: SKTileSet(tileGroups: [group]), columns: size, rows: size, tileSize: tileSize)
+        flat.anchorPoint = .zero
+        var any = false
+        for cell in World.cells(in: chunk) where store.land(at: cell)?.id == id {
+            flat.setTileGroup(group, forColumn: cell.col - origin.col, row: cell.row - origin.row)
+            any = true
+        }
+        guard any else { return }
+        drawn.ground.addChild(flat)
+        drawn.placeholders[id] = flat
     }
 }
