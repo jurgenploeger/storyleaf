@@ -3002,3 +3002,50 @@ struct WorldStoreTests {
         #expect(world.ground(at: cell) == nil, "Frog Swamp has ground before it's laid out")
     }
 }
+
+/// A land's scenery decided before it's drawn (`LandPlanner`, docs/continuous-world.md step 1b).
+@MainActor
+struct LandPlanTests {
+    let content = Content.shared
+
+    private func planned(_ def: MapDef) async -> (map: WorldMap, plan: LandPlan) {
+        let map = WorldMap(def: def)
+        let planner = LandPlanner(def: def, map: map, art: ArtLibrary.shared)
+        await planner.planUpToLocals(pause: {})
+        await planner.planTheRest(pause: {})
+        return (map, planner.plan)
+    }
+
+    /// Building the scene takes no cell the plan didn't: where you can walk is settled once the plan's
+    /// run, so the continent's store can have it without drawing the land.
+    @Test func theSceneTakesNoCellItsPlanDidnt() async throws {
+        let def = try #require(content.map("sunny_meadow"))
+        let plan = await planned(def)
+        let scene = WorldScene(map: def, session: GameSession.newGame(name: "Test", raceID: "human"), input: InputState(), entry: nil)
+        await scene.build { _ in }
+        var differ: [GridPoint] = []
+        for row in 0..<plan.map.rows {
+            for col in 0..<plan.map.columns {
+                let cell = GridPoint(col: col, row: row)
+                if plan.map.isWalkable(cell) != scene.layout.isWalkable(cell) { differ.append(cell) }
+            }
+        }
+        #expect(differ.isEmpty, "\(differ.count) cells differ between the plan and the scene, first \(Array(differ.prefix(5)))")
+        #expect(!plan.plan.props.isEmpty, "Sunny Meadow planned no props")
+    }
+
+    /// The same land plans the same every time: its props, its neighbours' over the line, its people
+    /// and its signposts, on the same cells, nudged the same.
+    @Test func aLandsPlanIsTheSameEveryTime() async throws {
+        let def = try #require(content.map("frog_swamp"))
+        let first = await planned(def).plan
+        let second = await planned(def).plan
+        #expect(first.props.map { $0.cell } == second.props.map { $0.cell })
+        #expect(first.props.map { $0.nudge } == second.props.map { $0.nudge })
+        #expect(first.seamProps.map { $0.cell } == second.seamProps.map { $0.cell })
+        #expect(first.reeds.map { $0.cell } == second.reeds.map { $0.cell })
+        #expect(first.npcs.map { $0.cell } == second.npcs.map { $0.cell })
+        #expect(first.signposts.map { $0.cell } == second.signposts.map { $0.cell })
+        #expect(!first.props.isEmpty, "Frog Swamp planned no props")
+    }
+}
