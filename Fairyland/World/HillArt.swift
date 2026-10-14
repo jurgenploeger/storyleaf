@@ -49,6 +49,9 @@ enum HillArt {
         /// Cells it isn't drawn over, if any: a land next door, where a cave's range out past the
         /// map's edge would reach into it past the edge's end.
         var hidden: ((GridPoint) -> Bool)? = nil
+        /// Pictures lying on the ground, north up, and where (in cells): a bridge's deck over a lake
+        /// that's sunk with the shore (`WorldMap.shore`).
+        var overlays: [(image: CGImage, frame: CGRect)] = []
     }
 
     /// How lit a hill's slopes facing away from the midday sun still are, on a map as rocky as
@@ -90,12 +93,18 @@ enum HillArt {
     /// How far up the screen each strip reaches.
     static let stripHeight = depthStep * CGFloat(stripDepth)
 
+    /// Cells deep each strip of sunk ground is (`Hill.sunken`): a square's worth. Nothing standing
+    /// behind sunk ground is ever hidden by it (it sinks away from them, down the screen), so it
+    /// needn't be cut finer to sort among them.
+    static let sunkenDepth = 2 * square
+
     /// The strip of raised ground over a point on the map (on the ground, not lifted): where it's
     /// sorted, just behind its back edge, and how far up the screen it begins. The strip in front of
-    /// it is sorted `stripHeight` higher.
-    static func strip(at ground: CGFloat) -> (z: CGFloat, start: CGFloat) {
-        let band = (ground / stripHeight).rounded(.down)
-        return (-(band + 1) * stripHeight - 0.75, band * stripHeight)
+    /// it is sorted `stripHeight` higher. `depth`: `sunkenDepth` on sunk ground.
+    static func strip(at ground: CGFloat, depth: Int = stripDepth) -> (z: CGFloat, start: CGFloat) {
+        let height = depthStep * CGFloat(depth)
+        let band = (ground / height).rounded(.down)
+        return (-(band + 1) * height - 0.75, band * height)
     }
 
     /// The range as sprites in the map's own space (put them straight in the world), each already
@@ -115,6 +124,13 @@ enum HillArt {
         func height(_ i: Int, _ j: Int) -> Float {
             hill.heights[min(lattice.rows - 1, max(0, j)) * lattice.columns + min(lattice.columns - 1, max(0, i))]
         }
+
+        // What shows: the range and a cell round it (its soft edge, its trails' feet).
+        var shown: Set<GridPoint> = []
+        for cell in hill.cells {
+            for dr in -1...1 { for dc in -1...1 { shown.insert(GridPoint(col: cell.col + dc, row: cell.row + dr)) } }
+        }
+        let depthOfStrips = hill.sunken ? sunkenDepth : stripDepth
 
         // Per sample (between the lattice's points): how much bank shows, how it's lit, and where
         // it ends.
@@ -158,6 +174,14 @@ enum HillArt {
                 let y = Double(low.row) + (Double(j) + 0.5) / Double(samples)
                 // Image rows run top down.
                 let index = ((sh - 1 - j) * sw + i) * 4
+                if hill.sunken {
+                    // Sunk ground, whole over its cells and the cell round them (the land there at its
+                    // own height, drawn just as it is round it), lit only by how it slopes.
+                    if shown.contains(GridPoint(col: Int(x.rounded(.down)), row: Int(y.rounded(.down)))) {
+                        for channel in 0..<4 { mask[index + channel] = 255 }
+                    }
+                    continue
+                }
                 let field = hill.field(x, y)
                 if let hidden = look.hidden, hidden(GridPoint(col: Int(x.rounded(.down)), row: Int(y.rounded(.down)))) { continue }
                 let trailDistance = Double(nearness[j * sw + i])
@@ -328,6 +352,15 @@ enum HillArt {
                 context.draw(variation, in: CGRect(x: -CGFloat(low.col) * scale, y: -CGFloat(low.row) * scale,
                                                    width: CGFloat(look.mapSize.columns) * scale, height: CGFloat(look.mapSize.rows) * scale))
             }
+            if !look.overlays.isEmpty {
+                context.interpolationQuality = .none
+                for overlay in look.overlays {
+                    context.draw(overlay.image, in: CGRect(x: (overlay.frame.minX - CGFloat(low.col)) * scale,
+                                                           y: (overlay.frame.minY - CGFloat(low.row)) * scale,
+                                                           width: overlay.frame.width * scale, height: overlay.frame.height * scale))
+                }
+                context.interpolationQuality = .medium
+            }
             await shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint,
                         brightest: Float(look.brightest), pause: pause)
             if let doorway { Self.cave(doorway, in: context, at: { spot($0) }) }
@@ -340,13 +373,15 @@ enum HillArt {
         }
 
         // Its heights, as a picture the shader reads (smoothly between samples, like
-        // `Hill.height(atCells:_:)`): 255ths of its highest in red, and what's left over in green.
-        // Not of its peak: where summits meet the ground stands higher, and would be cut off.
-        let peak = max(hill.highest, 1)
+        // `Hill.height(atCells:_:)`): 255ths of its highest in red, and what's left over in green,
+        // from its lowest (`base`: 0, or below for sunk ground). Not of its peak: where summits meet
+        // the ground stands higher, and would be cut off.
+        let base = min(0, hill.lowest)
+        let peak = max(hill.highest - base, 1)
         var levels = [UInt8](repeating: 0, count: lattice.columns * lattice.rows * 4)
         for j in 0..<lattice.rows {
             for i in 0..<lattice.columns {
-                let value = Double(hill.heights[j * lattice.columns + i]) / Double(peak) * 255
+                let value = Double(CGFloat(hill.heights[j * lattice.columns + i]) - base) / Double(peak) * 255
                 let units = min(255, max(0, value.rounded(.down)))
                 let index = ((lattice.rows - 1 - j) * lattice.columns + i) * 4
                 levels[index] = UInt8(units)
@@ -366,7 +401,7 @@ enum HillArt {
             // The sun (`light(_:by:)` moves it); how dark the shade, how bright the sunniest slope
             // and the picture's pixels a cell; how the shade leans toward the shadow colour.
             SKUniform(name: "u_sun", vectorFloat4: SIMD4(Float(sun.x), Float(sun.y), Float(sun.z), Float(sun.strength))),
-            SKUniform(name: "u_look", vectorFloat4: SIMD4(Float(Sun.shaded(ambient: ambient)), Float(look.brightest), 0, Float(px))),
+            SKUniform(name: "u_look", vectorFloat4: SIMD4(Float(Sun.shaded(ambient: ambient)), Float(look.brightest), Float(base), Float(px))),
             SKUniform(name: "u_lean", vectorFloat4: SIMD4(Float(1 - tint.0), Float(1 - tint.1), Float(1 - tint.2), 0)),
         ]
         shader.attributes = [
@@ -375,11 +410,6 @@ enum HillArt {
             SKAttribute(name: "a_band", type: .vectorFloat4),
         ]
 
-        // What shows: the range and a cell round it (its soft edge, its trails' feet).
-        var shown: Set<GridPoint> = []
-        for cell in hill.cells {
-            for dr in -1...1 { for dc in -1...1 { shown.insert(GridPoint(col: cell.col + dc, row: cell.row + dr)) } }
-        }
         let across = WorldMap.project(CGPoint(x: tile, y: 0)).x
         var sprites: [SKSpriteNode] = []
         for top in stride(from: low.row, to: low.row + rows, by: square) {
@@ -397,8 +427,8 @@ enum HillArt {
                 // The strips a cell reaches into: a cell spans two of the map's diagonals.
                 var bands: Set<Int> = []
                 for cell in own {
-                    bands.insert((cell.col + cell.row) / stripDepth)
-                    bands.insert((cell.col + cell.row + 1) / stripDepth)
+                    bands.insert((cell.col + cell.row) / depthOfStrips)
+                    bands.insert((cell.col + cell.row + 1) / depthOfStrips)
                 }
                 // How low and high the ground stands in each strip of the square: from the lattice's
                 // points round it, the ground between them never higher or lower.
@@ -409,7 +439,7 @@ enum HillArt {
                     for i in i0...i1 {
                         let sum = Double(low.col + low.row) + Double(i + j) / Double(samples)
                         let level = hill.heights[j * lattice.columns + i]
-                        let depth = Double(stripDepth)
+                        let depth = Double(depthOfStrips)
                         let first = Int(((sum - 0.5 - depth) / depth).rounded(.up)), last = Int(((sum + 0.5) / depth).rounded(.down))
                         guard first <= last else { continue }
                         for band in first...last {
@@ -421,7 +451,7 @@ enum HillArt {
                 for band in bands.sorted() {
                     let lift = lifts[band] ?? (low: 0, high: 0)
                     // Across the screen, where the strip crosses the square (in cells, column less row).
-                    let from = Double(band * stripDepth), to = Double((band + 1) * stripDepth)
+                    let from = Double(band * depthOfStrips), to = Double((band + 1) * depthOfStrips)
                     let c0 = Double(corner.col), r0 = Double(corner.row), size = Double(square)
                     var least = Double.infinity, most = -Double.infinity
                     for sum in [from, to, c0 + r0 + size] where sum >= from && sum <= to {
@@ -476,7 +506,7 @@ enum HillArt {
             vec2 cell = vec2(along + across, along - across) * (0.5 / 44.0);
             vec2 at = ((cell - u_samples.xy) * u_samples.z + 0.5) / u_sampleSize;
             vec4 level = texture2D(u_heights, at);
-            float lift = (level.r * 255.0 + level.g) / 255.0 * u_samples.w;
+            float lift = (level.r * 255.0 + level.g) / 255.0 * u_samples.w + u_look.z;
             if (middle + lift > spot.y) { high = middle; } else { low = middle; }
         }
         float ground = 0.5 * (low + high);
@@ -484,7 +514,7 @@ enum HillArt {
         vec2 cell = vec2(along + across, along - across) * (0.5 / 44.0);
         vec2 at = ((cell - u_samples.xy) * u_samples.z + 0.5) / u_sampleSize;
         vec4 level = texture2D(u_heights, at);
-        float lift = (level.r * 255.0 + level.g) / 255.0 * u_samples.w;
+        float lift = (level.r * 255.0 + level.g) / 255.0 * u_samples.w + u_look.z;
         vec2 uv = (cell - a_area.xy) / a_area.zw;
         if (ground < a_band.x - 0.3 || ground > a_band.y + 0.3 || abs(ground + lift - spot.y) > 0.3
             || uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) {

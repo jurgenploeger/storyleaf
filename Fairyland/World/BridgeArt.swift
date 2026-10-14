@@ -17,12 +17,24 @@ enum BridgeArt {
     private static let edge = (r: 84.0, g: 56.0, b: 34.0)
     private static let nail = (r: 60.0, g: 52.0, b: 48.0)
 
-    /// A bridge's deck for the ground's own (unprojected) layer, where it lies over its cells:
-    /// planks across it, a beam along each side and a strip of shadow on the water past them,
-    /// `pixels` to a cell like the tiles. Nil if it can't be drawn.
+    /// A bridge's deck for the ground's own (unprojected) layer, where it lies over its cells
+    /// (`deckPicture`). Nil if it can't be drawn.
     static func deck(for bridge: WorldMap.Bridge, pixels: Int, palette: MapPalette?) -> SKSpriteNode? {
-        guard pixels > 0 else { return nil }
+        guard let picture = deckPicture(for: bridge, pixels: pixels, palette: palette) else { return nil }
+        let texture = SKTexture(cgImage: picture.image)
+        texture.filteringMode = .nearest
         let tile = WorldMap.tileSize
+        let sprite = SKSpriteNode(texture: texture, size: CGSize(width: picture.frame.width * tile, height: picture.frame.height * tile))
+        sprite.anchorPoint = .zero
+        sprite.position = CGPoint(x: picture.frame.minX * tile, y: picture.frame.minY * tile)
+        return sprite
+    }
+
+    /// A bridge's deck as a picture, north up, and where it lies, in cells: planks across it, a beam
+    /// along each side and a strip of shadow on the water past them, `pixels` to a cell like the
+    /// tiles. Nil if it can't be drawn.
+    static func deckPicture(for bridge: WorldMap.Bridge, pixels: Int, palette: MapPalette?) -> (image: CGImage, frame: CGRect)? {
+        guard pixels > 0 else { return nil }
         let before = bridge.landsAtStart ? overlap : 0, after = bridge.landsAtEnd ? overlap : 0
         let cellsAlong = CGFloat(bridge.end - bridge.start + 1) + before + after
         let shadow = max(2, pixels / 8), beamWidth = max(2, pixels / 10)
@@ -69,20 +81,17 @@ enum BridgeArt {
         }
         guard var image = Self.image(bytes, width: width, height: height) else { return nil }
         if let palette, let graded = Recolor.grade(palette, image: image) { image = graded }
-        let texture = SKTexture(cgImage: image)
-        texture.filteringMode = .nearest
-        let scale = tile / CGFloat(pixels)
-        let sprite = SKSpriteNode(texture: texture, size: CGSize(width: CGFloat(width) * scale, height: CGFloat(height) * scale))
-        sprite.anchorPoint = .zero
         let low = CGFloat(bridge.start) - before, side = CGFloat(bridge.lane) - CGFloat(shadow) / CGFloat(pixels)
-        sprite.position = bridge.northward ? CGPoint(x: side * tile, y: low * tile) : CGPoint(x: low * tile, y: side * tile)
-        return sprite
+        let size = CGSize(width: CGFloat(width) / CGFloat(pixels), height: CGFloat(height) / CGFloat(pixels))
+        return (image, CGRect(origin: bridge.northward ? CGPoint(x: side, y: low) : CGPoint(x: low, y: side), size: size))
     }
 
     /// A bridge's posts and rails, standing in `world`: a post at each corner and about every cell
     /// and a quarter along both sides, two rails between each pair, and across a jetty's far end.
     /// `pixels`: the tiles' pixels to a cell, so the wood's pixels are the same size as theirs.
-    static func rails(for bridge: WorldMap.Bridge, pixels: Int, palette: MapPalette?, in world: SKNode) {
+    /// `ground`: how high the deck lies under a spot on screen (sunk with a lake, `WorldMap.shore`).
+    static func rails(for bridge: WorldMap.Bridge, pixels: Int, palette: MapPalette?, in world: SKNode,
+                      ground: (CGPoint) -> CGFloat = { _ in 0 }) {
         let tile = WorldMap.tileSize
         let scale = tile / CGFloat(max(1, pixels))
         guard let post = texture(post: true, palette: palette), let rail = texture(post: false, palette: palette) else { return }
@@ -98,21 +107,23 @@ enum BridgeArt {
         /// A post at each spot, and two rails from each to the next, sorted in front of the deck
         /// if the line runs along its near side, behind if along its far side.
         func line(_ spots: [CGPoint], inFront: Bool) {
-            for base in spots {
+            // Sorted by where they stand on the ground, drawn as high as it lies there.
+            let raised = spots.map { CGPoint(x: $0.x, y: $0.y + ground($0)) }
+            for (base, top) in zip(spots, raised) {
                 let node = SKSpriteNode(texture: post, size: CGSize(width: 3 * scale, height: 10 * scale))
                 node.anchorPoint = CGPoint(x: 0.5, y: 0.05)
-                node.position = base
+                node.position = top
                 node.zPosition = -base.y
                 world.addChild(node)
             }
-            for (a, b) in zip(spots, spots.dropFirst()) {
+            for ((a, b), (from, to)) in zip(zip(spots, spots.dropFirst()), zip(raised, raised.dropFirst())) {
                 let z = inFront ? -min(a.y, b.y) + 0.01 : -max(a.y, b.y) - 0.01
                 for (lift, thick) in [(8.5 * scale, 2 * scale), (4.5 * scale, scale)] {
-                    let length = a.distance(to: b)
+                    let length = from.distance(to: to)
                     let node = SKSpriteNode(texture: rail, size: CGSize(width: length + scale, height: thick))
                     node.anchorPoint = CGPoint(x: 0, y: 0.5)
-                    node.position = CGPoint(x: a.x, y: a.y + lift)
-                    node.zRotation = atan2(b.y - a.y, b.x - a.x)
+                    node.position = CGPoint(x: from.x, y: from.y + lift)
+                    node.zRotation = atan2(to.y - from.y, to.x - from.x)
                     node.zPosition = z
                     world.addChild(node)
                 }

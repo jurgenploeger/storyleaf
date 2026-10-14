@@ -412,6 +412,53 @@ struct ContentTests {
         }
     }
 
+    @Test func shoresSlopeDownToTheWater() throws {
+        // Out in the fields the land slopes down to the sea and into the lakes (`WorldMap.shore`):
+        // at the water's level beside it, never folding out of view going up the screen.
+        let tile = WorldMap.tileSize
+        var sloping = 0
+        for def in content.maps where Continent.region(of: def) != nil && def.town == nil && def.theme.cave == nil {
+            let map = WorldMap(def: def)
+            guard let shore = map.shore else { continue }
+            sloping += 1
+            func height(_ cell: GridPoint) -> CGFloat {
+                map.height(atGrid: CGPoint(x: (CGFloat(cell.col) + 0.5) * tile, y: (CGFloat(cell.row) + 0.5) * tile))
+            }
+            for lake in map.lakes {
+                #expect(lake.water.allSatisfy { abs(height($0) + WorldMap.lakeDrop) < 1 },
+                        "map \(def.id): a lake isn't down at its water's level")
+            }
+            // The land along the coast, at the sea's level (but by a hill, which it rises to meet).
+            var coast = 0, low = 0
+            for row in 0..<map.rows {
+                for col in 0..<map.columns {
+                    let cell = GridPoint(col: col, row: row)
+                    guard map.owns(cell), map.hillIndex(at: cell) == nil,
+                          [Edge.east, .west, .north, .south].contains(where: { map.isOpenSea(cell.stepped($0)) }) else { continue }
+                    coast += 1
+                    if height(cell) < -WorldMap.seaDrop + 1 { low += 1 }
+                }
+            }
+            #expect(coast == 0 || Double(low) >= 0.75 * Double(coast), "map \(def.id): only \(low) of \(coast) cells on the coast down at the sea")
+            // A cell east and a cell north at once (up the screen) it never drops faster than the view.
+            let samples = WorldMap.Hill.samples, width = shore.size.columns * samples + 1, depth = shore.size.rows * samples + 1
+            var steepest: Float = 0
+            for j in 0..<(depth - samples) {
+                for i in 0..<(width - samples) {
+                    steepest = max(steepest, shore.heights[j * width + i] - shore.heights[(j + samples) * width + i + samples])
+                }
+            }
+            #expect(Double(steepest) < WorldMap.Hill.foldLimit, "map \(def.id): its shore drops \(steepest) points a cell up the screen")
+            // You walk down it as you would up a hill: a tap on it finds where you stand.
+            if let cell = shore.cells.min(by: { height($0) < height($1) }) {
+                let spot = map.center(of: cell)
+                let shown = CGPoint(x: spot.x, y: spot.y + map.height(at: spot))
+                #expect(map.groundPoint(under: shown).distance(to: spot) < 1, "map \(def.id): a tap on its shore misses where it was")
+            }
+        }
+        #expect(sloping >= 10, "only \(sloping) lands slope down to the water")
+    }
+
     @Test func hillsRiseWithATrailUp() throws {
         let tile = WorldMap.tileSize
         for def in content.maps where def.theme.hills != nil {

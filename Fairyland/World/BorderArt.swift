@@ -92,8 +92,10 @@ enum BorderArt {
     /// lands meet, so it winds as their border does. `open`: a quest's gate is open already. Returns
     /// what's taken away once you can cross: a town's, the bar across its shut gate and its sign; any
     /// other, all of it.
+    /// `ground`: how high the ground lies under a spot on screen (where the land slopes down to the
+    /// sea, `WorldMap.shore`), for the wall to stand on.
     static func place(_ neighbour: Continent.Neighbour, of here: MapDef, open: Bool, art: ArtLibrary,
-                      into parent: (CGPoint) -> SKNode) -> [SKNode] {
+                      ground: (CGPoint) -> CGFloat = { _ in 0 }, into parent: (CGPoint) -> SKNode) -> [SKNode] {
         guard let origin = Continent.origin(of: here), !neighbour.border.isEmpty else { return [] }
         let palette = sharedPalette(here, neighbour.def)
         // Not across a river where it runs over the border: the water's in the way already.
@@ -104,8 +106,10 @@ enum BorderArt {
         // Everything set down (but a town's wall), to take away once you can cross.
         var placed: [SKNode] = []
         func put(_ node: SKNode) {
-            node.zPosition = -node.position.y
-            parent(node.position).addChild(node)
+            let foot = node.position
+            node.zPosition = -foot.y
+            node.position.y += ground(foot)
+            parent(foot).addChild(node)
             placed.append(node)
         }
         let gate: Gate? = neighbour.quest == nil ? nil : neighbour.exit.flatMap { exit in neighbour.road.map { Gate(road: $0, edge: exit.edge) } }

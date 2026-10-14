@@ -493,7 +493,7 @@ final class WorldScene: SKScene {
         }
         let full = 0b111_111_111, sides = 0b010_101_010
         // The sea (on the continent), round the land and in over its box past its coast (`Region`).
-        // It lies lower than the land (`Self.seaDrop`; `placeSea` draws it), so its cells have no
+        // It lies lower than the land (`WorldMap.seaDrop`; `placeSea` draws it), so its cells have no
         // ground, and the land's edge along it is cut clear, curving as a lake's shore does, a bank
         // of earth under it (`bank`).
         var sea: Set<GridPoint> = []
@@ -614,10 +614,14 @@ final class WorldScene: SKScene {
         let tileSet = SKTileSet(tileGroups: Array(groups.values))
         let tileMap = SKTileMapNode(tileSet: tileSet, columns: map.columns, rows: map.rows, tileSize: tileSize)
         tileMap.anchorPoint = .zero
+        // The shore's cells are drawn sunk (`WorldMap.shore`, below), not here.
+        let sunk = map.shore?.cells ?? []
         for (index, pick) in picks.enumerated() {
             // SpriteKit takes its time over each tile (a fifth of a millisecond in the tests), so a few at a time.
             if index % 32 == 31 { await breathe() }
-            if let group = pick.group { tileMap.setTileGroup(group, forColumn: pick.col, row: pick.row) }
+            if let group = pick.group, !sunk.contains(GridPoint(col: pick.col, row: pick.row)) {
+                tileMap.setTileGroup(group, forColumn: pick.col, row: pick.row)
+            }
         }
         // A raised terrace: its own tiles again, drawn its height up (`placePlateaus` sets them
         // down). The stairs are drawn as slopes instead.
@@ -655,11 +659,16 @@ final class WorldScene: SKScene {
             grid.addChild(await blendBand(toward: other, seam: seam))
         }
         // Bridges' decks lie on the water with the ground (`BridgeArt`; their rails stand in the
-        // world, `placeBridges`).
+        // world, `placeBridges`); out over a sunk lake, with the shore (below).
+        var sunkDecks: [(image: CGImage, frame: CGRect)] = []
         if !map.bridges.isEmpty {
             let pixels = art.tileTexture(theme.ground).cgImage().width
             for bridge in map.bridges {
                 await breathe()
+                if bridge.cells.contains(where: { sunk.contains($0) }) {
+                    if let deck = BridgeArt.deckPicture(for: bridge, pixels: pixels, palette: theme.palette) { sunkDecks.append(deck) }
+                    continue
+                }
                 guard let deck = BridgeArt.deck(for: bridge, pixels: pixels, palette: theme.palette) else { continue }
                 deck.zPosition = 2
                 grid.addChild(deck)
@@ -739,24 +748,47 @@ final class WorldScene: SKScene {
                 raisedHills += sprites as [SKNode]
             }
         }
+        // The shore sloping down to the sea and into the lakes (`WorldMap.shore`): the same ground
+        // again, sunk and lit by how it slopes (`HillArt`), with the decks of the bridges out over a
+        // sunk lake.
+        if let shore = map.shore {
+            await breathe()
+            var images: [ObjectIdentifier: CGImage] = [:]
+            let look = HillArt.Look(
+                ground: { cell in
+                    guard self.map.owns(cell), let group = picks[cell.row * self.map.columns + cell.col].group else { return nil }
+                    if let known = images[ObjectIdentifier(group)] { return known }
+                    let made = pictures[ObjectIdentifier(group)]?.cgImage()
+                    images[ObjectIdentifier(group)] = made
+                    return made
+                },
+                trail: { _ in nil },
+                bank: nil,
+                rocky: 0,
+                variation: variation?.texture?.cgImage(),
+                mapSize: (map.columns, map.rows),
+                shadow: Lighting.rgb(theme.palette?.shadow) ?? (r: 0.2, g: 0.22, b: 0.3),
+                highlight: Lighting.rgb(theme.palette?.highlight) ?? (r: 1, g: 0.95, b: 0.8),
+                overlays: sunkDecks)
+            let sprites = await HillArt.sprites(for: shore, look: look, pause: { await self.breathe() })
+            raisedHills += sprites as [SKNode]
+        }
         let ground = SKNode()
         ground.zPosition = -100_000
         ground.addChild(projected(grid))
         if !shoreline.isEmpty {
-            for layer in await bank(under: shoreline, picks: picks, tiles: tileSet) { ground.addChild(layer) }
+            for layer in await bank(under: shoreline, picks: picks, tiles: tileSet, foamOnly: map.shore != nil) { ground.addChild(layer) }
         }
         return ground
     }
 
-    /// How far the sea lies below the land, in points.
-    static let seaDrop: CGFloat = 14
-
-    /// The bank of earth along the land's edge over the sea, which lies `seaDrop` lower: the land's
-    /// outline along the shore (`cells`, with the tiles they show, cut along it) drawn again a little
-    /// lower each time, in layers of soil darkening toward the water, and a line of foam at its foot.
-    /// Under the land, so it shows only where the land's edge faces you.
+    /// The bank of earth along the land's edge over the sea, which lies `WorldMap.seaDrop` lower: the
+    /// land's outline along the shore (`cells`, with the tiles they show, cut along it) drawn again a
+    /// little lower each time, in layers of soil darkening toward the water, and a line of foam at its
+    /// foot. Under the land, so it shows only where the land's edge faces you. `foamOnly`: where the
+    /// land slopes down to the sea (`WorldMap.shore`), only the foam, at the water's edge.
     private func bank(under cells: [(col: Int, row: Int)], picks: [(col: Int, row: Int, group: SKTileGroup?)],
-                      tiles: SKTileSet) async -> [SKNode] {
+                      tiles: SKTileSet, foamOnly: Bool = false) async -> [SKNode] {
         let tileSize = CGSize(width: WorldMap.tileSize, height: WorldMap.tileSize)
         let soil = (r: CGFloat(0.43), g: CGFloat(0.32), b: CGFloat(0.22))
         // The land's own ground colour, darkened, leans the soil its way (sandy under sand, grey under scree).
@@ -764,7 +796,7 @@ final class WorldScene: SKScene {
         let top = (r: soil.r * 0.6 + ground.0 * 0.3, g: soil.g * 0.6 + ground.1 * 0.3, b: soil.b * 0.6 + ground.2 * 0.3)
         let steps = 7
         var layers: [SKNode] = []
-        for step in 0...steps {
+        for step in (foamOnly ? steps : 0)...steps {
             let foam = step == steps
             let shade = 1 - 0.45 * CGFloat(step) / CGFloat(steps - 1)
             let outline = SKTileMapNode(tileSet: tiles, columns: map.columns, rows: map.rows, tileSize: tileSize)
@@ -780,7 +812,7 @@ final class WorldScene: SKScene {
             grid.addChild(outline)
             let layer = projected(grid)
             // Each lower than the last, the foam just below the bottom one, all under the land.
-            layer.position.y = foam ? -Self.seaDrop - 1.5 : -Self.seaDrop * CGFloat(step + 1) / CGFloat(steps)
+            layer.position.y = foam ? -WorldMap.seaDrop - 1.5 : -WorldMap.seaDrop * CGFloat(step + 1) / CGFloat(steps)
             layer.zPosition = -0.1 - 0.05 * CGFloat(step)
             layers.append(layer)
             await breathe()
@@ -1006,7 +1038,7 @@ final class WorldScene: SKScene {
         ground.addChild(surroundings)
         if let mist = mist(over: sea, margin: margin, color: haze) { ground.addChild(mist) }
         let projectedSea = projected(ground)
-        projectedSea.position.y = -Self.seaDrop
+        projectedSea.position.y = -WorldMap.seaDrop
         projectedSea.zPosition = -100_001
         world.addChild(projectedSea)
     }
@@ -1526,6 +1558,10 @@ final class WorldScene: SKScene {
                             z: strip.z + CGFloat(step) * HillArt.stripHeight)
                 }
                 shadows.append(Lighting.Shadow(under: node, in: chunk(at: node.position), layers: layers))
+            } else if map.isSunken(cell) {
+                // On the shore, over the sunk ground it stands on (`HillArt.sunkenDepth`).
+                let strip = HillArt.strip(at: -node.zPosition, depth: HillArt.sunkenDepth)
+                shadows.append(Lighting.Shadow(under: node, in: chunk(at: node.position), layers: [(from: strip.start, z: strip.z)]))
             } else {
                 shadows.append(Lighting.Shadow(under: node, in: chunk(at: node.position)))
             }
@@ -1590,8 +1626,10 @@ final class WorldScene: SKScene {
             for _ in 0..<min(max(4, pond.count / 60), max(1, pond.count / 8)) {
                 guard let cell = pond.randomElement(using: &padRNG), !map.bridgeCells.contains(cell) else { continue }
                 let node = SKSpriteNode(texture: sprite.texture, size: sprite.size)
-                node.position = map.center(of: cell) + CGVector(dx: .random(in: -6...6, using: &padRNG), dy: .random(in: -6...6, using: &padRNG))
-                node.zPosition = -99_000
+                let spot = map.center(of: cell) + CGVector(dx: .random(in: -6...6, using: &padRNG), dy: .random(in: -6...6, using: &padRNG))
+                // On a lake sunk with the shore, down on its water.
+                node.position = CGPoint(x: spot.x, y: spot.y + map.height(at: spot))
+                node.zPosition = map.isSunken(cell) ? flatZ(at: spot) : -99_000
                 node.run(.repeatForever(.sequence([
                     .rotate(toAngle: 0.08, duration: 2.2, shortestUnitArc: true),
                     .rotate(toAngle: -0.08, duration: 2.2, shortestUnitArc: true),
@@ -1606,7 +1644,7 @@ final class WorldScene: SKScene {
         guard !map.bridges.isEmpty else { return }
         let pixels = art.tileTexture(def.theme.ground).cgImage().width
         for bridge in map.bridges {
-            BridgeArt.rails(for: bridge, pixels: pixels, palette: def.theme.palette, in: world)
+            BridgeArt.rails(for: bridge, pixels: pixels, palette: def.theme.palette, in: world) { self.map.height(at: $0) }
             // Nothing grows right beside a deck either, on the bank its planks and rails reach over,
             // where a fern or a tree would stand on the bridge.
             for cell in bridge.cells {
@@ -1723,7 +1761,9 @@ final class WorldScene: SKScene {
     private func placeBorders() {
         for neighbour in neighbours where neighbour.isWalled(done: session.hasCompleted, joined: isJoined(neighbour)) {
             let open = neighbour.quest.map(session.hasCompleted) ?? false
-            let bar = BorderArt.place(neighbour, of: def, open: open, art: art) { [unowned self] in self.chunk(at: $0) }
+            let bar = BorderArt.place(neighbour, of: def, open: open, art: art, ground: { [unowned self] in self.map.height(at: $0) }) {
+                [unowned self] in self.chunk(at: $0)
+            }
             if !bar.isEmpty { gates.append((neighbour, bar)) }
         }
         placeBarricades()
@@ -2304,6 +2344,7 @@ final class WorldScene: SKScene {
     private func flatZ(at point: CGPoint) -> CGFloat {
         let cell = map.cell(at: point)
         if map.hillIndex(at: cell) != nil { return HillArt.strip(at: point.y).z + 0.2 }
+        if map.isSunken(cell) { return HillArt.strip(at: point.y, depth: HillArt.sunkenDepth).z + 0.2 }
         if let plateau = map.plateaus.first(where: { $0.cells.contains(cell) }) { return Self.topZ(of: plateau.cells) + 0.2 }
         return -50_000
     }

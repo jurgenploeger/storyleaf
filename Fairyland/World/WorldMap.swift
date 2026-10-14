@@ -77,6 +77,10 @@ nonisolated final class WorldMap: @unchecked Sendable {
     private(set) var summits: [CGPoint] = []
     /// The cells the hills' trails run over (for the minimap).
     private(set) var trailCells: Set<GridPoint> = []
+    /// The land sloping down to the sea and into the lakes (`layShore`): ground sunk below the
+    /// land round it, drawn as a hill is (`HillArt`), walked on as one is. Nil in a town or a cave,
+    /// or with no water to slope down to.
+    private(set) var shore: Hill?
     /// The map's lakes (`theme.lakes`): each one's water, and its island if it has one. Their water
     /// is among the `ponds` too, for lily pads and frogs.
     private(set) var lakes: [(water: Set<GridPoint>, island: Set<GridPoint>)] = []
@@ -286,6 +290,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
             }
         }
         markForeign()
+        layShore()
     }
 
     /// Over the land's box, the cells that aren't its own (`Region`) are the sea's or a land next
@@ -366,6 +371,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
     func height(atGrid grid: CGPoint) -> CGFloat {
         let cell = GridPoint(col: Int((grid.x / Self.tileSize).rounded(.down)), row: Int((grid.y / Self.tileSize).rounded(.down)))
         if let index = hillOf[cell] { return hills[index].height(atCells: grid.x / Self.tileSize, grid.y / Self.tileSize) }
+        if let shore, shore.cells.contains(cell) { return shore.height(atCells: grid.x / Self.tileSize, grid.y / Self.tileSize) }
         guard let index = plateauOf[cell] else { return 0 }
         let plateau = plateaus[index]
         let rise: CGFloat? = switch plateau.ramps[cell] {
@@ -379,17 +385,24 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// How high the ground stands under an on-screen (ground) point: walkers and scenery standing
     /// there are drawn this much higher.
     func height(at point: CGPoint) -> CGFloat {
-        plateaus.isEmpty && hills.isEmpty ? 0 : height(atGrid: Self.unproject(point))
+        plateaus.isEmpty && hills.isEmpty && shore == nil ? 0 : height(atGrid: Self.unproject(point))
+    }
+
+    /// Whether a cell is on the shore, sunk below the land round it (`shore`).
+    func isSunken(_ cell: GridPoint) -> Bool {
+        shore?.cells.contains(cell) ?? false
     }
 
     /// The ground point a tap at `point` means. Raised ground hides the ground behind it, so a tap
     /// on a terrace is a tap on its top: tops first, then ramps, then the ground itself.
     func groundPoint(under point: CGPoint) -> CGPoint {
-        guard !plateaus.isEmpty || !hills.isEmpty else { return point }
-        if !hills.isEmpty {
-            // A hill is never steeper than the view (`Hill.Lobe.band`), so going up the screen the ground
-            // under it only ever rises: exactly one ground point lands on the spot. Found by halving.
-            var low = point.y - (hills.map(\.highest).max() ?? 0) - 1, high = point.y
+        guard !plateaus.isEmpty || !hills.isEmpty || shore != nil else { return point }
+        if !hills.isEmpty || shore != nil {
+            // A hill is never steeper than the view (`Hill.Lobe.band`), nor the shore, so going up the
+            // screen the ground under it only ever rises: exactly one ground point lands on the spot.
+            // Found by halving, from as high as a hill stands to as low as the shore sinks.
+            let deepest = -(shore?.lowest ?? 0)
+            var low = point.y - (hills.map(\.highest).max() ?? 0) - 1, high = point.y + deepest + (deepest > 0 ? 1 : 0)
             for _ in 0..<24 {
                 let middle = (low + high) / 2
                 if middle + height(at: CGPoint(x: point.x, y: middle)) > point.y { high = middle } else { low = middle }
@@ -1925,6 +1938,122 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 }
             }
         }
+    }
+
+    // MARK: Shores
+
+    /// How far the sea lies below the land, in points (`WorldScene.placeSea` draws it there).
+    static let seaDrop: CGFloat = 14
+    /// How far a lake's water lies below the land round it, in points.
+    static let lakeDrop: CGFloat = 9
+    /// Over how many cells the land slopes down to the sea, and into a lake, past the cell beside
+    /// the water (which lies at the water's own level, its shoreline curving through it).
+    static let seaSlope = 4.0
+    static let lakeSlope = 3.0
+
+    /// The land sloping down to the water (`shore`): to the sea, `seaDrop` lower, and into the lakes,
+    /// `lakeDrop` lower. The water's own cells and the cells beside it (the shoreline curves through
+    /// them) lie at the water's level, and the land rises evenly from there over `seaSlope` or
+    /// `lakeSlope` cells to its own. Never under a hill: it rises to meet one over the few cells
+    /// short of it. A lake's slope doesn't run over the border either (the land next door doesn't
+    /// sink with it); the sea's does, as the land next door slopes down to the same sea. Out in the
+    /// fields, not in a town (whose wall stands over the sea on a bank) or a cave. Gentle, 14 points
+    /// over 4 cells at most, so it never folds out of view (`Hill.foldLimit`).
+    private func layShore() {
+        guard region != nil, def.town == nil, def.theme.cave == nil else { return }
+        let lakeWater = Set(lakes.flatMap(\.water))
+        // Over the box and a few cells round it, for the sea past its edges.
+        let pad = 8
+        let width = columns + 2 * pad, height = rows + 2 * pad
+        var sea = [Bool](repeating: false, count: width * height)
+        var lake = [Bool](repeating: false, count: width * height)
+        var firm = [Bool](repeating: false, count: width * height)
+        var stop = [Bool](repeating: false, count: width * height)
+        for y in 0..<height {
+            for x in 0..<width {
+                let cell = GridPoint(col: x - pad, row: y - pad), index = y * width + x
+                if contains(cell) {
+                    let kind = ground[cell.row][cell.col]
+                    sea[index] = kind == .sea
+                    lake[index] = lakeWater.contains(cell)
+                    firm[index] = hillOf[cell] != nil
+                    stop[index] = firm[index] || kind == .away
+                } else {
+                    sea[index] = isOpenSea(cell)
+                    // Past the box: the sea, or a land next door.
+                    stop[index] = !sea[index]
+                }
+            }
+        }
+        guard sea.contains(true) || lake.contains(true) else { return }
+        let toSea = Seam.distances(width: width, height: height, from: sea)
+        let toLake = Seam.distances(width: width, height: height, from: lake)
+        let toHill = Seam.distances(width: width, height: height, from: firm)
+        let toStop = Seam.distances(width: width, height: height, from: stop)
+        // The cells it reaches, in a box.
+        let seaReach = Float(Self.seaSlope + 2), lakeReach = Float(Self.lakeSlope + 2)
+        var low = GridPoint(col: Int.max, row: Int.max), high = GridPoint(col: Int.min, row: Int.min)
+        for row in 0..<rows {
+            for col in 0..<columns where owns(GridPoint(col: col, row: row)) {
+                let index = (row + pad) * width + col + pad
+                guard toSea[index] < seaReach || toLake[index] < lakeReach else { continue }
+                low = GridPoint(col: min(low.col, col), row: min(low.row, row))
+                high = GridPoint(col: max(high.col, col), row: max(high.row, row))
+            }
+        }
+        guard low.col <= high.col else { return }
+        func smooth(_ t: Double) -> Double {
+            let t = min(1, max(0, t))
+            return t * t * (3 - 2 * t)
+        }
+        /// A distance at a point in cells, between the middles of the cells round it.
+        func at(_ field: [Float], _ x: Double, _ y: Double) -> Double {
+            let fx = min(max(x - 0.5 + Double(pad), 0), Double(width - 1)), fy = min(max(y - 0.5 + Double(pad), 0), Double(height - 1))
+            let c0 = min(Int(fx), width - 2), r0 = min(Int(fy), height - 2)
+            let tx = fx - Double(c0), ty = fy - Double(r0)
+            let a = Double(field[r0 * width + c0]), b = Double(field[r0 * width + c0 + 1])
+            let c = Double(field[(r0 + 1) * width + c0]), d = Double(field[(r0 + 1) * width + c0 + 1])
+            return (a * (1 - tx) + b * tx) * (1 - ty) + (c * (1 - tx) + d * tx) * ty
+        }
+        let samples = Hill.samples
+        let origin = GridPoint(col: low.col - 1, row: low.row - 1)
+        let size = (columns: high.col - low.col + 3, rows: high.row - low.row + 3)
+        let lattice = (columns: size.columns * samples + 1, rows: size.rows * samples + 1)
+        var heights = [Float](repeating: 0, count: lattice.columns * lattice.rows)
+        for j in 0..<lattice.rows {
+            for i in 0..<lattice.columns {
+                let x = Double(origin.col) + Double(i) / Double(samples), y = Double(origin.row) + Double(j) / Double(samples)
+                let toward = (sea: at(toSea, x, y), lake: at(toLake, x, y))
+                guard toward.sea < Double(seaReach) || toward.lake < Double(lakeReach) else { continue }
+                // Rising to meet a hill (or for a lake, the border) over the cells short of it; hills
+                // and lakes keep further off the water than that (`place`, `digLakes`), so it lies flat.
+                let bySea = Double(Self.seaDrop) * (1 - smooth((toward.sea - 1) / Self.seaSlope)) * smooth(at(toHill, x, y) / 2.5)
+                let byLake = Double(Self.lakeDrop) * (1 - smooth((toward.lake - 1) / Self.lakeSlope)) * smooth(at(toStop, x, y) / 2.5)
+                heights[j * lattice.columns + i] = -Float(max(bySea, byLake))
+            }
+        }
+        // The land's own cells it sinks, any corner of them.
+        var cells: Set<GridPoint> = []
+        for row in low.row...high.row {
+            for col in low.col...high.col {
+                let cell = GridPoint(col: col, row: row)
+                guard owns(cell), hillOf[cell] == nil else { continue }
+                let i = (col - origin.col) * samples, j = (row - origin.row) * samples
+                let corners = [heights[j * lattice.columns + i], heights[j * lattice.columns + i + samples],
+                               heights[(j + samples) * lattice.columns + i], heights[(j + samples) * lattice.columns + i + samples],
+                               heights[(j + samples / 2) * lattice.columns + i + samples / 2]]
+                if corners.contains(where: { $0 < -0.05 }) { cells.insert(cell) }
+            }
+        }
+        guard !cells.isEmpty else { return }
+        var sunk = Hill(lobes: [], ripples: [], steepness: 1)
+        sunk.sunken = true
+        sunk.origin = origin
+        sunk.size = size
+        sunk.heights = heights
+        sunk.cells = cells
+        sunk.lowest = CGFloat(heights.min() ?? 0)
+        shore = sunk
     }
 
     // MARK: Rivers and lakes
