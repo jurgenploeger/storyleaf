@@ -1171,9 +1171,10 @@ final class ContinentScene: SKScene {
         if let standing, lands[standing] == nil { near[standing] = -1 }
         wanted = near
         buildWanted()
-        // Ready once the land you're in is drawn round you, with its hills and shore.
+        // Ready once the land you're in is drawn round you, with its hills and shore on screen.
+        let you = Self.cell(at: cam.position)
         if !isReady, standing.map({ lands[$0] != nil }) ?? true,
-           !waiting.contains(where: { max(abs($0.chunk.col - middle.col), abs($0.chunk.row - middle.row)) <= 1 }) {
+           !waiting.contains(where: { distance(of: $0, from: you) <= Self.screenReach }) {
             isReady = true
         }
         #if DEBUG
@@ -1424,9 +1425,9 @@ final class ContinentScene: SKScene {
 
     private func paintWaiting() async {
         while !waiting.isEmpty {
-            let here = World.chunk(of: Self.cell(at: cam.position))
-            func away(_ chunk: GridPoint) -> Int { max(abs(chunk.col - here.col), abs(chunk.row - here.row)) }
-            guard let next = waiting.indices.min(by: { away(waiting[$0].chunk) < away(waiting[$1].chunk) }) else { break }
+            let you = Self.cell(at: cam.position)
+            guard let next = waiting.indices.min(by: { distance(of: waiting[$0], from: you) < distance(of: waiting[$1], from: you) })
+            else { break }
             let job = waiting.remove(at: next)
             guard let drawn = chunks[job.chunk], let land = lands[job.land] else { continue }
             if job.painter == Self.bankJob {
@@ -1447,6 +1448,29 @@ final class ContinentScene: SKScene {
             await breathe()
         }
         painting = false
+    }
+
+    /// How many cells out from you the screen shows (about 17 on a phone, either way up), with room
+    /// for a mountain rising into it from further down: the loading card waits for the hills and
+    /// shore within it (`lookAround`).
+    private static let screenReach = 28
+
+    /// How far a square waiting to be drawn (`HillArt.square` cells a side), or a chunk's bank,
+    /// lies from `cell`, in cells: none if it covers it.
+    private func distance(of job: (chunk: GridPoint, land: String, painter: Int, corner: GridPoint), from cell: GridPoint) -> Int {
+        let low: GridPoint, side: Int
+        if job.painter == Self.bankJob {
+            low = GridPoint(col: job.chunk.col * World.chunkSize, row: job.chunk.row * World.chunkSize)
+            side = World.chunkSize
+        } else if let origin = lands[job.land]?.place.origin {
+            low = GridPoint(col: origin.col + job.corner.col, row: origin.row + job.corner.row)
+            side = HillArt.square
+        } else {
+            return .max
+        }
+        let across = max(low.col - cell.col, 0, cell.col - (low.col + side - 1))
+        let up = max(low.row - cell.row, 0, cell.row - (low.row + side - 1))
+        return max(across, up)
     }
 
     /// Draws a chunk: each land's cells in it with that land's tiles (in its ground's colour till
