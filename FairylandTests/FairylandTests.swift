@@ -3142,6 +3142,25 @@ struct LandPlanTests {
         #expect(!plan.plan.props.isEmpty, "Sunny Meadow planned no props")
     }
 
+    /// No prop stands on the coast's own cells, which the shoreline curves through: a palm on
+    /// Ingothold Lake's beach stood in the sea (playtesting 2026-10-15).
+    @Test func propsKeepOffTheCoast() async throws {
+        let def = try #require(content.map("goldburg_lake"))
+        let result = await planned(def)
+        let map = result.map
+        let cells = result.plan.props.map(\.cell) + result.plan.seamProps.map(\.cell)
+        let wet = cells.filter { cell in
+            (-1...1).contains { dr in
+                (-1...1).contains { dc in
+                    let next = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                    return map.contains(next) ? map.ground[next.row][next.col] == .sea : map.isOpenSea(next)
+                }
+            }
+        }
+        #expect(!cells.isEmpty, "Ingothold Lake planned no props")
+        #expect(wet.isEmpty, "\(wet.count) props on Ingothold Lake's coast, first \(Array(wet.prefix(3)))")
+    }
+
     /// The same land plans the same every time: its props, its neighbours' over the line, its people
     /// and its signposts, on the same cells, nudged the same.
     @Test func aLandsPlanIsTheSameEveryTime() async throws {

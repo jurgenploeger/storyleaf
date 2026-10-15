@@ -188,7 +188,7 @@ Each step is its own PR and leaves the game playable. The old engine stays the d
 Saves didn't need a new version: where you stand is still kept as the land you're in and a spot in
 its own points, which the continent turns into its own (a land's shift) both ways.
 
-**Playtesting on a phone (2026-10-15), 0.7.1 to 0.7.4.** Lessons from the first build on a phone:
+**Playtesting on a phone (2026-10-15), 0.7.1 to 0.7.5.** Lessons from the first build on a phone:
 - A land's air (sky, light, mood) fades as you cross into the next, each part fading itself. The
   sky's shade is multiplied onto the screen, and a multiplied colour faded by alpha goes dark, not
   faint: faded as one layer, the screen dimmed at every crossing. It eases toward white instead.
@@ -198,6 +198,9 @@ its own points, which the continent turns into its own (a land's shift) both way
   It still happened after a fight in 0.7.2 (Ingothold Lake, the sea's tile maps in that chunk showing
   fine), so the ground of the chunks round you is made afresh each time the continent is back on
   screen (`drawGround`), and a chunk's tile maps sit at its corner themselves, as the sea's do.
+  In 0.7.4 the sea's went too (Ingothold Lake's coast, after a fight: the scene's grey-blue
+  background to the chunk's edge), so since 0.7.5 a chunk's ground, sea and banks are all made
+  afresh (`redraw`): those round you as you come back, the rest as you come near them (`stale`).
 - The coast's bank and foam (`WorldScene.bank`) are drawn per chunk after its shore's squares.
 - The slope down to the sea, 14 points over four cells, barely showed by its light alone. Sunk ground
   darkens the lower it lies (`HillArt.wetShade`, in the hills' stepped shade), wet toward the water, and
@@ -209,6 +212,13 @@ its own points, which the continent turns into its own (a land's shift) both way
   lands are laid out nearest first by cells to you, not by chunk; and while one is within 20 cells of
   you, the work takes 16 ms slices rather than 6 (`isUrgent`), a frame or two dropped for it to come
   in faster.
+- Walking onto Frog Swamp in 0.7.4, its plain ground stayed plain: it waited its turn behind the land
+  being built, and its layout behind whatever was laid out already (`MapLayouts`, one at a time),
+  the world map's own among them, which the minimap asked for every land round you without a
+  picture. Since 0.7.5 the minimap no longer asks (the continent hands each land's picture over as
+  it's built), the land under your feet starts laying out at once (`layOutAhead`), its work takes
+  40 ms slices, and a note shows how far it's come (`showLoading`: 0 waiting, 5 laying out, 45 laid
+  out, then by its steps), which says where it's stuck if it ever is.
 
 1. **Store and settle step, no visible change.** Lands are laid out into the store, and placement
    decisions move into the layout. Tests check that the store matches each land's layout cell for

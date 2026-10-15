@@ -17,6 +17,10 @@ on:
         description: "Only these tests (comma-separated, e.g. FairylandTests/ContentTests). Empty = all."
         required: false
         default: ""
+      configuration:
+        description: "The tests' build: Debug, or Release to time the maps (PerformanceTests) as a phone's build runs them."
+        required: false
+        default: "Debug"
 
 permissions:
   contents: write
@@ -48,6 +52,7 @@ jobs:
         timeout-minutes: 85
         env:
           ONLY: ${{ inputs.tests }}
+          CONFIG: ${{ inputs.configuration || 'Debug' }}
         run: |
           UDID=$(xcrun simctl list devices available | grep -m1 -E 'iPhone 1[6-9] Pro \(' | grep -oE '[0-9A-F-]{36}')
           test -n "$UDID" || { xcrun simctl list devices available; exit 1; }
@@ -60,8 +65,10 @@ jobs:
             name=$(echo "$name" | xargs)
             [ -n "$name" ] && only+=("-only-testing:$name")
           done
-          xcodebuild test -project Fairyland.xcodeproj -scheme Fairyland -destination "id=$UDID" \
-            -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO "${only[@]}" > build/tests.log 2>&1 || status=$?
+          # Release (by hand, `configuration`) times the maps at a phone build's speed; its tests need
+          # testability on to see the game's internals.
+          xcodebuild test -project Fairyland.xcodeproj -scheme Fairyland -destination "id=$UDID" -configuration "$CONFIG" \
+            -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES "${only[@]}" > build/tests.log 2>&1 || status=$?
           # How long each map takes to build (PerformanceTests) and the hills each raised, pass or fail.
           grep -E '⏱|⛰' build/tests.log || true
           if [ "$status" -ne 0 ]; then

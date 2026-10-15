@@ -272,7 +272,7 @@ final class LandPlanner {
                         row: middle.row + Int.random(in: -spread...spread, using: &rng)
                     )
                     guard map.isFreeForScenery(cell, insideFence: placement.within != nil, blocking: placement.blocking),
-                          map.foreign[cell] == nil else { continue }
+                          map.foreign[cell] == nil, !isCoast(cell) else { continue }
                     var scale: CGFloat = 1
                     if let range = placement.size, range.count == 2, range[0] <= range[1] {
                         scale = CGFloat(Double.random(in: range[0]...range[1], using: &rng))
@@ -298,7 +298,7 @@ final class LandPlanner {
             let area = Double(land.width * land.height)
             for placement in land.theme.props where placement.within == nil {
                 guard Double.random(in: 0..<1, using: &random) < Double(placement.count) / area else { continue }
-                guard map.isFreeForScenery(cell, blocking: placement.blocking) else { break }
+                guard map.isFreeForScenery(cell, blocking: placement.blocking), !isCoast(cell) else { break }
                 var scale: CGFloat = 1
                 if let range = placement.size, range.count == 2, range[0] <= range[1] {
                     scale = CGFloat(Double.random(in: range[0]...range[1], using: &random))
@@ -309,6 +309,19 @@ final class LandPlanner {
                 break
             }
         }
+    }
+
+    /// Whether a cell is the coast's own, beside the sea, which the shoreline curves through (its tile
+    /// cut along it, `GroundTiles`): no prop there, or it stood in the sea (playtesting 2026-10-15).
+    private func isCoast(_ cell: GridPoint) -> Bool {
+        for dr in -1...1 {
+            for dc in -1...1 {
+                let next = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                let sea = map.contains(next) ? map.ground[next.row][next.col] == .sea : map.isOpenSea(next)
+                if sea { return true }
+            }
+        }
+        return false
     }
 
     /// A prop set down at `cell` as its placement says: taking the cell, nudged, swaying, and how it
