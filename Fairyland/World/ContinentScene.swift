@@ -182,6 +182,9 @@ final class ContinentScene: SKScene {
     /// The next land's layout under way off the main thread while this one's planned and drawn on
     /// it (`layOutNext`), so one land's layout needn't wait for the last land's drawing.
     private var layingOut: (id: String, task: Task<WorldMap, Never>)?
+    /// Lands laid out while the continent was off screen (a battle, a cave), their ground still to
+    /// show in the chunks drawn: a tile map made then never showed (`didMove`).
+    private var unshown: Set<String> = []
     private var pinchStartZoom: CGFloat = 1
     private lazy var pinch = UIPinchGestureRecognizer(target: self, action: #selector(pinched(_:)))
 
@@ -253,9 +256,10 @@ final class ContinentScene: SKScene {
             set(mood: 0)
         }
 
+        /// Each part fades itself, the layer only hidden once it's gone: faded as a whole, the
+        /// sky's multiplied shade went dark rather than faint as you walked into the next land.
         func set(mood: CGFloat) {
             self.mood = mood
-            layer.alpha = mood
             layer.isHidden = mood <= 0.01
             ambience?.setMood(mood)
             lighting?.setMood(mood)
@@ -295,6 +299,17 @@ final class ContinentScene: SKScene {
         view.addGestureRecognizer(pinch)
         cam.setScale(1 / WorldScene.zoom)
         lastUpdate = 0
+        // Back from a battle or a cave: the ground of lands laid out meanwhile, and the squares and
+        // banks left to draw.
+        for id in unshown.sorted() {
+            guard let land = lands[id] else { continue }
+            for (key, chunk) in chunks where owners(of: key).contains(id) { show(land, in: chunk, at: key) }
+        }
+        unshown = []
+        if !painting, !waiting.isEmpty {
+            painting = true
+            Task { [weak self] in await self?.paintWaiting() }
+        }
     }
 
     override func willMove(from view: SKView) {
@@ -1308,7 +1323,13 @@ final class ContinentScene: SKScene {
         #if DEBUG
         builtForDebug.append("\(id) \(Int(Date().timeIntervalSince(began)))s")
         #endif
-        for (key, chunk) in chunks where owners(of: key).contains(id) { show(land, in: chunk, at: key) }
+        // Its ground in the chunks drawn already; while a battle or a cave is up, once you're back
+        // (`didMove`): playtesting saw a chunk's ground made during a fight never show.
+        if view != nil {
+            for (key, chunk) in chunks where owners(of: key).contains(id) { show(land, in: chunk, at: key) }
+        } else {
+            unshown.insert(id)
+        }
         // Don't stand on top of scenery, or out at sea (an old save): onto the nearest ground.
         let standing = Self.cell(at: player.position)
         if store.land(at: standing)?.id == id, !store.isWalkable(standing), let open = store.nearestWalkable(to: standing, within: 48) {
@@ -1424,7 +1445,8 @@ final class ContinentScene: SKScene {
     }
 
     private func paintWaiting() async {
-        while !waiting.isEmpty {
+        // Not while a battle or a cave is up: their tile maps wouldn't show (`didMove` goes on).
+        while !waiting.isEmpty, view != nil {
             let you = Self.cell(at: cam.position)
             guard let next = waiting.indices.min(by: { distance(of: waiting[$0], from: you) < distance(of: waiting[$1], from: you) })
             else { break }
@@ -1488,6 +1510,7 @@ final class ContinentScene: SKScene {
             waters.setTileGroup(water, forColumn: cell.col - origin.col, row: cell.row - origin.row)
         }
         waters.position = CGPoint(x: CGFloat(origin.col) * tile, y: CGFloat(origin.row) * tile)
+        if let shallows = shallows(in: chunk) { waters.addChild(shallows) }
         seaGrid.addChild(waters)
         let drawn = Chunk(sea: waters)
         drawn.ground.position = waters.position
@@ -1502,6 +1525,54 @@ final class ContinentScene: SKScene {
             }
         }
         for land in lands.values { paintSquares(of: land, in: chunk) }
+    }
+
+    /// The sea paler along the coast, in bands out from the land (`shallowTiles`): the water shallow
+    /// where the land runs down into it, palest at the waterline, under the cut edge of the land's
+    /// cells along it too. None in a chunk all land or all sea.
+    private func shallows(in chunk: GridPoint) -> SKTileMapNode? {
+        let size = World.chunkSize, tile = WorldMap.tileSize
+        let reach = Self.shallowTiles.count - 1
+        // Which cells are land, over the chunk and `reach` round it.
+        let low = GridPoint(col: chunk.col * size - reach, row: chunk.row * size - reach), side = size + 2 * reach
+        var land = [Bool](repeating: false, count: side * side)
+        for row in 0..<side {
+            for col in 0..<side { land[row * side + col] = store.land(at: GridPoint(col: low.col + col, row: low.row + row)) != nil }
+        }
+        guard land.contains(true), land.contains(false) else { return nil }
+        let map = SKTileMapNode(tileSet: SKTileSet(tileGroups: Self.shallowTiles), columns: size, rows: size,
+                                tileSize: CGSize(width: tile, height: tile))
+        map.anchorPoint = .zero
+        map.zPosition = 1
+        var any = false
+        for row in 0..<size {
+            for col in 0..<size {
+                let isLand = land[(row + reach) * side + col + reach]
+                // How far it lies out from the land, in cells (0: the land's own cell, at the waterline).
+                var nearest = Double(reach) + 1
+                for dr in -reach...reach {
+                    for dc in -reach...reach where (dc != 0 || dr != 0) && land[(row + reach + dr) * side + col + reach + dc] != isLand {
+                        nearest = min(nearest, Double(dc * dc + dr * dr).squareRoot())
+                    }
+                }
+                let band: Int? = isLand ? (nearest < 1.5 ? 0 : nil) : Int(nearest.rounded(.up))
+                guard let band, band <= reach else { continue }
+                map.setTileGroup(Self.shallowTiles[band], forColumn: col, row: row)
+                any = true
+            }
+        }
+        return any ? map : nil
+    }
+
+    /// The shallows' bands, palest first: a pale sea green over the water, less of it each cell out.
+    private static let shallowTiles: [SKTileGroup] = [0.42, 0.3, 0.18, 0.08].map { alpha in
+        let color = UIColor(red: 0.8, green: 0.96, blue: 0.95, alpha: alpha)
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { context in
+            color.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
+        }
+        let size = CGSize(width: WorldMap.tileSize, height: WorldMap.tileSize)
+        return SKTileGroup(tileDefinition: SKTileDefinition(texture: SKTexture(image: image), size: size))
     }
 
     /// A land's cells in a chunk drawn, with its tiles graded with its palette, in place of its plain

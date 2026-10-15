@@ -40,6 +40,10 @@ continent_rocky_night | newgame,map=crystal_mountain,at=9_1,weather=clear,hour=2
 continent_rocky | newgame,map=crystal_mountain,at=9_1,weather=clear,hour=12 | 8
 continent_rocky_coast | newgame,map=crystal_mountain,at=-31_-75,weather=clear,hour=12 | 8
 continent_swamp_edge | newgame,map=sunny_meadow,at=18_-56,weather=clear,hour=12 | 8
+# Back on the map after a won fight, the lands round you laid out meanwhile: playtesting saw a
+# chunk's ground gone after one, the sea showing through under its scenery.
+after_battle_rocky | newgame,map=crystal_mountain,at=9_1,battle,win,back,weather=clear,hour=12 | 25
+after_battle_coast | newgame,map=crystal_mountain,at=-31_-75,battle,win,back,weather=clear,hour=12 | 25
 # The walls along borders you can't cross yet: a quest's barred gate, rocks, a fence.
 border_gate  | newgame,map=sunny_meadow,border=frog_swamp,landscape,weather=clear,hour=12 | 6
 border_rocks | newgame,map=sunny_meadow,border=pineapple_shore,landscape,weather=clear,hour=12 | 6

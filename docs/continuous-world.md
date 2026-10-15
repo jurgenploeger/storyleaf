@@ -188,6 +188,18 @@ Each step is its own PR and leaves the game playable. The old engine stays the d
 Saves didn't need a new version: where you stand is still kept as the land you're in and a spot in
 its own points, which the continent turns into its own (a land's shift) both ways.
 
+**Playtesting on a phone (2026-10-15), 0.7.1 and 0.7.2.** Lessons from the first build on a phone:
+- A land's air (sky, light, mood) fades as you cross into the next, each part fading itself. The
+  sky's shade is multiplied onto the screen, and a multiplied colour faded by alpha goes dark, not
+  faint: faded as one layer, the screen dimmed at every crossing. It eases toward white instead.
+- A tile map made while the continent is off screen (a battle, a cave) never showed: a land that
+  finished laying out during a fight left its ground missing, the sea showing through. Its ground
+  waits till the continent is back on screen (`didMove`), and so do the hills', shore's and banks'.
+- The coast's bank and foam (`WorldScene.bank`) are drawn per chunk after its shore's squares.
+- The slope down to the sea, 14 points over four cells, barely showed by its light alone. Sunk ground
+  darkens the lower it lies (`HillArt.wetShade`, in the hills' stepped shade), wet toward the water, and
+  the sea is paler in bands along the coast (`ContinentScene.shallows`), palest at the waterline.
+
 1. **Store and settle step, no visible change.** Lands are laid out into the store, and placement
    decisions move into the layout. Tests check that the store matches each land's layout cell for
    cell, that walkability doesn't change, and that two layouts of the same land agree.
