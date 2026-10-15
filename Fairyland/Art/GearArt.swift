@@ -241,35 +241,4 @@ enum GearArt {
             c.fill(x - half, y - half, width, width, color)
         }
     }
-
-    // MARK: Accessory
-
-    /// A few twinkles around the wearer, in the accessory's colour.
-    static func aura(_ item: ItemDef, height: CGFloat) -> SKNode? {
-        guard item.type == .accessory else { return nil }
-        let fallback: UIColor = switch item.icon {
-        case "clover": UIColor(red: 0.55, green: 1, blue: 0.5, alpha: 1)
-        case "gem": UIColor(red: 1, green: 0.45, blue: 0.5, alpha: 1)
-        default: UIColor(red: 1, green: 0.88, blue: 0.45, alpha: 1)
-        }
-        let color = item.accent.flatMap { UIColor(hex: $0) } ?? fallback
-        let aura = SKNode()
-        aura.name = "aura"
-        aura.zPosition = 2
-        for index in 0..<3 {
-            let star = SKSpriteNode(texture: SoftTextures.star, size: CGSize(width: 7, height: 7))
-            star.color = color
-            star.colorBlendFactor = 1
-            star.blendMode = .add
-            star.alpha = 0
-            aura.addChild(star)
-            let hop = SKAction.run { [weak star] in
-                star?.position = CGPoint(x: .random(in: -height * 0.35...height * 0.35), y: .random(in: height * 0.2...height * 0.9))
-            }
-            let twinkle = SKAction.sequence([hop, .fadeIn(withDuration: 0.3), .wait(forDuration: 0.2), .fadeOut(withDuration: 0.5),
-                                             .wait(forDuration: 0.6, withRange: 0.8)])
-            star.run(.sequence([.wait(forDuration: 0.5 * Double(index)), .repeatForever(twinkle)]))
-        }
-        return aura
-    }
 }

@@ -1018,6 +1018,27 @@ struct RulesTests {
         #expect(session.count(of: "pet_egg") == 1)
     }
 
+    @Test func chestsFillAgainAfterAWhile() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let chest = try #require(Content.shared.npc("crystal_summit_chest"))
+        let rules = try #require(Content.shared.rewards.chests)
+        // The first time, its own treasure.
+        #expect(session.openChest(chest)?.id == "crystal_crown_pendant")
+        #expect(session.isOpened(chest.id))
+        #expect(session.openChest(chest) == nil)
+        // A while later, something new, and gold for its level.
+        let opened = try #require(session.data.chestsOpenedAt?[chest.id])
+        session.data.chestsOpenedAt?[chest.id] = opened.addingTimeInterval(-rules.refillHours * 3600 - 1)
+        #expect(!session.isOpened(chest.id))
+        let gold = session.data.gold
+        #expect(session.openChest(chest) != nil)
+        #expect(session.data.gold > gold)
+        #expect(session.isOpened(chest.id))
+        // One opened before chests filled again is full already.
+        session.data.openedChests = ["snow_summit_chest"]
+        #expect(!session.isOpened("snow_summit_chest"))
+    }
+
     @Test func skillPointsRaiseSkills() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         let novice = Content.shared.classDef("novice").skills

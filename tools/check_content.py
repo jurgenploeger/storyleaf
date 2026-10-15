@@ -800,6 +800,16 @@ for index, rule in enumerate(seals.get("tiers", []) + [seals.get("boss", {})], s
     check_items(rule.get("items"), where)
     for item_id in rule.get("items") or []:
         check(items.get(item_id, {}).get("capture") is True, f"{where} → {item_id} isn't a Seal Stone")
+
+# Treasure chests filled again (rewards.json `chests`): a while after you open one, gold for its
+# level and gear or one of its items.
+chest_rules = rewards.get("chests", {})
+check(isinstance(chest_rules.get("refillHours"), (int, float)) and chest_rules["refillHours"] > 0, "rewards chests refillHours → above 0")
+check(isinstance(chest_rules.get("goldPerLevel"), int) and chest_rules["goldPerLevel"] >= 0, "rewards chests goldPerLevel → a whole number, at least 0")
+check(isinstance(chest_rules.get("gearChance"), (int, float)) and 0 <= chest_rules["gearChance"] <= 1, "rewards chests gearChance → in [0, 1]")
+check(bool(chest_rules.get("items")), "rewards chests → needs items (what a chest holds when it's no gear)")
+check_items(chest_rules.get("items"), "rewards chests")
+
 gains = cards.get("gains", {})
 for element in sorted({m["element"] for m in monsters.values()}):
     check(element in gains, f"rewards cards gains → nothing for {element} monsters' cards")

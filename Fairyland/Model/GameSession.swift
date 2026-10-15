@@ -1019,8 +1019,17 @@ final class GameSession {
 
     // MARK: - Eggs & chests
 
+    /// Whether a chest stands open and empty: opened, and not filled again yet (`refillsAt`).
     func isOpened(_ chestID: String) -> Bool {
-        data.openedChests?.contains(chestID) == true
+        guard data.openedChests?.contains(chestID) == true else { return false }
+        return refillsAt(chestID).map { $0 > Date() } ?? false
+    }
+
+    /// When a chest you've opened has something new in it: `rewards.chests.refillHours` after you
+    /// last opened it. None for one opened before chests filled again (it's full already).
+    func refillsAt(_ chestID: String) -> Date? {
+        guard let opened = data.chestsOpenedAt?[chestID], let rules = content.rewards.chests else { return nil }
+        return opened.addingTimeInterval(rules.refillHours * 3600)
     }
 
     /// Whether a chest can be opened yet (its quest, if it has one, has to be accepted first).
@@ -1030,16 +1039,37 @@ final class GameSession {
         return data.quests[questID] != nil
     }
 
-    /// Opens a chest and returns the item inside.
+    /// Opens a chest and returns the item inside: the first time its own treasure (`gives`), and
+    /// each time it's filled again after that, gold and something new for its level (`refill`).
     @discardableResult
     func openChest(_ chest: NPCDef) -> ItemDef? {
-        guard canOpen(chest), let id = chest.gives, let item = content.item(id) else { return nil }
-        data.openedChests = (data.openedChests ?? []) + [chest.id]
+        guard canOpen(chest), let id = chest.gives, let treasure = content.item(id) else { return nil }
+        var found = treasure, gold = 0
+        if data.openedChests?.contains(chest.id) == true {
+            let filled = refill(level: treasure.level ?? data.hero.level)
+            guard let item = filled.item else { return nil }
+            found = item
+            gold = filled.gold
+        } else {
+            data.openedChests = (data.openedChests ?? []) + [chest.id]
+        }
+        addItem(found.id)
+        data.gold += gold
+        data.chestsOpenedAt = (data.chestsOpenedAt ?? [:]).merging([chest.id: Date()]) { $1 }
         SoundEffects.shared.play(.chest)
-        addItem(id)
         record(.collect, target: "gift_box")
-        post(L("Found {item} in the treasure chest!", ["item": item.name]), .reward)
-        return item
+        post(L("Found {item} in the treasure chest!", ["item": found.name]), .reward)
+        if gold > 0 { post(L("+{gold} gold", ["gold": gold]), .reward) }
+        return found
+    }
+
+    /// What a chest holds when it's filled again, for its `level` (its own treasure's): gold, and a
+    /// piece of gear around that level (`equipmentDrop`) `gearChance` of the time, else one of its
+    /// `items` (rewards.json `chests`).
+    private func refill(level: Int) -> (gold: Int, item: ItemDef?) {
+        guard let rules = content.rewards.chests else { return (0, nil) }
+        let gear = Double.random(in: 0..<1) < rules.gearChance ? equipmentDrop(level: level) : nil
+        return (rules.goldPerLevel * level, gear ?? rules.items.randomElement().flatMap(content.item))
     }
 
     /// Hatches an egg from the bag into a new companion.

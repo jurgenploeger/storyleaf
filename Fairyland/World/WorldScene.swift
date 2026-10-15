@@ -1837,7 +1837,7 @@ final class WorldScene: SKScene {
         }
         player.setTitle(session.wornTitle)
         player.setLabelColor(Self.nameColor(rebirths: session.rebirths))
-        player.setGear(weapon: session.equipped(.weapon), accessory: session.equipped(.accessory))
+        player.setWeapon(session.equipped(.weapon))
         heroKey = key
     }
 
@@ -1951,7 +1951,7 @@ final class WorldScene: SKScene {
             // No title over a friend's name: the party walks bunched up, so it would sit on the next one's
             // name. Their card still shows it.
             let node = Walker(cycle: art.walkCycle(session.artID(for: friend)), label: friend.name, labelColor: HUDStyle.partyGreen, badge: .bot)
-            node.setGear(weapon: GameSession.weapon(for: friend), accessory: nil)
+            node.setWeapon(GameSession.weapon(for: friend))
             node.walkSpeed = 105
             node.tagMode = .whenStill
             if let spot = friend.waitingAt {
@@ -2497,8 +2497,9 @@ final class WorldScene: SKScene {
         var nearest: (id: String, distance: CGFloat)?
         for npc in npcs {
             npc.node.isNear = npc.node.position.distance(to: player.position) < Walker.nameRange
-            if npc.def.role == .chest, session.isOpened(npc.def.id), npc.node.alpha > 0.5 {
-                npc.node.run(.fadeAlpha(to: 0.35, duration: 0.3))
+            // A chest stands faded while it's empty, and comes back as something new turns up in it.
+            if npc.def.role == .chest, session.isOpened(npc.def.id) == (npc.node.alpha > 0.5) {
+                npc.node.run(.fadeAlpha(to: session.isOpened(npc.def.id) ? 0.35 : 1, duration: 0.3))
             }
             if npc.def.role == .boss, session.isBeatenHere(npc.def) {
                 if !npc.node.isHidden {

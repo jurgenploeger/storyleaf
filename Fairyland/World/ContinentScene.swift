@@ -19,6 +19,10 @@ final class ContinentScene: SKScene {
     /// a land's ground is.
     private let groundGrid = SKNode()
     private let seaGrid = SKNode()
+    /// The bank of earth down from the land's edge to the sea, a layer a step lower each, and the
+    /// foam at its foot, the last (`bank`).
+    private let bankGrids = (0...ContinentScene.bankSteps).map { _ in SKNode() }
+    private static let bankSteps = 7
     private let cam = SKCameraNode()
     let player: Walker
     private let walkSpeed: CGFloat = 88
@@ -40,6 +44,8 @@ final class ContinentScene: SKScene {
         let squares: [GridPoint: [(painter: Int, corner: GridPoint)]]
         /// Its shore's cells, drawn sunk with it rather than flat (`WorldMap.shore`).
         let sunk: Set<GridPoint>
+        /// Whether it comes down to the sea anywhere, so has a bank along it (`drawBank`).
+        let coastal: Bool
         /// Its minimap, one pixel a cell (`WorldScene.overview`), made when it's first wanted; and
         /// remembered for the world map and the lands round it (`WorldOverview`).
         lazy var overview: CGImage = {
@@ -65,9 +71,13 @@ final class ContinentScene: SKScene {
             }
             self.squares = squares
             sunk = map.shore?.cells ?? []
+            coastal = map.shore != nil || map.ground.contains { $0.contains(.sea) }
         }
     }
     private var lands: [String: Land] = [:]
+    /// The lands with a chunk drawn round you: the ones whose people and animals go about and that
+    /// show (`update`). The rest wait, hidden, till you come near them again (`lookAround`).
+    private var nearLands: Set<String> = []
     /// The lands wanted laid out, by how far off they are (in chunks from the camera's; the land
     /// you're put in or stand in first), laid out one at a time, nearest first (`buildWanted`); and
     /// the one being laid out now.
@@ -80,6 +90,8 @@ final class ContinentScene: SKScene {
         let sea: SKNode
         let things = SKNode()
         var placeholders: [String: SKNode] = [:]
+        /// The bank along the coast and the foam at its foot, a layer a step (`bankGrids`).
+        var banks: [SKNode] = []
 
         init(sea: SKNode) {
             self.sea = sea
@@ -105,8 +117,10 @@ final class ContinentScene: SKScene {
     /// slices till they're in.
     var hurries = false
     private let seaTile = "raw:tile_water"
-    /// Squares of hills and shore waiting to be drawn (nearest first), and whether they're being drawn.
+    /// Squares of hills and shore waiting to be drawn (nearest first), and whether they're being drawn;
+    /// and a chunk's bank along the sea (`bankJob` for its painter).
     private var waiting: [(chunk: GridPoint, land: String, painter: Int, corner: GridPoint)] = []
+    private static let bankJob = -1
     private var painting = false
     /// When the work under way last had the frame back (`breathe`).
     private var sliceStart = ContinuousClock.now
@@ -165,6 +179,9 @@ final class ContinentScene: SKScene {
     /// Lands laid out already (`adopt`: the one a save starts in, laid out off the main thread as
     /// the game opened), taken instead of laying them out again.
     private var laidOut: [String: WorldMap] = [:]
+    /// The next land's layout under way off the main thread while this one's planned and drawn on
+    /// it (`layOutNext`), so one land's layout needn't wait for the last land's drawing.
+    private var layingOut: (id: String, task: Task<WorldMap, Never>)?
     private var pinchStartZoom: CGFloat = 1
     private lazy var pinch = UIPinchGestureRecognizer(target: self, action: #selector(pinched(_:)))
 
@@ -185,6 +202,15 @@ final class ContinentScene: SKScene {
         let groundLayer = Self.projected(groundGrid)
         groundLayer.zPosition = -100_000
         layer.addChild(groundLayer)
+        // Each lower than the last, the foam just below the bottom one, all under the land
+        // (`WorldScene.bank`).
+        for (step, grid) in bankGrids.enumerated() {
+            let bank = Self.projected(grid)
+            let foam = step == Self.bankSteps
+            bank.position.y = foam ? -WorldMap.seaDrop - 1.5 : -WorldMap.seaDrop * CGFloat(step + 1) / CGFloat(Self.bankSteps)
+            bank.zPosition = -100_000.1 - 0.05 * CGFloat(step)
+            layer.addChild(bank)
+        }
         addChild(layer)
         player.tagMode = .whenStill
         player.fidgets = true
@@ -378,8 +404,8 @@ final class ContinentScene: SKScene {
         }
         player.settle()
         cam.position = player.position + CGVector(dx: 0, dy: player.lift)
-        for land in lands.values {
-            land.stage.update(dt: dt, player: player.position, camera: cam.position, scale: cam.xScale, screen: size)
+        for id in nearLands {
+            lands[id]?.stage.update(dt: dt, player: player.position, camera: cam.position, scale: cam.xScale, screen: size)
         }
         updateAir(dt)
         if currentTime - lookedAround > 0.25 {
@@ -460,8 +486,17 @@ final class ContinentScene: SKScene {
         }
         player.path = points
         if marked, let end = points.last {
-            Effects.tapMarker(at: end + CGVector(dx: 0, dy: groundHeight(at: end)), in: layer)
+            Effects.tapMarker(at: end + CGVector(dx: 0, dy: groundHeight(at: end)), z: markZ(at: end), in: layer)
         }
+    }
+
+    /// How deep the tap's swirl at `point` sorts: over a hill, the sunk shore or a terrace's top, as
+    /// the land there has it (`LandStage.markZ`), or they'd hide it; elsewhere under everything that
+    /// stands.
+    private func markZ(at point: CGPoint) -> CGFloat {
+        guard let owner = store.land(at: Self.cell(at: point)), let land = lands[owner.id],
+              let z = land.stage.markZ(at: land.stage.local(point)) else { return -50_000 }
+        return z - land.shift.dy
     }
 
     /// Once you're near enough whoever you were walking up to, their window opens; if you stop short
@@ -751,7 +786,7 @@ final class ContinentScene: SKScene {
                 return existing
             }
             let node = Walker(cycle: art.walkCycle(session.artID(for: friend)), label: friend.name, labelColor: HUDStyle.partyGreen, badge: .bot)
-            node.setGear(weapon: GameSession.weapon(for: friend), accessory: nil)
+            node.setWeapon(GameSession.weapon(for: friend))
             node.walkSpeed = 105
             node.tagMode = .whenStill
             if let spot = friend.waitingAt, let there = point(for: spot, index: index) {
@@ -836,7 +871,7 @@ final class ContinentScene: SKScene {
         }
         player.setTitle(session.wornTitle)
         player.setLabelColor(WorldScene.nameColor(rebirths: session.rebirths))
-        player.setGear(weapon: session.equipped(.weapon), accessory: session.equipped(.accessory))
+        player.setWeapon(session.equipped(.weapon))
         heroKey = key
     }
 
@@ -1159,7 +1194,7 @@ final class ContinentScene: SKScene {
         // The lands' people: their quest marks, townsfolk watching you pass, and who's near enough to
         // talk to (the HUD's Talk button); and the adventurers about you in the land you're in.
         var nearest: (land: String, npc: NPCDef, distance: CGFloat)?
-        for land in lands.values {
+        for land in nearLands.compactMap({ lands[$0] }) {
             guard let near = land.stage.updateNotices(player: player.position, reach: talkRange + 12),
                   near.distance < (nearest?.distance ?? .infinity) else { continue }
             nearest = (land.def.id, near.npc, near.distance)
@@ -1178,8 +1213,15 @@ final class ContinentScene: SKScene {
                 gone.ground.removeFromParent()
                 gone.sea.removeFromParent()
                 gone.things.removeFromParent()
+                gone.banks.forEach { $0.removeFromParent() }
                 waiting.removeAll { $0.chunk == chunk }
             }
+        }
+        // Only the lands round you go about their lives; those far off wait, out of sight.
+        nearLands = Set(chunks.keys.flatMap { owners(of: $0) })
+        for (id, land) in lands where land.stage.world.isHidden == nearLands.contains(id) {
+            land.stage.world.isHidden = !nearLands.contains(id)
+            land.stage.world.isPaused = !nearLands.contains(id)
         }
     }
 
@@ -1229,9 +1271,21 @@ final class ContinentScene: SKScene {
         let map: WorldMap
         if let ready = laidOut.removeValue(forKey: id) {
             map = ready
+        } else if let ahead = layingOut, ahead.id == id {
+            layingOut = nil
+            map = await ahead.task.value
         } else {
+            // One laid out ahead that isn't wanted first after all is kept for when it is.
+            if let ahead = layingOut {
+                layingOut = nil
+                Task { [weak self] in
+                    let map = await ahead.task.value
+                    if self?.lands[ahead.id] == nil { self?.laidOut[ahead.id] = map }
+                }
+            }
             map = await GameCoordinator.layOut(def)
         }
+        layOutNext(after: id)
         let rest = pause(for: def)
         art.use(palette: def.theme.palette, for: def.id)
         let planner = LandPlanner(def: def, map: map, art: art)
@@ -1263,6 +1317,16 @@ final class ContinentScene: SKScene {
         // Its minimap for the world map (`WorldOverview`), so that needn't lay it out again.
         await rest()
         _ = land.overview
+    }
+
+    /// Starts laying out the nearest land wanted after `id` (`wanted`), off the main thread, while
+    /// `id`'s is planned and drawn on it.
+    private func layOutNext(after id: String) {
+        guard layingOut == nil,
+              let next = wanted.filter({ $0.key != id && lands[$0.key] == nil && laidOut[$0.key] == nil })
+                  .min(by: { ($0.value, $0.key) < ($1.value, $1.key) })?.key,
+              let def = Content.shared.map(next) else { return }
+        layingOut = (next, Task { await GameCoordinator.layOut(def) })
     }
 
     /// A pause in work on `def`'s land: gives the frame back once the work's had it a while, then
@@ -1348,9 +1412,11 @@ final class ContinentScene: SKScene {
     }
 
     /// Draws a land's squares of hills and shore in a chunk, nearest the camera first, in the
-    /// background: each lifts itself and is sorted among what stands there (`HillArt`).
+    /// background: each lifts itself and is sorted among what stands there (`HillArt`). Then its
+    /// bank along the sea there (`drawBank`), its tiles made by then for the shore's squares.
     private func paintSquares(of land: Land, in chunk: GridPoint) {
         for square in land.squares[chunk] ?? [] { waiting.append((chunk, land.def.id, square.painter, square.corner)) }
+        if land.coastal, owners(of: chunk).contains(land.def.id) { waiting.append((chunk, land.def.id, Self.bankJob, chunk)) }
         guard !painting, !waiting.isEmpty else { return }
         painting = true
         Task { [weak self] in await self?.paintWaiting() }
@@ -1362,7 +1428,13 @@ final class ContinentScene: SKScene {
             func away(_ chunk: GridPoint) -> Int { max(abs(chunk.col - here.col), abs(chunk.row - here.row)) }
             guard let next = waiting.indices.min(by: { away(waiting[$0].chunk) < away(waiting[$1].chunk) }) else { break }
             let job = waiting.remove(at: next)
-            guard let things = chunks[job.chunk]?.things, let land = lands[job.land] else { continue }
+            guard let drawn = chunks[job.chunk], let land = lands[job.land] else { continue }
+            if job.painter == Self.bankJob {
+                drawBank(of: land, in: drawn, at: job.chunk)
+                await breathe()
+                continue
+            }
+            let things = drawn.things
             art.use(palette: land.def.theme.palette, for: land.def.id)
             let sprites = await land.painters[job.painter].draw(job.corner, self.pause(for: land.def))
             // Unless the chunk's been let go meanwhile (and maybe drawn again, with its own).
@@ -1409,7 +1481,8 @@ final class ContinentScene: SKScene {
     }
 
     /// A land's cells in a chunk drawn, with its tiles graded with its palette, in place of its
-    /// ground's colour. Its shore's drawn sunk, with its hills (`paintSquares`).
+    /// ground's colour. Its shore's drawn sunk, with its hills, and its bank along the sea after
+    /// them (`paintSquares`).
     private func show(_ land: Land, in drawn: Chunk, at chunk: GridPoint) {
         drawn.placeholders.removeValue(forKey: land.def.id)?.removeFromParent()
         let size = World.chunkSize, tile = WorldMap.tileSize
@@ -1429,6 +1502,44 @@ final class ContinentScene: SKScene {
         ground.anchorPoint = .zero
         for pick in picks { ground.setTileGroup(pick.group, forColumn: pick.col, row: pick.row) }
         drawn.ground.addChild(ground)
+    }
+
+    /// The bank of earth along a land's edge over the sea in a chunk, as its own scene draws it
+    /// (`WorldScene.bank`): its cells within two of the sea, with the tiles they show (cut along
+    /// it), drawn again a little lower each time, in layers of soil darkening toward the water, and
+    /// a line of foam at its foot. Under the land, so it shows only where its edge faces you. Where
+    /// the land slopes down to the sea (`WorldMap.shore`), only the foam, at the water's edge.
+    private func drawBank(of land: Land, in drawn: Chunk, at chunk: GridPoint) {
+        let size = World.chunkSize, tile = WorldMap.tileSize, steps = Self.bankSteps
+        let origin = GridPoint(col: chunk.col * size, row: chunk.row * size)
+        art.use(palette: land.def.theme.palette, for: land.def.id)
+        var cells: [(col: Int, row: Int, group: SKTileGroup)] = []
+        var groups: [ObjectIdentifier: SKTileGroup] = [:]
+        for cell in World.cells(in: chunk) where store.land(at: cell)?.id == land.def.id {
+            let pick = land.tiles.pick(store.local(cell, in: land.place))
+            guard pick.nearSea, let group = pick.group else { continue }
+            cells.append((cell.col - origin.col, cell.row - origin.row, group))
+            groups[ObjectIdentifier(group)] = group
+        }
+        guard !cells.isEmpty else { return }
+        let tiles = SKTileSet(tileGroups: Array(groups.values))
+        let soil = (r: CGFloat(0.43), g: CGFloat(0.32), b: CGFloat(0.22))
+        // The land's own ground colour leans the soil its way (sandy under sand, grey under scree).
+        let ground = WorldScene.groundColor(of: land.def, art: art)
+        let top = (r: soil.r * 0.6 + ground.0 * 0.3, g: soil.g * 0.6 + ground.1 * 0.3, b: soil.b * 0.6 + ground.2 * 0.3)
+        for step in (land.map.shore != nil ? steps : 0)...steps {
+            let foam = step == steps
+            let shade = 1 - 0.45 * CGFloat(step) / CGFloat(steps - 1)
+            let outline = SKTileMapNode(tileSet: tiles, columns: size, rows: size, tileSize: CGSize(width: tile, height: tile))
+            outline.anchorPoint = .zero
+            outline.position = CGPoint(x: CGFloat(origin.col) * tile, y: CGFloat(origin.row) * tile)
+            for cell in cells { outline.setTileGroup(cell.group, forColumn: cell.col, row: cell.row) }
+            outline.color = foam ? .white : UIColor(red: top.r * shade, green: top.g * shade, blue: top.b * shade, alpha: 1)
+            outline.colorBlendFactor = 1
+            outline.alpha = foam ? 0.5 : 1
+            bankGrids[step].addChild(outline)
+            drawn.banks.append(outline)
+        }
     }
 
     /// A land's cells in a chunk in its ground's colour, till it's laid out (`show`): no sea where
