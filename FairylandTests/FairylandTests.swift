@@ -3185,10 +3185,10 @@ struct LayoutStepTests {
     @Test func layoutSteps() throws {
         for id in ["frog_swamp", "goldburg_lake", "smiling_forest"] {
             let def = try #require(Content.shared.map(id))
-            var steps: [(step: String, time: Duration)] = []
-            WorldMap.timing = { steps.append(($0, $1)) }
+            WorldMap.timings = []
             _ = WorldMap(def: def)
-            WorldMap.timing = nil
+            let steps = WorldMap.timings ?? []
+            WorldMap.timings = nil
             let total = steps.reduce(Duration.zero) { $0 + $1.time }
             let slowest = steps.sorted { $0.time > $1.time }.map { "\($0.step) \($0.time)" }.joined(separator: ", ")
             print("⏱ \(id) laid out in \(total): \(slowest)")

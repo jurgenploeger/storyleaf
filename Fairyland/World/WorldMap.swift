@@ -219,9 +219,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
         var lapped = clock.now
         // Each step's time, for the tests (`timing`).
         func lap(_ step: String) {
-            guard let timing = WorldMap.timing else { return }
+            guard WorldMap.timings != nil else { return }
             let now = clock.now
-            timing(step, now - lapped)
+            WorldMap.timings?.append((step, now - lapped))
             lapped = now
         }
         self.def = def
@@ -327,9 +327,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
         lap("link graph")
     }
 
-    /// Tests only: told how long each step of a layout took, by step (`PerformanceTests`), to find
-    /// where the time goes.
-    nonisolated(unsafe) static var timing: ((String, Duration) -> Void)?
+    /// Tests only: how long each step of a layout took, in order, while it's set (`LayoutStepTests`),
+    /// to find where the time goes.
+    nonisolated(unsafe) static var timings: [(step: String, time: Duration)]?
 
     /// Over the land's box, the cells that aren't its own (`Region`) are the sea's or a land next
     /// door's: nothing of this land's goes there, and you can't walk there from it (you walk over
