@@ -637,7 +637,7 @@ final class StoryScene: SKScene {
         let hero = patch.walker("player_walk", 11, 4.5, facing: .left, label: L("Hero"))
         hero.tagMode = .whenStill
         hero.fidgets = true
-        if staff { hero.setGear(weapon: content.item("oak_staff"), accessory: nil) }
+        if staff { hero.setWeapon(content.item("oak_staff")) }
         let pet = patch.walker(content.monster(species)?.art ?? "pet_walk", 10.4, 3.9, facing: .left, label: content.monster(species)?.name)
         pet.tagMode = .whenClear
         pet.walkSpeed = 110
@@ -749,7 +749,7 @@ final class StoryScene: SKScene {
         let hero = meadow.walker("player_walk", 6, 10, facing: .right, label: L("Hero"))
         hero.tagMode = .whenStill
         hero.fidgets = true
-        hero.setGear(weapon: content.item("oak_staff"), accessory: nil)
+        hero.setWeapon(content.item("oak_staff"))
         let pet = meadow.walker(content.monster("pineapple")?.art ?? "monster_pineapple", 5.2, 9.6, facing: .right,
                                 label: content.monster("pineapple")?.name)
         pet.tagMode = .whenClear
@@ -958,7 +958,7 @@ final class StoryScene: SKScene {
         for id in ids {
             guard let fighter = Self.fighter(id), let place = Self.places[id] else { continue }
             let actor = BattleActor(fighter: fighter, art: art)
-            if id == 0 { actor.setGear(weapon: Content.shared.item("oak_staff"), accessory: nil) }
+            if id == 0 { actor.setWeapon(Content.shared.item("oak_staff")) }
             actor.place(at: place, facing: id >= 10 ? .right : .left)
             battleStage.addChild(actor)
             actors[id] = actor

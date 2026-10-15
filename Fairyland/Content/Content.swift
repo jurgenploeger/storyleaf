@@ -971,12 +971,22 @@ nonisolated struct RewardsDef: Decodable, Sendable {
         let tiers: [Rule]
         let boss: Rule
     }
+    /// Treasure chests filled again (`GameSession.openChest`): `refillHours` after you last opened
+    /// one, with gold as `goldPerLevel` × its level (its own treasure's) and one thing: a piece of
+    /// gear around that level `gearChance` of the time, else one of `items` (repeats weigh more).
+    nonisolated struct Chests: Decodable, Sendable {
+        let refillHours: Double
+        let goldPerLevel: Int
+        let gearChance: Double
+        let items: [String]
+    }
     let dailyGifts: [Gift]
     let bounties: Bounties
     let quests: Quests
     let bookMilestones: [Milestone]
     let cards: Cards
     let seals: Seals
+    let chests: Chests?
 }
 
 /// One entry in content/changelog.json, shown under "What's new" on the title screen.

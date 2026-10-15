@@ -144,16 +144,12 @@ final class Walker: SKNode {
         turn.xScale = cycle.mirrors && goingRight != cycle.facesRight ? -1 : 1
     }
 
-    /// Shows the weapon in hand and an accessory's sparkle.
-    func setGear(weapon: ItemDef?, accessory: ItemDef?) {
+    /// Shows the weapon in hand.
+    func setWeapon(_ weapon: ItemDef?) {
         sprite.childNode(withName: "weapon")?.removeFromParent()
-        body.childNode(withName: "aura")?.removeFromParent()
         if let weapon, let node = GearArt.weapon(weapon, height: cycle.size.height) {
             Self.lit(node)
             sprite.addChild(node)
-        }
-        if let accessory, let aura = GearArt.aura(accessory, height: cycle.size.height) {
-            addChild(aura)
         }
         // From the walk's first frame, the weapon in step with it.
         animate()

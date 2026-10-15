@@ -112,8 +112,10 @@ nonisolated struct SaveData: Codable, Sendable {
     var position: [Double]?
     /// When this hero's story began; drives the in-game calendar.
     var startedAt: Date?
-    /// Gift boxes already opened.
+    /// Gift boxes and treasure chests opened (their own treasure given), and when each chest was
+    /// last opened (it fills again a while after, `GameSession.refillsAt`).
     var openedChests: [String]?
+    var chestsOpenedAt: [String: Date]?
     /// What will hatch from the pet egg (from the elder's question).
     var eggSpecies: String?
     /// Where you wake up after fainting.

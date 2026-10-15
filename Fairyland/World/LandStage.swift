@@ -155,8 +155,9 @@ final class LandStage {
         var nearest: (npc: NPCDef, distance: CGFloat)?
         for npc in npcs {
             npc.node.isNear = npc.node.position.distance(to: you) < Walker.nameRange
-            if npc.def.role == .chest, session.isOpened(npc.def.id), npc.node.alpha > 0.5 {
-                npc.node.run(.fadeAlpha(to: 0.35, duration: 0.3))
+            // A chest stands faded while it's empty, and comes back as something new turns up in it.
+            if npc.def.role == .chest, session.isOpened(npc.def.id) == (npc.node.alpha > 0.5) {
+                npc.node.run(.fadeAlpha(to: session.isOpened(npc.def.id) ? 0.35 : 1, duration: 0.3))
             }
             if npc.def.role == .boss, session.isBeatenHere(npc.def) {
                 if !npc.node.isHidden {
@@ -364,6 +365,15 @@ final class LandStage {
         if map.hillIndex(at: cell) != nil { return HillArt.strip(at: point.y).z + 0.2 }
         if map.isSunken(cell) { return HillArt.strip(at: point.y, depth: HillArt.sunkenDepth).z + 0.2 }
         return nil
+    }
+
+    /// How deep a tap's swirl lying flat at `point` sorts, in the land's own depth, as
+    /// `WorldScene.flatZ` has it: over the hill or the sunk shore it lies on, or a terrace's top;
+    /// nil elsewhere, under everything that stands.
+    func markZ(at point: CGPoint) -> CGFloat? {
+        if let z = flatZ(at: point) { return z }
+        let cell = map.cell(at: point)
+        return map.plateaus.first { $0.cells.contains(cell) }.map { Self.topZ(of: $0.cells) + 0.2 }
     }
 
     // MARK: What it sets down

@@ -169,7 +169,7 @@ final class Crowd {
         let walker = Self.person(profile.name, art: GameSession.registerAdventurer(profile),
                                  color: profile.hostile ? Self.hostileColor : Self.adventurerColor, badge: .bot)
         // A weapon in hand for their class and level, like yours (`GameSession.weapon(for:)`).
-        walker.setGear(weapon: GameSession.weapon(for: profile), accessory: nil)
+        walker.setWeapon(GameSession.weapon(for: profile))
         walker.setTitle(GameSession.botTitle(level: profile.level, id: profile.id))
         walker.walkSpeed = .random(in: 72...92)
         add(Member(name: profile.name, kind: .adventurer, walker: walker, pet: Self.pet(profile.petSpecies), home: home, roam: roam,
@@ -203,7 +203,7 @@ final class Crowd {
                         skin: def.skin ?? skin ?? Look.standard.skin, gender: def.gender ?? gender, style: def.style ?? style)
         let art = GameSession.registerPerson(race: def.race ?? race ?? "human", look: look, armor: def.wear.flatMap(content.item))
         let walker = Self.person(def.name, art: art, color: .white)
-        walker.setGear(weapon: def.hold.flatMap(content.item), accessory: nil)
+        walker.setWeapon(def.hold.flatMap(content.item))
         walker.walkSpeed = .random(in: 44...56, using: &draw)
         let facing = def.face.flatMap(Direction.init(rawValue:))
         add(Member(name: def.name, kind: .villager, walker: walker, pet: Self.pet(def.pet), home: local.home, roam: def.roam ?? 0,
