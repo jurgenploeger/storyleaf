@@ -45,6 +45,18 @@ struct LandPlan {
     var props: [Placement] = []
     var seamProps: [Placement] = []
     var signposts: [(exit: MapDef.Exit, cell: GridPoint)] = []
+    /// What lines stretches of its roads (`LandPlanner.planRoadsides`). A row's props are among
+    /// `props`.
+    var roadsides: [RoadsideLine] = []
+}
+
+/// A stretch of a land's road lined (`LandPlanner.planRoadsides`): a picket fence, a low wall, or a
+/// row of its props, on the cells beside the road.
+struct RoadsideLine {
+    enum Kind: String { case fence, wall, row }
+    let kind: Kind
+    /// The cells beside the road it stands on, one after another along it.
+    let cells: [GridPoint]
 }
 
 /// Decides where a land's scenery goes, taking the cells it stands on (`WorldMap.occupy`), in the
@@ -81,8 +93,11 @@ final class LandPlanner {
         planLocals()
     }
 
-    /// The rest: fairy rings, outcrops, the theme's props and the lands next door's, and signposts.
+    /// The rest: what lines its roads, fairy rings, outcrops, the theme's props and the lands next
+    /// door's, and signposts.
     func planTheRest(pause: () async -> Void) async {
+        planRoadsides()
+        await pause()
         planFairyRings()
         planOutcrops()
         await pause()
@@ -207,6 +222,140 @@ final class LandPlanner {
             map.occupy(home, blocking: false)
             let walk = local.walk.flatMap { map.spot(of: $0) }
             plan.locals.append(Crowd.Local(def: local, index: index, home: home, walk: walk))
+        }
+    }
+
+    #if DEBUG
+    /// Debug launches only (`roadside=`): the plan up to what lines the roads, at once, in the
+    /// order `planUpToLocals` and `planTheRest` take it (without their pauses).
+    func planRoadsidesForDebug() -> [RoadsideLine] {
+        planLilyPads()
+        occupyBridgeBanks()
+        planReeds()
+        occupyFence()
+        planBuildings()
+        planDecor()
+        planNPCs()
+        planLocals()
+        planRoadsides()
+        return plan.roadsides
+    }
+    #endif
+
+    /// How many cells a lined stretch of road runs, fewest to most.
+    private static let roadsideLength = 4...10
+    /// The chance each stretch of a road's straight edge is lined, where it could be.
+    private static let roadsideShare = 0.3
+    /// How far in from the lands next door a road's lined, in cells: clear of the band where the
+    /// ground gives way to theirs, so no fence stops short at the border.
+    private static let roadsideBorderGap = 6.0
+
+    /// Stretches of the land's roads lined here and there (`theme.roadside`; playtesting
+    /// 2026-10-15: roads with fences, walls or other scenery along them): along a straight edge of
+    /// a road, a picket fence, a low wall of field stones, or a row of one of the land's own props (a
+    /// hedge of bushes, an avenue of trees, lanterns), on the cells beside it. Only along a road
+    /// wider than a footpath, on open ground with nothing on it, off the hills and the shore, and
+    /// well in from the lands next door and the roads' crossings (where the signposts stand). A
+    /// cell's kept clear either end, and behind it, so you can always step off the road round it.
+    /// Its own stream ("/roadside"), so the draws for everything else stay as they were.
+    private func planRoadsides() {
+        guard let kinds = def.theme.roadside, !kinds.isEmpty, def.town == nil, def.theme.cave == nil else { return }
+        let total = kinds.reduce(0.0) { $0 + max(0, $1.weight ?? 1) }
+        guard total > 0 else { return }
+        var random = SeededRandom(text: def.id + "/roadside")
+        let crossings = map.region?.roads.values.map(\.at) ?? []
+        func isRoad(_ cell: GridPoint) -> Bool {
+            map.owns(cell) && map.ground[cell.row][cell.col] == .path
+        }
+        func isOpen(_ cell: GridPoint) -> Bool {
+            guard map.owns(cell), map.isFreeForScenery(cell), map.foreign[cell] == nil,
+                  map.hillIndex(at: cell) == nil, !map.isSunken(cell) else { return false }
+            switch map.ground[cell.row][cell.col] {
+            case .ground, .accent, .border: break
+            default: return false
+            }
+            if map.seams.contains(where: { ($0.side(cell) ?? .infinity) < Self.roadsideBorderGap }) { return false }
+            return !crossings.contains { max(abs($0.col - cell.col), abs($0.row - cell.row)) < 8 }
+        }
+        /// Whether `cell` is beside the road on its `side`: the road at least two cells deep the
+        /// other way, and open ground on it and behind it.
+        func besideRoad(_ cell: GridPoint, _ side: Edge) -> Bool {
+            isRoad(cell.stepped(side.opposite)) && isRoad(cell.stepped(side.opposite, by: 2)) && isOpen(cell) && isOpen(cell.stepped(side))
+        }
+        func pick() -> MapDef.Roadside {
+            var left = Double.random(in: 0..<total, using: &random)
+            for kind in kinds {
+                left -= max(0, kind.weight ?? 1)
+                if left < 0 { return kind }
+            }
+            return kinds[kinds.count - 1]
+        }
+        /// Sets `kind` down on `cells`, beside the road one after another.
+        func line(_ cells: [GridPoint], with kind: MapDef.Roadside) {
+            guard kind.kind == "row" else {
+                for cell in cells { map.occupy(cell, blocking: true) }
+                plan.roadsides.append(RoadsideLine(kind: kind.kind == "wall" ? .wall : .fence, cells: cells))
+                return
+            }
+            guard let art = kind.art, let prop = def.theme.props.first(where: { $0.art == art }) else { return }
+            plan.roadsides.append(RoadsideLine(kind: .row, cells: cells))
+            let every = max(1, kind.every ?? 1)
+            // One size down the row, as if planted together: the middle of the prop's sizes.
+            let sizes = prop.size.flatMap { $0.count == 2 && $0[0] <= $0[1] ? $0 : nil } ?? [1, 1]
+            let size = (sizes[0] + sizes[1]) / 2
+            for (index, cell) in cells.enumerated() {
+                guard index % every == 0 else {
+                    map.occupy(cell, blocking: false)
+                    continue
+                }
+                map.occupy(cell, blocking: prop.blocking)
+                var planted = Placement(art: art, cell: cell, scale: CGFloat(size * Double.random(in: 0.95...1.05, using: &random)))
+                planted.prop = prop
+                if prop.sway == true {
+                    let duration = TimeInterval.random(in: 1.8...2.8, using: &random)
+                    let lean = CGFloat.random(in: 0.018...0.03, using: &random)
+                    planted.sway = Placement.Sway(duration: duration, lean: lean, start: CGFloat.random(in: -lean...lean, using: &random))
+                }
+                if let hex = prop.glow, UIColor(hex: hex) != nil {
+                    planted.glow = (alpha: CGFloat.random(in: 0.3...0.45, using: &random), duration: Double.random(in: 1.4...2.6, using: &random))
+                }
+                plan.props.append(planted)
+            }
+        }
+        /// Lines stretches of `run`, the cells beside a road's straight edge on its `side`, here and
+        /// there, keeping a cell clear before each and after (and behind those).
+        func lineStretches(of run: [GridPoint], _ side: Edge) {
+            var start = 1
+            while start + Self.roadsideLength.lowerBound < run.count {
+                let longest = min(Self.roadsideLength.upperBound, run.count - 1 - start)
+                let length = Int.random(in: Self.roadsideLength.lowerBound...longest, using: &random)
+                if Double.random(in: 0..<1, using: &random) < Self.roadsideShare {
+                    for end in [run[start - 1], run[start + length]] {
+                        map.occupy(end, blocking: false)
+                        map.occupy(end.stepped(side), blocking: false)
+                    }
+                    line(Array(run[start..<(start + length)]), with: pick())
+                }
+                start += length + Int.random(in: 3...8, using: &random)
+            }
+        }
+        for side in [Edge.north, .east, .south, .west] {
+            // The cells beside the road on this side run along a row (north or south of it) or a
+            // column.
+            let eastward = side == .north || side == .south
+            let length = eastward ? map.columns : map.rows
+            for across in 0..<(eastward ? map.rows : map.columns) {
+                var run: [GridPoint] = []
+                for along in 0...length {
+                    let cell = eastward ? GridPoint(col: along, row: across) : GridPoint(col: across, row: along)
+                    if along < length, besideRoad(cell, side) {
+                        run.append(cell)
+                        continue
+                    }
+                    if run.count >= Self.roadsideLength.lowerBound + 2 { lineStretches(of: run, side) }
+                    run = []
+                }
+            }
         }
     }
 

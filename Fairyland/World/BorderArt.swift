@@ -239,6 +239,47 @@ enum BorderArt {
         return palette.flatMap { Recolor.grade($0, image: image) } ?? image
     }
 
+    /// How tall a low wall along a road stands (`lowWallPicture`), in points.
+    static let lowWallHeight: CGFloat = 13
+
+    /// One cell's stretch of a low wall of field stones along a road (`LandPlanner.planRoadsides`),
+    /// face on, to be slanted along its line (`TownFence.pieces`): a row of slabs set on edge along
+    /// its top, two courses of rounded stones of the town wall's grey, unevenly long, and a darker
+    /// foot with moss. Its pattern repeats every 32 pixels, so stretches run on as one wall.
+    static func lowWallPicture(palette: MapPalette?) -> CGImage? {
+        var canvas = PixelCanvas(width: 32, height: 14)
+        // The coping: slabs on edge, two wide with a joint between, every other one a shade darker.
+        canvas.fill(0, 0, 32, 3, mortar)
+        for x in stride(from: 0, to: 32, by: 3) {
+            let slab = blocks[(x / 3) % 2 == 0 ? 0 : 1]
+            canvas.fill(x, 0, 2, 3, slab)
+            canvas[x, 0] = lip
+        }
+        // Two courses of rounded stones, their joints apart from course to course.
+        canvas.fill(0, 3, 32, 9, mortar)
+        let courses: [(y: Int, height: Int, widths: [Int])] = [(3, 4, [7, 5, 8, 6, 6]), (8, 4, [4, 8, 6, 7, 7])]
+        for (number, course) in courses.enumerated() {
+            var x = 0
+            for (index, width) in course.widths.enumerated() {
+                let stone = blocks[(number + index) % blocks.count]
+                canvas.fill(x, course.y, width - 1, course.height, stone)
+                canvas.fill(x, course.y, width - 1, 1, stone.shaded(1.15))
+                // Rounded: the corners in the joints' shade.
+                for (cx, cy) in [(x, course.y), (x + width - 2, course.y), (x, course.y + course.height - 1), (x + width - 2, course.y + course.height - 1)] {
+                    canvas[cx, cy] = mortar
+                }
+                x += width
+            }
+        }
+        canvas.fill(0, 12, 32, 2, foot)
+        for x in [1, 2, 9, 17, 18, 25, 30] {
+            canvas[x, 11] = moss
+            canvas[x, 12] = moss
+        }
+        let image = canvas.cgImage()
+        return palette.flatMap { Recolor.grade($0, image: image) } ?? image
+    }
+
     /// A round tower of the same stone, standing up from the wall: battlements, an arrow slit, its
     /// right side in shade.
     static func towerPicture(palette: MapPalette?) -> CGImage? {

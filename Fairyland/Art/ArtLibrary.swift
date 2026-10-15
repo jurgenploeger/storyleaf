@@ -295,12 +295,26 @@ final class ArtLibrary {
         /// A land next door's tile, graded with its palette as it is there, not this land's: its
         /// ground in patches across the band between the two (`Seam`).
         var from: Foreign? = nil
+        /// A road taking on the land next door's road across the band (`Fade`).
+        var fade: Fade? = nil
     }
 
     /// A land next door, for its tiles (`GroundLayer.from`).
     nonisolated struct Foreign: Sendable {
         let land: String
         let palette: MapPalette?
+    }
+
+    /// A road across the band between two lands (`Seam`): the land next door's road tile, graded as
+    /// it is there, mixed into this land's by `share` (0...1), so the road changes look a little at
+    /// a time instead of all at once at the border.
+    nonisolated struct Fade: Sendable {
+        let tile: String
+        let from: Foreign
+        let share: Double
+
+        /// What tells one fade from another in a texture's key.
+        var key: String { "\(from.land)~\(tile)~\(share)" }
     }
 
     /// One of four versions of a tile (0 is the tile itself). The others show the texture shifted
@@ -379,6 +393,31 @@ final class ArtLibrary {
         return texture
     }
 
+    /// Version `variant` of this land's tile `id` with a land next door's mixed in (`Fade`), for a
+    /// road cell all road across the band between them.
+    func fadedTile(_ id: String, fade: Fade, variant: Int) -> SKTexture {
+        let key = "faded|\(id)|\(fade.key)|\(variant % 4)"
+        if let cached = blended[key] { return cached }
+        let size = max(tileImage(id).width, 16)
+        let texture = makeTexture(fadedPixels(id, fade: fade, variant: variant, size: size), size: size)
+        blended[key] = texture
+        return texture
+    }
+
+    /// This land's tile `id` and the land next door's (`fade`) mixed, pixel by pixel.
+    private func fadedPixels(_ id: String, fade: Fade, variant: Int, size: Int) -> [UInt8] {
+        let own = variantPixels(id, variant, size: size)
+        let theirs = foreignPixels(fade.tile, palette: fade.from.palette, from: fade.from.land, variant: variant, size: size)
+        guard own.count == theirs.count else { return own }
+        let share = min(1, max(0, fade.share))
+        var out = own
+        for index in out.indices {
+            let mixed: Double = Double(own[index]) * (1 - share) + Double(theirs[index]) * share
+            out[index] = UInt8(min(255, mixed.rounded()))
+        }
+        return out
+    }
+
     /// A ground tile with soft, rounded roads, patches and water drawn over `base`. Roads and
     /// patches are rounded strokes joining the cells around this one that hold them, so corners
     /// curve and diagonal steps become smooth bends; their edges wobble in a pattern that repeats
@@ -390,7 +429,7 @@ final class ArtLibrary {
     func organicTile(base: String, layers: [GroundLayer], cell: GridPoint, variant: Int) -> SKTexture {
         let hasWater = layers.contains { $0.style == .water || $0.style == .cut }
         let place = hasWater ? "@\(cell.col),\(cell.row)#\(variant)" : ""
-        let key = "organic|\(base)|" + layers.map { "\($0.tile):\($0.mask):\($0.style):\($0.from?.land ?? "")" }.joined(separator: "|") + place
+        let key = "organic|\(base)|" + layers.map { "\($0.tile):\($0.mask):\($0.style):\($0.from?.land ?? ""):\($0.fade?.key ?? "")" }.joined(separator: "|") + place
         if let cached = blended[key] { return cached }
         let size = max(tileImage(base).width, 16)
         let pick = hasWater ? variant : 0
@@ -401,6 +440,8 @@ final class ArtLibrary {
             let texels: [UInt8]
             if layer.style == .cut {
                 texels = []
+            } else if let fade = layer.fade {
+                texels = fadedPixels(layer.tile, fade: fade, variant: pick, size: size)
             } else if let from = layer.from {
                 texels = foreignPixels(layer.tile, palette: from.palette, from: from.land, variant: pick, size: size)
             } else {

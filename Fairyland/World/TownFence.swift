@@ -17,41 +17,12 @@ enum TownFence {
         let palette = map.def.theme.palette
         let source = stone ? BorderArt.wallPicture(palette: palette) : art.sprite("fence").texture.cgImage()
         let height = stone ? BorderArt.wallHeight : Self.height
-        guard !fence.isEmpty, let source, let pickets = cropped(source) else { return }
-        let tile = WorldMap.tileSize
-        let c = CGFloat(0.5).squareRoot()
-        // Half a cell along the grid's x axis on screen; along y it's (-dx, dy).
-        let east = CGVector(dx: c * tile / 2, dy: c * tile / 4)
-        let north = CGVector(dx: -east.dx, dy: east.dy)
-        let pad: CGFloat = 2
-        let size = CGSize(width: east.dx * 2 + pad * 2, height: east.dy * 2 + height + pad * 2)
-        let middle = CGPoint(x: size.width / 2, y: east.dy + pad)
-
+        guard !fence.isEmpty, let source else { return }
         func has(_ dc: Int, _ dr: Int, _ cell: GridPoint) -> Bool { fence.contains(GridPoint(col: cell.col + dc, row: cell.row + dr)) }
-        var textures: [Int: SKTexture] = [:]
-        for cell in cells {
-            var mask = 0
-            if has(1, 0, cell) { mask |= 1 }
-            if has(0, 1, cell) { mask |= 2 }
-            if has(-1, 0, cell) { mask |= 4 }
-            if has(0, -1, cell) { mask |= 8 }
-            if mask == 0 { mask = 5 }
-            if textures[mask] == nil {
-                textures[mask] = render(size: size) { context in
-                    // Along x the picture runs from the west end to the east end; along y from the
-                    // north end to the south end, so it reads left to right on screen. Each half of
-                    // the cell shows its half of the picture, so straight runs repeat seamlessly.
-                    // The far halves (north, east) first.
-                    if mask & 2 != 0 { draw(pickets, in: context, from: middle + north, along: north * -2, part: 0, height: height) }
-                    if mask & 1 != 0 { draw(pickets, in: context, from: middle + east * -1, along: east * 2, part: 1, height: height) }
-                    if mask & 4 != 0 { draw(pickets, in: context, from: middle + east * -1, along: east * 2, part: 0, height: height) }
-                    if mask & 8 != 0 { draw(pickets, in: context, from: middle + north, along: north * -2, part: 1, height: height) }
-                }
-            }
-            guard let texture = textures[mask] else { continue }
-            let node = SKSpriteNode(texture: texture, size: size)
-            node.anchorPoint = CGPoint(x: 0.5, y: middle.y / size.height)
-            node.position = map.center(of: cell)
+        for piece in pieces(cells: cells, picture: source, height: height) {
+            let node = SKSpriteNode(texture: piece.texture, size: piece.size)
+            node.anchorPoint = piece.anchor
+            node.position = map.center(of: piece.cell)
             node.zPosition = -node.position.y
             world.addChild(node)
         }
@@ -99,6 +70,76 @@ enum TownFence {
             let (from, to) = step.0 + step.1 * -1 > 0 ? (cell, other) : (other, cell)
             world.addChild(gate(arch, from: map.center(of: from), to: map.center(of: to)))
         }
+    }
+
+    /// How tall the pickets of a fence along a road stand (points): a little lower than a town's.
+    private static let roadsideHeight: CGFloat = 18
+
+    /// The picket fences and low walls along stretches of a land's roads
+    /// (`LandPlanner.planRoadsides`; its rows of props are drawn as its other props are), joined from
+    /// cell to cell as a town's fence is, each piece on its cell's middle, up on the ground there.
+    /// `put` sets each down (in the piece of the land it stands in).
+    static func placeRoadsides(_ lines: [RoadsideLine], map: WorldMap, art: ArtLibrary, put: (SKSpriteNode) -> Void) {
+        guard lines.contains(where: { $0.kind != .row }) else { return }
+        let pickets = art.picture(of: art.sprite("fence").texture)
+        let stones = BorderArt.lowWallPicture(palette: map.def.theme.palette)
+        for line in lines where line.kind != .row {
+            let wall = line.kind == .wall
+            guard let picture = wall ? stones : pickets else { continue }
+            for piece in pieces(cells: line.cells, picture: picture, height: wall ? BorderArt.lowWallHeight : roadsideHeight) {
+                let node = SKSpriteNode(texture: piece.texture, size: piece.size)
+                node.anchorPoint = piece.anchor
+                let foot = map.center(of: piece.cell)
+                node.position = CGPoint(x: foot.x, y: foot.y + map.height(at: foot))
+                node.zPosition = -foot.y
+                put(node)
+            }
+        }
+    }
+
+    /// A fence's pieces, one a cell (`cells`), each `picture` (pickets, or a wall's stones) slanted
+    /// from the cell's middle to each side it joins the next cell of the fence at, so the pieces
+    /// join up and turn at the corners: what each cell shows, and the anchor to stand it on the
+    /// cell's middle with. `height`: how tall the picture stands, in points.
+    static func pieces(cells: [GridPoint], picture source: CGImage, height: CGFloat) -> [(cell: GridPoint, texture: SKTexture, size: CGSize, anchor: CGPoint)] {
+        let fence = Set(cells)
+        guard !fence.isEmpty, let pickets = cropped(source) else { return [] }
+        let tile = WorldMap.tileSize
+        let c = CGFloat(0.5).squareRoot()
+        // Half a cell along the grid's x axis on screen; along y it's (-dx, dy).
+        let east = CGVector(dx: c * tile / 2, dy: c * tile / 4)
+        let north = CGVector(dx: -east.dx, dy: east.dy)
+        let pad: CGFloat = 2
+        let size = CGSize(width: east.dx * 2 + pad * 2, height: east.dy * 2 + height + pad * 2)
+        let middle = CGPoint(x: size.width / 2, y: east.dy + pad)
+        let anchor = CGPoint(x: 0.5, y: middle.y / size.height)
+
+        func has(_ dc: Int, _ dr: Int, _ cell: GridPoint) -> Bool { fence.contains(GridPoint(col: cell.col + dc, row: cell.row + dr)) }
+        var textures: [Int: SKTexture] = [:]
+        var found: [(cell: GridPoint, texture: SKTexture, size: CGSize, anchor: CGPoint)] = []
+        for cell in cells {
+            var mask = 0
+            if has(1, 0, cell) { mask |= 1 }
+            if has(0, 1, cell) { mask |= 2 }
+            if has(-1, 0, cell) { mask |= 4 }
+            if has(0, -1, cell) { mask |= 8 }
+            if mask == 0 { mask = 5 }
+            if textures[mask] == nil {
+                textures[mask] = render(size: size) { context in
+                    // Along x the picture runs from the west end to the east end; along y from the
+                    // north end to the south end, so it reads left to right on screen. Each half of
+                    // the cell shows its half of the picture, so straight runs repeat seamlessly.
+                    // The far halves (north, east) first.
+                    if mask & 2 != 0 { draw(pickets, in: context, from: middle + north, along: north * -2, part: 0, height: height) }
+                    if mask & 1 != 0 { draw(pickets, in: context, from: middle + east * -1, along: east * 2, part: 1, height: height) }
+                    if mask & 4 != 0 { draw(pickets, in: context, from: middle + east * -1, along: east * 2, part: 0, height: height) }
+                    if mask & 8 != 0 { draw(pickets, in: context, from: middle + north, along: north * -2, part: 1, height: height) }
+                }
+            }
+            guard let texture = textures[mask] else { continue }
+            found.append((cell: cell, texture: texture, size: size, anchor: anchor))
+        }
+        return found
     }
 
     /// The stone arch over a road through a fence, from `a` to `b` on screen (the west or north

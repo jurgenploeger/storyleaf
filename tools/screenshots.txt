@@ -44,6 +44,17 @@ continent_rocky_night | newgame,map=crystal_mountain,at=9_1,weather=clear,hour=2
 continent_rocky | newgame,map=crystal_mountain,at=9_1,weather=clear,hour=12 | 8
 continent_rocky_coast | newgame,map=crystal_mountain,at=-31_-75,weather=clear,hour=12 | 8
 continent_swamp_edge | newgame,map=sunny_meadow,at=18_-56,weather=clear,hour=12 | 8
+# A road running on from Frog Swamp into the Valley of Fear: its look fades across the band, not cut
+# at the border (playtesting 2026-10-15). Roads lined here and there (`LandPlanner.planRoadsides`):
+# a picket fence, a low stone wall, a row of the land's own props (lanterns, an avenue); and a range
+# that may have no trail up it.
+road_fade      | newgame,level=30,map=frog_swamp,near=valley_of_fear,weather=clear,hour=12 | 8
+road_fade_land | newgame,level=30,map=frog_swamp,near=valley_of_fear,landscape,weather=clear,hour=12 | 8
+roadside_fence | newgame,map=sunny_meadow,roadside=fence,weather=clear,hour=12 | 8
+roadside_wall  | newgame,level=90,map=crystal_mountain,roadside=wall,weather=clear,hour=12 | 8
+roadside_row   | newgame,level=20,map=twilight_woods,roadside=row,weather=clear,hour=12 | 8
+roadside_land  | newgame,map=swan_lake,roadside=row,landscape,weather=clear,hour=12 | 8
+hill_bare      | newgame,map=sunny_meadow,hill=1,face,weather=clear,hour=12 | 8
 # Back on the map after a won fight, the lands round you laid out meanwhile: playtesting saw a
 # chunk's ground gone after one, the sea showing through under its scenery.
 after_battle_rocky | newgame,map=crystal_mountain,at=9_1,battle,win,back,weather=clear,hour=12 | 25

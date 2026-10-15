@@ -1626,6 +1626,10 @@ nonisolated final class WorldMap: @unchecked Sendable {
     private static let mountainSides = 1.6
     private static let mountainRound = max((1 + 1 / mountainFace) / 2, 1 / mountainSides)
 
+    /// The chance a range has a trail up it, but for a land's first and those with a mountain, which
+    /// always do (`shapeHill`).
+    private static let trailShare = 0.4
+
     /// How a range's trails wind (`Hill.traceTrail`): the angle their feet aim at (round the front),
     /// which way round they go first, how much further round than they need, and how they bend.
     private nonisolated struct Winding {
@@ -1891,6 +1895,16 @@ nonisolated final class WorldMap: @unchecked Sendable {
         }
         guard order.contains(where: { climb($0, fromGround: true) }) else { return false }
         if let mountain, !trails.contains(where: { $0.lobe == mountain }) { _ = climb(mountain, fromGround: false) }
+        // Not every range has a trail worn up it; you can climb them anywhere (playtesting
+        // 2026-10-15: hills don't always need a path winding up them). A range with a mountain has
+        // one, and the land's first range, and each of the rest by the chance `trailShare`, a draw
+        // of its own so the land's other draws stay as they were. Its way up was still looked for,
+        // so the ranges stand where they always did.
+        var draw = SeededRandom(text: "\(def.id)/trail \(self.hills.count)")
+        guard mountain != nil || self.hills.isEmpty || Double.random(in: 0..<1, using: &draw) < Self.trailShare else {
+            hill.trails = []
+            return true
+        }
         hill.trails = trails
         // Nothing grows on the trails or beside them, so the ways up stay open and in sight.
         for cell in onTrails {
