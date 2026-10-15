@@ -3176,3 +3176,23 @@ struct LandPlanTests {
         #expect(!first.props.isEmpty, "Frog Swamp planned no props")
     }
 }
+
+/// Where a land's layout spends its time, step by step (⏱ in the tests job's log). In a Release
+/// build (the job's `configuration`) the layout took about as long as in a Debug one (Frog Swamp
+/// 85 s on CI's simulator, 2026-10-15), so its time goes somewhere the optimiser can't reach.
+@MainActor
+struct LayoutStepTests {
+    @Test func layoutSteps() throws {
+        for id in ["frog_swamp", "goldburg_lake", "smiling_forest"] {
+            let def = try #require(Content.shared.map(id))
+            var steps: [(step: String, time: Duration)] = []
+            WorldMap.timing = { steps.append(($0, $1)) }
+            _ = WorldMap(def: def)
+            WorldMap.timing = nil
+            let total = steps.reduce(Duration.zero) { $0 + $1.time }
+            let slowest = steps.sorted { $0.time > $1.time }.map { "\($0.step) \($0.time)" }.joined(separator: ", ")
+            print("⏱ \(id) laid out in \(total): \(slowest)")
+            #expect(!steps.isEmpty)
+        }
+    }
+}

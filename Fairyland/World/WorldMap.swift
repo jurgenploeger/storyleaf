@@ -215,10 +215,20 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// `around`: where the land lies among the others (`Continent.neighbourhood(of:)`): its shape,
     /// and whose each cell round it is; nil for a cave.
     init(def: MapDef, caves: [String: MapDef.Cave], around: Neighbourhood?) {
+        let clock = ContinuousClock()
+        var lapped = clock.now
+        // Each step's time, for the tests (`timing`).
+        func lap(_ step: String) {
+            guard let timing = WorldMap.timing else { return }
+            let now = clock.now
+            timing(step, now - lapped)
+            lapped = now
+        }
         self.def = def
         region = around?.region
         neighbourhood = around
         seams = Self.bands(of: def, in: around)
+        lap("seams")
         columns = def.width
         rows = def.height
         center = around?.region.middle ?? GridPoint(col: def.width / 2, row: def.height / 2)
@@ -229,14 +239,18 @@ nonisolated final class WorldMap: @unchecked Sendable {
             height: Int32(def.height),
             diagonalsAllowed: true
         )
+        lap("graph")
         // Seeded by the map id, so every map looks the same each time you visit.
         var rng = SeededRandom(text: def.id)
         // Only the land's own cells are its: the sea and the lands next door have the rest of its box.
         if let around { layOutShape(around) }
+        lap("shape")
         if def.fence == true { layOutTownBorder() }
         for exit in def.exits { carveRoad(for: exit, &rng) }
+        lap("roads")
         for trail in def.trails ?? [] { carveTrail(trail, &rng) }
         layRivers()
+        lap("rivers")
         // Caves dig their ponds first and then a chamber around each one.
         let ponds = def.theme.water != nil ? def.theme.ponds : nil
         if let cave = def.theme.cave {
@@ -249,6 +263,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
             placeOwnBuildings()
             keepNPCsInView()
         }
+        lap("town and buildings")
         var ranges: [(edge: Edge, cave: MapDef.Cave, hill: Hill)] = []
         if def.theme.cave == nil, def.town == nil {
             // Its own random numbers, so the rest of the map comes out as it did before.
@@ -258,6 +273,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 ranges.append((exit.edge, cave, range))
             }
         }
+        lap("crags")
         if def.theme.cave == nil, def.town == nil {
             // Their own random numbers too.
             var waterRNG = SeededRandom(text: def.id + "/water")
@@ -270,8 +286,11 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 }
             }
         }
+        lap("lakes")
         if def.theme.cave == nil, let ponds { digPonds(ponds, &rng) }
+        lap("ponds")
         if def.town == nil, def.theme.cave == nil, let hills = def.theme.hills { raiseHills(hills, &rng) }
+        lap("hills")
         // Each summit's top is the middle of its round, where it rises highest.
         let lobes: [Hill.Lobe] = self.hills.flatMap { $0.lobes }.sorted { $0.peak > $1.peak }
         summits = lobes.map { lobe in CGPoint(x: lobe.x, y: lobe.y) }
@@ -285,8 +304,11 @@ nonisolated final class WorldMap: @unchecked Sendable {
         }
         // Where you arrive through a cave's mouth beside the road has moved.
         if !ranges.isEmpty { cachedEntryCells = nil }
+        lap("summits")
         if def.town == nil, def.theme.cave == nil, def.theme.hills != nil || !landings.isEmpty { layFootpaths() }
+        lap("footpaths")
         sealCrags()
+        lap("seal crags")
         if def.theme.accent != nil {
             if let patches = def.theme.accentPatches {
                 paintAccentPatches(patches, &rng)
@@ -294,11 +316,20 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 scatterAccents(&rng)
             }
         }
+        lap("accents")
         markForeign()
+        lap("foreign")
         layShore()
+        lap("shore")
         if def.theme.cave == nil { sealPockets() }
+        lap("pockets")
         linkGraph()
+        lap("link graph")
     }
+
+    /// Tests only: told how long each step of a layout took, by step (`PerformanceTests`), to find
+    /// where the time goes.
+    nonisolated(unsafe) static var timing: ((String, Duration) -> Void)?
 
     /// Over the land's box, the cells that aren't its own (`Region`) are the sea's or a land next
     /// door's: nothing of this land's goes there, and you can't walk there from it (you walk over
