@@ -3177,6 +3177,21 @@ struct LandPlanTests {
         #expect(!first.props.isEmpty, "Frog Swamp planned no props")
     }
 
+    /// What lines the roads on every land that has any (🚧 in the tests job's log, to tune by): how
+    /// many stretches of each kind and how many cells they take, against how much road it has.
+    @Test func roadsidesOnEveryLand() async throws {
+        for def in content.maps where def.theme.roadside != nil {
+            let (map, plan) = await planned(def)
+            var roads = 0
+            for row in 0..<map.rows {
+                for col in 0..<map.columns where map.ground[row][col] == .path && map.owns(GridPoint(col: col, row: row)) { roads += 1 }
+            }
+            let kinds = Dictionary(grouping: plan.roadsides, by: { $0.kind.rawValue }).map { "\($0.value.count) \($0.key)" }.sorted()
+            let cells = plan.roadsides.reduce(0) { $0 + $1.cells.count }
+            print("🚧 \(def.id): \(plan.roadsides.count) lined (\(kinds.joined(separator: ", "))), \(cells) cells; \(roads) road cells, \(map.fenceCells.count) wall")
+        }
+    }
+
     /// Stretches of the roads are lined (`LandPlanner.planRoadsides`): a fence, a low wall or a row of
     /// the land's props on the cells beside a road, one after another along it, and never in the
     /// way: a fence or a wall can't be walked through, and you can always get round it from the
