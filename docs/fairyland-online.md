@@ -203,15 +203,18 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   a lighter tint, the edge facing the light lit and the far edge shaded, a cell of shadow on the ground past
   it, and a mountain's upper slopes lighter still.
 - Roadsides (ours, since 0.7.7, asked for in playtesting 2026-10-15: roads with fences, walls or other
-  scenery along them; nothing here records what lined FO's roads): here and there along a straight edge
-  of a road wider than a footpath, a picket fence, a low wall of field stones (`BorderArt.lowWallPicture`)
-  or a row of one of the land's own props, a hedge of bushes, an avenue of trees or lanterns every few
-  cells, on the cells beside it (`theme.roadside` in maps.json, `LandPlanner.planRoadsides`). Each land
-  has its own mix: walls on the downs and the rocky lands, palms on the shores, lanterns in the woods and
-  the spooky lands, lollipops on Gumdrop Peaks, lamp posts on the roads into the cities (a prop with a
-  count of 0 only lines the roads). In a town only out in its countryside, five cells off its wall; off
-  the hills and the shore, and well in from the lands next door; a cell's kept clear at either end, so you
-  can always step off the road.
+  scenery along them; nothing here records what lined FO's roads): here and there along the edge of a
+  road wider than a footpath, a picket fence, a low wall of field stones (`BorderArt.lowWallPicture`) or a
+  row of one of the land's own props, a hedge of bushes, an avenue of trees or lanterns every few cells,
+  on the cells beside it (`theme.roadside` in maps.json, `LandPlanner.planRoadsides`), about half of
+  what could be. A line follows the edge, a cell out or in where the road shifts (straight for three
+  cells at least between), a fence or a wall taking the cell at the step so its pieces join; the first
+  try lined straight edges only and found next to nothing on most lands (counted per land, 🚧 in the
+  tests job's log), their roads wander. Each land has its own mix: walls on the downs and the rocky
+  lands, palms on the shores, lanterns in the woods and the spooky lands, lollipops on Gumdrop Peaks,
+  lamp posts on the roads into the cities (a prop with a count of 0 only lines the roads). In a town
+  only out in its countryside, three cells off its wall; off the hills and the shore, and well in from the
+  lands next door; a cell's kept clear at either end, so you can always step off the road.
 - Lakes and rivers (ours, since 0.4.8, asked for in playtesting 2026-10-12: "more like RuneScape, with large
   lakes and interesting pathways and landscapes"); nothing here records whether FO's fields had them.
   Since 0.6.0 the rivers are the continent's (playtesting 2026-10-14: "there should still be rivers running

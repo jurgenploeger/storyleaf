@@ -3205,15 +3205,17 @@ struct LandPlanTests {
             for line in plan.roadsides {
                 kinds.insert(line.kind.rawValue)
                 #expect(line.cells.count >= 4, "\(id): a lined stretch only \(line.cells.count) long")
+                // One after another: a fence's or a wall's cells side by side, so its pieces join; a
+                // row's corner to corner where it steps with the road's edge.
                 for (a, b) in zip(line.cells, line.cells.dropFirst()) {
-                    #expect(abs(a.col - b.col) + abs(a.row - b.row) == 1, "\(id): a lined stretch skips from \(a) to \(b)")
+                    let apart = line.kind == .row ? max(abs(a.col - b.col), abs(a.row - b.row)) : abs(a.col - b.col) + abs(a.row - b.row)
+                    #expect(apart == 1, "\(id): a lined stretch skips from \(a) to \(b)")
                 }
-                // The road on one side of every cell of it, the same side all along.
+                func isRoad(_ cell: GridPoint) -> Bool { map.contains(cell) && map.ground[cell.row][cell.col] == .path }
+                // The road on one side of it, the same side all along: beside every cell, or a cell
+                // further where a fence steps out with the road's edge.
                 let side = [Edge.north, .east, .south, .west].first { side in
-                    line.cells.allSatisfy { cell in
-                        let road = cell.stepped(side.opposite)
-                        return map.contains(road) && map.ground[road.row][road.col] == .path
-                    }
+                    line.cells.allSatisfy { isRoad($0.stepped(side.opposite)) || isRoad($0.stepped(side.opposite, by: 2)) }
                 }
                 guard let side else {
                     Issue.record("\(id): a lined stretch at \(line.cells[0]) not along a road")
@@ -3223,10 +3225,11 @@ struct LandPlanTests {
                     #expect(line.cells.allSatisfy { !map.isWalkable($0) }, "\(id): a \(line.kind.rawValue) you can walk through")
                 }
                 // In a town, out in its countryside, clear of its wall and gates.
-                #expect(line.cells.allSatisfy { cell in map.fenceCells.allSatisfy { max(abs($0.col - cell.col), abs($0.row - cell.row)) > 5 } },
+                #expect(line.cells.allSatisfy { cell in map.fenceCells.allSatisfy { max(abs($0.col - cell.col), abs($0.row - cell.row)) > 3 } },
                         "\(id): a \(line.kind.rawValue) up against the town's wall")
                 // From the road in front of its middle round to the ground behind it.
-                let middle = line.cells[line.cells.count / 2]
+                let besideRoad = line.cells.filter { isRoad($0.stepped(side.opposite)) }
+                let middle = besideRoad.isEmpty ? line.cells[line.cells.count / 2] : besideRoad[besideRoad.count / 2]
                 let way = map.path(from: map.center(of: middle.stepped(side.opposite)), to: map.center(of: middle.stepped(side)))
                 #expect(!way.isEmpty, "\(id): no way round the \(line.kind.rawValue) at \(middle)")
             }
