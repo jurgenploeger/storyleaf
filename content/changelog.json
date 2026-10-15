@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.3",
+      "date": "2026-10-15",
+      "title": "No more missing ground",
+      "notes": [
+        "The ground round you is drawn afresh as you come back from a fight, so none of it goes missing."
+      ]
+    },
+    {
       "version": "0.7.2",
       "date": "2026-10-15",
       "title": "Smoother crossings",

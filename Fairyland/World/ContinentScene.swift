@@ -299,11 +299,17 @@ final class ContinentScene: SKScene {
         view.addGestureRecognizer(pinch)
         cam.setScale(1 / WorldScene.zoom)
         lastUpdate = 0
-        // Back from a battle or a cave: the ground of lands laid out meanwhile, and the squares and
-        // banks left to draw.
-        for id in unshown.sorted() {
-            guard let land = lands[id] else { continue }
-            for (key, chunk) in chunks where owners(of: key).contains(id) { show(land, in: chunk, at: key) }
+        // Back from a battle or a cave: the ground of the chunks round you made afresh, and in the
+        // rest that of lands laid out meanwhile; then the squares and banks left to draw.
+        let middle = World.chunk(of: Self.cell(at: cam.position))
+        for (key, drawn) in chunks {
+            if max(abs(key.col - middle.col), abs(key.row - middle.row)) <= 1 {
+                drawGround(of: drawn, at: key)
+            } else {
+                for id in owners(of: key).sorted() where unshown.contains(id) {
+                    if let land = lands[id] { show(land, in: drawn, at: key) }
+                }
+            }
         }
         unshown = []
         if !painting, !waiting.isEmpty {
@@ -1513,17 +1519,10 @@ final class ContinentScene: SKScene {
         if let shallows = shallows(in: chunk) { waters.addChild(shallows) }
         seaGrid.addChild(waters)
         let drawn = Chunk(sea: waters)
-        drawn.ground.position = waters.position
         groundGrid.addChild(drawn.ground)
         layer.addChild(drawn.things)
         chunks[chunk] = drawn
-        for id in owners(of: chunk).sorted() {
-            if let land = lands[id] {
-                show(land, in: drawn, at: chunk)
-            } else {
-                placehold(id, in: drawn, at: chunk)
-            }
-        }
+        drawGround(of: drawn, at: chunk)
         for land in lands.values { paintSquares(of: land, in: chunk) }
     }
 
@@ -1575,6 +1574,22 @@ final class ContinentScene: SKScene {
         return SKTileGroup(tileDefinition: SKTileDefinition(texture: SKTexture(image: image), size: size))
     }
 
+    /// A chunk's ground, made afresh: each land's cells in it with that land's tiles, or in its plain
+    /// ground till it's laid out. Each time the continent's back on screen after a battle or a cave,
+    /// round you (`didMove`): playtesting saw a chunk's ground gone after a fight, the sea showing
+    /// through under its scenery while the sea's own tile maps still showed; new ones always do.
+    private func drawGround(of drawn: Chunk, at chunk: GridPoint) {
+        drawn.ground.removeAllChildren()
+        drawn.placeholders = [:]
+        for id in owners(of: chunk).sorted() {
+            if let land = lands[id] {
+                show(land, in: drawn, at: chunk)
+            } else {
+                placehold(id, in: drawn, at: chunk)
+            }
+        }
+    }
+
     /// A land's cells in a chunk drawn, with its tiles graded with its palette, in place of its plain
     /// ground. Its shore's drawn sunk, with its hills, and its bank along the sea after
     /// them (`paintSquares`).
@@ -1595,6 +1610,8 @@ final class ContinentScene: SKScene {
         let ground = SKTileMapNode(tileSet: SKTileSet(tileGroups: Array(groups.values)), columns: size, rows: size,
                                    tileSize: CGSize(width: tile, height: tile))
         ground.anchorPoint = .zero
+        // At the chunk's corner itself, as the sea's are.
+        ground.position = CGPoint(x: CGFloat(origin.col) * tile, y: CGFloat(origin.row) * tile)
         for pick in picks { ground.setTileGroup(pick.group, forColumn: pick.col, row: pick.row) }
         drawn.ground.addChild(ground)
     }
@@ -1666,6 +1683,7 @@ final class ContinentScene: SKScene {
         }
         let flat = SKTileMapNode(tileSet: SKTileSet(tileGroups: [group]), columns: size, rows: size, tileSize: tileSize)
         flat.anchorPoint = .zero
+        flat.position = CGPoint(x: CGFloat(origin.col) * tile, y: CGFloat(origin.row) * tile)
         var any = false
         for cell in World.cells(in: chunk) where store.land(at: cell)?.id == id {
             flat.setTileGroup(group, forColumn: cell.col - origin.col, row: cell.row - origin.row)

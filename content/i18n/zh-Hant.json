@@ -799,6 +799,8 @@
     "Rosy": "紅潤",
     "Tan": "小麥",
     "Deep": "深色",
+    "No more missing ground": "地面不再缺失",
+    "The ground round you is drawn afresh as you come back from a fight, so none of it goes missing.": "從戰鬥中返回時，周圍的地面會重新繪製，不再有缺失的地方。",
     "Smoother crossings": "更順暢的穿行",
     "Walking into the next land no longer dims the screen for a moment.": "走進相鄰的土地時，畫面不再暗一下。",
     "The ground no longer goes missing where a land finished loading during a fight.": "在戰鬥中載入完成的土地上，地面不再消失。",

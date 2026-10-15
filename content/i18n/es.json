@@ -799,6 +799,8 @@
     "Rosy": "Rosada",
     "Tan": "Morena",
     "Deep": "Oscura",
+    "No more missing ground": "Se acabó el suelo que falta",
+    "The ground round you is drawn afresh as you come back from a fight, so none of it goes missing.": "El suelo a tu alrededor se vuelve a dibujar al volver de un combate, así que no falta ningún trozo.",
     "Smoother crossings": "Cruces más suaves",
     "Walking into the next land no longer dims the screen for a moment.": "Al entrar en la siguiente tierra, la pantalla ya no se oscurece un momento.",
     "The ground no longer goes missing where a land finished loading during a fight.": "El suelo ya no desaparece donde una tierra terminó de cargar durante un combate.",
