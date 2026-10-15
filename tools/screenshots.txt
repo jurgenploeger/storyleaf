@@ -52,7 +52,7 @@ continent_swamp_edge | newgame,map=sunny_meadow,at=18_-56,weather=clear,hour=12 
 road_fade      | newgame,level=30,map=frog_swamp,near=valley_of_fear,weather=clear,hour=12 | 8
 road_fade_land | newgame,level=30,map=frog_swamp,near=valley_of_fear,landscape,weather=clear,hour=12 | 8
 roadside_fence | newgame,map=sunny_meadow,roadside=fence,weather=clear,hour=12 | 8
-roadside_wall  | newgame,level=90,map=crystal_mountain,roadside=wall,weather=clear,hour=12 | 8
+roadside_wall  | newgame,level=60,map=genie_desert,roadside=wall,weather=clear,hour=12 | 8
 roadside_row   | newgame,level=20,map=twilight_woods,roadside=row,weather=clear,hour=12 | 8
 roadside_land  | newgame,map=swan_lake,roadside=row,landscape,weather=clear,hour=12 | 8
 roadside_swamp | newgame,level=30,map=frog_swamp,roadside=row,landscape,weather=clear,hour=12 | 8
