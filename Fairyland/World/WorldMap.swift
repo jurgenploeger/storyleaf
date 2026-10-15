@@ -172,8 +172,11 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// The middles of a cave's galleries and tunnels, kept clear of scenery so they stay open.
     private var passages: Set<GridPoint> = []
     private var occupied: Set<GridPoint> = []
+    /// The cells you can't walk on: ways round them are looked for over this itself (`route`).
+    /// GameplayKit's walk graph did it before, and keeping that up to date was nearly all of a land's
+    /// layout (taking the sea's and the next lands' cells out of it: Smiling Forest's 88 s of 94 in a
+    /// Release build on CI's simulator, 2026-10-15; the rest of the layout took under a second).
     private var blocked: Set<GridPoint> = []
-    private let graph: GKGridGraph<GKGridGraphNode>
     /// The land's shape on the continent (`Region`): its own cells of its box, the sea round it, its
     /// middle and where its roads cross its border. Nil for a cave: all its box is its own.
     let region: Region?
@@ -210,28 +213,35 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// `around`: where the land lies among the others (`Continent.neighbourhood(of:)`): its shape,
     /// and whose each cell round it is; nil for a cave.
     init(def: MapDef, caves: [String: MapDef.Cave], around: Neighbourhood?) {
+        let clock = ContinuousClock()
+        var lapped = clock.now
+        // Each step's time, for the tests (`timings`).
+        func lap(_ step: String) {
+            guard WorldMap.timings != nil else { return }
+            let now = clock.now
+            WorldMap.timings?.append((step, now - lapped))
+            lapped = now
+        }
         self.def = def
         region = around?.region
         neighbourhood = around
         seams = Self.bands(of: def, in: around)
+        lap("seams")
         columns = def.width
         rows = def.height
         center = around?.region.middle ?? GridPoint(col: def.width / 2, row: def.height / 2)
         ground = Array(repeating: Array(repeating: .ground, count: def.width), count: def.height)
-        graph = GKGridGraph(
-            fromGridStartingAt: vector_int2(0, 0),
-            width: Int32(def.width),
-            height: Int32(def.height),
-            diagonalsAllowed: true
-        )
         // Seeded by the map id, so every map looks the same each time you visit.
         var rng = SeededRandom(text: def.id)
         // Only the land's own cells are its: the sea and the lands next door have the rest of its box.
         if let around { layOutShape(around) }
+        lap("shape")
         if def.fence == true { layOutTownBorder() }
         for exit in def.exits { carveRoad(for: exit, &rng) }
+        lap("roads")
         for trail in def.trails ?? [] { carveTrail(trail, &rng) }
         layRivers()
+        lap("rivers")
         // Caves dig their ponds first and then a chamber around each one.
         let ponds = def.theme.water != nil ? def.theme.ponds : nil
         if let cave = def.theme.cave {
@@ -244,6 +254,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
             placeOwnBuildings()
             keepNPCsInView()
         }
+        lap("town and buildings")
         var ranges: [(edge: Edge, cave: MapDef.Cave, hill: Hill)] = []
         if def.theme.cave == nil, def.town == nil {
             // Its own random numbers, so the rest of the map comes out as it did before.
@@ -253,6 +264,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 ranges.append((exit.edge, cave, range))
             }
         }
+        lap("crags")
         if def.theme.cave == nil, def.town == nil {
             // Their own random numbers too.
             var waterRNG = SeededRandom(text: def.id + "/water")
@@ -265,8 +277,11 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 }
             }
         }
+        lap("lakes")
         if def.theme.cave == nil, let ponds { digPonds(ponds, &rng) }
+        lap("ponds")
         if def.town == nil, def.theme.cave == nil, let hills = def.theme.hills { raiseHills(hills, &rng) }
+        lap("hills")
         // Each summit's top is the middle of its round, where it rises highest.
         let lobes: [Hill.Lobe] = self.hills.flatMap { $0.lobes }.sorted { $0.peak > $1.peak }
         summits = lobes.map { lobe in CGPoint(x: lobe.x, y: lobe.y) }
@@ -280,8 +295,11 @@ nonisolated final class WorldMap: @unchecked Sendable {
         }
         // Where you arrive through a cave's mouth beside the road has moved.
         if !ranges.isEmpty { cachedEntryCells = nil }
+        lap("summits")
         if def.town == nil, def.theme.cave == nil, def.theme.hills != nil || !landings.isEmpty { layFootpaths() }
+        lap("footpaths")
         sealCrags()
+        lap("seal crags")
         if def.theme.accent != nil {
             if let patches = def.theme.accentPatches {
                 paintAccentPatches(patches, &rng)
@@ -289,16 +307,23 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 scatterAccents(&rng)
             }
         }
+        lap("accents")
         markForeign()
+        lap("foreign")
         layShore()
+        lap("shore")
         if def.theme.cave == nil { sealPockets() }
+        lap("pockets")
     }
+
+    /// Tests only: how long each step of a layout took, in order, while it's set (`LayoutStepTests`),
+    /// to find where the time goes.
+    nonisolated(unsafe) static var timings: [(step: String, time: Duration)]?
 
     /// Over the land's box, the cells that aren't its own (`Region`) are the sea's or a land next
     /// door's: nothing of this land's goes there, and you can't walk there from it (you walk over
     /// into a land next door, `WorldScene.canCross`).
     private func layOutShape(_ around: Neighbourhood) {
-        var nodes: [GKGridGraphNode] = []
         for row in 0..<rows {
             for col in 0..<columns {
                 let cell = GridPoint(col: col, row: row)
@@ -306,11 +331,8 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 ground[row][col] = around.isLand(cell) ? .away : .sea
                 occupied.insert(cell)
                 blocked.insert(cell)
-                if let node = graph.node(atGridPosition: cell.vector) { nodes.append(node) }
             }
         }
-        // All at once: one at a time, the graph rebuilds round each.
-        graph.remove(nodes)
     }
 
     /// The bands a land gives way to the lands beside it over (`Seam`): every land it shares a
@@ -586,13 +608,11 @@ nonisolated final class WorldMap: @unchecked Sendable {
 
     // MARK: Placement
 
-    /// Reserves a cell; blocking things also take it out of the walk graph.
+    /// Reserves a cell; blocking things also keep you off it.
     func occupy(_ cell: GridPoint, blocking: Bool) {
         guard contains(cell) else { return }
         occupied.insert(cell)
-        guard blocking, !blocked.contains(cell), let node = graph.node(atGridPosition: cell.vector) else { return }
-        graph.remove([node])
-        blocked.insert(cell)
+        if blocking { blocked.insert(cell) }
     }
 
     /// Whether scenery may go in `cell`: free, off roads and water, clear of the centre and
@@ -662,9 +682,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// Waypoints from `start` to `end` around blocked cells. Empty if unreachable.
     func path(from start: CGPoint, to end: CGPoint) -> [CGPoint] {
         guard let startCell = nearestWalkable(to: cell(at: start)),
-              let goalCell = nearestWalkable(to: cell(at: end)),
-              let from = graph.node(atGridPosition: startCell.vector),
-              let to = graph.node(atGridPosition: goalCell.vector)
+              let goalCell = nearestWalkable(to: cell(at: end))
         else { return [] }
 
         // Stop exactly where the player tapped when that spot is walkable. The tapped cell unclamped:
@@ -672,11 +690,58 @@ nonisolated final class WorldMap: @unchecked Sendable {
         let goal = goalCell == rawCell(at: end) ? end : center(of: goalCell)
         if startCell == goalCell { return [goal] }
 
-        let nodes = graph.findPath(from: from, to: to).compactMap { $0 as? GKGridGraphNode }
-        guard nodes.count > 1 else { return [] }
-        var points = nodes.dropFirst().map { center(of: GridPoint($0.gridPosition)) }
+        let cells = route(from: startCell, to: goalCell)
+        guard !cells.isEmpty else { return [] }
+        var points = cells.map { center(of: $0) }
         points[points.count - 1] = goal
         return points
+    }
+
+    /// The shortest way from one cell you can walk on to another, a step at a time eight ways round:
+    /// the cells after `start`, `goal` last; empty if there's none. A* over `blocked`, stepping
+    /// diagonally between any two cells you can walk on, as the walk graph it replaced did (so it
+    /// reaches what that reached).
+    private func route(from start: GridPoint, to goal: GridPoint) -> [GridPoint] {
+        func slot(_ cell: GridPoint) -> Int { cell.row * columns + cell.col }
+        // Costs in tenths of a cell: 10 a step along, 14 across a corner.
+        func estimate(_ cell: GridPoint) -> Int {
+            let dx = abs(cell.col - goal.col), dy = abs(cell.row - goal.row)
+            return 10 * max(dx, dy) + 4 * min(dx, dy)
+        }
+        let count = columns * rows
+        var cost = [Int](repeating: .max, count: count)
+        var cameFrom = [Int](repeating: -1, count: count)
+        var done = [Bool](repeating: false, count: count)
+        var open = World.Frontier()
+        let first = slot(start), last = slot(goal)
+        cost[first] = 0
+        open.push(first, priority: estimate(start))
+        let steps = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)]
+        while let current = open.pop() {
+            if current == last { break }
+            guard !done[current] else { continue }
+            done[current] = true
+            let here = GridPoint(col: current % columns, row: current / columns)
+            for (dc, dr) in steps {
+                let next = GridPoint(col: here.col + dc, row: here.row + dr)
+                guard isWalkable(next) else { continue }
+                let index = slot(next)
+                guard !done[index] else { continue }
+                let through = cost[current] + (dc != 0 && dr != 0 ? 14 : 10)
+                guard through < cost[index] else { continue }
+                cost[index] = through
+                cameFrom[index] = current
+                open.push(index, priority: through + estimate(next))
+            }
+        }
+        guard cameFrom[last] >= 0 else { return [] }
+        var cells: [GridPoint] = []
+        var at = last
+        while at != first {
+            cells.append(GridPoint(col: at % columns, row: at / columns))
+            at = cameFrom[at]
+        }
+        return cells.reversed()
     }
 
     func nearestWalkable(to cell: GridPoint, within reach: Int = 8) -> GridPoint? {
@@ -2188,7 +2253,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
     }
 
     /// Which cells (row by row) can be walked to from the hub, round the water and the buildings,
-    /// corners too as the walk graph has it. None if the hub itself is walled off.
+    /// corners too as `route` steps. None if the hub itself is walled off.
     private func reachedFromHub() -> [Bool] {
         var reached = [Bool](repeating: false, count: columns * rows)
         let hub = point(def.hub ?? [0, 0])
@@ -2631,7 +2696,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
 /// Lays maps out off the main thread, one at a time: the lands next door
 /// (`GameCoordinator.buildNextDoor`) and the world map's pictures (`WorldOverview.prepare`) take
 /// turns. Two at once came with a crash (CI's border_built, 2026-10-14: the game's memory found
-/// corrupted while a land next door was built), and each layout builds a GameplayKit path graph,
+/// corrupted while a land next door was built), when each layout built a GameplayKit path graph,
 /// which Apple doesn't document as safe on two threads at once; on a phone they'd only compete
 /// for the same cores anyway. Each call runs at its caller's priority.
 actor MapLayouts {

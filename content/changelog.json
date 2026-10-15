@@ -2,6 +2,15 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.6",
+      "date": "2026-10-15",
+      "title": "Lands load in moments",
+      "notes": [
+        "Lands load many times faster. Laying one out took up to a minute and a half, nearly all of it spent on a way of finding paths the game no longer needs; now it takes moments, so the lands round you are ready before you get there.",
+        "Building a land's scenery takes about half as long too."
+      ]
+    },
+    {
       "version": "0.7.5",
       "date": "2026-10-15",
       "title": "Lands load sooner",
