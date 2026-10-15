@@ -78,11 +78,15 @@ final class ContinentScene: SKScene {
     /// The lands with a chunk drawn round you: the ones whose people and animals go about and that
     /// show (`update`). The rest wait, hidden, till you come near them again (`lookAround`).
     private var nearLands: Set<String> = []
-    /// The lands wanted laid out, by how far off they are (in chunks from the camera's; the land
-    /// you're put in or stand in first), laid out one at a time, nearest first (`buildWanted`); and
-    /// the one being laid out now.
+    /// The lands wanted laid out, by how far off they are (in cells from you to the nearest of theirs
+    /// in the chunks round you; the land you're put in or stand in first, at -1), laid out one at a
+    /// time, nearest first (`buildWanted`); and the one being laid out now.
     private var wanted: [String: Int] = [:]
     private var building: String?
+    /// Whether a land not laid out yet is under your feet or near enough to walk onto soon
+    /// (`urgentReach`): the work takes longer slices till it's in (`breathe`).
+    private var isUrgent = false
+    private static let urgentReach = 20
     /// A chunk drawn: its ground (a tile map for each land laid out, and one in its plain ground
     /// for each land not laid out yet, `placeholders`), its sea, and what stands on it.
     private final class Chunk {
@@ -98,8 +102,9 @@ final class ContinentScene: SKScene {
         }
     }
     private var chunks: [GridPoint: Chunk] = [:]
-    /// Each chunk's lands (they never change), worked out once.
-    private var owned: [GridPoint: Set<String>] = [:]
+    /// Each chunk's lands (they never change), with the box round each one's cells in it, worked out
+    /// once.
+    private var owned: [GridPoint: [String: (low: GridPoint, high: GridPoint)]] = [:]
     /// Each land's plain ground as a tile, for its cells till it's laid out (`placehold`).
     private var placeholderTiles: [String: SKTileGroup] = [:]
     /// How many chunks round yours are drawn, and how far off they're let go.
@@ -435,8 +440,9 @@ final class ContinentScene: SKScene {
         }
     }
 
-    /// Whether you can step onto a point from where you stand: onto ground a land's laid out and you
-    /// can walk on, and over a border only where it's open.
+    /// Whether you can step onto a point from where you stand: onto ground you can walk on (on a land
+    /// not laid out yet, anywhere but its rivers and lakes, `World.isWalkable`), and over a border
+    /// only where it's open.
     private func canStand(at point: CGPoint) -> Bool {
         let cell = Self.cell(at: point)
         return store.isWalkable(cell) && canCross(from: Self.cell(at: player.position), to: cell)
@@ -558,6 +564,9 @@ final class ContinentScene: SKScene {
         session.playerPosition = CGPoint(x: player.position.x - land.shift.dx, y: player.position.y - land.shift.dy)
         session.mapCell = store.local(cell, in: land.place)
         guard !starting else { return }
+        // On a land not laid out yet, you're still in the last one (`checkLand`): none of its caves
+        // or monsters there.
+        guard store.land(at: cell)?.id == here.id else { return }
         // Into a cave through its mouth: off the continent, behind the card.
         if let exit = land.map.exit(at: session.mapCell), Content.shared.world[exit.to] == nil {
             isInputLocked = true
@@ -999,12 +1008,13 @@ final class ContinentScene: SKScene {
 
     /// Debug launches (`near=<land>,crossing`): walks you over the line into that land, to
     /// the nearest cell of it you can walk to with its own land all round it, and returns once
-    /// you're in it (or after half a minute).
-    func walkIntoForDebug(_ id: String) async {
+    /// you're in it (or after half a minute). `early` (`crossing,early`): onto it at once, in its
+    /// plain ground before it's laid out (`World.walkable`), and waits there while it is.
+    func walkIntoForDebug(_ id: String, early: Bool = false) async {
         // Once that land's laid out (it's near, so it's wanted), or a couple of minutes.
         let hurried = hurries
         hurries = true
-        for _ in 0..<480 where lands[id] == nil {
+        for _ in 0..<480 where lands[id] == nil && !early {
             try? await Task.sleep(for: .milliseconds(250))
         }
         hurries = hurried
@@ -1034,6 +1044,12 @@ final class ContinentScene: SKScene {
         for _ in 0..<120 where here?.id != id {
             try? await Task.sleep(for: .milliseconds(250))
         }
+        guard early else { return }
+        hurries = true
+        for _ in 0..<720 where here?.id != id {
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        hurries = hurried
     }
 
     /// Debug launches: each land laid out and how long it took, by the frame counter
@@ -1176,24 +1192,27 @@ final class ContinentScene: SKScene {
     /// the chunks far off.
     private func lookAround() {
         guard placed else { return }
-        let middle = World.chunk(of: Self.cell(at: cam.position))
+        let you = Self.cell(at: cam.position)
+        let middle = World.chunk(of: you)
         var near: [String: Int] = [:]
         for dr in -Self.reach...Self.reach {
             for dc in -Self.reach...Self.reach {
                 let chunk = GridPoint(col: middle.col + dc, row: middle.row + dr)
                 if chunks[chunk] == nil { draw(chunk) }
-                for id in owners(of: chunk) where lands[id] == nil {
-                    near[id] = min(near[id] ?? .max, max(abs(dc), abs(dr)))
+                // How far off each land not laid out yet is: to the box round its cells here.
+                for (id, box) in boxes(in: chunk) where lands[id] == nil {
+                    let gap = max(box.low.col - you.col, you.col - box.high.col, box.low.row - you.row, you.row - box.high.row, 0)
+                    near[id] = min(near[id] ?? .max, gap)
                 }
             }
         }
         // The land you stand in before any.
-        let standing = store.land(at: Self.cell(at: cam.position))?.id
+        let standing = store.land(at: you)?.id
         if let standing, lands[standing] == nil { near[standing] = -1 }
         wanted = near
+        isUrgent = (near.values.min() ?? .max) <= Self.urgentReach
         buildWanted()
         // Ready once the land you're in is drawn round you, with its hills and shore on screen.
-        let you = Self.cell(at: cam.position)
         if !isReady, standing.map({ lands[$0] != nil }) ?? true,
            !waiting.contains(where: { distance(of: $0, from: you) <= Self.screenReach }) {
             isReady = true
@@ -1249,8 +1268,23 @@ final class ContinentScene: SKScene {
 
     /// The lands owning any cell of a chunk.
     private func owners(of chunk: GridPoint) -> Set<String> {
+        Set(boxes(in: chunk).keys)
+    }
+
+    /// The lands owning any cell of a chunk, each with the box round its cells there (south-west
+    /// and north-east cells).
+    private func boxes(in chunk: GridPoint) -> [String: (low: GridPoint, high: GridPoint)] {
         if let known = owned[chunk] { return known }
-        let found = Set(World.cells(in: chunk).compactMap { store.land(at: $0)?.id })
+        var found: [String: (low: GridPoint, high: GridPoint)] = [:]
+        for cell in World.cells(in: chunk) {
+            guard let id = store.land(at: cell)?.id else { continue }
+            if let box = found[id] {
+                found[id] = (low: GridPoint(col: min(box.low.col, cell.col), row: min(box.low.row, cell.row)),
+                             high: GridPoint(col: max(box.high.col, cell.col), row: max(box.high.row, cell.row)))
+            } else {
+                found[id] = (low: cell, high: cell)
+            }
+        }
         owned[chunk] = found
         return found
     }
@@ -1313,7 +1347,6 @@ final class ContinentScene: SKScene {
         let planner = LandPlanner(def: def, map: map, art: art)
         await planner.planUpToLocals(pause: rest)
         await planner.planTheRest(pause: rest)
-        store.add(map)
         let tiles = GroundTiles(map: map, art: art)
         let painters = await ranges(of: map, tiles: tiles, place: place, pause: rest)
         let stage = LandStage(def: def, map: map, plan: planner.plan, tiles: tiles, art: art, session: session, shift: Self.shift(of: place))
@@ -1325,6 +1358,9 @@ final class ContinentScene: SKScene {
         }
         layer.addChild(stage.world)
         let land = Land(def: def, place: place, map: map, tiles: tiles, painters: painters, stage: stage)
+        // Walked on as it's laid out from now, not as its shape has it (`World.walkable`): as its
+        // scenery shows, not before, or you'd walk into trees you can't see yet.
+        store.add(map)
         lands[id] = land
         #if DEBUG
         builtForDebug.append("\(id) \(Int(Date().timeIntervalSince(began)))s")
@@ -1336,11 +1372,17 @@ final class ContinentScene: SKScene {
         } else {
             unshown.insert(id)
         }
-        // Don't stand on top of scenery, or out at sea (an old save): onto the nearest ground.
+        // Don't stand on top of scenery, or out at sea (an old save): onto the nearest ground. A way
+        // you were walking over it before it was laid out goes round what's there now.
         let standing = Self.cell(at: player.position)
         if store.land(at: standing)?.id == id, !store.isWalkable(standing), let open = store.nearestWalkable(to: standing, within: 48) {
             move(to: Self.center(of: open))
+        } else if let end = player.path.last, player.path.contains(where: { !store.isWalkable(Self.cell(at: $0)) }) {
+            walk(to: end, marked: false)
         }
+        // Standing on it already (walked onto it in its plain ground), you're in it now, not only once
+        // you take a step (`checkCell`).
+        if here != nil, !isInputLocked { checkLand(at: Self.cell(at: player.position)) }
         for chunk in chunks.keys { paintSquares(of: land, in: chunk) }
         // Its minimap for the world map (`WorldOverview`), so that needn't lay it out again.
         await rest()
@@ -1371,9 +1413,10 @@ final class ContinentScene: SKScene {
     /// before the land you start in is drawn round you, only every 120 (as a land's own scene did,
     /// `WorldScene.sliceLength`): the card still turns with the phone, and the work isn't held up
     /// by a pause every few milliseconds (each a good deal longer than asked on a busy phone). And
-    /// so too while a debug launch `hurries`.
+    /// so too while a debug launch `hurries`. While a land not laid out yet is near you (`isUrgent`),
+    /// every 16: a frame or two dropped while it comes in faster.
     private func breathe() async {
-        let slice: Duration = isReady && !hurries ? .milliseconds(6) : .milliseconds(120)
+        let slice: Duration = !isReady || hurries ? .milliseconds(120) : isUrgent ? .milliseconds(16) : .milliseconds(6)
         guard ContinuousClock.now - sliceStart > slice else { return }
         try? await Task.sleep(for: .milliseconds(10))
         sliceStart = ContinuousClock.now
@@ -1655,7 +1698,8 @@ final class ContinentScene: SKScene {
     }
 
     /// A land's cells in a chunk in its own plain ground, graded as it is there, till it's laid out
-    /// (`show`) with its roads, patches and all: no sea where it'll be.
+    /// (`show`) with its roads, patches and all: no sea where it'll be. Its rivers and lakes are left
+    /// out, the sea's water showing there, as you can't walk on them (`World.isWalkable`).
     private func placehold(_ id: String, in drawn: Chunk, at chunk: GridPoint) {
         guard let def = Content.shared.map(id) else { return }
         let size = World.chunkSize, tile = WorldMap.tileSize
@@ -1685,7 +1729,7 @@ final class ContinentScene: SKScene {
         flat.anchorPoint = .zero
         flat.position = CGPoint(x: CGFloat(origin.col) * tile, y: CGFloat(origin.row) * tile)
         var any = false
-        for cell in World.cells(in: chunk) where store.land(at: cell)?.id == id {
+        for cell in World.cells(in: chunk) where store.land(at: cell)?.id == id && store.isWalkable(cell) {
             flat.setTileGroup(group, forColumn: cell.col - origin.col, row: cell.row - origin.row)
             any = true
         }

@@ -3051,6 +3051,34 @@ struct WorldStoreTests {
         #expect(world.ground(at: cell) == nil, "Frog Swamp has ground before it's laid out")
     }
 
+    /// Before a land's laid out you can walk anywhere on it but its rivers and lakes, as its shape
+    /// has them (`World.walkable`), so its layout never keeps you off it: over the border on each
+    /// of its roads too. Never out at sea.
+    @Test func aLandNotLaidOutIsWalkedButForItsRivers() throws {
+        let world = World.continent()
+        var owned = 0, rivers = 0, wrong: [String] = []
+        for land in world.lands {
+            let region = try #require(content.regions[land.id])
+            for row in 0..<land.rows {
+                for col in 0..<land.columns {
+                    let cell = GridPoint(col: col, row: row)
+                    let there = world.world(cell, of: land)
+                    guard region.owns(cell), world.land(at: there)?.id == land.id else { continue }
+                    owned += 1
+                    if region.isRiver(cell) { rivers += 1 }
+                    if world.isWalkable(there) == region.isRiver(cell), wrong.count < 5 { wrong.append("\(land.id) \(cell)") }
+                }
+            }
+            for (to, road) in region.roads {
+                #expect(world.isWalkable(world.world(road.at, of: land)), "\(land.id): its road to \(to) is shut at the border")
+            }
+        }
+        #expect(rivers > 0 && rivers < owned, "\(rivers) of \(owned) cells under a river")
+        #expect(wrong.isEmpty, "walked otherwise than the shape has it: \(wrong)")
+        let sea = (0..<world.columns).lazy.map { GridPoint(col: world.low.col + $0, row: world.low.row) }.first { world.land(at: $0) == nil }
+        #expect(sea.map { !world.isWalkable($0) } ?? false, "the sea's walkable, or there's none")
+    }
+
     /// A way over the store (`World.path`) steps a cell at a time over ground you can walk on, never
     /// cutting a corner, and ends where it was asked to; one out of reach is none.
     @Test func pathsKeepToWalkableGround() throws {
