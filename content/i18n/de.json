@@ -799,6 +799,8 @@
     "Rosy": "Rosig",
     "Tan": "Gebräunt",
     "Deep": "Dunkel",
+    "No more missing ground": "Kein fehlender Boden mehr",
+    "The ground round you is drawn afresh as you come back from a fight, so none of it goes missing.": "Der Boden um dich herum wird nach einem Kampf neu gezeichnet, damit kein Stück fehlt.",
     "Smoother crossings": "Sanftere Übergänge",
     "Walking into the next land no longer dims the screen for a moment.": "Beim Betreten des nächsten Landes wird der Bildschirm nicht mehr kurz dunkel.",
     "The ground no longer goes missing where a land finished loading during a fight.": "Der Boden fehlt nicht mehr, wo ein Land während eines Kampfes fertig geladen hat.",

@@ -195,6 +195,9 @@ its own points, which the continent turns into its own (a land's shift) both way
 - A tile map made while the continent is off screen (a battle, a cave) never showed: a land that
   finished laying out during a fight left its ground missing, the sea showing through. Its ground
   waits till the continent is back on screen (`didMove`), and so do the hills', shore's and banks'.
+  It still happened after a fight in 0.7.2 (Ingothold Lake, the sea's tile maps in that chunk showing
+  fine), so the ground of the chunks round you is made afresh each time the continent is back on
+  screen (`drawGround`), and a chunk's tile maps sit at its corner themselves, as the sea's do.
 - The coast's bank and foam (`WorldScene.bank`) are drawn per chunk after its shore's squares.
 - The slope down to the sea, 14 points over four cells, barely showed by its light alone. Sunk ground
   darkens the lower it lies (`HillArt.wetShade`, in the hills' stepped shade), wet toward the water, and

@@ -799,6 +799,8 @@
     "Rosy": "ばら色",
     "Tan": "小麦色",
     "Deep": "褐色",
+    "No more missing ground": "地面が欠けなくなった",
+    "The ground round you is drawn afresh as you come back from a fight, so none of it goes missing.": "戦闘から戻るとまわりの地面が描き直されるので、欠けることがなくなった。",
     "Smoother crossings": "なめらかな行き来",
     "Walking into the next land no longer dims the screen for a moment.": "となりの土地に入っても、画面が一瞬暗くならなくなった。",
     "The ground no longer goes missing where a land finished loading during a fight.": "戦闘中に読み込みが終わった土地で、地面が消えなくなった。",
