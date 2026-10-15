@@ -5964,7 +5964,7 @@
       "theme": {
         "ground": "tile_desert",
         "path": "tile_scree",
-        "border": "tile_scree",
+        "border": "tile_desert",
         "accent": "tile_cave_floor",
         "props": [
           {

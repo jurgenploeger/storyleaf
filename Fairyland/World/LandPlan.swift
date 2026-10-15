@@ -246,9 +246,6 @@ final class LandPlanner {
     private static let roadsideLength = 4...12
     /// The chance each stretch of a road's edge is lined, where it could be.
     private static let roadsideShare = 0.5
-    /// How many cells a fence or a wall runs straight at least before it steps a cell out or in with
-    /// the road's edge, so it stays mostly straight.
-    private static let roadsideStraight = 3
     /// How far in from the lands next door a road's lined, in cells: clear of where the ground gives
     /// way most to theirs, so no fence stops short at the border.
     private static let roadsideBorderGap = 6.0
@@ -260,17 +257,18 @@ final class LandPlanner {
     /// Stretches of the land's roads lined here and there (`theme.roadside`; playtesting
     /// 2026-10-15: roads with fences, walls or other scenery along them): along a road's edge, a
     /// picket fence, a low wall of field stones, or a row of one of the land's own props (a hedge of
-    /// bushes, an avenue of trees, lanterns), on the cells beside it. A line follows the edge, a
-    /// cell out or in where the road shifts; a fence or a wall only where those steps are
-    /// `roadsideStraight` apart at least (along a road that runs corner to corner, as Frog Swamp's
-    /// do, it would zigzag: a row lines that), taking the cell at each step too, so its pieces
-    /// join. Only along a road wider than a footpath, on open ground with nothing on it, off the
-    /// hills and the shore, and well in from the lands next door and the roads' crossings; in a
-    /// town only out in its countryside, a few cells off its wall. A cell's kept clear either end,
-    /// and behind it, so you can always step off the road round it. Its own stream ("/roadside"),
-    /// so the draws for everything else stay as they were. The first try (straight edges only, a third of them) lined next to nothing on
-    /// most lands: their roads wander. The second (steps `roadsideStraight` apart for every kind)
-    /// lined nothing on Frog Swamp, whose roads all run corner to corner.
+    /// bushes, an avenue of trees, lanterns), on the cells beside it. A row follows the edge, a
+    /// cell out or in where the road shifts; a fence or a wall runs straight, and where the edge
+    /// steps it ends and starts again a cell on, leaving a gap (one that jogged with the edge
+    /// zigzagged; along a road that runs corner to corner, as Frog Swamp's do, only a row fits).
+    /// Only along a road wider than a footpath, on open ground with nothing on it, off the hills
+    /// and the shore, and well in from the lands next door and the roads' crossings; in a town
+    /// only out in its countryside, a few cells off its wall. A cell's kept clear either end, and
+    /// behind it, so you can always step off the road round it. Its own stream ("/roadside"), so
+    /// the draws for everything else stay as they were. The first try (straight edges only, a
+    /// third of them) lined next to nothing on most lands: their roads wander. The second (every
+    /// kind straight three cells at least between steps, a fence jogging with each) lined nothing
+    /// on Frog Swamp, whose roads all run corner to corner, and its fences zigzagged.
     private func planRoadsides() {
         guard let kinds = def.theme.roadside, !kinds.isEmpty, def.theme.cave == nil else { return }
         let total = kinds.reduce(0.0) { $0 + max(0, $1.weight ?? 1) }
@@ -322,35 +320,25 @@ final class LandPlanner {
             case .west: a.col - b.col
             }
         }
-        /// The cells a fence or a wall along `cells` stands on: theirs, and at each step out or in,
-        /// the cell behind the step, which joins the two (`TownFence.pieces` joins a fence's cells
-        /// side to side).
-        func joined(_ cells: [GridPoint], _ side: Edge) -> [GridPoint] {
-            var found = [cells[0]]
-            for (a, b) in zip(cells, cells.dropFirst()) {
-                let step = outward(a, b, side)
-                if step > 0 { found.append(a.stepped(side)) } else if step < 0 { found.append(b.stepped(side)) }
-                found.append(b)
-            }
-            return found
-        }
-        /// Whether `cells` run straight `roadsideStraight` cells at least between their steps out or
-        /// in, so a fence or a wall along them stays mostly straight.
-        func isStraight(_ cells: [GridPoint], _ side: Edge) -> Bool {
-            var run = Self.roadsideStraight
+        /// The straight runs of `cells` a fence or a wall stands on: it ends where the road's edge
+        /// steps out or in and starts again a cell on, a gap you can walk through, as a fence
+        /// jogging with each step zigzagged. Runs shorter than a lined stretch's least are left out.
+        func runs(_ cells: [GridPoint], _ side: Edge) -> [[GridPoint]] {
+            var found: [[GridPoint]] = [], run = [cells[0]]
             for (a, b) in zip(cells, cells.dropFirst()) {
                 if outward(a, b, side) == 0 {
-                    run += 1
-                } else if run < Self.roadsideStraight {
-                    return false
+                    run.append(b)
                 } else {
-                    run = 0
+                    found.append(run)
+                    run = []
                 }
             }
-            return true
+            found.append(run)
+            return found.filter { $0.count >= Self.roadsideLength.lowerBound }
         }
-        /// A kind to line a stretch with, by weight; only a row where the stretch bends (a fence or
-        /// a wall along a road that runs corner to corner would zigzag), nil if the land has none.
+        /// A kind to line a stretch with, by weight; only a row unless it runs `straight` long
+        /// enough for a fence or a wall (along a road that runs corner to corner the edge steps
+        /// every cell), nil if the land has none.
         func pick(straight: Bool) -> MapDef.Roadside? {
             let fits = straight ? kinds : kinds.filter { $0.kind == "row" }
             let weight = fits.reduce(0.0) { $0 + max(0, $1.weight ?? 1) }
@@ -366,11 +354,15 @@ final class LandPlanner {
         /// something's taken one of them meanwhile.
         func line(_ cells: [GridPoint], _ side: Edge, with kind: MapDef.Roadside) -> Bool {
             guard kind.kind == "row" else {
-                let fence = joined(cells, side)
-                guard fence.allSatisfy({ map.isFreeForScenery($0) }) else { return false }
-                for cell in fence { map.occupy(cell, blocking: true) }
-                keepBehindClear(fence, side)
-                plan.roadsides.append(RoadsideLine(kind: kind.kind == "wall" ? .wall : .fence, cells: fence))
+                let fences = runs(cells, side)
+                guard !fences.isEmpty, cells.allSatisfy({ map.isFreeForScenery($0) }) else { return false }
+                for fence in fences {
+                    for cell in fence { map.occupy(cell, blocking: true) }
+                    plan.roadsides.append(RoadsideLine(kind: kind.kind == "wall" ? .wall : .fence, cells: fence))
+                }
+                // Its gaps stay open, and the ground behind it all along.
+                for cell in cells where map.isFreeForScenery(cell) { map.occupy(cell, blocking: false) }
+                keepBehindClear(cells, side)
                 return true
             }
             guard let art = kind.art, let prop = def.theme.props.first(where: { $0.art == art }),
@@ -411,7 +403,7 @@ final class LandPlanner {
                 let length = Int.random(in: Self.roadsideLength.lowerBound...longest, using: &random)
                 let cells = Array(chain[start..<(start + length)])
                 if Double.random(in: 0..<1, using: &random) < Self.roadsideShare,
-                   let kind = pick(straight: isStraight(cells, side)), line(cells, side, with: kind) {
+                   let kind = pick(straight: !runs(cells, side).isEmpty), line(cells, side, with: kind) {
                     for end in [chain[start - 1], chain[start + length]] {
                         map.occupy(end, blocking: false)
                         map.occupy(end.stepped(side), blocking: false)
