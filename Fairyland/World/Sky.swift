@@ -21,6 +21,8 @@ final class Sky {
     /// Sunlight now, 0 at night to 1 by day, for the sun's flare and sunbeams (`Lighting.sunlight`).
     /// Clouds hide them.
     private(set) var sunlight: CGFloat = 1
+    /// How much of its light shows (`setMood`).
+    private var strength: CGFloat = 1
 
     /// The colour the time of day multiplies the map by, at hours of the day, eased between.
     private static let light: [(hour: Double, r: Double, g: Double, b: Double)] = [
@@ -80,9 +82,13 @@ final class Sky {
     }
 
     private func apply() {
-        shade.color = UIColor(red: color.r, green: color.g, blue: color.b, alpha: 1)
+        // Less of it shows as plain daylight (white), never as a fainter shade: a multiplied colour
+        // faded by alpha darkens toward black (crossing into a land, the screen went dark).
+        let s = Double(strength)
+        let r = 1 - (1 - color.r) * s, g = 1 - (1 - color.g) * s, b = 1 - (1 - color.b) * s
+        shade.color = UIColor(red: r, green: g, blue: b, alpha: 1)
         // Plain daylight changes nothing; skip drawing it.
-        shade.isHidden = color.r > 0.995 && color.g > 0.995 && color.b > 0.995
+        shade.isHidden = r > 0.995 && g > 0.995 && b > 0.995
     }
 
     private func target() -> (r: Double, g: Double, b: Double) {
@@ -113,11 +119,13 @@ final class Sky {
         layer = node
     }
 
-    /// How much of the map's weather shows, 0...1 (`WorldScene.mood`): it thins out toward a
-    /// border you can walk across, and the next land's comes in beyond it.
+    /// How much of the map's weather and light shows, 0...1 (`WorldScene.mood`, a land's air on the
+    /// continent): it thins out toward a border you can walk across, and the next land's comes in.
     func setMood(_ strength: CGFloat) {
+        self.strength = strength
         weatherLayer.alpha = strength
         weatherLayer.isHidden = strength <= 0.01
+        apply()
     }
 
     /// Walked over a border from under `other`: the light and the clouds' shade go on from where

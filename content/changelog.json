@@ -2,6 +2,15 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.2",
+      "date": "2026-10-15",
+      "title": "Smoother crossings",
+      "notes": [
+        "Walking into the next land no longer dims the screen for a moment.",
+        "The ground no longer goes missing where a land finished loading during a fight."
+      ]
+    },
+    {
       "version": "0.7.1",
       "date": "2026-10-15",
       "title": "Fixes from playtesting",

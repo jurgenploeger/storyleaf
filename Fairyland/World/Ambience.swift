@@ -10,6 +10,7 @@ final class Ambience {
     /// The drifting particles, and how many each lets go a second at full strength (`setMood`).
     private var emitters: [(node: SKEmitterNode, rate: CGFloat)] = []
     private var tintAlpha: CGFloat = 0
+    private var vignetteAlpha: CGFloat = 0
 
     /// `inside`: brings a point of `bounds` onto the land itself, so its butterflies start there.
     init(_ def: MapDef.Ambience?, world: SKNode, camera: SKCameraNode, bounds: CGRect, seed: String,
@@ -70,6 +71,7 @@ final class Ambience {
         }
         emitters = drifting
         tintAlpha = tint?.alpha ?? 0
+        vignetteAlpha = vignette?.alpha ?? 0
     }
 
     func resize(to size: CGSize) {
@@ -80,6 +82,7 @@ final class Ambience {
     /// particles fade toward a border you can walk across, as the next land's come in beyond it.
     func setMood(_ strength: CGFloat) {
         tint?.alpha = tintAlpha * strength
+        vignette?.alpha = vignetteAlpha * strength
         for emitter in emitters { emitter.node.particleBirthRate = emitter.rate * strength }
     }
 

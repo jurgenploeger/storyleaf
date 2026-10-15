@@ -182,6 +182,9 @@ final class ContinentScene: SKScene {
     /// The next land's layout under way off the main thread while this one's planned and drawn on
     /// it (`layOutNext`), so one land's layout needn't wait for the last land's drawing.
     private var layingOut: (id: String, task: Task<WorldMap, Never>)?
+    /// Lands laid out while the continent was off screen (a battle, a cave), their ground still to
+    /// show in the chunks drawn: a tile map made then never showed (`didMove`).
+    private var unshown: Set<String> = []
     private var pinchStartZoom: CGFloat = 1
     private lazy var pinch = UIPinchGestureRecognizer(target: self, action: #selector(pinched(_:)))
 
@@ -253,9 +256,10 @@ final class ContinentScene: SKScene {
             set(mood: 0)
         }
 
+        /// Each part fades itself, the layer only hidden once it's gone: faded as a whole, the
+        /// sky's multiplied shade went dark rather than faint as you walked into the next land.
         func set(mood: CGFloat) {
             self.mood = mood
-            layer.alpha = mood
             layer.isHidden = mood <= 0.01
             ambience?.setMood(mood)
             lighting?.setMood(mood)
@@ -295,6 +299,17 @@ final class ContinentScene: SKScene {
         view.addGestureRecognizer(pinch)
         cam.setScale(1 / WorldScene.zoom)
         lastUpdate = 0
+        // Back from a battle or a cave: the ground of lands laid out meanwhile, and the squares and
+        // banks left to draw.
+        for id in unshown.sorted() {
+            guard let land = lands[id] else { continue }
+            for (key, chunk) in chunks where owners(of: key).contains(id) { show(land, in: chunk, at: key) }
+        }
+        unshown = []
+        if !painting, !waiting.isEmpty {
+            painting = true
+            Task { [weak self] in await self?.paintWaiting() }
+        }
     }
 
     override func willMove(from view: SKView) {
@@ -1308,7 +1323,13 @@ final class ContinentScene: SKScene {
         #if DEBUG
         builtForDebug.append("\(id) \(Int(Date().timeIntervalSince(began)))s")
         #endif
-        for (key, chunk) in chunks where owners(of: key).contains(id) { show(land, in: chunk, at: key) }
+        // Its ground in the chunks drawn already; while a battle or a cave is up, once you're back
+        // (`didMove`): playtesting saw a chunk's ground made during a fight never show.
+        if view != nil {
+            for (key, chunk) in chunks where owners(of: key).contains(id) { show(land, in: chunk, at: key) }
+        } else {
+            unshown.insert(id)
+        }
         // Don't stand on top of scenery, or out at sea (an old save): onto the nearest ground.
         let standing = Self.cell(at: player.position)
         if store.land(at: standing)?.id == id, !store.isWalkable(standing), let open = store.nearestWalkable(to: standing, within: 48) {
@@ -1424,7 +1445,8 @@ final class ContinentScene: SKScene {
     }
 
     private func paintWaiting() async {
-        while !waiting.isEmpty {
+        // Not while a battle or a cave is up: their tile maps wouldn't show (`didMove` goes on).
+        while !waiting.isEmpty, view != nil {
             let you = Self.cell(at: cam.position)
             guard let next = waiting.indices.min(by: { distance(of: waiting[$0], from: you) < distance(of: waiting[$1], from: you) })
             else { break }
