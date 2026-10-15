@@ -174,6 +174,11 @@ nonisolated final class WorldMap: @unchecked Sendable {
     private var occupied: Set<GridPoint> = []
     private var blocked: Set<GridPoint> = []
     private let graph: GKGridGraph<GKGridGraphNode>
+    /// Cells blocked since the walk graph was last brought up to date (`occupy`), taken out of it all
+    /// at once when it's next wanted (`linkGraph`): the graph rebuilds round each removal, and one at
+    /// a time they were most of a land's layout, as long in a Release build as in a Debug one (Frog
+    /// Swamp's 85 s of 102 on CI's simulator, 2026-10-15). Nothing reads the graph but `path`.
+    private var unlinked: [GKGridGraphNode] = []
     /// The land's shape on the continent (`Region`): its own cells of its box, the sea round it, its
     /// middle and where its roads cross its border. Nil for a cave: all its box is its own.
     let region: Region?
@@ -292,6 +297,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
         markForeign()
         layShore()
         if def.theme.cave == nil { sealPockets() }
+        linkGraph()
     }
 
     /// Over the land's box, the cells that aren't its own (`Region`) are the sea's or a land next
@@ -586,13 +592,21 @@ nonisolated final class WorldMap: @unchecked Sendable {
 
     // MARK: Placement
 
-    /// Reserves a cell; blocking things also take it out of the walk graph.
+    /// Reserves a cell; blocking things also take it out of the walk graph (when it's next wanted,
+    /// `unlinked`).
     func occupy(_ cell: GridPoint, blocking: Bool) {
         guard contains(cell) else { return }
         occupied.insert(cell)
         guard blocking, !blocked.contains(cell), let node = graph.node(atGridPosition: cell.vector) else { return }
-        graph.remove([node])
+        unlinked.append(node)
         blocked.insert(cell)
+    }
+
+    /// Takes the cells blocked since it was last done out of the walk graph, all at once.
+    private func linkGraph() {
+        guard !unlinked.isEmpty else { return }
+        graph.remove(unlinked)
+        unlinked = []
     }
 
     /// Whether scenery may go in `cell`: free, off roads and water, clear of the centre and
@@ -661,6 +675,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
 
     /// Waypoints from `start` to `end` around blocked cells. Empty if unreachable.
     func path(from start: CGPoint, to end: CGPoint) -> [CGPoint] {
+        linkGraph()
         guard let startCell = nearestWalkable(to: cell(at: start)),
               let goalCell = nearestWalkable(to: cell(at: end)),
               let from = graph.node(atGridPosition: startCell.vector),
