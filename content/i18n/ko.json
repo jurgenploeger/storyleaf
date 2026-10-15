@@ -804,6 +804,7 @@
     "The land under your feet starts loading at once and gets more of the phone's time, so its trees, houses and people come in sooner.": "발밑의 땅은 바로 불러오기 시작하고 휴대폰의 시간을 더 많이 받아서, 나무와 집, 사람들이 더 빨리 나타나요.",
     "While it loads, a note shows its name and how far along it is.": "불러오는 동안 땅의 이름과 진행 정도가 표시돼요.",
     "The minimap no longer loads the lands round you a second time for the world map, which held up the land you were walking into.": "미니맵이 세계 지도를 위해 주변 땅을 한 번 더 불러오지 않아요. 이것 때문에 들어가려던 땅이 늦어졌어요.",
+    "The sea no longer repeats one small square: long swells and ripples run across it, coming round again only every 16 tiles. Lakes and rivers are calmer.": "바다가 더 이상 작은 사각형 하나를 되풀이하지 않아요. 긴 너울과 잔물결이 펼쳐지고, 16칸마다만 되풀이돼요. 호수와 강은 더 잔잔해졌어요.",
     "Walk on before it loads": "불러오는 중에도 걸어가기",
     "You can walk into the next land before it has finished loading: its trees, houses and people come in round you as it does. Only its rivers and lakes keep you out.": "옆 땅이 다 불러와지기 전에도 걸어 들어갈 수 있어요. 나무와 집, 사람들은 불러오는 대로 주위에 나타나요. 강과 호수만 길을 막아요.",
     "The land nearest you loads first, and faster as you come close to it.": "가장 가까운 땅부터 먼저 불러오고, 가까이 갈수록 더 빨라져요.",

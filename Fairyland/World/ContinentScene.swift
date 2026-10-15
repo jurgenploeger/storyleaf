@@ -128,7 +128,27 @@ final class ContinentScene: SKScene {
     /// Debug launches waiting for the lands round you (`isSettled`): the work keeps its longer
     /// slices till they're in.
     var hurries = false
-    private let seaTile = "raw:tile_water"
+    /// The sea's picture (`tools/water_art.py`): `seaCells` cells a side that tile as a whole, the
+    /// same blue round every land ("raw:", graded for none).
+    private let seaSheet = "raw:sea"
+    /// The sea's tiles, the picture cut a cell at a time (by row from the south), and the tile set
+    /// they make: each world cell takes the one at its place in it (`seaGroup`), so the sea repeats
+    /// only every `seaCells` cells, not every tile.
+    private lazy var seaGroups: [SKTileGroup] = {
+        let sheet = art.tileTexture(seaSheet)
+        let step = 1 / CGFloat(seaCells), size = CGSize(width: WorldMap.tileSize, height: WorldMap.tileSize)
+        var groups: [SKTileGroup] = []
+        for row in 0..<seaCells {
+            for col in 0..<seaCells {
+                let part = SKTexture(rect: CGRect(x: CGFloat(col) * step, y: CGFloat(row) * step, width: step, height: step), in: sheet)
+                part.filteringMode = .nearest
+                groups.append(SKTileGroup(tileDefinition: SKTileDefinition(texture: part, size: size)))
+            }
+        }
+        return groups
+    }()
+    private lazy var seaCells = max(1, Int((art.tileTexture(seaSheet).size().width / 32).rounded()))
+    private lazy var seaTiles = SKTileSet(tileGroups: seaGroups)
     /// Squares of hills and shore waiting to be drawn (nearest first), and whether they're being drawn;
     /// and a chunk's bank along the sea (`bankJob` for its painter).
     private var waiting: [(chunk: GridPoint, land: String, painter: Int, corner: GridPoint)] = []
@@ -1613,12 +1633,11 @@ final class ContinentScene: SKScene {
         let size = World.chunkSize, tile = WorldMap.tileSize
         let origin = GridPoint(col: chunk.col * size, row: chunk.row * size)
         let tileSize = CGSize(width: tile, height: tile)
-        let water = SKTileGroup(tileDefinition: SKTileDefinition(texture: art.tileTexture(seaTile), size: tileSize))
-        let waters = SKTileMapNode(tileSet: SKTileSet(tileGroups: [water]), columns: size, rows: size, tileSize: tileSize)
+        let waters = SKTileMapNode(tileSet: seaTiles, columns: size, rows: size, tileSize: tileSize)
         waters.anchorPoint = .zero
         // Under the land's cut edge along the coast too, so the sea shows through it.
         for cell in World.cells(in: chunk) {
-            waters.setTileGroup(water, forColumn: cell.col - origin.col, row: cell.row - origin.row)
+            waters.setTileGroup(seaGroup(at: cell), forColumn: cell.col - origin.col, row: cell.row - origin.row)
         }
         waters.position = CGPoint(x: CGFloat(origin.col) * tile, y: CGFloat(origin.row) * tile)
         if let shallows = shallows(in: chunk) { waters.addChild(shallows) }
@@ -1629,6 +1648,12 @@ final class ContinentScene: SKScene {
         chunks[chunk] = drawn
         drawGround(of: drawn, at: chunk)
         for land in lands.values { paintSquares(of: land, in: chunk) }
+    }
+
+    /// The sea's tile for a world cell: the one at its place in the sea's picture (`seaGroups`).
+    private func seaGroup(at cell: GridPoint) -> SKTileGroup {
+        let col = ((cell.col % seaCells) + seaCells) % seaCells, row = ((cell.row % seaCells) + seaCells) % seaCells
+        return seaGroups[row * seaCells + col]
     }
 
     /// The sea paler along the coast, in bands out from the land (`shallowTiles`): the water shallow

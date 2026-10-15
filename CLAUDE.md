@@ -56,6 +56,10 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `tools/ui_icon_art.py`: the same for the UI's button icons (`art/sprites/ui_<GameIcon>.png`): `IconImage` shows
   them from 18 pt up (battle buttons, the HUD's buttons, the menu's tabs) and keeps Iconaut's vector icons for
   small inline glyphs. `--sheet out.png` previews them on the game's button colours.
+- `tools/water_art.py`: the same for the water: `sea.png` (16 × 16 cells that tile as a whole; the continent gives each
+  world cell its own, `ContinentScene.seaGroups`) and `tile_water.png` (a land's lakes and rivers, calm so its versions
+  don't make a grid), ripples level on screen. It replaced a generated tile that repeated every 16 pixels; rerun it
+  after editing, `--preview out.png` shows them turned as the game draws them.
 - `tools/fx_art.py`: the same for the few battle marks that aren't light (`art/sprites/fx_*.png`: poison's bubble
   and the glossy marks by the HP bars, drawn smooth at 3×: poison's drop and the arrows for lowered and raised
   stats). `--sheet out.png` writes a contact sheet. Spells are light, not sprites:
