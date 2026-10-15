@@ -87,6 +87,13 @@ final class ContinentScene: SKScene {
     /// (`urgentReach`): the work takes longer slices till it's in (`breathe`).
     private var isUrgent = false
     private static let urgentReach = 20
+    /// Whether the land under your feet isn't laid out yet (you walked onto its plain ground): its
+    /// work takes the longest slices that still let you walk (`breathe`), and a note says how far
+    /// it's come (`showLoading`).
+    private var standsOnUnbuilt = false
+    /// How far each land being built has come, 0 to 1 by its steps (`build`).
+    private var progress: [String: Double] = [:]
+    private var loadingNote: NameTag?
     /// A chunk drawn: its ground (a tile map for each land laid out, and one in its plain ground
     /// for each land not laid out yet, `placeholders`), its sea, and what stands on it.
     private final class Chunk {
@@ -1151,20 +1158,20 @@ final class ContinentScene: SKScene {
         context.setFillColor(red: CGFloat(sea.r) / 255, green: CGFloat(sea.g) / 255, blue: CGFloat(sea.b) / 255, alpha: 1)
         context.fill(CGRect(x: 0, y: 0, width: columns, height: rows))
         let drawn = WorldOverview.shared.images
-        var missing: [String] = []
+        // Lands not drawn yet in their ground's colour, till the continent lays them out and hands
+        // their pictures over (`Land.overview`), and the minimap's drawn again. Not laid out for the
+        // world map meanwhile: one layout at a time (`MapLayouts`), and the land you walk into
+        // waited behind them.
         for (other, offset) in Continent.lands(near: def, within: margin) {
             let frame = CGRect(x: offset.col + margin, y: offset.row + margin, width: other.width, height: other.height)
             if let image = drawn[other.id] {
                 context.draw(image, in: frame)
                 continue
             }
-            missing.append(other.id)
             let (red, green, blue) = WorldScene.groundColor(of: other, art: art)
             let color = PixelColor(r: UInt8(red * 255), g: UInt8(green * 255), b: UInt8(blue * 255))
             if let shape = WorldScene.silhouette(of: other, color: color) { context.draw(shape, in: frame) }
         }
-        // Lands not drawn yet are drawn in the background, and the minimap's drawn again as they come.
-        if !missing.isEmpty { Task { WorldOverview.shared.prepare(first: missing) } }
         context.draw(own, in: CGRect(x: margin, y: margin, width: def.width, height: def.height))
         guard let made = context.makeImage() else { return nil }
         let picture = WorldScene.MinimapPicture(image: UIImage(cgImage: made), origin: GridPoint(col: -margin, row: -margin),
@@ -1183,6 +1190,31 @@ final class ContinentScene: SKScene {
         cam.addChild(tag)
         tag.run(.sequence([.fadeIn(withDuration: 0.6), .wait(forDuration: 2.4), .fadeOut(withDuration: 0.9), .removeFromParent()]))
         banner = tag
+    }
+
+    /// While the land you stand on isn't laid out yet (`id`), a note above you with its name and how
+    /// far its build has come, so its plain ground reads as on its way; gone once it's in.
+    private func showLoading(_ id: String?) {
+        guard let id, let def = Content.shared.map(id) else {
+            loadingNote?.run(.sequence([.fadeOut(withDuration: 0.4), .removeFromParent()]))
+            loadingNote = nil
+            return
+        }
+        // Waiting its turn, 0; laying out (off the main thread), 5; laid out, 40; then by its steps.
+        let done = progress[id] ?? (laidOut[id] != nil ? 0.4 : layingOut?.id == id ? 0.05 : 0)
+        let percent = Int((done * 100).rounded())
+        let text = L("Loading {land}… {percent}%", ["land": def.name, "percent": percent])
+        if let note = loadingNote {
+            note.setText(text)
+        } else {
+            let note = NameTag(text, color: .white, size: 14)
+            note.zPosition = 45_000
+            note.alpha = 0
+            cam.addChild(note)
+            note.run(.fadeIn(withDuration: 0.4))
+            loadingNote = note
+        }
+        loadingNote?.position = CGPoint(x: 0, y: min(120, size.height / 2 - 70))
     }
 
     // MARK: Chunks
@@ -1206,12 +1238,17 @@ final class ContinentScene: SKScene {
                 }
             }
         }
-        // The land you stand in before any.
+        // The land you stand in before any, its layout begun at once, even while another's built.
         let standing = store.land(at: you)?.id
-        if let standing, lands[standing] == nil { near[standing] = -1 }
+        if let standing, lands[standing] == nil {
+            near[standing] = -1
+            layOutAhead(standing)
+        }
         wanted = near
         isUrgent = (near.values.min() ?? .max) <= Self.urgentReach
+        standsOnUnbuilt = standing.map { lands[$0] == nil } ?? false
         buildWanted()
+        showLoading(standsOnUnbuilt ? standing : nil)
         // Ready once the land you're in is drawn round you, with its hills and shore on screen.
         if !isReady, standing.map({ lands[$0] != nil }) ?? true,
            !waiting.contains(where: { distance(of: $0, from: you) <= Self.screenReach }) {
@@ -1324,6 +1361,7 @@ final class ContinentScene: SKScene {
         #if DEBUG
         let began = Date()
         #endif
+        progress[id] = 0.05
         let map: WorldMap
         if let ready = laidOut.removeValue(forKey: id) {
             map = ready
@@ -1334,23 +1372,25 @@ final class ContinentScene: SKScene {
             // One laid out ahead that isn't wanted first after all is kept for when it is.
             if let ahead = layingOut {
                 layingOut = nil
-                Task { [weak self] in
-                    let map = await ahead.task.value
-                    if self?.lands[ahead.id] == nil { self?.laidOut[ahead.id] = map }
-                }
+                setAside(ahead)
             }
             map = await GameCoordinator.layOut(def)
         }
+        progress[id] = 0.45
         layOutNext(after: id)
         let rest = pause(for: def)
         art.use(palette: def.theme.palette, for: def.id)
         let planner = LandPlanner(def: def, map: map, art: art)
         await planner.planUpToLocals(pause: rest)
+        progress[id] = 0.55
         await planner.planTheRest(pause: rest)
+        progress[id] = 0.65
         let tiles = GroundTiles(map: map, art: art)
         let painters = await ranges(of: map, tiles: tiles, place: place, pause: rest)
+        progress[id] = 0.8
         let stage = LandStage(def: def, map: map, plan: planner.plan, tiles: tiles, art: art, session: session, shift: Self.shift(of: place))
         await stage.build(pause: rest)
+        progress[id] = nil
         // Its adventurers spoiling for a fight dare you only in the land you're in.
         stage.crowd?.onChallenge = { [weak self, weak stage] rival in
             guard let self, stage?.isHere == true, !self.isInputLocked else { return }
@@ -1399,6 +1439,26 @@ final class ContinentScene: SKScene {
         layingOut = (next, Task { await GameCoordinator.layOut(def) })
     }
 
+    /// Starts laying out `id` off the main thread now, unless it's built, being built, or laid out
+    /// or under way already: the land under your feet, without waiting for the one being built.
+    /// One laid out ahead for another land is kept for when that's wanted.
+    private func layOutAhead(_ id: String) {
+        guard lands[id] == nil, building != id, laidOut[id] == nil, layingOut?.id != id,
+              let def = Content.shared.map(id) else { return }
+        if let ahead = layingOut { setAside(ahead) }
+        layingOut = (id, Task { await GameCoordinator.layOut(def) })
+    }
+
+    /// Keeps a land's layout under way for when it's wanted (`laidOut`), unless it's been built or
+    /// is being built by then.
+    private func setAside(_ ahead: (id: String, task: Task<WorldMap, Never>)) {
+        Task { [weak self] in
+            let map = await ahead.task.value
+            guard let self, lands[ahead.id] == nil, building != ahead.id else { return }
+            laidOut[ahead.id] = map
+        }
+    }
+
     /// A pause in work on `def`'s land: gives the frame back once the work's had it a while, then
     /// grades with that land's palette again, as other work may have changed it meanwhile.
     private func pause(for def: MapDef) -> () async -> Void {
@@ -1414,9 +1474,11 @@ final class ContinentScene: SKScene {
     /// `WorldScene.sliceLength`): the card still turns with the phone, and the work isn't held up
     /// by a pause every few milliseconds (each a good deal longer than asked on a busy phone). And
     /// so too while a debug launch `hurries`. While a land not laid out yet is near you (`isUrgent`),
-    /// every 16: a frame or two dropped while it comes in faster.
+    /// every 16: a frame or two dropped while it comes in faster; and while you stand on one, every
+    /// 40, the frames slower for a few seconds but the land in sooner.
     private func breathe() async {
-        let slice: Duration = !isReady || hurries ? .milliseconds(120) : isUrgent ? .milliseconds(16) : .milliseconds(6)
+        let slice: Duration = !isReady || hurries ? .milliseconds(120)
+            : standsOnUnbuilt ? .milliseconds(40) : isUrgent ? .milliseconds(16) : .milliseconds(6)
         guard ContinuousClock.now - sliceStart > slice else { return }
         try? await Task.sleep(for: .milliseconds(10))
         sliceStart = ContinuousClock.now

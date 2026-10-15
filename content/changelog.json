@@ -2,6 +2,16 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.5",
+      "date": "2026-10-15",
+      "title": "Lands load sooner",
+      "notes": [
+        "The land under your feet starts loading at once and gets more of the phone's time, so its trees, houses and people come in sooner.",
+        "While it loads, a note shows its name and how far along it is.",
+        "The minimap no longer loads the lands round you a second time for the world map, which held up the land you were walking into."
+      ]
+    },
+    {
       "version": "0.7.4",
       "date": "2026-10-15",
       "title": "Walk on before it loads",
