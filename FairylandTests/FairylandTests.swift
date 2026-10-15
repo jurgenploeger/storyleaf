@@ -3198,7 +3198,7 @@ struct LandPlanTests {
     /// road to the ground behind.
     @Test func roadsidesLineTheRoads() async throws {
         var kinds: Set<String> = []
-        for id in ["sunny_meadow", "valley_of_fear", "crystal_mountain", "twilight_woods", "goldburg"] {
+        for id in ["sunny_meadow", "valley_of_fear", "crystal_mountain", "twilight_woods", "goldburg", "frog_swamp"] {
             let def = try #require(content.map(id))
             let (map, plan) = await planned(def)
             print("🚧 \(id): " + plan.roadsides.map { "\($0.kind.rawValue) \($0.cells.count)" }.joined(separator: ", "))

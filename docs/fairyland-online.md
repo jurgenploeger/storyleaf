@@ -207,10 +207,12 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   road wider than a footpath, a picket fence, a low wall of field stones (`BorderArt.lowWallPicture`) or a
   row of one of the land's own props, a hedge of bushes, an avenue of trees or lanterns every few cells,
   on the cells beside it (`theme.roadside` in maps.json, `LandPlanner.planRoadsides`), about half of
-  what could be. A line follows the edge, a cell out or in where the road shifts (straight for three
-  cells at least between), a fence or a wall taking the cell at the step so its pieces join; the first
-  try lined straight edges only and found next to nothing on most lands (counted per land, 🚧 in the
-  tests job's log), their roads wander. Each land has its own mix: walls on the downs and the rocky
+  what could be. A line follows the edge, a cell out or in where the road shifts; a fence or a wall
+  only where it runs straight for three cells at least between, taking the cell at the step so its
+  pieces join, and along a road that runs corner to corner (all of Frog Swamp's) a row, which reads as
+  an avenue on screen where a fence would zigzag. The first try lined straight edges only and found
+  next to nothing on most lands (counted per land, 🚧 in the tests job's log), their roads wander; the
+  second kept every kind straight and lined nothing on Frog Swamp. Each land has its own mix: walls on the downs and the rocky
   lands, palms on the shores, lanterns in the woods and the spooky lands, lollipops on Gumdrop Peaks,
   lamp posts on the roads into the cities (a prop with a count of 0 only lines the roads). In a town
   only out in its countryside, three cells off its wall; off the hills and the shore, and well in from the

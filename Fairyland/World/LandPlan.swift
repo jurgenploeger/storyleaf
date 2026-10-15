@@ -246,8 +246,8 @@ final class LandPlanner {
     private static let roadsideLength = 4...12
     /// The chance each stretch of a road's edge is lined, where it could be.
     private static let roadsideShare = 0.5
-    /// How many cells a line runs straight at least before it steps a cell out or in with the
-    /// road's edge, so it stays mostly straight.
+    /// How many cells a fence or a wall runs straight at least before it steps a cell out or in with
+    /// the road's edge, so it stays mostly straight.
     private static let roadsideStraight = 3
     /// How far in from the lands next door a road's lined, in cells: clear of where the ground gives
     /// way most to theirs, so no fence stops short at the border.
@@ -261,14 +261,16 @@ final class LandPlanner {
     /// 2026-10-15: roads with fences, walls or other scenery along them): along a road's edge, a
     /// picket fence, a low wall of field stones, or a row of one of the land's own props (a hedge of
     /// bushes, an avenue of trees, lanterns), on the cells beside it. A line follows the edge, a
-    /// cell out or in where the road shifts (`roadsideStraight` apart at least); a fence or a wall
-    /// takes the cell at each step too, so its pieces join. Only along a road wider than a
-    /// footpath, on open ground with nothing on it, off the hills and the shore, and well in from
-    /// the lands next door and the roads' crossings; in a town only out in its countryside, a few
-    /// cells off its wall. A cell's kept clear either end, and behind it, so you can always step off
-    /// the road round it. Its own stream ("/roadside"), so the draws for everything else stay as
-    /// they were. The first try (straight edges only, a third of them) lined next to nothing on
-    /// most lands: their roads wander.
+    /// cell out or in where the road shifts; a fence or a wall only where those steps are
+    /// `roadsideStraight` apart at least (along a road that runs corner to corner, as Frog Swamp's
+    /// do, it would zigzag: a row lines that), taking the cell at each step too, so its pieces
+    /// join. Only along a road wider than a footpath, on open ground with nothing on it, off the
+    /// hills and the shore, and well in from the lands next door and the roads' crossings; in a
+    /// town only out in its countryside, a few cells off its wall. A cell's kept clear either end,
+    /// and behind it, so you can always step off the road round it. Its own stream ("/roadside"),
+    /// so the draws for everything else stay as they were. The first try (straight edges only, a third of them) lined next to nothing on
+    /// most lands: their roads wander. The second (steps `roadsideStraight` apart for every kind)
+    /// lined nothing on Frog Swamp, whose roads all run corner to corner.
     private func planRoadsides() {
         guard let kinds = def.theme.roadside, !kinds.isEmpty, def.theme.cave == nil else { return }
         let total = kinds.reduce(0.0) { $0 + max(0, $1.weight ?? 1) }
@@ -332,13 +334,33 @@ final class LandPlanner {
             }
             return found
         }
-        func pick() -> MapDef.Roadside {
-            var left = Double.random(in: 0..<total, using: &random)
-            for kind in kinds {
+        /// Whether `cells` run straight `roadsideStraight` cells at least between their steps out or
+        /// in, so a fence or a wall along them stays mostly straight.
+        func isStraight(_ cells: [GridPoint], _ side: Edge) -> Bool {
+            var run = Self.roadsideStraight
+            for (a, b) in zip(cells, cells.dropFirst()) {
+                if outward(a, b, side) == 0 {
+                    run += 1
+                } else if run < Self.roadsideStraight {
+                    return false
+                } else {
+                    run = 0
+                }
+            }
+            return true
+        }
+        /// A kind to line a stretch with, by weight; only a row where the stretch bends (a fence or
+        /// a wall along a road that runs corner to corner would zigzag), nil if the land has none.
+        func pick(straight: Bool) -> MapDef.Roadside? {
+            let fits = straight ? kinds : kinds.filter { $0.kind == "row" }
+            let weight = fits.reduce(0.0) { $0 + max(0, $1.weight ?? 1) }
+            guard weight > 0 else { return nil }
+            var left = Double.random(in: 0..<weight, using: &random)
+            for kind in fits {
                 left -= max(0, kind.weight ?? 1)
                 if left < 0 { return kind }
             }
-            return kinds[kinds.count - 1]
+            return fits[fits.count - 1]
         }
         /// Sets `kind` down on `cells`, beside the road on its `side` one after another; false if
         /// something's taken one of them meanwhile.
@@ -387,8 +409,9 @@ final class LandPlanner {
             while start + Self.roadsideLength.lowerBound < chain.count {
                 let longest = min(Self.roadsideLength.upperBound, chain.count - 1 - start)
                 let length = Int.random(in: Self.roadsideLength.lowerBound...longest, using: &random)
+                let cells = Array(chain[start..<(start + length)])
                 if Double.random(in: 0..<1, using: &random) < Self.roadsideShare,
-                   line(Array(chain[start..<(start + length)]), side, with: pick()) {
+                   let kind = pick(straight: isStraight(cells, side)), line(cells, side, with: kind) {
                     for end in [chain[start - 1], chain[start + length]] {
                         map.occupy(end, blocking: false)
                         map.occupy(end.stepped(side), blocking: false)
@@ -397,6 +420,9 @@ final class LandPlanner {
                 start += length + Int.random(in: 2...6, using: &random)
             }
         }
+        // The cells already in a chain: beside a road that runs corner to corner, a cell lies beside
+        // it two ways (north of it and west of it, say), so it's lined from one of them only.
+        var used: Set<GridPoint> = []
         for side in [Edge.north, .east, .south, .west] {
             // The cells beside the road on this side, by how far along the row (north or south of
             // it) or the column they lie.
@@ -410,23 +436,16 @@ final class LandPlanner {
                 for along in 0..<length where besideRoad(cell(along, across), side) { beside[along].append(across) }
             }
             // Chains along the edge, from where each begins: on along it a cell at a time, a cell
-            // out or in where the edge steps, but straight for a while first.
-            var used: Set<GridPoint> = []
+            // out or in where the edge steps (every cell along a road that runs corner to corner).
             for along in 0..<length {
                 for first in beside[along] where !used.contains(cell(along, first)) {
                     var chain = [cell(along, first)]
                     used.insert(chain[0])
-                    var across = first, at = along, straight = Self.roadsideStraight
+                    var across = first, at = along
                     while at + 1 < length {
                         let options = beside[at + 1]
-                        var step: Int?
-                        if options.contains(across) {
-                            step = across
-                        } else if straight >= Self.roadsideStraight {
-                            step = [across - 1, across + 1].first(where: { options.contains($0) })
-                        }
+                        let step = [across, across - 1, across + 1].first { options.contains($0) }
                         guard let next = step, !used.contains(cell(at + 1, next)) else { break }
-                        straight = next == across ? straight + 1 : 0
                         across = next
                         at += 1
                         chain.append(cell(at, across))
