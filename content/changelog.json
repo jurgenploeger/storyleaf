@@ -7,7 +7,8 @@
       "title": "Smoother crossings",
       "notes": [
         "Walking into the next land no longer dims the screen for a moment.",
-        "The ground no longer goes missing where a land finished loading during a fight."
+        "The ground no longer goes missing where a land finished loading during a fight.",
+        "You can see the coast slope down into the sea now: the ground darkens toward the water, and the sea is paler in the shallows."
       ]
     },
     {

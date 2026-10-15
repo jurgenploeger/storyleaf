@@ -86,6 +86,10 @@ enum HillArt {
 
     /// Cells a side of each picture.
     static let square = 16
+    /// How much darker sunk ground is at the water's level than at the land's (`WorldMap.seaDrop`
+    /// below), in the shade's steps: wet ground running down into the sea, so the slope shows
+    /// (playtesting 2026-10-15). A lake's shore, not as deep, darkens less.
+    static let wetShade: Float = 0.3
     /// Cells deep each strip is, along the map's diagonal (up the screen).
     static let stripDepth = 2
     /// How far up the screen a cell's depth is (a cell's diamond is twice this tall).
@@ -190,8 +194,10 @@ enum HillArt {
         }
         if hill.sunken {
             // Sunk ground, whole over its cells and the cell round them (the land there at its own
-            // height, drawn just as it is round it), lit only by how it slopes: their samples, not
-            // every one in its box (a coast's shore reaches round much of its land, in a narrow band).
+            // height, drawn just as it is round it), lit by how it slopes and darker the lower it
+            // lies, wet toward the water (`wetShade`): their samples, not every one in its box (a
+            // coast's shore reaches round much of its land, in a narrow band).
+            let drop = Float(WorldMap.seaDrop)
             for (number, cell) in shown.enumerated() {
                 if number % 256 == 255 { await pause() }
                 let i0 = (cell.col - low.col) * samples, j0 = (cell.row - low.row) * samples
@@ -202,6 +208,9 @@ enum HillArt {
                         // Image rows run top down.
                         let index = ((sh - 1 - j) * sw + i) * 4
                         for channel in 0..<4 { mask[index + channel] = 255 }
+                        let depth = -(height(i, j) + height(i + 1, j) + height(i, j + 1) + height(i + 1, j + 1)) / 4
+                        let wet = min(1, max(0, depth / drop))
+                        light[j * sw + i] = 1 - Self.wetShade * wet * wet.squareRoot()
                     }
                 }
             }
@@ -383,6 +392,10 @@ enum HillArt {
                 context.draw(variation, in: CGRect(x: -CGFloat(low.col) * scale, y: -CGFloat(low.row) * scale,
                                                    width: CGFloat(look.mapSize.columns) * scale, height: CGFloat(look.mapSize.rows) * scale))
             }
+            // Sunk ground's light is only how wet it is; its slope's is the shader's.
+            await shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint,
+                        brightest: Float(look.brightest), pause: pause)
+            // A bridge's deck over a sunk lake lies over the wet ground, not wet itself.
             if !look.overlays.isEmpty {
                 context.interpolationQuality = .none
                 for overlay in look.overlays {
@@ -391,11 +404,6 @@ enum HillArt {
                                                            width: overlay.frame.width * scale, height: overlay.frame.height * scale))
                 }
                 context.interpolationQuality = .medium
-            }
-            // Sunk ground is lit only by the shader (its `light` is 1 all over: nothing to shade).
-            if !hill.sunken {
-                await shade(context, light: light, samples: (sw, sh), perSample: Float(px) / Float(samples), offset: offset, tint: tint,
-                            brightest: Float(look.brightest), pause: pause)
             }
             if let doorway { Self.cave(doorway, in: context, at: { spot($0) }) }
             if let outline {

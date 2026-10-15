@@ -1510,6 +1510,7 @@ final class ContinentScene: SKScene {
             waters.setTileGroup(water, forColumn: cell.col - origin.col, row: cell.row - origin.row)
         }
         waters.position = CGPoint(x: CGFloat(origin.col) * tile, y: CGFloat(origin.row) * tile)
+        if let shallows = shallows(in: chunk) { waters.addChild(shallows) }
         seaGrid.addChild(waters)
         let drawn = Chunk(sea: waters)
         drawn.ground.position = waters.position
@@ -1524,6 +1525,54 @@ final class ContinentScene: SKScene {
             }
         }
         for land in lands.values { paintSquares(of: land, in: chunk) }
+    }
+
+    /// The sea paler along the coast, in bands out from the land (`shallowTiles`): the water shallow
+    /// where the land runs down into it, palest at the waterline, under the cut edge of the land's
+    /// cells along it too. None in a chunk all land or all sea.
+    private func shallows(in chunk: GridPoint) -> SKTileMapNode? {
+        let size = World.chunkSize, tile = WorldMap.tileSize
+        let reach = Self.shallowTiles.count - 1
+        // Which cells are land, over the chunk and `reach` round it.
+        let low = GridPoint(col: chunk.col * size - reach, row: chunk.row * size - reach), side = size + 2 * reach
+        var land = [Bool](repeating: false, count: side * side)
+        for row in 0..<side {
+            for col in 0..<side { land[row * side + col] = store.land(at: GridPoint(col: low.col + col, row: low.row + row)) != nil }
+        }
+        guard land.contains(true), land.contains(false) else { return nil }
+        let map = SKTileMapNode(tileSet: SKTileSet(tileGroups: Self.shallowTiles), columns: size, rows: size,
+                                tileSize: CGSize(width: tile, height: tile))
+        map.anchorPoint = .zero
+        map.zPosition = 1
+        var any = false
+        for row in 0..<size {
+            for col in 0..<size {
+                let isLand = land[(row + reach) * side + col + reach]
+                // How far it lies out from the land, in cells (0: the land's own cell, at the waterline).
+                var nearest = Double(reach) + 1
+                for dr in -reach...reach {
+                    for dc in -reach...reach where (dc != 0 || dr != 0) && land[(row + reach + dr) * side + col + reach + dc] != isLand {
+                        nearest = min(nearest, Double(dc * dc + dr * dr).squareRoot())
+                    }
+                }
+                let band: Int? = isLand ? (nearest < 1.5 ? 0 : nil) : Int(nearest.rounded(.up))
+                guard let band, band <= reach else { continue }
+                map.setTileGroup(Self.shallowTiles[band], forColumn: col, row: row)
+                any = true
+            }
+        }
+        return any ? map : nil
+    }
+
+    /// The shallows' bands, palest first: a pale sea green over the water, less of it each cell out.
+    private static let shallowTiles: [SKTileGroup] = [0.42, 0.3, 0.18, 0.08].map { alpha in
+        let color = UIColor(red: 0.8, green: 0.96, blue: 0.95, alpha: alpha)
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { context in
+            color.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
+        }
+        let size = CGSize(width: WorldMap.tileSize, height: WorldMap.tileSize)
+        return SKTileGroup(tileDefinition: SKTileDefinition(texture: SKTexture(image: image), size: size))
     }
 
     /// A land's cells in a chunk drawn, with its tiles graded with its palette, in place of its plain
