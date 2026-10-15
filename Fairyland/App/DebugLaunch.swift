@@ -198,11 +198,18 @@ enum DebugLaunch {
             coordinator.startBattle(encounters, backdrop: backdrop)
         }
         #if DEBUG
-        // `win`: once everyone has marched in, the monsters fall and the victory plays out.
+        // `win`: once everyone has marched in, the monsters fall and the victory plays out. With
+        // `back`, then Continue, back on the map (where playtesting saw ground gone after a fight).
         if flags["win"] != nil, let battle = coordinator.battle {
             Task {
                 try? await Task.sleep(for: .seconds(2))
                 battle.winForDebug()
+                guard flags["back"] != nil else { return }
+                for _ in 0..<40 where battle.phase != .finished {
+                    try? await Task.sleep(for: .milliseconds(250))
+                }
+                try? await Task.sleep(for: .seconds(2))
+                battle.leave()
             }
         }
         // `orders`: the hero goes for the first monster, and it's your companion's turn.
