@@ -250,8 +250,8 @@ nonisolated final class World: @unchecked Sendable {
         return cells.reversed()
     }
 
-    /// The cells A* is yet to look at, the cheapest first: a binary heap.
-    nonisolated private struct Frontier {
+    /// The cells A* is yet to look at, the cheapest first: a binary heap (`WorldMap.route` too).
+    nonisolated struct Frontier {
         private var items: [(slot: Int, priority: Int)] = []
 
         mutating func push(_ slot: Int, priority: Int) {

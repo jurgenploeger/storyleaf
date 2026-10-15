@@ -188,7 +188,7 @@ Each step is its own PR and leaves the game playable. The old engine stays the d
 Saves didn't need a new version: where you stand is still kept as the land you're in and a spot in
 its own points, which the continent turns into its own (a land's shift) both ways.
 
-**Playtesting on a phone (2026-10-15), 0.7.1 to 0.7.5.** Lessons from the first build on a phone:
+**Playtesting on a phone (2026-10-15), 0.7.1 to 0.7.6.** Lessons from the first build on a phone:
 - A land's air (sky, light, mood) fades as you cross into the next, each part fading itself. The
   sky's shade is multiplied onto the screen, and a multiplied colour faded by alpha goes dark, not
   faint: faded as one layer, the screen dimmed at every crossing. It eases toward white instead.
@@ -219,6 +219,13 @@ its own points, which the continent turns into its own (a land's shift) both way
   it's built), the land under your feet starts laying out at once (`layOutAhead`), its work takes
   40 ms slices, and a note shows how far it's come (`showLoading`: 0 waiting, 5 laying out, 45 laid
   out, then by its steps), which says where it's stuck if it ever is.
+- It stuck at 5 (laying out). A Release build of the timing tests (the tests job's `configuration`)
+  laid lands out about as slowly as a Debug one: Frog Swamp 85 s, Smiling Forest 90, on CI's
+  simulator. Timed step by step (`LayoutStepTests`), nearly all of it was GameplayKit's walk graph:
+  taking the sea's and the next lands' cells out of it (88 s of Smiling Forest's 94), the rest of
+  the layout under a second. Since 0.7.6 there's no graph: ways round are looked for over the
+  blocked cells themselves (`WorldMap.route`, A* eight ways round as the graph stepped), and the
+  planner's props no longer take their cells out of it one by one, which halved the scene's time.
 
 1. **Store and settle step, no visible change.** Lands are laid out into the store, and placement
    decisions move into the layout. Tests check that the store matches each land's layout cell for
