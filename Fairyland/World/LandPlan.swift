@@ -249,27 +249,38 @@ final class LandPlanner {
     /// How far in from the lands next door a road's lined, in cells: clear of the band where the
     /// ground gives way to theirs, so no fence stops short at the border.
     private static let roadsideBorderGap = 6.0
+    /// How far off a town's wall or fence its roads are lined, in cells: its gates stand clear.
+    private static let roadsideWallGap = 5
 
     /// Stretches of the land's roads lined here and there (`theme.roadside`; playtesting
     /// 2026-10-15: roads with fences, walls or other scenery along them): along a straight edge of
     /// a road, a picket fence, a low wall of field stones, or a row of one of the land's own props (a
     /// hedge of bushes, an avenue of trees, lanterns), on the cells beside it. Only along a road
     /// wider than a footpath, on open ground with nothing on it, off the hills and the shore, and
-    /// well in from the lands next door and the roads' crossings (where the signposts stand). A
-    /// cell's kept clear either end, and behind it, so you can always step off the road round it.
-    /// Its own stream ("/roadside"), so the draws for everything else stay as they were.
+    /// well in from the lands next door and the roads' crossings (where the signposts stand); in a
+    /// town only out in its countryside, a few cells off its wall. A cell's kept clear either end,
+    /// and behind it, so you can always step off the road round it. Its own stream ("/roadside"), so
+    /// the draws for everything else stay as they were.
     private func planRoadsides() {
-        guard let kinds = def.theme.roadside, !kinds.isEmpty, def.town == nil, def.theme.cave == nil else { return }
+        guard let kinds = def.theme.roadside, !kinds.isEmpty, def.theme.cave == nil else { return }
         let total = kinds.reduce(0.0) { $0 + max(0, $1.weight ?? 1) }
         guard total > 0 else { return }
         var random = SeededRandom(text: def.id + "/roadside")
         let crossings = map.region?.roads.values.map(\.at) ?? []
+        // A town's wall or fence, and the cells within `roadsideWallGap` of it.
+        var nearWall: Set<GridPoint> = []
+        let gap = Self.roadsideWallGap
+        for cell in map.fenceCells {
+            for dr in -gap...gap {
+                for dc in -gap...gap { nearWall.insert(GridPoint(col: cell.col + dc, row: cell.row + dr)) }
+            }
+        }
         func isRoad(_ cell: GridPoint) -> Bool {
             map.owns(cell) && map.ground[cell.row][cell.col] == .path
         }
         func isOpen(_ cell: GridPoint) -> Bool {
             guard map.owns(cell), map.isFreeForScenery(cell), map.foreign[cell] == nil,
-                  map.hillIndex(at: cell) == nil, !map.isSunken(cell) else { return false }
+                  map.hillIndex(at: cell) == nil, !map.isSunken(cell), !nearWall.contains(cell) else { return false }
             switch map.ground[cell.row][cell.col] {
             case .ground, .accent, .border: break
             default: return false

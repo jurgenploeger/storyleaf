@@ -339,7 +339,7 @@ for map_def in maps.values():
         # What lines stretches of the roads (`LandPlanner.planRoadsides`).
         lines = theme["roadside"]
         where = f"map {map_def['id']} roadside"
-        check(not map_def.get("town") and "cave" not in theme, f"{where} → only out in the fields (not towns or caves)")
+        check("cave" not in theme, f"{where} → not in a cave")
         check(isinstance(lines, list) and len(lines) > 0, f"{where} → must be a list of what lines the roads")
         own = {p["art"] for p in theme["props"]}
         for line in lines if isinstance(lines, list) else []:

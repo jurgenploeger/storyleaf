@@ -208,8 +208,10 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   or a row of one of the land's own props, a hedge of bushes, an avenue of trees or lanterns every few
   cells, on the cells beside it (`theme.roadside` in maps.json, `LandPlanner.planRoadsides`). Each land
   has its own mix: walls on the downs and the rocky lands, palms on the shores, lanterns in the woods and
-  the spooky lands, lollipops on Gumdrop Peaks. Never in a town, off the hills and the shore, and well in
-  from the lands next door; a cell's kept clear at either end, so you can always step off the road.
+  the spooky lands, lollipops on Gumdrop Peaks, lamp posts on the roads into the cities (a prop with a
+  count of 0 only lines the roads). In a town only out in its countryside, five cells off its wall; off
+  the hills and the shore, and well in from the lands next door; a cell's kept clear at either end, so you
+  can always step off the road.
 - Lakes and rivers (ours, since 0.4.8, asked for in playtesting 2026-10-12: "more like RuneScape, with large
   lakes and interesting pathways and landscapes"); nothing here records whether FO's fields had them.
   Since 0.6.0 the rivers are the continent's (playtesting 2026-10-14: "there should still be rivers running
@@ -322,7 +324,11 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     have lands around them, not be a square in the world") a town is a land like any other, its walled
     square (maps.json `town.size`) in the middle of its own countryside, its roads out through its gates
     and on across the fields; a city (Prismhaven, Ingothold, `town.walls`) is walled in stone with
-    towers, a village keeps its picket fence (`TownFence`). A land's map is the box round its shape; the boxes overlap where the shapes fit into each
+    towers, a village keeps its picket fence (`TownFence`). Since 0.7.7 its countryside is as full of
+    scenery as the lands round it (playtesting 2026-10-15: "there should be more scenery around the
+    cities"): 0.6.0 to 0.7.6 kept the few props its old border ring had, 2 to 4 that block a hundred
+    cells against 10 to 35 out in the fields; Ingothold's are the desert's and the mines', rocks,
+    cacti and dry bushes. A land's map is the box round its shape; the boxes overlap where the shapes fit into each
     other, and each land lays out and draws only its own cells (the rest of its box is the sea's, or the
     land next door's, `Ground.away`). Where a road crosses, the border runs straight for 8 cells either
     side and the painting gives the crossing and the road's turns through the middle of the land; a road

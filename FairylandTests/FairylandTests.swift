@@ -3183,7 +3183,7 @@ struct LandPlanTests {
     /// road to the ground behind.
     @Test func roadsidesLineTheRoads() async throws {
         var kinds: Set<String> = []
-        for id in ["sunny_meadow", "valley_of_fear", "crystal_mountain", "twilight_woods"] {
+        for id in ["sunny_meadow", "valley_of_fear", "crystal_mountain", "twilight_woods", "goldburg"] {
             let def = try #require(content.map(id))
             let (map, plan) = await planned(def)
             print("🚧 \(id): " + plan.roadsides.map { "\($0.kind.rawValue) \($0.cells.count)" }.joined(separator: ", "))
@@ -3207,6 +3207,9 @@ struct LandPlanTests {
                 if line.kind != .row {
                     #expect(line.cells.allSatisfy { !map.isWalkable($0) }, "\(id): a \(line.kind.rawValue) you can walk through")
                 }
+                // In a town, out in its countryside, clear of its wall and gates.
+                #expect(line.cells.allSatisfy { cell in map.fenceCells.allSatisfy { max(abs($0.col - cell.col), abs($0.row - cell.row)) > 5 } },
+                        "\(id): a \(line.kind.rawValue) up against the town's wall")
                 // From the road in front of its middle round to the ground behind it.
                 let middle = line.cells[line.cells.count / 2]
                 let way = map.path(from: map.center(of: middle.stepped(side.opposite)), to: map.center(of: middle.stepped(side)))

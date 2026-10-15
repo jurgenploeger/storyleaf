@@ -55,6 +55,11 @@ roadside_wall  | newgame,level=90,map=crystal_mountain,roadside=wall,weather=cle
 roadside_row   | newgame,level=20,map=twilight_woods,roadside=row,weather=clear,hour=12 | 8
 roadside_land  | newgame,map=swan_lake,roadside=row,landscape,weather=clear,hour=12 | 8
 hill_bare      | newgame,map=sunny_meadow,hill=1,face,weather=clear,hour=12 | 8
+# The countryside round the towns and cities, as full as the lands round it (playtesting 2026-10-15),
+# and a road into a city lined.
+countryside_city | newgame,level=60,map=goldburg,at=-50_0,weather=clear,hour=12 | 8
+countryside_village | newgame,map=meadowbrook,at=-60_10,weather=clear,hour=12 | 8
+roadside_city  | newgame,level=60,map=rainbow_city,roadside=row,weather=clear,hour=12 | 8
 # Back on the map after a won fight, the lands round you laid out meanwhile: playtesting saw a
 # chunk's ground gone after one, the sea showing through under its scenery.
 after_battle_rocky | newgame,map=crystal_mountain,at=9_1,battle,win,back,weather=clear,hour=12 | 25
