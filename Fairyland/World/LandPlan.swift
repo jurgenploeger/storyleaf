@@ -297,9 +297,19 @@ final class LandPlanner {
             return !crossings.contains { max(abs($0.col - cell.col), abs($0.row - cell.row)) < Self.roadsideCrossingGap }
         }
         /// Whether `cell` is beside the road on its `side`: the road at least two cells deep the
-        /// other way, and open ground on it and behind it.
+        /// other way, open ground on it and behind it, and ground you can walk on behind that.
         func besideRoad(_ cell: GridPoint, _ side: Edge) -> Bool {
             isRoad(cell.stepped(side.opposite)) && isRoad(cell.stepped(side.opposite, by: 2)) && isOpen(cell) && isOpen(cell.stepped(side))
+                && map.isWalkable(cell.stepped(side, by: 2))
+        }
+        /// Keeps the two cells behind a line you can't walk through clear of anything that blocks,
+        /// so the way round behind it from either end stays open, its steps too.
+        func keepBehindClear(_ cells: [GridPoint], _ side: Edge) {
+            for cell in cells {
+                for depth in 1...2 where map.isFreeForScenery(cell.stepped(side, by: depth)) {
+                    map.occupy(cell.stepped(side, by: depth), blocking: false)
+                }
+            }
         }
         /// How far `b` lies out past `a` toward `side`, in cells.
         func outward(_ a: GridPoint, _ b: GridPoint, _ side: Edge) -> Int {
@@ -337,6 +347,7 @@ final class LandPlanner {
                 let fence = joined(cells, side)
                 guard fence.allSatisfy({ map.isFreeForScenery($0) }) else { return false }
                 for cell in fence { map.occupy(cell, blocking: true) }
+                keepBehindClear(fence, side)
                 plan.roadsides.append(RoadsideLine(kind: kind.kind == "wall" ? .wall : .fence, cells: fence))
                 return true
             }
@@ -365,6 +376,8 @@ final class LandPlanner {
                 }
                 plan.props.append(planted)
             }
+            // A hedge you can't walk through is a fence too.
+            if every == 1, prop.blocking { keepBehindClear(cells, side) }
             return true
         }
         /// Lines stretches of `chain`, the cells beside a road's edge on its `side` one after
