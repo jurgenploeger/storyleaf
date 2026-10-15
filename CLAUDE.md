@@ -34,7 +34,7 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   cell and where you can walk; each land near you is laid out, planned (`LandPlanner`) and drawn a 32-cell chunk at a
   time round you, its ground by `GroundTiles`, its hills and shore by `HillArt.painter`, what it sets down and its
   people by `LandStage`, in its own points at its shift. Lands are laid out one at a time, nearest first (the one
-  you're in before any), and drawn in their ground's colour till then; the world map's own layouts wait meanwhile
+  you're in before any), and drawn in their plain ground till then; the world map's own layouts wait meanwhile
   (`WorldOverview.isHeld`). You walk anywhere with no loading card; the land you're in
   (`here`) brings its music, air and encounters. Caves are scenes of their own (`WorldScene`), behind the card;
   `GameCoordinator.mapScene` is whichever you're in.

@@ -83,7 +83,7 @@ final class ContinentScene: SKScene {
     /// the one being laid out now.
     private var wanted: [String: Int] = [:]
     private var building: String?
-    /// A chunk drawn: its ground (a tile map for each land laid out, and one in its ground's colour
+    /// A chunk drawn: its ground (a tile map for each land laid out, and one in its plain ground
     /// for each land not laid out yet, `placeholders`), its sea, and what stands on it.
     private final class Chunk {
         let ground = SKNode()
@@ -100,7 +100,7 @@ final class ContinentScene: SKScene {
     private var chunks: [GridPoint: Chunk] = [:]
     /// Each chunk's lands (they never change), worked out once.
     private var owned: [GridPoint: Set<String>] = [:]
-    /// Each land's ground colour as a tile, for its cells till it's laid out.
+    /// Each land's plain ground as a tile, for its cells till it's laid out (`placehold`).
     private var placeholderTiles: [String: SKTileGroup] = [:]
     /// How many chunks round yours are drawn, and how far off they're let go.
     static let reach = 2
@@ -1151,7 +1151,7 @@ final class ContinentScene: SKScene {
     // MARK: Chunks
 
     /// Draws the chunks round the camera that aren't yet (the lands in them not laid out yet in
-    /// their ground's colour, till they are), lays out those lands, nearest first, and lets go of
+    /// their plain ground, till they are), lays out those lands, nearest first, and lets go of
     /// the chunks far off.
     private func lookAround() {
         guard placed else { return }
@@ -1473,7 +1473,7 @@ final class ContinentScene: SKScene {
         return max(across, up)
     }
 
-    /// Draws a chunk: each land's cells in it with that land's tiles (in its ground's colour till
+    /// Draws a chunk: each land's cells in it with that land's tiles (in its plain ground till
     /// it's laid out); the sea where no land is; and (in the background) its squares of hills and
     /// shore. What the lands set down on it is theirs to show (`LandStage.show`).
     private func draw(_ chunk: GridPoint) {
@@ -1504,8 +1504,8 @@ final class ContinentScene: SKScene {
         for land in lands.values { paintSquares(of: land, in: chunk) }
     }
 
-    /// A land's cells in a chunk drawn, with its tiles graded with its palette, in place of its
-    /// ground's colour. Its shore's drawn sunk, with its hills, and its bank along the sea after
+    /// A land's cells in a chunk drawn, with its tiles graded with its palette, in place of its plain
+    /// ground. Its shore's drawn sunk, with its hills, and its bank along the sea after
     /// them (`paintSquares`).
     private func show(_ land: Land, in drawn: Chunk, at chunk: GridPoint) {
         drawn.placeholders.removeValue(forKey: land.def.id)?.removeFromParent()
@@ -1566,8 +1566,8 @@ final class ContinentScene: SKScene {
         }
     }
 
-    /// A land's cells in a chunk in its ground's colour, till it's laid out (`show`): no sea where
-    /// it'll be.
+    /// A land's cells in a chunk in its own plain ground, graded as it is there, till it's laid out
+    /// (`show`) with its roads, patches and all: no sea where it'll be.
     private func placehold(_ id: String, in drawn: Chunk, at chunk: GridPoint) {
         guard let def = Content.shared.map(id) else { return }
         let size = World.chunkSize, tile = WorldMap.tileSize
@@ -1577,13 +1577,20 @@ final class ContinentScene: SKScene {
         if let known = placeholderTiles[id] {
             group = known
         } else {
-            let (red, green, blue) = WorldScene.groundColor(of: def, art: art)
-            let color = UIColor(red: red, green: green, blue: blue, alpha: 1)
-            let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { context in
-                color.setFill()
-                context.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
+            let texture: SKTexture
+            if let image = art.gradedTile(def.theme.ground, palette: def.theme.palette) {
+                texture = SKTexture(cgImage: image)
+                texture.filteringMode = .nearest
+            } else {
+                // Or its ground's colour.
+                let (red, green, blue) = WorldScene.groundColor(of: def, art: art)
+                let color = UIColor(red: red, green: green, blue: blue, alpha: 1)
+                texture = SKTexture(image: UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { context in
+                    color.setFill()
+                    context.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
+                })
             }
-            group = SKTileGroup(tileDefinition: SKTileDefinition(texture: SKTexture(image: image), size: tileSize))
+            group = SKTileGroup(tileDefinition: SKTileDefinition(texture: texture, size: tileSize))
             placeholderTiles[id] = group
         }
         let flat = SKTileMapNode(tileSet: SKTileSet(tileGroups: [group]), columns: size, rows: size, tileSize: tileSize)
