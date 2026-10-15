@@ -98,7 +98,7 @@ final class ContinentScene: SKScene {
     /// for each land not laid out yet, `placeholders`), its sea, and what stands on it.
     private final class Chunk {
         let ground = SKNode()
-        let sea: SKNode
+        var sea: SKNode
         let things = SKNode()
         var placeholders: [String: SKNode] = [:]
         /// The bank along the coast and the foam at its foot, a layer a step (`bankGrids`).
@@ -217,6 +217,9 @@ final class ContinentScene: SKScene {
     /// Lands laid out while the continent was off screen (a battle, a cave), their ground still to
     /// show in the chunks drawn: a tile map made then never showed (`didMove`).
     private var unshown: Set<String> = []
+    /// Chunks drawn before the last battle or cave and not made afresh since (`redraw`): those round
+    /// you are as you come back (`didMove`), the rest as you come near them (`lookAround`).
+    private var stale: Set<GridPoint> = []
     private var pinchStartZoom: CGFloat = 1
     private lazy var pinch = UIPinchGestureRecognizer(target: self, action: #selector(pinched(_:)))
 
@@ -331,13 +334,16 @@ final class ContinentScene: SKScene {
         view.addGestureRecognizer(pinch)
         cam.setScale(1 / WorldScene.zoom)
         lastUpdate = 0
-        // Back from a battle or a cave: the ground of the chunks round you made afresh, and in the
-        // rest that of lands laid out meanwhile; then the squares and banks left to draw.
+        // Back from a battle or a cave: the chunks round you made afresh (`redraw`), and the rest as
+        // you come near them (`stale`), meanwhile with the ground of lands laid out since; then the
+        // squares and banks left to draw.
         let middle = World.chunk(of: Self.cell(at: cam.position))
         for (key, drawn) in chunks {
             if max(abs(key.col - middle.col), abs(key.row - middle.row)) <= 1 {
-                drawGround(of: drawn, at: key)
+                redraw(drawn, at: key)
+                stale.remove(key)
             } else {
+                stale.insert(key)
                 for id in owners(of: key).sorted() where unshown.contains(id) {
                     if let land = lands[id] { show(land, in: drawn, at: key) }
                 }
@@ -1250,7 +1256,12 @@ final class ContinentScene: SKScene {
         for dr in -Self.reach...Self.reach {
             for dc in -Self.reach...Self.reach {
                 let chunk = GridPoint(col: middle.col + dc, row: middle.row + dr)
-                if chunks[chunk] == nil { draw(chunk) }
+                if chunks[chunk] == nil {
+                    draw(chunk)
+                } else if max(abs(dc), abs(dr)) <= 1, stale.contains(chunk), let drawn = chunks[chunk] {
+                    stale.remove(chunk)
+                    redraw(drawn, at: chunk)
+                }
                 // How far off each land not laid out yet is: to the box round its cells here.
                 for (id, box) in boxes(in: chunk) where lands[id] == nil {
                     let gap = max(box.low.col - you.col, you.col - box.high.col, box.low.row - you.row, you.row - box.high.row, 0)
@@ -1313,6 +1324,7 @@ final class ContinentScene: SKScene {
                 gone.things.removeFromParent()
                 gone.banks.forEach { $0.removeFromParent() }
                 waiting.removeAll { $0.chunk == chunk }
+                stale.remove(chunk)
             }
         }
         // Only the lands round you go about their lives; those far off wait, out of sight.
@@ -1630,17 +1642,7 @@ final class ContinentScene: SKScene {
     /// it's laid out); the sea where no land is; and (in the background) its squares of hills and
     /// shore. What the lands set down on it is theirs to show (`LandStage.show`).
     private func draw(_ chunk: GridPoint) {
-        let size = World.chunkSize, tile = WorldMap.tileSize
-        let origin = GridPoint(col: chunk.col * size, row: chunk.row * size)
-        let tileSize = CGSize(width: tile, height: tile)
-        let waters = SKTileMapNode(tileSet: seaTiles, columns: size, rows: size, tileSize: tileSize)
-        waters.anchorPoint = .zero
-        // Under the land's cut edge along the coast too, so the sea shows through it.
-        for cell in World.cells(in: chunk) {
-            waters.setTileGroup(seaGroup(at: cell), forColumn: cell.col - origin.col, row: cell.row - origin.row)
-        }
-        waters.position = CGPoint(x: CGFloat(origin.col) * tile, y: CGFloat(origin.row) * tile)
-        if let shallows = shallows(in: chunk) { waters.addChild(shallows) }
+        let waters = sea(of: chunk)
         seaGrid.addChild(waters)
         let drawn = Chunk(sea: waters)
         groundGrid.addChild(drawn.ground)
@@ -1648,6 +1650,40 @@ final class ContinentScene: SKScene {
         chunks[chunk] = drawn
         drawGround(of: drawn, at: chunk)
         for land in lands.values { paintSquares(of: land, in: chunk) }
+    }
+
+    /// A chunk's sea: the sea's tiles under every cell of it (under the land's cut edge along the
+    /// coast too, so the sea shows through it), with its shallows along the coast.
+    private func sea(of chunk: GridPoint) -> SKTileMapNode {
+        let size = World.chunkSize, tile = WorldMap.tileSize
+        let origin = GridPoint(col: chunk.col * size, row: chunk.row * size)
+        let waters = SKTileMapNode(tileSet: seaTiles, columns: size, rows: size, tileSize: CGSize(width: tile, height: tile))
+        waters.anchorPoint = .zero
+        for cell in World.cells(in: chunk) {
+            waters.setTileGroup(seaGroup(at: cell), forColumn: cell.col - origin.col, row: cell.row - origin.row)
+        }
+        waters.position = CGPoint(x: CGFloat(origin.col) * tile, y: CGFloat(origin.row) * tile)
+        if let shallows = shallows(in: chunk) { waters.addChild(shallows) }
+        return waters
+    }
+
+    /// A chunk's tile maps made afresh, its ground, sea and banks along the coast, as the continent's
+    /// back on screen after a battle or a cave (`didMove`, and `stale` as you come near): playtesting
+    /// saw a chunk's tile maps stop showing after a fight, its ground (0.7.2) and then its sea (0.7.4,
+    /// the scene's background showing through, to the chunk's edge). New ones always show.
+    private func redraw(_ drawn: Chunk, at chunk: GridPoint) {
+        drawGround(of: drawn, at: chunk)
+        drawn.sea.removeFromParent()
+        drawn.sea = sea(of: chunk)
+        seaGrid.addChild(drawn.sea)
+        drawn.banks.forEach { $0.removeFromParent() }
+        drawn.banks = []
+        for id in owners(of: chunk).sorted() {
+            // Those still waiting to be drawn are drawn in their turn (`paintWaiting`).
+            guard let land = lands[id], land.coastal,
+                  !waiting.contains(where: { $0.chunk == chunk && $0.land == id && $0.painter == Self.bankJob }) else { continue }
+            drawBank(of: land, in: drawn, at: chunk)
+        }
     }
 
     /// The sea's tile for a world cell: the one at its place in the sea's picture (`seaGroups`).

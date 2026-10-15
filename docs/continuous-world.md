@@ -198,6 +198,9 @@ its own points, which the continent turns into its own (a land's shift) both way
   It still happened after a fight in 0.7.2 (Ingothold Lake, the sea's tile maps in that chunk showing
   fine), so the ground of the chunks round you is made afresh each time the continent is back on
   screen (`drawGround`), and a chunk's tile maps sit at its corner themselves, as the sea's do.
+  In 0.7.4 the sea's went too (Ingothold Lake's coast, after a fight: the scene's grey-blue
+  background to the chunk's edge), so since 0.7.5 a chunk's ground, sea and banks are all made
+  afresh (`redraw`): those round you as you come back, the rest as you come near them (`stale`).
 - The coast's bank and foam (`WorldScene.bank`) are drawn per chunk after its shore's squares.
 - The slope down to the sea, 14 points over four cells, barely showed by its light alone. Sunk ground
   darkens the lower it lies (`HillArt.wetShade`, in the hills' stepped shade), wet toward the water, and

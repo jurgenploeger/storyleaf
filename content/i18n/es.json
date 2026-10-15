@@ -805,6 +805,7 @@
     "While it loads, a note shows its name and how far along it is.": "Mientras carga, un aviso muestra su nombre y cuánto le falta.",
     "The minimap no longer loads the lands round you a second time for the world map, which held up the land you were walking into.": "El minimapa ya no carga por segunda vez las tierras de alrededor para el mapa del mundo, lo que retrasaba la tierra en la que entrabas.",
     "The sea no longer repeats one small square: long swells and ripples run across it, coming round again only every 16 tiles. Lakes and rivers are calmer.": "El mar ya no repite un mismo cuadrado pequeño: lo cruzan largas ondas y ondulaciones que solo se repiten cada 16 casillas. Los lagos y ríos están más tranquilos.",
+    "The sea no longer goes flat and grey near you after a fight, and no palm tree stands in the water on the beach.": "El mar ya no se vuelve gris y plano a tu alrededor después de una pelea, y ninguna palmera queda dentro del agua en la playa.",
     "Walk on before it loads": "Sigue andando mientras carga",
     "You can walk into the next land before it has finished loading: its trees, houses and people come in round you as it does. Only its rivers and lakes keep you out.": "Puedes entrar en la siguiente tierra antes de que termine de cargar: sus árboles, casas y gente aparecen a tu alrededor mientras carga. Solo sus ríos y lagos te cierran el paso.",
     "The land nearest you loads first, and faster as you come close to it.": "La tierra más cercana carga primero, y más rápido a medida que te acercas.",
