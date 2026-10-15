@@ -188,7 +188,7 @@ Each step is its own PR and leaves the game playable. The old engine stays the d
 Saves didn't need a new version: where you stand is still kept as the land you're in and a spot in
 its own points, which the continent turns into its own (a land's shift) both ways.
 
-**Playtesting on a phone (2026-10-15), 0.7.1 and 0.7.2.** Lessons from the first build on a phone:
+**Playtesting on a phone (2026-10-15), 0.7.1 to 0.7.4.** Lessons from the first build on a phone:
 - A land's air (sky, light, mood) fades as you cross into the next, each part fading itself. The
   sky's shade is multiplied onto the screen, and a multiplied colour faded by alpha goes dark, not
   faint: faded as one layer, the screen dimmed at every crossing. It eases toward white instead.
@@ -202,6 +202,13 @@ its own points, which the continent turns into its own (a land's shift) both way
 - The slope down to the sea, 14 points over four cells, barely showed by its light alone. Sunk ground
   darkens the lower it lies (`HillArt.wetShade`, in the hills' stepped shade), wet toward the water, and
   the sea is paler in bands along the coast (`ContinentScene.shallows`), palest at the waterline.
+- A land next door that wasn't laid out yet kept you out (Ingothold Lake, 0.7.3): its cells weren't
+  walkable till its build was done, a few lands queued before it on a phone. Since 0.7.4 a land not
+  laid out yet is walked on as its shape has it (`World.walkable`: anywhere but its rivers and lakes,
+  which its plain ground leaves out so the water shows), as it's laid out once its scenery shows. The
+  lands are laid out nearest first by cells to you, not by chunk; and while one is within 20 cells of
+  you, the work takes 16 ms slices rather than 6 (`isUrgent`), a frame or two dropped for it to come
+  in faster.
 
 1. **Store and settle step, no visible change.** Lands are laid out into the store, and placement
    decisions move into the layout. Tests check that the store matches each land's layout cell for

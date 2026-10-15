@@ -1,9 +1,9 @@
 import CoreGraphics
 
 /// The whole continent as one grid of world cells (x east, y north, as world.json has them), in
-/// chunks of `chunkSize`: which land owns each cell, and, once that land's been laid out (`add`),
-/// its ground and where you can walk. What the game will draw a chunk at a time and walk on, with
-/// no borders (docs/continuous-world.md); nothing but the tests reads it yet.
+/// chunks of `chunkSize`: which land owns each cell, where you can walk (from its land's shape till
+/// that's laid out), and, once it is (`add`), its ground. What the game draws a chunk at a time and
+/// walks on, with no borders (docs/continuous-world.md).
 ///
 /// Small on purpose: a byte or two a cell, about 2 MB for the whole continent. A laid-out land
 /// (`WorldMap`) is copied in and can be let go.
@@ -33,7 +33,9 @@ nonisolated final class World: @unchecked Sendable {
     private var owner: [UInt8]
     /// Each cell's ground once its land's laid out (`Ground`'s raw value + 1); 0 till then.
     private var grounds: [UInt8]
-    /// Whether you can walk on each cell, once its land's laid out.
+    /// Whether you can walk on each cell: before its land's laid out, anywhere on it but its rivers
+    /// and lakes (its shape's, `Region.isRiver`), so a land's layout never keeps you off it (it comes
+    /// in round you, `ContinentScene.build`); then as its layout has it (`add`).
     private var walkable: [Bool]
     /// The lands laid out so far (`add`), by index.
     private var laidOut: Set<Int> = []
@@ -55,10 +57,13 @@ nonisolated final class World: @unchecked Sendable {
         for (number, item) in lands.enumerated() {
             let land = item.land
             for row in 0..<land.rows {
-                for col in 0..<land.columns where item.region.owns(GridPoint(col: col, row: row)) {
-                    guard let index = index(GridPoint(col: land.origin.col + col, row: land.origin.row + row)) else { continue }
+                for col in 0..<land.columns {
+                    let cell = GridPoint(col: col, row: row)
+                    guard item.region.owns(cell),
+                          let index = index(GridPoint(col: land.origin.col + col, row: land.origin.row + row)) else { continue }
                     if owner[index] == 0 {
                         owner[index] = UInt8(number + 1)
+                        walkable[index] = !item.region.isRiver(cell)
                     } else {
                         conflicts += 1
                     }
@@ -131,8 +136,9 @@ nonisolated final class World: @unchecked Sendable {
 
     // MARK: Laid out
 
-    /// Copies a land's layout in: the ground and walking of each cell it owns. Its `WorldMap` can be
-    /// let go after. Nothing for a map that isn't on the continent (a cave).
+    /// Copies a land's layout in: the ground and walking of each cell it owns, in place of walking
+    /// from its shape. Its `WorldMap` can be let go after. Nothing for a map that isn't on the
+    /// continent (a cave).
     func add(_ map: WorldMap) {
         guard let number = lands.firstIndex(where: { $0.id == map.def.id }) else { return }
         let land = lands[number]
@@ -158,7 +164,8 @@ nonisolated final class World: @unchecked Sendable {
         return Ground(rawValue: grounds[index] - 1)
     }
 
-    /// Whether you can walk on a world cell (only once its land's laid out).
+    /// Whether you can walk on a world cell: as its land's laid out, or till then anywhere on it but
+    /// its rivers and lakes (`walkable`). Never at sea.
     func isWalkable(_ cell: GridPoint) -> Bool {
         guard let index = index(cell) else { return false }
         return walkable[index]

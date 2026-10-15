@@ -730,14 +730,15 @@ enum DebugLaunch {
             }
         }
         // `crossing` (with `near=<land>`): once the continent's drawn round you, you walk over the line
-        // into that land; ready as you arrive, its name at the top of the screen.
+        // into that land; ready as you arrive, its name at the top of the screen. `early`: before
+        // it's laid out, onto its plain ground, ready once it's laid out round you.
         #if DEBUG
         if flags["crossing"] != nil, let id = flags["near"] {
             Task {
                 for _ in 0..<480 {
                     try? await Task.sleep(for: .milliseconds(500))
                     guard coordinator.isReady, coordinator.mapScene.view != nil, let continent = coordinator.continent else { continue }
-                    await continent.walkIntoForDebug(id)
+                    await continent.walkIntoForDebug(id, early: flags["early"] != nil)
                     try? await Task.sleep(for: .seconds(1))
                     markReady(nextDoorShown: true)
                     return

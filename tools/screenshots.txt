@@ -33,6 +33,8 @@ continent_border | newgame,map=sunny_meadow,near=meadowbrook,landscape,weather=c
 continent_coast | newgame,map=pineapple_shore,at=-10_-47,landscape,weather=clear,hour=12 | 8
 # Walking over the line into Meadowbrook: no card, no wait, its name at the top as you arrive.
 continent_crossing | newgame,map=sunny_meadow,near=meadowbrook,crossing,landscape,weather=clear,hour=12 | 1
+# Over the line before Meadowbrook's laid out, onto its plain ground, which it's laid out round.
+continent_early | newgame,map=sunny_meadow,near=meadowbrook,crossing,early,landscape,weather=clear,hour=12 | 1
 # Where playtesting (2026-10-15, on a phone) saw the continent go wrong: Crystal Mountain's ground
 # gone under its scenery at night, its coast with no bank or foam, and Frog Swamp past Sunny
 # Meadow's south-east still its flat colour.
