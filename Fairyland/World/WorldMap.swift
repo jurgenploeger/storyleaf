@@ -2885,8 +2885,10 @@ nonisolated final class WorldMap: @unchecked Sendable {
                         }
                     }
                 }
+                // Off anything already set down there too: a land's own buildings out past the middle
+                // stood in a pond (Glimmerbough's tree houses on Starfall Isle).
                 let clear = cells.allSatisfy { cell in
-                    owns(cell) && !rock.contains(cell) && !cragGround.contains(cell)
+                    owns(cell) && !rock.contains(cell) && !cragGround.contains(cell) && !occupied.contains(cell)
                         && !isNear(cell, within: 2) { $0 == .path || $0 == .water }
                 }
                 guard clear, !cells.isEmpty else { continue }
