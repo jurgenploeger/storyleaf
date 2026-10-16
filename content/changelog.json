@@ -2,6 +2,16 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.10",
+      "date": "2026-10-16",
+      "title": "Fading music",
+      "notes": [
+        "Walking from one land into the next, its music fades out and the next land's fades in, instead of cutting straight over at the border.",
+        "After a battle out in the lands, the land's music comes back, the victory tune fading out first. It used to stay silent till you reached the next land.",
+        "A road coming over a border no longer stops at the line while the land past it is still being laid out: its road shows on the plain ground there till then."
+      ]
+    },
+    {
       "version": "0.7.9",
       "date": "2026-10-16",
       "title": "Starfall Isle",

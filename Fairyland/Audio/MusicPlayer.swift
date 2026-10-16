@@ -47,12 +47,15 @@ final class MusicPlayer {
         Float(0.7 * min(1, max(0, volume)))
     }
 
-    /// Switches to a song (nil = silence). Playing the current song again does nothing.
-    func play(_ id: String?) {
+    /// Switches to a song (nil = silence). Playing the current song again does nothing. `fade`: over
+    /// how many seconds the song playing fades out first, and the new one fades in (walking from
+    /// one land into the next, `ContinentScene.arrive`); none cuts over at once, the new one fading
+    /// in quickly.
+    func play(_ id: String?, fade: Double = 0) {
         guard id != current else { return }
         current = id
         startIfNeeded()
-        synth?.play(id.flatMap { tunes[$0] })
+        synth?.play(id.flatMap { tunes[$0] }, id: id, fadeOut: fade, fadeIn: fade > 0 ? fade : 0.4)
     }
 
     /// Restarts audio after the app returns to the foreground or the output changes.
