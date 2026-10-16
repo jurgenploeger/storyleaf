@@ -364,11 +364,20 @@ nonisolated final class WorldMap: @unchecked Sendable {
         for (index, seam) in seams.enumerated() {
             if let land = lands.firstIndex(of: seam.neighbour) { seamOf[land] = index }
         }
+        // A town's walled square takes none; out past it, its roads and streams take them as its grass
+        // does, as on any other land, so the land next door sees what's there (`Blend.shows`).
+        let square = def.fence == true ? townSquare : nil
+        func walledIn(_ cell: GridPoint) -> Bool {
+            guard let square else { return false }
+            return cell.col >= square.origin.col && cell.col < square.origin.col + square.width
+                && cell.row >= square.origin.row && cell.row < square.origin.row + square.height
+        }
         for row in 0..<rows {
             for col in 0..<columns {
                 let spot = GridPoint(col: col, row: row)
-                guard isCountryside(spot) else { continue }
-                if ground[row][col] == .accent, seams.contains(where: { ($0.share(spot) ?? 0) > 0.03 }) { ground[row][col] = .ground }
+                let kind = ground[row][col]
+                guard isCountryside(spot) || (square != nil && kind != .away && kind != .sea && !walledIn(spot)) else { continue }
+                if kind == .accent, seams.contains(where: { ($0.share(spot) ?? 0) > 0.03 }) { ground[row][col] = .ground }
                 if let land = blend.shows(spot), let seam = seamOf[land] { foreign[spot] = seam }
             }
         }
