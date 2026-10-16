@@ -90,7 +90,7 @@ The rest of the world map is fairy-tale lands (H):
 A second "levels map" shades areas in 20-level bands (1–20, 21–40, …), used to pick the right capture
 capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
 
-**Us:** 30 maps and 4 towns (Meadowbrook, Prismhaven, Larkspur, Ingothold).
+**Us:** 31 maps and 4 towns (Meadowbrook, Prismhaven, Larkspur, Ingothold).
 - Towns are planned from maps.json `town` (streets, a plaza, terraces, shops along the streets, street
   furniture) plus hand-placed `buildings`; scenery only grows inside a town's fence with a `within` radius.
   Since 0.3.65 the planner keeps each townsperson's spot and the cells just in front of it clear, so no
@@ -312,6 +312,23 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   south and west a cleft under an arch; playtesting (2026-10-11) asked for a slope instead of flat tops
   and walls, and for no grass past it. How FO showed its cave entrances isn't in any source reachable
   from a cloud session.
+- Harbors and a ship (ours, since 0.7.9; playtesting 2026-10-16: "Add another magical/mystical map now, an
+  island. To get to an island there should be a ship and harbor to get on"): Starfall Isle (levels 128 to
+  148, after Sneezle Isle's 120 to 140) lies out at sea about 65 cells east of Sneezle Isle, a land of its
+  own with no land next door: lilac and blossom trees, glowing crystals and fairy rings, a lake with an
+  island, wisps and pegasi, its own song (`starfall`, a music box over harp and pad). A road with
+  `"ship": true` (maps.json exit) ends at a harbor instead of a border: `tools/world_layout.py` (`harbors`)
+  finds it a cell on the coast the exit's side faces with open sea straight out (14 cells, 3 to one side
+  and 6 to the other), its own land straight behind for the road's last stretch, clear of the rivers,
+  nearest the land it sails to (world.json's road: `at` the last cell of the coast, `pier` the way out).
+  Its pier runs 6 cells out over the sea, 3 wide (`Region.Road.pierCells`), a deck of planks on posts 5
+  points over the water (`WorldMap.pierHeight`, `LandStage.placeHarbors`); the world lets you walk on it
+  though no land owns it (`World.pier`), with no monsters out there. A ship lies alongside, up the screen
+  from it so you on the pier are in front (`tools/prop_art.py` draws it: one mast, a square sail with a
+  gold star, lit stern windows, a gangplank down to the pier), rocking gently; walk out past its
+  gangplank (`Region.Road.boarding`) and you sail, behind the card, to the other harbor, coming ashore by
+  the foot of its pier. A captain stands by each (`at: "harbor"`). FO had an island zone too (Cannibal
+  Island, above); this one isn't it.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake
@@ -341,7 +358,8 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     go inward or outward at the edges with the map environments") it's one landmass: the lands' shapes
     blurred together and cut again a little raggedly (`BODY_BLUR`), so the gaps and notches where two
     lands met fill in, no sea lies inland, and one coast runs on past every border; only Emerald Road
-    stands off it, an island, as it's reached through a cave. And (the same playtest: "the towns should
+    stands off it, an island, as it's reached through a cave, and since 0.7.9 Starfall Isle, out at sea,
+    reached by ship (below). And (the same playtest: "the towns should
     have lands around them, not be a square in the world") a town is a land like any other, its walled
     square (maps.json `town.size`) in the middle of its own countryside, its roads out through its gates
     and on across the fields; a city (Prismhaven, Ingothold, `town.walls`) is walled in stone with

@@ -568,9 +568,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// Its harbors, in the order its exits come: each road to a land over the sea (`MapDef.Exit.ship`),
     /// ending on the coast with a pier out over the sea and a ship moored at its end (`Region.Road`).
     var harbors: [(exit: MapDef.Exit, road: Region.Road)] {
-        def.exits.compactMap { exit in
+        def.exits.compactMap { exit -> (exit: MapDef.Exit, road: Region.Road)? in
             guard exit.ship == true, let road = region?.roads[exit.to], road.pier != nil else { return nil }
-            return (exit, road)
+            return (exit: exit, road: road)
         }
     }
 
@@ -678,7 +678,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
     private var entryCells: [GridPoint] {
         if let cachedEntryCells { return cachedEntryCells }
         // And where a harbor's pier leaves the land, clear for it.
-        let cells = def.exits.map { entryCell(from: $0.edge) } + harbors.map(\.road.at)
+        let cells = def.exits.map { entryCell(from: $0.edge) } + harbors.map { $0.road.at }
         cachedEntryCells = cells
         return cells
     }

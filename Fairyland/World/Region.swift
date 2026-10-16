@@ -38,8 +38,9 @@ nonisolated struct Region: Sendable {
 
         /// How far a harbor's pier runs out over the sea, in cells; it's three wide, along the road.
         static let pierLength = 6
-        /// How far out along its pier you walk aboard: its last cells, beside the gangplank.
-        static let boardingFrom = 5
+        /// How far out along its pier you walk aboard: from beside the ship's gangplank to its end
+        /// (`LandStage.shipAlong`).
+        static let boardingFrom = 4
 
         /// A cell of its pier, `along` out from `at` and `across` it, from the road's middle lane
         /// (-1...1) toward the north or the east: the side its ship lies, up the screen, behind you
