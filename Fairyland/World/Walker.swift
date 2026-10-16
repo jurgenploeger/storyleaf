@@ -345,6 +345,30 @@ final class Walker: SKNode {
         if tagMode == .whenClear { crowded = tagCrowds(leader) }
     }
 
+    /// Walks on toward `goal` as a follower walks to its place (`follow`), on while `going` (whoever
+    /// it's following is walking) or still a few points off, sliding along whatever's in its way: the
+    /// hero in a party they've joined, at the back of its line (`Crowd.yourPlace`).
+    func walk(toward goal: CGPoint, going: Bool, dt: TimeInterval, canStand: (CGPoint) -> Bool) {
+        let offset = goal - position
+        let distance = offset.length
+        guard distance > 6 || (going && distance > 0.5) else {
+            setWalking(false)
+            return
+        }
+        let step = min(distance, max(walkSpeed, distance * 2) * CGFloat(dt))
+        let move = offset * (step / distance)
+        var next = position + move
+        if !canStand(next) {
+            let alongX = CGPoint(x: position.x + move.dx, y: position.y)
+            let alongY = CGPoint(x: position.x, y: position.y + move.dy)
+            next = canStand(alongX) ? alongX : canStand(alongY) ? alongY : position
+        }
+        let moved = next != position
+        position = next
+        face(Direction(offset, current: facing))
+        setWalking(moved)
+    }
+
     /// Whether its name tag, where it stands now, would print over `other`'s.
     func tagCrowds(_ other: Walker) -> Bool {
         guard let tag, let theirs = other.tag else { return false }

@@ -901,6 +901,15 @@ nonisolated struct CrowdOptions: Decodable, Sendable {
     /// [fewest, most] (`Crowd`).
     let groupChance: Double?
     let groupSize: [Int]?
+    /// How often an adventurer says yes to partying up, yours or theirs, when nothing else stops them
+    /// (`GameSession.askAlong`, `askToJoin`).
+    let acceptChance: Double?
+    /// How long an adventurer stays in a party with you, yours or theirs you joined, before heading
+    /// off on their own: minutes of play [fewest, most] (`GameSession.stayLength`).
+    let stayMinutes: [Double]?
+    /// How long an adventurer keeps to how they travel among the crowd, alone or in a group, before
+    /// they leave their group or join one near them: minutes [fewest, most] (`Crowd`).
+    let groupMinutes: [Double]?
     /// What market traders call out: {item} and {price} for what they sell, {buy} and {price} for
     /// what they'd buy from you.
     let traderLines: [String]?

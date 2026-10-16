@@ -745,6 +745,11 @@ check(0 <= crowd.get("groupChance", 0) <= 1, "crowd groupChance → between 0 an
 size = crowd.get("groupSize", [2, 2])
 check(isinstance(size, list) and len(size) == 2 and all(isinstance(n, int) for n in size) and 2 <= size[0] <= size[1] <= 5,
       "crowd groupSize → [fewest, most], whole numbers from 2 to 5 (a leader and up to four behind, like your party)")
+check(0 < crowd.get("acceptChance", 0.75) <= 1, "crowd acceptChance → above 0 and at most 1 (how often an adventurer says yes to partying up)")
+for key in ("stayMinutes", "groupMinutes"):
+    span = crowd.get(key, [1, 1])
+    check(isinstance(span, list) and len(span) == 2 and all(isinstance(n, (int, float)) for n in span) and 0 < span[0] <= span[1],
+          f"crowd {key} → [fewest, most] minutes, above 0")
 for line in crowd.get("traderLines", []):
     check(("{item}" in line) != ("{buy}" in line), f"crowd traderLines → \"{line}\" needs {{item}} or {{buy}} (one of them)")
     check(set(re.findall(r"\{(\w+)\}", line)) <= {"item", "buy", "price"}, f"crowd traderLines → unknown placeholder in \"{line}\"")

@@ -192,9 +192,9 @@ final class LandStage {
 
     /// Everyone else about it, for the minimap (in its cells): the adventurers walking about (friends
     /// and those spoiling for a fight marked so) and the folk who live here (`WorldScene.minimapDots`).
-    func minimapDots(friends: Set<UUID>) -> [GameSession.MinimapDot] {
+    func minimapDots(friends: Set<UUID>, party: Set<UUID> = []) -> [GameSession.MinimapDot] {
         let walkers = (crowd?.adventurerPositions ?? []).map { profile, position in
-            GameSession.MinimapDot(cell: map.cell(at: position), kind: profile.hostile ? .hostile : friends.contains(profile.id) ? .friend : .adventurer)
+            GameSession.MinimapDot(cell: map.cell(at: position), kind: GameSession.MinimapDot.kind(of: profile, friends: friends, party: party))
         }
         let folk = (crowd?.folkPositions ?? []).map { GameSession.MinimapDot(cell: map.cell(at: $0), kind: .folk) }
         return folk + walkers

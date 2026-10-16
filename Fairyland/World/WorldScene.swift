@@ -1627,8 +1627,10 @@ final class WorldScene: SKScene {
             let cell = map.cell(at: point)
             return seen(cell) ? GameSession.MinimapDot(cell: cell, kind: kind) : nil
         }
+        // The party you've joined shows as yours does.
+        let party = Set(session.joinedParty?.members.map(\.id) ?? [])
         let walkers = (crowd?.adventurerPositions ?? []).compactMap { profile, position in
-            dot(at: position, profile.hostile ? .hostile : friends.contains(profile.id) ? .friend : .adventurer)
+            dot(at: position, GameSession.MinimapDot.kind(of: profile, friends: friends, party: party))
         }
         let folk = (crowd?.folkPositions ?? []).compactMap { dot(at: $0, .folk) }
         return folk + walkers + allies.compactMap { dot(at: $0.node.position, .party) }
@@ -2323,11 +2325,15 @@ final class WorldScene: SKScene {
             refreshFollower()
             refreshHero()
             rejoinWaitingFriends()
+            let goodbyes = keepUpWithParties(0.4)
             refreshAllies()
+            // Those heading off say goodbye, from among the crowd (a friend who left your party has
+            // just rejoined it).
+            for id in goodbyes { adventurerSays(GameSession.goodbyes.randomElement() ?? L("See you around!"), id) }
             let nearby = crowd?.adventurer(near: player.position, within: 80)
             if session.nearbyAdventurer?.id != nearby?.id { session.nearbyAdventurer = nearby }
-            let group = nearby.flatMap { crowd?.groupSize(of: $0.id) } ?? 1
-            if session.nearbyGroupSize != group { session.nearbyGroupSize = group }
+            let group = nearby.flatMap { crowd?.group(of: $0.id) } ?? []
+            if session.nearbyGroup != group { session.nearbyGroup = group }
             let around = crowd?.adventurers(near: player.position, within: 320) ?? []
             if session.adventurersAround != around { session.adventurersAround = around }
             let dots = minimapDots()
@@ -2379,9 +2385,41 @@ final class WorldScene: SKScene {
             player.position = next
             player.face(Direction(stick, current: player.facing))
             player.setWalking(true)
+        } else if player.path.isEmpty, let place = crowd?.yourPlace {
+            // In a party you've joined: along at the back of its line, never off the map.
+            player.walk(toward: place.spot, going: place.going, dt: dt) { [unowned self] in
+                self.canStand(at: $0) && self.map.exit(at: self.map.rawCell(at: $0)) == nil
+            }
         } else {
             player.setWalking(player.followPath(dt: dt) || !player.path.isEmpty)
         }
+    }
+
+    /// Keeps the party you've joined in step (`ContinentScene.keepUpWithParties`): this map's crowd
+    /// leads you while its leader's here and you're near them, and who walks with them is who's in it.
+    /// Time passes for the friends at your side and for it: whoever heads off says goodbye.
+    private func keepUpWithParties(_ elapsed: TimeInterval) -> [UUID] {
+        var goodbyes: [UUID] = []
+        if !isInputLocked {
+            let gone = session.passPartyTime(elapsed)
+            goodbyes = gone.left.map(\.id)
+            if let leader = gone.headedOff { goodbyes.append(leader.id) }
+        }
+        if let leader = session.joinedParty?.leader {
+            if crowd?.yourLeader != leader.id { crowd?.lead(you: leader.id) }
+            if let crowd, crowd.yourLeader == leader.id, let place = crowd.yourPlace {
+                if place.leader.distance(to: player.position) > GameSession.joinedReach {
+                    session.leaveJoinedParty(.wandered)
+                } else {
+                    let group = crowd.group(of: leader.id)
+                    if group.map(\.id) != session.joinedParty?.members.map(\.id) { session.joinedParty?.members = group }
+                }
+            } else {
+                session.leaveJoinedParty(.gone)
+            }
+        }
+        if session.joinedParty == nil, crowd?.yourLeader != nil { crowd?.letYouGo() }
+        return goodbyes
     }
 
     private func canStand(at point: CGPoint) -> Bool {

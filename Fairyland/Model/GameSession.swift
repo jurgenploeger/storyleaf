@@ -24,8 +24,21 @@ final class GameSession {
     var pendingPet: Pet?
     /// The adventurer you're standing next to (the HUD shows their card).
     var nearbyAdventurer: Adventurer?
-    /// How many travel together with them, them among them (`Crowd.groupSize`): 1 on their own.
-    var nearbyGroupSize = 1
+    /// Everyone travelling together with them, whoever leads first (`Crowd.group`): just them on
+    /// their own, no one with no one near.
+    var nearbyGroup: [Adventurer] = []
+    /// How many travel together with them, them among them: 1 on their own.
+    var nearbyGroupSize: Int { max(1, nearbyGroup.count) }
+    /// The adventurers' party you've joined (`askToJoin`), if any: you follow them about, and they
+    /// fight beside you.
+    var joinedParty: JoinedParty?
+    /// Who said no to partying up lately, and till when they'd say no again (`askAlong`, `askToJoin`).
+    @ObservationIgnored var declinedUntil: [UUID: Date] = [:]
+    /// How much longer each friend at your side stays in your party, in seconds of play
+    /// (`passPartyTime`): set as they join, or the first time it's counted.
+    @ObservationIgnored var partyStays: [UUID: TimeInterval] = [:]
+    /// How much longer the party you've joined keeps together with you, in seconds of play.
+    @ObservationIgnored var joinedStay: TimeInterval = 0
     /// Whether the weaver has a cape for you (`capesWaiting`), as of the last time a milestone could
     /// have been met (`checkTitles`) or a cape was woven: the "!" over her, without working out every
     /// cape's progress each frame.
@@ -54,6 +67,13 @@ final class GameSession {
         enum Kind { case adventurer, friend, hostile, party, folk }
         let cell: GridPoint
         let kind: Kind
+
+        /// An adventurer's dot: red-named, in the party you've joined, a friend, or anyone.
+        static func kind(of adventurer: Adventurer, friends: Set<UUID>, party: Set<UUID>) -> Kind {
+            if adventurer.hostile { return .hostile }
+            if party.contains(adventurer.id) { return .party }
+            return friends.contains(adventurer.id) ? .friend : .adventurer
+        }
     }
 
     /// Someone with a job, as an icon on the minimap (like RuneScape's): a quest giver (with a quest
@@ -664,11 +684,11 @@ final class GameSession {
     var friendsAtYourSide: [Adventurer] { partyMembers.filter { $0.waitingAt == nil } }
 
     /// How strong your side is in a fight, as the levels of everyone who'd stand with you added up:
-    /// you, your companion while it's up, and the friends at your side with theirs (a step below
+    /// you, your companion while it's up, and everyone fighting beside you with theirs (a step below
     /// their own level, as they fight).
     var partyStrength: Int {
         let companion = activePet.map { $0.hp > 0 ? $0.level : 0 } ?? 0
-        return data.hero.level + companion + friendsAtYourSide.map(Self.strength).reduce(0, +)
+        return data.hero.level + companion + fightersAtYourSide.map(Self.strength).reduce(0, +)
     }
 
     /// An adventurer's strength with their companion, the same way.
@@ -700,7 +720,7 @@ final class GameSession {
     }
 
     func invite(_ id: UUID) {
-        guard let friend = friends.first(where: { $0.id == id }), !isInParty(friend), partyMembers.count < Self.maxAllies,
+        guard let friend = friends.first(where: { $0.id == id }), !isInParty(friend), !partyIsFull,
               adventurersAround.contains(id) else { return }
         // Friends keep up with you, and save where you last did. Read first, then write: the right
         // side of an optional-chained write runs while the write holds `data`, so reading `data`
@@ -713,6 +733,7 @@ final class GameSession {
             data.friends?[index].checkpoint = saved
         }
         data.partyIDs = (data.partyIDs ?? []) + [id]
+        partyStays[id] = stayLength()
         post(L("{name} joined your party!", ["name": friend.name]), .reward)
         save()
     }
@@ -720,6 +741,7 @@ final class GameSession {
     func leaveParty(_ id: UUID) {
         guard let friend = friends.first(where: { $0.id == id }) else { return }
         data.partyIDs?.removeAll { $0 == id }
+        partyStays[id] = nil
         if let index = data.friends?.firstIndex(where: { $0.id == id }) {
             data.friends?[index].waitingAt = nil
         }

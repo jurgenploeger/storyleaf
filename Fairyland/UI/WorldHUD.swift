@@ -17,6 +17,10 @@ struct WorldHUD: View {
                 // through to the map.
                 StatusCluster(session: session, onInspect: { coordinator.open(.profile($0)) })
                     .coachTarget(.status)
+                // The party you've joined: whose it is, and a way out of it.
+                if let joined = session.joinedParty, let leader = joined.leader {
+                    JoinedPartyPlate(leader: leader, count: joined.members.count) { coordinator.leaveJoinedParty() }
+                }
                 CalendarPlate(session: session)
                     .allowsHitTesting(false)
                 SystemLog(lines: session.log)
@@ -318,6 +322,37 @@ private struct TaggedBar: View {
                 .frame(width: 14, height: 11)
                 .background(RoundedRectangle(cornerRadius: 3).fill(HUDStyle.frameDark))
         }
+    }
+}
+
+/// Under your party, while you travel in someone else's (`GameSession.joinedParty`): whose it is and
+/// how many of them, and Leave party.
+private struct JoinedPartyPlate: View {
+    let leader: Adventurer
+    let count: Int
+    let leave: () -> Void
+
+    var body: some View {
+        HStack(spacing: 6) {
+            IconImage(.users, size: 13)
+                .foregroundStyle(HUDStyle.green)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(L("In {name}'s party", ["name": leader.name]))
+                    .font(HUDStyle.font(11))
+                    .foregroundStyle(HUDStyle.cream)
+                Text(L("{count} of them, and you", ["count": count]))
+                    .font(HUDStyle.font(9))
+                    .foregroundStyle(HUDStyle.dim)
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            Button(L("Leave party"), action: leave)
+                .buttonStyle(PixelButtonStyle(compact: true))
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(HUDStyle.panel)
+        .frame(maxWidth: 230, alignment: .leading)
     }
 }
 

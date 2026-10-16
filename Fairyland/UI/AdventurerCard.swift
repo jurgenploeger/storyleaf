@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Fairyland's target frame for another adventurer you're standing next to: who they are,
-/// how strong, and what you can do (befriend, invite to your party, or duel in danger zones, where
-/// a beaten adventurer drops everything they carry).
+/// how strong, and what you can do (befriend, invite to your party, ask to join theirs, or duel in
+/// danger zones, where a beaten adventurer drops everything they carry). They don't always say yes.
 struct AdventurerCard: View {
     let coordinator: GameCoordinator
     let adventurer: Adventurer
@@ -54,10 +54,10 @@ struct AdventurerCard: View {
                 } else if !session.isFriend(adventurer) {
                     Button { coordinator.befriend(adventurer) } label: { word(L("Befriend")) }
                         .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
-                } else if !session.isInParty(adventurer), session.partyMembers.count < GameSession.maxAllies {
+                } else if !session.isInParty(adventurer), !session.partyIsFull {
                     Button { coordinator.invite(adventurer) } label: { word(L("Invite to party")) }
                         .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
-                } else if session.partyMembers.count >= GameSession.maxAllies {
+                } else if session.partyIsFull {
                     Text(L("Your party is full")).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim)
                 }
                 if !adventurer.hostile {
@@ -68,6 +68,11 @@ struct AdventurerCard: View {
                     Button { coordinator.challenge(adventurer) } label: { word(L("Duel")) }
                         .buttonStyle(PixelButtonStyle(tint: Color(red: 1, green: 0.55, blue: 0.5), compact: true))
                 }
+            }
+            // Travelling with friends: ask whoever leads to let you join them, and follow them about.
+            if !adventurer.hostile, session.nearbyGroupSize > 1, session.joinedParty == nil {
+                Button { coordinator.askToJoin(adventurer) } label: { word(L("Ask to join their party")) }
+                    .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
             }
         }
         .padding(10)
