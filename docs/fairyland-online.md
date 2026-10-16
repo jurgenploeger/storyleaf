@@ -23,7 +23,7 @@ keeps the FO names when it describes the original:
 |---|---|
 | Rainbow City, Bluebird, Goldburg (and Goldburg Lake) | Prismhaven, Larkspur, Ingothold (Ingothold Lake) |
 | Northern Grassland, Slime Cave, Candy Mountain, Puppet Hill | Windswept Downs, Gooey Grotto, Gumdrop Peaks, Marionette Rise |
-| Sleepy Town, Secret Plain, Hachoo Island, Rosen Lake | Dozywick, Hidden Steppe, Sneezle Isle, Briarmere |
+| Sleepy Town, Secret Plain, Hachoo Island, Rosen Lake | Dozywick, Hidden Steppe, Sneezle Sands (Sneezle Isle till 0.7.22: it's a sandy coast, not an island), Briarmere |
 | Water Temple, Mysterious Cave, Valley of Fear, Moonglow | Tidewater Shrine, Whispering Hollow, Shiverdell, Moonwhisper |
 | Shiria, Linns the Tailor, Hermit Will, Hamini the Wise, Thomas, Sophia | Liora, Nella the Tailor, Hermit Orrin, Ambrose the Wise, Jory, Rosalind |
 | Diviner Guild, Journeyman Guild (the Warrior Guild stays) | Arcane Circle, Wildfolk Lodge |
@@ -163,7 +163,7 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   hills or mountains): every map outside the towns and caves has `theme.hills`, dunes on Pineapple Shore, low
   rises in the swamps (28 to 30 points), rolling hills in the woods and round the lakes (40 to 44), and a
   mountain each in Shiverdell and Moonwhisper (160), on Emerald Road (140), in Big Bad Wolf's Lair and on
-  Sneezle Isle (130). Towns have their terraces; a cave's tunnels (3 cells wide, chambers up to 5 across)
+  Sneezle Sands (130). Towns have their terraces; a cave's tunnels (3 cells wide, chambers up to 5 across)
   have no room for a hill. Their bare slopes are the scree every rocky land shows: a first try gave
   Moonwhisper and Tidewater Shrine the caves' dark cobbles (`bank` tile_cave_rock), and since a range where a
   road leads into a cave takes its rock from the hills' bank, Moonwhisper's cave range went dark and
@@ -176,7 +176,7 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   Howlmaster and the Marionette King moved up onto their mountains (the Emerald Dragon stays at the end of
   its road, Shiverdell's Great Wisp in its hollow), Pebble onto Crystal Mountain's second peak and Mister
   Frost onto Snow White Forest's, and a treasure chest stands at the top of Gumdrop Peaks, Shiverdell,
-  Crystal Mountain, Snow White Forest, Sneezle Isle and Emerald Road, lanterns, crystals, lollipops or a
+  Crystal Mountain, Snow White Forest, Sneezle Sands and Emerald Road, lanterns, crystals, lollipops or a
   statue beside it. Each holds a summit treasure: gear only that chest has (`Content.chestHolding`, like a
   quest treasure: no shop, monster, smith or adventurer has one, gold-framed, its card saying where it's
   from), around the map's level: Gumdrop Star Charm 24, Shiverpeak Gloves 42, Crystal Crown Pendant 80,
@@ -329,7 +329,7 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   from a cloud session.
 - Harbors and a ship (ours, since 0.7.9; playtesting 2026-10-16: "Add another magical/mystical map now, an
   island. To get to an island there should be a ship and harbor to get on"): Starfall Isle (levels 128 to
-  148, after Sneezle Isle's 120 to 140) lies out at sea about 65 cells east of Sneezle Isle, a land of its
+  148, after Sneezle Sands' 120 to 140) lies out at sea about 65 cells east of Sneezle Sands, a land of its
   own with no land next door: lilac and blossom trees, glowing crystals and fairy rings, a lake with an
   island, wisps and pegasi, its own song (`starfall`, a music box over harp and pad). A road with
   `"ship": true` (maps.json exit) ends at a harbor instead of a border: `tools/world_layout.py` (`harbors`)
@@ -344,6 +344,27 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   gangplank (`Region.Road.boarding`) and you sail, behind the card, to the other harbor, coming ashore by
   the foot of its pier. A captain stands by each (`at: "harbor"`). FO had an island zone too (Cannibal
   Island, above); this one isn't it.
+- Glimmerbough (ours, since 0.7.22; playtesting 2026-10-16: "There should be something worthy to do on
+  Starfall Isle, like new monsters, quests, armor/items to earn etc. There should be like a small mystical
+  fairy tree village"): a fairy village round the fallen star's crystals at Starfall Isle's heart, where
+  its road from the harbor ends. Its houses are hollow trees with round doors in lilac, rose and moonlit
+  silver leaves, and Mother Lumen's great pale tree behind her (free palette swaps of `hollow_tree`,
+  maps.json `buildings`; each has a Retro Diffusion `request` for a later upgrade of its own). Wisp
+  lanterns, paper lanterns, fairy rings and moonflowers grow round it (props with `within`). Its fairy
+  folk are elves drawn small (`scale` 0.8): Mother Lumen with three quests, Dewdrop the healer, Thistle's
+  shop, and Pip the Lamplighter, a wisp, with two; Bramble the Gardener and Little Wren live there. Four
+  new monsters live on the island (free palette swaps): Starmoths (and the rare Dawn Starmoth), Nebula
+  Puffs and Crystal Quills. The quests: The Lanterns of Glimmerbough (6 Starlight Dust from the Starmoths,
+  136), The Sleeping Moonflowers (12 Nebula Puffs, 140), The Crystal Garden (10 Crystal Quills, 140), A
+  Lantern for the Stargazer (a Starfall Shard from a Crystal Quill joined to 3 Starlight Dust, 144) and The
+  Fallen Star (148), the island's boss: the star that fell, awake and lonely on top of the island's
+  mountain (level 150, the Starcatcher title; the island has a mountain since, like every land with a boss
+  on a summit). Each quest gives a treasure (Glimmerwing Boots, the Starweave Robe,
+  Starpetal Gauntlets, the Stargazer's Band, the Fallen Star Pendant, levels 136 to 148, drawn in
+  `tools/item_art.py`), filling the gap between the Temple Bell Amulet (135) and the Wavecrest Scale Mail
+  (155), and the Fallen Star drops a level-150 weapon for each class now and then (Starfall Staff, Blade,
+  Axe and Whip; the smiths' lines stop at 105). Whether FO had a village like it isn't in any source
+  reachable from a cloud session; it's ours.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake
@@ -393,7 +414,7 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     The layout follows the climate, roughly RuneScape's Gielinor turned on its side: snow and ice in the
     north (Snow White Forest, Moonwhisper, Briarmere, Tidewater Shrine, like Fremennik and Trollheim),
     desert in the south-east (Ingothold, Genie Desert, Hidden Steppe, like the Kharidian Desert) with
-    Sneezle Isle on a sand spit and Pineapple Shore's beaches on the south coast (Karamja's place), the dark
+    Sneezle Sands on a sand spit and Pineapple Shore's beaches on the south coast (Karamja's place), the dark
     woods to the east (Morytania's), Gumdrop Peaks and the wolves' lair to the west, Meadowbrook's fields in
     the middle. Since 0.7.21 each land says which (maps.json `climate`: cold for the four northern lands, hot for the desert and the south coast; none for the mild lands between, and caves), frost and snow monsters live only where it's cold (`check_content.py`; playtesting 2026-10-16 found a frost-maned lion on the Hidden Steppe and frost puffs on Pineapple Shore's beach), and the adventurers about walk companions at home in a land of the same climate where one fits (`Crowd.companion`). Changing the order moved some roads: Pineapple Shore is reached from
     Meadowbrook now (still behind "Jelly Trouble"), the Smiling Forest from Gumdrop Peaks and Prismhaven,
@@ -770,7 +791,7 @@ A quest giver with nothing for you says why (a level to reach, someone else's qu
 points to the quest open to you that suits your level best, or the next to open (`GameSession.questGiverNote`,
 since 0.4.0, at the playtester's request, 2026-10-11: a level-103 hero was told to come back stronger). The
 same day closed a gap with nothing new between levels 96 and 109: the Old Ox on the Hidden Steppe (Aesop's
-four oxen and the lion; 100, 106, 114) and the Little Crab on Sneezle Isle (the Japanese tale of the monkey
+four oxen and the lion; 100, 106, 114) and the Little Crab on Sneezle Sands (the Japanese tale of the monkey
 and the crab; 124, 130), both ours.
 Since 0.7.11 a quest can ask you to bring something, not only to beat monsters (playtesting 2026-10-16:
 "Maybe to get to the islands you need to complete a quest. The quests shouldn't only be about defeating
@@ -784,16 +805,16 @@ bag and takes them when you hand it in; while you're on it, its monsters drop th
 a chance a beaten monster, up to what it wants, none once you have it), a chest opens for it (maps.json
 chest `quest`), or you make it by hand from the bag (items.json `make`: carve or join, from its `recipe`,
 the Carve and Piece together buttons on a piece's card, `GameSession.make`). A quest's pieces are materials
-of their own (`material: quest`), never sold or dropped otherwise. Captain Brine at Sneezle Isle's harbor
+of their own (`material: quest`), never sold or dropped otherwise. Captain Brine at Sneezle Sands' harbor
 (an NPC at a landmark, `NPCDef.at`) readies the ship to Starfall Isle in three: A Spare Sail (4 Sailcloth
 Scraps from the fire crabs, 122), A Figurehead for the Gull (Starwood from the wood monkeys, carved with 3
-Red Yew, 124) and The Star Chart (three pieces: in an old chest on Sneezle Isle, from the Hidden Steppe's
+Red Yew, 124) and The Star Chart (three pieces: in an old chest on Sneezle Sands, from the Hidden Steppe's
 Earth Lions and from a Mint Shadow Ape; pieced together, 126). Its ship stays moored till then (the exit's
 `requires`), saying which quest it waits on as you step up to it; the ship back never does. Two early ones
 show the same: Wool for the Lambs (Mother Sheep, 5 Tufts of Wool from the golden hamsters, 5) and A Flute
 for Shelly (Old Shelly, a Piece of Driftwood from the wood crabs carved with 2 White Poplar, 10).
 Quest treasures (ours, since 0.4.2, asked for in playtesting 2026-10-11: quests should give rare items and
-armour you don't get from fights; no source we could reach says what FO's quests paid in gear): 28 pieces of
+armour you don't get from fights; no source we could reach says what FO's quests paid in gear): 33 pieces of
 armour, boots, gloves, necklaces and rings, each from one story quest between levels 14 and 190 and themed on
 it (Oxhide Mail from the Old Ox, the Woodcutter's Coat for the Big Bad Wolf, Liora's Veil from her ruins). A
 treasure is gear a quest gives that no shop sells (`Content.questGiving`); no monster drops one, no trader
@@ -943,7 +964,7 @@ the Wishing Seal, which stays the Monster Book's last reward.
     (`crowd.traders`). `botDensity` in content/crowd.json thins out every map's bots.
   - Us (since 0.4.12, asked for in playtesting 2026-10-12: "characters walking/standing around that give
     the place more character and a story"): every map has locals (maps.json `locals`, `MapDef.Local`),
-    two or three out in the fields and one in each cave and town, 56 in all. Each has a look of their own
+    two or three out in the fields and one in each cave and town, 60 in all. Each has a look of their own
     (race, gender, hair, outfit; the rest drawn from their place in the list, so they look the same on
     every visit), a home by a landmark (a jetty's end, a road's bridge, a lake's island or shore, a cave's
     mouth), on a summit or out from the middle, and stands there, strolls about it or walks an errand

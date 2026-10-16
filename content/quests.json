@@ -821,9 +821,9 @@
     },
     {
       "id": "ore_of_hachoo",
-      "title": "Ore of Sneezle Isle",
+      "title": "Ore of Sneezle Sands",
       "giver": "hamini",
-      "description": "Even bigger golems live on Sneezle Isle, south of the Hidden Steppe. Defeat 10 and the mystery of the ore is solved.",
+      "description": "Even bigger golems live on Sneezle Sands, south of the Hidden Steppe. Defeat 10 and the mystery of the ore is solved.",
       "objective": {
         "type": "defeat",
         "target": "ore_golem",
@@ -1223,7 +1223,7 @@
       "id": "persimmons_for_all",
       "title": "Persimmons for Everyone",
       "giver": "little_crab",
-      "description": "Now the Mint Shadow Apes come down from the hills for the ripe ones. Drive off 6, and the whole island can share the harvest.",
+      "description": "Now the Mint Shadow Apes come down from the hills for the ripe ones. Drive off 6, and the whole coast can share the harvest.",
       "objective": {
         "type": "defeat",
         "target": "mint_black_kong",
@@ -1373,7 +1373,7 @@
       "id": "the_star_chart",
       "title": "The Star Chart",
       "giver": "captain_brine",
-      "description": "The chart to Starfall Isle blew apart in the same storm. One piece landed in an old chest on Sneezle Isle, an Earth Lion on the Hidden Steppe carried off another, and a Mint Shadow Ape ran off with the third. Find all three, piece the chart together and bring it to Captain Brine.",
+      "description": "The chart to Starfall Isle blew apart in the same storm. One piece landed in an old chest on Sneezle Sands, an Earth Lion on the Hidden Steppe carried off another, and a Mint Shadow Ape ran off with the third. Find all three, piece the chart together and bring it to Captain Brine.",
       "minLevel": 126,
       "requires": [
         "a_figurehead_for_the_gull"
@@ -1407,6 +1407,143 @@
         "items": [
           "hi_potion",
           "hi_ether"
+        ]
+      }
+    },
+    {
+      "id": "lanterns_of_glimmerbough",
+      "title": "The Lanterns of Glimmerbough",
+      "giver": "mother_lumen",
+      "minLevel": 136,
+      "description": "Starmoths drink the light from Glimmerbough's lanterns, and each night the village grows a little darker. Win back 6 pinches of Starlight Dust from their wings, so Pip can light them again.",
+      "objective": {
+        "type": "bring",
+        "target": "starlight_dust",
+        "count": 6
+      },
+      "drops": [
+        {
+          "item": "starlight_dust",
+          "from": [
+            "star_moth",
+            "dawn_starmoth"
+          ],
+          "chance": 0.5
+        }
+      ],
+      "reward": {
+        "gold": 16000,
+        "exp": 58000,
+        "items": [
+          "glimmerwing_boots",
+          "hi_ether"
+        ]
+      }
+    },
+    {
+      "id": "sleeping_moonflowers",
+      "title": "The Sleeping Moonflowers",
+      "giver": "mother_lumen",
+      "minLevel": 140,
+      "description": "Nebula Puffs drift down from the hills at dusk and settle on our moonflowers until they wilt. Drive off 12 of them, and the flowers can open again.",
+      "objective": {
+        "type": "defeat",
+        "target": "nebula_puff",
+        "count": 12
+      },
+      "reward": {
+        "gold": 18000,
+        "exp": 64000,
+        "items": [
+          "starweave_robe",
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "the_crystal_garden",
+      "title": "The Crystal Garden",
+      "giver": "pip_lamplighter",
+      "minLevel": 140,
+      "description": "Crystal Quills keep digging up the crystals I grow my lantern glass from. Teach 10 of them to dig somewhere else!",
+      "objective": {
+        "type": "defeat",
+        "target": "crystal_quill",
+        "count": 10
+      },
+      "reward": {
+        "gold": 18000,
+        "exp": 64000,
+        "items": [
+          "starpetal_gauntlets",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "a_lantern_for_lune",
+      "title": "A Lantern for the Stargazer",
+      "giver": "pip_lamplighter",
+      "minLevel": 144,
+      "requires": [
+        "the_crystal_garden"
+      ],
+      "description": "Stargazer Lune watches the sky all night by the light of a candle stub. Let's make her a Star Lantern! Win a Starfall Shard from a Crystal Quill, then join it to 3 pinches of Starlight Dust from your bag.",
+      "objective": {
+        "type": "bring",
+        "target": "star_lantern",
+        "count": 1
+      },
+      "drops": [
+        {
+          "item": "starfall_shard",
+          "from": [
+            "crystal_quill"
+          ],
+          "chance": 0.35,
+          "upTo": 1
+        },
+        {
+          "item": "starlight_dust",
+          "from": [
+            "star_moth",
+            "dawn_starmoth"
+          ],
+          "chance": 0.5,
+          "upTo": 3
+        }
+      ],
+      "reward": {
+        "gold": 20000,
+        "exp": 72000,
+        "items": [
+          "stargazer_band",
+          "hi_ether"
+        ]
+      }
+    },
+    {
+      "id": "the_fallen_star",
+      "title": "The Fallen Star",
+      "giver": "mother_lumen",
+      "minLevel": 148,
+      "requires": [
+        "lanterns_of_glimmerbough",
+        "sleeping_moonflowers"
+      ],
+      "description": "Long ago a star fell on this island, and Glimmerbough grew up round the crystals it left. Now it has woken on the hill, lonely and far from home, and its light burns anyone who comes near. Calm it, and help it find its way back to the sky.",
+      "objective": {
+        "type": "defeat",
+        "target": "fallen_star",
+        "count": 1
+      },
+      "reward": {
+        "gold": 22000,
+        "exp": 80000,
+        "items": [
+          "fallen_star_pendant",
+          "star_seal"
         ]
       }
     }

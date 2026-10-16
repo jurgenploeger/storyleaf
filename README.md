@@ -10,7 +10,7 @@ Built with SwiftUI + SpriteKit. Art is generated with [Retro Diffusion](https://
   (Meadowbrook, Prismhaven, Larkspur, dwarven Ingothold) with streets, shops, fairytale buildings and raised
   stone terraces, and wild zones from Sunny Meadow, the Windswept Downs and Gumdrop Peaks to Swan Lake,
   Lotus Land, Marionette Rise, Shiverdell, Genie Desert, Dozywick and Moonwhisper, then the level
-  105–200 lands beyond: the Hidden Steppe, Sneezle Isle, Briarmere, the Tidewater Shrine, the Whispering Hollow and
+  105–200 lands beyond: the Hidden Steppe, Sneezle Sands, Briarmere, the Tidewater Shrine, the Whispering Hollow and
   the Emerald Road. Quests open the roads onward.
 - **Random encounters** in the wild (no monsters on the map), with **turn-based battles** fought where you
   stand. Big spells splash onto nearby monsters. Fourteen bosses wait on their maps behind two waves of ten of their followers, up to the Emerald Dragon at level 200.

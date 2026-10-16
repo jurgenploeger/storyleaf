@@ -9098,7 +9098,7 @@
       "id": "item_hachoo_island_cape",
       "kind": "item",
       "request": {
-        "prompt": "a long cape in Sneezle Isle's colours with a clasp and an emblem, game item icon",
+        "prompt": "a long cape in Sneezle Sands' colours with a clasp and an emblem, game item icon",
         "prompt_style": "rd_tile__tile_object",
         "width": 32,
         "height": 32,
@@ -9261,6 +9261,483 @@
         "width": 48,
         "height": 48,
         "return_spritesheet": true
+      }
+    },
+    {
+      "id": "fairy_tree_house",
+      "kind": "building",
+      "scale": 1.6,
+      "derive": {
+        "from": "hollow_tree",
+        "recolor": [
+          {
+            "hue": [
+              60,
+              175
+            ],
+            "minSaturation": 0.2,
+            "to": 272,
+            "spread": 1.0,
+            "saturation": 0.75,
+            "value": 1.1
+          }
+        ]
+      },
+      "request": {
+        "prompt": "whimsical fairy tree house, a big old hollow tree with a round door, tiny glowing windows and lilac leaves",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 64,
+        "height": 64,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "fairy_tree_house_rose",
+      "kind": "building",
+      "scale": 1.6,
+      "derive": {
+        "from": "hollow_tree",
+        "recolor": [
+          {
+            "hue": [
+              60,
+              175
+            ],
+            "minSaturation": 0.2,
+            "to": 328,
+            "spread": 1.0,
+            "saturation": 0.7,
+            "value": 1.15
+          }
+        ]
+      },
+      "request": {
+        "prompt": "whimsical fairy tree house, a big old hollow tree with a round door, tiny glowing windows and rose pink leaves",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 64,
+        "height": 64,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "fairy_tree_house_moon",
+      "kind": "building",
+      "scale": 1.6,
+      "derive": {
+        "from": "hollow_tree",
+        "recolor": [
+          {
+            "hue": [
+              60,
+              175
+            ],
+            "minSaturation": 0.2,
+            "to": 200,
+            "spread": 0.6,
+            "saturation": 0.3,
+            "value": 1.3
+          }
+        ]
+      },
+      "request": {
+        "prompt": "whimsical fairy tree house, a big old hollow tree with a round door, tiny glowing windows and silvery moonlit leaves",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 64,
+        "height": 64,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "fairy_great_tree",
+      "kind": "building",
+      "scale": 2.1,
+      "derive": {
+        "from": "hollow_tree",
+        "recolor": [
+          {
+            "hue": [
+              60,
+              175
+            ],
+            "minSaturation": 0.2,
+            "to": 285,
+            "spread": 0.6,
+            "saturation": 0.35,
+            "value": 1.3
+          }
+        ]
+      },
+      "request": {
+        "prompt": "whimsical fairy tree house, a big old hollow tree with a round door, tiny glowing windows and pale silver lilac leaves",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 64,
+        "height": 64,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "monster_yellow_butterfly_star",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_yellow_butterfly",
+        "recolor": [
+          {
+            "hue": [
+              0,
+              75
+            ],
+            "minSaturation": 0.2,
+            "to": 262,
+            "spread": 1.0,
+            "saturation": 0.85
+          }
+        ]
+      }
+    },
+    {
+      "id": "monster_yellow_butterfly_dawn",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_yellow_butterfly",
+        "recolor": [
+          {
+            "hue": [
+              0,
+              75
+            ],
+            "minSaturation": 0.2,
+            "to": 318,
+            "spread": 0.7,
+            "saturation": 0.55,
+            "value": 1.15
+          }
+        ]
+      }
+    },
+    {
+      "id": "monster_jelly_nebula",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_jelly",
+        "recolor": [
+          {
+            "hue": [
+              280,
+              20
+            ],
+            "minSaturation": 0.2,
+            "to": 228,
+            "spread": 1.0,
+            "saturation": 0.9,
+            "value": 0.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "monster_hedgehog_crystal",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_hedgehog",
+        "recolor": [
+          {
+            "hue": [
+              320,
+              55
+            ],
+            "minSaturation": 0.2,
+            "to": 188,
+            "spread": 0.66,
+            "saturation": 0.7,
+            "value": 1.1
+          }
+        ]
+      }
+    },
+    {
+      "id": "boss_fallen_star",
+      "kind": "monster",
+      "derive": {
+        "from": "boss_great_wisp",
+        "recolor": [
+          {
+            "hue": [
+              0,
+              70
+            ],
+            "minSaturation": 0.2,
+            "to": 205,
+            "spread": 0.6,
+            "saturation": 0.45,
+            "value": 1.15
+          }
+        ]
+      }
+    },
+    {
+      "id": "npc_pip",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_wisp",
+        "recolor": [
+          {
+            "hue": [
+              0,
+              75
+            ],
+            "minSaturation": 0.25,
+            "to": 175,
+            "spread": 1.0,
+            "saturation": 0.8,
+            "value": 1.1
+          }
+        ]
+      }
+    },
+    {
+      "id": "npc_mother_lumen",
+      "kind": "walk_sheet",
+      "scale": 0.8,
+      "derive": {
+        "from": "elf_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 50,
+            "saturation": 0.55,
+            "value": 1.2
+          },
+          {
+            "hue": [
+              12,
+              58
+            ],
+            "minSaturation": 0.55,
+            "minValue": 0.55,
+            "to": 200,
+            "saturation": 0.1,
+            "value": 1.3
+          }
+        ]
+      },
+      "request": {
+        "prompt": "small kindly fairy elder with silver hair in a pale gold robe, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_dewdrop",
+      "kind": "walk_sheet",
+      "scale": 0.8,
+      "derive": {
+        "from": "elf_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 175,
+            "saturation": 0.7,
+            "value": 1.1
+          },
+          {
+            "hue": [
+              12,
+              58
+            ],
+            "minSaturation": 0.55,
+            "minValue": 0.55,
+            "to": 205,
+            "saturation": 0.6,
+            "value": 1.15
+          }
+        ]
+      },
+      "request": {
+        "prompt": "small fairy healer with sky blue hair in an aqua dress, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_thistle",
+      "kind": "walk_sheet",
+      "scale": 0.8,
+      "derive": {
+        "from": "elf_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 330,
+            "saturation": 0.6,
+            "value": 1.1
+          },
+          {
+            "hue": [
+              12,
+              58
+            ],
+            "minSaturation": 0.55,
+            "minValue": 0.55,
+            "to": 275,
+            "saturation": 0.5,
+            "value": 1.15
+          }
+        ]
+      },
+      "request": {
+        "prompt": "small fairy trader with lavender hair in a rose pink tunic, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_starlight_dust",
+      "kind": "item",
+      "request": {
+        "prompt": "a little heap of glittering violet and gold star dust, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_starfall_shard",
+      "kind": "item",
+      "request": {
+        "prompt": "a pale blue crystal shard with a star of light inside, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_star_lantern",
+      "kind": "item",
+      "request": {
+        "prompt": "a small glass lantern with glowing star dust inside, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_glimmerwing_boots",
+      "kind": "item",
+      "request": {
+        "prompt": "violet boots with little moth wings at the heels, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_starweave_robe",
+      "kind": "item",
+      "request": {
+        "prompt": "deep blue robe with gold trim and tiny stars on it, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_starpetal_gauntlets",
+      "kind": "item",
+      "request": {
+        "prompt": "silver gauntlets set with pale blue crystal petals, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_stargazer_band",
+      "kind": "item",
+      "request": {
+        "prompt": "night blue silver ring with a tiny gold star, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_fallen_star_pendant",
+      "kind": "item",
+      "request": {
+        "prompt": "a glowing white star stone on a silver chain, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_starfall_staff",
+      "kind": "item",
+      "request": {
+        "prompt": "white and gold magic staff with a glowing star at the tip, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_starfall_blade",
+      "kind": "item",
+      "request": {
+        "prompt": "sword with a pale star blade, gold wings on the guard, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_starfall_axe",
+      "kind": "item",
+      "request": {
+        "prompt": "axe with a pale crystal crescent head and a gold star, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_starfall_whip",
+      "kind": "item",
+      "request": {
+        "prompt": "lilac whip with a glowing star at its tip, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     }
   ]

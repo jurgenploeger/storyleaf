@@ -230,7 +230,7 @@ mountain_evening | newgame,level=90,map=crystal_mountain,hill=tallest,face,hour=
 # The trees' long morning shadows down a slope in shade: dark, not streaks of light (0.4.14).
 mountain_candy_morning | newgame,level=26,map=candy_mountain,hill=tallest,face,hour=7,weather=clear | 8
 # Hills on every land (0.4.10): dunes on the shore, the woods' rolling hills, a swamp's low rises, and the
-# mountains of Shiverdell, Sneezle Isle and Big Bad Wolf's Lair.
+# mountains of Shiverdell, Sneezle Sands and Big Bad Wolf's Lair.
 hill_shore     | newgame,level=12,map=pineapple_shore,hill=0,hour=12,weather=clear | 8
 hill_woods_land | newgame,level=20,map=twilight_woods,hill=0,landscape,hour=12,weather=clear | 8
 hill_swamp     | newgame,level=25,map=frog_swamp,hill=0,hour=12,weather=clear | 8
@@ -306,14 +306,24 @@ gate_downs_near_land | newgame,level=12,map=northern_grassland,mouth=0:3,landsca
 gate_valley_near | newgame,level=30,map=valley_of_fear,mouth=0:3,weather=clear,hour=12 | 8
 gate_moon_near_land | newgame,level=100,map=moonglow,mouth=0:3,landscape,hour=16,weather=clear | 8
 # A harbor where a road meets the sea: a pier out to a ship moored at its end, walked aboard to sail
-# over to Starfall Isle, an island of fallen starlight out east of Sneezle Isle (`WorldMap.harbors`),
-# its own harbor, its crystal glades by day and by night, and Sneezle Isle's captain.
+# over to Starfall Isle, an island of fallen starlight out east of Sneezle Sands (`WorldMap.harbors`),
+# its own harbor, its crystal glades by day and by night, and Captain Brine at Sneezle Sands.
 harbor_sneezle | newgame,level=130,map=hachoo_island,harbor=0,weather=clear,hour=12 | 8
 harbor_sneezle_land | newgame,level=130,map=hachoo_island,harbor=0,landscape,weather=clear,hour=12 | 8
 harbor_starfall | newgame,level=135,map=starfall_isle,harbor=0,weather=clear,hour=12 | 8
 starfall       | newgame,level=135,map=starfall_isle,weather=clear,hour=11 | 8
 starfall_land  | newgame,level=135,map=starfall_isle,landscape,weather=clear,hour=11 | 8
 starfall_night | newgame,level=135,map=starfall_isle,landscape,weather=clear,hour=22 | 8
+# Glimmerbough, the fairy tree village at Starfall Isle's heart (playtesting 2026-10-16: "something worthy
+# to do on Starfall Isle"): its tree houses, lanterns and fairy folk by day and by night, Mother Lumen's
+# quests, the island's new monsters in battle, and the Fallen Star on its hill, fought and calmed.
+glimmerbough   | newgame,level=140,map=starfall_isle,at=0_3,weather=clear,hour=12 | 8
+glimmerbough_land | newgame,level=140,map=starfall_isle,at=0_3,landscape,weather=clear,hour=12 | 8
+glimmerbough_night | newgame,level=140,map=starfall_isle,at=0_3,landscape,weather=clear,hour=22 | 8
+quest_lumen    | newgame,level=148,map=starfall_isle,at=-1_5,npc=mother_lumen,done=lanterns_of_glimmerbough+sleeping_moonflowers,weather=clear,hour=12 | 8
+battle_starfall | newgame,level=140,map=starfall_isle,battle=5 | 15
+boss_fallen_star | newgame,level=150,class=mage,map=starfall_isle,boss=fallen_star_hill | 25
+boss_fallen_star_win | newgame,level=150,class=mage,map=starfall_isle,boss=fallen_star_hill,win | 35
 quest_captain  | newgame,level=126,map=hachoo_island,harbor=0,npc=captain_brine,done=a_spare_sail+a_figurehead_for_the_gull,weather=clear,hour=12 | 8
 # Quests that ask you to bring something, not only to beat monsters (playtesting 2026-10-16, after
 # RuneScape's): the Carve button on a quest's piece once the bag holds the rest, and a quest asking for wool.
