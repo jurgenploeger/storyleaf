@@ -1077,6 +1077,11 @@ final class ContinentScene: SKScene {
         player.say(text, for: 600)
     }
 
+    /// Debug launches (`facing=<way>`): you turn that way.
+    func turnForDebug(_ direction: Direction) {
+        player.face(direction)
+    }
+
     /// Debug launches (`local=n`): the local you start beside tells you the first line of their story.
     func localTellsForDebug() {
         guard let here, let stage = lands[here.id]?.stage else { return }

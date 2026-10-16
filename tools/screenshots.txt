@@ -276,6 +276,13 @@ gate_lotus_side_day | newgame,level=126,map=lotus_land,at=-4_-19,hour=12,weather
 # Adventurers travelling together, as you do with your party (crowd.json `groupChance`), in town, with the
 # card of the one nearest saying how many there are.
 bot_group      | newgame,map=meadowbrook,group,hour=12,weather=clear | 10
+# Status capes (rewards.json `prizes`): one on your back (its emblem and trim), over plate from the side,
+# the weaver's list with two to weave, the cape's slot on the paper doll, and a cape's card.
+cape_back      | newgame,level=60,map=meadowbrook,equip=swan_lake_cape,facing=up,hour=12,weather=clear | 8
+cape_plate     | newgame,class=fighter,level=60,map=sunny_meadow,equip=iron_plate+bossbane_cape,facing=left,hour=12,weather=clear | 8
+cape_weaver    | newgame,level=60,map=meadowbrook,beaten=sunny_meadow+northern_grassland,npc=weaver,hour=12,weather=clear | 8
+cape_doll      | newgame,level=60,map=meadowbrook,equip=storyleaf_cape,menu=character | 8
+cape_card      | newgame,level=60,map=meadowbrook,bag=quest_cape,menu=bag,inspect=quest_cape | 8
 # Where a road leads into a cave it ends inland, at a rocky hill with the cave's dark mouth in a wall
 # of rock turned toward you (playtesting 2026-10-16: the caves stood at the edge of the maps, out in
 # the sea); and at night, the butterflies and the sparkles dimmed with the rest.

@@ -58,6 +58,21 @@ struct ItemInfoCard: View {
                                     .foregroundStyle(HUDStyle.cream)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
+                        } else if let prize = session.content.prize(for: item.id), let weaver = session.weaver {
+                            // A status cape: what earns it, who weaves it, and how far along you are.
+                            let progress = session.prizeProgress(prize)
+                            section(L("Cape of renown")) {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(L("{requirement}, and {weaver} in {town} will weave it for you. No one else has one to give.",
+                                           ["requirement": session.prizeRequirement(prize), "weaver": weaver.npc.name, "town": weaver.land.name]))
+                                        .font(HUDStyle.font(12))
+                                        .foregroundStyle(HUDStyle.cream)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    Text(L("So far: {have} of {need}", ["have": progress.have, "need": progress.need]))
+                                        .font(HUDStyle.font(11))
+                                        .foregroundStyle(session.hasEarned(prize) ? HUDStyle.gold : HUDStyle.dim)
+                                }
+                            }
                         }
                         if isGear {
                             requirements

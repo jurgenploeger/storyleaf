@@ -4521,6 +4521,512 @@
         "chart_piece_isle": 1
       },
       "make": "join"
+    },
+    {
+      "id": "sunny_meadow_cape",
+      "icon": "shield-star",
+      "art": "item_sunny_meadow_cape",
+      "name": "Sunny Meadow Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 1,
+        "hp": 5
+      },
+      "description": "Woven in the colours of Sunny Meadow, for one who has beaten every monster that lives there.",
+      "color": "#7BC74D",
+      "accent": "#F6D743"
+    },
+    {
+      "id": "northern_grassland_cape",
+      "icon": "shield-star",
+      "art": "item_northern_grassland_cape",
+      "name": "Windswept Downs Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 1,
+        "hp": 6
+      },
+      "description": "Woven in the colours of Windswept Downs, for one who has beaten every monster that lives there.",
+      "color": "#9BBF6A",
+      "accent": "#F0F0E0"
+    },
+    {
+      "id": "pineapple_shore_cape",
+      "icon": "shield-star",
+      "art": "item_pineapple_shore_cape",
+      "name": "Pineapple Shore Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 1,
+        "hp": 8
+      },
+      "description": "Woven in the colours of Pineapple Shore, for one who has beaten every monster that lives there.",
+      "color": "#F2B134",
+      "accent": "#3E9E5A"
+    },
+    {
+      "id": "slime_cave_cape",
+      "icon": "shield-star",
+      "art": "item_slime_cave_cape",
+      "name": "Gooey Grotto Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 1,
+        "hp": 8
+      },
+      "description": "Woven in the colours of Gooey Grotto, for one who has beaten every monster that lives there.",
+      "color": "#59C9A5",
+      "accent": "#F5D94E"
+    },
+    {
+      "id": "twilight_woods_cape",
+      "icon": "shield-star",
+      "art": "item_twilight_woods_cape",
+      "name": "Twilight Woods Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 1,
+        "hp": 10
+      },
+      "description": "Woven in the colours of Twilight Woods, for one who has beaten every monster that lives there.",
+      "color": "#5B3FA6",
+      "accent": "#C9B8FF"
+    },
+    {
+      "id": "smiling_forest_cape",
+      "icon": "shield-star",
+      "art": "item_smiling_forest_cape",
+      "name": "Smiling Forest Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 1,
+        "hp": 10
+      },
+      "description": "Woven in the colours of Smiling Forest, for one who has beaten every monster that lives there.",
+      "color": "#3F8F3A",
+      "accent": "#E8C468"
+    },
+    {
+      "id": "candy_mountain_cape",
+      "icon": "shield-star",
+      "art": "item_candy_mountain_cape",
+      "name": "Gumdrop Peaks Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 1,
+        "hp": 10
+      },
+      "description": "Woven in the colours of Gumdrop Peaks, for one who has beaten every monster that lives there.",
+      "color": "#F28DB2",
+      "accent": "#FFFFFF"
+    },
+    {
+      "id": "frog_swamp_cape",
+      "icon": "shield-star",
+      "art": "item_frog_swamp_cape",
+      "name": "Frog Swamp Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 2,
+        "hp": 12
+      },
+      "description": "Woven in the colours of Frog Swamp, for one who has beaten every monster that lives there.",
+      "color": "#5E7F3A",
+      "accent": "#9ED36A"
+    },
+    {
+      "id": "wolf_lair_cape",
+      "icon": "shield-star",
+      "art": "item_wolf_lair_cape",
+      "name": "Big Bad Wolf's Lair Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 2,
+        "hp": 12
+      },
+      "description": "Woven in the colours of Big Bad Wolf's Lair, for one who has beaten every monster that lives there.",
+      "color": "#5A5A66",
+      "accent": "#C0392B"
+    },
+    {
+      "id": "swan_lake_cape",
+      "icon": "shield-star",
+      "art": "item_swan_lake_cape",
+      "name": "Swan Lake Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 2,
+        "hp": 14
+      },
+      "description": "Woven in the colours of Swan Lake, for one who has beaten every monster that lives there.",
+      "color": "#3FA7B5",
+      "accent": "#F7F7F7"
+    },
+    {
+      "id": "valley_of_fear_cape",
+      "icon": "shield-star",
+      "art": "item_valley_of_fear_cape",
+      "name": "Shiverdell Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 2,
+        "hp": 14
+      },
+      "description": "Woven in the colours of Shiverdell, for one who has beaten every monster that lives there.",
+      "color": "#3B3F5C",
+      "accent": "#9CC9FF"
+    },
+    {
+      "id": "lotus_land_cape",
+      "icon": "shield-star",
+      "art": "item_lotus_land_cape",
+      "name": "Lotus Land Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 2,
+        "hp": 16
+      },
+      "description": "Woven in the colours of Lotus Land, for one who has beaten every monster that lives there.",
+      "color": "#C86FA8",
+      "accent": "#7FD18B"
+    },
+    {
+      "id": "rat_cavern_cape",
+      "icon": "shield-star",
+      "art": "item_rat_cavern_cape",
+      "name": "Rat Cavern Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 2,
+        "hp": 17
+      },
+      "description": "Woven in the colours of Rat Cavern, for one who has beaten every monster that lives there.",
+      "color": "#6B5B4B",
+      "accent": "#C9A46B"
+    },
+    {
+      "id": "puppet_hill_cape",
+      "icon": "shield-star",
+      "art": "item_puppet_hill_cape",
+      "name": "Marionette Rise Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 3,
+        "hp": 18
+      },
+      "description": "Woven in the colours of Marionette Rise, for one who has beaten every monster that lives there.",
+      "color": "#A0342F",
+      "accent": "#F2C14E"
+    },
+    {
+      "id": "genie_desert_cape",
+      "icon": "shield-star",
+      "art": "item_genie_desert_cape",
+      "name": "Genie Desert Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 3,
+        "hp": 21
+      },
+      "description": "Woven in the colours of Genie Desert, for one who has beaten every monster that lives there.",
+      "color": "#E0A84F",
+      "accent": "#3A6EC4"
+    },
+    {
+      "id": "goldburg_lake_cape",
+      "icon": "shield-star",
+      "art": "item_goldburg_lake_cape",
+      "name": "Ingothold Lake Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 3,
+        "hp": 21
+      },
+      "description": "Woven in the colours of Ingothold Lake, for one who has beaten every monster that lives there.",
+      "color": "#D4AF37",
+      "accent": "#2E6DA4"
+    },
+    {
+      "id": "crystal_mountain_cape",
+      "icon": "shield-star",
+      "art": "item_crystal_mountain_cape",
+      "name": "Crystal Mountain Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 4,
+        "hp": 24
+      },
+      "description": "Woven in the colours of Crystal Mountain, for one who has beaten every monster that lives there.",
+      "color": "#8FD3E8",
+      "accent": "#FFFFFF"
+    },
+    {
+      "id": "sleepy_town_cape",
+      "icon": "shield-star",
+      "art": "item_sleepy_town_cape",
+      "name": "Dozywick Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 4,
+        "hp": 24
+      },
+      "description": "Woven in the colours of Dozywick, for one who has beaten every monster that lives there.",
+      "color": "#7E6BC4",
+      "accent": "#F5E7A1"
+    },
+    {
+      "id": "snow_white_forest_cape",
+      "icon": "shield-star",
+      "art": "item_snow_white_forest_cape",
+      "name": "Snow White Forest Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 4,
+        "hp": 25
+      },
+      "description": "Woven in the colours of Snow White Forest, for one who has beaten every monster that lives there.",
+      "color": "#E8EEF7",
+      "accent": "#C0303C"
+    },
+    {
+      "id": "moonglow_cape",
+      "icon": "shield-star",
+      "art": "item_moonglow_cape",
+      "name": "Moonwhisper Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 4,
+        "hp": 28
+      },
+      "description": "Woven in the colours of Moonwhisper, for one who has beaten every monster that lives there.",
+      "color": "#2C3E7A",
+      "accent": "#F5E7A1"
+    },
+    {
+      "id": "secret_plain_cape",
+      "icon": "shield-star",
+      "art": "item_secret_plain_cape",
+      "name": "Hidden Steppe Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 5,
+        "hp": 33
+      },
+      "description": "Woven in the colours of Hidden Steppe, for one who has beaten every monster that lives there.",
+      "color": "#B5893F",
+      "accent": "#5C3A1E"
+    },
+    {
+      "id": "hachoo_island_cape",
+      "icon": "shield-star",
+      "art": "item_hachoo_island_cape",
+      "name": "Sneezle Isle Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 6,
+        "hp": 37
+      },
+      "description": "Woven in the colours of Sneezle Isle, for one who has beaten every monster that lives there.",
+      "color": "#E2563C",
+      "accent": "#2B2B2B"
+    },
+    {
+      "id": "starfall_isle_cape",
+      "icon": "shield-star",
+      "art": "item_starfall_isle_cape",
+      "name": "Starfall Isle Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 6,
+        "hp": 39
+      },
+      "description": "Woven in the colours of Starfall Isle, for one who has beaten every monster that lives there.",
+      "color": "#1F2A5C",
+      "accent": "#FFE680"
+    },
+    {
+      "id": "rosen_lake_cape",
+      "icon": "shield-star",
+      "art": "item_rosen_lake_cape",
+      "name": "Briarmere Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 6,
+        "hp": 41
+      },
+      "description": "Woven in the colours of Briarmere, for one who has beaten every monster that lives there.",
+      "color": "#B0223F",
+      "accent": "#3F7A3A"
+    },
+    {
+      "id": "water_temple_cape",
+      "icon": "shield-star",
+      "art": "item_water_temple_cape",
+      "name": "Tidewater Shrine Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 7,
+        "hp": 45
+      },
+      "description": "Woven in the colours of Tidewater Shrine, for one who has beaten every monster that lives there.",
+      "color": "#1E6FA8",
+      "accent": "#7FE3E0"
+    },
+    {
+      "id": "mysterious_cave_cape",
+      "icon": "shield-star",
+      "art": "item_mysterious_cave_cape",
+      "name": "Whispering Hollow Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 8,
+        "hp": 48
+      },
+      "description": "Woven in the colours of Whispering Hollow, for one who has beaten every monster that lives there.",
+      "color": "#3A2E4F",
+      "accent": "#B9A6E0"
+    },
+    {
+      "id": "emerald_road_cape",
+      "icon": "shield-star",
+      "art": "item_emerald_road_cape",
+      "name": "Emerald Road Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 8,
+        "hp": 52
+      },
+      "description": "Woven in the colours of Emerald Road, for one who has beaten every monster that lives there.",
+      "color": "#1E9E5A",
+      "accent": "#F2D16B"
+    },
+    {
+      "id": "monster_book_cape",
+      "icon": "shield-star",
+      "art": "item_monster_book_cape",
+      "name": "Monster Book Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 12,
+        "hp": 80,
+        "attack": 6,
+        "magic": 6
+      },
+      "description": "For one who has beaten every kind of monster there is: the whole Monster Book, worn on your back.",
+      "color": "#8C2F39",
+      "accent": "#F2C14E"
+    },
+    {
+      "id": "card_collector_cape",
+      "icon": "shield-star",
+      "art": "item_card_collector_cape",
+      "name": "Card Collector's Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 8,
+        "hp": 60,
+        "magic": 10,
+        "mp": 30
+      },
+      "description": "For one who holds every monster card. It rustles like a well-shuffled deck.",
+      "color": "#6A3FA0",
+      "accent": "#E0E0F0"
+    },
+    {
+      "id": "quest_cape",
+      "icon": "shield-star",
+      "art": "item_quest_cape",
+      "name": "Quest Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 12,
+        "hp": 80,
+        "attack": 8,
+        "mp": 20
+      },
+      "description": "For one who has finished every quest there is. Everyone you ever helped is stitched into it.",
+      "color": "#2E4FA8",
+      "accent": "#F2C14E"
+    },
+    {
+      "id": "bossbane_cape",
+      "icon": "shield-star",
+      "art": "item_bossbane_cape",
+      "name": "Bossbane Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 14,
+        "hp": 90,
+        "attack": 10
+      },
+      "description": "For one who has beaten every boss. Monsters whisper about whoever wears it.",
+      "color": "#2B2B2B",
+      "accent": "#D94040"
+    },
+    {
+      "id": "wayfarer_cape",
+      "icon": "shield-star",
+      "art": "item_wayfarer_cape",
+      "name": "Wayfarer's Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 8,
+        "hp": 50,
+        "speed": 6
+      },
+      "description": "For one who has set foot in every land. Its hem still carries a little dust from each.",
+      "color": "#8B6B3E",
+      "accent": "#E8D9A8"
+    },
+    {
+      "id": "storyleaf_cape",
+      "icon": "shield-star",
+      "art": "item_storyleaf_cape",
+      "name": "Storyleaf Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 20,
+        "hp": 150,
+        "attack": 12,
+        "magic": 12,
+        "speed": 6
+      },
+      "description": "For one who has earned every other cape. The whole tale, woven into one.",
+      "color": "#2F7D4F",
+      "accent": "#F2C14E"
     }
   ]
 }

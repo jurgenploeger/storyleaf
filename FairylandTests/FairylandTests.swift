@@ -2968,6 +2968,74 @@ struct RewardTests {
         #expect(session.titleRequirement(wolfbane).contains("Wolf"))
     }
 
+    /// A land's cape (rewards.json `prizes`): earned once every monster that lives there is beaten,
+    /// told of once, woven by the weaver (whose "!" says so) and had once; worn in its own slot for
+    /// its stats; and woven again if it's lost.
+    @Test func capesAreEarnedWovenAndWorn() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let prize = try #require(session.prizes.first { $0.kind == .land && $0.land == "sunny_meadow" })
+        let weaver = try #require(session.weaver)
+        let monsters = session.monsters(of: "sunny_meadow")
+        #expect(!monsters.isEmpty)
+        let start = session.prizeProgress(prize)
+        #expect(start.have == 0 && start.need == monsters.count)
+        #expect(!session.hasEarned(prize) && session.notice(for: weaver.npc.id) == nil)
+        #expect(!session.takeCape(prize))
+        for monster in monsters.dropLast() { session.beatMonster(monster, level: 3) }
+        #expect(!session.hasEarned(prize))
+        session.beatMonster(try #require(monsters.last), level: 3)
+        #expect(session.hasEarned(prize))
+        #expect(session.capesWaiting.map(\.item) == [prize.item])
+        // Told once (after a fight, as `checkTitles` runs), and the weaver's "!" says so.
+        session.checkTitles()
+        #expect(session.notice(for: weaver.npc.id) == .available)
+        #expect(session.data.capesTold == [prize.item])
+        session.checkTitles()
+        #expect(session.data.capesTold == [prize.item])
+        // Woven once.
+        #expect(session.takeCape(prize))
+        #expect(session.count(of: prize.item) == 1 && session.hasCape(prize))
+        #expect(!session.takeCape(prize))
+        #expect(session.capesWaiting.isEmpty && session.notice(for: weaver.npc.id) == nil)
+        // Worn in its own slot, next to armour, for its stats.
+        let before = session.heroStats
+        session.equip(prize.item)
+        #expect(session.data.hero.equipment.cape == prize.item && session.hasCape(prize))
+        let cape = try #require(Content.shared.item(prize.item))
+        #expect(session.heroStats.defense == before.defense + (cape.stats?.defense ?? 0))
+        #expect(GameSession.lookKey(for: session.data.hero).contains(prize.item))
+        // Lost (it can't be sold), it can be woven again.
+        session.unequip(.cape)
+        #expect(session.removeItem(prize.item))
+        #expect(session.capesWaiting.map(\.item) == [prize.item])
+        session.checkTitles()
+        #expect(session.notice(for: weaver.npc.id) == .available)
+    }
+
+    /// The capes are the weaver's alone: none for sale, none dropped, no adventurer wears one; the
+    /// Storyleaf Cape takes every other one; and a save from before capes loads with none on.
+    @Test func capesAreOnlyTheWeavers() throws {
+        let content = Content.shared
+        let capes = content.items.filter { $0.type == .cape }
+        #expect(capes.count == content.rewards.prizes?.count)
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        for cape in capes {
+            #expect(content.isTreasure(cape.id) && cape.price == 0, "\(cape.id) could be sold or found elsewhere")
+            session.addItem(cape.id)
+            #expect(!session.sellableItems.contains { $0.id == cape.id }, "\(cape.id) can be sold")
+        }
+        session.data.hero.level = 200
+        for _ in 0..<300 {
+            if let drop = session.equipmentDrop(level: 190, best: true) { #expect(drop.type != .cape, "a monster dropped \(drop.id)") }
+        }
+        let crown = try #require(session.prizes.first { $0.kind == .capes })
+        let others = session.prizes.filter { $0.kind != .capes }
+        let crowning = session.prizeProgress(crown)
+        #expect(crowning.have == 0 && crowning.need == others.count)
+        let old = try JSONDecoder().decode(Equipment.self, from: Data(#"{"weapon":"wooden_sword","armor":"cloth_tunic"}"#.utf8))
+        #expect(old.cape == nil)
+    }
+
     @Test func theDailyGiftComesOnceADayAndGoesRound() throws {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         let start = Date(timeIntervalSince1970: 1_800_000_000)

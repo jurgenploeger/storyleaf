@@ -250,10 +250,11 @@ nonisolated struct MonsterDef: Decodable, Identifiable, Sendable {
 nonisolated enum ItemType: String, Decodable, Sendable {
     /// `material`: wood, metal, gems and hides that monsters drop, for the blacksmith.
     /// `accessory`: rings, charms and bands; `gloves`, `necklace` and `boots` have slots of their own.
-    case consumable, weapon, armor, gloves, necklace, boots, accessory, material
+    /// `cape`: a status cape, the weaver's prize for a milestone (rewards.json `prizes`), worn on the back.
+    case consumable, weapon, armor, gloves, necklace, boots, accessory, material, cape
 
     /// Every slot the hero wears something in, in the order lists show them.
-    static let equipmentSlots: [ItemType] = [.weapon, .armor, .gloves, .boots, .necklace, .accessory]
+    static let equipmentSlots: [ItemType] = [.weapon, .armor, .gloves, .boots, .necklace, .accessory, .cape]
 
     /// The small pieces worn next to a weapon and armour: few next to dozens of weapons and
     /// armours, so they drop on a share of their own (`GameSession.accessoryShare`).
@@ -269,6 +270,7 @@ nonisolated enum ItemType: String, Decodable, Sendable {
         case .boots: L("Boots")
         case .accessory: L("Accessory")
         case .material: L("Material")
+        case .cape: L("Cape")
         }
     }
 }
@@ -319,6 +321,8 @@ nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
     let tint: [RecolorRule]?
     /// Trim colour on the sprite (buttons, clasps, hems) and an accessory's sparkle, "#RRGGBB".
     let accent: String?
+    /// A cape's colour, "#RRGGBB" (its trim and emblem are `accent`).
+    let color: String?
     /// Magic weapons: a soft light while held, "#RRGGBB", centred on `glowAt` ([x, y] in the 32×32 art).
     let glow: String?
     let glowAt: [Double]?
@@ -403,7 +407,8 @@ nonisolated enum Edge: String, Codable, Sendable {
 nonisolated enum NPCRole: String, Decodable, Sendable {
     /// `boss`: a mighty monster waiting on the map; talk to it to fight.
     /// `smith`: forges weapons from materials (the item's `recipe`).
-    case healer, shop, quests, guild, chest, boss, smith
+    /// `weaver`: weaves the status capes (rewards.json `prizes`) for those who've earned them.
+    case healer, shop, quests, guild, chest, boss, smith, weaver
 }
 
 nonisolated struct NPCDef: Decodable, Identifiable, Sendable {
@@ -1036,6 +1041,22 @@ nonisolated struct RewardsDef: Decodable, Sendable {
     let cards: Cards
     let seals: Seals
     let chests: Chests?
+    /// Status capes, like RuneScape's capes for a skill at 99: the weaver weaves each one's `item`
+    /// once its milestone is met.
+    let prizes: [Prize]?
+
+    nonisolated struct Prize: Decodable, Sendable, Identifiable {
+        /// What earns it: every monster of a `land` beaten (`land`), every monster beaten (`book`),
+        /// every monster card (`cards`), every quest finished (`quests`), every boss beaten
+        /// (`bosses`), every land set foot in (`lands`), every other prize earned (`capes`).
+        nonisolated enum Kind: String, Decodable, Sendable {
+            case land, book, cards, quests, bosses, lands, capes
+        }
+        let item: String
+        let kind: Kind
+        let land: String?
+        var id: String { item }
+    }
 }
 
 /// One entry in content/changelog.json, shown under "What's new" on the title screen.
@@ -1367,8 +1388,11 @@ final class Content {
         loaded.chestTreasures[itemID].flatMap(npc)
     }
 
-    /// A quest's or a chest's treasure: yours alone, found only there.
-    func isTreasure(_ itemID: String) -> Bool { isQuestTreasure(itemID) || loaded.chestTreasures[itemID] != nil }
+    /// A quest's or a chest's treasure, or a weaver's cape: yours alone, found only there.
+    func isTreasure(_ itemID: String) -> Bool { isQuestTreasure(itemID) || loaded.chestTreasures[itemID] != nil || prize(for: itemID) != nil }
+
+    /// The status cape an item is (rewards.json `prizes`), if it's one.
+    func prize(for itemID: String) -> RewardsDef.Prize? { rewards.prizes?.first { $0.item == itemID } }
 
     /// The level a monster's card is worth (`RewardsDef.Cards`): the middle of the gentlest band
     /// of levels it lives in, or a boss's own level; 1 for one that lives nowhere.

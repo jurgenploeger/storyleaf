@@ -26,6 +26,10 @@ final class GameSession {
     var nearbyAdventurer: Adventurer?
     /// How many travel together with them, them among them (`Crowd.groupSize`): 1 on their own.
     var nearbyGroupSize = 1
+    /// Whether the weaver has a cape for you (`capesWaiting`), as of the last time a milestone could
+    /// have been met (`checkTitles`) or a cape was woven: the "!" over her, without working out every
+    /// cape's progress each frame.
+    var capeReady = false
     /// Adventurers walking around near you on this map: only they can be invited along.
     var adventurersAround: Set<UUID> = []
     /// Up to four friends can travel with you, a party of five, each with their companion. (In a
@@ -53,10 +57,10 @@ final class GameSession {
     }
 
     /// Someone with a job, as an icon on the minimap (like RuneScape's): a quest giver (with a quest
-    /// for you, or one to hand in), the healer, the shop, the smith, a guild, a chest still to open
-    /// and a boss still to beat.
+    /// for you, or one to hand in), the healer, the shop, the smith, the weaver, a guild, a chest
+    /// still to open and a boss still to beat.
     struct MinimapMark: Hashable {
-        enum Kind { case quest, questNew, questReady, healer, shop, smith, guild, chest, boss }
+        enum Kind { case quest, questNew, questReady, healer, shop, smith, weaver, guild, chest, boss }
         let cell: GridPoint
         let kind: Kind
     }
@@ -320,19 +324,22 @@ final class GameSession {
         let content = Content.shared
         let boots = hero.equipment[.boots].flatMap(content.item)?.wear == "boots"
         registerArt(id, race: content.race(hero.raceID), look: hero.look ?? .standard,
-                    armor: hero.equipment[.armor].flatMap(content.item), boots: boots, key: Self.lookKey(for: hero))
+                    armor: hero.equipment[.armor].flatMap(content.item), boots: boots,
+                    cape: hero.equipment[.cape].flatMap(content.item), key: Self.lookKey(for: hero))
     }
 
     /// Draws someone of `race` in `look` under the art id `id`: the hero, or another adventurer. Worn
     /// armour takes over the outfit's colours and adds its cut (or brings its own walk sheet), and
-    /// speed boots turn the boots blue.
-    private static func registerArt(_ id: String, race: RaceDef, look: Look, armor: ItemDef?, boots: Bool, key: String) {
-        var gear = GearLook(wear: armor?.wear, accent: armor?.accent, boots: boots, pattern: armor?.pattern)
+    /// speed boots turn the boots blue. A status cape hangs on their back, over everything.
+    private static func registerArt(_ id: String, race: RaceDef, look: Look, armor: ItemDef?, boots: Bool,
+                                    cape: ItemDef? = nil, key: String) {
+        var gear = GearLook(wear: armor?.wear, accent: armor?.accent, boots: boots, pattern: armor?.pattern,
+                            cape: cape?.color, capeTrim: cape?.accent)
         var rules = Self.rules(for: look, armor: armor)
         if let armor, armor.sheets?[race.id] != nil {
             // The armour's own sheet is already drawn and coloured: only the skin tone applies, plus a
             // rare colour variant's tint.
-            gear = GearLook(wear: nil, accent: nil, boots: boots)
+            gear = GearLook(wear: nil, accent: nil, boots: boots, cape: cape?.color, capeTrim: cape?.accent)
             rules = (Content.shared.appearance.skin.first { $0.id == look.skin }?.recolor ?? []) + (armor.tint ?? [])
         }
         ArtLibrary.shared.register(id, from: race.sheet(for: look.gender), recolor: rules, key: key,
@@ -1521,6 +1528,10 @@ final class GameSession {
     func notice(for giver: String) -> QuestNotice? {
         if let npc = content.npc(giver), npc.role == .chest {
             return canOpen(npc) ? .available : nil
+        }
+        // The weaver, with a cape you've earned to weave.
+        if content.npc(giver)?.role == .weaver {
+            return capeReady ? .available : nil
         }
         let statuses = content.quests.filter { $0.giver == giver }.map { status(of: $0) }
         if statuses.contains(.ready) { return .ready }

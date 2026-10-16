@@ -1647,6 +1647,7 @@ final class WorldScene: SKScene {
             case .healer: kind = .healer
             case .shop: kind = .shop
             case .smith: kind = .smith
+            case .weaver: kind = session.notice(for: npc.def.id) == nil ? .weaver : .questNew
             case .guild: kind = .guild
             case .boss: kind = .boss
             case .chest:
@@ -2167,6 +2168,11 @@ final class WorldScene: SKScene {
     /// Debug launches (`say=<text>`): a speech bubble over the hero that stays, for screenshots.
     func sayForDebug(_ text: String) {
         player.say(text, for: 600)
+    }
+
+    /// Debug launches (`facing=<way>`): the hero turns that way.
+    func turnForDebug(_ direction: Direction) {
+        player.face(direction)
     }
 
     /// Debug launches (`local=n`): the local you start beside tells you the first line of their

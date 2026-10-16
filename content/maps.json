@@ -981,6 +981,15 @@
           "x": 7,
           "y": -6,
           "greeting": "Clang! Bring me wood and metal from the wilds and I'll forge you something fine."
+        },
+        {
+          "id": "weaver",
+          "name": "Orla the Weaver",
+          "role": "weaver",
+          "art": "npc_weaver",
+          "x": -2,
+          "y": 3,
+          "greeting": "Every cape I weave tells a story. Beat every monster in a land and I'll weave you its colours; do greater things, and I'll weave you greater capes."
         }
       ],
       "ambience": {

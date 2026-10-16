@@ -149,6 +149,7 @@ struct EquipmentPicker: View {
         case .armor: .shield
         case .necklace: .gem
         case .boots: .wind
+        case .cape: .shieldStar
         default: .ring
         }
     }

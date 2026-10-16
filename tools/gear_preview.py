@@ -4,6 +4,7 @@ links, open vests, pauldrons, robe hems, capes, helmets and hoods, blue speed bo
 paper-doll layers the game stacks (tools/hero_layers.py), to tune it without a Mac.
 
     python3 tools/gear_preview.py /tmp/gear.png      # every armour in items.json on every race
+    python3 tools/gear_preview.py --capes /tmp/capes.png   # every status cape, over some armours
 
 Needs pillow + numpy.
 """
@@ -303,6 +304,76 @@ def apply(base, recolored, wear=None, accent=None, boots=False, pattern=None):
     return out
 
 
+def cape(base, out, colour, trim):
+    """A status cape over whatever is worn (GearOverlay.drape): from behind, hung from the shoulders
+    (0.38 of the way from the top of the head to the feet) nearly to the feet, widening, its trim
+    along the hem and a diamond emblem, the hair falling over its top; from the front and the side,
+    past the body's outline, a clasp at the collar."""
+    col, acc = hexc(colour), hexc(trim)
+    dark, light = shade(col, 0.62), mix(col, (1, 1, 1), 0.3)
+    outline = np.array([0.16, 0.12, 0.18])
+    for row, facing in enumerate(DIRS):
+        for c in range(base.shape[1] // FRAME):
+            oy, ox = row * FRAME, c * FRAME
+            f = out[oy:oy + FRAME, ox:ox + FRAME]
+            b = base[oy:oy + FRAME, ox:ox + FRAME]
+            a = b[..., 3] > 0.5
+            rows = np.nonzero(a.any(1))[0]
+            if len(rows) == 0 or rows[-1] - rows[0] <= 8:
+                continue
+            top, feet = rows[0], rows[-1]
+            shoulder = top + int(round((feet - top) * 0.38))
+            hem = feet - 3
+            xs = np.nonzero(a[shoulder])[0]
+            if hem <= shoulder + 2 or len(xs) == 0:
+                continue
+            left, right = xs.min(), xs.max()
+            cx = (left + right) // 2
+
+            def put(x, y, cc, only_empty=False):
+                if 0 <= x < FRAME and 0 <= y < FRAME and (not only_empty or not a[y, x]):
+                    f[y, x, :3] = cc
+                    f[y, x, 3] = 1
+
+            def hair(x, y):
+                if y >= shoulder + 11 or not (0 <= x < FRAME and 0 <= y < FRAME) or not a[y, x]:
+                    return False
+                hh, ss, vv = hsv(tuple(b[y, x, :3]))
+                return 10 <= hh * 360 <= 65 and ss > 0.4 and vv > 0.6
+
+            if facing == 'up':
+                for y in range(shoulder, hem + 1):
+                    widen = (y - shoulder) // 4
+                    lo, hi = left + 1 - widen, right - 1 + widen
+                    for x in range(lo, hi + 1):
+                        if lo < hi and not hair(x, y):
+                            put(x, y, outline if x in (lo, hi) or y == hem else acc if y == hem - 1
+                                else light if x == lo + 1 else dark if x == hi - 1 else col)
+                emblem = shoulder + 6
+                for dy in range(-2, 3):
+                    for dx in range(abs(dy) - 2, 3 - abs(dy)):
+                        if not hair(cx + dx, emblem + dy):
+                            put(cx + dx, emblem + dy, acc if abs(dx) + abs(dy) < 2 else shade(acc, 0.7))
+                continue
+            for y in range(shoulder + 1, hem + 1):
+                xs = np.nonzero(a[y])[0]
+                if len(xs) == 0:
+                    continue
+                l, r = xs.min(), xs.max()
+                flare = 1 + (y - shoulder) // 4
+                if facing == 'down':
+                    spots = [(l - flare, True), (r + flare, True)] + [s for k in range(1, flare) for s in ((l - k, False), (r + k, False))]
+                elif facing == 'right':
+                    spots = [(l - flare - 1, True)] + [(l - k, False) for k in range(1, flare + 1)]
+                else:
+                    spots = [(r + flare + 1, True)] + [(r + k, False) for k in range(1, flare + 1)]
+                for x, outer in spots:
+                    put(x, y, outline if outer else acc if y == hem else col, only_empty=True)
+            if facing == 'down':
+                put(cx, shoulder, acc); put(cx - 1, shoulder, acc); put(cx, shoulder + 1, shade(acc, 0.7))
+    return out
+
+
 def main(out):
     import json
     import pathlib
@@ -341,6 +412,49 @@ def main(out):
     print(f"wrote {out}: {', '.join(i['id'] for i in items)} on {', '.join(r['id'] for r in races)}")
 
 
+def capes(out):
+    """Every status cape on every race: plain, and over plate, a cloak's own sheet and a robe."""
+    import json
+    import pathlib
+    import sys
+    from PIL import Image
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import palette_preview as pp
+    root = pathlib.Path(__file__).resolve().parent.parent
+    items = {i["id"]: i for i in json.load(open(root / "content" / "items.json"))["items"]}
+    races = json.load(open(root / "content" / "classes.json"))["races"]
+    worn = [None] + [items[i] for i in ("iron_plate", "ranger_cloak", "mage_robe") if i in items]
+    capes_ = [i for i in items.values() if i["type"] == "cape"]
+    zoom = 2
+    sheet = Image.new("RGB", (len(races) * 4 * 48 * zoom, len(capes_) * 48 * zoom), (80, 130, 80))
+    for r, item_cape in enumerate(capes_):
+        armour = worn[r % len(worn)]
+        for k, race in enumerate(races):
+            if armour and race["id"] in armour.get("sheets", {}):
+                base = np.asarray(Image.open(root / "art" / "sprites" / f"{armour['sheets'][race['id']]}.png").convert("RGBA")).astype(float) / 255
+                dressed = base.copy()
+            else:
+                head = {"plate": "helmet", "cloak": "hood"}.get((armour or {}).get("wear"))
+                top = f"{head}_{race['id']}" if head else f"hair_{race['hair']}_{race['id']}"
+                image = Image.open(root / "art" / "sprites" / f"body_{race['id']}.png").convert("RGBA")
+                for layer in (f"locks_{race['id']}", top):
+                    image.alpha_composite(Image.open(root / "art" / "sprites" / f"{layer}.png").convert("RGBA"))
+                base = np.asarray(image).astype(float) / 255
+                dressed = pp.recolor(base, armour["recolor"]) if armour and armour.get("recolor") else base.copy()
+                if armour:
+                    dressed = apply(base, dressed, armour.get("wear"), armour.get("accent"), pattern=armour.get("pattern"))
+            dressed = cape(base, dressed, item_cape["color"], item_cape["accent"])
+            image = Image.fromarray((np.clip(dressed, 0, 1) * 255).astype(np.uint8), "RGBA")
+            for c, row in enumerate((2, 1, 0, 3)):   # down, right, up, left
+                frame = image.crop((0, row * 48, 48, row * 48 + 48)).resize((48 * zoom, 48 * zoom), Image.NEAREST)
+                sheet.paste(frame, ((k * 4 + c) * 48 * zoom, r * 48 * zoom), frame)
+    sheet.save(out)
+    print(f"wrote {out}: {', '.join(i['id'] for i in capes_)}")
+
+
 if __name__ == "__main__":
     import sys
-    main(sys.argv[1] if len(sys.argv) > 1 else "gear-preview.png")
+    if len(sys.argv) > 2 and sys.argv[1] == "--capes":
+        capes(sys.argv[2])
+    else:
+        main(sys.argv[1] if len(sys.argv) > 1 else "gear-preview.png")
