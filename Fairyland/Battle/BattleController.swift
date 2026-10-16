@@ -1358,16 +1358,13 @@ final class BattleController {
         }
 
         // Monster cards (Fairyland Online's card collection): now and then a beaten monster leaves
-        // its card, a rare one or a boss more often.
+        // its card, a rare one or a boss more often; never one whose card is in your Book already.
         for foe in beaten {
-            guard case .wild = foe.source, let id = foe.speciesID, let species = content.monster(id),
-                  Double.random(in: 0..<1) < (DebugLaunch.dropsCards ? 1 : session.cardChance(for: species)) else { continue }
-            let isNew = !session.hasCard(id)
-            let line = session.findCard(of: species)
-            if isNew {
-                newCards.append(id)
-                newCardLines.insert(line)
-            }
+            guard case .wild = foe.source, let id = foe.speciesID, let species = content.monster(id), !session.hasCard(id),
+                  Double.random(in: 0..<1) < (DebugLaunch.dropsCards ? 1 : session.cardChance(for: species)),
+                  let line = session.findCard(of: species) else { continue }
+            newCards.append(id)
+            newCardLines.insert(line)
             lines.append(line)
         }
 

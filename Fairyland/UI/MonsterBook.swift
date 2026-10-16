@@ -296,18 +296,14 @@ private struct MonsterPage: View {
             }
 
             section(L("Card")) {
-                let found = session.cards(of: monster.id)
+                let found = session.hasCard(monster.id)
                 let gain = session.cardGain(of: monster).bonusSummary
                 HStack(alignment: .center, spacing: 12) {
-                    MonsterCardFace(monster: monster, width: 58, found: found > 0)
+                    MonsterCardFace(monster: monster, width: 58, found: found)
                     VStack(alignment: .leading, spacing: 4) {
-                        if found > 0 {
+                        if found {
                             Text(L("In your Book: {bonus} for good.", ["bonus": gain]))
                                 .foregroundStyle(HUDStyle.green)
-                            Text(found > 1
-                                 ? L("Found {count} times. A spare sells for {gold} gold.", ["count": found, "gold": session.spareCardGold(monster)])
-                                 : L("A spare sells for {gold} gold.", ["gold": session.spareCardGold(monster)]))
-                                .foregroundStyle(HUDStyle.dim)
                         } else {
                             Text(L("Not found yet. It now and then leaves its card when beaten: {bonus} for good.", ["bonus": gain]))
                                 .foregroundStyle(HUDStyle.cream)

@@ -807,8 +807,9 @@ cards did. Every monster has one. A beaten monster leaves its card 3% of the tim
 `cards` in content/rewards.json). The first of each goes in the Monster Book and raises a stat for good, by
 element: Fire and Metal attack, Dark magic, Earth defence, Water speed, Wood HP, Light MP. It gives a step, and
 another for every 25 levels of where the monster lives, twice that for a rare card and three times for a
-boss's. The whole set adds about +107 ATK, +127 MAG, +44 DEF, +27 SPD, +375 HP and +154 MP. Spares sell on the
-spot. Tilly the Toymaker in Prismhaven has five quests for 5 to 100 kinds of card, paid in toys, and three
+boss's. The whole set adds about +107 ATK, +127 MAG, +44 DEF, +27 SPD, +375 HP and +154 MP. Since 0.7.20 a
+monster whose card is in the Book leaves no other (playtesting 2026-10-16: "Spare cards shouldn't be
+automatically sold. Duplicates shouldn't be rewarded at all"); before, spares sold on the spot. Tilly the Toymaker in Prismhaven has five quests for 5 to 100 kinds of card, paid in toys, and three
 titles count cards. FO's dolls aren't in yet.
 
 **Capes (since 0.7.16), ours, after RuneScape's:** asked for in playtesting (2026-10-16: "If I have all

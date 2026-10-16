@@ -147,8 +147,8 @@ nonisolated struct SaveData: Codable, Sendable {
     var tradesDone: [String]?
     /// The Monster Book: every species met in battle, by id.
     var monsterBook: [String: MonsterSighting]?
-    /// Monster cards found, by monster id: the first of each is kept in the Book, and the spares
-    /// (sold as they turned up) are counted too.
+    /// Monster cards found, by monster id: one of each, kept in the Book (before 0.7.20 the spares,
+    /// sold as they turned up, were counted too).
     var cards: [String: Int]?
     /// Dark maps (caves): the cells you've seen by your light, one bit per cell (row by row from the
     /// south-west corner), by map id. The minimap shows only these.

@@ -6,6 +6,10 @@ import SwiftUI
 /// the controls step aside, so nothing peeks out from behind the conversation.
 struct WorldHUD: View {
     let coordinator: GameCoordinator
+    /// A phone on its side: the joystick and the buttons sit lower, just over the home indicator's
+    /// strip (playtesting 2026-10-16: they could sit lower in landscape).
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    private var bottomGap: (joystick: CGFloat, buttons: CGFloat) { verticalSizeClass == .compact ? (4, 4) : (10, 14) }
 
     private var session: GameSession { coordinator.session }
     private var controlsHidden: Bool { coordinator.overlay != nil }
@@ -60,7 +64,7 @@ struct WorldHUD: View {
                 .stepsAside(controlsHidden)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 .padding(.leading, 8)
-                .padding(.bottom, 10)
+                .padding(.bottom, bottomGap.joystick)
 
             VStack(alignment: .trailing, spacing: 10) {
                 if let id = session.nearbyNPC, let npc = Content.shared.npc(id) {
@@ -91,7 +95,7 @@ struct WorldHUD: View {
                 .coachTarget(.toolbar)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-            .padding(.bottom, 14)
+            .padding(.bottom, bottomGap.buttons)
             .animation(.spring(response: 0.3, dampingFraction: 0.75), value: session.nearbyNPC)
             .animation(.spring(response: 0.3, dampingFraction: 0.75), value: session.nearbyAdventurer?.id)
             .stepsAside(controlsHidden)

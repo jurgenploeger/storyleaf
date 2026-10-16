@@ -90,6 +90,9 @@ struct GameView: View {
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+        // A swipe up from the bottom edge (the joystick and the buttons sit close to it on a phone on
+        // its side) moves the joystick first; a second one goes home.
+        .defersSystemGestures(on: .bottom)
     }
 
     /// The chat over a fight: read, so the dot goes.

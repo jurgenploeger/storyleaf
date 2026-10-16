@@ -2,6 +2,15 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.20",
+      "date": "2026-10-16",
+      "title": "No spare cards",
+      "notes": [
+        "A monster whose card is in your Monster Book never leaves another: no more spare cards sold on the spot for gold.",
+        "On a phone held sideways, the joystick and the buttons sit lower, just over the home indicator, and a swipe up from the bottom edge moves the joystick before it goes home."
+      ]
+    },
+    {
       "version": "0.7.19",
       "date": "2026-10-16",
       "title": "Roads meet at the border",
