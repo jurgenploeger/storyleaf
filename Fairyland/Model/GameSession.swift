@@ -1305,9 +1305,9 @@ final class GameSession {
     // Fairyland Online's blacksmiths forged weapons from gathered wood, metal and gems. Here
     // monsters drop the materials, and a smith in each town turns a recipe into the weapon.
 
-    /// Everything a smith can forge, lowest level first.
+    /// Everything a smith can forge, lowest level first (not what's made by hand, `make`).
     var recipes: [ItemDef] {
-        content.items.filter { $0.recipe != nil }.sorted { ($0.level ?? 1) < ($1.level ?? 1) }
+        content.items.filter { $0.recipe != nil && $0.make == nil }.sorted { ($0.level ?? 1) < ($1.level ?? 1) }
     }
 
     struct Ingredient: Identifiable {
@@ -1385,7 +1385,9 @@ final class GameSession {
         let span = best ? 6 : 12
         let kept = Set(content.monsters.flatMap { $0.drops ?? [] }.map(\.item)).union(content.items.map(\.id).filter(content.isTreasure))
         // Past the best gear a monster can drop, it drops from the top (quest treasures go higher).
-        let top = min(level, content.items.filter { !kept.contains($0.id) }.compactMap(\.level).max() ?? level)
+        // Gear only: a quest's pieces have levels too, past any gear's.
+        let gear = content.items.filter { ItemType.equipmentSlots.contains($0.type) && !kept.contains($0.id) }
+        let top = min(level, gear.compactMap(\.level).max() ?? level)
         let accessories = content.items.filter {
             $0.type.isTrinket && !kept.contains($0.id) && ($0.level ?? 1) <= top
         }
@@ -1465,6 +1467,7 @@ final class GameSession {
             case .reachLevel: data.hero.level
             case .chooseClass: data.hero.classID == "novice" ? 0 : 1
             case .cards: cardCount
+            case .bring: min(goal, quest.objective.target.map { count(of: $0) } ?? 0)
             }
             return current >= goal ? .ready : .active(progress: current, goal: goal)
         }
@@ -1549,6 +1552,48 @@ final class GameSession {
         if let list = itemList(starters) {
             post(L("Received {items}.", ["items": list]), .reward)
         }
+    }
+
+    /// What the quests you're on have a beaten wild monster of `species` drop (`QuestDef.drops`):
+    /// each item one wants that it drops, as often as its chance has it, till you have enough.
+    func questDrops(from species: String) -> [ItemDef] {
+        var found: [ItemDef] = []
+        // Not once you've what it asks for (a carved flute: no more driftwood for it).
+        for quest in activeQuests where status(of: quest) != .ready {
+            for drop in quest.drops ?? [] where drop.from.contains(species) {
+                let enough = drop.upTo ?? goal(of: quest)
+                guard count(of: drop.item) < enough, let item = content.item(drop.item),
+                      Double.random(in: 0..<1) < drop.chance else { continue }
+                addItem(item.id)
+                found.append(item)
+            }
+        }
+        return found
+    }
+
+    /// What you could make by hand from the bag with `item` for a quest you're on (`ItemDef.make`):
+    /// the thing a quest asks you to bring, carved or joined from it, if you haven't got it yet.
+    func handmade(using item: ItemDef) -> ItemDef? {
+        for quest in activeQuests where quest.objective.type == .bring {
+            guard let id = quest.objective.target, let made = content.item(id), made.make != nil,
+                  made.recipe?[item.id] != nil, count(of: id) < goal(of: quest) else { continue }
+            return made
+        }
+        return nil
+    }
+
+    /// Makes an item by hand from the bag (`ItemDef.make`): carves it, or pieces it together, from
+    /// its `recipe`.
+    @discardableResult
+    func make(_ id: String) -> Bool {
+        guard let item = content.item(id), let how = item.make, craft(id) else { return false }
+        SoundEffects.shared.play(.equip)
+        Haptics.success()
+        switch how {
+        case .carve: post(L("You carved {item}.", ["item": item.name]), .reward)
+        case .join: post(L("You pieced together {item}.", ["item": item.name]), .reward)
+        }
+        return true
     }
 
     /// Counts a defeat or capture toward matching active quests.
@@ -1654,6 +1699,10 @@ final class GameSession {
         guard let quest = content.quest(id), status(of: quest) == .ready else { return [] }
         // Priced at the level you hand it in, before its EXP lifts you.
         let pay = questPay(quest)
+        // What it asked you to bring is handed over.
+        if quest.objective.type == .bring, let item = quest.objective.target {
+            for _ in 0..<goal(of: quest) { removeItem(item) }
+        }
         data.quests[id]?.state = .completed
         data.quests[id]?.paidGold = pay.gold
         data.quests[id]?.paidEXP = pay.exp
@@ -1676,7 +1725,9 @@ final class GameSession {
         }
         for map in content.maps {
             for exit in map.exits where exit.requires == id {
-                lines.append(L("The road from {from} to {map} is open!", ["from": map.name, "map": content.map(exit.to)?.name ?? exit.to]))
+                let place = content.map(exit.to)?.name ?? exit.to
+                lines.append(exit.ship == true ? L("The ship from {from} to {map} is ready to sail!", ["from": map.name, "map": place])
+                             : L("The road from {from} to {map} is open!", ["from": map.name, "map": place]))
             }
         }
         checkTitles()

@@ -888,7 +888,7 @@ def content_spots(land):
     spots = []
     for kind in ("buildings", "decor", "npcs"):
         for thing in land.get(kind) or []:
-            if "x" in thing and thing.get("summit") is None:
+            if "x" in thing and thing.get("summit") is None and not thing.get("at"):
                 spots.append(((thing["x"], thing.get("y", 0)), f"{kind[:-1]} {thing.get('id', thing.get('art', ''))}"))
     for local in land.get("locals") or []:
         if not local.get("at") and local.get("summit") is None:

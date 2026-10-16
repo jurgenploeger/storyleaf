@@ -1160,6 +1160,66 @@ struct RulesTests {
         #expect(!session.bagEquipment.contains { $0.type == .material })
     }
 
+    /// A quest that asks you to bring something (RuneScape's Sheep Shearer): its monsters drop it
+    /// while you're on it, never more than it wants, and handing it in hands it over.
+    @Test func bringQuestsHandOverWhatTheyAsk() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let quest = try #require(Content.shared.quest("wool_for_the_lambs"))
+        #expect(session.questDrops(from: "golden_hamster").isEmpty)   // not before it's taken
+        session.data.hero.level = quest.minLevel ?? 1
+        for required in quest.requires ?? [] { session.data.quests[required] = QuestProgress(state: .completed, count: 1) }
+        session.acceptQuest(quest.id)
+        #expect(session.status(of: quest) == .active(progress: 0, goal: 5))
+        for _ in 0..<400 { _ = session.questDrops(from: "golden_hamster") }
+        #expect(session.count(of: "tuft_of_wool") == 5, "the hamsters dropped \(session.count(of: "tuft_of_wool")) tufts, not 5")
+        #expect(session.questDrops(from: "jelly").isEmpty)
+        #expect(session.status(of: quest) == .ready)
+        session.turnInQuest(quest.id)
+        #expect(session.count(of: "tuft_of_wool") == 0 && session.hasCompleted(quest.id))
+        #expect(session.questDrops(from: "golden_hamster").isEmpty)   // not after it's done
+    }
+
+    /// A quest that asks you to carve something (RuneScape's Lost City): its monsters drop the piece
+    /// you can't buy, you carve it from the bag with the rest, and they drop no more once it's carved.
+    @Test func carvedQuestItemsAreMadeFromTheBag() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let quest = try #require(Content.shared.quest("a_flute_for_shelly"))
+        let flute = try #require(Content.shared.item("driftwood_flute"))
+        let piece = try #require(Content.shared.item("driftwood_piece"))
+        session.data.hero.level = quest.minLevel ?? 1
+        for required in quest.requires ?? [] { session.data.quests[required] = QuestProgress(state: .completed, count: 1) }
+        session.acceptQuest(quest.id)
+        #expect(session.handmade(using: piece)?.id == flute.id)
+        #expect(!session.canCraft(flute) && !session.make(flute.id))
+        for _ in 0..<200 { _ = session.questDrops(from: "wood_crab") }
+        #expect(session.count(of: piece.id) == 1)
+        session.addItem("poplar", 2)
+        #expect(session.make(flute.id))
+        #expect(session.count(of: flute.id) == 1 && session.count(of: piece.id) == 0 && session.count(of: "poplar") == 0)
+        #expect(session.status(of: quest) == .ready && session.handmade(using: piece) == nil)
+        for _ in 0..<200 { _ = session.questDrops(from: "wood_crab") }
+        #expect(session.count(of: piece.id) == 0)
+        // Made by hand, never at a smith's.
+        #expect(!session.recipes.contains { $0.make != nil })
+    }
+
+    /// The ship to Starfall Isle sails once Captain Brine's last quest is done; the one back always
+    /// does, so you're never stranded. Brine stands by the pier.
+    @Test func theShipWaitsOnItsQuest() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let sneezle = try #require(Content.shared.map("hachoo_island")), isle = try #require(Content.shared.map("starfall_isle"))
+        let out = try #require(sneezle.exits.first { $0.to == isle.id }), back = try #require(isle.exits.first { $0.to == sneezle.id })
+        #expect(out.ship == true && out.requires == "the_star_chart")
+        #expect(!session.canTravel(out) && session.canTravel(back))
+        session.data.quests["the_star_chart"] = QuestProgress(state: .completed, count: 1)
+        #expect(session.canTravel(out))
+        let map = Layouts.of(sneezle)
+        let brine = try #require(sneezle.npcs?.first { $0.id == "captain_brine" })
+        let dock = try #require(map.harbors.first).road.at
+        let spot = map.spot(of: brine)
+        #expect(map.owns(spot) && max(abs(spot.col - dock.col), abs(spot.row - dock.row)) <= 6, "Captain Brine stands at \(spot), the pier leaves at \(dock)")
+    }
+
     @Test func recipesUseMaterialsMonstersDrop() {
         for item in Content.shared.items {
             for (id, _) in item.recipe ?? [:] {
@@ -1273,7 +1333,10 @@ struct RulesTests {
         }
         // Past the best gear monsters drop, weapons and armour come from the top (trinkets from
         // anywhere). Quest and summit treasures go higher, but no monster drops them.
-        let droppable = Content.shared.items.filter { !bossDrops.contains($0.id) && !Content.shared.isTreasure($0.id) }
+        // Gear only: a quest's pieces (materials) go past the top gear's level.
+        let droppable = Content.shared.items.filter {
+            ItemType.equipmentSlots.contains($0.type) && !bossDrops.contains($0.id) && !Content.shared.isTreasure($0.id)
+        }
         let top = try #require(droppable.compactMap(\.level).max())
         let beyond = (0..<30).compactMap { _ in session.equipmentDrop(level: top + 50) }.filter { !$0.type.isTrinket }
         #expect(!beyond.isEmpty)

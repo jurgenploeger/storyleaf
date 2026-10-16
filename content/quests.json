@@ -1,5 +1,5 @@
 {
-  "_about": "Quests. objective.type: defeat (target = monster id, omit for any) | capture | hatch (a pet egg) | reachLevel (count = level) | chooseClass | cards (count = kinds of monster card in the Monster Book; the cards are only shown, never handed over). `requires` lists quests that must be completed first. `question` is asked on accepting; each answer's `egg` decides what hatches from the Pet Egg. `giver` is an NPC id from maps.json.",
+  "_about": "Quests. objective.type: defeat (target = monster id, omit for any) | capture | hatch (a pet egg) | reachLevel (count = level) | chooseClass | cards (count = kinds of monster card in the Monster Book; the cards are only shown, never handed over) | bring (count of the item target in the bag, handed over when you complete it: from `drops`, a chest that opens once the quest's taken (maps.json `quest`), a shop, or made by hand from the bag, items.json `make`). `drops`: while the quest's on, beaten wild monsters of the species `from` drop `item` `chance` of the time, till you have `upTo` (the objective's count unless set). `requires` lists quests that must be completed first. `question` is asked on accepting; each answer's `egg` decides what hatches from the Pet Egg. `giver` is an NPC id from maps.json.",
   "quests": [
     {
       "id": "hope_of_meadowbrook",
@@ -1242,6 +1242,174 @@
       "requires": [
         "monkey_and_crab"
       ]
+    },
+    {
+      "id": "wool_for_the_lambs",
+      "title": "Wool for the Lambs",
+      "giver": "mother_sheep",
+      "description": "The golden hamsters pulled tufts of wool from my lambs to line their burrows, and now the poor dears shiver at night. Bring me 5 Tufts of Wool from the hamsters and I'll knit them new coats.",
+      "minLevel": 5,
+      "requires": [
+        "lost_lambs"
+      ],
+      "objective": {
+        "type": "bring",
+        "target": "tuft_of_wool",
+        "count": 5
+      },
+      "drops": [
+        {
+          "item": "tuft_of_wool",
+          "from": [
+            "golden_hamster"
+          ],
+          "chance": 0.5
+        }
+      ],
+      "reward": {
+        "gold": 50,
+        "exp": 60,
+        "items": [
+          "potion",
+          "potion"
+        ]
+      }
+    },
+    {
+      "id": "a_flute_for_shelly",
+      "title": "A Flute for Shelly",
+      "giver": "old_shelly",
+      "description": "A mud eagle carried off my driftwood flute, the one that calls my grandchildren home. Carve me a new one! The wood crabs hoard driftwood: win a piece from them, then carve it with 2 White Poplar from your bag.",
+      "minLevel": 10,
+      "requires": [
+        "shell_snatchers"
+      ],
+      "objective": {
+        "type": "bring",
+        "target": "driftwood_flute",
+        "count": 1
+      },
+      "drops": [
+        {
+          "item": "driftwood_piece",
+          "from": [
+            "wood_crab",
+            "rosy_wood_crab"
+          ],
+          "chance": 0.4,
+          "upTo": 1
+        }
+      ],
+      "reward": {
+        "gold": 90,
+        "exp": 110,
+        "items": [
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "a_spare_sail",
+      "title": "A Spare Sail",
+      "giver": "captain_brine",
+      "description": "Captain Brine won't cross open water without a spare sail: the winds past the reef tore her last one to ribbons. The fire crabs drag washed-up sailcloth into their burrows. Win back 4 Sailcloth Scraps from them.",
+      "minLevel": 122,
+      "objective": {
+        "type": "bring",
+        "target": "sailcloth_scrap",
+        "count": 4
+      },
+      "drops": [
+        {
+          "item": "sailcloth_scrap",
+          "from": [
+            "fire_crab"
+          ],
+          "chance": 0.5
+        }
+      ],
+      "reward": {
+        "gold": 10000,
+        "exp": 36000,
+        "items": [
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "a_figurehead_for_the_gull",
+      "title": "A Figurehead for the Gull",
+      "giver": "captain_brine",
+      "description": "No sailor crosses to Starfall Isle without a figurehead to watch the stars. The wood monkeys hoard Starwood in their grove: win a piece, then carve the figurehead yourself with 3 Red Yew from your bag.",
+      "minLevel": 124,
+      "requires": [
+        "a_spare_sail"
+      ],
+      "objective": {
+        "type": "bring",
+        "target": "star_figurehead",
+        "count": 1
+      },
+      "drops": [
+        {
+          "item": "starwood",
+          "from": [
+            "wood_monkey",
+            "shadow_wood_monkey"
+          ],
+          "chance": 0.35,
+          "upTo": 1
+        }
+      ],
+      "reward": {
+        "gold": 11000,
+        "exp": 40000,
+        "items": [
+          "hi_ether"
+        ]
+      }
+    },
+    {
+      "id": "the_star_chart",
+      "title": "The Star Chart",
+      "giver": "captain_brine",
+      "description": "The chart to Starfall Isle blew apart in the same storm. One piece landed in an old chest on Sneezle Isle, an Earth Lion on the Hidden Steppe carried off another, and a Mint Shadow Ape ran off with the third. Find all three, piece the chart together and bring it to Captain Brine.",
+      "minLevel": 126,
+      "requires": [
+        "a_figurehead_for_the_gull"
+      ],
+      "objective": {
+        "type": "bring",
+        "target": "star_chart",
+        "count": 1
+      },
+      "drops": [
+        {
+          "item": "chart_piece_reef",
+          "from": [
+            "earth_lion",
+            "frosted_earth_lion"
+          ],
+          "chance": 0.35,
+          "upTo": 1
+        },
+        {
+          "item": "chart_piece_isle",
+          "from": [
+            "mint_black_kong"
+          ],
+          "chance": 0.4,
+          "upTo": 1
+        }
+      ],
+      "reward": {
+        "gold": 14000,
+        "exp": 50000,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      }
     }
   ]
 }

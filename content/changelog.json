@@ -2,6 +2,16 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.11",
+      "date": "2026-10-16",
+      "title": "Quests to sail by",
+      "notes": [
+        "Captain Brine on Sneezle Isle won't sail to Starfall Isle till the Gull is ready: three new quests to win back sailcloth from the fire crabs, carve a figurehead from Starwood, and piece together a torn star chart.",
+        "Quests can now ask you to bring things, not only to beat monsters. Their monsters drop what you need while you're on them, chests open for them, and some things you carve or piece together yourself from the bag.",
+        "Two new early quests: wool for Mother Sheep's lambs in Sunny Meadow, and a driftwood flute to carve for Old Shelly on Pineapple Shore."
+      ]
+    },
+    {
       "version": "0.7.10",
       "date": "2026-10-16",
       "title": "Fading music",

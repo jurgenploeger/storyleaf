@@ -191,7 +191,7 @@ for item in items.values():
         check(isinstance(item.get("stats"), dict) and any(v > 0 for v in item["stats"].values()),
               f"toy {item['id']} → needs the stats it raises")
     if item["type"] == "material":
-        check(item.get("material") in ("wood", "metal", "gem", "hide"), f"material {item['id']} → unknown kind {item.get('material')}")
+        check(item.get("material") in ("wood", "metal", "gem", "hide", "quest"), f"material {item['id']} → unknown kind {item.get('material')}")
         check(isinstance(item.get("level"), int), f"material {item['id']} needs a level (when monsters start dropping it)")
     for material, count in (item.get("recipe") or {}).items():
         check(material in materials, f"recipe for {item['id']} → {material} isn't a material")
@@ -201,11 +201,66 @@ for item in items.values():
             check(materials[material]["level"] <= max(item.get("level", 1), 1),
                   f"recipe for {item['id']} (Lv {item.get('level', 1)}) → {material} only drops from Lv {materials[material]['level']}")
 
+# Made by hand from the bag (items.json `make`): a quest's piece, from its recipe.
+for item in items.values():
+    if "make" in item:
+        check(item["make"] in ("carve", "join"), f"item {item['id']} → make is carve or join")
+        check(bool(item.get("recipe")), f"item {item['id']} → made by hand from what? (needs a recipe)")
+        check(item.get("material") == "quest", f"item {item['id']} → only a quest's piece is made by hand")
+
+# Where a quest's pieces come from: its monsters (`drops`), a chest it opens, a shop, a boss, the
+# monsters' own materials, or made by hand from those.
+quest_drops = {drop["item"] for quest in quests.values() for drop in quest.get("drops", [])}
+chest_gifts = {npc.get("gives") for npc in npcs.values() if npc["role"] == "chest"}
+in_shops = {item for npc in npcs.values() for item in npc.get("stock", [])}
+monster_drops = {drop["item"] for monster in monsters.values() for drop in monster.get("drops", [])}
+
+
+def obtainable(item_id, depth=0):
+    item = items.get(item_id)
+    if item is None:
+        return False
+    if item_id in quest_drops | chest_gifts | in_shops | monster_drops:
+        return True
+    if item["type"] == "material" and item.get("material") in ("wood", "metal", "gem", "hide"):
+        return True
+    return depth < 2 and "make" in item and all(obtainable(part, depth + 1) for part in item.get("recipe", {}))
+
+
+wanted = set()
 for quest in quests.values():
     check(quest["giver"] in npcs, f"quest {quest['id']} → unknown giver {quest['giver']}")
     objective = quest["objective"]
-    check(objective["type"] in ("defeat", "capture", "reachLevel", "chooseClass", "collect", "hatch", "cards"),
+    check(objective["type"] in ("defeat", "capture", "reachLevel", "chooseClass", "collect", "hatch", "cards", "bring"),
           f"quest {quest['id']} → unknown objective type {objective['type']}")
+    if objective["type"] == "bring":
+        # Something in the bag, handed over: there has to be a way to get it.
+        target = objective.get("target")
+        check(target in items, f"quest {quest['id']} → bring what? unknown item {target}")
+        check(isinstance(objective.get("count"), int) and objective["count"] >= 1, f"quest {quest['id']} → bring how many?")
+        check(obtainable(target), f"quest {quest['id']} → nothing gives {target} (a quest's drops, a chest, a shop, or made by hand)")
+        wanted |= {target} | set(items.get(target, {}).get("recipe", {}))
+    for drop in quest.get("drops", []):
+        where = f"quest {quest['id']} drop {drop.get('item')}"
+        check(drop.get("item") in items, f"{where} → unknown item")
+        check(objective["type"] == "bring" and drop.get("item") in {objective.get("target")} | set(items.get(objective.get("target"), {}).get("recipe", {})),
+              f"{where} → a quest's monsters only drop what it asks you to bring, or a piece of it")
+        check(isinstance(drop.get("chance"), (int, float)) and 0 < drop["chance"] <= 1, f"{where} → chance between 0 and 1")
+        check("upTo" not in drop or (isinstance(drop["upTo"], int) and drop["upTo"] >= 1), f"{where} → upTo is a count")
+        for species in drop.get("from", []):
+            check(species in monsters, f"{where} → unknown monster {species}")
+            check(any(species in (m.get("encounters") or {}).get("monsters", {}) for m in maps_file["maps"]),
+                  f"{where} → {species} isn't met on any map")
+        check(bool(drop.get("from")), f"{where} → dropped by whom?")
+for npc in npcs.values():
+    if npc["role"] == "chest" and npc.get("quest"):
+        check(npc["quest"] in quests, f"chest {npc['id']} → unknown quest {npc['quest']}")
+        if npc.get("gives") in items and items[npc["gives"]].get("material") == "quest":
+            wanted.add(npc["gives"])
+for item in items.values():
+    if item.get("material") == "quest":
+        check(item["id"] in wanted, f"item {item['id']} → a quest's piece no quest asks for")
+        check(item.get("price", 0) == 0, f"item {item['id']} → a quest's piece isn't for sale (price 0)")
     if objective["type"] == "defeat" and objective.get("target"):
         check(objective["target"] in monsters, f"quest {quest['id']} → unknown monster {objective['target']}")
     if objective["type"] == "cards":
@@ -278,7 +333,8 @@ for map_def in maps.values():
                   f"map {map_def['id']} exit to {exit['to']}: a ship sails between two lands, never a cave")
             check(destination is None or any(e["to"] == map_def["id"] and e.get("ship") for e in destination["exits"]),
                   f"map {exit['to']} has no ship back to {map_def['id']}")
-            check("requires" not in exit, f"map {map_def['id']} exit to {exit['to']}: a ship needs no quest")
+            check(destination is None or not any(e["to"] == map_def["id"] and e.get("requires") for e in destination["exits"]) or "requires" not in exit,
+                  f"map {map_def['id']} exit to {exit['to']}: a quest can ready the ship one way, never both, or you'd be stranded")
     for monster in (map_def.get("encounters") or {}).get("monsters", {}):
         check(monster in monsters, f"map {map_def['id']} → unknown monster {monster}")
     if map_def.get("music"):
@@ -434,6 +490,10 @@ for map_def in maps.values():
         "mouth": any("cave" in (maps.get(exit["to"]) or {}).get("theme", {}) for exit in map_def["exits"]) and "cave" not in theme,
         "harbor": any(exit.get("ship") for exit in map_def["exits"]),
     }
+    for npc in map_def.get("npcs", []):
+        if "at" in npc:
+            check(landmarks.get(npc["at"]) is True, f"npc {npc['id']} → at a {npc['at']} the map {map_def['id']} hasn't got")
+            check("summit" not in npc, f"npc {npc['id']} → at a landmark or on a summit, not both")
     for local in map_def.get("locals", []):
         where = f"map {map_def['id']} local {local.get('name', '?')}"
         check(set(local) <= local_keys, f"{where} → unknown keys {set(local) - local_keys}")
