@@ -112,8 +112,11 @@ final class ContinentScene: SKScene {
     /// Each chunk's lands (they never change), with the box round each one's cells in it, worked out
     /// once.
     private var owned: [GridPoint: [String: (low: GridPoint, high: GridPoint)]] = [:]
-    /// Each land's plain ground as a tile, for its cells till it's laid out (`placehold`).
+    /// Each land's plain ground as a tile, for its cells till it's laid out (`placehold`), and its
+    /// road's tile and cells (`placeholderRoads`).
     private var placeholderTiles: [String: SKTileGroup] = [:]
+    private var placeholderRoadTiles: [String: SKTileGroup] = [:]
+    private var placeholderRoadCells: [String: Set<GridPoint>] = [:]
     /// How many chunks round yours are drawn, and how far off they're let go.
     static let reach = 2
     static let keep = 3
@@ -354,6 +357,9 @@ final class ContinentScene: SKScene {
             painting = true
             Task { [weak self] in await self?.paintWaiting() }
         }
+        // Back from a battle, its song again, the victory tune fading out first (it stayed silent
+        // till the next land's).
+        if let here { MusicPlayer.shared.play(here.music, fade: Self.musicFade) }
     }
 
     override func willMove(from view: SKView) {
@@ -986,6 +992,10 @@ final class ContinentScene: SKScene {
         arrive(in: def)
     }
 
+    /// Over how many seconds a land's song fades out as you walk into the next, and the next one's
+    /// fades in (playtesting 2026-10-16: it cut straight over at the border).
+    static let musicFade = 1.5
+
     /// You've walked into a land: its light on everyone, its music, and the game knows you're there
     /// (its checkpoint, the map you're on); and, new to you since you were last in it, its name at
     /// the top of the screen and in the chat (as `WorldScene.didMove` greets you).
@@ -1004,7 +1014,8 @@ final class ContinentScene: SKScene {
         if !walkedIn { airs[def.id]?.set(mood: 1) }
         Walker.light = WorldScene.light(of: def)
         player.relight()
-        MusicPlayer.shared.play(def.music)
+        // Walking in, the last land's song fades out and this one's in (`musicFade`).
+        MusicPlayer.shared.play(def.music, fade: walkedIn ? Self.musicFade : 0)
         session.data.mapID = def.id
         session.markVisited(def.id)
         session.reachCheckpoint(def)
@@ -1859,16 +1870,83 @@ final class ContinentScene: SKScene {
             group = SKTileGroup(tileDefinition: SKTileDefinition(texture: texture, size: tileSize))
             placeholderTiles[id] = group
         }
-        let flat = SKTileMapNode(tileSet: SKTileSet(tileGroups: [group]), columns: size, rows: size, tileSize: tileSize)
+        // Its roads too, so one coming over the border runs on rather than stopping at the line.
+        let road = placeholderRoadTile(def)
+        let roads: Set<GridPoint> = road == nil ? [] : placeholderRoads(def)
+        let flat = SKTileMapNode(tileSet: SKTileSet(tileGroups: [group] + (road.map { [$0] } ?? [])), columns: size, rows: size, tileSize: tileSize)
         flat.anchorPoint = .zero
         flat.position = CGPoint(x: CGFloat(origin.col) * tile, y: CGFloat(origin.row) * tile)
         var any = false
         for cell in World.cells(in: chunk) where store.land(at: cell)?.id == id && store.isWalkable(cell) {
-            flat.setTileGroup(group, forColumn: cell.col - origin.col, row: cell.row - origin.row)
+            let pick = roads.contains(cell) ? (road ?? group) : group
+            flat.setTileGroup(pick, forColumn: cell.col - origin.col, row: cell.row - origin.row)
             any = true
         }
         guard any else { return }
         drawn.ground.addChild(flat)
         drawn.placeholders[id] = flat
+    }
+
+    /// A land's road tile, graded with its palette, for its placeholder (`placehold`).
+    private func placeholderRoadTile(_ def: MapDef) -> SKTileGroup? {
+        if let known = placeholderRoadTiles[def.id] { return known }
+        guard let image = art.gradedTile(def.theme.path, palette: def.theme.palette) else { return nil }
+        let texture = SKTexture(cgImage: image)
+        texture.filteringMode = .nearest
+        let group = SKTileGroup(tileDefinition: SKTileDefinition(texture: texture, size: CGSize(width: WorldMap.tileSize, height: WorldMap.tileSize)))
+        placeholderRoadTiles[def.id] = group
+        return group
+    }
+
+    /// A land's roads before it's laid out (`placehold`), in world cells: straight from its hub
+    /// through the turns the painting found (`Region.Road`) to where each crosses its border (into
+    /// a cave, up to its mouth), two cells wide. A road ran on over the border and stopped at the
+    /// line while the land past it was still being laid out (playtesting 2026-10-16); its last
+    /// stretch runs straight at the border as its own layout's does (`WorldMap.carveRoad`), so the
+    /// two meet, and its layout, winding the rest a little, takes its place.
+    private func placeholderRoads(_ def: MapDef) -> Set<GridPoint> {
+        if let known = placeholderRoadCells[def.id] { return known }
+        let cells: Set<GridPoint> = store.land(def.id).map { Self.placeholderRoads(of: def, origin: $0.origin) } ?? []
+        placeholderRoadCells[def.id] = cells
+        return cells
+    }
+
+    /// `placeholderRoads` worked out, its box starting at the world cell `origin`.
+    static func placeholderRoads(of def: MapDef, origin: GridPoint) -> Set<GridPoint> {
+        var cells: Set<GridPoint> = []
+        if let region = Content.shared.regions[def.id] {
+            func point(_ pair: [Int]) -> CGPoint {
+                CGPoint(x: CGFloat(region.middle.col + (pair.first ?? 0)) + 0.5, y: CGFloat(region.middle.row + (pair.count > 1 ? pair[1] : 0)) + 0.5)
+            }
+            for exit in def.exits {
+                guard let road = region.roads[exit.to] else { continue }
+                let way = road.into ?? exit.edge
+                let out: CGVector = switch way {
+                case .east: CGVector(dx: 1, dy: 0)
+                case .west: CGVector(dx: -1, dy: 0)
+                case .north: CGVector(dx: 0, dy: 1)
+                case .south: CGVector(dx: 0, dy: -1)
+                }
+                let end = CGPoint(x: CGFloat(road.at.col) + 0.5, y: CGFloat(road.at.row) + 0.5)
+                let straight = CGFloat(road.into == nil ? 5 : WorldMap.gateApproach)
+                let stops = [point(def.hub ?? [0, 0])] + road.via.map(point)
+                    + [CGPoint(x: end.x - out.dx * straight, y: end.y - out.dy * straight), CGPoint(x: end.x + out.dx * 0.5, y: end.y + out.dy * 0.5)]
+                for (a, b) in zip(stops, stops.dropFirst()) {
+                    let steps = max(1, Int(hypot(b.x - a.x, b.y - a.y) * 3))
+                    for step in 0...steps {
+                        let t = CGFloat(step) / CGFloat(steps)
+                        let x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t
+                        for dr in -2...2 {
+                            for dc in -2...2 {
+                                let col = Int(x.rounded(.down)) + dc, row = Int(y.rounded(.down)) + dr
+                                let dx = CGFloat(col) + 0.5 - x, dy = CGFloat(row) + 0.5 - y
+                                if dx * dx + dy * dy <= 1.1 * 1.1 { cells.insert(GridPoint(col: col + origin.col, row: row + origin.row)) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return cells
     }
 }

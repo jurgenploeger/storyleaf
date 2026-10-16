@@ -240,6 +240,26 @@ struct ContentTests {
         #expect(Continent.neighbours(of: isle).isEmpty, "Starfall Isle touches another land")
     }
 
+    /// Before a land's laid out, its plain ground shows its roads (`ContinentScene.placeholderRoads`),
+    /// meeting the road that comes over the border from the land next door, so the road never stops
+    /// at the line while it's still being laid out (playtesting 2026-10-16).
+    @Test func roadsRunOnOverPlaceholderGround() throws {
+        var crossings = 0
+        for def in content.maps {
+            guard let origin = content.world[def.id], let region = content.regions[def.id] else { continue }
+            let ours = ContinentScene.placeholderRoads(of: def, origin: origin)
+            for exit in def.exits where exit.ship != true {
+                guard let next = content.map(exit.to), let there = content.world[next.id], let road = region.roads[exit.to] else { continue }
+                crossings += 1
+                let theirs = ContinentScene.placeholderRoads(of: next, origin: there)
+                let here = GridPoint(col: road.at.col + origin.col, row: road.at.row + origin.row)
+                #expect(ours.contains(here), "\(def.id): its placeholder road to \(next.id) stops short of the border")
+                #expect(theirs.contains(here.stepped(exit.edge)), "\(def.id) → \(next.id): the placeholder road over the border doesn't start at it")
+            }
+        }
+        #expect(crossings > 40, "only \(crossings) roads cross a border")
+    }
+
     /// Lands a road joins touch on the continent (content/world.json), and the road runs on across
     /// the border: where it leaves one land it comes into the next, on the same world cells, as wide.
     @Test func roadsRunOnIntoTheNextLand() throws {

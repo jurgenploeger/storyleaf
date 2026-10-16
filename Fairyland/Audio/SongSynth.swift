@@ -203,14 +203,23 @@ nonisolated final class SongSynth: @unchecked Sendable {
 
     private let lock = NSLock()
     private var queuedTune: Tune?
+    private var queuedID: String?
+    private var queuedFade: (out: Double, in: Double) = (0, 0.4)
     private var hasQueuedTune = false
     private var queuedMuted = false
 
     // Audio-thread state.
     private var tune: Tune?
+    /// The playing song's id (`play`), to know it again.
+    private var tuneID: String?
+    /// The song waiting for the one playing to fade out first (`play`'s `fadeOut`).
+    private var incoming: (tune: Tune?, id: String?)?
     private var voices: [VoiceState] = []
     private var muted = false
     private var fade: Float = 0
+    /// How much the level rises each sample as a song fades in, and falls as one fades out.
+    private var fadeInStep: Float
+    private var fadeOutStep: Float = 0
     private var random: UInt32 = 0x9E37_79B9
     private var combs: [[Line]] = []
     private var allpasses: [[Line]] = []
@@ -219,6 +228,7 @@ nonisolated final class SongSynth: @unchecked Sendable {
 
     init(sampleRate: Double) {
         self.sampleRate = sampleRate
+        fadeInStep = Float(1 / (sampleRate * 0.4))
         sine = (0...4096).map { Float(sin(Double($0) / 4096 * 2 * .pi)) }
         let scale = sampleRate / 44_100
         for side in 0..<2 {
@@ -228,11 +238,26 @@ nonisolated final class SongSynth: @unchecked Sendable {
         }
     }
 
-    func play(_ tune: Tune?) {
+    /// Switches to `tune` (nil: silence), known as `id`: at once, or once the song playing has
+    /// faded out over `fadeOut` seconds (walking from one land into the next, playtesting
+    /// 2026-10-16: the music cut over at the border); either way fading in over `fadeIn`. Asked
+    /// back for the song still fading out, it fades in again from where it is.
+    func play(_ tune: Tune?, id: String? = nil, fadeOut: Double = 0, fadeIn: Double = 0.4) {
         lock.lock()
         queuedTune = tune
+        queuedID = id
+        queuedFade = (fadeOut, fadeIn)
         hasQueuedTune = true
         lock.unlock()
+    }
+
+    /// Starts a song from its beginning, silent at first (it fades in).
+    private func start(_ next: Tune?, id: String?) {
+        tune = next
+        tuneID = id
+        voices = Array(repeating: VoiceState(), count: next?.voices.count ?? 0)
+        incoming = nil
+        fade = 0
     }
 
     func setMuted(_ muted: Bool) {
@@ -247,13 +272,25 @@ nonisolated final class SongSynth: @unchecked Sendable {
         // Pick up changes from the main thread without ever blocking the audio thread.
         if lock.try() {
             if hasQueuedTune {
-                tune = queuedTune
-                voices = Array(repeating: VoiceState(), count: tune?.voices.count ?? 0)
                 hasQueuedTune = false
-                fade = 0
+                fadeInStep = Float(1 / (sampleRate * max(0.01, queuedFade.in)))
+                if let id = queuedID, id == tuneID, tune != nil {
+                    // Back to the song fading out: it fades in again where it is.
+                    incoming = nil
+                } else if queuedFade.out > 0, tune != nil, fade > 0, !muted, voices.contains(where: { !$0.finished }) {
+                    // Still playing (a victory tune that's over goes at once): it fades out first.
+                    incoming = (queuedTune, queuedID)
+                    fadeOutStep = Float(1 / (sampleRate * queuedFade.out))
+                } else {
+                    start(queuedTune, id: queuedID)
+                }
             }
             muted = queuedMuted
             lock.unlock()
+        }
+        // Faded out, or muted meanwhile: the next song.
+        if let next = incoming, fade <= 0 || muted {
+            start(next.tune, id: next.id)
         }
 
         guard let tune, !muted else {
@@ -264,7 +301,7 @@ nonisolated final class SongSynth: @unchecked Sendable {
         }
 
         let stepSamples = max(1, Int(tune.secondsPerStep * sampleRate))
-        let fadeStep = Float(1 / (sampleRate * 0.4))
+        let fadingOut = incoming != nil
         let wet = tune.reverb * 0.7
         let left = buffers.count > 0 ? buffers[0].mData?.assumingMemoryBound(to: Float.self) : nil
         let right = buffers.count > 1 ? buffers[1].mData?.assumingMemoryBound(to: Float.self) : nil
@@ -301,7 +338,7 @@ nonisolated final class SongSynth: @unchecked Sendable {
                 }
             }
 
-            fade = min(1, fade + fadeStep)
+            fade = fadingOut ? max(0, fade - fadeOutStep) : min(1, fade + fadeInStep)
             let outLeft: Float
             let outRight: Float
             if tune.isLegacy {

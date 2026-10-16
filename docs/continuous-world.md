@@ -212,6 +212,20 @@ its own points, which the continent turns into its own (a land's shift) both way
   lands are laid out nearest first by cells to you, not by chunk; and while one is within 20 cells of
   you, the work takes 16 ms slices rather than 6 (`isUrgent`), a frame or two dropped for it to come
   in faster.
+- A land's plain ground had no roads, so a road coming over the border stopped at the line till the
+  land past it was laid out (playtesting 2026-10-16: "make sure there is not a hard line/cut in the
+  roads from one area to another"; once both are laid out the road fades from one land's to the
+  other's across the band, 0.7.7). Since 0.7.10 the plain ground shows its roads
+  (`ContinentScene.placeholderRoads`): straight from the hub through the painting's turns, two cells
+  wide, the last stretch straight at the border as its layout's is, so the two meet (the
+  `roadsRunOnOverPlaceholderGround` test checks every crossing).
+- The music cut straight over at the border (playtesting 2026-10-16: "when you move from one area to
+  the other, the music should fade"), and after a battle out in the lands nothing played the land's
+  song again (only a cave's scene did, as you came back to it), so it stayed silent till the next
+  land. Since 0.7.10 walking in, the last land's song fades out over 1.5 seconds and the next fades in
+  over as long (`ContinentScene.musicFade`, `SongSynth.play`'s `fadeOut`), back from a battle the
+  victory tune fades into the land's song, and walking back before the fade's done brings the first
+  song back in from where it was.
 - Walking onto Frog Swamp in 0.7.4, its plain ground stayed plain: it waited its turn behind the land
   being built, and its layout behind whatever was laid out already (`MapLayouts`, one at a time),
   the world map's own among them, which the minimap asked for every land round you without a
