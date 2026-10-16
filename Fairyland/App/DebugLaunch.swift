@@ -8,6 +8,7 @@ import SpriteKit
 ///   level=5        start at a level
 ///   levelup        start one EXP short of the next level
 ///   hp=0.2         start with this fraction of HP left
+///   gold=1457603   start with this much gold
 ///   map=<id>       start on a map from content/maps.json
 ///   at=x_y         start at this offset from the map's centre (e.g. at=0_14)
 ///   hill=n         start at the foot of the first trail up the map's nth range of hills (0 first);
@@ -446,6 +447,9 @@ enum DebugLaunch {
         }
         if flags["levelup"] != nil {
             session.data.hero.exp = GameSession.expToNext(level: session.data.hero.level) - 1
+        }
+        if let gold = flags["gold"].flatMap({ Int($0) }) {
+            session.data.gold = gold
         }
         if let fraction = flags["hp"].flatMap(Double.init) {
             session.data.hero.hp = max(1, Int(Double(session.heroStats.hp) * fraction))

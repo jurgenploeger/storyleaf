@@ -1351,6 +1351,23 @@ struct RulesTests {
         #expect(GameSession.equipmentDropChance(level: 30, heroLevel: 30, rare: false, boss: true) == 1)
     }
 
+    @Test func goldShortensFromTenThousandUp() {
+        let en = Locale(identifier: "en_US")
+        #expect(HUDStyle.short(9_999, locale: en) == "9,999")
+        #expect(HUDStyle.short(10_000, locale: en) == "10K")
+        #expect(HUDStyle.short(12_345, locale: en) == "12.3K")
+        #expect(HUDStyle.short(123_456, locale: en) == "123K")
+        // Rounded down: never more than you have.
+        #expect(HUDStyle.short(999_999, locale: en) == "999K")
+        #expect(HUDStyle.short(1_000_000, locale: en) == "1M")
+        #expect(HUDStyle.short(1_457_603, locale: en) == "1.45M")
+        #expect(HUDStyle.short(1_450_000, locale: en) == "1.45M")
+        #expect(HUDStyle.short(14_570_000, locale: en) == "14.5M")
+        #expect(HUDStyle.short(2_000_000_000, locale: en) == "2B")
+        // In the phone's own way with numbers, like the HP bars beside it.
+        #expect(HUDStyle.short(1_457_603, locale: Locale(identifier: "nl_NL")) == "1,45M")
+    }
+
     @Test func levelsStopAtTheCap() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         session.data.hero.level = GameSession.levelCap

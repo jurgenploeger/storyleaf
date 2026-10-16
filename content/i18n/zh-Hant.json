@@ -807,6 +807,8 @@
     "Rosy": "紅潤",
     "Tan": "小麥",
     "Deep": "深色",
+    "Short gold": "金幣簡寫",
+    "The gold by the calendar is shortened from 10,000 up: 12.3K, 457K, 1.45M. It's rounded down, so it never shows more than you have, and the date beside it stays on one line.": "日曆旁的金幣從 10,000 起簡寫：12.3K、457K、1.45M。數值無條件捨去，絕不會顯示得比你擁有的多，旁邊的日期也能保持在一行內。",
     "Quests to sail by": "出航前的任務",
     "Captain Brine on Sneezle Isle won't sail to Starfall Isle till the Gull is ready: three new quests to win back sailcloth from the fire crabs, carve a figurehead from Starwood, and piece together a torn star chart.": "噴嚏島的布萊因船長要等海鷗號準備妥當，才肯開往落星島：三個新任務，從火蟹那裡奪回帆布、用星木雕一尊船首像，再拼好一張撕破的星圖。",
     "Quests can now ask you to bring things, not only to beat monsters. Their monsters drop what you need while you're on them, chests open for them, and some things you carve or piece together yourself from the bag.": "任務現在不只要你打倒怪物，也會請你帶東西回來。接下任務後，對應的怪物會掉落你需要的東西，寶箱也會為任務開啟，有些東西則要你親自從背包裡雕刻或拼合出來。",

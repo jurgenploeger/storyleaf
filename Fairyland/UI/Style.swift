@@ -33,6 +33,20 @@ enum HUDStyle {
         .system(size: size, weight: .bold, design: .monospaced)
     }
 
+    /// An amount in a few characters: in full below 10,000, then in thousands (12.3K, 457K),
+    /// millions (1.45M) and billions (B), to three figures and rounded down, so it never shows
+    /// more than you have. Numbers in `locale`'s way, like the HUD's others.
+    static func short(_ amount: Int, locale: Locale = .autoupdatingCurrent) -> String {
+        guard amount >= 10_000 else { return amount.formatted(.number.locale(locale)) }
+        let (unit, suffix) = amount >= 1_000_000_000 ? (1_000_000_000, "B") : amount >= 1_000_000 ? (1_000_000, "M") : (1_000, "K")
+        let whole = amount / unit
+        let decimals = whole < 10 ? 2 : whole < 100 ? 1 : 0
+        let scale = decimals == 2 ? 100 : decimals == 1 ? 10 : 1
+        // Whole steps of the last figure shown, counted in integers (no rounding up in floating point).
+        let value = Double(amount / (unit / scale)) / Double(scale)
+        return value.formatted(.number.precision(.fractionLength(0...decimals)).locale(locale)) + suffix
+    }
+
     static let bevel = LinearGradient(colors: [frameLight, frameMid, frameDark], startPoint: .top, endPoint: .bottom)
 
     /// A title bar's gloss (and the menu's row of tabs): a light sheen over the top half, then the
