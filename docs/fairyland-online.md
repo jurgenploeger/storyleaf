@@ -272,7 +272,10 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   cells from the mouth's foot, ridges down it as a mountain's have (`Hill.Lobe.spurs`), its back 12
   cells on and 11 either way along the face, 110 to 116 points high; smaller summits at its shoulders
   and one behind where they keep clear of what's there, drawn as the ranges below were, boulders strewn
-  on its rock. The wall the mouth is in rises 60 points and falls back into the slopes behind (before
+  on its rock. Where a road passes close it stands narrower, down to 6 cells either way (since 0.7.17), and a road
+  that comes from behind the mouth or beside it goes round the mountain's side, 18 cells along the face,
+  and across in front of it to its straight last stretch (`WorldMap.aroundGate`; playtesting 2026-10-16:
+  Lotus Land's road to the Rat Cavern ran up over its flank). The wall the mouth is in rises 60 points and falls back into the slopes behind (before
   0.7.13 it left a ledge at the mouth's height behind it, ending in a cliff), and its road shows only up
   to the mouth's foot (the cells it's carved on past it showed the land's ground over the doorway). Its rock is painted as it shows on the screen (`HillArt.Look.upright`): a hill's picture lies on the map and is lifted onto
   the screen, so up a sheer face each of its pixels stood several times as tall as on the flat and the rock
