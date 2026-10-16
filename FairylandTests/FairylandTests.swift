@@ -1650,7 +1650,8 @@ struct RulesTests {
     @Test func newQuestsAreAtTheTop() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         let quests = Content.shared.quests.map(\.id).filter { $0 != "hope_of_meadowbrook" && $0 != "jelly_trouble" }.prefix(4).map { $0 }
-        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        // A day ago, so taking one now dates it later.
+        let start = Date(timeIntervalSinceNow: -86_400)
         session.data.quests[quests[0]] = QuestProgress(state: .active, count: 0)
         session.data.quests[quests[1]] = QuestProgress(state: .active, count: 0, taken: start)
         session.data.quests[quests[2]] = QuestProgress(state: .active, count: 0, taken: start.addingTimeInterval(60))
