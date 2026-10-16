@@ -12,7 +12,7 @@ struct WorldHUD: View {
     /// points off the screen's edge (playtesting 2026-10-16: "should sit lower"): the indicator hides
     /// itself and a swipe there moves the joystick first (`GameView`). Upright, they keep over it.
     private var onItsSide: Bool { verticalSizeClass == .compact }
-    private var bottomEdge: Edge.Set { onItsSide ? .bottom : [] }
+    private var bottomEdge: SwiftUI.Edge.Set { onItsSide ? .bottom : [] }
 
     private var session: GameSession { coordinator.session }
     private var controlsHidden: Bool { coordinator.overlay != nil }
