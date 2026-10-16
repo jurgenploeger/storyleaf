@@ -1065,6 +1065,7 @@ private nonisolated struct WorldFile: Decodable {
     nonisolated struct Road: Decodable {
         let at: [Int]
         let via: [[Int]]?
+        let into: Edge?
     }
 
     /// A river from its spring to the sea: its middle, [x, y] in world cells.
@@ -1205,7 +1206,7 @@ final class Content {
         }
         for map in mapFile.maps {
             guard let runs = worldFile.regions[map.id], let origin = worldFile.lands[map.id].map(point) else { continue }
-            let roads = (worldFile.roads[map.id] ?? [:]).mapValues { Region.Road(at: point($0.at), via: $0.via ?? []) }
+            let roads = (worldFile.roads[map.id] ?? [:]).mapValues { Region.Road(at: point($0.at), via: $0.via ?? [], into: $0.into) }
             // The rivers that come near it, in its cells.
             let reach = CGFloat(worldFile.margin)
             let near = rivers.map { line in

@@ -23,6 +23,8 @@ import SpriteKit
 ///   bridge=n       start on the map's nth bridge (0 first: those over the river, then the
 ///                  footbridges and jetties out into its lakes; `WorldMap.bridges`), at its land end
 ///                  (a jetty's) or its middle
+///   mouth=n        start on the road six cells in front of the mouth of the map's nth cave
+///                  (`WorldMap.crags`, 0 first), looking up at it
 ///   equip=a+b      start wearing these items (ids from content/items.json, joined with +)
 ///   bag=a+b        put these items in the bag
 ///   done=a+b       these quests (ids from content/quests.json) already handed in (their treasures
@@ -638,6 +640,13 @@ enum DebugLaunch {
                 // A jetty from where it leaves the shore, looking out; a bridge from its middle.
                 let along = !bridge.landsAtEnd ? bridge.start : !bridge.landsAtStart ? bridge.end : (bridge.start + bridge.end) / 2
                 session.playerPosition = grid.center(of: bridge.cell(lane: bridge.lane, along: along))
+            }
+        }
+        if let pick = flags["mouth"].flatMap({ Int($0) }), let def = Content.shared.map(session.data.mapID) {
+            let grid = WorldMap(def: def)
+            if grid.crags.indices.contains(pick), let mouth = grid.hills[grid.crags[pick].hill].mouth {
+                let spot = GridPoint(col: Int((mouth.x - mouth.into.x * 6).rounded(.down)), row: Int((mouth.y - mouth.into.y * 6).rounded(.down)))
+                session.playerPosition = grid.center(of: grid.nearestWalkable(to: spot) ?? spot)
             }
         }
         if let id = flags["title"], Content.shared.title(id) != nil {

@@ -23,11 +23,15 @@ nonisolated struct Region: Sendable {
     let rivers: [[CGPoint]]
 
     /// Where a road crosses the land's border: the last cell on this side (the next one over, the
-    /// way its exit goes, is the other land's, or a cave's mountain), and the turns it takes on its
-    /// way there from the hub, as [x, y] out from the middle, through the middle of the land.
+    /// way its exit goes, is the other land's), and the turns it takes on its way there from the
+    /// hub, as [x, y] out from the middle, through the middle of the land. A road into a cave ends
+    /// inland instead (tools/world_layout.py `cave_gates`): `at` is the cell in front of the cave's
+    /// mouth, in a rocky hill (`WorldMap.raiseGate`), and `into` the way you walk into it, north or
+    /// east so its face is turned toward you.
     nonisolated struct Road: Sendable {
         let at: GridPoint
         let via: [[Int]]
+        var into: Edge? = nil
     }
 
     /// `runs`: world.json's rows of [code, length, code, length, ...], from the south.

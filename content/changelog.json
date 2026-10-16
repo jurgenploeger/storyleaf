@@ -2,6 +2,16 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.8",
+      "date": "2026-10-16",
+      "title": "Cave gates",
+      "notes": [
+        "The roads into the caves no longer run off to the coast, where the caves' mountains stood out in the sea. Each ends inland now, at a rocky hill with the cave's mouth in its face, turned toward you.",
+        "The coasts where those mountains stood are back to their natural shape.",
+        "At night the butterflies, the drifting leaves and the sparkles over fairy rings and fountains darken with everything else, instead of staying as bright as by day."
+      ]
+    },
+    {
       "version": "0.7.7",
       "date": "2026-10-15",
       "title": "Fences along the road",

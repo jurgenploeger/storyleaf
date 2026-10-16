@@ -50,6 +50,11 @@ final class LandStage {
     /// How far over everything that stands on the continent its layers above everything are lifted:
     /// past the deepest anything stands there (`ContinentScene`, about ±25,000).
     private static let above: CGFloat = 40_000
+    /// How far its air is lifted (`air`, and the sparkles over a fairy ring or a fountain): with
+    /// their own depths (20,000 to 30,000) past the deepest anything stands, and still under the
+    /// night's shade over the screen (`Sky`, 43,000), as on a land's own map. Lifted `above`, the
+    /// butterflies and sparkles stayed as bright at night as by day (playtesting 2026-10-16).
+    private static let airLift: CGFloat = 10_000
 
     init(def: MapDef, map: WorldMap, plan: LandPlan, tiles: GroundTiles, art: ArtLibrary, session: GameSession, shift: CGVector) {
         self.def = def
@@ -67,10 +72,10 @@ final class LandStage {
     /// A layer of its own over everything that stands on the continent, for its air's parts that a
     /// land's scene puts over everything (`Ambience`'s butterflies and clouds' shadows, `Lighting`'s
     /// pools of light and sunbeams, and the particles drifting about): their depths, lifted
-    /// `above`, keep their order there.
+    /// `airLift`, keep their order there.
     private(set) lazy var air: SKNode = {
         let node = SKNode()
-        node.zPosition = self.shift.dy + Self.above
+        node.zPosition = self.shift.dy + Self.airLift
         self.world.addChild(node)
         return node
     }()
@@ -243,7 +248,7 @@ final class LandStage {
 
     /// A layer of the chunk at `position` for things with a depth of the continent's own, not the
     /// land's: the ground's shadows and lily pads (`lift` 0, just over the ground at -100,000), or,
-    /// lifted `above`, the sparkles, mist and signs over everything that stands.
+    /// lifted `airLift` or `above`, the sparkles, mist and signs over everything that stands.
     private func layer(at position: CGPoint, lift: CGFloat = 0) -> SKNode {
         let key = Self.key(position.x, position.y)
         if let known = layers[key]?[lift] { return known }
@@ -485,7 +490,7 @@ final class LandStage {
             addScenery(decor)
             if decor.art.contains("fountain") {
                 let sparkle = map.center(of: decor.cell) + CGVector(dx: 0, dy: 30)
-                Ambience.twinkle(around: sparkle, radius: 30, count: 4, in: layer(at: sparkle, lift: Self.above))
+                Ambience.twinkle(around: sparkle, radius: 30, count: 4, in: layer(at: sparkle, lift: Self.airLift))
             }
         }
     }
@@ -527,7 +532,7 @@ final class LandStage {
                 node.zPosition = -node.position.y
                 chunk(at: origin).addChild(node)
             }
-            Ambience.twinkle(around: origin, radius: 26, count: 5, in: layer(at: origin, lift: Self.above))
+            Ambience.twinkle(around: origin, radius: 26, count: 5, in: layer(at: origin, lift: Self.airLift))
         }
     }
 
@@ -602,7 +607,7 @@ final class LandStage {
     private func placeSignposts(_ planned: [(exit: MapDef.Exit, cell: GridPoint)]) {
         for (exit, cell) in planned {
             guard let destination = Content.shared.map(exit.to) else { continue }
-            let text = switch exit.edge {
+            let text = switch map.signWay(for: exit) {
             // Arrows follow the road on screen: north runs up-left, east up-right.
             case .north: "↖ \(destination.name)"
             case .south: "\(destination.name) ↘"
@@ -626,7 +631,9 @@ final class LandStage {
         let colour = Self.fogColor(from: art.picture(of: art.tileTexture(def.theme.border ?? def.theme.ground)))
         for crag in map.crags {
             let hill = map.hills[crag.hill]
-            strewStones(on: hill)
+            strewStones(on: hill, inland: crag.inland)
+            // A hill inland stands in the land's own ground: no range past the edge to fade out.
+            guard !crag.inland else { continue }
             let length = crag.edge == .north || crag.edge == .south ? map.columns : map.rows
             var span = 0...length
             if map.region != nil, let mouth = hill.mouth {
@@ -679,11 +686,11 @@ final class LandStage {
     }
 
     /// Boulders and stones strewn over a range where a road leads into a cave, out past the land's
-    /// edge (`WorldScene.strewStones`).
-    private func strewStones(on hill: WorldMap.Hill) {
+    /// edge, or over its rock where it's a hill inland (`WorldScene.strewStones`).
+    private func strewStones(on hill: WorldMap.Hill, inland: Bool) {
         var random = SeededRandom(text: def.id + "/crag stones")
-        for cell in hill.cells.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }) where !map.contains(cell) {
-            if Continent.isLand(cell, from: def) { continue }
+        for cell in hill.cells.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }) where inland ? !map.isWalkable(cell) : !map.contains(cell) {
+            if !inland, Continent.isLand(cell, from: def) { continue }
             let x = Double(cell.col) + 0.5, y = Double(cell.row) + 0.5
             if let mouth = hill.mouth {
                 let dx = x - mouth.x, dy = y - mouth.y
