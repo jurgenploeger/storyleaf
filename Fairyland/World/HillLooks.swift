@@ -81,6 +81,17 @@ struct HillLooks {
 
     /// How a range of the land's looks.
     func look(for hill: WorldMap.Hill) -> HillArt.Look {
+        if let mouth = hill.mouth, !mouth.beside {
+            // Its road shows up to the mouth's foot, rock over it from there: the cells it's carved
+            // on past it showed the land's ground over the doorway (playtesting 2026-10-16).
+            var style = crag
+            let road = crag.road
+            style.road = { cell in
+                let x = Double(cell.col) + 0.5 - mouth.x, y = Double(cell.row) + 0.5 - mouth.y
+                return x * mouth.into.x + y * mouth.into.y < 0 && road?(cell) == true
+            }
+            return style
+        }
         if hill.isCrag { return crag }
         guard hill.hasMountain else { return plain }
         var style = mountain

@@ -90,7 +90,8 @@ CROSSING_DEEP = 9
 # toward the exit's side its mouth may be (cells along that way), how long a way there is best, how
 # far in front of the mouth the road runs straight at it, and the hill's room round it (from the
 # mouth's foot: how far in its middle is, and its reach along the face and into it), its main
-# summit's (the same; `WorldMap.raiseGate` raises them), and how far each keeps from the coast or a
+# summit's top (the same; `WorldMap.raiseGate` raises them, the main summit's foot out over the
+# hill's room since 0.7.13), and how far each keeps from the coast or a
 # land next door, the rivers, the other roads (the game sways them up to 6 cells) and everything set
 # down by hand.
 GATE_OUT = (16, 70)

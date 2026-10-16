@@ -147,6 +147,9 @@ struct ContentTests {
                 // In a wall of rock at least 40 points taller a cell in, the hill rising on behind it.
                 #expect(height(out: 1) - height(out: 0) > 40, "map \(def.id): no wall of rock over the cave's mouth")
                 #expect(height(out: 5) > 50, "map \(def.id): no hill behind the cave's mouth")
+                // A mountain over it, tall enough to have its top (playtesting 2026-10-16: 0.7.8's,
+                // about 75 points, was too small).
+                #expect(hill.highest >= 100, "map \(def.id): its cave's hill is only \(Int(hill.highest)) high")
                 // The road reaches the mouth, climbing only a little, and you can walk it from the hub.
                 let last = GridPoint(col: Int((mouth.x - mouth.into.x * 0.5).rounded(.down)),
                                      row: Int((mouth.y - mouth.into.y * 0.5).rounded(.down)))
