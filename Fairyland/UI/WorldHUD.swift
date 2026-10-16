@@ -343,9 +343,11 @@ private struct CalendarPlate: View {
                     IconImage(.coins, size: 14)
                         .foregroundStyle(HUDStyle.coin)
                         .shadow(color: HUDStyle.plateDark, radius: 0, x: 1, y: 1)
-                    Text("\(session.data.gold)")
+                    // Short from 10,000 up (1.45M), so the date beside it keeps to one line.
+                    Text(HUDStyle.short(session.data.gold))
                         .font(HUDStyle.mono(10))
                         .foregroundStyle(HUDStyle.plateDark)
+                        .accessibilityLabel(L("{gold} gold", ["gold": session.data.gold]))
                 }
                 .padding(.horizontal, 7)
                 .padding(.vertical, 3)

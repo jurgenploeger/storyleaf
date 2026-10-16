@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.12",
+      "date": "2026-10-16",
+      "title": "Short gold",
+      "notes": [
+        "The gold by the calendar is shortened from 10,000 up: 12.3K, 457K, 1.45M. It's rounded down, so it never shows more than you have, and the date beside it stays on one line."
+      ]
+    },
+    {
       "version": "0.7.11",
       "date": "2026-10-16",
       "title": "Quests to sail by",
