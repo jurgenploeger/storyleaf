@@ -197,8 +197,10 @@ nonisolated struct Blend: Sendable {
             for x in 0..<width {
                 let here = owners[y * width + x]
                 guard here >= 0 else { continue }
-                for next in [x + 1 < width ? owners[y * width + x + 1] : -1, y + 1 < height ? owners[(y + 1) * width + x] : -1]
-                where next >= 0 && next != here {
+                // The cells east and north of it.
+                let east: Int = x + 1 < width ? owners[y * width + x + 1] : -1
+                let north: Int = y + 1 < height ? owners[(y + 1) * width + x] : -1
+                for next in [east, north] where next >= 0 && next != here {
                     touching[here].insert(next)
                     touching[next].insert(here)
                 }
@@ -229,8 +231,8 @@ nonisolated struct Blend: Sendable {
         for land in touching[holder] {
             // As `Seam.side` has it on the holder's cells.
             let share = Seam.share(at: Double(distances[land][index] - 0.5))
-            guard share > best?.share ?? 0,
-                  Seam.patches(share: share, at: world, sign: around.lands[holder] < around.lands[land] ? 1 : -1) else { continue }
+            let sign: Double = around.lands[holder] < around.lands[land] ? 1 : -1
+            guard share > best?.share ?? 0, Seam.patches(share: share, at: world, sign: sign) else { continue }
             best = (land, share)
         }
         return best?.land ?? holder

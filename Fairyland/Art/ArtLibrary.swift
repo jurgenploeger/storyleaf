@@ -446,25 +446,44 @@ final class ArtLibrary {
         let rim = 1.2 / Double(size)
         let grounds = layers.filter { $0.style == .ground }
         if !grounds.isEmpty {
-            let texels = grounds.map { layer in
-                layer.from.map { foreignPixels(layer.tile, palette: $0.palette, from: $0.land, variant: pick, size: size) }
-                    ?? variantPixels(layer.tile, pick, size: size)
-            }
-            let segments = grounds.map { Self.strokes(mask: $0.mask) }
-            let cells = grounds.map { layer in
-                (0..<9).filter { layer.mask & (1 << $0) != 0 }.map { (x: Double($0 % 3 - 1), y: Double(1 - $0 / 3)) }
+            var texels: [[UInt8]] = []
+            var segments: [[(x0: Double, y0: Double, x1: Double, y1: Double)]] = []
+            // Each ground's cells of the 3×3, in this cell's coordinates.
+            var cells: [[(x: Double, y: Double)]] = []
+            for layer in grounds {
+                if let from = layer.from {
+                    texels.append(foreignPixels(layer.tile, palette: from.palette, from: from.land, variant: pick, size: size))
+                } else {
+                    texels.append(variantPixels(layer.tile, pick, size: size))
+                }
+                segments.append(Self.strokes(mask: layer.mask))
+                var near: [(x: Double, y: Double)] = []
+                for bit in 0..<9 where layer.mask & (1 << bit) != 0 {
+                    let x: Double = Double(bit % 3 - 1)
+                    let y: Double = Double(1 - bit / 3)
+                    near.append((x: x, y: y))
+                }
+                cells.append(near)
             }
             for py in 0..<size {
                 for px in 0..<size {
-                    let x = (Double(px) + 0.5) / Double(size) - 0.5, y = 0.5 - (Double(py) + 0.5) / Double(size)
-                    let reach = 0.42 + Self.wobble(x, y, style: .patch, cell: cell)
-                    var shown: Int?
-                    for index in grounds.indices.reversed() where segments[index].contains(where: { Self.distance(x, y, to: $0) < reach }) {
-                        shown = index
-                        break
+                    let x: Double = (Double(px) + 0.5) / Double(size) - 0.5
+                    let y: Double = 0.5 - (Double(py) + 0.5) / Double(size)
+                    let reach: Double = 0.42 + Self.wobble(x, y, style: .patch, cell: cell)
+                    var shown: Int? = nil
+                    // The last whose shape reaches here.
+                    for index in grounds.indices.reversed() where shown == nil {
+                        for segment in segments[index] where Self.distance(x, y, to: segment) < reach {
+                            shown = index
+                            break
+                        }
                     }
-                    if shown == nil {
-                        shown = cells.firstIndex { near in near.contains { Self.gap(x, y, to: $0) < Self.verge } }
+                    // Else the first with a cell within `verge`.
+                    for index in grounds.indices where shown == nil {
+                        for spot in cells[index] where Self.gap(x, y, to: spot) < Self.verge {
+                            shown = index
+                            break
+                        }
                     }
                     let index = (py * size + px) * 4
                     guard let ground = shown, texels[ground].count == out.count else { continue }
@@ -644,7 +663,8 @@ final class ArtLibrary {
 
     /// How far a point (in this cell's coordinates) is from the cell `offset` of the 3×3 round it.
     nonisolated private static func gap(_ x: Double, _ y: Double, to offset: (x: Double, y: Double)) -> Double {
-        let dx = max(0, abs(x - offset.x) - 0.5), dy = max(0, abs(y - offset.y) - 0.5)
+        let dx: Double = max(0, abs(x - offset.x) - 0.5)
+        let dy: Double = max(0, abs(y - offset.y) - 0.5)
         return (dx * dx + dy * dy).squareRoot()
     }
 
