@@ -892,6 +892,10 @@ nonisolated struct CrowdOptions: Decodable, Sendable {
     /// How many of each map's adventurers and traders turn up (1: all of them). Turn it down as real
     /// players arrive.
     let botDensity: Double?
+    /// How often an adventurer travels with friends, and how many there are in all
+    /// [fewest, most] (`Crowd`).
+    let groupChance: Double?
+    let groupSize: [Int]?
     /// What market traders call out: {item} and {price} for what they sell, {buy} and {price} for
     /// what they'd buy from you.
     let traderLines: [String]?

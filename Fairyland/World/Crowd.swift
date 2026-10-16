@@ -5,14 +5,16 @@ import SpriteKit
 /// town's main square, villagers pottering around town, and the locals who live out on the maps
 /// (`MapDef.Local`), each with a story they tell a line at a time as you stop by. They stroll, pause,
 /// look around and chat now and then. They never block the way. Walk up to an adventurer to see
-/// their card: befriend them, invite them along, trade, or (in danger zones) duel.
+/// their card: befriend them, invite them along, trade, or (in danger zones) duel. Some adventurers
+/// travel together, as you do with your party (crowd.json `groupChance`): one leads, the rest walk
+/// behind in single file, their companions at their sides.
 final class Crowd {
     private final class Member {
         let name: String
         let kind: GameSession.ChatLine.Kind
         let walker: Walker
         let pet: Walker?
-        let home: GridPoint
+        var home: GridPoint
         let roam: Int
         let lines: [String]
         /// Adventurers have a level, class and companion like you.
@@ -35,6 +37,12 @@ final class Crowd {
         var outward = true
         /// Which way a local likes to look while standing (out over the water).
         let facing: Direction?
+        /// In a group of adventurers travelling together: the one walking ahead of them (nil for
+        /// whoever leads, or someone on their own), their place in the line (0 leading), and
+        /// whether anyone walks behind them.
+        var ahead: Member?
+        var place = 0
+        var leads = false
 
         init(name: String, kind: GameSession.ChatLine.Kind, walker: Walker, pet: Walker?, home: GridPoint, roam: Int,
              lines: [String], profile: Adventurer? = nil, trades: Bool = false, story: Bool = false,
@@ -136,12 +144,38 @@ final class Crowd {
             .filter { _ in Double.random(in: 0..<1) < Self.friendVisitChance }
             .shuffled()
             .prefix(min(2, count)))
-        for index in 0..<count {
+        let groupChance = Self.groupChanceOverride ?? options.groupChance ?? 0
+        let fewest = max(1, options.groupSize?.first ?? 2)
+        let sizes = fewest...max(fewest, options.groupSize?.last ?? fewest)
+        let roam = town ? 9 : 14
+        var left = count
+        var slot = 0
+        while left > 0 {
+            defer { slot += 1 }
+            left -= 1
             guard let home = map.strollTarget(near: map.center, radius: spread, using: &rng) else { continue }
-            let profile = index < visitors.count
-                ? visitors[index]
+            let profile = slot < visitors.count
+                ? visitors[slot]
                 : Self.profile(named: adventurerNames.popLast() ?? L("Traveller"), levels: levels, danger: def.danger == true)
-            addAdventurer(profile, home: home, roam: town ? 9 : 14, world: world)
+            addAdventurer(profile, home: home, roam: roam, world: world)
+            // Now and then a few travel together, as you do with your party: friends about the
+            // leader's level, counted among the map's adventurers. Never troublemakers.
+            guard slot >= visitors.count, !profile.hostile, left > 0, var ahead = members.last,
+                  Double.random(in: 0..<1, using: &rng) < groupChance else { continue }
+            let near = max(1, profile.level - 3)...(profile.level + 3)
+            let size = Int.random(in: sizes, using: &rng)
+            for place in 1..<max(1, min(size, left + 1)) {
+                left -= 1
+                addAdventurer(Self.profile(named: adventurerNames.popLast() ?? L("Traveller"), levels: near, danger: false),
+                              home: home, roam: roam, world: world)
+                guard let member = members.last else { break }
+                member.ahead = ahead
+                member.place = place
+                ahead.leads = true
+                // Quicker than whoever leads, so they keep up (as your friends do).
+                member.walker.walkSpeed = 105
+                ahead = member
+            }
         }
         if let market, traders > 0 {
             placeTraders(traders, market: market, names: &adventurerNames, avoiding: def, world: world)
@@ -164,6 +198,9 @@ final class Crowd {
 
     /// How likely each friend is to be on a map you enter.
     static let friendVisitChance = 0.35
+
+    /// Debug launches (`group`): how often adventurers travel together, in place of crowd.json's.
+    static var groupChanceOverride: Double?
 
     private func addAdventurer(_ profile: Adventurer, home: GridPoint, roam: Int, world: SKNode, trades: Bool = false) {
         let walker = Self.person(profile.name, art: GameSession.registerAdventurer(profile),
@@ -325,17 +362,32 @@ final class Crowd {
 
     func update(dt: TimeInterval, player: CGPoint) {
         self.player = player
+        let standable: (CGPoint) -> Bool = { [map] in map.isWalkable(map.rawCell(at: $0)) }
+        // A group is as near you as the nearest of them: their names show together, and they all
+        // stop and turn to you as you walk up to any of them.
+        var nearest: [ObjectIdentifier: CGFloat] = [:]
+        for member in members where member.ahead != nil || member.leads {
+            let key = ObjectIdentifier(Self.head(of: member))
+            nearest[key] = min(nearest[key] ?? .infinity, member.walker.position.distance(to: player))
+        }
         for member in members {
             let walker = member.walker
             let distance = walker.position.distance(to: player)
-            walker.isNear = distance < Walker.nameRange
+            let head = Self.head(of: member)
+            let together = nearest[ObjectIdentifier(head)] ?? distance
+            walker.isNear = together < Walker.nameRange
             // Adventurers and locals stop to chat when you walk up to them.
-            if member.profile?.hostile == false || member.story, distance < 90 {
+            if member.profile?.hostile == false || member.story, together < 90 {
                 walker.path = []
                 walker.face(Direction(player - walker.position, current: walker.facing))
                 member.wait = max(member.wait, 1.5)
             }
-            if !walker.path.isEmpty {
+            walker.markFootstep()
+            if let ahead = member.ahead {
+                // In line behind the one ahead, on the trail of whoever leads.
+                walker.follow(ahead.walker, dt: dt, footstep: head.walker.footstep(behind: CGFloat(member.place) * 36), canStand: standable)
+                if together < 90 { walker.face(Direction(player - walker.position, current: walker.facing)) }
+            } else if !walker.path.isEmpty {
                 walker.followPath(dt: dt)
                 walker.setWalking(true)
             } else {
@@ -377,12 +429,63 @@ final class Crowd {
             }
             walker.zPosition = -walker.position.y
             if let pet = member.pet {
-                walker.markFootstep()
-                pet.follow(walker, dt: dt, footstep: walker.footstep(behind: 36)) { self.map.isWalkable(self.map.rawCell(at: $0)) }
+                // In a group at their side, with the next of them walking behind (as your friends'
+                // companions do); on their own, behind them.
+                if member.ahead != nil || member.leads {
+                    let behind = CGFloat(member.place) * 36 + 18
+                    pet.follow(walker, dt: dt, footstep: head.walker.footstep(behind: behind), canStand: standable, beside: true)
+                } else {
+                    pet.follow(walker, dt: dt, footstep: walker.footstep(behind: 36), canStand: standable)
+                }
                 pet.zPosition = -pet.position.y
             }
         }
     }
+
+    /// Whoever leads the group `member` walks in (them, if they lead or walk alone).
+    private static func head(of member: Member) -> Member {
+        var head = member
+        while let ahead = head.ahead { head = ahead }
+        return head
+    }
+
+    /// Takes someone out of their group (joining your party, or leaving after a duel): whoever
+    /// walked behind them follows whoever was ahead of them, or leads the rest from where they
+    /// stand, and the line closes up.
+    private func leaveGroup(_ member: Member) {
+        guard member.ahead != nil || member.leads else { return }
+        for next in members where next.ahead === member {
+            next.ahead = member.ahead
+            if member.ahead == nil {
+                next.home = map.cell(at: next.walker.position)
+                next.walker.walkSpeed = .random(in: 72...92)
+                next.wait = .random(in: 1...3)
+            }
+        }
+        member.ahead = nil
+        for someone in members {
+            var place = 0
+            var ahead = someone.ahead
+            while let next = ahead {
+                place += 1
+                ahead = next.ahead
+            }
+            someone.place = place
+            someone.leads = members.contains { $0.ahead === someone }
+        }
+    }
+
+    /// The adventurers travelling together with the one `id`, them among them, whoever leads first
+    /// and the rest in their places in line; just them on their own.
+    func group(of id: UUID) -> [Adventurer] {
+        guard let member = members.first(where: { $0.profile?.id == id }) else { return [] }
+        guard member.ahead != nil || member.leads else { return member.profile.map { [$0] } ?? [] }
+        let head = Self.head(of: member)
+        return members.filter { Self.head(of: $0) === head }.sorted { $0.place < $1.place }.compactMap(\.profile)
+    }
+
+    /// How many travel together with the adventurer `id`, them among them: 1 on their own.
+    func groupSize(of id: UUID) -> Int { max(1, group(of: id).count) }
 
     /// Standing around is over: look about, or stroll somewhere near home (traders and locals who
     /// stand mind their spot; locals out on an errand go on to where they're going).
@@ -421,12 +524,28 @@ final class Crowd {
 
     #if DEBUG
     /// Debug launches (`invite=n`): the `count` friendly adventurers nearest `point` walk straight
-    /// over to stand around it, so they're near enough to befriend and invite.
+    /// over to stand around it, so they're near enough to befriend and invite. `count` 0 (`group`):
+    /// the group travelling together nearest it instead, in line, whoever leads a few steps off.
     func summonForDebug(_ count: Int, to point: CGPoint) -> [Adventurer] {
+        if count == 0 {
+            let heads = members.filter { $0.leads && $0.ahead == nil }
+            guard let head = heads.min(by: { $0.walker.position.distance(to: point) < $1.walker.position.distance(to: point) }) else { return [] }
+            let group = members.filter { Self.head(of: $0) === head }.sorted { $0.place < $1.place }
+            for member in group {
+                let step = CGFloat(member.place)
+                member.walker.path = []
+                member.walker.position = point + CGVector(dx: 70 + step * 32, dy: 10 - step * 16)
+                member.pet?.position = member.walker.position + CGVector(dx: 24, dy: 8)
+            }
+            head.walker.face(.left)
+            head.wait = 600
+            return group.compactMap(\.profile)
+        }
         let chosen = members
             .filter { member in member.profile.map { !$0.hostile } == true }
             .sorted { $0.walker.position.distance(to: point) < $1.walker.position.distance(to: point) }
             .prefix(count)
+        for member in chosen { leaveGroup(member) }
         for (index, member) in chosen.enumerated() {
             let angle = Double(index) * 2 * .pi / Double(max(1, chosen.count)) + 0.4
             member.walker.path = []
@@ -493,7 +612,9 @@ final class Crowd {
 
     /// They left: joined your party, or ran off after a duel.
     func remove(_ id: UUID, poof: Bool) {
-        guard let index = members.firstIndex(where: { $0.profile?.id == id }) else { return }
+        guard let found = members.first(where: { $0.profile?.id == id }) else { return }
+        leaveGroup(found)
+        guard let index = members.firstIndex(where: { $0 === found }) else { return }
         let member = members.remove(at: index)
         for node in [member.walker, member.pet].compactMap({ $0 }) {
             if poof, let parent = node.parent { SkillEffects.smoke(at: node.position, in: parent) }
@@ -516,7 +637,8 @@ final class Crowd {
         }
         member.walker.path = []
         member.walker.setWalking(false)
-        member.walker.revealTag()
+        let head = Self.head(of: member)
+        for mate in members where Self.head(of: mate) === head { mate.walker.revealTag() }
         member.walker.face(Direction(player - member.walker.position, current: member.walker.facing))
         member.wait = 3
         member.chat = member.story ? .random(in: 9...14) : .random(in: 20...45)

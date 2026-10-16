@@ -29,6 +29,8 @@ protocol MapScene: SKScene {
 
     #if DEBUG
     func encounterForDebug()
+    /// The `count` nearest friendly adventurers brought over (`invite=n`, `meet=n`); 0, the nearest
+    /// group travelling together, in line (`group`).
     func summonAdventurersForDebug(_ count: Int) -> [Adventurer]
     func featherAwayForDebug()
     func sayForDebug(_ text: String)

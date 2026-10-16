@@ -40,6 +40,10 @@ struct AdventurerCard: View {
                     if let pet = adventurer.petSpecies.flatMap(content.monster) {
                         Text(L("with a {pet}", ["pet": pet.name])).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim)
                     }
+                    // Travelling with friends, as you do with your party.
+                    if session.nearbyGroupSize > 1 {
+                        Text(L("In a party of {count}", ["count": session.nearbyGroupSize])).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim)
+                    }
                 }
             }
             StatBar(label: L("HP"), value: stats.hp, maximum: stats.hp, color: HUDStyle.hp, labelWidth: 20)
