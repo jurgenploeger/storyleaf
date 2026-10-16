@@ -485,17 +485,18 @@ struct ContentTests {
                 #expect(fields.contains { $0.hasMountain && Double($0.peak) >= asked * 0.85 },
                         "map \(def.id): no mountain near \(Int(asked)) high (needs more room)")
             }
+            // Not every range has a trail up it, but every land has one, and every mountain.
+            #expect(fields.contains { !$0.trails.isEmpty }, "map \(def.id): no trail up any of its hills")
             for hill in fields {
                 func height(_ point: CGPoint) -> CGFloat { map.height(atGrid: CGPoint(x: point.x * tile, y: point.y * tile)) }
                 func cell(_ point: CGPoint) -> GridPoint { GridPoint(col: Int(point.x.rounded(.down)), row: Int(point.y.rounded(.down))) }
+                #expect(!hill.hasMountain || !hill.trails.isEmpty, "map \(def.id): a mountain with no trail")
                 // Its first trail starts on the ground; every trail comes out on its summit's top, every
                 // step of it walkable, and you can walk from the first trail's foot to the top of each.
-                guard let main = hill.trails.first?.points, let start = main.first else {
-                    Issue.record("map \(def.id): a range with no trail")
-                    continue
-                }
-                #expect(height(start) < 1, "map \(def.id): the first trail starts up in the air")
+                let start = hill.trails.first?.points.first
+                if let start { #expect(height(start) < 1, "map \(def.id): the first trail starts up in the air") }
                 for trail in hill.trails {
+                    guard let start else { break }
                     guard let foot = trail.points.first, let top = trail.points.last else { continue }
                     #expect(height(top) >= CGFloat(hill.lobes[trail.lobe].peak) - 1, "map \(def.id): a trail stops short of the top")
                     #expect(trail.points.allSatisfy { map.isWalkable(cell($0)) }, "map \(def.id): a trail is blocked")
@@ -3174,6 +3175,67 @@ struct LandPlanTests {
         #expect(first.npcs.map { $0.cell } == second.npcs.map { $0.cell })
         #expect(first.signposts.map { $0.cell } == second.signposts.map { $0.cell })
         #expect(!first.props.isEmpty, "Frog Swamp planned no props")
+    }
+
+    /// What lines the roads on every land that has any (🚧 in the tests job's log, to tune by): how
+    /// many stretches of each kind and how many cells they take, against how much road it has.
+    @Test func roadsidesOnEveryLand() async throws {
+        for def in content.maps where def.theme.roadside != nil {
+            let (map, plan) = await planned(def)
+            var roads = 0
+            for row in 0..<map.rows {
+                for col in 0..<map.columns where map.ground[row][col] == .path && map.owns(GridPoint(col: col, row: row)) { roads += 1 }
+            }
+            let kinds = Dictionary(grouping: plan.roadsides, by: { $0.kind.rawValue }).map { "\($0.value.count) \($0.key)" }.sorted()
+            let cells = plan.roadsides.reduce(0) { $0 + $1.cells.count }
+            print("🚧 \(def.id): \(plan.roadsides.count) lined (\(kinds.joined(separator: ", "))), \(cells) cells; \(roads) road cells, \(map.fenceCells.count) wall")
+        }
+    }
+
+    /// Stretches of the roads are lined (`LandPlanner.planRoadsides`): a fence, a low wall or a row of
+    /// the land's props on the cells beside a road, one after another along it, and never in the
+    /// way: a fence or a wall can't be walked through, and you can always get round it from the
+    /// road to the ground behind.
+    @Test func roadsidesLineTheRoads() async throws {
+        var kinds: Set<String> = []
+        for id in ["sunny_meadow", "valley_of_fear", "crystal_mountain", "twilight_woods", "goldburg", "frog_swamp"] {
+            let def = try #require(content.map(id))
+            let (map, plan) = await planned(def)
+            print("🚧 \(id): " + plan.roadsides.map { "\($0.kind.rawValue) \($0.cells.count)" }.joined(separator: ", "))
+            for line in plan.roadsides {
+                kinds.insert(line.kind.rawValue)
+                #expect(line.cells.count >= 4, "\(id): a lined stretch only \(line.cells.count) long")
+                // One after another: a fence's or a wall's cells side by side, so its pieces join; a
+                // row's corner to corner where it steps with the road's edge.
+                for (a, b) in zip(line.cells, line.cells.dropFirst()) {
+                    let apart = line.kind == .row ? max(abs(a.col - b.col), abs(a.row - b.row)) : abs(a.col - b.col) + abs(a.row - b.row)
+                    #expect(apart == 1, "\(id): a lined stretch skips from \(a) to \(b)")
+                }
+                func isRoad(_ cell: GridPoint) -> Bool { map.contains(cell) && map.ground[cell.row][cell.col] == .path }
+                // The road on one side of it, the same side all along: beside every cell, or a cell
+                // further where a fence steps out with the road's edge.
+                let side = [Edge.north, .east, .south, .west].first { side in
+                    line.cells.allSatisfy { isRoad($0.stepped(side.opposite)) || isRoad($0.stepped(side.opposite, by: 2)) }
+                }
+                guard let side else {
+                    Issue.record("\(id): a lined stretch at \(line.cells[0]) not along a road")
+                    continue
+                }
+                if line.kind != .row {
+                    #expect(line.cells.allSatisfy { !map.isWalkable($0) }, "\(id): a \(line.kind.rawValue) you can walk through")
+                }
+                // In a town, out in its countryside, clear of its wall and gates.
+                #expect(line.cells.allSatisfy { cell in map.fenceCells.allSatisfy { max(abs($0.col - cell.col), abs($0.row - cell.row)) > 3 } },
+                        "\(id): a \(line.kind.rawValue) up against the town's wall")
+                // From the road in front of its middle round to the ground behind it.
+                let besideRoad = line.cells.filter { isRoad($0.stepped(side.opposite)) }
+                let middle = besideRoad.isEmpty ? line.cells[line.cells.count / 2] : besideRoad[besideRoad.count / 2]
+                let way = map.path(from: map.center(of: middle.stepped(side.opposite)), to: map.center(of: middle.stepped(side)))
+                #expect(!way.isEmpty, "\(id): no way round the \(line.kind.rawValue) at \(middle)")
+            }
+        }
+        #expect(kinds.contains("fence") || kinds.contains("wall"), "no fence or wall along any road")
+        #expect(kinds.contains("row"), "no row of props along any road")
     }
 }
 

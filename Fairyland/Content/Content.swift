@@ -443,6 +443,22 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let cave: Cave?
         /// Grassy hills to climb, out in the fields (not towns or caves).
         let hills: Hills?
+        /// What lines stretches of its roads here and there (not caves; a town's only out in its
+        /// countryside).
+        let roadside: [Roadside]?
+    }
+
+    /// What lines a stretch of a land's road (`LandPlanner.planRoadsides`), on the cells beside it.
+    nonisolated struct Roadside: Decodable, Sendable {
+        /// fence (wooden pickets) | wall (a low wall of field stones) | row (one of the land's own
+        /// props, `art`, every `every` cells: a hedge of bushes, an avenue of trees, lanterns; a prop
+        /// with a count of 0 only lines the roads).
+        let kind: String
+        let art: String?
+        /// A row's spacing, in cells (1 when not given: a hedge).
+        let every: Int?
+        /// How often it's picked against the others (1 when not given).
+        let weight: Double?
     }
 
     /// Ranges of rounded hills of the map's own ground (`WorldMap.Hill`), to walk up anywhere, with

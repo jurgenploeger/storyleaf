@@ -119,7 +119,9 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   climbing evenly and far enough round that halfway up it climbs about 5 points a cell, bending gently in
   and out; a curve up a low hill, a sweep half round a mountain, and a single hairpin where it would go
   most of the way round. Each range has its own aim, way round, stretch and bends (`Hill.traceTrail`);
-  0.4.1 to 0.4.4 zig-zagged in switchbacks. Since 0.4.5 it's drawn worn in (asked for in playtesting
+  0.4.1 to 0.4.4 zig-zagged in switchbacks. Since 0.7.7 not every range has one (playtesting 2026-10-15:
+  hills don't always need a path winding up them): a mountain's range and each land's first do, about two
+  in five of the rest (`WorldMap.trailShare`), so fewer footpaths lead off into the fields too. Since 0.4.5 it's drawn worn in (asked for in playtesting
   2026-10-11: more natural, not so smooth): stamped along its line every eighth of a cell, wandering a
   little either side and narrowing and widening as it goes, with a ragged edge two pixels at a time, a tuft
   of grass here and there, and the shadow and lip only where it's cut into a slope (`HillArt.stamps`,
@@ -200,6 +202,22 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   ground in flat tones (since 0.4.5; the height gradient read as a staircase of shades at a pixel a cell):
   a lighter tint, the edge facing the light lit and the far edge shaded, a cell of shadow on the ground past
   it, and a mountain's upper slopes lighter still.
+- Roadsides (ours, since 0.7.7, asked for in playtesting 2026-10-15: roads with fences, walls or other
+  scenery along them; nothing here records what lined FO's roads): here and there along the edge of a
+  road wider than a footpath, a picket fence, a low wall of field stones (`BorderArt.lowWallPicture`) or a
+  row of one of the land's own props, a hedge of bushes, an avenue of trees or lanterns every few cells,
+  on the cells beside it (`theme.roadside` in maps.json, `LandPlanner.planRoadsides`), about half of
+  what could be. A row follows the edge, a cell out or in where the road shifts; a fence or a wall runs
+  straight, and where the edge steps it ends and starts again a cell on, a gap in it (one that jogged
+  with the edge zigzagged in the screenshots); along a road that runs corner to corner (all of Frog
+  Swamp's) only a row fits, and reads as an avenue on screen. The first try lined straight edges only
+  and found next to nothing on most lands (counted per land, 🚧 in the tests job's log), their roads
+  wander; the second kept every kind straight three cells between steps and lined nothing on Frog
+  Swamp. Each land has its own mix: walls on the downs and the rocky
+  lands, palms on the shores, lanterns in the woods and the spooky lands, lollipops on Gumdrop Peaks,
+  lamp posts on the roads into the cities (a prop with a count of 0 only lines the roads). In a town
+  only out in its countryside, three cells off its wall; off the hills and the shore, and well in from the
+  lands next door; a cell's kept clear at either end, so you can always step off the road.
 - Lakes and rivers (ours, since 0.4.8, asked for in playtesting 2026-10-12: "more like RuneScape, with large
   lakes and interesting pathways and landscapes"); nothing here records whether FO's fields had them.
   Since 0.6.0 the rivers are the continent's (playtesting 2026-10-14: "there should still be rivers running
@@ -312,7 +330,12 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     have lands around them, not be a square in the world") a town is a land like any other, its walled
     square (maps.json `town.size`) in the middle of its own countryside, its roads out through its gates
     and on across the fields; a city (Prismhaven, Ingothold, `town.walls`) is walled in stone with
-    towers, a village keeps its picket fence (`TownFence`). A land's map is the box round its shape; the boxes overlap where the shapes fit into each
+    towers, a village keeps its picket fence (`TownFence`). Since 0.7.7 its countryside is as full of
+    scenery as the lands round it (playtesting 2026-10-15: "there should be more scenery around the
+    cities"): 0.6.0 to 0.7.6 kept the few props its old border ring had, 2 to 4 that block a hundred
+    cells against 10 to 35 out in the fields; Ingothold's are the desert's and the mines', rocks,
+    cacti and dry bushes, on desert sand (its countryside was gravel, its roads' own ground, so they
+    didn't show). A land's map is the box round its shape; the boxes overlap where the shapes fit into each
     other, and each land lays out and draws only its own cells (the rest of its box is the sea's, or the
     land next door's, `Ground.away`). Where a road crosses, the border runs straight for 8 cells either
     side and the painting gives the crossing and the road's turns through the middle of the land; a road

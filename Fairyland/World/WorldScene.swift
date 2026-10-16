@@ -277,6 +277,7 @@ final class WorldScene: SKScene {
         for rock in planner.plan.outcrops { addScenery(rock) }
         await breathe()
         await placeProps(planner.plan.props, seams: planner.plan.seamProps)
+        TownFence.placeRoadsides(planner.plan.roadsides, map: map, art: art) { node in self.chunk(at: node.position).addChild(node) }
         placeSignposts(planner.plan.signposts)
         placeBorders()
         // Everyone set down before they were on the map stands up on the ground under them.

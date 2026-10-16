@@ -114,6 +114,7 @@ final class LandStage {
         for rock in plan.outcrops { addScenery(rock) }
         await pause()
         await placeProps(plan.props, seams: plan.seamProps, pause: pause)
+        placeRoadsides()
         placeSignposts(plan.signposts)
         placeCrags()
         await pause()
@@ -412,6 +413,12 @@ final class LandStage {
     private func placeFence() {
         guard !map.fenceCells.isEmpty else { return }
         TownFence.place(cells: map.fenceCells, map: map, world: world, art: art, stone: def.town?.walls == "stone")
+    }
+
+    /// The picket fences and low walls along stretches of its roads (`LandPlanner.planRoadsides`),
+    /// joined from cell to cell as a town's fence is, each piece in the chunk it stands in.
+    private func placeRoadsides() {
+        TownFence.placeRoadsides(plan.roadsides, map: map, art: art) { node in self.chunk(at: node.position).addChild(node) }
     }
 
     /// Houses, the street's lamps (glowing) and decor, the terraces' railings, and the land's own

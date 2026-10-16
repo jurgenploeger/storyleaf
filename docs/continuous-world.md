@@ -188,7 +188,7 @@ Each step is its own PR and leaves the game playable. The old engine stays the d
 Saves didn't need a new version: where you stand is still kept as the land you're in and a spot in
 its own points, which the continent turns into its own (a land's shift) both ways.
 
-**Playtesting on a phone (2026-10-15), 0.7.1 to 0.7.6.** Lessons from the first build on a phone:
+**Playtesting on a phone (2026-10-15), 0.7.1 to 0.7.7.** Lessons from the first build on a phone:
 - A land's air (sky, light, mood) fades as you cross into the next, each part fading itself. The
   sky's shade is multiplied onto the screen, and a multiplied colour faded by alpha goes dark, not
   faint: faded as one layer, the screen dimmed at every crossing. It eases toward white instead.
@@ -226,6 +226,12 @@ its own points, which the continent turns into its own (a land's shift) both way
   the layout under a second. Since 0.7.6 there's no graph: ways round are looked for over the
   blocked cells themselves (`WorldMap.route`, A* eight ways round as the graph stepped), and the
   planner's props no longer take their cells out of it one by one, which halved the scene's time.
+- A road ran on over a border cut straight across: each land draws its own cells, its road graded
+  with its own palette, so Frog Swamp's beige road met the Valley of Fear's grey one in a line. The
+  ground there comes in patches across the band (`Seam`), but a road in patches looks torn, so a road
+  fades instead: on each side its tile is mixed with the land next door's road, graded as it is there,
+  by that land's share of the band (`Seam.share`, half on the border, in eighths;
+  `GroundTiles.roadFade`, `ArtLibrary.Fade`). Both lands work it out the same, so they meet half and half.
 
 1. **Store and settle step, no visible change.** Lands are laid out into the store, and placement
    decisions move into the layout. Tests check that the store matches each land's layout cell for

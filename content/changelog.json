@@ -2,6 +2,17 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.7",
+      "date": "2026-10-15",
+      "title": "Fences along the road",
+      "notes": [
+        "Where a road runs from one land into the next, it fades from one land's look to the other's instead of changing in a hard line at the border.",
+        "Stretches of road are lined here and there: a picket fence, a low stone wall, a hedge, an avenue of trees or a row of lanterns, each land with its own.",
+        "There's far more scenery round the towns and cities: trees, rocks, bushes and flowers, as much as in the lands round them, and lamp posts along some of the roads into the cities.",
+        "Not every hill has a path winding up it any more. Mountains still do, and you can climb any hill anywhere."
+      ]
+    },
+    {
       "version": "0.7.6",
       "date": "2026-10-15",
       "title": "Lands load in moments",

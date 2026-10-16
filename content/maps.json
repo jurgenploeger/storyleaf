@@ -43,9 +43,9 @@
         "props": [
           {
             "art": "blossom_tree",
-            "count": 64,
+            "count": 220,
             "blocking": true,
-            "cluster": 3,
+            "cluster": 5,
             "sway": true,
             "size": [
               0.7,
@@ -55,9 +55,9 @@
           },
           {
             "art": "tree",
-            "count": 88,
+            "count": 300,
             "blocking": true,
-            "cluster": 4,
+            "cluster": 8,
             "sway": true,
             "size": [
               0.7,
@@ -67,7 +67,7 @@
           },
           {
             "art": "mushroom",
-            "count": 20,
+            "count": 60,
             "blocking": false,
             "size": [
               0.75,
@@ -76,7 +76,18 @@
           },
           {
             "art": "bush",
-            "count": 80,
+            "count": 240,
+            "blocking": true,
+            "cluster": 4,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "flowering_bush",
+            "count": 160,
             "blocking": true,
             "cluster": 3,
             "size": [
@@ -86,21 +97,10 @@
             "shadow": true
           },
           {
-            "art": "flowering_bush",
-            "count": 40,
-            "blocking": true,
-            "cluster": 2,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "shadow": true
-          },
-          {
             "art": "daisy",
-            "count": 48,
+            "count": 150,
             "blocking": false,
-            "cluster": 5,
+            "cluster": 6,
             "sway": true,
             "size": [
               0.8,
@@ -109,9 +109,9 @@
           },
           {
             "art": "daisy_yellow",
-            "count": 48,
+            "count": 150,
             "blocking": false,
-            "cluster": 5,
+            "cluster": 6,
             "sway": true,
             "size": [
               0.8,
@@ -120,9 +120,9 @@
           },
           {
             "art": "daisy_blue",
-            "count": 24,
+            "count": 80,
             "blocking": false,
-            "cluster": 4,
+            "cluster": 5,
             "sway": true,
             "size": [
               0.8,
@@ -179,7 +179,7 @@
           },
           {
             "art": "lilac_bush",
-            "count": 24,
+            "count": 80,
             "blocking": true,
             "cluster": 3,
             "size": [
@@ -190,7 +190,7 @@
           },
           {
             "art": "pebbles",
-            "count": 32,
+            "count": 60,
             "blocking": false,
             "cluster": 2,
             "size": [
@@ -223,9 +223,10 @@
           },
           {
             "art": "haystack",
-            "count": 4,
+            "count": 40,
             "blocking": true,
-            "shadow": true
+            "shadow": true,
+            "cluster": 2
           },
           {
             "art": "wooden_crates",
@@ -346,6 +347,138 @@
               1.1
             ],
             "within": 10
+          },
+          {
+            "art": "big_tree",
+            "count": 40,
+            "blocking": true,
+            "cluster": 4,
+            "sway": true,
+            "spread": 3,
+            "size": [
+              0.8,
+              1.2
+            ],
+            "shadow": true
+          },
+          {
+            "art": "autumn_tree",
+            "count": 60,
+            "blocking": true,
+            "cluster": 5,
+            "sway": true,
+            "size": [
+              0.7,
+              1.3
+            ],
+            "shadow": true
+          },
+          {
+            "art": "apple_tree",
+            "count": 60,
+            "blocking": true,
+            "cluster": 4,
+            "size": [
+              0.8,
+              1.2
+            ],
+            "sway": true,
+            "shadow": true
+          },
+          {
+            "art": "berry_bush",
+            "count": 80,
+            "blocking": true,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "pumpkin_patch",
+            "count": 60,
+            "blocking": false,
+            "cluster": 4,
+            "size": [
+              0.8,
+              1.2
+            ]
+          },
+          {
+            "art": "scarecrow",
+            "count": 12,
+            "blocking": true,
+            "size": [
+              0.9,
+              1.1
+            ],
+            "shadow": true
+          },
+          {
+            "art": "beehive_tree",
+            "count": 12,
+            "blocking": true,
+            "sway": true,
+            "size": [
+              0.7,
+              1.3
+            ],
+            "shadow": true
+          },
+          {
+            "art": "rock",
+            "count": 40,
+            "blocking": true,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "small_boulder",
+            "count": 40,
+            "blocking": true,
+            "cluster": 2,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "tree_stump",
+            "count": 30,
+            "blocking": true,
+            "size": [
+              0.7,
+              1.3
+            ],
+            "shadow": true
+          },
+          {
+            "art": "clover_patch",
+            "count": 60,
+            "blocking": false,
+            "cluster": 4,
+            "size": [
+              0.8,
+              1.2
+            ]
+          },
+          {
+            "art": "sunflower",
+            "count": 40,
+            "blocking": false,
+            "cluster": 4,
+            "sway": true,
+            "size": [
+              0.8,
+              1.2
+            ]
           }
         ],
         "accent": "tile_scree",
@@ -369,7 +502,30 @@
           "light": "#FFF0D8",
           "lightStrength": 0.35,
           "variation": 0.12
-        }
+        },
+        "roadside": [
+          {
+            "kind": "fence",
+            "weight": 3
+          },
+          {
+            "kind": "row",
+            "art": "haystack",
+            "every": 3,
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "bush",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "blossom_tree",
+            "every": 2,
+            "weight": 1
+          }
+        ]
       },
       "fence": true,
       "exits": [
@@ -1516,7 +1672,33 @@
           "light": "#FFE6B8",
           "lightStrength": 0.4,
           "variation": 0.16
-        }
+        },
+        "roadside": [
+          {
+            "kind": "fence",
+            "weight": 3
+          },
+          {
+            "kind": "wall",
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "flowering_bush",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "blossom_tree",
+            "every": 2,
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "sunflower",
+            "weight": 1
+          }
+        ]
       },
       "exits": [
         {
@@ -1867,7 +2049,24 @@
           "light": "#FFE0CC",
           "lightStrength": 0.4,
           "variation": 0.12
-        }
+        },
+        "roadside": [
+          {
+            "kind": "row",
+            "art": "palm_tree",
+            "every": 3,
+            "weight": 2
+          },
+          {
+            "kind": "fence",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "bush",
+            "weight": 1
+          }
+        ]
       },
       "exits": [
         {
@@ -2276,7 +2475,30 @@
           "light": "#9A86FF",
           "lightStrength": 0.5,
           "variation": 0.14
-        }
+        },
+        "roadside": [
+          {
+            "kind": "row",
+            "art": "wisp_lantern",
+            "every": 4,
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "lilac_tree",
+            "every": 2,
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "lilac_bush",
+            "weight": 1
+          },
+          {
+            "kind": "fence",
+            "weight": 1
+          }
+        ]
       },
       "exits": [
         {
@@ -2856,7 +3078,29 @@
           "light": "#E2FFC8",
           "lightStrength": 0.4,
           "variation": 0.16
-        }
+        },
+        "roadside": [
+          {
+            "kind": "fence",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "berry_bush",
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "golden_bush",
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "apple_tree",
+            "every": 2,
+            "weight": 2
+          }
+        ]
       },
       "exits": [
         {
@@ -3025,9 +3269,9 @@
         "props": [
           {
             "art": "blossom_tree",
-            "count": 80,
+            "count": 240,
             "blocking": true,
-            "cluster": 3,
+            "cluster": 6,
             "sway": true,
             "size": [
               0.7,
@@ -3037,9 +3281,9 @@
           },
           {
             "art": "tree",
-            "count": 80,
+            "count": 240,
             "blocking": true,
-            "cluster": 4,
+            "cluster": 6,
             "sway": true,
             "size": [
               0.7,
@@ -3049,9 +3293,9 @@
           },
           {
             "art": "flowering_bush",
-            "count": 80,
+            "count": 220,
             "blocking": true,
-            "cluster": 2,
+            "cluster": 4,
             "size": [
               0.75,
               1.25
@@ -3060,9 +3304,9 @@
           },
           {
             "art": "bush",
-            "count": 60,
+            "count": 180,
             "blocking": true,
-            "cluster": 2,
+            "cluster": 4,
             "size": [
               0.75,
               1.25
@@ -3071,9 +3315,9 @@
           },
           {
             "art": "daisy",
-            "count": 60,
+            "count": 160,
             "blocking": false,
-            "cluster": 5,
+            "cluster": 6,
             "sway": true,
             "size": [
               0.8,
@@ -3082,9 +3326,9 @@
           },
           {
             "art": "daisy_yellow",
-            "count": 60,
+            "count": 160,
             "blocking": false,
-            "cluster": 5,
+            "cluster": 6,
             "sway": true,
             "size": [
               0.8,
@@ -3093,9 +3337,9 @@
           },
           {
             "art": "daisy_blue",
-            "count": 30,
+            "count": 100,
             "blocking": false,
-            "cluster": 4,
+            "cluster": 5,
             "sway": true,
             "size": [
               0.8,
@@ -3164,9 +3408,9 @@
           },
           {
             "art": "lilac_tree",
-            "count": 24,
+            "count": 120,
             "blocking": true,
-            "cluster": 3,
+            "cluster": 5,
             "sway": true,
             "size": [
               0.7,
@@ -3176,9 +3420,9 @@
           },
           {
             "art": "lilac_bush",
-            "count": 32,
+            "count": 120,
             "blocking": true,
-            "cluster": 3,
+            "cluster": 4,
             "size": [
               0.75,
               1.25
@@ -3311,6 +3555,100 @@
             "blocking": false,
             "within": 40,
             "cluster": 4
+          },
+          {
+            "art": "big_blossom_tree",
+            "count": 30,
+            "blocking": true,
+            "cluster": 3,
+            "sway": true,
+            "size": [
+              0.8,
+              1.2
+            ],
+            "shadow": true
+          },
+          {
+            "art": "big_lilac_tree",
+            "count": 20,
+            "blocking": true,
+            "cluster": 3,
+            "sway": true,
+            "size": [
+              0.8,
+              1.2
+            ],
+            "shadow": true
+          },
+          {
+            "art": "rock",
+            "count": 40,
+            "blocking": true,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "small_boulder",
+            "count": 30,
+            "blocking": true,
+            "cluster": 2,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "tree_stump",
+            "count": 20,
+            "blocking": true,
+            "size": [
+              0.7,
+              1.3
+            ],
+            "shadow": true
+          },
+          {
+            "art": "tulip_patch",
+            "count": 60,
+            "blocking": false,
+            "cluster": 4,
+            "size": [
+              0.8,
+              1.2
+            ]
+          },
+          {
+            "art": "clover_patch",
+            "count": 60,
+            "blocking": false,
+            "cluster": 4,
+            "size": [
+              0.8,
+              1.2
+            ]
+          },
+          {
+            "art": "giant_flower",
+            "count": 20,
+            "blocking": true,
+            "cluster": 3,
+            "sway": true,
+            "size": [
+              0.8,
+              1.2
+            ]
+          },
+          {
+            "art": "street_lamp",
+            "count": 0,
+            "blocking": true,
+            "shadow": true,
+            "glow": "#FFD980"
           }
         ],
         "accentPatches": 0,
@@ -3334,7 +3672,30 @@
           "light": "#FFE4F4",
           "lightStrength": 0.35,
           "variation": 0.1
-        }
+        },
+        "roadside": [
+          {
+            "kind": "wall",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "street_lamp",
+            "every": 4,
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "lilac_tree",
+            "every": 2,
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "flowering_bush",
+            "weight": 1
+          }
+        ]
       },
       "town": {
         "size": [
@@ -4282,7 +4643,28 @@
           "light": "#D6E4FF",
           "lightStrength": 0.45,
           "variation": 0.1
-        }
+        },
+        "roadside": [
+          {
+            "kind": "fence",
+            "weight": 2
+          },
+          {
+            "kind": "wall",
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "snow_pine",
+            "every": 2,
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "snow_bush",
+            "weight": 1
+          }
+        ]
       },
       "exits": [
         {
@@ -4720,7 +5102,29 @@
           "light": "#C8F0A8",
           "lightStrength": 0.45,
           "variation": 0.16
-        }
+        },
+        "roadside": [
+          {
+            "kind": "fence",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "moss_bush",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "swamp_tree",
+            "every": 2,
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "autumn_reeds",
+            "weight": 1
+          }
+        ]
       },
       "exits": [
         {
@@ -5058,7 +5462,28 @@
           "light": "#C8A0E8",
           "lightStrength": 0.5,
           "variation": 0.14
-        }
+        },
+        "roadside": [
+          {
+            "kind": "row",
+            "art": "spooky_lantern",
+            "every": 4,
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "thorn_bush",
+            "weight": 2
+          },
+          {
+            "kind": "wall",
+            "weight": 2
+          },
+          {
+            "kind": "fence",
+            "weight": 1
+          }
+        ]
       },
       "exits": [
         {
@@ -5539,14 +5964,14 @@
       "theme": {
         "ground": "tile_desert",
         "path": "tile_scree",
-        "border": "tile_scree",
+        "border": "tile_desert",
         "accent": "tile_cave_floor",
         "props": [
           {
             "art": "boulder",
-            "count": 48,
+            "count": 200,
             "blocking": true,
-            "cluster": 3,
+            "cluster": 4,
             "size": [
               0.75,
               1.25
@@ -5555,12 +5980,23 @@
           },
           {
             "art": "mine_cart",
-            "count": 8,
+            "count": 24,
             "blocking": true
           },
           {
             "art": "dry_bush",
-            "count": 48,
+            "count": 200,
+            "blocking": true,
+            "cluster": 4,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "sandstone_boulder",
+            "count": 120,
             "blocking": true,
             "cluster": 3,
             "size": [
@@ -5570,21 +6006,10 @@
             "shadow": true
           },
           {
-            "art": "sandstone_boulder",
-            "count": 20,
-            "blocking": true,
-            "cluster": 2,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "shadow": true
-          },
-          {
             "art": "red_rock",
-            "count": 40,
+            "count": 160,
             "blocking": true,
-            "cluster": 2,
+            "cluster": 3,
             "size": [
               0.75,
               1.25
@@ -5593,17 +6018,18 @@
           },
           {
             "art": "ore_vein",
-            "count": 4,
+            "count": 30,
             "blocking": true,
             "size": [
               0.75,
               1.25
             ],
-            "glow": "#FFD27A"
+            "glow": "#FFD27A",
+            "cluster": 2
           },
           {
             "art": "tumbleweed",
-            "count": 8,
+            "count": 60,
             "blocking": false,
             "size": [
               0.8,
@@ -5716,6 +6142,94 @@
             "blocking": true,
             "cluster": 2,
             "within": 38
+          },
+          {
+            "art": "small_boulder",
+            "count": 120,
+            "blocking": true,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "dead_bush",
+            "count": 80,
+            "blocking": true,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "small_cactus",
+            "count": 60,
+            "blocking": true,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "yellow_cactus",
+            "count": 40,
+            "blocking": true,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "cactus",
+            "count": 40,
+            "blocking": true,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "dead_tree",
+            "count": 40,
+            "blocking": true,
+            "cluster": 3,
+            "size": [
+              0.7,
+              1.3
+            ],
+            "shadow": true
+          },
+          {
+            "art": "skull_bones",
+            "count": 20,
+            "blocking": false
+          },
+          {
+            "art": "pebbles",
+            "count": 80,
+            "blocking": false,
+            "cluster": 2,
+            "size": [
+              0.8,
+              1.2
+            ]
+          },
+          {
+            "art": "street_lamp",
+            "count": 0,
+            "blocking": true,
+            "shadow": true,
+            "glow": "#FFD980"
           }
         ],
         "accentPatches": 0,
@@ -5737,7 +6251,25 @@
           "light": "#FFDCA8",
           "lightStrength": 0.45,
           "variation": 0.12
-        }
+        },
+        "roadside": [
+          {
+            "kind": "wall",
+            "weight": 3
+          },
+          {
+            "kind": "row",
+            "art": "street_lamp",
+            "every": 4,
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "boulder",
+            "every": 2,
+            "weight": 1
+          }
+        ]
       },
       "town": {
         "size": [
@@ -6522,7 +7054,25 @@
           "light": "#FFC8A0",
           "lightStrength": 0.45,
           "variation": 0.14
-        }
+        },
+        "roadside": [
+          {
+            "kind": "wall",
+            "weight": 3
+          },
+          {
+            "kind": "row",
+            "art": "cactus",
+            "every": 2,
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "palm_tree",
+            "every": 3,
+            "weight": 1
+          }
+        ]
       },
       "exits": [
         {
@@ -6947,7 +7497,23 @@
           "light": "#D4CCFF",
           "lightStrength": 0.45,
           "variation": 0.12
-        }
+        },
+        "roadside": [
+          {
+            "kind": "wall",
+            "weight": 3
+          },
+          {
+            "kind": "row",
+            "art": "crystal",
+            "every": 3,
+            "weight": 1
+          },
+          {
+            "kind": "fence",
+            "weight": 1
+          }
+        ]
       },
       "exits": [
         {
@@ -7345,7 +7911,24 @@
           "light": "#A8B8FF",
           "lightStrength": 0.55,
           "variation": 0.12
-        }
+        },
+        "roadside": [
+          {
+            "kind": "row",
+            "art": "moon_lantern_post",
+            "every": 4,
+            "weight": 3
+          },
+          {
+            "kind": "wall",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "snow_bush",
+            "weight": 1
+          }
+        ]
       },
       "exits": [
         {
@@ -7914,7 +8497,28 @@
           "light": "#FFE6B8",
           "lightStrength": 0.4,
           "variation": 0.16
-        }
+        },
+        "roadside": [
+          {
+            "kind": "wall",
+            "weight": 3
+          },
+          {
+            "kind": "fence",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "bush",
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "tree",
+            "every": 2,
+            "weight": 1
+          }
+        ]
       },
       "ambience": {
         "particles": "leaves+dandelions",
@@ -8704,7 +9308,30 @@
           "light": "#FFE0F2",
           "lightStrength": 0.4,
           "variation": 0.16
-        }
+        },
+        "roadside": [
+          {
+            "kind": "row",
+            "art": "lollipop",
+            "every": 2,
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "candy_cane",
+            "every": 3,
+            "weight": 2
+          },
+          {
+            "kind": "fence",
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "flowering_bush",
+            "weight": 1
+          }
+        ]
       },
       "ambience": {
         "particles": "petals+sprinkles",
@@ -9118,7 +9745,30 @@
           "light": "#D8A0C0",
           "lightStrength": 0.5,
           "variation": 0.14
-        }
+        },
+        "roadside": [
+          {
+            "kind": "row",
+            "art": "wisp_lantern",
+            "every": 4,
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "dark_bush",
+            "weight": 2
+          },
+          {
+            "kind": "fence",
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "dark_tree",
+            "every": 2,
+            "weight": 1
+          }
+        ]
       },
       "ambience": {
         "particles": "fireflies",
@@ -9264,9 +9914,9 @@
         "props": [
           {
             "art": "blossom_tree",
-            "count": 80,
+            "count": 210,
             "blocking": true,
-            "cluster": 3,
+            "cluster": 6,
             "sway": true,
             "size": [
               0.7,
@@ -9276,9 +9926,9 @@
           },
           {
             "art": "tree",
-            "count": 80,
+            "count": 220,
             "blocking": true,
-            "cluster": 4,
+            "cluster": 7,
             "sway": true,
             "size": [
               0.7,
@@ -9288,9 +9938,9 @@
           },
           {
             "art": "flowering_bush",
-            "count": 80,
+            "count": 200,
             "blocking": true,
-            "cluster": 2,
+            "cluster": 4,
             "size": [
               0.75,
               1.25
@@ -9299,9 +9949,9 @@
           },
           {
             "art": "bush",
-            "count": 60,
+            "count": 170,
             "blocking": true,
-            "cluster": 2,
+            "cluster": 4,
             "size": [
               0.75,
               1.25
@@ -9310,9 +9960,9 @@
           },
           {
             "art": "daisy",
-            "count": 60,
+            "count": 140,
             "blocking": false,
-            "cluster": 5,
+            "cluster": 6,
             "sway": true,
             "size": [
               0.8,
@@ -9321,7 +9971,18 @@
           },
           {
             "art": "daisy_yellow",
-            "count": 60,
+            "count": 140,
+            "blocking": false,
+            "cluster": 6,
+            "sway": true,
+            "size": [
+              0.8,
+              1.2
+            ]
+          },
+          {
+            "art": "daisy_blue",
+            "count": 90,
             "blocking": false,
             "cluster": 5,
             "sway": true,
@@ -9331,21 +9992,10 @@
             ]
           },
           {
-            "art": "daisy_blue",
-            "count": 30,
-            "blocking": false,
-            "cluster": 4,
-            "sway": true,
-            "size": [
-              0.8,
-              1.2
-            ]
-          },
-          {
             "art": "lilac_tree",
-            "count": 24,
+            "count": 100,
             "blocking": true,
-            "cluster": 3,
+            "cluster": 5,
             "sway": true,
             "size": [
               0.7,
@@ -9355,9 +10005,9 @@
           },
           {
             "art": "lilac_bush",
-            "count": 32,
+            "count": 100,
             "blocking": true,
-            "cluster": 3,
+            "cluster": 4,
             "size": [
               0.75,
               1.25
@@ -9532,6 +10182,94 @@
               1.1
             ],
             "within": 32
+          },
+          {
+            "art": "berry_bush",
+            "count": 60,
+            "blocking": true,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "rock",
+            "count": 30,
+            "blocking": true,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "small_boulder",
+            "count": 30,
+            "blocking": true,
+            "cluster": 2,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "tree_stump",
+            "count": 20,
+            "blocking": true,
+            "size": [
+              0.7,
+              1.3
+            ],
+            "shadow": true
+          },
+          {
+            "art": "haystack",
+            "count": 16,
+            "blocking": true,
+            "shadow": true,
+            "cluster": 2
+          },
+          {
+            "art": "pumpkin_patch",
+            "count": 40,
+            "blocking": false,
+            "cluster": 4,
+            "size": [
+              0.8,
+              1.2
+            ]
+          },
+          {
+            "art": "clover_patch",
+            "count": 50,
+            "blocking": false,
+            "cluster": 4,
+            "size": [
+              0.8,
+              1.2
+            ]
+          },
+          {
+            "art": "poppy_patch",
+            "count": 40,
+            "blocking": false,
+            "cluster": 5,
+            "size": [
+              0.8,
+              1.2
+            ],
+            "sway": true
+          },
+          {
+            "art": "street_lamp",
+            "count": 0,
+            "blocking": true,
+            "shadow": true,
+            "glow": "#FFD980"
           }
         ],
         "accentPatches": 0,
@@ -9555,7 +10293,30 @@
           "light": "#E0F0FF",
           "lightStrength": 0.35,
           "variation": 0.1
-        }
+        },
+        "roadside": [
+          {
+            "kind": "fence",
+            "weight": 3
+          },
+          {
+            "kind": "row",
+            "art": "flowering_bush",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "blossom_tree",
+            "every": 2,
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "street_lamp",
+            "every": 4,
+            "weight": 1
+          }
+        ]
       },
       "town": {
         "size": [
@@ -10359,7 +11120,24 @@
           "light": "#E0ECFF",
           "lightStrength": 0.4,
           "variation": 0.16
-        }
+        },
+        "roadside": [
+          {
+            "kind": "fence",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "flowering_bush",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "blossom_tree",
+            "every": 2,
+            "weight": 2
+          }
+        ]
       },
       "ambience": {
         "particles": "sparkles",
@@ -10725,7 +11503,24 @@
           "light": "#FFE0F0",
           "lightStrength": 0.45,
           "variation": 0.16
-        }
+        },
+        "roadside": [
+          {
+            "kind": "fence",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "moss_bush",
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "swamp_tree",
+            "every": 2,
+            "weight": 1
+          }
+        ]
       },
       "ambience": {
         "particles": "petals+bubbles",
@@ -11061,7 +11856,28 @@
           "light": "#E8B8A0",
           "lightStrength": 0.5,
           "variation": 0.14
-        }
+        },
+        "roadside": [
+          {
+            "kind": "row",
+            "art": "spooky_lantern",
+            "every": 4,
+            "weight": 2
+          },
+          {
+            "kind": "fence",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "thorn_bush",
+            "weight": 1
+          },
+          {
+            "kind": "wall",
+            "weight": 1
+          }
+        ]
       },
       "ambience": {
         "particles": "fireflies+notes",
@@ -11433,7 +12249,28 @@
           "light": "#FFE4A8",
           "lightStrength": 0.4,
           "variation": 0.12
-        }
+        },
+        "roadside": [
+          {
+            "kind": "row",
+            "art": "palm_tree",
+            "every": 3,
+            "weight": 1
+          },
+          {
+            "kind": "fence",
+            "weight": 2
+          },
+          {
+            "kind": "wall",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "bush",
+            "weight": 1
+          }
+        ]
       },
       "ambience": {
         "particles": "sparkles",
@@ -11826,7 +12663,24 @@
           "light": "#B8B0F0",
           "lightStrength": 0.5,
           "variation": 0.14
-        }
+        },
+        "roadside": [
+          {
+            "kind": "row",
+            "art": "wisp_lantern",
+            "every": 4,
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "lilac_bush",
+            "weight": 1
+          },
+          {
+            "kind": "fence",
+            "weight": 2
+          }
+        ]
       },
       "ambience": {
         "particles": "fireflies+zzz",
@@ -12213,7 +13067,24 @@
           "light": "#FFD8B0",
           "lightStrength": 0.45,
           "variation": 0.14
-        }
+        },
+        "roadside": [
+          {
+            "kind": "wall",
+            "weight": 3
+          },
+          {
+            "kind": "row",
+            "art": "cactus",
+            "every": 2,
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "dry_bush",
+            "weight": 1
+          }
+        ]
       },
       "ambience": {
         "particles": "dust",
@@ -12571,7 +13442,24 @@
           "light": "#FFE8C8",
           "lightStrength": 0.4,
           "variation": 0.12
-        }
+        },
+        "roadside": [
+          {
+            "kind": "row",
+            "art": "palm_tree",
+            "every": 3,
+            "weight": 2
+          },
+          {
+            "kind": "fence",
+            "weight": 2
+          },
+          {
+            "kind": "row",
+            "art": "bush",
+            "weight": 1
+          }
+        ]
       },
       "ambience": {
         "particles": "sparkles",
@@ -12957,7 +13845,28 @@
           "light": "#D6E4FF",
           "lightStrength": 0.45,
           "variation": 0.1
-        }
+        },
+        "roadside": [
+          {
+            "kind": "fence",
+            "weight": 2
+          },
+          {
+            "kind": "wall",
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "snow_pine",
+            "every": 2,
+            "weight": 1
+          },
+          {
+            "kind": "row",
+            "art": "snow_bush",
+            "weight": 1
+          }
+        ]
       },
       "ambience": {
         "particles": "snow",
@@ -13296,7 +14205,19 @@
           "lightStrength": 0.45,
           "variation": 0.12
         },
-        "ponds": 7
+        "ponds": 7,
+        "roadside": [
+          {
+            "kind": "wall",
+            "weight": 3
+          },
+          {
+            "kind": "row",
+            "art": "crystal",
+            "every": 3,
+            "weight": 1
+          }
+        ]
       },
       "ambience": {
         "particles": "sparkles+bubbles",
@@ -14086,7 +15007,28 @@
           "light": "#C8FFD0",
           "lightStrength": 0.4,
           "variation": 0.16
-        }
+        },
+        "roadside": [
+          {
+            "kind": "row",
+            "art": "tree",
+            "every": 2,
+            "weight": 3
+          },
+          {
+            "kind": "row",
+            "art": "flowering_bush",
+            "weight": 1
+          },
+          {
+            "kind": "fence",
+            "weight": 1
+          },
+          {
+            "kind": "wall",
+            "weight": 1
+          }
+        ]
       },
       "ambience": {
         "particles": "leaves",

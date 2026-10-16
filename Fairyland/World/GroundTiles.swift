@@ -138,6 +138,23 @@ final class GroundTiles {
         return found
     }
 
+    /// How a road cell takes on the road of the land next door across the band between them: its
+    /// road tile, graded as it is there, mixed in by that land's share of the ground at the cell
+    /// (`Seam.share`, half on the border), in eighths. The ground there comes in patches; a road
+    /// changing in patches looked torn, and changing at the border it was cut straight across
+    /// (playtesting 2026-10-15). Nil where no band reaches.
+    private func roadFade(_ cell: GridPoint) -> ArtLibrary.Fade? {
+        var best: (seam: Int, share: Double)?
+        for index in map.seams.indices {
+            guard let share = map.seams[index].share(cell), share > (best?.share ?? 0) else { continue }
+            best = (index, share)
+        }
+        guard let best, let other = others[best.seam] else { return nil }
+        let eighths = (best.share * 8).rounded()
+        guard eighths > 0 else { return nil }
+        return ArtLibrary.Fade(tile: other.land.theme.path, from: other.from, share: eighths / 8)
+    }
+
     /// The land next door whose patches reach `cell` (its own, or one round it), and which cells of
     /// the 3×3 round it show that land (bit row * 3 + col, row 0 north).
     private func patches(_ cell: GridPoint) -> (seam: Int, mask: Int)? {
@@ -177,7 +194,8 @@ final class GroundTiles {
             layers.append(.init(tile: otherLand.land.theme.ground, mask: other.mask, style: .patch, from: otherLand.from))
         }
         if patch != 0, let accent = theme.accent { layers.append(.init(tile: accent, mask: patch, style: .patch)) }
-        if road != 0 { layers.append(.init(tile: theme.path, mask: road, style: .road)) }
+        let fade = road == 0 || map.seams.isEmpty ? nil : roadFade(cell)
+        if road != 0 { layers.append(.init(tile: theme.path, mask: road, style: .road, fade: fade)) }
         if pond != 0 { layers.append(.init(tile: waterID, mask: poolMask(cell), style: .water)) }
         let near = sea.isEmpty ? 0 : seaPool(cell)
         let coast = near == 0 ? 0 : shore(cell)
@@ -186,7 +204,11 @@ final class GroundTiles {
         if pond == full, coast == 0 {
             chosen = waterVaries ? plain(waterID, variant) : water
         } else if road == full, pond == 0, coast == 0 {
-            chosen = plain(theme.path, variant)
+            if let fade {
+                chosen = group("faded|\(theme.path)|\(fade.key)#\(variant)") { art.fadedTile(theme.path, fade: fade, variant: variant) }
+            } else {
+                chosen = plain(theme.path, variant)
+            }
         } else if let other, let otherLand, other.mask == full, layers.count == 1 {
             // All the land next door's ground.
             let land = otherLand.land
@@ -200,7 +222,7 @@ final class GroundTiles {
         } else {
             // Shorelines depend on where they are (see organicTile), so each gets its own tile.
             let place = pond != 0 || coast != 0 ? "@\(col),\(row)" : ""
-            let key = base + "|" + layers.map { "\($0.style)\($0.mask)\($0.from?.land ?? "")" }.joined(separator: "|") + place
+            let key = base + "|" + layers.map { "\($0.style)\($0.mask)\($0.from?.land ?? "")\($0.fade?.key ?? "")" }.joined(separator: "|") + place
             chosen = group(key) { art.organicTile(base: base, layers: layers, cell: cell, variant: variant) }
         }
         return (chosen, near != 0)

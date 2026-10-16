@@ -16,6 +16,8 @@ import SpriteKit
 ///                  with `face`, a few cells out in front of its tallest summit's face
 ///   summit=n       start up on the map's nth summit (0 the tallest; `WorldMap.summits`), just in
 ///                  front of its top
+///   roadside=k     start on the road by the map's first stretch lined with a fence, wall or row
+///                  (`LandPlanner.planRoadsides`)
 ///   local=n        start a couple of steps in front of the map's nth local (maps.json `locals`, 0
 ///                  first), who starts on their story, the first line in a bubble that stays
 ///   bridge=n       start on the map's nth bridge (0 first: those over the river, then the
@@ -579,6 +581,20 @@ enum DebugLaunch {
                 session.playerPosition = grid.center(of: grid.offset(parts[0], parts[1]))
             }
         }
+        #if DEBUG
+        // `roadside=fence|wall|row`: on the road by the land's first stretch lined with that
+        // (`LandPlanner.planRoadsides`; any if it has none), two cells out from it.
+        if let kind = flags["roadside"], let def = Content.shared.map(session.data.mapID) {
+            let grid = WorldMap(def: def)
+            let lines = LandPlanner(def: def, map: grid, art: ArtLibrary.shared).planRoadsidesForDebug()
+            if let line = lines.first(where: { $0.kind.rawValue == kind }) ?? lines.first, !line.cells.isEmpty {
+                let middle = line.cells[line.cells.count / 2]
+                let road = [Edge.north, .east, .south, .west].map { middle.stepped($0, by: 2) }
+                    .first(where: { grid.contains($0) && grid.ground[$0.row][$0.col] == .path }) ?? middle
+                session.playerPosition = grid.center(of: road)
+            }
+        }
+        #endif
         if let pick = flags["hill"], let def = Content.shared.map(session.data.mapID) {
             let grid = WorldMap(def: def)
             // A range by its place, or `tallest`: the one with the highest top, up its highest trail.

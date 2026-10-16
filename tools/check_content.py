@@ -335,6 +335,28 @@ for map_def in maps.values():
               f"{where} → size must be [smallest, biggest] reach in cells, 5 to 24")
         islands = lakes.get("islands", 0)
         check(isinstance(islands, int) and 0 <= islands <= lakes.get("count", 0), f"{where} → islands must be 0 to count")
+    if "roadside" in theme:
+        # What lines stretches of the roads (`LandPlanner.planRoadsides`).
+        lines = theme["roadside"]
+        where = f"map {map_def['id']} roadside"
+        check("cave" not in theme, f"{where} → not in a cave")
+        check(isinstance(lines, list) and len(lines) > 0, f"{where} → must be a list of what lines the roads")
+        own = {p["art"] for p in theme["props"]}
+        for line in lines if isinstance(lines, list) else []:
+            if not isinstance(line, dict):
+                check(False, f"{where} → each must be {{kind, art, every, weight}}")
+                continue
+            check(set(line) <= {"kind", "art", "every", "weight"}, f"{where} → unknown keys {set(line) - {'kind', 'art', 'every', 'weight'}}")
+            kind = line.get("kind")
+            check(kind in ("fence", "wall", "row"), f"{where} → kind must be fence, wall or row, not {kind}")
+            if kind == "row":
+                check(line.get("art") in own, f"{where} → a row's art must be one of the map's own props, not {line.get('art')}")
+                every = line.get("every", 1)
+                check(isinstance(every, int) and not isinstance(every, bool) and 1 <= every <= 8, f"{where} → every must be 1 to 8 cells")
+            else:
+                check("art" not in line and "every" not in line, f"{where} → only a row has art and every")
+            weight = line.get("weight", 1)
+            check(isinstance(weight, (int, float)) and not isinstance(weight, bool) and weight > 0, f"{where} → weight must be over 0")
     props = [p["art"] for p in theme["props"]] + town.get("lots", []) + list(town.get("streetDecor", {}))
     props += [b["art"] for b in map_def.get("buildings", [])] + [d["art"] for d in map_def.get("decor", [])]
     for art_id in tiles + props:
