@@ -12793,8 +12793,8 @@
     {
       "id": "secret_plain",
       "name": "Hidden Steppe",
-      "width": 125,
-      "height": 97,
+      "width": 126,
+      "height": 94,
       "music": "desert",
       "crowd": {
         "adventurers": 3
@@ -13278,8 +13278,8 @@
           ]
         }
       ],
-      "width": 89,
-      "height": 93,
+      "width": 103,
+      "height": 101,
       "music": "shore",
       "theme": {
         "ground": "tile_sand",
