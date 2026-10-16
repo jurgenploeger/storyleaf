@@ -136,6 +136,16 @@ extension MenuView {
         if item.toy == true, !session.data.pets.isEmpty {
             return ItemInfoCard.Action(title: L("Give"), icon: .gift, run: pick)
         }
+        // A piece of what a quest asks you to bring: carve it or piece it together, once the bag
+        // holds all it takes (`ItemDef.make`).
+        if let made = session.handmade(using: item) {
+            let title = made.make == .join ? L("Piece together {item}", ["item": made.name]) : L("Carve {item}", ["item": made.name])
+            return ItemInfoCard.Action(title: title, icon: .hammer, enabled: session.canCraft(made)) {
+                close()
+                session.make(made.id)
+                session.save()
+            }
+        }
         return nil
     }
 

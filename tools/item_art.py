@@ -1377,6 +1377,146 @@ for _id, _kind, _level, _name, _draw, _desc in MATERIALS:
     globals()["draw_" + _id] = _draw
 
 
+# ---------------------------------------------------------------- a quest's pieces
+# What a quest asks you to bring (content/quests.json `bring`): won from its monsters, found in a
+# chest, carved or pieced together from the bag (items.json `make`).
+
+def draw_tuft_of_wool(c):
+    """A soft cloud of lamb's wool, a nibbled bite out of one side."""
+    for (x, y, r) in ((12, 18, 7), (19, 15, 7.5), (21, 21, 6), (14, 23, 5.5)):
+        c.disc(x, y, r, SHEEP[1])
+    for (x, y) in ((7, 22), (8, 23), (7, 23)):          # the bite
+        c.set(x, y, None)
+    c.shade(lambda x, y, col: col == SHEEP[1] and x + y > 40, SHEEP[0])
+    c.shade(lambda x, y, col: col == SHEEP[1] and x + y < 26, SHEEP[2])
+    for (x, y) in ((13, 15), (18, 11), (22, 17), (16, 20)):
+        c.set(x, y, SHEEP[0])                        # curls
+
+
+def draw_driftwood_piece(c):
+    """A sea-worn branch, silver-grey, a knot in it and a curl of weed."""
+    drift = [hexc("8a7e70"), hexc("c4b8a4"), hexc("eee6d4")]
+    c.line(5, 23, 27, 10, drift[1], width=5)
+    c.line(19, 14, 23, 20, drift[1], width=3)            # a stub of a branch
+    c.shade(lambda x, y, col: col == drift[1] and x + y > 31, drift[0])
+    c.shade(lambda x, y, col: col == drift[1] and x + y < 27, drift[2])
+    c.ring(14, 18, 2.2, 1, drift[0])                      # a knot
+    c.line(8, 21, 24, 12, drift[2])                      # grain
+    c.line(25, 9, 29, 14, GREEN[0])                      # a curl of seaweed
+    c.set(28, 15, GREEN[1])
+
+
+def draw_driftwood_flute(c):
+    """A little flute carved from driftwood, finger holes along it and a cord at its end."""
+    drift = [hexc("8a7e70"), hexc("c4b8a4"), hexc("eee6d4")]
+    c.line(5, 26, 26, 5, drift[1], width=5)
+    c.shade(lambda x, y, col: col == drift[1] and x + y > 31, drift[0])
+    c.shade(lambda x, y, col: col == drift[1] and x + y < 30, drift[2])
+    c.disc(24.5, 6.5, 1.2, drift[0])                     # the mouthpiece
+    for t in (0.3, 0.42, 0.54, 0.66):                    # finger holes
+        c.disc(5 + 21 * t, 26 - 21 * t, 0.8, OUTLINE)
+    c.line(6, 25, 3, 30, RED[1])                         # a red cord
+    c.set(2, 30, RED[2])
+
+
+def draw_sailcloth_scrap(c):
+    """A torn corner of sailcloth, a seam stitched across it and a brass ring at its corner."""
+    c.poly([(5, 6), (26, 5), (24, 13), (27, 19), (20, 22), (22, 27), (9, 26), (6, 18), (8, 12)], CLOTH[1])
+    c.shade(lambda x, y, col: col == CLOTH[1] and x + y > 36, CLOTH[0])
+    c.shade(lambda x, y, col: col == CLOTH[1] and x + y < 20, CLOTH[2])
+    for x in range(7, 24, 2):                            # the seam
+        c.set(x, 11 + (x % 4 == 1), CLOTH[0])
+    c.ring(7.5, 8, 2.6, 1.4, GOLD[1])                   # a grommet
+    c.line(14, 16, 20, 15, NAVY[1])                       # a stripe of the old sail's blue
+    c.line(13, 17, 19, 16, NAVY[0])
+
+
+def draw_starwood(c):
+    """A pale log that glows: starlight caught in its grain."""
+    log(c, [hexc("8a9ab8"), hexc("c4d4ee"), hexc("f2f8ff")], [hexc("8a8ad8"), hexc("c8c8ff"), WHITE])
+    for (x, y) in ((9, 21), (14, 19), (12, 16)):         # sparks in the bark
+        c.set(x, y, GOLD[2])
+    c.set(23, 11, GOLD[2])
+
+
+def draw_star_figurehead(c):
+    """A carved maiden holding a gold star up over her head, her hair streaming back like waves."""
+    c.line(17, 9, 25, 15, TEAK[1], width=3)                              # her hair, streaming back
+    c.line(18, 12, 26, 21, TEAK[0], width=2)
+    c.poly([(9, 28), (13, 15), (19, 15), (22, 28)], RATTAN[1])            # her gown, carved
+    c.shade(lambda x, y, col: col == RATTAN[1] and x > 18, RATTAN[0])
+    c.shade(lambda x, y, col: col == RATTAN[1] and x < 13, RATTAN[2])
+    for y in (19, 23):                                                   # folds
+        c.line(12, y, 20, y + 1, RATTAN[0])
+    c.disc(16, 11.5, 3.4, PALE[1])                                       # her face, paler wood
+    c.set(17, 11, OUTLINE)                                               # an eye
+    c.shade(lambda x, y, col: col == PALE[1] and x + y < 25, PALE[2])
+    c.line(13, 14, 10.5, 7, PALE[1], width=2)                            # her arm, raised
+    for k in range(10):                                                  # the gold star
+        r = 4.2 if k % 2 == 0 else 1.9
+        a = -math.pi / 2 + k * math.pi / 5
+        c.line(10.5, 4.5, 10.5 + r * math.cos(a), 4.5 + r * math.sin(a), GOLD[1])
+    c.set(10, 4, GOLD[2])
+    c.line(10, 28, 21, 28, TEAK[0], width=2)                             # her plinth
+
+
+def chart_paper(c, points):
+    """A torn piece of old sea chart: parchment with a faint grid."""
+    paper = [hexc("b8945a"), hexc("ecd29a"), hexc("fff2cc")]
+    c.poly(points, paper[1])
+    c.shade(lambda x, y, col: col == paper[1] and x + y > 40, paper[0])
+    c.shade(lambda x, y, col: col == paper[1] and x + y < 18, paper[2])
+    c.shade(lambda x, y, col: col in paper and (x % 7 == 3 or y % 7 == 3), hexc("d8bc84"))
+
+
+def draw_chart_piece_compass(c):
+    """The chart's corner with a compass rose on it."""
+    chart_paper(c, [(4, 4), (27, 4), (24, 11), (28, 18), (21, 22), (25, 28), (4, 28)])
+    for (dx, dy) in ((0, -6), (6, 0), (0, 6), (-6, 0)):                 # the rose
+        c.line(12, 16, 12 + dx, 16 + dy, NAVY[1])
+    c.line(12, 16, 12, 9, RED[1])                                       # north, in red
+    c.disc(12, 16, 1.2, GOLD[1])
+
+
+def draw_chart_piece_reef(c):
+    """The chart's middle: a reef, and a dotted way through it."""
+    chart_paper(c, [(6, 3), (25, 5), (28, 12), (24, 18), (27, 28), (8, 27), (4, 20), (7, 12)])
+    for (x, y, r) in ((11, 10, 2), (15, 13, 1.6), (20, 9, 1.8), (18, 20, 2.2), (10, 21, 1.5)):
+        c.disc(x, y, r, TEAL[0])                                       # the rocks
+    for t in range(0, 9):                                               # the safe way, dotted
+        c.set(7 + t * 2.3, 26 - t * 2.4, RED[1])
+
+
+def draw_chart_piece_isle(c):
+    """The chart's corner with a star-shaped island drawn on it."""
+    chart_paper(c, [(5, 4), (28, 4), (28, 28), (9, 28), (5, 21), (9, 15), (4, 9)])
+    for k in range(10):                                                 # the island, a star
+        r = 6 if k % 2 == 0 else 2.8
+        a = -math.pi / 2 + k * math.pi / 5
+        c.line(19, 15, 19 + r * math.cos(a), 15 + r * math.sin(a), GREEN[1])
+    c.disc(19, 15, 2, GREEN[1])
+    c.set(19, 15, GOLD[2])
+    c.line(10, 25, 15, 21, RED[1])                                      # an X near it
+    c.line(10, 21, 15, 25, RED[1])
+
+
+def draw_star_chart(c):
+    """The whole chart, pieced together, rolled a little at the top, a gold star on the island."""
+    chart_paper(c, [(4, 6), (28, 6), (28, 28), (4, 28)])
+    c.line(4, 6, 28, 6, hexc("b8945a"), width=3)                       # rolled at the top
+    c.line(12, 7, 10, 28, hexc("b8945a"))                                # where the pieces meet
+    c.line(20, 7, 22, 28, hexc("b8945a"))
+    for (dx, dy) in ((0, -4), (4, 0), (0, 4), (-4, 0)):                  # the rose
+        c.line(7, 22, 7 + dx, 22 + dy, NAVY[1])
+    for t in range(0, 6):                                                # the way through the reef
+        c.set(11 + t * 2, 23 - t * 1.6, RED[1])
+    for k in range(10):                                                  # the island
+        r = 4 if k % 2 == 0 else 1.8
+        a = -math.pi / 2 + k * math.pi / 5
+        c.line(24, 13, 24 + r * math.cos(a), 13 + r * math.sin(a), GOLD[1])
+    c.set(24, 13, GOLD[2])
+
+
 DRAWINGS = {name[5:]: fn for name, fn in globals().items() if name.startswith("draw_")}
 # Not drawn here: the Potion is a Retro Diffusion sprite (rd_pro__fantasy) and the Hi-Potion,
 # Ether and Hi-Ether are palette swaps of it (`derive` in art/assets.json).
@@ -1440,6 +1580,16 @@ PROMPTS = {  # for a later Retro Diffusion upgrade (python3 tools/rd.py generate
     "toy_ball": "bouncy red rubber ball with a yellow band and a star",
     "toy_bear": "brown teddy bear with a red bow",
     "toy_bubbles": "bubble wand blowing shiny bubbles",
+    "tuft_of_wool": "soft tuft of white lamb's wool",
+    "driftwood_piece": "piece of silver grey driftwood with a curl of seaweed",
+    "driftwood_flute": "small flute carved from driftwood with a red cord",
+    "sailcloth_scrap": "torn scrap of cream sailcloth with a blue stripe and a brass ring",
+    "starwood": "pale glowing log with sparkles in its bark",
+    "star_figurehead": "carved wooden ship figurehead of a maiden holding up a gold star",
+    "chart_piece_compass": "torn corner of an old sea chart with a compass rose",
+    "chart_piece_reef": "torn piece of an old sea chart showing a reef",
+    "chart_piece_isle": "torn corner of an old sea chart with a star shaped island",
+    "star_chart": "old sea chart pieced together, a gold star island on it",
 }
 
 

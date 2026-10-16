@@ -13248,34 +13248,6 @@
             "Somebody hid a chest at the top of the peak. Achoo!",
             "I'd fetch it myself, but... achoo! ...the pollen's worse up there."
           ]
-        },
-        {
-          "name": "Captain Brine",
-          "race": "dwarf",
-          "gender": "male",
-          "hair": "ginger",
-          "style": "messy",
-          "outfit": "blue",
-          "at": "harbor",
-          "roam": 1,
-          "props": [
-            {
-              "art": "barrels",
-              "x": 1,
-              "y": 1
-            },
-            {
-              "art": "wooden_crates",
-              "x": -1,
-              "y": 1
-            }
-          ],
-          "lines": [
-            "Fair winds to Starfall Isle! Walk up the pier and step aboard when you're ready.",
-            "Out east there's an island that glows at night. No, I'm not joking.",
-            "The crossing's short. The sea's kind on this side of the world.",
-            "Bring a coat. Starlight is chilly."
-          ]
         }
       ],
       "width": 89,
@@ -13530,7 +13502,8 @@
         {
           "edge": "east",
           "to": "starfall_isle",
-          "ship": true
+          "ship": true,
+          "requires": "the_star_chart"
         }
       ],
       "encounters": {
@@ -13572,6 +13545,27 @@
           "summit": 0,
           "greeting": "A chest, left at the top for whoever climbs this far.",
           "gives": "firepeak_ring"
+        },
+        {
+          "id": "captain_brine",
+          "name": "Captain Brine",
+          "role": "quests",
+          "art": "npc_captain",
+          "at": "harbor",
+          "x": 0,
+          "y": 0,
+          "greeting": "Ahoy! The Gull's the only ship that knows the way to Starfall Isle, and she's not ready to sail."
+        },
+        {
+          "id": "sneezle_chart_chest",
+          "name": "Treasure Chest",
+          "role": "chest",
+          "art": "treasure_chest",
+          "x": 6,
+          "y": -5,
+          "greeting": "An old chest by the path, a scrap of sea chart caught in its lid.",
+          "gives": "chart_piece_compass",
+          "quest": "the_star_chart"
         }
       ],
       "decor": [

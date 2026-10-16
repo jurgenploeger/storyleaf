@@ -1343,6 +1343,16 @@ final class BattleController {
             lines.append(L("{name} dropped {item}!", ["name": foe.name, "item": gear.name]))
         }
 
+        // What a quest you're on wants of these monsters (`QuestDef.drops`): a sail's scraps, a piece
+        // of a map.
+        for foe in beaten {
+            guard case .wild = foe.source, let id = foe.speciesID else { continue }
+            for item in session.questDrops(from: id) {
+                loot[item.id, default: 0] += 1
+                lines.append(L("{name} dropped {item}!", ["name": foe.name, "item": item.name]))
+            }
+        }
+
         // Monster cards (Fairyland Online's card collection): now and then a beaten monster leaves
         // its card, a rare one or a boss more often.
         for foe in beaten {

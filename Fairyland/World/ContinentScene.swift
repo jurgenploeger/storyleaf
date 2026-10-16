@@ -617,7 +617,16 @@ final class ContinentScene: SKScene {
         // Into a cave through its mouth, or aboard a ship at the end of a harbor's pier, over the
         // sea to the land it sails to: off where you are, behind the card.
         let cave = land.map.exit(at: session.mapCell).flatMap { Content.shared.world[$0.to] == nil ? $0 : nil }
-        if let exit = cave ?? land.map.boarding(at: session.mapCell) {
+        let ship = land.map.boarding(at: session.mapCell)
+        // A ship a quest has to ready first (`MapDef.Exit.requires`) stays moored: said once as you
+        // step up to it.
+        if let ship, !session.canTravel(ship) {
+            if !refusedBoarding { refuseBoarding(ship) }
+            refusedBoarding = true
+            return
+        }
+        refusedBoarding = false
+        if let exit = cave ?? ship {
             isInputLocked = true
             player.path = []
             player.setWalking(false)
@@ -990,6 +999,19 @@ final class ContinentScene: SKScene {
             }
         }
         arrive(in: def)
+    }
+
+    /// Whether you've stepped up to a ship that won't sail yet (`checkCell`), so it's said once.
+    private var refusedBoarding = false
+
+    /// Why a ship won't sail yet: the quest that readies it, and who asks it.
+    private func refuseBoarding(_ exit: MapDef.Exit) {
+        let content = Content.shared
+        guard let quest = exit.requires.flatMap(content.quest) else { return }
+        let giver = content.npc(quest.giver)?.name ?? quest.giver
+        let line = L("The ship won't sail yet. Finish “{quest}” for {giver} first.", ["quest": quest.title, "giver": giver])
+        heroSay(line)
+        session.post(line, .quest)
     }
 
     /// Over how many seconds a land's song fades out as you walk into the next, and the next one's

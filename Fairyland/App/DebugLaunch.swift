@@ -29,6 +29,7 @@ import SpriteKit
 ///                  first), its ship moored out at the end
 ///   equip=a+b      start wearing these items (ids from content/items.json, joined with +)
 ///   bag=a+b        put these items in the bag
+///   taken=a+b      these quests on, not done yet (a carving quest's Carve button on its piece's card)
 ///   done=a+b       these quests (ids from content/quests.json) already handed in (their treasures
 ///                  come by post, as for a save from before they gave them)
 ///   pet=<species>  a companion of that species (content/monsters.json), out with you
@@ -513,6 +514,9 @@ enum DebugLaunch {
         }
         // Like a save from before those quests gave their treasures: they come by post.
         if flags["done"] != nil { session.deliverQuestTreasures() }
+        for id in flags["taken"]?.split(separator: "+").map(String.init) ?? [] where Content.shared.quest(id) != nil {
+            session.data.quests[id] = QuestProgress(state: .active, count: 0)
+        }
         if let species = flags["pet"], let pet = session.makePet(species: species, level: max(1, session.data.hero.level - 15)) {
             session.addPet(pet, countsForQuests: false)
             session.data.activePetID = pet.id

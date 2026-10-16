@@ -276,7 +276,11 @@ harbor_starfall | newgame,level=135,map=starfall_isle,harbor=0,weather=clear,hou
 starfall       | newgame,level=135,map=starfall_isle,weather=clear,hour=11 | 8
 starfall_land  | newgame,level=135,map=starfall_isle,landscape,weather=clear,hour=11 | 8
 starfall_night | newgame,level=135,map=starfall_isle,landscape,weather=clear,hour=22 | 8
-local_captain  | newgame,level=130,map=hachoo_island,local=2,weather=clear,hour=12 | 8
+quest_captain  | newgame,level=126,map=hachoo_island,harbor=0,npc=captain_brine,done=a_spare_sail+a_figurehead_for_the_gull,weather=clear,hour=12 | 8
+# Quests that ask you to bring something, not only to beat monsters (playtesting 2026-10-16, after
+# RuneScape's): the Carve button on a quest's piece once the bag holds the rest, and a quest asking for wool.
+quest_carve    | newgame,level=12,map=pineapple_shore,taken=a_flute_for_shelly,bag=driftwood_piece+poplar+poplar,menu=bag,inspect=driftwood_piece | 8
+quest_bring    | newgame,level=6,map=sunny_meadow,done=lost_lambs,taken=wool_for_the_lambs,bag=tuft_of_wool+tuft_of_wool,menu=quests | 8
 # The people who live on the maps (`MapDef.Local`, `Crowd`): a couple of steps from one, who starts on
 # their story (a fisher at the end of a jetty, a girl at a bridge, a farmer among his things, a dancer
 # on an island, a mapmaker up a mountain, a mole by a cave's mouth, a tin man), in German and Japanese too.

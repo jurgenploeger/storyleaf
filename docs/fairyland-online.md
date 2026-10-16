@@ -757,6 +757,26 @@ since 0.4.0, at the playtester's request, 2026-10-11: a level-103 hero was told 
 same day closed a gap with nothing new between levels 96 and 109: the Old Ox on the Hidden Steppe (Aesop's
 four oxen and the lion; 100, 106, 114) and the Little Crab on Sneezle Isle (the Japanese tale of the monkey
 and the crab; 124, 130), both ours.
+Since 0.7.11 a quest can ask you to bring something, not only to beat monsters (playtesting 2026-10-16:
+"Maybe to get to the islands you need to complete a quest. The quests shouldn't only be about defeating
+monsters, but maybe also obtaining an item or carving one. Check the runescape quests for inspiration"),
+ours, after RuneScape's: Sheep Shearer and Imp Catcher (things won from the monsters about), Lost City (a
+Dramen branch won from the tree's guardian spirit and carved into a staff with a knife) and Dragon Slayer
+(a ship to buy and patch with planks and nails, a map of Crandor in three pieces from three places, a
+captain to sail it) ([RuneScape Classic Wiki](https://classic.runescape.wiki/w/Dragon_Slayer),
+[RuneScape Wiki](https://runescape.wiki/w/Dramen_Staff)). A `bring` quest wants `count` of an item in the
+bag and takes them when you hand it in; while you're on it, its monsters drop them (quests.json `drops`,
+a chance a beaten monster, up to what it wants, none once you have it), a chest opens for it (maps.json
+chest `quest`), or you make it by hand from the bag (items.json `make`: carve or join, from its `recipe`,
+the Carve and Piece together buttons on a piece's card, `GameSession.make`). A quest's pieces are materials
+of their own (`material: quest`), never sold or dropped otherwise. Captain Brine at Sneezle Isle's harbor
+(an NPC at a landmark, `NPCDef.at`) readies the ship to Starfall Isle in three: A Spare Sail (4 Sailcloth
+Scraps from the fire crabs, 122), A Figurehead for the Gull (Starwood from the wood monkeys, carved with 3
+Red Yew, 124) and The Star Chart (three pieces: in an old chest on Sneezle Isle, from the Hidden Steppe's
+Earth Lions and from a Mint Shadow Ape; pieced together, 126). Its ship stays moored till then (the exit's
+`requires`), saying which quest it waits on as you step up to it; the ship back never does. Two early ones
+show the same: Wool for the Lambs (Mother Sheep, 5 Tufts of Wool from the golden hamsters, 5) and A Flute
+for Shelly (Old Shelly, a Piece of Driftwood from the wood crabs carved with 2 White Poplar, 10).
 Quest treasures (ours, since 0.4.2, asked for in playtesting 2026-10-11: quests should give rare items and
 armour you don't get from fights; no source we could reach says what FO's quests paid in gear): 28 pieces of
 armour, boots, gloves, necklaces and rings, each from one story quest between levels 14 and 190 and themed on

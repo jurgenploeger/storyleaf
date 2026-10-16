@@ -1,5 +1,5 @@
 {
-  "_about": "Items. `art` is the item's sprite (art/sprites/item_<id>.png, drawn by tools/item_art.py); `icon` is a GameIcon name (Fairyland/UI/GameIcon.swift) used when there's no art; weapons are drawn in the hero's hand from their art (or icon). Armour `sheets` (per race) swaps in a whole walk sheet while it's worn (Retro Diffusion art in art/sprites; only the skin colour applies), recoloured by `tint` for the rare colour variants bosses drop. Armour `pattern` adds finer detail to the sprite (engraved | scales | fur | runes | pockets). Armour `recolor` changes the outfit colours while worn and `wear` its cut on the hero's sprite (vest | mail | plate | robe | cloak; \"boots\" for footwear), drawn by Fairyland/Art/GearOverlay.swift. `accent` (#RRGGBB) is the trim colour on the sprite and an accessory's sparkle. `glow` (#RRGGBB) gives a magic weapon a soft light at `glowAt` ([x, y] in its 32×32 art): a halo in the icon (tools/item_art.py) and a gentle pulse while held. type: consumable | weapon | armor | gloves | necklace | boots | accessory (rings, charms and bands) | material. `classes` limits who can equip it (omit = everyone); `level` is the level needed. Materials (type material; `material` is wood | metal | gem | hide) drop from monsters of at least their `level`. `recipe` is what a blacksmith needs to forge the item. Companion toys (`toy`, Fairyland Online's Pet Toys) are consumables given to a companion from the bag: they raise its `stats` for good, up to ten toys a companion (GameSession.giveToy). Seal Stones (`capture`) are thrown in battle to befriend a monster and used up whether they hold or not: `sealPower` is how many times likelier than a plain one a stone is to hold (1 unless set), and a `sure` one (the Wishing Seal) never fails (BattleEngine.captureStatus).",
+  "_about": "Items. `art` is the item's sprite (art/sprites/item_<id>.png, drawn by tools/item_art.py); `icon` is a GameIcon name (Fairyland/UI/GameIcon.swift) used when there's no art; weapons are drawn in the hero's hand from their art (or icon). Armour `sheets` (per race) swaps in a whole walk sheet while it's worn (Retro Diffusion art in art/sprites; only the skin colour applies), recoloured by `tint` for the rare colour variants bosses drop. Armour `pattern` adds finer detail to the sprite (engraved | scales | fur | runes | pockets). Armour `recolor` changes the outfit colours while worn and `wear` its cut on the hero's sprite (vest | mail | plate | robe | cloak; \"boots\" for footwear), drawn by Fairyland/Art/GearOverlay.swift. `accent` (#RRGGBB) is the trim colour on the sprite and an accessory's sparkle. `glow` (#RRGGBB) gives a magic weapon a soft light at `glowAt` ([x, y] in its 32×32 art): a halo in the icon (tools/item_art.py) and a gentle pulse while held. type: consumable | weapon | armor | gloves | necklace | boots | accessory (rings, charms and bands) | material. `classes` limits who can equip it (omit = everyone); `level` is the level needed. Materials (type material; `material` is wood | metal | gem | hide) drop from monsters of at least their `level`; a quest's pieces are `material: quest` (none for sale, never dropped but by the quests that want them, content/quests.json `drops`). `recipe` is what a blacksmith needs to forge the item; one with `make` (carve | join) is made by hand from the bag instead, for a quest that asks you to bring it. Companion toys (`toy`, Fairyland Online's Pet Toys) are consumables given to a companion from the bag: they raise its `stats` for good, up to ten toys a companion (GameSession.giveToy). Seal Stones (`capture`) are thrown in battle to befriend a monster and used up whether they hold or not: `sealPower` is how many times likelier than a plain one a stone is to hold (1 unless set), and a `sure` one (the Wishing Seal) never fails (BattleEngine.captureStatus).",
   "items": [
     {
       "id": "potion",
@@ -4395,6 +4395,132 @@
       },
       "level": 192,
       "description": "Gauntlets of green steel from the crest above Emerald Road, where the dragon likes to sun itself."
+    },
+    {
+      "id": "tuft_of_wool",
+      "icon": "clover",
+      "art": "item_tuft_of_wool",
+      "name": "Tuft of Wool",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 4,
+      "description": "Soft lamb's wool, a little nibbled at the edges."
+    },
+    {
+      "id": "driftwood_piece",
+      "icon": "leaf",
+      "art": "item_driftwood_piece",
+      "name": "Piece of Driftwood",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 10,
+      "description": "Smoothed by the sea and light as a feather. Good for carving."
+    },
+    {
+      "id": "driftwood_flute",
+      "icon": "music",
+      "art": "item_driftwood_flute",
+      "name": "Driftwood Flute",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 10,
+      "description": "Carved by your own hand. It plays a little flat, but Shelly won't mind.",
+      "recipe": {
+        "driftwood_piece": 1,
+        "poplar": 2
+      },
+      "make": "carve"
+    },
+    {
+      "id": "sailcloth_scrap",
+      "icon": "wind",
+      "art": "item_sailcloth_scrap",
+      "name": "Sailcloth Scrap",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 122,
+      "description": "Salty sailcloth, dragged into a fire crab's burrow."
+    },
+    {
+      "id": "starwood",
+      "icon": "pine-tree",
+      "art": "item_starwood",
+      "name": "Starwood",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 124,
+      "description": "Pale wood that glows faintly, as if it remembers the starlight. The wood monkeys hoard it."
+    },
+    {
+      "id": "star_figurehead",
+      "icon": "star",
+      "art": "item_star_figurehead",
+      "name": "Star Figurehead",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 124,
+      "description": "A maiden holding up a star, carved to watch the sky from a ship's prow.",
+      "recipe": {
+        "starwood": 1,
+        "red_yew": 3
+      },
+      "make": "carve"
+    },
+    {
+      "id": "chart_piece_compass",
+      "icon": "map",
+      "art": "item_chart_piece_compass",
+      "name": "Chart Piece: Compass",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 126,
+      "description": "The corner of a sea chart with a compass rose on it."
+    },
+    {
+      "id": "chart_piece_reef",
+      "icon": "map",
+      "art": "item_chart_piece_reef",
+      "name": "Chart Piece: Reef",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 126,
+      "description": "The middle of a sea chart: a reef, and a safe way through it."
+    },
+    {
+      "id": "chart_piece_isle",
+      "icon": "map",
+      "art": "item_chart_piece_isle",
+      "name": "Chart Piece: Isle",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 126,
+      "description": "The corner of a sea chart with a star-shaped island drawn on it."
+    },
+    {
+      "id": "star_chart",
+      "icon": "map",
+      "art": "item_star_chart",
+      "name": "Star Chart",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 126,
+      "description": "The way to Starfall Isle by the stars. Glued a little crooked, but true.",
+      "recipe": {
+        "chart_piece_compass": 1,
+        "chart_piece_reef": 1,
+        "chart_piece_isle": 1
+      },
+      "make": "join"
     }
   ]
 }

@@ -3786,6 +3786,32 @@
       }
     },
     {
+      "id": "npc_captain",
+      "kind": "walk_sheet",
+      "frame": 48,
+      "directions": [
+        "up",
+        "right",
+        "down",
+        "left"
+      ],
+      "derive": {
+        "from": "dwarf_npc_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 222,
+            "saturation": 0.75,
+            "value": 0.8
+          }
+        ]
+      }
+    },
+    {
       "id": "npc_chief",
       "kind": "walk_sheet",
       "frame": 48,
@@ -6161,6 +6187,116 @@
       "kind": "item",
       "request": {
         "prompt": "dragon god whip, a whip, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_tuft_of_wool",
+      "kind": "item",
+      "request": {
+        "prompt": "soft tuft of white lamb's wool, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_driftwood_piece",
+      "kind": "item",
+      "request": {
+        "prompt": "piece of silver grey driftwood with a curl of seaweed, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_driftwood_flute",
+      "kind": "item",
+      "request": {
+        "prompt": "small flute carved from driftwood with a red cord, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_sailcloth_scrap",
+      "kind": "item",
+      "request": {
+        "prompt": "torn scrap of cream sailcloth with a blue stripe and a brass ring, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_starwood",
+      "kind": "item",
+      "request": {
+        "prompt": "pale glowing log with sparkles in its bark, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_star_figurehead",
+      "kind": "item",
+      "request": {
+        "prompt": "carved wooden ship figurehead of a maiden holding up a gold star, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_chart_piece_compass",
+      "kind": "item",
+      "request": {
+        "prompt": "torn corner of an old sea chart with a compass rose, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_chart_piece_reef",
+      "kind": "item",
+      "request": {
+        "prompt": "torn piece of an old sea chart showing a reef, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_chart_piece_isle",
+      "kind": "item",
+      "request": {
+        "prompt": "torn corner of an old sea chart with a star shaped island, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_star_chart",
+      "kind": "item",
+      "request": {
+        "prompt": "old sea chart pieced together, a gold star island on it, game item icon",
         "prompt_style": "rd_tile__tile_object",
         "width": 32,
         "height": 32,

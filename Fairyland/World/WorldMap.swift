@@ -467,8 +467,15 @@ nonisolated final class WorldMap: @unchecked Sendable {
         return GridPoint(col: Int(top.x.rounded(.down)) + x, row: Int(top.y.rounded(.down)) + y)
     }
 
-    /// Where an NPC stands (`spot(x:y:summit:)`).
-    func spot(of npc: NPCDef) -> GridPoint { spot(x: npc.x, y: npc.y, summit: npc.summit) }
+    /// Where an NPC stands (`spot(x:y:summit:)`), or by its landmark (`NPCDef.at`), on the nearest
+    /// cell you can walk on.
+    func spot(of npc: NPCDef) -> GridPoint {
+        if let name = npc.at, let mark = landmark(name, which: npc.which ?? 0) {
+            let cell = GridPoint(col: mark.col + npc.x, row: mark.row + npc.y)
+            return nearestWalkable(to: cell) ?? cell
+        }
+        return spot(x: npc.x, y: npc.y, summit: npc.summit)
+    }
 
     /// Where a local lives or walks to (`MapDef.Place`): `x` and `y` steps from its landmark (from
     /// the middle if the map hasn't one), from a summit's top or from the middle, on the nearest
@@ -1669,7 +1676,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// so it gets a wider clearing. You can still walk there.
     private func keepNPCsInView() {
         // Those up on a summit once the hills are raised.
-        for npc in def.npcs ?? [] where npc.summit == nil { keepInView(offset(npc.x, npc.y), wide: npc.role == .boss) }
+        for npc in def.npcs ?? [] where npc.summit == nil {
+            keepInView(npc.at == nil ? offset(npc.x, npc.y) : spot(of: npc), wide: npc.role == .boss)
+        }
     }
 
     /// Keeps scenery off an NPC's spot and the ground in front of it, wider round a boss.

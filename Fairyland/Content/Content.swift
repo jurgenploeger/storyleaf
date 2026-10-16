@@ -322,12 +322,31 @@ nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
     /// Magic weapons: a soft light while held, "#RRGGBB", centred on `glowAt` ([x, y] in the 32×32 art).
     let glow: String?
     let glowAt: [Double]?
+    /// Made by hand from the bag rather than at a smith (a quest's: RuneScape's quests have you
+    /// carve a staff from a branch, piece a map together): from its `recipe`, carved or joined.
+    let make: Make?
+
+    nonisolated enum Make: String, Decodable, Sendable {
+        case carve, join
+    }
 }
 
 nonisolated struct QuestDef: Decodable, Identifiable, Sendable {
     nonisolated enum ObjectiveType: String, Decodable, Sendable {
-        /// `cards`: kinds of monster card in the Monster Book, `count` of them.
-        case defeat, capture, reachLevel, chooseClass, collect, hatch, cards
+        /// `cards`: kinds of monster card in the Monster Book, `count` of them. `bring`: `count` of
+        /// the item `target` in the bag, handed over when the quest's done (from monsters, `drops`,
+        /// a chest, a shop, or made by hand, `ItemDef.make`).
+        case defeat, capture, reachLevel, chooseClass, collect, hatch, cards, bring
+    }
+
+    /// An item a quest's monsters drop while it wants them (`bring`): beaten wild monsters of the
+    /// species `from` leave one `chance` of the time, till you have `upTo` (the quest's count unless
+    /// set).
+    nonisolated struct Drop: Decodable, Sendable {
+        let item: String
+        let from: [String]
+        let chance: Double
+        let upTo: Int?
     }
 
     /// Asked when accepting; the answer decides which companion hatches from the egg.
@@ -364,6 +383,8 @@ nonisolated struct QuestDef: Decodable, Identifiable, Sendable {
     let reward: Reward
     /// Items handed over when you accept (e.g. Seal Stones for the capture quest).
     let starterItems: [String]?
+    /// What its monsters drop while it's on (`Drop`).
+    let drops: [Drop]?
 }
 
 nonisolated enum Edge: String, Codable, Sendable {
@@ -390,6 +411,10 @@ nonisolated struct NPCDef: Decodable, Identifiable, Sendable {
     let name: String
     let role: NPCRole
     let art: String
+    /// By a landmark (`MapDef.Place.at`: a harbor's pier, say), the `which`th of its kind, `x` and
+    /// `y` stepping on from it; else `x` and `y` out from the middle.
+    let at: String?
+    let which: Int?
     let x: Int
     let y: Int
     /// Up on one of the map's summits rather than out from its middle (`WorldMap.summits`, the
