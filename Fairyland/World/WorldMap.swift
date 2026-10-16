@@ -862,8 +862,16 @@ nonisolated final class WorldMap: @unchecked Sendable {
             // mouth is in (`Region.Road`), straight at the mouth for the last few cells, and up to it.
             let way = Self.outward(into)
             let front = CGPoint(x: CGFloat(road.at.col) + 0.5, y: CGFloat(road.at.row) + 0.5)
-            let stops = [point(def.hub ?? [0, 0])] + road.via.map(point) + [front + way * -CGFloat(Self.gateApproach)]
-            carve(through: stops, then: [front + way * 0.6], halfWidth: 1.05, &rng)
+            let start = front + way * -CGFloat(Self.gateApproach), mouth = front + way * 0.6
+            var stops = [point(def.hub ?? [0, 0])] + road.via.map(point)
+            let around = aroundGate(from: stops[stops.count - 1], front: front, way: way)
+            if around.isEmpty {
+                carve(through: stops + [start], then: [mouth], halfWidth: 1.05, &rng)
+            } else {
+                // Swaying out round the mountain's side, then across in front of its face, steady.
+                stops += around
+                carve(through: stops, then: [start, mouth], halfWidth: 1.05, &rng)
+            }
             return
         }
         if let road = region?.roads[exit.to] {
@@ -879,6 +887,39 @@ nonisolated final class WorldMap: @unchecked Sendable {
         let approach = end.point + end.inward * 5
         let stops = [point(def.hub ?? [0, 0])] + (exit.via ?? []).map(point) + [approach]
         carve(through: stops, then: [end.point], halfWidth: 1.05, &rng)
+    }
+
+    /// The turns a road to a cave's mouth takes round the mountain its mouth is in (`raiseGate`) when
+    /// it comes from behind the mouth or beside it: out past the side of the mountain nearer it, then
+    /// across in front of its face to where it runs straight in. Straight from there, it ran up over
+    /// the mountain's flank (playtesting 2026-10-16, Lotus Land's road to the Rat Cavern). None when
+    /// it comes from in front, or neither way round is on the land.
+    private func aroundGate(from start: CGPoint, front: CGPoint, way: CGVector) -> [CGPoint] {
+        // Along the face: the mouth faces south or west, so you walk north or east into it.
+        let side = CGVector(dx: way.dy, dy: way.dx)
+        let dx = start.x - front.x, dy = start.y - front.y
+        let inward = dx * way.dx + dy * way.dy, along = dx * side.dx + dy * side.dy
+        guard inward > -3 else { return [] }
+        // Clear of the mountain at its widest, and of its road's sway on its way there.
+        let wide = CGFloat(Self.gateAcross.first ?? 11) + 7
+        let approach = CGFloat(Self.gateApproach)
+        func onLand(_ point: CGPoint) -> Bool { owns(GridPoint(col: Int(point.x.rounded(.down)), row: Int(point.y.rounded(.down)))) }
+        let signs: [CGFloat] = along < 0 ? [-1, 1] : [1, -1]
+        let ahead: CGVector = way * -approach
+        for sign in signs {
+            let out: CGVector = side * (sign * wide)
+            let beside: CGPoint = front + out + ahead
+            var turns: [CGPoint] = [beside]
+            // From right behind it, out to its side first.
+            if abs(along) < wide {
+                let back: CGVector = way * max(inward, 0)
+                turns.insert(front + out + back, at: 0)
+            }
+            // And in front of its face, where it crosses over to run in.
+            let halfway: CGPoint = front + side * (sign * wide / 2) + ahead
+            if onLand(halfway) && turns.allSatisfy(onLand) { return turns }
+        }
+        return []
     }
 
     /// Where a road `at` cells along `edge` from its middle crosses it, and the way into the map.
