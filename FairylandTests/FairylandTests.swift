@@ -362,6 +362,24 @@ struct ContentTests {
                     }
                 }
                 #expect(differ == 0, "\(def.id) | \(here.def.id): \(differ) cells of the band show a different land from each side")
+                // Past the border, the cells round this land's own show to its tiles (`Blend.shows`)
+                // what the land holding them lays out there, a third land's patches too, so a tile
+                // meets the one past the border as it would its own (playtesting 2026-10-16).
+                guard let blend = grid(def).blend else { continue }
+                let near = grid(here.def)
+                var seenWrong: [GridPoint] = []
+                for pair in here.border {
+                    for dr in -1...1 {
+                        for dc in -1...1 {
+                            let cell = GridPoint(col: pair.outside.col + dc, row: pair.outside.row + dr)
+                            guard blend.around.owner(cell).map({ blend.around.lands[$0] }) == here.def.id else { continue }
+                            let local = here.local(cell)
+                            let theirs = near.foreign[local].map { near.seams[$0].neighbour } ?? here.def.id
+                            if blend.shows(cell).map({ blend.around.lands[$0] }) != theirs { seenWrong.append(cell) }
+                        }
+                    }
+                }
+                #expect(seenWrong.isEmpty, "\(def.id) | \(here.def.id): \(seenWrong.count) cells past the border show otherwise than there, first \(Array(seenWrong.prefix(3)))")
             }
         }
     }
@@ -3314,6 +3332,26 @@ struct LandPlanTests {
         }
         #expect(!cells.isEmpty, "Ingothold Lake planned no props")
         #expect(wet.isEmpty, "\(wet.count) props on Ingothold Lake's coast, first \(Array(wet.prefix(3)))")
+    }
+
+    /// A lake's island stays open to walk about on: nothing in the way inside it, a little round its
+    /// shore, none beside its footbridge (Swan Lake's grew into a thicket, playtesting 2026-10-16).
+    @Test func lakeIslandsStayOpen() async throws {
+        let def = try #require(content.map("swan_lake"))
+        let result = await planned(def)
+        let map = result.map
+        let island = Set(map.lakes.flatMap { $0.island })
+        try #require(!island.isEmpty, "Swan Lake has no island")
+        func around(_ cell: GridPoint) -> [GridPoint] {
+            (-1...1).flatMap { dr in (-1...1).map { dc in GridPoint(col: cell.col + dc, row: cell.row + dr) } }
+        }
+        let shore = island.filter { around($0).contains { !island.contains($0) } }
+        let inTheWay = (result.plan.props + result.plan.seamProps).filter { $0.prop?.blocking == true && island.contains($0.cell) }
+        let inside = inTheWay.filter { !shore.contains($0.cell) }
+        let byTheBridge = inTheWay.filter { around($0.cell).contains { map.bridgeCells.contains($0) } }
+        #expect(inside.isEmpty, "\(inside.count) things in the way inside Swan Lake's island, first \(inside.first?.cell as Any)")
+        #expect(byTheBridge.isEmpty, "\(byTheBridge.count) things in the way beside the island's footbridge")
+        #expect(inTheWay.count * 4 <= shore.count, "\(inTheWay.count) things in the way round an island shore \(shore.count) cells long")
     }
 
     /// The same land plans the same every time: its props, its neighbours' over the line, its people

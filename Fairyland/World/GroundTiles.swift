@@ -4,7 +4,9 @@ import SpriteKit
 /// its ground, with soft roads, accent patches, ponds and shorelines drawn over it from the cells
 /// round it (`ArtLibrary.organicTile`), and across the band where it gives way to the land next
 /// door (`Seam`), that land's ground in patches. Each cell's pick depends only on the cells within
-/// two of it, so any piece of the land can be tiled on its own.
+/// two of it, so any piece of the land can be tiled on its own; and across the band, only on what
+/// they show, whichever land holds them (`Blend`), so a tile meets the one past the border as it
+/// would one of its own.
 final class GroundTiles {
     private let map: WorldMap
     private let art: ArtLibrary
@@ -27,10 +29,9 @@ final class GroundTiles {
     /// It lies lower than the land (`WorldMap.seaDrop`; `WorldScene.placeSea` draws it), so its cells
     /// have no ground, and the land's edge along it is cut clear, curving as a lake's shore does.
     private var sea: Set<GridPoint> = []
-    /// The lands next door whose ground comes over the line in patches, by seam (`WorldMap.seams`),
-    /// graded as it is there.
-    private let others: [(land: MapDef, from: ArtLibrary.Foreign)?]
-    private var lookPast: [GridPoint: Int?] = [:]
+    /// The lands next door whose ground comes over the line in patches, by id, graded as it is there.
+    private var others: [String: (land: MapDef, from: ArtLibrary.Foreign)?] = [:]
+    private var lookPast: [GridPoint: String?] = [:]
     private static let full = 0b111_111_111, sides = 0b010_101_010
 
     /// The tiles picked so far, for a tile set.
@@ -48,9 +49,6 @@ final class GroundTiles {
         pictures = [ObjectIdentifier(water): frames.first ?? SKTexture()]
         patchAccent = (theme.accentPatches ?? 0) > 0 && theme.accent != nil && theme.accent != theme.ground
         waterVaries = frames.count == 1
-        others = map.seams.map { seam in
-            Content.shared.map(seam.neighbour).map { (land: $0, from: ArtLibrary.Foreign(land: $0.id, palette: $0.theme.palette)) }
-        }
         if map.region != nil {
             for row in -2..<(map.rows + 2) {
                 for col in -2..<(map.columns + 2) {
@@ -128,12 +126,21 @@ final class GroundTiles {
         return bits
     }
 
-    /// Which land's ground shows at a cell, as the index of its seam: on this land as laid out, just
-    /// over the border as the band runs on into the land next door.
-    private func otherLook(_ cell: GridPoint) -> Int? {
-        if map.owns(cell) { return map.foreign[cell] }
+    /// A land next door, for its ground graded as it is there.
+    private func foreignLand(_ id: String) -> (land: MapDef, from: ArtLibrary.Foreign)? {
+        if let known = others[id] { return known }
+        let found = Content.shared.map(id).map { (land: $0, from: ArtLibrary.Foreign(land: $0.id, palette: $0.theme.palette)) }
+        others[id] = found
+        return found
+    }
+
+    /// Which land's ground shows at a cell, by id: on this land as laid out (`WorldMap.foreign`),
+    /// past its border as the land there lays it out (`Blend.shows`), a land next door's own or a
+    /// third land's come over onto it. Nil on the sea, or past where the band could reach.
+    private func look(_ cell: GridPoint) -> String? {
+        if map.owns(cell) { return map.foreign[cell].map { map.seams[$0].neighbour } ?? map.def.id }
         if let known = lookPast[cell] { return known }
-        let found = map.seams.indices.first { map.seams[$0].covers(cell) && map.seams[$0].showsOther(cell) }
+        let found = map.blend.flatMap { blend in blend.shows(cell).map { blend.around.lands[$0] } }
         lookPast[cell] = found
         return found
     }
@@ -149,23 +156,33 @@ final class GroundTiles {
             guard let share = map.seams[index].share(cell), share > (best?.share ?? 0) else { continue }
             best = (index, share)
         }
-        guard let best, let other = others[best.seam] else { return nil }
+        guard let best, let other = foreignLand(map.seams[best.seam].neighbour) else { return nil }
         let eighths = (best.share * 8).rounded()
         guard eighths > 0 else { return nil }
         return ArtLibrary.Fade(tile: other.land.theme.path, from: other.from, share: eighths / 8)
     }
 
-    /// The land next door whose patches reach `cell` (its own, or one round it), and which cells of
-    /// the 3×3 round it show that land (bit row * 3 + col, row 0 north).
-    private func patches(_ cell: GridPoint) -> (seam: Int, mask: Int)? {
-        var looks: [Int?] = []
+    /// The grounds the 3×3 round `cell` shows across the band (`look`), this land's and the lands
+    /// next door's, a layer each (`base` this land's) with the cells showing it (bit row * 3 + col,
+    /// row 0 north), by land id: `ArtLibrary.organicTile` lays them in that order, the same whichever
+    /// land draws the tile. Nil where they're all this land's. One land's alone left out the others'
+    /// where three met, and patches stopped dead there (playtesting 2026-10-16).
+    private func grounds(_ cell: GridPoint, base: String) -> [ArtLibrary.GroundLayer]? {
+        var masks: [String: Int] = [:]
+        var bit = 0
         for dy in -1...1 {
-            for dx in -1...1 { looks.append(otherLook(GridPoint(col: cell.col + dx, row: cell.row - dy))) }
+            for dx in -1...1 {
+                if let land = look(GridPoint(col: cell.col + dx, row: cell.row - dy)) { masks[land, default: 0] |= 1 << bit }
+                bit += 1
+            }
         }
-        guard let seam = looks[4] ?? looks.compactMap({ $0 }).first else { return nil }
-        var bits = 0
-        for (bit, look) in looks.enumerated() where look == seam { bits |= 1 << bit }
-        return (seam, bits)
+        guard masks.keys.contains(where: { $0 != map.def.id }) else { return nil }
+        return masks.keys.sorted().compactMap { land -> ArtLibrary.GroundLayer? in
+            let mask = masks[land] ?? 0
+            if land == map.def.id { return ArtLibrary.GroundLayer(tile: base, mask: mask, style: .ground) }
+            guard let other = foreignLand(land) else { return nil }
+            return ArtLibrary.GroundLayer(tile: other.land.theme.ground, mask: mask, style: .ground, from: other.from)
+        }
     }
 
     /// The tile a cell of the land's box shows (none on the sea, or on a land next door's cell), and
@@ -187,12 +204,9 @@ final class GroundTiles {
         default: mask(cell, .border) & Self.sides != 0 ? (theme.border ?? theme.ground) : theme.ground
         }
         var layers: [ArtLibrary.GroundLayer] = []
-        // The land next door's patches first, under everything of this land's.
-        let other = map.seams.isEmpty ? nil : patches(cell)
-        let otherLand = other.flatMap { others[$0.seam] }
-        if let other, let otherLand {
-            layers.append(.init(tile: otherLand.land.theme.ground, mask: other.mask, style: .patch, from: otherLand.from))
-        }
+        // The grounds across the band first, under everything of this land's.
+        let band = map.seams.isEmpty ? nil : grounds(cell, base: base)
+        if let band { layers += band }
         if patch != 0, let accent = theme.accent { layers.append(.init(tile: accent, mask: patch, style: .patch)) }
         let fade = road == 0 || map.seams.isEmpty ? nil : roadFade(cell)
         if road != 0 { layers.append(.init(tile: theme.path, mask: road, style: .road, fade: fade)) }
@@ -209,11 +223,10 @@ final class GroundTiles {
             } else {
                 chosen = plain(theme.path, variant)
             }
-        } else if let other, let otherLand, other.mask == full, layers.count == 1 {
+        } else if let band, band.count == 1, let only = band.first, only.mask == full, layers.count == 1, let from = only.from {
             // All the land next door's ground.
-            let land = otherLand.land
-            chosen = group("foreign|\(land.id)#\(variant)") {
-                art.foreignTile(land.theme.ground, palette: land.theme.palette, from: land.id, variant: variant, base: base)
+            chosen = group("foreign|\(from.land)#\(variant)") {
+                art.foreignTile(only.tile, palette: from.palette, from: from.land, variant: variant, base: base)
             }
         } else if layers.isEmpty {
             chosen = plain(base, variant)

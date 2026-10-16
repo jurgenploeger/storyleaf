@@ -31,7 +31,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   take joins the two lands, so none skips a quest), and the sea all round, each cell drawn by the nearest land
   (`BorderArt` draws the fences, rocks and city walls along the cell edges). Boxes overlap: a land lays out and
   draws only its own cells (`WorldMap.owns`; the rest is `.sea` or `.away`). `Seam.swift` is the band where one
-  land's ground and scenery give way to the next's in patches, measured from the border.
+  land's ground and scenery give way to the next's in patches, measured from the border; its `Blend` says what
+  any cell shows the same from every land, so a tile meets the one past the border (that land's) cleanly.
   The world map (`WorldAtlas`) shows every land's minimap where it lies (`WorldOverview`, cached on disk).
   The continent is one scene (`ContinentScene`, docs/continuous-world.md): `World` holds which land owns each world
   cell and where you can walk; each land near you is laid out, planned (`LandPlanner`) and drawn a 32-cell chunk at a

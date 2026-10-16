@@ -511,7 +511,7 @@ final class LandPlanner {
                         row: middle.row + Int.random(in: -spread...spread, using: &rng)
                     )
                     guard map.isFreeForScenery(cell, insideFence: placement.within != nil, blocking: placement.blocking),
-                          map.foreign[cell] == nil, !isCoast(cell) else { continue }
+                          map.foreign[cell] == nil, !isCoast(cell), !placement.blocking || roomOnIsland(cell) else { continue }
                     var scale: CGFloat = 1
                     if let range = placement.size, range.count == 2, range[0] <= range[1] {
                         scale = CGFloat(Double.random(in: range[0]...range[1], using: &rng))
@@ -537,7 +537,8 @@ final class LandPlanner {
             let area = Double(land.width * land.height)
             for placement in land.theme.props where placement.within == nil {
                 guard Double.random(in: 0..<1, using: &random) < Double(placement.count) / area else { continue }
-                guard map.isFreeForScenery(cell, blocking: placement.blocking), !isCoast(cell) else { break }
+                guard map.isFreeForScenery(cell, blocking: placement.blocking), !isCoast(cell),
+                      !placement.blocking || roomOnIsland(cell) else { break }
                 var scale: CGFloat = 1
                 if let range = placement.size, range.count == 2, range[0] <= range[1] {
                     scale = CGFloat(Double.random(in: range[0]...range[1], using: &random))
@@ -548,6 +549,26 @@ final class LandPlanner {
                 break
             }
         }
+    }
+
+    /// The lakes' islands (`WorldMap.lakes`).
+    private lazy var islands: Set<GridPoint> = Set(map.lakes.flatMap { $0.island })
+
+    /// Whether something in the way may stand in `cell`: anywhere off the lakes' islands, but on one
+    /// only here and there round its shore and not beside its footbridge, so you can walk about on it
+    /// (it grew into a thicket, playtesting 2026-10-16). Flowers and the like grow all over it.
+    private func roomOnIsland(_ cell: GridPoint) -> Bool {
+        guard islands.contains(cell) else { return true }
+        var shore = false
+        for dr in -1...1 {
+            for dc in -1...1 {
+                let next = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                if map.bridgeCells.contains(next) { return false }
+                if !islands.contains(next) { shore = true }
+            }
+        }
+        // One shore cell in five, the same ones every visit.
+        return shore && (cell.col * 2 + cell.row * 3) % 5 == 0
     }
 
     /// Whether a cell is the coast's own, beside the sea, which the shoreline curves through (its tile

@@ -285,7 +285,9 @@ final class ArtLibrary {
     /// One layer of an organic ground tile (see `organicTile`).
     nonisolated struct GroundLayer: Sendable {
         /// `cut`: the land's edge over the sea, which lies lower: the pixels past the shore left clear.
-        nonisolated enum Style: Sendable { case road, patch, water, cut }
+        /// `ground`: a land's ground across a band, this one's or (`from`) a land next door's, under
+        /// the rest (see `organicTile`).
+        nonisolated enum Style: Sendable { case road, patch, water, cut, ground }
         let tile: String
         /// Roads and patches: bit `row * 3 + col` is set where that cell of the 3×3 around this one
         /// holds the layer (row 0 north, col 0 west; bit 4 is the cell itself). Water: the same for
@@ -426,6 +428,13 @@ final class ArtLibrary {
     /// neighbouring tiles meet seamlessly. Roads get a darker rim, water a foamy edge and a damp bank.
     /// Shoreline tiles are unique anyway, so they also use tile variant `variant`. A patch layer
     /// `from` a land next door is its ground, graded as it is there.
+    ///
+    /// Across the band between two lands (`Seam`), the grounds each cell round shows (`ground`
+    /// layers, in the same order whichever land draws the tile) go down first, over `base`: at each
+    /// pixel the last of them whose soft shape reaches it, else the first with a cell within `verge`
+    /// of it. So what shows between the shapes, along an edge, is the same from both tiles either
+    /// side of it, though a land next door draws the one past its border: with the land's own
+    /// ground there, its patches stopped dead along the border (playtesting 2026-10-16).
     func organicTile(base: String, layers: [GroundLayer], cell: GridPoint, variant: Int) -> SKTexture {
         let hasWater = layers.contains { $0.style == .water || $0.style == .cut }
         let place = hasWater ? "@\(cell.col),\(cell.row)#\(variant)" : ""
@@ -435,7 +444,36 @@ final class ArtLibrary {
         let pick = hasWater ? variant : 0
         var out = variantPixels(base, pick, size: size)
         let rim = 1.2 / Double(size)
-        for layer in layers {
+        let grounds = layers.filter { $0.style == .ground }
+        if !grounds.isEmpty {
+            let texels = grounds.map { layer in
+                layer.from.map { foreignPixels(layer.tile, palette: $0.palette, from: $0.land, variant: pick, size: size) }
+                    ?? variantPixels(layer.tile, pick, size: size)
+            }
+            let segments = grounds.map { Self.strokes(mask: $0.mask) }
+            let cells = grounds.map { layer in
+                (0..<9).filter { layer.mask & (1 << $0) != 0 }.map { (x: Double($0 % 3 - 1), y: Double(1 - $0 / 3)) }
+            }
+            for py in 0..<size {
+                for px in 0..<size {
+                    let x = (Double(px) + 0.5) / Double(size) - 0.5, y = 0.5 - (Double(py) + 0.5) / Double(size)
+                    let reach = 0.42 + Self.wobble(x, y, style: .patch, cell: cell)
+                    var shown: Int?
+                    for index in grounds.indices.reversed() where segments[index].contains(where: { Self.distance(x, y, to: $0) < reach }) {
+                        shown = index
+                        break
+                    }
+                    if shown == nil {
+                        shown = cells.firstIndex { near in near.contains { Self.gap(x, y, to: $0) < Self.verge } }
+                    }
+                    let index = (py * size + px) * 4
+                    guard let ground = shown, texels[ground].count == out.count else { continue }
+                    for c in 0..<3 { out[index + c] = texels[ground][index + c] }
+                    out[index + 3] = 255
+                }
+            }
+        }
+        for layer in layers where layer.style != .ground {
             let shore = layer.style == .water || layer.style == .cut
             let texels: [UInt8]
             if layer.style == .cut {
@@ -451,7 +489,7 @@ final class ArtLibrary {
             let pools: [(x: Double, y: Double)] = shore ? Self.pools(mask: layer.mask) : []
             let radius: Double = switch layer.style {
             case .road: 0.36
-            case .patch: 0.42
+            case .patch, .ground: 0.42
             case .water, .cut: 0
             }
             for py in 0..<size {
@@ -469,7 +507,7 @@ final class ArtLibrary {
                     }
                     let index = (py * size + px) * 4
                     switch layer.style {
-                    case .road, .patch:
+                    case .road, .patch, .ground:
                         guard depth > 0 else { continue }
                         let shade = layer.style == .road && depth < rim ? 0.72 : 1
                         for c in 0..<3 { out[index + c] = UInt8(Double(texels[index + c]) * shade) }
@@ -597,6 +635,17 @@ final class ArtLibrary {
         let a: Double = sin(turn * (2 * x + y))
         let b: Double = sin(turn * (3 * y - x) + 1.3)
         return 0.045 * a + 0.03 * b
+    }
+
+    /// How far round a cell of the 3×3 a ground across a band shows where no shape reaches
+    /// (`organicTile`): far enough that it fills the gap between this cell's own shape and that
+    /// cell's side of it all along.
+    nonisolated private static let verge = 0.27
+
+    /// How far a point (in this cell's coordinates) is from the cell `offset` of the 3×3 round it.
+    nonisolated private static func gap(_ x: Double, _ y: Double, to offset: (x: Double, y: Double)) -> Double {
+        let dx = max(0, abs(x - offset.x) - 0.5), dy = max(0, abs(y - offset.y) - 0.5)
+        return (dx * dx + dy * dy).squareRoot()
     }
 
     nonisolated private static func distance(_ x: Double, _ y: Double, to s: (x0: Double, y0: Double, x1: Double, y1: Double)) -> Double {
