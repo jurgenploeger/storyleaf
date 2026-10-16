@@ -149,8 +149,10 @@ enum TownFence {
         let span = CGVector(dx: b.x - a.x, dy: b.y - a.y)
         let gateSize = CGSize(width: abs(span.dx) + pad * 2, height: abs(span.dy) + gateHeight + pad * 2)
         let start = CGPoint(x: span.dx >= 0 ? pad : gateSize.width - pad, y: span.dy >= 0 ? pad : gateSize.height - gateHeight - pad)
+        // As wide as the gap, its pillars and banner as they are (`widened`).
+        let arch = widened(picture, to: Int((abs(span.dx) / gateHeight * CGFloat(picture.height)).rounded()))
         let texture = render(size: gateSize) { context in
-            draw(picture, in: context, from: start, along: span, part: nil, height: gateHeight)
+            draw(arch, in: context, from: start, along: span, part: nil, height: gateHeight)
         }
         let node = SKSpriteNode(texture: texture, size: gateSize)
         node.anchorPoint = CGPoint(x: start.x / gateSize.width, y: start.y / gateSize.height)
@@ -158,6 +160,50 @@ enum TownFence {
         node.zPosition = -(a.y + b.y) / 2
         return node
     }
+
+    /// The town gate's arch (`cropped`) widened to `width` pixels without stretching it: its pillars
+    /// at either end and its banner in the middle as they are, a beam of the pillars' stones laid
+    /// across their tops between them. Stretched across a wide road (a quest's gate across a border
+    /// spans six cells) its pillars came out smeared sideways (playtesting 2026-10-16). Narrower
+    /// than the picture, it's the picture. Its parts, as shares of the picture's size: each pillar
+    /// `pillar` of its width (the banner between them, `hangs` of its height down from the top), and
+    /// the beam the stones `stones` across the left pillar's top, `beam` down from the top.
+    static func widened(_ picture: CGImage, to width: Int) -> CGImage {
+        let w = picture.width, h = picture.height
+        guard width > w else { return picture }
+        let side = Int((Double(w) * pillar).rounded())
+        let top = Int((Double(h) * beam.lowerBound).rounded()), bottom = Int((Double(h) * beam.upperBound).rounded())
+        let from = Int((Double(w) * stones.lowerBound).rounded()), to = Int((Double(w) * stones.upperBound).rounded())
+        guard side > 0, side * 2 < w, bottom > top, to > from,
+              let left = picture.cropping(to: CGRect(x: 0, y: 0, width: side, height: h)),
+              let right = picture.cropping(to: CGRect(x: w - side, y: 0, width: side, height: h)),
+              let banner = picture.cropping(to: CGRect(x: side, y: 0, width: w - 2 * side, height: Int((Double(h) * hangs).rounded()))),
+              let block = picture.cropping(to: CGRect(x: from, y: top, width: to - from, height: bottom - top)),
+              let context = CGContext(data: nil, width: width, height: h, bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return picture }
+        context.interpolationQuality = .none
+        // Rows run up from the bottom here: a part `y` rows down from the picture's top lies at
+        // `h - y - its height`. The beam first, from just inside one pillar to just inside the other.
+        context.saveGState()
+        context.clip(to: CGRect(x: side - 2, y: 0, width: width - 2 * side + 4, height: h))
+        var x = side - 2
+        while x < width - side + 2 {
+            context.draw(block, in: CGRect(x: x, y: h - bottom, width: block.width, height: block.height))
+            x += block.width
+        }
+        context.restoreGState()
+        context.draw(left, in: CGRect(x: 0, y: 0, width: side, height: h))
+        context.draw(right, in: CGRect(x: width - side, y: 0, width: side, height: h))
+        context.draw(banner, in: CGRect(x: (width - banner.width) / 2, y: h - banner.height, width: banner.width, height: banner.height))
+        return context.makeImage() ?? picture
+    }
+
+    /// The town gate's parts (`widened`), as shares of its cropped picture (70 × 51 pixels).
+    private static let pillar = 27.0 / 70
+    private static let hangs = 32.0 / 51
+    private static let beam = (2.0 / 51)...(12.0 / 51)
+    private static let stones = (14.0 / 70)...(26.0 / 70)
 
     /// One cell's stretch of a railing picture that has a post at each end (`posts`: how far across
     /// the cropped picture their centres sit, 0...1), slanted along the edge it stands on: west to
