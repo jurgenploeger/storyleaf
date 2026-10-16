@@ -48,9 +48,14 @@ struct ContentTests {
             for exit in map.exits {
                 let destination = content.map(exit.to)
                 #expect(destination != nil, "map \(map.id) → unknown map \(exit.to)")
-                // Every exit needs a way back, or you'd get stuck.
-                #expect(destination?.exits.contains { $0.to == map.id && $0.edge == exit.edge.opposite } == true,
-                        "map \(exit.to) has no \(exit.edge.opposite) exit back to \(map.id)")
+                // Every exit needs a way back, or you'd get stuck: by the other side, but a cave's
+                // road back out of its mouth inland by the other side from the way you walk in
+                // (`Region.Road.into`), and the land's by the side its mouth is toward.
+                let into = content.regions[map.id]?.roads[exit.to]?.into
+                let outOfCave = content.regions[exit.to]?.roads[map.id]?.into != nil
+                let side: Edge? = into.map(\.opposite) ?? (outOfCave ? nil : exit.edge.opposite)
+                #expect(destination?.exits.contains { $0.to == map.id && (side == nil || $0.edge == side) } == true,
+                        "map \(exit.to) has no \(side.map { "\($0)" } ?? "") exit back to \(map.id)")
             }
             for id in map.encounters?.monsters.keys.sorted() ?? [] {
                 #expect(content.monster(id) != nil, "map \(map.id) → unknown monster \(id)")

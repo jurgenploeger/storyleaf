@@ -315,6 +315,22 @@ for item, held_by in holders.items():
 
 check(maps_file["start"] in maps, f"start map {maps_file['start']} doesn't exist")
 opposite = {"north": "south", "south": "north", "east": "west", "west": "east"}
+world_roads = load("content/world.json").get("roads", {})
+
+
+def back_side(map_def, exit):
+    """The side the road back from `exit`'s map leaves by: the other side from the one it left by,
+    but where a road leads into a cave's mouth inland, the cave's leaves by the other side from the
+    way you walk in (world.json `into`, playtesting 2026-10-16: inside you come in on the side you
+    walked in from), and the land's by any (it names the side the mouth is toward)."""
+    into = world_roads.get(map_def["id"], {}).get(exit["to"], {}).get("into")
+    if into:
+        return opposite[into]
+    if world_roads.get(exit["to"], {}).get(map_def["id"], {}).get("into"):
+        return None
+    return opposite[exit["edge"]]
+
+
 for map_def in maps.values():
     edges = [exit["edge"] for exit in map_def["exits"]]
     check(len(edges) == len(set(edges)), f"map {map_def['id']} has two exits on one edge")
@@ -322,8 +338,9 @@ for map_def in maps.values():
         destination = maps.get(exit["to"])
         check(destination is not None, f"map {map_def['id']} → unknown map {exit['to']}")
         if destination:
-            back = any(e["to"] == map_def["id"] and e["edge"] == opposite[exit["edge"]] for e in destination["exits"])
-            check(back, f"map {exit['to']} has no {opposite[exit['edge']]} exit back to {map_def['id']}")
+            side = back_side(map_def, exit)
+            back = any(e["to"] == map_def["id"] and side in (None, e["edge"]) for e in destination["exits"])
+            check(back, f"map {exit['to']} has no {side or ''} exit back to {map_def['id']}".replace("  ", " "))
         if "requires" in exit:
             check(exit["requires"] in quests, f"map {map_def['id']} road → unknown quest {exit['requires']}")
         if "ship" in exit:
@@ -802,8 +819,9 @@ for map_def in maps.values():
         back = [e for e in maps.get(exit_def["to"], {}).get("exits", []) if e["to"] == map_def["id"]]
         check(len(back) == 1, f"map {map_def['id']} → {exit_def['to']} has no single road back")
         if back and ("cave" in map_def["theme"] or "cave" in maps[exit_def["to"]]["theme"]):
-            check(back[0]["edge"] == OPPOSITE[exit_def["edge"]],
-                  f"map {map_def['id']} {exit_def['edge']} → {exit_def['to']}: its road back should leave by the {OPPOSITE[exit_def['edge']]}")
+            side = back_side(map_def, exit_def)
+            check(side in (None, back[0]["edge"]),
+                  f"map {map_def['id']} {exit_def['edge']} → {exit_def['to']}: its road back should leave by the {side}")
     edges = [e["edge"] for e in map_def["exits"]]
     check(len(edges) == len(set(edges)), f"map {map_def['id']} → two roads leave by the same side")
 

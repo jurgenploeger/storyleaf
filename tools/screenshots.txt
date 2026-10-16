@@ -118,6 +118,13 @@ landscape    | newgame,map=rainbow_city,landscape | 8
 rat_cavern   | newgame,map=rat_cavern            | 8
 cave_dark    | newgame,level=44,class=fighter,pet=pineapple,friends=2,map=rat_cavern | 15
 behind_wall  | newgame,map=rat_cavern,at=-3_3        | 8
+# Inside a cave where you come in from each land (from=<land>): on the side you walked into its mouth
+# from, north into the Gooey Grotto and the Hollow from Emerald Road (in at their south side), north into
+# the Rat Cavern from Shiverdell (south) and east from Lotus Land (west).
+cave_in_downs   | newgame,level=12,map=slime_cave,from=northern_grassland | 8
+cave_in_valley  | newgame,level=30,map=rat_cavern,from=valley_of_fear | 8
+cave_in_lotus   | newgame,level=40,map=rat_cavern,from=lotus_land | 8
+cave_in_emerald | newgame,level=190,map=mysterious_cave,from=emerald_road | 8
 behind_tree  | newgame,map=smiling_forest,at=0_-14   | 15
 intro_story  | intro                             | 6
 intro_shadows | intro=2                          | 6

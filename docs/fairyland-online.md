@@ -261,7 +261,11 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   next door, the rivers, the other roads and everything set down by hand, and the cheapest way there,
   the road running straight at the mouth for its last 7 cells (world.json's road: `at` the cell in front
   of the mouth, `into` the way in). Its face is always turned toward you, so you walk north or east into
-  it: a face turned away can't show (on the south and west edges 0.4.5 put a crag beside the road's end
+  it, the other way from the cave's own road back out (`gate_into`, since 0.7.13, playtesting 2026-10-16:
+  "inside it should have the correct entrance/exit side depending on the location of the cave
+  entrance"), so inside you come in on the side you walked in from and a cave's ways out leave by its
+  south or west side; you arrive by the destination's own road back (`GameCoordinator.travel`). The Rat
+  Cavern's two ways in both went east, so Shiverdell's mouth turned to be walked into north: a face turned away can't show (on the south and west edges 0.4.5 put a crag beside the road's end
   for that reason). Its main summit is a mountain turned to face you (since 0.7.13, playtesting
   2026-10-16: "the front of the cave is a bit too flat now and the land that goes up is a bit too
   small"; 0.7.8's stood 6 cells in, too small to reach its top, about 75 points): its face climbs 5

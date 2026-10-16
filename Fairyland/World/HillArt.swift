@@ -849,8 +849,9 @@ enum HillArt {
     }
 
     /// The mouth's doorway, upright on the screen like a door in a wall, however the slope it's in
-    /// leans: its sides straight up from its foot and its top an arch leaning along the edge, the
-    /// way the map's diagonals do. The opening is 30 points tall and 14 more for each cell of its
+    /// leans: a round arch from its foot, leaning along the edge the way the map's diagonals do, its
+    /// sides straight up only a little way (playtesting 2026-10-16: with them a third of the way up,
+    /// it met its top in a sharp corner). The opening is 30 points tall and 14 more for each cell of its
     /// half-width (55 over a road 3 cells wide). Painted on the ground, each point of it is where
     /// the ground shows that far up the screen over its foot: up the map's diagonal (a cell of it
     /// is 31 points up the screen), plus however much the ground rises or falls on the way.
@@ -872,7 +873,7 @@ enum HillArt {
         let tall = 30 + 14 * mouth.half
         /// Feet first, then up one side, over the top and down the other.
         func arch(_ half: Double, _ top: Double, rough: Double) -> [CGPoint] {
-            let steps = 20, side = 0.38 * top
+            let steps = 24, side = 0.08 * top
             var points = [point(-half, 0)]
             for k in 0...steps {
                 let u = Double(k) / Double(steps)

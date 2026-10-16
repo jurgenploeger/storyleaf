@@ -5268,7 +5268,7 @@
           "style": "braids",
           "outfit": "gold",
           "at": "mouth",
-          "y": 2,
+          "x": 2,
           "hold": "small_hatchet",
           "lines": [
             "The cavern's ours. Was ours. The rats have it now.",
@@ -5820,12 +5820,12 @@
       },
       "exits": [
         {
-          "edge": "west",
+          "edge": "south",
           "to": "valley_of_fear",
           "at": -12
         },
         {
-          "edge": "north",
+          "edge": "west",
           "to": "lotus_land"
         }
       ],
@@ -8812,7 +8812,7 @@
       },
       "exits": [
         {
-          "edge": "east",
+          "edge": "south",
           "to": "northern_grassland"
         }
       ],
@@ -14554,7 +14554,7 @@
           "to": "moonglow"
         },
         {
-          "edge": "east",
+          "edge": "south",
           "to": "emerald_road"
         }
       ],
