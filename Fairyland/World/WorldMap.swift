@@ -483,7 +483,8 @@ nonisolated final class WorldMap: @unchecked Sendable {
 
     /// A landmark's cell (`MapDef.Place.at`), the `which`th of its kind: a jetty's far end out in the
     /// water, the bank beside a road's bridge over the river (at its end nearer you), the middle of a
-    /// lake's island, the lake's shore nearest you, or the road in front of a cave's mouth.
+    /// lake's island, the lake's shore nearest you, the road in front of a cave's mouth, or beside
+    /// where a harbor's pier leaves the land.
     func landmark(_ name: String, which: Int) -> GridPoint? {
         func pick<T>(_ list: [T]) -> T? { list.indices.contains(which) ? list[which] : nil }
         switch name {
@@ -508,6 +509,10 @@ nonisolated final class WorldMap: @unchecked Sendable {
         case "mouth":
             guard let crag = pick(crags) else { return nil }
             return entryCell(from: crag.edge)
+        case "harbor":
+            // Beside where the pier leaves the land, on the side away from its ship.
+            guard let harbor = pick(harbors) else { return nil }
+            return harbor.road.pierCell(along: -2, across: -3)
         default:
             return nil
         }
@@ -558,6 +563,20 @@ nonisolated final class WorldMap: @unchecked Sendable {
             case .west: cell.col == 0
             }
         }
+    }
+
+    /// Its harbors, in the order its exits come: each road to a land over the sea (`MapDef.Exit.ship`),
+    /// ending on the coast with a pier out over the sea and a ship moored at its end (`Region.Road`).
+    var harbors: [(exit: MapDef.Exit, road: Region.Road)] {
+        def.exits.compactMap { exit -> (exit: MapDef.Exit, road: Region.Road)? in
+            guard exit.ship == true, let road = region?.roads[exit.to], road.pier != nil else { return nil }
+            return (exit: exit, road: road)
+        }
+    }
+
+    /// The ship you step aboard at `cell` (its cells: out on a harbor's pier, past its box too), if any.
+    func boarding(at cell: GridPoint) -> MapDef.Exit? {
+        harbors.first { $0.road.boarding.contains(cell) }?.exit
     }
 
     /// The way the road out by `exit` runs where its signpost stands: to the edge it leaves by, or on
@@ -658,7 +677,8 @@ nonisolated final class WorldMap: @unchecked Sendable {
 
     private var entryCells: [GridPoint] {
         if let cachedEntryCells { return cachedEntryCells }
-        let cells = def.exits.map { entryCell(from: $0.edge) }
+        // And where a harbor's pier leaves the land, clear for it.
+        let cells = def.exits.map { entryCell(from: $0.edge) } + harbors.map { $0.road.at }
         cachedEntryCells = cells
         return cells
     }
@@ -2207,6 +2227,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
     static let seaDrop: CGFloat = 14
     /// How far a lake's water lies below the land round it, in points.
     static let lakeDrop: CGFloat = 9
+    /// How high a harbor's pier's deck lies (`harbors`): a little over the sea, a step up from the
+    /// shore where it leaves the land.
+    static let pierHeight: CGFloat = -seaDrop + 5
     /// Over how many cells the land slopes down to the sea, and into a lake, past the cell beside
     /// the water (which lies at the water's own level, its shoreline curving through it).
     static let seaSlope = 4.0

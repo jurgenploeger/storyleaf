@@ -106,6 +106,7 @@ final class LandStage {
     func build(pause: @escaping () async -> Void) async {
         placeLilyPads(plan.lilyPads)
         placeBridges()
+        placeHarbors()
         for reed in plan.reeds { addScenery(reed) }
         await pause()
         placeFence()
@@ -412,6 +413,77 @@ final class LandStage {
         let pixels = art.picture(of: art.tileTexture(def.theme.ground)).width
         for bridge in map.bridges {
             BridgeArt.rails(for: bridge, pixels: pixels, palette: def.theme.palette, in: world) { [map] in map.height(at: $0) }
+        }
+    }
+
+    /// How far across from its harbor's road its ship lies, up the screen from the pier (cells, its
+    /// middle: past the pier's far side and a little water), and how far out along it.
+    static let shipAcross: CGFloat = 2.9
+    static let shipAlong: CGFloat = 4
+
+    /// Its harbors (`WorldMap.harbors`): a pier of planks out over the sea, a little over the water
+    /// (`WorldMap.pierHeight`) on posts, and a ship moored alongside, up the screen from it, rocking
+    /// gently, its gangplank down to the pier. You walk aboard at the pier's end
+    /// (`Region.Road.boarding`, `ContinentScene.checkCell`).
+    private func placeHarbors() {
+        let harbors = map.harbors
+        guard !harbors.isEmpty else { return }
+        let pixels = art.picture(of: art.tileTexture(def.theme.ground)).width
+        let tile = WorldMap.tileSize
+        for harbor in harbors {
+            let road = harbor.road
+            guard let pier = road.pier, let first = road.pierCell(along: 1, across: -1),
+                  let last = road.pierCell(along: Region.Road.pierLength, across: -1) else { continue }
+            let northward = pier == .north || pier == .south, outward = pier == .north || pier == .east
+            let a = northward ? first.row : first.col, b = northward ? last.row : last.col
+            let bridge = WorldMap.Bridge(kind: .jetty, northward: northward, lane: northward ? first.col : first.row, lanes: 3,
+                                         start: min(a, b), end: max(a, b), landsAtStart: outward, landsAtEnd: !outward)
+            // Its deck, under whoever walks it: under the lowest of them on the screen.
+            var top: CGFloat = 0
+            if let picture = BridgeArt.deckPicture(for: bridge, pixels: pixels, palette: def.theme.palette) {
+                let texture = SKTexture(cgImage: picture.image)
+                texture.filteringMode = .nearest
+                let deck = SKSpriteNode(texture: texture, size: CGSize(width: picture.frame.width * tile, height: picture.frame.height * tile))
+                deck.anchorPoint = .zero
+                deck.position = CGPoint(x: picture.frame.minX * tile, y: picture.frame.minY * tile)
+                let flat = ContinentScene.projected(deck)
+                flat.position.y = WorldMap.pierHeight
+                let frame = picture.frame
+                top = [CGPoint(x: frame.minX, y: frame.minY), CGPoint(x: frame.maxX, y: frame.minY),
+                       CGPoint(x: frame.minX, y: frame.maxY), CGPoint(x: frame.maxX, y: frame.maxY)]
+                    .map { WorldMap.project(CGPoint(x: $0.x * tile, y: $0.y * tile)).y }.max() ?? 0
+                flat.zPosition = -top - 1
+                world.addChild(flat)
+            }
+            BridgeArt.rails(for: bridge, pixels: pixels, palette: def.theme.palette, in: world, railed: false) { _ in WorldMap.pierHeight }
+            // The ship, behind the pier and all on it.
+            let side = northward ? CGVector(dx: 1, dy: 0) : CGVector(dx: 0, dy: 1)
+            let out = Self.step(pier)
+            let middle = CGPoint(x: CGFloat(road.at.col) + 0.5 + out.dx * Self.shipAlong + side.dx * Self.shipAcross,
+                                 y: CGFloat(road.at.row) + 0.5 + out.dy * Self.shipAlong + side.dy * Self.shipAcross)
+            let sprite = art.sprite("ship")
+            let ship = SKSpriteNode(texture: sprite.texture, size: sprite.size)
+            // Drawn lying along the east; its mirror image lies along the north.
+            if northward { ship.xScale = -1 }
+            ship.position = WorldMap.project(CGPoint(x: middle.x * tile, y: middle.y * tile)) + CGVector(dx: 0, dy: -WorldMap.seaDrop)
+            ship.zPosition = -top - 2
+            let rise = SKAction.moveBy(x: 0, y: 1.5, duration: 1.9)
+            rise.timingMode = .easeInEaseOut
+            let lean = SKAction.rotate(byAngle: 0.012, duration: 2.6)
+            lean.timingMode = .easeInEaseOut
+            ship.run(.repeatForever(.sequence([rise, rise.reversed()])))
+            ship.run(.repeatForever(.sequence([lean, lean.reversed(), lean.reversed(), lean])))
+            world.addChild(ship)
+        }
+    }
+
+    /// A step the way `edge` faces, in cells.
+    private static func step(_ edge: Edge) -> CGVector {
+        switch edge {
+        case .east: CGVector(dx: 1, dy: 0)
+        case .west: CGVector(dx: -1, dy: 0)
+        case .north: CGVector(dx: 0, dy: 1)
+        case .south: CGVector(dx: 0, dy: -1)
         }
     }
 

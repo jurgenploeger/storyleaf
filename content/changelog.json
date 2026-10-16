@@ -2,6 +2,16 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.9",
+      "date": "2026-10-16",
+      "title": "Starfall Isle",
+      "notes": [
+        "A new island out at sea, east of Sneezle Isle: Starfall Isle, where a star fell long ago. Crystals glow in its glades, wisps drift about at night, and it has a song of its own.",
+        "Sneezle Isle has a harbor now. Walk out along the pier and aboard the ship to sail over, and back again from the island's own harbor.",
+        "The arches over the town gates no longer stretch when a gate is wide: the pillars and the banner keep their shape, with a stone beam between them."
+      ]
+    },
+    {
       "version": "0.7.8",
       "date": "2026-10-16",
       "title": "Cave gates",

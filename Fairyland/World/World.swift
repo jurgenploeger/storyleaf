@@ -39,6 +39,9 @@ nonisolated final class World: @unchecked Sendable {
     private var walkable: [Bool]
     /// The lands laid out so far (`add`), by index.
     private var laidOut: Set<Int> = []
+    /// The harbors' piers, out over the sea (`Region.Road.pierCells`), walked on as the land
+    /// they're built from (its id), though no land owns them.
+    private var piers: [GridPoint: String] = [:]
 
     /// `lands`: each land with its shape (`Region`), whose own cells it gets.
     init(lands: [(land: Land, region: Region)]) {
@@ -70,6 +73,17 @@ nonisolated final class World: @unchecked Sendable {
                 }
             }
         }
+        // The piers, over the sea.
+        for item in lands {
+            for road in item.region.roads.values {
+                for cell in road.pierCells {
+                    let spot = GridPoint(col: item.land.origin.col + cell.col, row: item.land.origin.row + cell.row)
+                    guard let index = index(spot), owner[index] == 0 else { continue }
+                    walkable[index] = true
+                    piers[spot] = item.land.id
+                }
+            }
+        }
     }
 
     /// The continent as content/world.json paints it: every land on it (not the caves).
@@ -95,6 +109,11 @@ nonisolated final class World: @unchecked Sendable {
     func land(at cell: GridPoint) -> Land? {
         guard let index = index(cell), owner[index] > 0 else { return nil }
         return lands[Int(owner[index]) - 1]
+    }
+
+    /// The land whose harbor's pier a world cell is on, if it's on one (`piers`).
+    func pier(at cell: GridPoint) -> Land? {
+        piers[cell].flatMap { land($0) }
     }
 
     /// The land with this id, if it's on the continent.

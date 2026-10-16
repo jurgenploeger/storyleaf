@@ -27,11 +27,42 @@ nonisolated struct Region: Sendable {
     /// hub, as [x, y] out from the middle, through the middle of the land. A road into a cave ends
     /// inland instead (tools/world_layout.py `cave_gates`): `at` is the cell in front of the cave's
     /// mouth, in a rocky hill (`WorldMap.raiseGate`), and `into` the way you walk into it, north or
-    /// east so its face is turned toward you.
+    /// east so its face is turned toward you. A road to a land over the sea (`MapDef.Exit.ship`) ends
+    /// at a harbor (tools/world_layout.py `harbors`): `at` is the last cell of the coast, and `pier`
+    /// the way its pier runs out over the sea from there, its ship moored alongside.
     nonisolated struct Road: Sendable {
         let at: GridPoint
         let via: [[Int]]
         var into: Edge? = nil
+        var pier: Edge? = nil
+
+        /// How far a harbor's pier runs out over the sea, in cells; it's three wide, along the road.
+        static let pierLength = 6
+        /// How far out along its pier you walk aboard: from beside the ship's gangplank to its end
+        /// (`LandStage.shipAlong`).
+        static let boardingFrom = 4
+
+        /// A cell of its pier, `along` out from `at` and `across` it, from the road's middle lane
+        /// (-1...1) toward the north or the east: the side its ship lies, up the screen, behind you
+        /// on the pier. Nil if it has none.
+        func pierCell(along: Int, across: Int) -> GridPoint? {
+            guard let pier else { return nil }
+            let out = at.stepped(pier, by: along)
+            return pier == .east || pier == .west ? GridPoint(col: out.col, row: out.row + across)
+                : GridPoint(col: out.col + across, row: out.row)
+        }
+
+        /// Every cell of its pier, out over the sea (none if it has no harbor).
+        var pierCells: [GridPoint] {
+            guard pier != nil else { return [] }
+            return (1...Self.pierLength).flatMap { along in (-1...1).compactMap { pierCell(along: along, across: $0) } }
+        }
+
+        /// The cells of its pier where you step aboard its ship.
+        var boarding: [GridPoint] {
+            guard pier != nil else { return [] }
+            return (Self.boardingFrom...Self.pierLength).flatMap { along in (-1...1).compactMap { pierCell(along: along, across: $0) } }
+        }
     }
 
     /// `runs`: world.json's rows of [code, length, code, length, ...], from the south.

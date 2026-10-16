@@ -19,7 +19,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   and lobes round it; a town's walled square, maps.json `town.size`, sits in its own countryside) and `rivers` (each
   one's course from its spring to the sea, or to a `lake` of its own) and rerun the tool (numpy + scipy): it
   paints the shapes and rivers, writes each land's box (maps.json `width`/`height`), middle, road crossings with
-  their turns (a road into a cave ends inland, at the hill its mouth is in: `cave_gates`, `WorldMap.raiseGate`),
+  their turns (a road into a cave ends inland, at the hill its mouth is in: `cave_gates`, `WorldMap.raiseGate`; a
+  road by ship, maps.json exit `ship`, at a harbor on the coast, its pier out over the sea walked on though no land
+  owns it: `harbors`, `World.pier`, `LandStage.placeHarbors`),
   and shape (`regions`, rivers in it), and `check_content.py` checks it (everything set down by hand on
   its land and clear of the rivers, roads meeting, nothing cut off by a river). Rerun it after changing exits or
   anything set down by hand; `--preview out.png` draws it. The game lays the rivers where they're painted, a bridge
@@ -53,7 +55,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   simulator draws in, exported at 2622×1206 and 2868×1320 with no alpha.
 - `tools/skill_art.py`: the same for every skill's icon (`art/sprites/skill_<id>.png`).
 - `tools/prop_art.py`: the same for the few props a generated sprite got wrong (`candy_cane`, whose hook came out
-  as a two-sided arch). Rerun it after editing a drawing; `--sheet out.png` previews them.
+  as a two-sided arch) or none was made for (the harbors' `ship`, built in 3D and projected as the game's view is).
+  Rerun it after editing a drawing; `--sheet out.png` previews them.
 - `tools/ui_icon_art.py`: the same for the UI's button icons (`art/sprites/ui_<GameIcon>.png`): `IconImage` shows
   them from 18 pt up (battle buttons, the HUD's buttons, the menu's tabs) and keeps Iconaut's vector icons for
   small inline glyphs. `--sheet out.png` previews them on the game's button colours.

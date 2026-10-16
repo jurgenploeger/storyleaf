@@ -4195,6 +4195,17 @@
       }
     },
     {
+      "id": "ship",
+      "kind": "prop",
+      "request": {
+        "prompt": "small wooden sailing ship with one mast and a cream square sail with a gold star, moored, isometric",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 202,
+        "height": 328,
+        "remove_bg": true
+      }
+    },
+    {
       "id": "barrels",
       "kind": "prop",
       "request": {

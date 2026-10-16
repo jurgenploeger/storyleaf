@@ -397,9 +397,12 @@ final class ContinentScene: SKScene {
     }
 
     /// How high the ground stands under a point (on a hill, a terrace, down the shore), from the
-    /// land whose it is: walkers stand on it (`Walker.settle`).
+    /// land whose it is, or out on a harbor's pier its deck: walkers stand on it (`Walker.settle`).
     func groundHeight(at point: CGPoint) -> CGFloat {
-        guard let owner = store.land(at: Self.cell(at: point)), let land = lands[owner.id] else { return 0 }
+        let cell = Self.cell(at: point)
+        guard let owner = store.land(at: cell), let land = lands[owner.id] else {
+            return store.pier(at: cell) == nil ? 0 : WorldMap.pierHeight
+        }
         return land.map.height(at: CGPoint(x: point.x - land.shift.dx, y: point.y - land.shift.dy))
     }
 
@@ -525,10 +528,14 @@ final class ContinentScene: SKScene {
             crowd.greet(at: spot, from: land.stage.local(player.position))
         }
         // A tap on a hilltop means the top, not the ground it hides: worked out by the land there.
+        // One on a harbor's pier means its deck, drawn a little over the sea.
         var ground = point
+        let deck = CGPoint(x: point.x, y: point.y - WorldMap.pierHeight)
         if let owner = store.land(at: Self.cell(at: point)), let land = lands[owner.id] {
             let local = CGPoint(x: point.x - land.shift.dx, y: point.y - land.shift.dy)
             ground = land.map.groundPoint(under: local) + land.shift
+        } else if store.pier(at: Self.cell(at: deck)) != nil {
+            ground = deck
         }
         walk(to: ground, marked: true)
     }
@@ -598,18 +605,22 @@ final class ContinentScene: SKScene {
         session.mapCell = store.local(cell, in: land.place)
         guard !starting else { return }
         // On a land not laid out yet, you're still in the last one (`checkLand`): none of its caves
-        // or monsters there.
-        guard store.land(at: cell)?.id == here.id else { return }
-        // Into a cave through its mouth: off the continent, behind the card.
-        if let exit = land.map.exit(at: session.mapCell), Content.shared.world[exit.to] == nil {
+        // or monsters there. Out on its harbor's pier, you're still in it.
+        let ashore = store.land(at: cell)
+        guard (ashore ?? store.pier(at: cell))?.id == here.id else { return }
+        // Into a cave through its mouth, or aboard a ship at the end of a harbor's pier, over the
+        // sea to the land it sails to: off where you are, behind the card.
+        let cave = land.map.exit(at: session.mapCell).flatMap { Content.shared.world[$0.to] == nil ? $0 : nil }
+        if let exit = cave ?? land.map.boarding(at: session.mapCell) {
             isInputLocked = true
             player.path = []
             player.setWalking(false)
             onTravel?(exit)
             return
         }
-        // Out in the wild, now and then, the land's monsters (`MapDef.Encounters`), as on its own map.
-        guard let encounters = here.encounters else { return }
+        // Out in the wild, now and then, the land's monsters (`MapDef.Encounters`), as on its own map;
+        // none out on a pier.
+        guard ashore != nil, let encounters = here.encounters else { return }
         stepsSinceBattle += 1
         if !holdsEncounters, stepsSinceBattle > encounters.graceSteps, Double.random(in: 0..<1) < encounters.rate {
             stepsSinceBattle = 0
