@@ -181,6 +181,17 @@ struct ContentTests {
                         #expect(!map.isWalkable(cell), "map \(def.id): you can climb its rock at \(cell)")
                     }
                 }
+                // No road climbs it but its own, up to the mouth (playtesting 2026-10-16: Lotus Land's
+                // road to the Rat Cavern ran up over the mountain's flank on its way from the hub).
+                var climbed: [GridPoint] = []
+                for cell in hill.cells where map.ground[cell.row][cell.col] == .path {
+                    let dx = Double(cell.col) + 0.5 - mouth.x, dy = Double(cell.row) + 0.5 - mouth.y
+                    let across = dx * mouth.along.x + dy * mouth.along.y, inward = dx * mouth.into.x + dy * mouth.into.y
+                    if abs(across) <= 2.5, inward >= -Double(WorldMap.gateApproach) - 2, inward <= 1.5 { continue }
+                    if hill.height(atCells: Double(cell.col) + 0.5, Double(cell.row) + 0.5) > 6 { climbed.append(cell) }
+                }
+                print("⛰ \(def.id) cave hill: \(Int(hill.lobes[0].across)) across")
+                #expect(climbed.isEmpty, "map \(def.id): a road climbs its cave's hill at \(Array(climbed.prefix(5)))")
                 // And it never leans out of sight.
                 for cell in hill.cells where (cell.col + cell.row) % 3 == 0 {
                     let x = Double(cell.col) + 0.5, y = Double(cell.row) + 0.5, e = 0.1

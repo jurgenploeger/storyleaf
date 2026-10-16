@@ -1511,13 +1511,33 @@ nonisolated final class WorldMap: @unchecked Sendable {
         // gentler across, and tall enough to have a top (`mountainTop`).
         let peak = min(Double.random(in: 110...125, using: &rng), (Self.gateBack - 1) * Self.mountainTop * steepness / 1.5)
         let middle = point(0, Self.gateFace)
-        var mountain = Hill.Lobe(x: middle.x, y: middle.y, along: Self.gateBack, across: 11,
-                                 angle: atan2(inward.y, inward.x) + Double.random(in: -0.1...0.1, using: &rng), peak: peak, steepness: steepness)
-        mountain.front = Self.gateFace
-        mountain.spurs = Hill.Lobe.Spurs(count: Double(Int.random(in: 11...15, using: &rng)), depth: 0.22,
-                                         phases: (Double.random(in: 0..<6.3, using: &rng), Double.random(in: 0..<6.3, using: &rng),
-                                                  Double.random(in: 0..<6.3, using: &rng)))
-        var lobes = [mountain]
+        let heading = atan2(inward.y, inward.x) + Double.random(in: -0.1...0.1, using: &rng)
+        let spurs = Hill.Lobe.Spurs(count: Double(Int.random(in: 11...15, using: &rng)), depth: 0.22,
+                                    phases: (Double.random(in: 0..<6.3, using: &rng), Double.random(in: 0..<6.3, using: &rng),
+                                             Double.random(in: 0..<6.3, using: &rng)))
+        func mountain(across: Double) -> Hill.Lobe {
+            var lobe = Hill.Lobe(x: middle.x, y: middle.y, along: Self.gateBack, across: across, angle: heading, peak: peak, steepness: steepness)
+            lobe.front = Self.gateFace
+            lobe.spurs = spurs
+            return lobe
+        }
+        /// Whether a summit keeps off every road but the one up to the mouth.
+        func offTheRoads(_ lobe: Hill.Lobe) -> Bool {
+            let reach = Int(max(lobe.along, lobe.across).rounded(.up)) + 2
+            for dr in -reach...reach {
+                for dc in -reach...reach {
+                    let cell = GridPoint(col: Int(lobe.x.rounded(.down)) + dc, row: Int(lobe.y.rounded(.down)) + dr)
+                    guard contains(cell), lobe.depth(Double(cell.col) + 0.5, Double(cell.row) + 0.5) > -1 else { continue }
+                    if ground[cell.row][cell.col] == .path && !approach(cell) { return false }
+                }
+            }
+            return true
+        }
+        // As wide across as it can be without climbing over a road beside it (playtesting
+        // 2026-10-16: Lotus Land's road to the Rat Cavern, swaying on its way from the hub, ran up
+        // over the mountain's flank).
+        let widest = Self.gateAcross.first { offTheRoads(mountain(across: $0)) } ?? Self.gateAcross.last ?? 11
+        var lobes = [mountain(across: widest)]
         for side in [-1.0, 1.0] {
             let shoulder = summit(side * 7, 3.5, along: Double.random(in: 4...4.5, using: &rng), across: Double.random(in: 4.5...5.5, using: &rng),
                                   turn: Double.random(in: -0.15...0.15, using: &rng), peak: Double.random(in: 50...70, using: &rng))
@@ -1587,6 +1607,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// foot to its middle, and its back on from there, in cells.
     static let gateFace = 5.0
     static let gateBack = 12.0
+    /// How far across its face either side it reaches, the widest first: narrower where a road
+    /// passes close by.
+    static let gateAcross: [Double] = [11, 10, 9, 8, 7, 6]
 
     /// How high a range where a road leads into a cave stands where its rock begins, the wall you
     /// can't climb (points): its foot below that you can walk on.
