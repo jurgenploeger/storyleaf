@@ -25,7 +25,7 @@ import SpriteKit
 ///                  footbridges and jetties out into its lakes; `WorldMap.bridges`), at its land end
 ///                  (a jetty's) or its middle
 ///   mouth=n        start on the road six cells in front of the mouth of the map's nth cave
-///                  (`WorldMap.crags`, 0 first), looking up at it
+///                  (`WorldMap.crags`, 0 first), looking up at it; mouth=n:d, d cells in front
 ///   harbor=n       start where the map's nth harbor's pier leaves the land (`WorldMap.harbors`, 0
 ///                  first), its ship moored out at the end
 ///   equip=a+b      start wearing these items (ids from content/items.json, joined with +)
@@ -652,10 +652,12 @@ enum DebugLaunch {
                 session.playerPosition = grid.center(of: bridge.cell(lane: bridge.lane, along: along))
             }
         }
-        if let pick = flags["mouth"].flatMap({ Int($0) }), let def = Content.shared.map(session.data.mapID) {
+        let mouthFlag = flags["mouth"]?.split(separator: ":").map(String.init) ?? []
+        if let pick = mouthFlag.first.flatMap({ Int($0) }), let def = Content.shared.map(session.data.mapID) {
             let grid = WorldMap(def: def)
+            let out = mouthFlag.count > 1 ? Double(mouthFlag[1]) ?? 6 : 6
             if grid.crags.indices.contains(pick), let mouth = grid.hills[grid.crags[pick].hill].mouth {
-                let spot = GridPoint(col: Int((mouth.x - mouth.into.x * 6).rounded(.down)), row: Int((mouth.y - mouth.into.y * 6).rounded(.down)))
+                let spot = GridPoint(col: Int((mouth.x - mouth.into.x * out).rounded(.down)), row: Int((mouth.y - mouth.into.y * out).rounded(.down)))
                 session.playerPosition = grid.center(of: grid.nearestWalkable(to: spot) ?? spot)
             }
         }

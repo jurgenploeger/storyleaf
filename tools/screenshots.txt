@@ -267,6 +267,11 @@ gate_lotus     | newgame,level=40,map=lotus_land,mouth=0,weather=clear,hour=12 |
 gate_moon      | newgame,level=100,map=moonglow,mouth=0,hour=16,weather=clear | 8
 gate_emerald_land | newgame,level=190,map=emerald_road,mouth=0,landscape,weather=clear,hour=12 | 8
 gate_night     | newgame,level=12,map=northern_grassland,mouth=0,weather=clear,hour=23 | 8
+# Nearer the mouth (mouth=0:3), so it's mid-screen with the mountain over it: its face and its ridges.
+gate_downs_near | newgame,level=12,map=northern_grassland,mouth=0:3,weather=clear,hour=12 | 8
+gate_downs_near_land | newgame,level=12,map=northern_grassland,mouth=0:3,landscape,weather=clear,hour=12 | 8
+gate_valley_near | newgame,level=30,map=valley_of_fear,mouth=0:3,weather=clear,hour=12 | 8
+gate_moon_near_land | newgame,level=100,map=moonglow,mouth=0:3,landscape,hour=16,weather=clear | 8
 # A harbor where a road meets the sea: a pier out to a ship moored at its end, walked aboard to sail
 # over to Starfall Isle, an island of fallen starlight out east of Sneezle Isle (`WorldMap.harbors`),
 # its own harbor, its crystal glades by day and by night, and Sneezle Isle's captain.
