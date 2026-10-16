@@ -1621,6 +1621,25 @@ struct RulesTests {
         #expect(session.status(of: Content.shared.quest("new_friend")!) == .available)
     }
 
+    /// The Quests list puts the quest you took last at the top, and the one you finished last first
+    /// (playtesting 2026-10-16); quests from saves before they kept dates come after, in the game's order.
+    @Test func newQuestsAreAtTheTop() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let quests = Content.shared.quests.map(\.id).filter { $0 != "hope_of_meadowbrook" && $0 != "jelly_trouble" }.prefix(4).map { $0 }
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        session.data.quests[quests[0]] = QuestProgress(state: .active, count: 0)
+        session.data.quests[quests[1]] = QuestProgress(state: .active, count: 0, taken: start)
+        session.data.quests[quests[2]] = QuestProgress(state: .active, count: 0, taken: start.addingTimeInterval(60))
+        #expect(session.activeQuests.map(\.id) == [quests[2], quests[1], quests[0]])
+        session.data.quests[quests[3]] = QuestProgress(state: .completed, count: 0, finished: start)
+        session.data.quests[quests[1]] = QuestProgress(state: .completed, count: 0, taken: start, finished: start.addingTimeInterval(120))
+        #expect(session.completedQuests.map(\.id) == [quests[1], quests[3]])
+        // Taking one dates it: it goes to the top.
+        session.data.quests["hope_of_meadowbrook"] = QuestProgress(state: .completed, count: 3)
+        session.acceptQuest("jelly_trouble")
+        #expect(session.activeQuests.first?.id == "jelly_trouble")
+    }
+
     @Test func questRewardsGrowWithYourLevel() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         session.data.quests["hope_of_meadowbrook"] = QuestProgress(state: .completed, count: 3)

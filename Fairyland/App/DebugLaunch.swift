@@ -532,8 +532,10 @@ enum DebugLaunch {
         }
         // Like a save from before those quests gave their treasures: they come by post.
         if flags["done"] != nil { session.deliverQuestTreasures() }
-        for id in flags["taken"]?.split(separator: "+").map(String.init) ?? [] where Content.shared.quest(id) != nil {
-            session.data.quests[id] = QuestProgress(state: .active, count: 0)
+        // Taken in the order given, a minute apart: the last at the top of the Quests list.
+        let taken = (flags["taken"]?.split(separator: "+").map(String.init) ?? []).filter { Content.shared.quest($0) != nil }
+        for (index, id) in taken.enumerated() {
+            session.data.quests[id] = QuestProgress(state: .active, count: 0, taken: Date(timeIntervalSinceNow: Double(index - taken.count) * 60))
         }
         if let species = flags["pet"], let pet = session.makePet(species: species, level: max(1, session.data.hero.level - 15)) {
             session.addPet(pet, countsForQuests: false)

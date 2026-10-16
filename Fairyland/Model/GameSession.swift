@@ -1539,12 +1539,21 @@ final class GameSession {
         return note
     }
 
+    /// The quests you're on, the one you took last first (playtesting 2026-10-16: new quests at the
+    /// top), then any taken before 0.7.19 kept no date, in the order the game lists them.
     var activeQuests: [QuestDef] {
-        content.quests.filter { data.quests[$0.id]?.state == .active }
+        Self.latestFirst(content.quests.filter { data.quests[$0.id]?.state == .active }) { data.quests[$0.id]?.taken }
     }
 
+    /// The quests you've handed in, the one you finished last first, as `activeQuests`.
     var completedQuests: [QuestDef] {
-        content.quests.filter { data.quests[$0.id]?.state == .completed }
+        Self.latestFirst(content.quests.filter { data.quests[$0.id]?.state == .completed }) { data.quests[$0.id]?.finished }
+    }
+
+    /// `quests` with a date the latest first, then those without one in their order.
+    private static func latestFirst(_ quests: [QuestDef], by date: (QuestDef) -> Date?) -> [QuestDef] {
+        let dated = quests.compactMap { quest in date(quest).map { (quest: quest, date: $0) } }
+        return dated.sorted { $0.date > $1.date }.map(\.quest) + quests.filter { date($0) == nil }
     }
 
     func notice(for giver: String) -> QuestNotice? {
@@ -1577,7 +1586,7 @@ final class GameSession {
 
     func acceptQuest(_ id: String, answer: QuestDef.Question.Answer? = nil) {
         guard let quest = content.quest(id), status(of: quest) == .available else { return }
-        data.quests[id] = QuestProgress(state: .active, count: 0)
+        data.quests[id] = QuestProgress(state: .active, count: 0, taken: Date())
         SoundEffects.shared.play(.questAccept)
         if let answer { data.eggSpecies = answer.egg }
         post(L("Quest accepted: {quest}", ["quest": quest.title]), .quest)
@@ -1739,6 +1748,7 @@ final class GameSession {
             for _ in 0..<goal(of: quest) { removeItem(item) }
         }
         data.quests[id]?.state = .completed
+        data.quests[id]?.finished = Date()
         data.quests[id]?.paidGold = pay.gold
         data.quests[id]?.paidEXP = pay.exp
         SoundEffects.shared.play(.questDone)

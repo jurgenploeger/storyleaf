@@ -368,6 +368,9 @@ party_open   | newgame,level=43,class=fighter,pet=pineapple,friends=2,map=twilig
 party_pet    | newgame,level=43,class=fighter,pet=pineapple,map=twilight_woods | 15
 party_landscape | newgame,level=43,class=fighter,pet=pineapple,friends=2,map=meadowbrook,landscape | 8
 quests       | newgame,menu=quests                                 | 8
+# The quest taken last at the top; the Hundred-Toy Shelf's six toys wrap under its gold and EXP
+# (playtesting 2026-10-16: they squeezed them into a column of single letters).
+quests_many  | newgame,level=127,taken=great_wisp+the_hundred_toy_shelf+monkey_and_crab,menu=quests | 8
 # The first world map lays every land out in the background (later ones read them back from disk).
 worldmap     | newgame,worldmap                                    | 180
 monster_book | newgame,book                                        | 8
