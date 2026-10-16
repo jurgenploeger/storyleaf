@@ -118,8 +118,8 @@ extension GameSession {
     func prizeProgress(_ prize: RewardsDef.Prize) -> (have: Int, need: Int) {
         switch prize.kind {
         case .land:
-            let monsters = prize.land.map { monsters(of: $0) } ?? []
-            return (have: monsters.filter { hasBeaten($0) }.count, need: monsters.count)
+            let species = prize.land.map { monsters(of: $0) } ?? []
+            return (have: species.filter { hasBeaten($0) }.count, need: species.count)
         case .book:
             return (have: content.monsters.filter { hasBeaten($0.id) }.count, need: content.monsters.count)
         case .cards:
