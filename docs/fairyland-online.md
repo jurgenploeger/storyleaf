@@ -395,7 +395,7 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     desert in the south-east (Ingothold, Genie Desert, Hidden Steppe, like the Kharidian Desert) with
     Sneezle Isle on a sand spit and Pineapple Shore's beaches on the south coast (Karamja's place), the dark
     woods to the east (Morytania's), Gumdrop Peaks and the wolves' lair to the west, Meadowbrook's fields in
-    the middle. Changing the order moved some roads: Pineapple Shore is reached from
+    the middle. Since 0.7.21 each land says which (maps.json `climate`: cold for the four northern lands, hot for the desert and the south coast; none for the mild lands between, and caves), frost and snow monsters live only where it's cold (`check_content.py`; playtesting 2026-10-16 found a frost-maned lion on the Hidden Steppe and frost puffs on Pineapple Shore's beach), and the adventurers about walk companions at home in a land of the same climate where one fits (`Crowd.companion`). Changing the order moved some roads: Pineapple Shore is reached from
     Meadowbrook now (still behind "Jelly Trouble"), the Smiling Forest from Gumdrop Peaks and Prismhaven,
     and Moonwhisper from the Snow White Forest, opened by beating the Big Bad Wolf
     ("Who's Afraid of the Big Bad Wolf?", which fits its levels, 82, better than "Crystal Hearts", 71,

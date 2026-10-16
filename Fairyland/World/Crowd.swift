@@ -173,7 +173,7 @@ final class Crowd {
             guard let home = map.strollTarget(near: map.center, radius: spread, using: &rng) else { continue }
             let profile = slot < visitors.count
                 ? visitors[slot]
-                : Self.profile(named: adventurerNames.popLast() ?? L("Traveller"), levels: levels, danger: def.danger == true)
+                : Self.profile(named: adventurerNames.popLast() ?? L("Traveller"), levels: levels, danger: def.danger == true, climate: def.climate)
             addAdventurer(profile, home: home, roam: roam, world: world)
             // Now and then a few travel together, as you do with your party: friends about the
             // leader's level, counted among the map's adventurers. Never troublemakers.
@@ -183,7 +183,7 @@ final class Crowd {
             let size = Int.random(in: sizes, using: &rng)
             for place in 1..<max(1, min(size, left + 1)) {
                 left -= 1
-                addAdventurer(Self.profile(named: adventurerNames.popLast() ?? L("Traveller"), levels: near, danger: false),
+                addAdventurer(Self.profile(named: adventurerNames.popLast() ?? L("Traveller"), levels: near, danger: false, climate: def.climate),
                               home: home, roam: roam, world: world)
                 guard let member = members.last else { break }
                 member.ahead = ahead
@@ -285,7 +285,7 @@ final class Crowd {
         }
         let levels = max(1, market.level - 6)...max(1, market.level + 10)
         for spot in spots {
-            let profile = Self.profile(named: names.popLast() ?? L("Trader"), levels: levels, danger: false)
+            let profile = Self.profile(named: names.popLast() ?? L("Trader"), levels: levels, danger: false, climate: def.climate)
             addAdventurer(profile, home: map.cell(at: spot), roam: 0, world: world, trades: true)
             guard let member = members.last else { continue }
             member.walker.position = spot
@@ -311,14 +311,15 @@ final class Crowd {
 
     /// A random adventurer: level to suit the area, a class once they're past Novice (and armour
     /// to match, `GameSession.armor(for:)`), and often a companion to suit their level
-    /// (`companion(forLevel:)`). In danger zones some are troublemakers.
-    private static func profile(named name: String, levels: ClosedRange<Int>, danger: Bool) -> Adventurer {
+    /// (`companion(forLevel:climate:)`, at home in a land like `climate`). In danger zones some are
+    /// troublemakers.
+    private static func profile(named name: String, levels: ClosedRange<Int>, danger: Bool, climate: MapDef.Climate?) -> Adventurer {
         let content = Content.shared
         let level = Int.random(in: levels)
         let classID = level < content.classChoiceLevel ? "novice" : (content.classes.filter { $0.id != "novice" }.randomElement()?.id ?? "novice")
         let race = content.races.randomElement()?.id ?? "human"
         return Adventurer(name: name, raceID: race, classID: classID, level: level,
-                          look: randomLook(race: race), petSpecies: Bool.random() ? companion(forLevel: level) : nil,
+                          look: randomLook(race: race), petSpecies: Bool.random() ? companion(forLevel: level, climate: climate) : nil,
                           hostile: danger && Int.random(in: 0..<5) < 2, sealStones: Int.random(in: 0...3))
     }
 
@@ -328,9 +329,10 @@ final class Crowd {
     /// A companion for an adventurer of `level`: a monster they could have caught on the way, one
     /// that can be caught (no bosses) and roams the wild (maps.json encounters) where monsters
     /// start at most `companionReach` levels below theirs. A level-90 mage walks something from
-    /// the snowy north, not a starter bunny. The starter companions (crowd.json `companions`)
-    /// fill in where nothing fits.
-    static func companion(forLevel level: Int) -> String? {
+    /// the snowy north, not a starter bunny. Where it can be, one at home in a land of `climate`,
+    /// the land they roam's (playtesting 2026-10-16: a frost-maned lion walked the desert). The
+    /// starter companions (crowd.json `companions`) fill in where nothing fits.
+    static func companion(forLevel level: Int, climate: MapDef.Climate? = nil) -> String? {
         let content = Content.shared
         let near = content.maps.compactMap(\.encounters).filter { encounters in
             guard let lowest = encounters.levels.first else { return false }
@@ -340,7 +342,12 @@ final class Crowd {
             guard let monster = content.monster(id) else { return false }
             return monster.captureRate > 0 && monster.boss != true
         }
-        if let pick = catchable.randomElement() { return pick }
+        var homes: Set<String> = []
+        for land in content.maps where land.climate == climate {
+            if let monsters = land.encounters?.monsters { homes.formUnion(monsters.keys) }
+        }
+        let suited = catchable.filter { homes.contains($0) }
+        if let pick = (suited.isEmpty ? catchable : suited).randomElement() { return pick }
         return content.crowd.companions.compactMap { art in content.monsters.first { $0.art == art }?.id }.randomElement()
     }
 

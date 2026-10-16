@@ -1387,8 +1387,7 @@
         {
           "item": "chart_piece_reef",
           "from": [
-            "earth_lion",
-            "frosted_earth_lion"
+            "earth_lion"
           ],
           "chance": 0.35,
           "upTo": 1

@@ -1813,6 +1813,7 @@
     {
       "id": "pineapple_shore",
       "name": "Pineapple Shore",
+      "climate": "hot",
       "crowd": {
         "adventurers": 4
       },
@@ -2097,12 +2098,12 @@
         "monsters": {
           "pineapple": 6,
           "jelly": 2,
-          "frost_puff": 1,
+          "ember_puff": 1,
           "dragonfruit": 1,
           "wood_crab": 3,
           "mud_eagle": 2,
           "rosy_wood_crab": 1,
-          "frosted_mud_eagle": 1
+          "sunny_tree_snake": 1
         }
       },
       "ambience": {
@@ -4324,6 +4325,7 @@
     {
       "id": "snow_white_forest",
       "name": "Snow White Forest",
+      "climate": "cold",
       "width": 154,
       "height": 121,
       "music": "snow",
@@ -4751,7 +4753,8 @@
           "frost_bear": 2,
           "starry_fire_bear": 1,
           "rosy_pegasus": 1,
-          "shadow_snowman": 1
+          "shadow_snowman": 1,
+          "frost_puff": 1
         }
       },
       "ambience": {
@@ -5536,7 +5539,7 @@
           "light_mouse": 2,
           "night_monkey": 2,
           "rosy_wisp": 1,
-          "frosted_earth_lion": 1,
+          "amber_werewolf": 1,
           "shadow_red_bull": 1
         }
       },
@@ -5936,6 +5939,7 @@
     {
       "id": "goldburg",
       "name": "Ingothold",
+      "climate": "hot",
       "width": 172,
       "height": 137,
       "music": "goldburg",
@@ -6783,6 +6787,7 @@
     {
       "id": "genie_desert",
       "name": "Genie Desert",
+      "climate": "hot",
       "width": 191,
       "height": 133,
       "music": "desert",
@@ -7640,6 +7645,7 @@
     {
       "id": "moonglow",
       "name": "Moonwhisper",
+      "climate": "cold",
       "width": 137,
       "height": 110,
       "music": "moonglow",
@@ -7970,7 +7976,8 @@
           "black_kong": 3,
           "snowman": 2,
           "sunny_poison_skeleton": 1,
-          "mint_black_kong": 1
+          "mint_black_kong": 1,
+          "frosted_mud_eagle": 1
         }
       },
       "ambience": {
@@ -8840,7 +8847,7 @@
           "golden_slime": 5,
           "mud_slime": 4,
           "jelly": 2,
-          "frost_puff": 2
+          "shade_puff": 2
         }
       },
       "npcs": [
@@ -11220,7 +11227,7 @@
         "monsters": {
           "water_slug": 3,
           "starry_water_slug": 2,
-          "frost_puff": 3,
+          "blue_treefrog": 3,
           "wisp": 2,
           "treefrog": 2
         }
@@ -12017,6 +12024,7 @@
     {
       "id": "goldburg_lake",
       "name": "Ingothold Lake",
+      "climate": "hot",
       "crowd": {
         "adventurers": 4
       },
@@ -12749,7 +12757,7 @@
           "dream_phantom": 5,
           "phantom": 2,
           "poison_skeleton": 2,
-          "shadow_snowman": 1
+          "night_bun": 1
         }
       },
       "buildings": [
@@ -12802,6 +12810,7 @@
     {
       "id": "secret_plain",
       "name": "Hidden Steppe",
+      "climate": "hot",
       "width": 126,
       "height": 94,
       "music": "desert",
@@ -13165,7 +13174,7 @@
         ],
         "monsters": {
           "earth_lion": 3,
-          "frosted_earth_lion": 2,
+          "mint_black_widow": 2,
           "red_bull": 2,
           "black_bull": 2,
           "light_snake": 2,
@@ -13205,6 +13214,7 @@
     {
       "id": "hachoo_island",
       "name": "Sneezle Isle",
+      "climate": "hot",
       "crowd": {
         "adventurers": 4
       },
@@ -13590,6 +13600,7 @@
     {
       "id": "rosen_lake",
       "name": "Briarmere",
+      "climate": "cold",
       "width": 192,
       "height": 98,
       "music": "snow",
@@ -13979,7 +13990,8 @@
           "snowman": 2,
           "shadow_snowman": 2,
           "temple_jelly": 3,
-          "frosted_phantom": 2
+          "frosted_phantom": 2,
+          "frosted_earth_lion": 1
         }
       },
       "buildings": [
@@ -14011,6 +14023,7 @@
     {
       "id": "water_temple",
       "name": "Tidewater Shrine",
+      "climate": "cold",
       "width": 96,
       "height": 103,
       "music": "cave",

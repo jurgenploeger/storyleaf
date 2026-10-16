@@ -551,6 +551,15 @@ for map_def in maps.values():
                 check(bool(hills) and "town" not in map_def and "cave" not in theme, f"{where} → {label} is on a summit, but no hills are raised there")
 # Every monster can be met somewhere: on a map's encounter table, or standing there as a boss.
 met = {monster for m in maps.values() for monster in (m.get("encounters") or {}).get("monsters", {})}
+# Climate (maps.json `climate`): the snowy north is cold, the desert south-east hot, the rest mild.
+# Frost and snow monsters live only where it's cold (playtesting 2026-10-16: a frost-maned lion
+# roamed the desert steppe, frost puffs a tropical beach).
+for m in maps.values():
+    check(m.get("climate") in (None, "cold", "hot"), f"map {m['id']} climate → cold or hot (or none, for a mild land)")
+    for species in (m.get("encounters") or {}).get("monsters", {}):
+        name = monsters.get(species, {}).get("name", "")
+        if re.search(r"\b(frost|frosted|snow|snowman|ice|icy)\b", name, re.I):
+            check(m.get("climate") == "cold", f"map {m['id']} → {name} lives only where it's cold (climate cold)")
 met |= {npc["monster"] for npc in npcs.values() if npc["role"] == "boss" and npc.get("monster")}
 for monster_id in monsters:
     check(monster_id in met, f"monster {monster_id} → on no map's encounter table and not a boss, so it can never be met")

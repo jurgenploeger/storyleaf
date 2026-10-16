@@ -1049,6 +1049,30 @@ struct RulesTests {
         }
     }
 
+    /// Adventurers walk companions at home in a land like the one they roam, where one fits
+    /// (playtesting 2026-10-16: a frost-maned lion in the desert): never one that lives only in the
+    /// cold out in the hot south-east, and no frost monster in the mild lands.
+    @Test func companionsSuitTheLandTheyRoam() {
+        let content = Content.shared
+        func homes(_ id: String) -> Set<MapDef.Climate?> {
+            Set(content.maps.filter { $0.encounters?.monsters[id] != nil }.map(\.climate))
+        }
+        let cases: [(level: Int, climate: MapDef.Climate)] = [(130, .hot), (60, .hot), (150, .cold), (80, .cold)]
+        for (level, climate) in cases {
+            for _ in 0..<20 {
+                guard let id = Crowd.companion(forLevel: level, climate: climate) else {
+                    Issue.record("no companion for level \(level)")
+                    return
+                }
+                #expect(homes(id).contains(climate), "level \(level) in a \(climate) land → \(id)")
+            }
+        }
+        for _ in 0..<20 {
+            let id = Crowd.companion(forLevel: 40) ?? ""
+            #expect(!id.contains("frost") && !id.contains("snow"), "a mild land → \(id)")
+        }
+    }
+
     @Test func theHealerRestsYourFriendsToo() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         var friend = Adventurer(name: "Maple", raceID: "elf", classID: "mage", level: 20, look: .standard)

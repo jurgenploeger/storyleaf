@@ -722,6 +722,14 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
     let locals: [Local]?
     /// A danger zone: adventurers can duel here, and some will pick a fight.
     let danger: Bool?
+    /// The snowy north or the hot south-east (`Climate`); nil for the mild lands between, and caves.
+    /// Frost monsters live only where it's cold, and the adventurers about walk companions at home
+    /// in a land like theirs (`Crowd.companion`).
+    let climate: Climate?
+
+    nonisolated enum Climate: String, Decodable, Sendable {
+        case cold, hot
+    }
     /// Town planning: streets, a plaza, shops along the streets and raised terraces.
     let town: Town?
 
