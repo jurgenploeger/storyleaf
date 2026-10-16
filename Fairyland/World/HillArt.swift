@@ -38,6 +38,11 @@ enum HillArt {
         /// Ledges across its steep bare rock, if set: a darker band every this many points up, a
         /// lighter lip over each, so it reads as layered rock rather than a smooth mound.
         var strata: Double? = nil
+        /// Its bare rock painted as it shows on the screen rather than as it lies on the map: each
+        /// pixel's from where it rises to, the rock over all it covers there, and its ledges by its
+        /// own height (`strata`). A sheer face showed the rock and its ledges stretched up the
+        /// screen (a cave's wall, playtesting 2026-10-16).
+        var upright = false
         /// The map's road, if bare rock should leave it showing (a road up into a cave's mouth).
         var road: ((GridPoint) -> Bool)? = nil
         /// The soft colour patches over the map's whole ground: a pixel a cell, north at the top.
@@ -263,7 +268,7 @@ enum HillArt {
                 // faces you. On a slope turned away the view squeezes each band into a thin dark line
                 // that reads as a crack in the ground (playtesting 2026-10-12, Moonwhisper's cave
                 // range): `facing` is 1 within 60° of straight at you, 0 turned side on or away.
-                if let strata = look.strata, amount > 0.5 {
+                if !look.upright, let strata = look.strata, amount > 0.5 {
                     let rise = (hx * hx + hy * hy).squareRoot()
                     let facing = min(1, max(0, 2 * (hx + hy) / max(rise * 2.0.squareRoot(), 1e-6)))
                     let steep = min(1, max(0, (rise - 0.15) / 0.2)) * facing
@@ -334,6 +339,67 @@ enum HillArt {
             CGPoint(x: (point.x - CGFloat(low.col)) * scale, y: (point.y - CGFloat(low.row)) * scale)
         }
         let side = square * px
+        // Bare rock painted upright (`Look.upright`): the rock's tiles round the range, read once.
+        let rockUpright = look.upright ? look.bank.flatMap { UprightRock(bank: $0, from: low, columns: columns, rows: rows, highest: hill.highest) } : nil
+        /// A square's bare rock painted upright (rows top down): each pixel's from where it rises to
+        /// on the screen, as flat ground there would show it, over all the pixel covers there, and
+        /// its ledges (`Look.strata`) by its own height, fine enough for a sheer face.
+        func uprightRock(_ corner: GridPoint, cells: [GridPoint], _ rock: UprightRock, pause: () async -> Void) async -> CGImage? {
+            var bytes = [UInt8](repeating: 0, count: side * side * 4)
+            let step = 1 / Double(px), climb = UprightRock.climb, unit = Double(tile) * 0.8660254
+            for (number, cell) in cells.enumerated() {
+                if number % 4 == 3 { await pause() }
+                for j in 0..<px {
+                    let y = Double(cell.row) + (Double(j) + 0.5) * step
+                    let row = side - 1 - ((cell.row - corner.row) * px + j)
+                    for i in 0..<px {
+                        let x = Double(cell.col) + (Double(i) + 0.5) * step
+                        let here = Double(hill.height(atCells: x, y))
+                        // How fast it rises across and up the map (points a cell), so where the pixel
+                        // shows and what it covers there: a pixel across and up the map each.
+                        let gx = (Double(hill.height(atCells: x + step, y)) - here) / step
+                        let gy = (Double(hill.height(atCells: x, y + step)) - here) / step
+                        let lift = here / climb
+                        let ax = step * (1 + gx / climb), ay = step * gx / climb
+                        let bx = step * gy / climb, by = step * (1 + gy / climb)
+                        let across = min(2, max(1, Int((ax * ax + ay * ay).squareRoot() * Double(rock.width) + 0.5)))
+                        let up = min(4, max(1, Int((bx * bx + by * by).squareRoot() * Double(rock.height) + 0.5)))
+                        var red = 0.0, green = 0.0, blue = 0.0
+                        for u in 0..<across {
+                            for v in 0..<up {
+                                let fu = (Double(u) + 0.5) / Double(across) - 0.5, fv = (Double(v) + 0.5) / Double(up) - 0.5
+                                let texel = rock.colour(x + lift + fu * ax + fv * bx, y + lift + fu * ay + fv * by)
+                                red += texel.red
+                                green += texel.green
+                                blue += texel.blue
+                            }
+                        }
+                        // Its ledges, as the light has them on other rock (`strata`), where it faces you.
+                        var shade = 1.0 / Double(across * up)
+                        if let strata = look.strata {
+                            let hx = gx / unit, hy = gy / unit
+                            let rise = (hx * hx + hy * hy).squareRoot()
+                            let facing = min(1, max(0, 2 * (hx + hy) / max(rise * 2.0.squareRoot(), 1e-6)))
+                            let steep = min(1, max(0, (rise - 0.15) / 0.2)) * facing
+                            let ragged = sin(x * 2.3 + 1.1) * sin(y * 1.9 + 0.3) * 0.5 + sin(x * 5.1) * sin(y * 4.7 + 2) * 0.3
+                            let level = here + ragged * 6
+                            let band = level / strata - (level / strata).rounded(.down)
+                            if band < 0.18 {
+                                shade *= 1 - 0.3 * steep
+                            } else if band < 0.28 {
+                                shade *= 1 + 0.1 * steep
+                            }
+                        }
+                        let index = (row * side + (cell.col - corner.col) * px + i) * 4
+                        bytes[index] = UInt8(min(255, red * shade))
+                        bytes[index + 1] = UInt8(min(255, green * shade))
+                        bytes[index + 2] = UInt8(min(255, blue * shade))
+                        bytes[index + 3] = 255
+                    }
+                }
+            }
+            return PixelImage.make(bytes, width: side, height: side)
+        }
         func paint(_ corner: GridPoint, pause: @escaping () async -> Void) async -> CGImage? {
             guard let context = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
                                           space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
@@ -365,8 +431,13 @@ enum HillArt {
                 context.saveGState()
                 context.beginTransparencyLayer(auxiliaryInfo: nil)
                 context.interpolationQuality = .none
-                for cell in area where hill.cells.contains(cell) {
-                    if let picture = bank(cell) { context.draw(picture, in: rect(cell)) }
+                let rockCells = area.filter { hill.cells.contains($0) }
+                if let rockUpright, let picture = await uprightRock(corner, cells: rockCells, rockUpright, pause: pause) {
+                    context.draw(picture, in: CGRect(x: CGFloat(offset.x), y: CGFloat(offset.y), width: CGFloat(side), height: CGFloat(side)))
+                } else {
+                    for cell in rockCells {
+                        if let picture = bank(cell) { context.draw(picture, in: rect(cell)) }
+                    }
                 }
                 context.interpolationQuality = .medium
                 context.setBlendMode(.destinationIn)
@@ -719,6 +790,62 @@ enum HillArt {
         /// The middle of its floor and of its top, for the shade inside.
         let floor: CGPoint
         let top: CGPoint
+    }
+
+    /// A rock's tiles for painting it upright (`Look.upright`): each tile's pixels read once, and
+    /// which tile each cell round a range has (as `Look.bank` gives them), out as far up the screen
+    /// as its highest ground shows.
+    struct UprightRock {
+        /// A cell up the map's diagonal is this many points up the screen.
+        static let climb = 2 * Double(depthStep)
+        let tiles: [[UInt8]]
+        let width: Int, height: Int
+        let index: [Int]
+        let from: GridPoint
+        let columns: Int, rows: Int
+
+        init?(bank: (GridPoint) -> CGImage?, from low: GridPoint, columns: Int, rows: Int, highest: CGFloat) {
+            let reach = Int((Double(highest) / Self.climb).rounded(.up)) + 2
+            let from = GridPoint(col: low.col - 1, row: low.row - 1)
+            let wide = columns + reach + 2, deep = rows + reach + 2
+            var tiles: [[UInt8]] = [], known: [ObjectIdentifier: Int] = [:]
+            var index = [Int](repeating: 0, count: wide * deep)
+            var size = (width: 0, height: 0)
+            for r in 0..<deep {
+                for c in 0..<wide {
+                    guard let picture = bank(GridPoint(col: from.col + c, row: from.row + r)) else { continue }
+                    if let seen = known[ObjectIdentifier(picture)] {
+                        index[r * wide + c] = seen
+                        continue
+                    }
+                    if tiles.isEmpty { size = (picture.width, picture.height) }
+                    guard picture.width == size.width, picture.height == size.height,
+                          let pixels = PixelImage.pixels(of: picture, width: size.width, height: size.height) else { continue }
+                    known[ObjectIdentifier(picture)] = tiles.count
+                    index[r * wide + c] = tiles.count
+                    tiles.append(pixels)
+                }
+            }
+            guard !tiles.isEmpty, size.width > 0, size.height > 0 else { return nil }
+            self.tiles = tiles
+            width = size.width
+            height = size.height
+            self.index = index
+            self.from = from
+            self.columns = wide
+            self.rows = deep
+        }
+
+        /// The rock at a point of flat ground (in cells): its tile's pixel there.
+        func colour(_ x: Double, _ y: Double) -> (red: Double, green: Double, blue: Double) {
+            let col = Int(x.rounded(.down)), row = Int(y.rounded(.down))
+            let c = min(max(col - from.col, 0), columns - 1), r = min(max(row - from.row, 0), rows - 1)
+            let tile = tiles[index[r * columns + c]]
+            let px = min(width - 1, max(0, Int((x - Double(col)) * Double(width))))
+            let py = min(height - 1, max(0, height - 1 - Int((y - Double(row)) * Double(height))))
+            let at = (py * width + px) * 4
+            return (Double(tile[at]), Double(tile[at + 1]), Double(tile[at + 2]))
+        }
     }
 
     /// The mouth's doorway, upright on the screen like a door in a wall, however the slope it's in

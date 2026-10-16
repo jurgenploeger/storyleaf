@@ -59,6 +59,7 @@ struct HillLooks {
         crag.ambient = HillLooks.cragShade
         crag.brightest = 1.3
         crag.strata = 14
+        crag.upright = true
         // Its road stays a road all the way up to the cave's mouth.
         crag.road = { cell in map.contains(cell) && map.ground[cell.row][cell.col] == .path }
         // Out past the ends of its edge, it stops where a land next door lies.
