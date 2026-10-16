@@ -373,6 +373,24 @@ struct ContentTests {
                     }
                 }
                 #expect(differ == 0, "\(def.id) | \(here.def.id): \(differ) cells of the band show a different land from each side")
+                // Where a road crosses, the cells over the line its tiles take for road are the land next
+                // door's road, cell for cell, so the two roads' edges meet (playtesting 2026-10-16:
+                // Ingothold's road into the Genie Desert stepped at the line).
+                if let road = grid(def).region?.roads[here.def.id], road.into == nil {
+                    let mine = grid(def), theirs = grid(here.def)
+                    var unmet: [GridPoint] = []
+                    for dr in -4...4 {
+                        for dc in -4...4 {
+                            let cell = GridPoint(col: road.at.col + dc, row: road.at.row + dr)
+                            let local = here.local(cell)
+                            guard !mine.owns(cell), theirs.owns(local) else { continue }
+                            let beside = (-1...1).contains { dy in (-1...1).contains { dx in mine.owns(GridPoint(col: cell.col + dx, row: cell.row + dy)) } }
+                            guard beside else { continue }
+                            if mine.roadsPast.contains(cell) != (theirs.ground[local.row][local.col] == .path) { unmet.append(cell) }
+                        }
+                    }
+                    #expect(unmet.isEmpty, "\(def.id) | \(here.def.id): its road takes \(unmet.count) cells over the line otherwise than there, first \(Array(unmet.prefix(3)))")
+                }
                 // Past the border, the cells round this land's own show to its tiles (`Blend.shows`)
                 // what the land holding them lays out there, a third land's patches too, so a tile
                 // meets the one past the border as it would its own (playtesting 2026-10-16).

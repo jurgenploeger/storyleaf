@@ -859,6 +859,8 @@
     "Rosy": "ばら色",
     "Tan": "小麦色",
     "Deep": "褐色",
+    "Roads meet at the border": "道が境目でつながるように",
+    "Where a road crosses from one land into the next, its edges now meet at the line: Ingothold's road into the Genie Desert had a notch and a step there. Each land draws the other's road where it runs on, and both keep the road its plain width for the last few cells.": "土地から土地へ道がこえるところで、道のふちが境目でぴったりつながるようになりました。インゴットホールドから魔人の砂漠への道には、そこに切れこみと段差がありました。それぞれの土地が、となりの道がつづくところを描き、最後の数マスはどちらもふつうの道幅のままにします。",
     "Parties come and go": "出会いと別れのパーティ",
     "Adventurers don't always say yes now. Invite one to your party and they might turn you down: more often when you're far apart in level or they're travelling with friends, and for a few minutes after saying no.": "冒険者がいつもOKしてくれるとはかぎらなくなりました。パーティにさそっても、ことわられることがあります。レベルがはなれているときや、仲間と旅をしているときはことわられやすく、一度ことわると数分のあいだはことわり続けます。",
     "You can join their parties too: walk up to anyone in a group and tap Ask to join their party. If whoever leads says yes, you walk at the back of their line as they lead you about, and they fight beside you. Walk off far enough, or tap Leave party under your portrait, to go your own way.": "冒険者のパーティに入ることもできます。グループで旅をしている人に近づいて「パーティに入れてもらう」をタップしましょう。リーダーがOKしたら、列のいちばんうしろについて歩き、みんながあなたといっしょに戦います。じゅうぶんはなれるか、自分の顔の下の「パーティをぬける」をタップすると、一人旅にもどります。",

@@ -60,6 +60,8 @@ hill_bare      | newgame,map=sunny_meadow,hill=1,face,weather=clear,hour=12 | 8
 # The countryside round the towns and cities, as full as the lands round it (playtesting 2026-10-15),
 # and a road into a city lined.
 countryside_city | newgame,level=60,map=goldburg,at=-50_0,weather=clear,hour=12 | 8
+# Ingothold's road into the Genie Desert at the line (playtesting 2026-10-16: it stepped there).
+road_crossing  | newgame,level=60,map=goldburg,at=44_-46,weather=clear,hour=17 | 8
 countryside_village | newgame,map=meadowbrook,at=-60_10,weather=clear,hour=12 | 8
 roadside_city  | newgame,level=60,map=rainbow_city,roadside=row,weather=clear,hour=12 | 8
 # Back on the map after a won fight, the lands round you laid out meanwhile: playtesting saw a

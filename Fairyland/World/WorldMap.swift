@@ -86,6 +86,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
     private(set) var lakes: [(water: Set<GridPoint>, island: Set<GridPoint>)] = []
     /// The rivers' water (`layRivers`): from springs to the sea, on the continent.
     private(set) var river: Set<GridPoint> = []
+    /// The cells of the lands next door, just over the border, where their roads run on from where
+    /// this land's cross it (`crossingCells`), for its road's edges to meet theirs (`GroundTiles`).
+    private(set) var roadsPast: Set<GridPoint> = []
     /// Where a road or trail crosses a river with no room for a bridge, fording it.
     private(set) var fords = 0
     /// Bridges where roads cross the river, footbridges out to the lakes' islands and jetties.
@@ -244,6 +247,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
         lap("shape")
         if def.fence == true { layOutTownBorder() }
         for exit in def.exits { carveRoad(for: exit, &rng) }
+        if let region { roadsPast = crossingCells(region) }
         lap("roads")
         for trail in def.trails ?? [] { carveTrail(trail, &rng) }
         layRivers()
@@ -949,11 +953,39 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 let t = CGFloat(step) / CGFloat(steps)
                 let point = straight ? CGPoint(x: p1.x + (p2.x - p1.x) * t, y: p1.y + (p2.y - p1.y) * t) : Self.catmullRom(p0, p1, p2, p3, t)
                 travelled += p1.distance(to: p2) / CGFloat(steps)
-                let settle = crossing.map { min(1, point.distance(to: $0) / 8) } ?? 1
+                // Its plain width the last few cells to the line (`crossingSteady`), so the land next
+                // door's meets it cell for cell; swelling and narrowing again beyond.
+                let settle = crossing.map { min(1, max(0, point.distance(to: $0) - CGFloat(Self.crossingSteady)) / 5) } ?? 1
                 let halfWidth = fenced ? base : base + base / 3 * sin(travelled / 6) * settle
                 paintRoad(around: point, radius: halfWidth)
             }
         }
+    }
+
+    /// How many cells in from where a road crosses into the land next door it keeps its plain width,
+    /// three cells across (`carve`), on both sides of the line.
+    static let crossingSteady = 3
+
+    /// The cells just over the border where the land next door's roads run on from this land's: each
+    /// crossing's straight last stretch, three cells across and `crossingSteady` in, on its cells. Both
+    /// lands' roads run straight at the line there, the same width (`carve`). A tile took a road to
+    /// go on into every cell over the border beside a road, and into none beside the ground, so at
+    /// the line the edges of the two lands' roads didn't meet (playtesting 2026-10-16).
+    private func crossingCells(_ region: Region) -> Set<GridPoint> {
+        var cells: Set<GridPoint> = []
+        for exit in def.exits where exit.ship != true {
+            guard let road = region.roads[exit.to], road.into == nil else { continue }
+            let out = Self.outward(exit.edge)
+            let ahead = (col: Int(out.dx), row: Int(out.dy)), side = (col: -Int(out.dy), row: Int(out.dx))
+            for step in 1...Self.crossingSteady {
+                for across in -1...1 {
+                    let cell = GridPoint(col: road.at.col + ahead.col * step + side.col * across,
+                                         row: road.at.row + ahead.row * step + side.row * across)
+                    if !owns(cell), !isOpenSea(cell) { cells.insert(cell) }
+                }
+            }
+        }
+        return cells
     }
 
     private func paintRoad(around point: CGPoint, radius: CGFloat) {
