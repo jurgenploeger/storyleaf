@@ -568,17 +568,8 @@ final class ContinentScene: SKScene {
         }
         player.path = points
         if marked, let end = points.last {
-            Effects.tapMarker(at: end + CGVector(dx: 0, dy: groundHeight(at: end)), z: markZ(at: end), in: layer)
+            Effects.tapMarker(at: end + CGVector(dx: 0, dy: groundHeight(at: end)), in: layer)
         }
-    }
-
-    /// How deep the tap's swirl at `point` sorts: over a hill, the sunk shore or a terrace's top, as
-    /// the land there has it (`LandStage.markZ`), or they'd hide it; elsewhere under everything that
-    /// stands.
-    private func markZ(at point: CGPoint) -> CGFloat {
-        guard let owner = store.land(at: Self.cell(at: point)), let land = lands[owner.id],
-              let z = land.stage.markZ(at: land.stage.local(point)) else { return -50_000 }
-        return z - land.shift.dy
     }
 
     /// Once you're near enough whoever you were walking up to, their window opens; if you stop short

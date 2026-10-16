@@ -512,13 +512,18 @@ enum Effects {
     }
 
     static let tapMarkerName = "tapMarker"
+    /// How deep the swirl sorts: over everyone and everything that stands, whose depth is their
+    /// place up the screen (`-y`, within ±15,000 points on the continent), and their name
+    /// tags; under the lights, the weather and the night's shade (`Lighting`, `Sky`). Under all
+    /// that stands, it was hidden behind whatever stood in front of where you tapped: a tree, a
+    /// house, your party (playtesting 2026-10-16).
+    static let tapMarkerZ: CGFloat = 21_000
 
     /// Fairyland's destination marker: a swirl on the ground, in Storyleaf's colours and drawn
     /// like the logo's letters: a pale leaf-green line over a forest-green outline. On every
     /// map one of the two stands out: the outline on sand, snow and candy, the line on grass,
-    /// caves and dark woods. `z`: how deep it sorts, under everything that stands unless it lies on
-    /// raised ground (`WorldScene.flatZ`).
-    static func tapMarker(at point: CGPoint, z: CGFloat = -50_000, in parent: SKNode) {
+    /// caves and dark woods. Over everything that stands (`tapMarkerZ`).
+    static func tapMarker(at point: CGPoint, z: CGFloat = Effects.tapMarkerZ, in parent: SKNode) {
         let marker = SKNode()
         marker.name = tapMarkerName
         marker.position = point

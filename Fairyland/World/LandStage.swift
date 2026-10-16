@@ -375,14 +375,6 @@ final class LandStage {
         return nil
     }
 
-    /// How deep a tap's swirl lying flat at `point` sorts, in the land's own depth, as
-    /// `WorldScene.flatZ` has it: over the hill or the sunk shore it lies on, or a terrace's top;
-    /// nil elsewhere, under everything that stands.
-    func markZ(at point: CGPoint) -> CGFloat? {
-        if let z = flatZ(at: point) { return z }
-        let cell = map.cell(at: point)
-        return map.plateaus.first { $0.cells.contains(cell) }.map { Self.topZ(of: $0.cells) + 0.2 }
-    }
 
     // MARK: What it sets down
 

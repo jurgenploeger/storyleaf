@@ -1891,12 +1891,12 @@ final class WorldScene: SKScene {
         // A tap on a hilltop means the top, not the ground it hides.
         player.path = map.path(from: player.position, to: ground)
         if let destination = player.path.last {
-            Effects.tapMarker(at: destination + CGVector(dx: 0, dy: map.height(at: destination)), z: flatZ(at: destination), in: world)
+            Effects.tapMarker(at: destination + CGVector(dx: 0, dy: map.height(at: destination)), in: world)
         }
     }
 
 
-    /// How deep something lying flat on the ground at `point` (a tap's swirl) sorts: on a hill, just
+    /// How deep something lying flat on the ground at `point` (a lily pad) sorts: on a hill, just
     /// over the strip of raised ground it lies on (`HillArt.strip(at:)`), as the scenery's shadows
     /// are, and on a terrace just over its top, or the raised ground drawn over it would hide it;
     /// elsewhere under everything that stands.
