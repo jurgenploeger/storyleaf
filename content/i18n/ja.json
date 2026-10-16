@@ -364,6 +364,7 @@
     "Toy": "おもちゃ",
     "Gem": "宝石",
     "Hide": "毛皮",
+    "Quest": "クエスト",
     "Material · {material}": "素材・{material}",
     "Who can use it": "使える人",
     "Level {level} (you're {heroLevel})": "レベル{level}（いまは{heroLevel}）",

@@ -364,6 +364,7 @@
     "Toy": "장난감",
     "Gem": "보석",
     "Hide": "가죽",
+    "Quest": "퀘스트",
     "Material · {material}": "재료 · {material}",
     "Who can use it": "사용 가능",
     "Level {level} (you're {heroLevel})": "레벨 {level} (현재 {heroLevel})",

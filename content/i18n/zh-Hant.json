@@ -364,6 +364,7 @@
     "Toy": "玩具",
     "Gem": "寶石",
     "Hide": "皮革",
+    "Quest": "任務",
     "Material · {material}": "材料 · {material}",
     "Who can use it": "可使用者",
     "Level {level} (you're {heroLevel})": "{level}級（你目前{heroLevel}級）",

@@ -1333,7 +1333,10 @@ struct RulesTests {
         }
         // Past the best gear monsters drop, weapons and armour come from the top (trinkets from
         // anywhere). Quest and summit treasures go higher, but no monster drops them.
-        let droppable = Content.shared.items.filter { !bossDrops.contains($0.id) && !Content.shared.isTreasure($0.id) }
+        // Gear only: a quest's pieces (materials) go past the top gear's level.
+        let droppable = Content.shared.items.filter {
+            ItemType.equipmentSlots.contains($0.type) && !bossDrops.contains($0.id) && !Content.shared.isTreasure($0.id)
+        }
         let top = try #require(droppable.compactMap(\.level).max())
         let beyond = (0..<30).compactMap { _ in session.equipmentDrop(level: top + 50) }.filter { !$0.type.isTrinket }
         #expect(!beyond.isEmpty)

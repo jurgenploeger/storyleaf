@@ -67,7 +67,8 @@ struct ItemInfoCard: View {
                             comparison
                         }
                         effects
-                        if item.type == .material {
+                        // A quest's piece drops only for its quest, and no smith wants it.
+                        if item.type == .material && item.material != "quest" {
                             materialUse
                         }
                         footer
@@ -169,6 +170,7 @@ struct ItemInfoCard: View {
             case "hide": L("Hide")
             case "metal": L("Metal")
             case "wood": L("Wood")
+            case "quest": L("Quest")
             default: material.capitalized
             }
             return L("Material · {material}", ["material": name])

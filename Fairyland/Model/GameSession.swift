@@ -1385,7 +1385,9 @@ final class GameSession {
         let span = best ? 6 : 12
         let kept = Set(content.monsters.flatMap { $0.drops ?? [] }.map(\.item)).union(content.items.map(\.id).filter(content.isTreasure))
         // Past the best gear a monster can drop, it drops from the top (quest treasures go higher).
-        let top = min(level, content.items.filter { !kept.contains($0.id) }.compactMap(\.level).max() ?? level)
+        // Gear only: a quest's pieces have levels too, past any gear's.
+        let gear = content.items.filter { ItemType.equipmentSlots.contains($0.type) && !kept.contains($0.id) }
+        let top = min(level, gear.compactMap(\.level).max() ?? level)
         let accessories = content.items.filter {
             $0.type.isTrinket && !kept.contains($0.id) && ($0.level ?? 1) <= top
         }

@@ -364,6 +364,7 @@
     "Toy": "Игрушка",
     "Gem": "Самоцвет",
     "Hide": "Шкура",
+    "Quest": "Задание",
     "Material · {material}": "Материал · {material}",
     "Who can use it": "Кто может использовать",
     "Level {level} (you're {heroLevel})": "Уровень {level} (у тебя {heroLevel})",

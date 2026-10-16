@@ -364,6 +364,7 @@
     "Toy": "Spielzeug",
     "Gem": "Edelstein",
     "Hide": "Leder",
+    "Quest": "Quest",
     "Material · {material}": "Material · {material}",
     "Who can use it": "Wer es benutzen kann",
     "Level {level} (you're {heroLevel})": "Level {level} (du: {heroLevel})",
