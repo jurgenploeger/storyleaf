@@ -267,6 +267,16 @@ gate_lotus     | newgame,level=40,map=lotus_land,mouth=0,weather=clear,hour=12 |
 gate_moon      | newgame,level=100,map=moonglow,mouth=0,hour=16,weather=clear | 8
 gate_emerald_land | newgame,level=190,map=emerald_road,mouth=0,landscape,weather=clear,hour=12 | 8
 gate_night     | newgame,level=12,map=northern_grassland,mouth=0,weather=clear,hour=23 | 8
+# A harbor where a road meets the sea: a pier out to a ship moored at its end, walked aboard to sail
+# over to Starfall Isle, an island of fallen starlight out east of Sneezle Isle (`WorldMap.harbors`),
+# its own harbor, its crystal glades by day and by night, and Sneezle Isle's captain.
+harbor_sneezle | newgame,level=130,map=hachoo_island,harbor=0,weather=clear,hour=12 | 8
+harbor_sneezle_land | newgame,level=130,map=hachoo_island,harbor=0,landscape,weather=clear,hour=12 | 8
+harbor_starfall | newgame,level=135,map=starfall_isle,harbor=0,weather=clear,hour=12 | 8
+starfall       | newgame,level=135,map=starfall_isle,weather=clear,hour=11 | 8
+starfall_land  | newgame,level=135,map=starfall_isle,landscape,weather=clear,hour=11 | 8
+starfall_night | newgame,level=135,map=starfall_isle,landscape,weather=clear,hour=22 | 8
+local_captain  | newgame,level=130,map=hachoo_island,local=2,weather=clear,hour=12 | 8
 # The people who live on the maps (`MapDef.Local`, `Crowd`): a couple of steps from one, who starts on
 # their story (a fisher at the end of a jetty, a girl at a bridge, a farmer among his things, a dancer
 # on an island, a mapmaker up a mountain, a mole by a cave's mouth, a tin man), in German and Japanese too.

@@ -20,7 +20,9 @@ border runs straight for a stretch (`CROSSING`), across the way the exit goes, s
 itself and a quest's gate fits. A road into a cave ends inland, at a rocky hill with the cave's mouth
 in its face (`cave_gates`): out from the hub toward the side the exit names, its face turned toward
 you, so you walk north or east into it, clear of the coast, the rivers, the other roads and
-everything set down by hand.
+everything set down by hand. A road to a land over the sea (maps.json `ship`) ends at a harbor
+(`harbors`): on the coast the exit's side faces, with open sea straight out from it for the pier
+and the ship moored at its end (`WorldMap.harbor`), nearest the land it sails to.
 
 Rivers (world.json `rivers`) run from a spring to the sea through the turns of their `course`,
 meandering a little (`RIVER_WOBBLE`) and widening as they go, some from one land on into the next;
@@ -34,7 +36,8 @@ Each land's map is the box round its shape, its middle at the land's middle (map
 and `height`, which this writes). world.json gets, per land, the cell its box starts on (`lands`),
 where each road crosses its border (`roads`, in its own cells: the last cell on its side, the next
 one over the edge the exit names being the other land's; for a road into a cave, the cell in front of
-its mouth, and `into`, the way you walk into it), each river's middle (`line`), and its
+its mouth, and `into`, the way you walk into it; for a harbor, the last cell of the coast, and
+`pier`, the way its pier runs out to sea), each river's middle (`line`), and its
 shape (`regions`): row by row from the south, over its box and `MARGIN` cells round it, runs of
 `[code, length]`: 1 its own land, 2 the sea it draws (the sea nearest it), 3 its own land under a
 river, 4 a land next door's under a river, 0 neither.
@@ -99,6 +102,13 @@ GATE_COAST = (4, 8)
 GATE_RIVER = (3, 6)
 GATE_ROAD = (3, 8)
 GATE_PEOPLE = (3, 5)
+# A harbor (`harbors`): how far straight out from its dock the sea must be open, and how far to
+# either side of the road (the pier's three lanes and the ship moored up the screen from it,
+# `Region.Road.pierLength`, `WorldMap.harbor`), and how far straight back the land must be its own,
+# for the road's last stretch (`ROAD_MARGIN` round it).
+HARBOR_SEA = 14
+HARBOR_ACROSS = (-3, 6)
+HARBOR_BACK = 9
 # Sea enclosed by land smaller than this fills in (pools inland); bigger is an inland sea.
 POOL = 900
 # Land in pieces smaller than this goes to the sea or the land round it.
@@ -414,14 +424,82 @@ def road_pairs(lands):
     pairs = []
     for land_id in sorted(lands):
         for exit in lands[land_id]["exits"]:
-            if exit["to"] in lands and (land_id < exit["to"]):
+            if exit["to"] in lands and (land_id < exit["to"]) and not exit.get("ship"):
                 pairs.append((land_id, exit))
     return pairs
+
+
+def ship_exits(lands):
+    """Every road that ends at a harbor, a ship sailing on to another land (maps.json `ship`), from
+    each side: (land, its exit)."""
+    return [(land_id, exit) for land_id in sorted(lands) for exit in lands[land_id]["exits"] if exit.get("ship")]
 
 
 def cave_exits(maps, lands):
     return [(land_id, exit) for land_id in sorted(lands) for exit in lands[land_id]["exits"]
             if exit["to"] not in lands and exit["to"] in maps]
+
+
+def harbor_side(edge):
+    """The side of a harbor's pier its ship is moored on, across it (as `straighten`'s `side`, +1 or
+    -1): the one up the screen, north or east, so the ship lies behind the pier and you on it."""
+    dx, dy = STEP[edge]
+    side = (-dy, dx)
+    return 1 if side[0] + side[1] > 0 else -1
+
+
+def harbors(canvas, design, lands, keep, world_rivers):
+    """Where each road to a land over the sea ends (maps.json `ship`): at a harbor on the coast its
+    exit's side faces, the last cell of the land, the sea open straight out from it for the pier and
+    the ship (`HARBOR_SEA`, `HARBOR_ACROSS`), the land straight behind it its own (`HARBOR_BACK`),
+    clear of the rivers and the towns' kept ground, nearest the land it sails to. As
+    {land: {to: (x, y)}} in world cells, and problems."""
+    import numpy as np
+    from scipy import ndimage
+    ids = canvas.ids
+    index = {land_id: k for k, land_id in enumerate(ids)}
+    found = {land_id: {} for land_id in ids}
+    problems = []
+    springs = [(x, y, w) for n, river in enumerate(world_rivers) for x, y, w, _ in river_line(river, n)]
+    for land_id, exit in ship_exits(lands):
+        other = exit["to"]
+        if other not in index:
+            problems.append(f"{land_id}'s ship sails to {other}, which isn't a land")
+            continue
+        k = index[land_id]
+        dx, dy = STEP[exit["edge"]]
+        sx, sy = -dy * harbor_side(exit["edge"]), dx * harbor_side(exit["edge"])
+        mine = canvas.owner == k
+        depth = ndimage.distance_transform_edt(np.pad(mine, 1))[1:-1, 1:-1]
+        r, c = np.nonzero(mine)
+        tx, ty = design[other]["at"]
+        hx, hy = design[land_id]["at"]
+        hub = lands[land_id].get("hub") or [0, 0]
+        hx, hy = hx + hub[0], hy + hub[1]
+        best = None
+        for row, col in zip(r, c):
+            x, y = int(col) + canvas.left, int(row) + canvas.bottom
+            if canvas.get(x + dx, y + dy) != -1:
+                continue
+            # The sea out in front, for the pier and the ship beside it.
+            if any(canvas.get(x + dx * a + sx * b, y + dy * a + sy * b) != -1
+                   for a in range(1, HARBOR_SEA + 1) for b in range(HARBOR_ACROSS[0], HARBOR_ACROSS[1] + 1)):
+                continue
+            # The land behind, the road's last stretch on it with room round it.
+            back = [(x - dx * a + sx * b, y - dy * a + sy * b) for a in range(0, HARBOR_BACK + 1)
+                    for b in range(-ROAD_MARGIN, ROAD_MARGIN + 1) if a >= 2 or abs(b) <= 1]
+            if any(canvas.get(px, py) != k or keep[canvas.index(px, py)] for px, py in back):
+                continue
+            if any(math.hypot(px - x, py - y) < RIVER_CROSSING + w / 2 + 2 for px, py, w in springs):
+                continue
+            score = math.hypot(tx - x, ty - y) + 0.3 * math.hypot(hx - x, hy - y)
+            if best is None or score < best[0]:
+                best = (score, (x, y))
+        if best is None:
+            problems.append(f"{land_id} has nowhere on its {exit['edge']} coast for a harbor (its ship to {other})")
+            continue
+        found[land_id][other] = best[1]
+    return found, problems
 
 
 def straighten(canvas, keep, a, b, cell, edge, along, deep, only=None):
@@ -712,7 +790,7 @@ def rivers(canvas, world_rivers, design, lands, grids, found, routes):
         land = lands[land_id]
         mx, my = design[land_id]["at"]
         for to, (cx, cy) in found[land_id].items():
-            clear(cx, cy, RIVER_CAVE if to not in lands else RIVER_CROSSING, f"{land_id}'s road to {to}'s crossing")
+            clear(cx, cy, RIVER_CROSSING, f"{land_id}'s road to {to}'s crossing")
         clear(mx, my, RIVER_MIDDLE, f"{land_id}'s middle")
         for (dx, dy), what in content_spots(land):
             clear(mx + dx, my + dy, RIVER_CONTENT + CONTENT_MARGIN if what != "hub" else RIVER_MIDDLE, f"{land_id}'s {what}")
@@ -1109,6 +1187,9 @@ def write(data, lands, design, grids, roads, routes, intos, shapes, lines):
                 road["via"] = routes[i][to]
             if intos.get(i, {}).get(to):
                 road["into"] = intos[i][to]
+            exit = next((e for e in lands[i]["exits"] if e["to"] == to), {})
+            if exit.get("ship"):
+                road["pier"] = exit["edge"]
             entries.append(f'      {json.dumps(to)}: {json.dumps(road, separators=(", ", ": "))}')
         blocks.append(f'    "{i}": {{\n' + ",\n".join(entries) + "\n    }")
     out.append(",\n".join(blocks))
@@ -1143,13 +1224,16 @@ def solve(data, maps, lands, design, world_rivers):
     tidy(canvas, keep, set())
     found, problems = crossings(canvas, design, lands, maps, keep)
     tidy(canvas, keep, set())
+    docks, ships = harbors(canvas, design, lands, keep, world_rivers)
+    for land_id, ends in docks.items():
+        found[land_id].update(ends)
     grids = boxes(canvas, design, lands)
     routes, more = ways(canvas, design, lands, grids, found)
     river, lines, wet = rivers(canvas, world_rivers, design, lands, grids, found, routes)
     intos, caves = cave_gates(canvas, design, lands, maps, grids, found, routes, river)
     # Roads in each land's own cells.
     roads = {i: {to: (x - grids[i][0], y - grids[i][1]) for to, (x, y) in found[i].items()} for i in found}
-    return canvas, grids, roads, routes, intos, regions(canvas, grids, river), lines, problems + more + wet + caves
+    return canvas, grids, roads, routes, intos, regions(canvas, grids, river), lines, problems + ships + more + wet + caves
 
 
 # MARK: Checking (no numpy: check_content.py runs it)
@@ -1256,7 +1340,22 @@ def verify(maps, lands, world):
             dx, dy = STEP[exit["edge"]]
             over = (here[0] + dx, here[1] + dy)
             last = 5
-            if exit["to"] in lands:
+            if exit.get("ship"):
+                # To a harbor: on the coast its side faces, its pier's way written, the sea open
+                # straight out from it for the pier and the ship (`harbors`), a ship sailing back.
+                if exit["to"] not in lands:
+                    problems.append(f"world.json: {land_id}'s ship sails to {exit['to']}, which isn't a land")
+                    continue
+                if road.get("pier") != exit["edge"]:
+                    problems.append(f"world.json: {land_id}'s harbor for {exit['to']} should have its pier run "
+                                    f"{exit['edge']} (run tools/world_layout.py)")
+                if not any(e["to"] == land_id and e.get("ship") for e in lands[exit["to"]]["exits"]):
+                    problems.append(f"world.json: {exit['to']} has no ship back to {land_id}")
+                sx, sy = -dy * harbor_side(exit["edge"]), dx * harbor_side(exit["edge"])
+                if any((here[0] + dx * a + sx * b, here[1] + dy * a + sy * b) in owner
+                       for a in range(1, HARBOR_SEA + 1) for b in range(HARBOR_ACROSS[0], HARBOR_ACROSS[1] + 1)):
+                    problems.append(f"world.json: {land_id}'s harbor for {exit['to']} doesn't look out on open sea")
+            elif exit["to"] in lands:
                 back = world["roads"].get(exit["to"], {}).get(land_id)
                 ox, oy = origins[exit["to"]]
                 if not back or (ox + back["at"][0], oy + back["at"][1]) != over:

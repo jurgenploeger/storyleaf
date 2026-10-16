@@ -271,6 +271,14 @@ for map_def in maps.values():
             check(back, f"map {exit['to']} has no {opposite[exit['edge']]} exit back to {map_def['id']}")
         if "requires" in exit:
             check(exit["requires"] in quests, f"map {map_def['id']} road → unknown quest {exit['requires']}")
+        if "ship" in exit:
+            # By ship from a harbor to a land over the sea and back (`WorldMap.harbor`).
+            check(exit["ship"] is True, f"map {map_def['id']} exit to {exit['to']}: ship is true or left out")
+            check(destination is not None and "cave" not in destination["theme"] and "cave" not in map_def["theme"],
+                  f"map {map_def['id']} exit to {exit['to']}: a ship sails between two lands, never a cave")
+            check(destination is None or any(e["to"] == map_def["id"] and e.get("ship") for e in destination["exits"]),
+                  f"map {exit['to']} has no ship back to {map_def['id']}")
+            check("requires" not in exit, f"map {map_def['id']} exit to {exit['to']}: a ship needs no quest")
     for monster in (map_def.get("encounters") or {}).get("monsters", {}):
         check(monster in monsters, f"map {map_def['id']} → unknown monster {monster}")
     if map_def.get("music"):
@@ -424,6 +432,7 @@ for map_def in maps.values():
         "island": lakes.get("islands", 0) > 0,
         "bridge": map_def["id"] in bridged_lands,
         "mouth": any("cave" in (maps.get(exit["to"]) or {}).get("theme", {}) for exit in map_def["exits"]) and "cave" not in theme,
+        "harbor": any(exit.get("ship") for exit in map_def["exits"]),
     }
     for local in map_def.get("locals", []):
         where = f"map {map_def['id']} local {local.get('name', '?')}"

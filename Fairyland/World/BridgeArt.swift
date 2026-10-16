@@ -90,8 +90,9 @@ enum BridgeArt {
     /// and a quarter along both sides, two rails between each pair, and across a jetty's far end.
     /// `pixels`: the tiles' pixels to a cell, so the wood's pixels are the same size as theirs.
     /// `ground`: how high the deck lies under a spot on screen (sunk with a lake, `WorldMap.shore`).
+    /// `railed`: false for posts alone, as along a harbor's pier, where you step off it aboard.
     static func rails(for bridge: WorldMap.Bridge, pixels: Int, palette: MapPalette?, in world: SKNode,
-                      ground: (CGPoint) -> CGFloat = { _ in 0 }) {
+                      railed: Bool = true, ground: (CGPoint) -> CGFloat = { _ in 0 }) {
         let tile = WorldMap.tileSize
         let scale = tile / CGFloat(max(1, pixels))
         guard let post = texture(post: true, palette: palette), let rail = texture(post: false, palette: palette) else { return }
@@ -116,7 +117,7 @@ enum BridgeArt {
                 node.zPosition = -base.y
                 world.addChild(node)
             }
-            for ((a, b), (from, to)) in zip(zip(spots, spots.dropFirst()), zip(raised, raised.dropFirst())) {
+            for ((a, b), (from, to)) in zip(zip(spots, spots.dropFirst()), zip(raised, raised.dropFirst())) where railed {
                 let z = inFront ? -min(a.y, b.y) + 0.01 : -max(a.y, b.y) - 0.01
                 for (lift, thick) in [(8.5 * scale, 2 * scale), (4.5 * scale, scale)] {
                     let length = from.distance(to: to)

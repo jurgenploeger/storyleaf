@@ -640,6 +640,10 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         /// Waypoints the road winds through on its way out, as [x, y] cell offsets from the centre (a
         /// cave's; the continent's come from its painting).
         let via: [[Int]]?
+        /// Over the sea by ship: the road ends at a harbor on the coast `edge` faces, a pier out to a
+        /// ship moored at its end, and you sail as you walk aboard (`WorldMap.harbors`); the land it
+        /// sails to has a ship back.
+        let ship: Bool?
     }
 
     /// A narrower path off the roads, to somewhere worth visiting (a boss's lair, an oasis).
@@ -787,8 +791,8 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
     /// landmark or a summit's top too.
     nonisolated struct Place: Decodable, Sendable {
         /// jetty (out at its end) | bridge (by a road's bridge over the river) | island (a lake's) |
-        /// shore (a lake's, on the side facing you) | mouth (in front of a cave's mouth); the map
-        /// must have one.
+        /// shore (a lake's, on the side facing you) | mouth (in front of a cave's mouth) | harbor
+        /// (beside where its pier leaves the land); the map must have one.
         let at: String?
         /// Which of them, when the map has several (the first when not given).
         let which: Int?
@@ -1066,6 +1070,7 @@ private nonisolated struct WorldFile: Decodable {
         let at: [Int]
         let via: [[Int]]?
         let into: Edge?
+        let pier: Edge?
     }
 
     /// A river from its spring to the sea: its middle, [x, y] in world cells.
@@ -1206,7 +1211,7 @@ final class Content {
         }
         for map in mapFile.maps {
             guard let runs = worldFile.regions[map.id], let origin = worldFile.lands[map.id].map(point) else { continue }
-            let roads = (worldFile.roads[map.id] ?? [:]).mapValues { Region.Road(at: point($0.at), via: $0.via ?? [], into: $0.into) }
+            let roads = (worldFile.roads[map.id] ?? [:]).mapValues { Region.Road(at: point($0.at), via: $0.via ?? [], into: $0.into, pier: $0.pier) }
             // The rivers that come near it, in its cells.
             let reach = CGFloat(worldFile.margin)
             let near = rivers.map { line in

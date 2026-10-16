@@ -25,6 +25,8 @@ import SpriteKit
 ///                  (a jetty's) or its middle
 ///   mouth=n        start on the road six cells in front of the mouth of the map's nth cave
 ///                  (`WorldMap.crags`, 0 first), looking up at it
+///   harbor=n       start where the map's nth harbor's pier leaves the land (`WorldMap.harbors`, 0
+///                  first), its ship moored out at the end
 ///   equip=a+b      start wearing these items (ids from content/items.json, joined with +)
 ///   bag=a+b        put these items in the bag
 ///   done=a+b       these quests (ids from content/quests.json) already handed in (their treasures
@@ -647,6 +649,13 @@ enum DebugLaunch {
             if grid.crags.indices.contains(pick), let mouth = grid.hills[grid.crags[pick].hill].mouth {
                 let spot = GridPoint(col: Int((mouth.x - mouth.into.x * 6).rounded(.down)), row: Int((mouth.y - mouth.into.y * 6).rounded(.down)))
                 session.playerPosition = grid.center(of: grid.nearestWalkable(to: spot) ?? spot)
+            }
+        }
+        if let pick = flags["harbor"].flatMap({ Int($0) }), let def = Content.shared.map(session.data.mapID) {
+            let grid = WorldMap(def: def)
+            if grid.harbors.indices.contains(pick) {
+                let dock = grid.harbors[pick].road.at
+                session.playerPosition = grid.center(of: grid.nearestWalkable(to: dock) ?? dock)
             }
         }
         if let id = flags["title"], Content.shared.title(id) != nil {

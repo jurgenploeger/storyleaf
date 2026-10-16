@@ -185,6 +185,61 @@ struct ContentTests {
         #expect(Layouts.of(try #require(content.map("sunny_meadow"))).crags.isEmpty)
     }
 
+    /// A road to a land over the sea (`MapDef.Exit.ship`) ends at a harbor: on the coast its exit's
+    /// side faces, its pier out over the open sea, walked out to its end, where you step aboard the
+    /// ship to the land it sails to, which has one back; and you come ashore by its own pier, its
+    /// captain standing there.
+    @Test func harborsSailBetweenTheLands() throws {
+        let world = World.continent()
+        var ships = 0
+        for def in content.maps where content.world[def.id] != nil {
+            for exit in def.exits where exit.ship == true {
+                ships += 1
+                let map = Layouts.of(def)
+                let land = try #require(world.land(def.id))
+                let harbor = try #require(map.harbors.first { $0.exit.to == exit.to }, "map \(def.id): no harbor for its ship to \(exit.to)")
+                let road = harbor.road
+                #expect(road.pier == exit.edge, "map \(def.id): its pier to \(exit.to) doesn't run \(exit.edge)")
+                // The road reaches the coast, and you can walk it from the hub.
+                #expect(map.owns(road.at) && map.isWalkable(road.at), "map \(def.id): its harbor's road ends off the land")
+                #expect(map.ground[road.at.row][road.at.col] == .path, "map \(def.id): its road doesn't reach the harbor")
+                #expect(!map.path(from: map.center(of: map.center), to: map.center(of: road.at)).isEmpty,
+                        "map \(def.id): no way from its middle to the harbor")
+                // Its pier: out over the sea, no land's, walked on.
+                for cell in road.pierCells {
+                    let there = world.world(cell, of: land)
+                    #expect(world.land(at: there) == nil && world.isWalkable(there) && world.pier(at: there)?.id == def.id,
+                            "map \(def.id): its pier's cell \(cell) isn't the sea's, to walk on")
+                }
+                let end = try #require(road.pierCell(along: Region.Road.pierLength, across: 0))
+                #expect(!world.path(from: world.world(road.at, of: land), to: world.world(end, of: land)).isEmpty,
+                        "map \(def.id): you can't walk out to the end of its pier")
+                // Aboard at its end, not on the way out; ashore by its foot, on the land.
+                #expect(road.boarding.allSatisfy { map.boarding(at: $0)?.to == exit.to }, "map \(def.id): its pier's end doesn't take you aboard")
+                let first = try #require(road.pierCell(along: 1, across: 0))
+                #expect(map.boarding(at: road.at) == nil && map.boarding(at: first) == nil, "map \(def.id): you'd board on the way out")
+                let ashore = map.entryCell(from: exit.edge)
+                #expect(map.owns(ashore) && map.isWalkable(ashore) && map.boarding(at: ashore) == nil,
+                        "map \(def.id): you'd come ashore off the land")
+                #expect(max(abs(ashore.col - road.at.col), abs(ashore.row - road.at.row)) <= 4, "map \(def.id): you come ashore away from its harbor")
+                // Its captain stands by the pier, on the land.
+                for local in def.locals ?? [] where local.home.at == "harbor" {
+                    let spot = try #require(map.spot(of: local.home))
+                    #expect(map.owns(spot) && max(abs(spot.col - road.at.col), abs(spot.row - road.at.row)) <= 5,
+                            "map \(def.id): \(local.name) stands away from the harbor, at \(spot)")
+                }
+                // A ship sails back.
+                let other = try #require(content.map(exit.to))
+                #expect(other.exits.contains { $0.to == def.id && $0.ship == true && $0.edge == exit.edge.opposite },
+                        "\(exit.to) has no ship back to \(def.id)")
+            }
+        }
+        #expect(ships >= 2, "no ship sails anywhere")
+        // The island is out at sea, a land of its own: no land next door.
+        let isle = try #require(content.map("starfall_isle"))
+        #expect(Continent.neighbours(of: isle).isEmpty, "Starfall Isle touches another land")
+    }
+
     /// Lands a road joins touch on the continent (content/world.json), and the road runs on across
     /// the border: where it leaves one land it comes into the next, on the same world cells, as wide.
     @Test func roadsRunOnIntoTheNextLand() throws {
@@ -207,7 +262,8 @@ struct ContentTests {
         }
         for def in content.maps {
             guard let origin = content.world[def.id], let region = content.regions[def.id] else { continue }
-            for exit in def.exits {
+            // (Over the sea by ship, the road ends at a harbor: `harborsSailBetweenTheLands`.)
+            for exit in def.exits where exit.ship != true {
                 guard let next = content.map(exit.to), let there = content.world[next.id],
                       let crossing = region.roads[exit.to], let back = content.regions[next.id]?.roads[def.id] else { continue }
                 // The two crossings are side by side, over the line the way the exit goes.
