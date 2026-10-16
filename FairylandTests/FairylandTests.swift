@@ -48,9 +48,14 @@ struct ContentTests {
             for exit in map.exits {
                 let destination = content.map(exit.to)
                 #expect(destination != nil, "map \(map.id) → unknown map \(exit.to)")
-                // Every exit needs a way back, or you'd get stuck.
-                #expect(destination?.exits.contains { $0.to == map.id && $0.edge == exit.edge.opposite } == true,
-                        "map \(exit.to) has no \(exit.edge.opposite) exit back to \(map.id)")
+                // Every exit needs a way back, or you'd get stuck: by the other side, but a cave's
+                // road back out of its mouth inland by the other side from the way you walk in
+                // (`Region.Road.into`), and the land's by the side its mouth is toward.
+                let into = content.regions[map.id]?.roads[exit.to]?.into
+                let outOfCave = content.regions[exit.to]?.roads[map.id]?.into != nil
+                let side: Edge? = into.map(\.opposite) ?? (outOfCave ? nil : exit.edge.opposite)
+                #expect(destination?.exits.contains { $0.to == map.id && (side == nil || $0.edge == side) } == true,
+                        "map \(exit.to) has no \(side.map { "\($0)" } ?? "") exit back to \(map.id)")
             }
             for id in map.encounters?.monsters.keys.sorted() ?? [] {
                 #expect(content.monster(id) != nil, "map \(map.id) → unknown monster \(id)")
@@ -147,6 +152,9 @@ struct ContentTests {
                 // In a wall of rock at least 40 points taller a cell in, the hill rising on behind it.
                 #expect(height(out: 1) - height(out: 0) > 40, "map \(def.id): no wall of rock over the cave's mouth")
                 #expect(height(out: 5) > 50, "map \(def.id): no hill behind the cave's mouth")
+                // A mountain over it, tall enough to have its top (playtesting 2026-10-16: 0.7.8's,
+                // about 75 points, was too small).
+                #expect(hill.highest >= 100, "map \(def.id): its cave's hill is only \(Int(hill.highest)) high")
                 // The road reaches the mouth, climbing only a little, and you can walk it from the hub.
                 let last = GridPoint(col: Int((mouth.x - mouth.into.x * 0.5).rounded(.down)),
                                      row: Int((mouth.y - mouth.into.y * 0.5).rounded(.down)))

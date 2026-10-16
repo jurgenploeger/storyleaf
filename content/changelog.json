@@ -2,6 +2,18 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.13",
+      "date": "2026-10-16",
+      "title": "Caves in the mountainside",
+      "notes": [
+        "The hills the caves open into stand taller: a small mountain turned toward you, its face rising steeply from the cave's mouth with ridges of rock down it, instead of a low, flat mound.",
+        "No patch of grass or road sits on the rock over a cave's doorway any more.",
+        "The rock wall round a cave's mouth no longer looks stretched: its stone and its ledges keep their size up the wall.",
+        "A cave's mouth is round at the top, without the sharp corner.",
+        "Inside a cave you come in on the side you walked into its mouth from. Shiverdell's cave mouth has moved a little and now faces south, so its way into the Rat Cavern doesn't come in beside Lotus Land's."
+      ]
+    },
+    {
       "version": "0.7.12",
       "date": "2026-10-16",
       "title": "Short gold",

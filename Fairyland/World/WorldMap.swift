@@ -1458,10 +1458,11 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// map's edge, rising out of the sea, but a gate somewhere inland): a rocky hill at the road's end
     /// (tools/world_layout.py `cave_gates` found it room), the cave's mouth in a wall of rock at the
     /// foot of its face, which is turned toward you, so you walk north or east into it (`into`) up
-    /// the road. Its main summit rises behind the mouth, as the range's did round the road at a map's
-    /// edge (`raiseCrags`), steepest toward you; smaller ones at its shoulders and a taller one behind
-    /// it, each only where it keeps clear of anything already set down, the water and the roads but
-    /// its own. `front`: the cell in front of the mouth.
+    /// the road. Its main summit is a mountain turned to face you, the mouth at the foot of its face
+    /// (`Hill.Lobe.front`), ridges down the face (playtesting 2026-10-16: the hill was too low and its
+    /// front too flat); smaller summits at its shoulders and one behind it, each only where it keeps
+    /// clear of anything already set down, the water and the roads but its own. `front`: the cell in
+    /// front of the mouth.
     private func raiseGate(at front: GridPoint, into: Edge, _ rng: inout SeededRandom) -> Hill? {
         let inward: (x: Double, y: Double) = into == .north ? (0, 1) : (1, 0)
         let along: (x: Double, y: Double) = (inward.y, inward.x)
@@ -1471,7 +1472,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
             (foot.x + along.x * a + inward.x * i, foot.y + along.y * a + inward.y * i)
         }
         let angle = into == .north ? 0.0 : Double.pi / 2
-        let steepness = 14.0
+        let steepness = Hill.steepness(rockiness: 1)
         func summit(_ a: Double, _ i: Double, along reach: Double, across depth: Double, turn: Double, peak: Double) -> Hill.Lobe {
             let centre = point(a, i)
             var lobe = Hill.Lobe(x: centre.x, y: centre.y, along: reach, across: depth, angle: angle + turn, peak: peak, steepness: steepness)
@@ -1499,17 +1500,28 @@ nonisolated final class WorldMap: @unchecked Sendable {
             }
             return true
         }
-        // Its main summit, the mouth partway up its face, there whatever else is: the room for it
-        // was found when the continent was painted.
-        var lobes = [summit(0, 6, along: 7, across: 8, turn: 0, peak: Double.random(in: 95...110, using: &rng))]
+        // Its main summit, there whatever else is: the room for it was found when the continent was
+        // painted (its top where world_layout.py's `GATE_SUMMIT` has room, its foot out over
+        // `GATE_ROOM`). A mountain facing you, as `raiseHills` turns one: its face rising from the
+        // mouth's foot, up its back (`gateBack` cells, as steep as ground facing away can be) a little
+        // gentler across, and tall enough to have a top (`mountainTop`).
+        let peak = min(Double.random(in: 110...125, using: &rng), (Self.gateBack - 1) * Self.mountainTop * steepness / 1.5)
+        let middle = point(0, Self.gateFace)
+        var mountain = Hill.Lobe(x: middle.x, y: middle.y, along: Self.gateBack, across: 11,
+                                 angle: atan2(inward.y, inward.x) + Double.random(in: -0.1...0.1, using: &rng), peak: peak, steepness: steepness)
+        mountain.front = Self.gateFace
+        mountain.spurs = Hill.Lobe.Spurs(count: Double(Int.random(in: 11...15, using: &rng)), depth: 0.22,
+                                         phases: (Double.random(in: 0..<6.3, using: &rng), Double.random(in: 0..<6.3, using: &rng),
+                                                  Double.random(in: 0..<6.3, using: &rng)))
+        var lobes = [mountain]
         for side in [-1.0, 1.0] {
             let shoulder = summit(side * 7, 3.5, along: Double.random(in: 4...4.5, using: &rng), across: Double.random(in: 4.5...5.5, using: &rng),
                                   turn: Double.random(in: -0.15...0.15, using: &rng), peak: Double.random(in: 50...70, using: &rng))
             if clear(shoulder) { lobes.append(shoulder) }
         }
-        let behind = summit(Double.random(in: -2...2, using: &rng), 12, along: Double.random(in: 5.5...7, using: &rng),
+        let behind = summit(Double.random(in: -2...2, using: &rng), 11.5, along: Double.random(in: 6...7, using: &rng),
                             across: Double.random(in: 5.5...6, using: &rng), turn: Double.random(in: -0.2...0.2, using: &rng),
-                            peak: Double.random(in: 105...125, using: &rng))
+                            peak: Double.random(in: 95...110, using: &rng))
         if clear(behind) { lobes.append(behind) }
         let ripples = (0..<3).map { _ in
             (fx: Double.random(in: 0.4...1, using: &rng), px: Double.random(in: 0..<6.3, using: &rng),
@@ -1522,7 +1534,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
         let mouth = Hill.Mouth(x: foot.x, y: foot.y, along: along, into: inward, half: 1.3, depth: 2, beside: false)
         hill.mouth = mouth
         hill.wall = Hill.Wall(x: mouth.x, y: mouth.y, along: mouth.along, into: mouth.into, base: nil, reach: mouth.half + 1.2,
-                              taper: (toward: 3.0, away: 5.0), run: 0.8, rise: 55, fall: 10)
+                              taper: (toward: 3.0, away: 6.0), run: 0.8, rise: 60, fall: 10)
         // Every cell any of it rises over: a box round its summits and its wall.
         var low = (x: foot.x - 6, y: foot.y - 6), high = (x: foot.x + 6, y: foot.y + 6)
         for lobe in lobes {
@@ -1551,6 +1563,8 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 hill.heights[j * width + i] = Float(hill.shape(Double(origin.col) + Double(i) / Double(samples), Double(origin.row) + Double(j) / Double(samples)))
             }
         }
+        // The mountain's back and sides, turned partly away, stay in sight.
+        hill.unfold()
         hill.highest = CGFloat(hill.heights.max() ?? 0)
         // Nothing grows on it, and no pond or other hill goes there. Its rock is a wall, from
         // `cragFoot` up: you can walk on its foot, and up its road to the mouth.
@@ -1565,6 +1579,10 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// How many cells in front of a cave's mouth inland its road runs straight at it (`raiseGate`;
     /// tools/world_layout.py `GATE_APPROACH`).
     static let gateApproach = 7
+    /// A cave's hill inland (`raiseGate`): how far its main summit's face climbs from the mouth's
+    /// foot to its middle, and its back on from there, in cells.
+    static let gateFace = 5.0
+    static let gateBack = 12.0
 
     /// How high a range where a road leads into a cave stands where its rock begins, the wall you
     /// can't climb (points): its foot below that you can walk on.

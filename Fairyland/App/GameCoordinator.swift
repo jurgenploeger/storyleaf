@@ -264,7 +264,10 @@ final class GameCoordinator {
             return
         }
         SoundEffects.shared.play(.whoosh)
-        go(to: destination, entry: exit.edge.opposite)
+        // In by its own road back to where you were: a cave's comes in on the side you walked into
+        // its mouth from, not across from the side the land's road names (playtesting 2026-10-16).
+        let back = destination.exits.first { $0.to == session.data.mapID }?.edge
+        go(to: destination, entry: back ?? exit.edge.opposite)
     }
 
     /// Shows the loading card first, then builds the (big) map behind it. `arrival`: where to stand

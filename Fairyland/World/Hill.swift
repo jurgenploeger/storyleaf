@@ -305,14 +305,15 @@ nonisolated extension WorldMap {
         func shape(_ x: Double, _ y: Double) -> CGFloat {
             let ground = summits(x, y)
             guard let wall, let lift = wall.lift(x, y) else { return CGFloat(ground) }
-            let top: Double
             if let base = wall.base {
-                top = max(0, base + lift.height) * lift.width
-            } else {
-                let foot = wall.foot(x, y)
-                top = summits(foot.x, foot.y) + max(0, lift.height) * lift.width
+                return CGFloat(max(ground, max(0, base + lift.height) * lift.width))
             }
-            return CGFloat(max(ground, top))
+            // On the ground at its foot, falling back into the slopes behind, and on down to them
+            // where they're lower than its foot; nothing stands level behind it to end in a cliff
+            // where it does.
+            let foot = wall.foot(x, y)
+            let over = summits(foot.x, foot.y) + lift.height - ground
+            return CGFloat(ground + max(0, over) * lift.width)
         }
 
         /// The summits' blended height at a point (`shape`).

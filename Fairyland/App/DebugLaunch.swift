@@ -24,8 +24,9 @@ import SpriteKit
 ///   bridge=n       start on the map's nth bridge (0 first: those over the river, then the
 ///                  footbridges and jetties out into its lakes; `WorldMap.bridges`), at its land end
 ///                  (a jetty's) or its middle
+///   from=<map>     start where the map's road back to that one comes in (inside a cave, its way out)
 ///   mouth=n        start on the road six cells in front of the mouth of the map's nth cave
-///                  (`WorldMap.crags`, 0 first), looking up at it
+///                  (`WorldMap.crags`, 0 first), looking up at it; mouth=n:d, d cells in front
 ///   harbor=n       start where the map's nth harbor's pier leaves the land (`WorldMap.harbors`, 0
 ///                  first), its ship moored out at the end
 ///   equip=a+b      start wearing these items (ids from content/items.json, joined with +)
@@ -585,6 +586,13 @@ enum DebugLaunch {
         if !skills.isEmpty {
             session.data.hero.learnedSkills = (session.data.hero.learnedSkills ?? []) + skills
         }
+        // `from=<map>`: where its road back to that map comes in, as if you'd just arrived by it (inside a
+        // cave, on the side you walked into its mouth from).
+        if let from = flags["from"], let def = Content.shared.map(session.data.mapID),
+           let road = def.exits.first(where: { $0.to == from }) {
+            let grid = WorldMap(def: def)
+            session.playerPosition = grid.center(of: grid.entryCell(from: road.edge))
+        }
         if let at = flags["at"]?.split(separator: ";").first ?? flags["at"].map({ Substring($0) }),
            let def = Content.shared.map(session.data.mapID) {
             let parts = at.split(separator: "_").compactMap { Int($0) }
@@ -652,10 +660,12 @@ enum DebugLaunch {
                 session.playerPosition = grid.center(of: bridge.cell(lane: bridge.lane, along: along))
             }
         }
-        if let pick = flags["mouth"].flatMap({ Int($0) }), let def = Content.shared.map(session.data.mapID) {
+        let mouthFlag = flags["mouth"]?.split(separator: ":").map(String.init) ?? []
+        if let pick = mouthFlag.first.flatMap({ Int($0) }), let def = Content.shared.map(session.data.mapID) {
             let grid = WorldMap(def: def)
+            let out = mouthFlag.count > 1 ? Double(mouthFlag[1]) ?? 6 : 6
             if grid.crags.indices.contains(pick), let mouth = grid.hills[grid.crags[pick].hill].mouth {
-                let spot = GridPoint(col: Int((mouth.x - mouth.into.x * 6).rounded(.down)), row: Int((mouth.y - mouth.into.y * 6).rounded(.down)))
+                let spot = GridPoint(col: Int((mouth.x - mouth.into.x * out).rounded(.down)), row: Int((mouth.y - mouth.into.y * out).rounded(.down)))
                 session.playerPosition = grid.center(of: grid.nearestWalkable(to: spot) ?? spot)
             }
         }

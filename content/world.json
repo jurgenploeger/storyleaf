@@ -175,7 +175,7 @@
     "valley_of_fear": {
       "frog_swamp": {"at": [0, 86], "via": [[-54, 20]]},
       "goldburg": {"at": [79, 29]},
-      "rat_cavern": {"at": [125, 63], "into": "east"},
+      "rat_cavern": {"at": [118, 82], "into": "north"},
       "twilight_woods": {"at": [86, 115]}
     },
     "frog_swamp": {

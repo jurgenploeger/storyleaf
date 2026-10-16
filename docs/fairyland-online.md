@@ -261,10 +261,23 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   next door, the rivers, the other roads and everything set down by hand, and the cheapest way there,
   the road running straight at the mouth for its last 7 cells (world.json's road: `at` the cell in front
   of the mouth, `into` the way in). Its face is always turned toward you, so you walk north or east into
-  it: a face turned away can't show (on the south and west edges 0.4.5 put a crag beside the road's end
-  for that reason). Its main summit stands 6 cells behind the mouth (7 cells along the face, 8 deep, 95
-  to 110 points), smaller ones at its shoulders and a taller one behind where they keep clear of what's
-  there, drawn as the ranges below were, boulders strewn on its rock; you come out two cells in front of
+  it, the other way from the cave's own road back out (`gate_into`, since 0.7.13, playtesting 2026-10-16:
+  "inside it should have the correct entrance/exit side depending on the location of the cave
+  entrance"), so inside you come in on the side you walked in from and a cave's ways out leave by its
+  south or west side; you arrive by the destination's own road back (`GameCoordinator.travel`). The Rat
+  Cavern's two ways in both went east, so Shiverdell's mouth turned to be walked into north: a face turned away can't show (on the south and west edges 0.4.5 put a crag beside the road's end
+  for that reason). Its main summit is a mountain turned to face you (since 0.7.13, playtesting
+  2026-10-16: "the front of the cave is a bit too flat now and the land that goes up is a bit too
+  small"; 0.7.8's stood 6 cells in, too small to reach its top, about 75 points): its face climbs 5
+  cells from the mouth's foot, ridges down it as a mountain's have (`Hill.Lobe.spurs`), its back 12
+  cells on and 11 either way along the face, 110 to 116 points high; smaller summits at its shoulders
+  and one behind where they keep clear of what's there, drawn as the ranges below were, boulders strewn
+  on its rock. The wall the mouth is in rises 60 points and falls back into the slopes behind (before
+  0.7.13 it left a ledge at the mouth's height behind it, ending in a cliff), and its road shows only up
+  to the mouth's foot (the cells it's carved on past it showed the land's ground over the doorway). Its rock is painted as it shows on the screen (`HillArt.Look.upright`): a hill's picture lies on the map and is lifted onto
+  the screen, so up a sheer face each of its pixels stood several times as tall as on the flat and the rock
+  streaked up the wall (playtesting 2026-10-16); each pixel's rock now comes from where it rises to, over
+  all it covers there, its ledges by its own height. You come out two cells in front of
   it, and its signpost points up the road at it. The coasts the ranges needed (straight for 16 cells
   either side of the road, open sea past them) are the lands' own again. Before 0.7.8, where a road led
   into a cave a range of rocky hills rose along that side of the map (`WorldMap.raiseCrags`, still there

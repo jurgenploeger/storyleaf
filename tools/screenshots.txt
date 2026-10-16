@@ -118,6 +118,13 @@ landscape    | newgame,map=rainbow_city,landscape | 8
 rat_cavern   | newgame,map=rat_cavern            | 8
 cave_dark    | newgame,level=44,class=fighter,pet=pineapple,friends=2,map=rat_cavern | 15
 behind_wall  | newgame,map=rat_cavern,at=-3_3        | 8
+# Inside a cave where you come in from each land (from=<land>): on the side you walked into its mouth
+# from, north into the Gooey Grotto and the Hollow from Emerald Road (in at their south side), north into
+# the Rat Cavern from Shiverdell (south) and east from Lotus Land (west).
+cave_in_downs   | newgame,level=12,map=slime_cave,from=northern_grassland | 8
+cave_in_valley  | newgame,level=30,map=rat_cavern,from=valley_of_fear | 8
+cave_in_lotus   | newgame,level=40,map=rat_cavern,from=lotus_land | 8
+cave_in_emerald | newgame,level=190,map=mysterious_cave,from=emerald_road | 8
 behind_tree  | newgame,map=smiling_forest,at=0_-14   | 15
 intro_story  | intro                             | 6
 intro_shadows | intro=2                          | 6
@@ -267,6 +274,11 @@ gate_lotus     | newgame,level=40,map=lotus_land,mouth=0,weather=clear,hour=12 |
 gate_moon      | newgame,level=100,map=moonglow,mouth=0,hour=16,weather=clear | 8
 gate_emerald_land | newgame,level=190,map=emerald_road,mouth=0,landscape,weather=clear,hour=12 | 8
 gate_night     | newgame,level=12,map=northern_grassland,mouth=0,weather=clear,hour=23 | 8
+# Nearer the mouth (mouth=0:3), so it's mid-screen with the mountain over it: its face and its ridges.
+gate_downs_near | newgame,level=12,map=northern_grassland,mouth=0:3,weather=clear,hour=12 | 8
+gate_downs_near_land | newgame,level=12,map=northern_grassland,mouth=0:3,landscape,weather=clear,hour=12 | 8
+gate_valley_near | newgame,level=30,map=valley_of_fear,mouth=0:3,weather=clear,hour=12 | 8
+gate_moon_near_land | newgame,level=100,map=moonglow,mouth=0:3,landscape,hour=16,weather=clear | 8
 # A harbor where a road meets the sea: a pier out to a ship moored at its end, walked aboard to sail
 # over to Starfall Isle, an island of fallen starlight out east of Sneezle Isle (`WorldMap.harbors`),
 # its own harbor, its crystal glades by day and by night, and Sneezle Isle's captain.

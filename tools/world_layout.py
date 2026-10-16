@@ -90,7 +90,8 @@ CROSSING_DEEP = 9
 # toward the exit's side its mouth may be (cells along that way), how long a way there is best, how
 # far in front of the mouth the road runs straight at it, and the hill's room round it (from the
 # mouth's foot: how far in its middle is, and its reach along the face and into it), its main
-# summit's (the same; `WorldMap.raiseGate` raises them), and how far each keeps from the coast or a
+# summit's top (the same; `WorldMap.raiseGate` raises them, the main summit's foot out over the
+# hill's room since 0.7.13), and how far each keeps from the coast or a
 # land next door, the rivers, the other roads (the game sways them up to 6 cells) and everything set
 # down by hand.
 GATE_OUT = (16, 70)
@@ -1032,10 +1033,14 @@ def turns(path, depth):
 INTO = {"north": (0, 1), "east": (1, 0)}
 
 
-def gate_into(edge):
-    """The way you walk into a cave's mouth on a road out `edge`: north or east, so its face is
-    turned toward you (down the screen is south and west)."""
-    return "north" if edge in ("north", "west") else "east"
+def gate_into(maps, land_id, exit):
+    """The way you walk into a cave's mouth on the road `exit` out of `land_id`: the other way from
+    the cave's own road back out of it (maps.json), so inside you come in on the side you walked in
+    from (playtesting 2026-10-16). North or east, so its face is turned toward you (down the screen
+    is south and west): a cave's ways back out leave by its south or west side. None if they don't."""
+    back = [e for e in maps.get(exit["to"], {}).get("exits", []) if e["to"] == land_id]
+    into = OPPOSITE[back[0]["edge"]] if back else None
+    return into if into in INTO else None
 
 
 def gate_cells(foot, into, shape):
@@ -1104,7 +1109,10 @@ def cave_gates(canvas, design, lands, maps, grids, found, routes, under):
                 alone[my + dy, mx + dx] = False
         people_distance = ndimage.distance_transform_edt(alone)
         best, back = cheapest(mine, depth, hub)
-        into = gate_into(exit["edge"])
+        into = gate_into(maps, land_id, exit)
+        if into is None:
+            problems.append(f"{exit['to']}'s road back to {land_id} should leave by its south or west side")
+            continue
         ix, iy = INTO[into]
         ox, oy = STEP[exit["edge"]]
 
@@ -1366,9 +1374,9 @@ def verify(maps, lands, world):
                 # Into a cave: its mouth inland in a hill on the land, turned toward you, clear of
                 # the coast and the rivers (`cave_gates`).
                 into = road.get("into")
-                if into != gate_into(exit["edge"]):
-                    problems.append(f"world.json: {land_id}'s road into the cave {exit['to']} should go {gate_into(exit['edge'])} "
-                                    "into its mouth (run tools/world_layout.py)")
+                if into is None or into != gate_into(maps, land_id, exit):
+                    problems.append(f"world.json: {land_id}'s road into the cave {exit['to']} should go {gate_into(maps, land_id, exit)} "
+                                    f"into its mouth, the other way from {exit['to']}'s road back (run tools/world_layout.py)")
                     continue
                 dx, dy = INTO[into]
                 last = GATE_APPROACH
