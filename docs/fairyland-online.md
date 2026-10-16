@@ -251,9 +251,24 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   without one (no room for it well out in the water, or no footbridge out to it) is dug again while a try
   could still be big enough for one (since 0.4.9; Lotus Land's lake had none in 0.4.8).
 - Cave entrances (ours, since 0.4.5, asked for in playtesting 2026-10-11: a map's way into a cave should
-  show from afar, a mountain or rock formation on that side): where a road leads into a cave (Shiverdell
-  and Lotus Land into the Rat Cavern, Windswept Downs into Gooey Grotto, Moonwhisper and Emerald Road into
-  Whispering Hollow), a range of rocky hills rises along that side of the map (`WorldMap.raiseCrags`, a
+  show from afar, a mountain or rock formation on that side). Since 0.7.8 (playtesting 2026-10-16: "the
+  caves shouldn't be at the edge of the world maps, because it goes into the sea. It can be somewhere in
+  the middle of the maps so it's just a gate to the cave maps. Maybe at the edge of a hill/mountain") a
+  road into a cave (Shiverdell and Lotus Land into the Rat Cavern, Windswept Downs into Gooey Grotto,
+  Moonwhisper and Emerald Road into Whispering Hollow) ends inland at a rocky hill (`WorldMap.raiseGate`),
+  the mouth in a wall of rock at the foot of its face. `tools/world_layout.py` (`cave_gates`) finds it
+  room 16 to 70 cells out from the hub toward the side the exit names, clear of the coast and the lands
+  next door, the rivers, the other roads and everything set down by hand, and the cheapest way there,
+  the road running straight at the mouth for its last 7 cells (world.json's road: `at` the cell in front
+  of the mouth, `into` the way in). Its face is always turned toward you, so you walk north or east into
+  it: a face turned away can't show (on the south and west edges 0.4.5 put a crag beside the road's end
+  for that reason). Its main summit stands 6 cells behind the mouth (7 cells along the face, 8 deep, 95
+  to 110 points), smaller ones at its shoulders and a taller one behind where they keep clear of what's
+  there, drawn as the ranges below were, boulders strewn on its rock; you come out two cells in front of
+  it, and its signpost points up the road at it. The coasts the ranges needed (straight for 16 cells
+  either side of the road, open sea past them) are the lands' own again. Before 0.7.8, where a road led
+  into a cave a range of rocky hills rose along that side of the map (`WorldMap.raiseCrags`, still there
+  for a land with no gate, a
   `Hill` with a `mouth`): summits of all sizes (65 to 125 points) every 3 to 10 cells along the edge,
   their feet 2 to 4 cells in, and one round the road whose side the cave's mouth is in, the road climbing
   to it about 40 to 55 points up. Their sides facing you climb faster, up to 2.8 times at the foot
@@ -339,7 +354,8 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
     other, and each land lays out and draws only its own cells (the rest of its box is the sea's, or the
     land next door's, `Ground.away`). Where a road crosses, the border runs straight for 8 cells either
     side and the painting gives the crossing and the road's turns through the middle of the land; a road
-    into a cave leaves by a straight stretch of coast with open sea past it for the cave's mountains. The
+    into a cave ends inland at its hill (since 0.7.8; before, it left by a straight stretch of coast with
+    open sea past it for the cave's mountains). The
     tool checks everything set down by hand stands on its land and every road keeps 3 cells off its edge.
     The layout follows the climate, roughly RuneScape's Gielinor turned on its side: snow and ice in the
     north (Snow White Forest, Moonwhisper, Briarmere, Tidewater Shrine, like Fremennik and Trollheim),
@@ -411,8 +427,8 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   - The sea (playtesting 2026-10-13: "everything outside of the land should be sea"): all round the
     lands and in the gaps between them, the same blue whichever land you're in (`raw:tile_water`, not
     graded by a palette), a river that reaches a coast running out into it, and haze thickening with
-    distance from any land (each cell drawn by the nearest land only, `Region.drawsSea`). A cave's range
-    rises out of it on rock. 0.5.0's first draft had wilds there (a thicket along the edge, then mist).
+    distance from any land (each cell drawn by the nearest land only, `Region.drawsSea`). Till 0.7.8 a
+    cave's range rose out of it on rock. 0.5.0's first draft had wilds there (a thicket along the edge, then mist).
   - Coasts (since 0.5.1, playtesting 2026-10-13: "the maps shouldn't be squares any more but natural
     landscape areas with natural curves; the sea part should be lower than the land; I shouldn't be able to
     walk here", from a screenshot of the hero out on the sea): since 0.6.0 the coast is the land's shape
@@ -791,7 +807,10 @@ the Wishing Seal, which stays the Monster Book's last reward.
   cloud session (a 2026-10-04 web search found nothing); asked for in playtesting (2026-10-04). Check the ToM
   wiki.
   - Us (since 0.3.44): `Sky` multiplies each map by the hour's light (warm at dawn and dusk, deep blue from
-    about 19:30 to 04:30) and fades the sun's flare and sunbeams with it. Weather (`Weather`) changes every
+    about 19:30 to 04:30) and fades the sun's flare and sunbeams with it. On the continent the land's air
+    (butterflies, clouds' shadows, drifting particles, the sparkles over fairy rings and fountains) hung
+    over that shade until 0.7.8, as bright at night as by day (playtesting 2026-10-16: "when it's night,
+    the butterflies are too light"); it's lifted only past what stands now (`LandStage.airLift`). Weather (`Weather`) changes every
     6 in-game hours, picked from the map's `ambience.weather` weights: clear, cloudy, rain, storm, fog, snow.
     Caves have neither. The battle backdrop is the map without the sky.
   - Us (since 0.3.65, asked for in playtesting 2026-10-07): night was too long at twelve real minutes, and

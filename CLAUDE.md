@@ -19,7 +19,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   and lobes round it; a town's walled square, maps.json `town.size`, sits in its own countryside) and `rivers` (each
   one's course from its spring to the sea, or to a `lake` of its own) and rerun the tool (numpy + scipy): it
   paints the shapes and rivers, writes each land's box (maps.json `width`/`height`), middle, road crossings with
-  their turns, and shape (`regions`, rivers in it), and `check_content.py` checks it (everything set down by hand on
+  their turns (a road into a cave ends inland, at the hill its mouth is in: `cave_gates`, `WorldMap.raiseGate`),
+  and shape (`regions`, rivers in it), and `check_content.py` checks it (everything set down by hand on
   its land and clear of the rivers, roads meeting, nothing cut off by a river). Rerun it after changing exits or
   anything set down by hand; `--preview out.png` draws it. The game lays the rivers where they're painted, a bridge
   wherever a road crosses one (`WorldMap.layRivers`); the land slopes down to the sea and into the lakes

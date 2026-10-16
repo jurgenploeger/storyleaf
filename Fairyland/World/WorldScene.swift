@@ -824,7 +824,9 @@ final class WorldScene: SKScene {
         let colour = Self.fogColor(from: art.tileTexture(def.theme.border ?? def.theme.ground), cave: false)
         for crag in map.crags {
             let hill = map.hills[crag.hill]
-            strewStones(on: hill)
+            strewStones(on: hill, inland: crag.inland)
+            // A hill inland stands in the land's own ground: no range past the edge to fade out.
+            guard !crag.inland else { continue }
             let length = crag.edge == .north || crag.edge == .south ? map.columns : map.rows
             // Along the edge as far as the range runs: on the continent, the stretch either side of
             // its road (`WorldMap.cragStretch`), the coast curving away past it.
@@ -884,13 +886,13 @@ final class WorldScene: SKScene {
     }
 
     /// Boulders and stones strewn over a range where a road leads into a cave, out past the map's
-    /// edge, so its slopes read as rough rock; up where its ground stands, and none over its cave's
-    /// mouth.
-    private func strewStones(on hill: WorldMap.Hill) {
+    /// edge (or over its rock, where it's a hill inland: `inland`), so its slopes read as rough rock;
+    /// up where its ground stands, and none over its cave's mouth.
+    private func strewStones(on hill: WorldMap.Hill, inland: Bool) {
         var random = SeededRandom(text: def.id + "/crag stones")
-        for cell in hill.cells.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }) where !map.contains(cell) {
+        for cell in hill.cells.sorted(by: { ($0.row, $0.col) < ($1.row, $1.col) }) where inland ? !map.isWalkable(cell) : !map.contains(cell) {
             // Not on a land next door, where the range past the edge's end would reach into it.
-            if Continent.isLand(cell, from: def) { continue }
+            if !inland, Continent.isLand(cell, from: def) { continue }
             let x = Double(cell.col) + 0.5, y = Double(cell.row) + 0.5
             if let mouth = hill.mouth {
                 let dx = x - mouth.x, dy = y - mouth.y
@@ -1286,7 +1288,7 @@ final class WorldScene: SKScene {
     private func placeSignposts(_ planned: [(exit: MapDef.Exit, cell: GridPoint)]) {
         for (exit, cell) in planned {
             guard let destination = Content.shared.map(exit.to) else { continue }
-            let text = switch exit.edge {
+            let text = switch map.signWay(for: exit) {
             // Arrows follow the road on screen: north runs up-left, east up-right.
             case .north: "↖ \(destination.name)"
             case .south: "\(destination.name) ↘"

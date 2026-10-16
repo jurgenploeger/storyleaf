@@ -2215,7 +2215,7 @@
         }
       ],
       "danger": true,
-      "width": 172,
+      "width": 173,
       "height": 118,
       "music": "woods",
       "battleMusic": "battle_dark",
@@ -5232,7 +5232,7 @@
     {
       "id": "valley_of_fear",
       "name": "Shiverdell",
-      "width": 169,
+      "width": 173,
       "height": 124,
       "music": "fear",
       "battleMusic": "battle_dark",
@@ -7631,7 +7631,7 @@
     {
       "id": "moonglow",
       "name": "Moonwhisper",
-      "width": 133,
+      "width": 137,
       "height": 110,
       "music": "moonglow",
       "battleMusic": "battle_dark",
@@ -8107,7 +8107,7 @@
           ]
         }
       ],
-      "width": 153,
+      "width": 156,
       "height": 68,
       "music": "meadow",
       "theme": {
@@ -11238,8 +11238,8 @@
     {
       "id": "lotus_land",
       "name": "Lotus Land",
-      "width": 91,
-      "height": 69,
+      "width": 87,
+      "height": 96,
       "music": "woods",
       "crowd": {
         "adventurers": 3
@@ -14574,7 +14574,7 @@
     {
       "id": "emerald_road",
       "name": "Emerald Road",
-      "width": 103,
+      "width": 110,
       "height": 88,
       "music": "woods",
       "crowd": {

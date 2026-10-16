@@ -17,8 +17,10 @@ the gates in its wall (`gate`) and cross the fields to its border as any land's 
 Then it's tidied: stray cells and slivers go to the land round them, a land in more than one piece
 keeps its biggest, pools inland fill in. Where a road crosses from one land into the next, the
 border runs straight for a stretch (`CROSSING`), across the way the exit goes, so the road meets
-itself and a quest's gate fits. Where a road leads into a cave, that side of the land is a straight coast
-(`CAVE_ALONG` either side of the road) with open sea past it for the mountains the cave is in.
+itself and a quest's gate fits. A road into a cave ends inland, at a rocky hill with the cave's mouth
+in its face (`cave_gates`): out from the hub toward the side the exit names, its face turned toward
+you, so you walk north or east into it, clear of the coast, the rivers, the other roads and
+everything set down by hand.
 
 Rivers (world.json `rivers`) run from a spring to the sea through the turns of their `course`,
 meandering a little (`RIVER_WOBBLE`) and widening as they go, some from one land on into the next;
@@ -31,7 +33,8 @@ they're small (`SLIVER`), else it's a problem to fix in the course.
 Each land's map is the box round its shape, its middle at the land's middle (maps.json `width`
 and `height`, which this writes). world.json gets, per land, the cell its box starts on (`lands`),
 where each road crosses its border (`roads`, in its own cells: the last cell on its side, the next
-one over the edge the exit names being the other land's), each river's middle (`line`), and its
+one over the edge the exit names being the other land's; for a road into a cave, the cell in front of
+its mouth, and `into`, the way you walk into it), each river's middle (`line`), and its
 shape (`regions`): row by row from the south, over its box and `MARGIN` cells round it, runs of
 `[code, length]`: 1 its own land, 2 the sea it draws (the sea nearest it), 3 its own land under a
 river, 4 a land next door's under a river, 0 neither.
@@ -79,12 +82,23 @@ TOWN_GATE = 5
 EXTENT = 170
 CROSSING = 8
 CROSSING_DEEP = 9
-# Where a road leads into a cave: the coast runs straight this far either side of it, the land
-# reaching it this far in, and no land this far past it (its mountains and their mist,
-# WorldScene.placeCrags).
-CAVE_ALONG = 16
-CAVE_DEEP = 10
-CAVE_CLEARANCE = 30
+# Where a road leads into a cave (`cave_gates`, playtesting 2026-10-16: not at the edge of the map,
+# where its mountains stood out in the sea, but inland, a gate to the cave): how far out from the hub
+# toward the exit's side its mouth may be (cells along that way), how long a way there is best, how
+# far in front of the mouth the road runs straight at it, and the hill's room round it (from the
+# mouth's foot: how far in its middle is, and its reach along the face and into it), its main
+# summit's (the same; `WorldMap.raiseGate` raises them), and how far each keeps from the coast or a
+# land next door, the rivers, the other roads (the game sways them up to 6 cells) and everything set
+# down by hand.
+GATE_OUT = (16, 70)
+GATE_IDEAL = 34
+GATE_APPROACH = 7
+GATE_ROOM = (7, 12, 11)
+GATE_SUMMIT = (6, 7, 8)
+GATE_COAST = (4, 8)
+GATE_RIVER = (3, 6)
+GATE_ROAD = (3, 8)
+GATE_PEOPLE = (3, 5)
 # Sea enclosed by land smaller than this fills in (pools inland); bigger is an inland sea.
 POOL = 900
 # Land in pieces smaller than this goes to the sea or the land round it.
@@ -98,12 +112,13 @@ ROAD_MARGIN = 3
 RIVER_WOBBLE = ((18, 2.2, 0xD01), (7, 0.7, 0xD02))
 SPRING = 2.0
 # How far a river keeps from where a road crosses a border, from a land's middle and hub, from
-# anything set down by hand, from a town and from where a road leads into a cave, in cells.
+# anything set down by hand and from a town, in cells; and how far a road into a cave keeps from one
+# all the way (no bridge on it: the game sways it up to 6 cells off its line).
 RIVER_CROSSING = 10
 RIVER_MIDDLE = 8
 RIVER_CONTENT = 4
 RIVER_TOWN = 5
-RIVER_CAVE = 30
+RIVER_GATE_ROAD = 8
 # Where a road crosses a river (a bridge, `WorldMap.bridge(over:along:)`): at least this square on
 # (the cosine of the angle between them, at most), no wider than this, and this far from the sea
 # (whose shore slopes down to it), the road's border crossing and its hub.
@@ -433,8 +448,9 @@ def straighten(canvas, keep, a, b, cell, edge, along, deep, only=None):
 
 
 def crossings(canvas, design, lands, maps, keep):
-    """Where every road crosses its border, as {land: {to: (x, y)}} in world cells (the last cell on
-    the land's side), each road's border laid straight there; and each cave's straight coast."""
+    """Where every road between two lands crosses its border, as {land: {to: (x, y)}} in world cells
+    (the last cell on the land's side), each road's border laid straight there. (Roads into caves
+    end inland, `cave_gates`.)"""
     import numpy as np
     ids = canvas.ids
     index = {land_id: k for k, land_id in enumerate(ids)}
@@ -480,44 +496,6 @@ def crossings(canvas, design, lands, maps, keep):
                 r, c = canvas.index(x0 + side[0] * s + dx * d, y0 + side[1] * s + dy * d)
                 if 0 <= r < canvas.height and 0 <= c < canvas.width and canvas.owner[r, c] in (a, b):
                     keep[r, c] = True
-    for land_id, exit in cave_exits(maps, lands):
-        edge = exit["edge"]
-        a = index[land_id]
-        dx, dy = STEP[edge]
-        cx, cy = design[land_id]["at"]
-        at = exit.get("at", 0)
-        r, c = np.nonzero(canvas.owner == a)
-        xs, ys = c + canvas.left, r + canvas.bottom
-        # The line: where the coast lies along the stretch, on the whole (half of it in front, half
-        # behind, as each row's or column's furthest cell goes).
-        if edge in ("east", "west"):
-            band = np.abs(ys - (cy + at)) <= CAVE_ALONG
-            ends = [xs[band & (ys == y)].max() if edge == "east" else xs[band & (ys == y)].min()
-                    for y in np.unique(ys[band])]
-            line = int(np.median(ends))
-            cell = (line, cy + at)
-        else:
-            band = np.abs(xs - (cx + at)) <= CAVE_ALONG
-            ends = [ys[band & (xs == x)].max() if edge == "north" else ys[band & (xs == x)].min()
-                    for x in np.unique(xs[band])]
-            line = int(np.median(ends))
-            cell = (cx + at, line)
-        # The land right up to the line along the stretch, nothing of it past the line anywhere,
-        # and nothing at all past it for the mountains.
-        straighten(canvas, keep, a, -1, cell, edge, CAVE_ALONG, CAVE_DEEP, only="a")
-        for x, y in zip(xs, ys):
-            past = (x - cell[0]) * dx + (y - cell[1]) * dy
-            if past > 0:
-                canvas.set(int(x), int(y), -1)
-        side = (-dy, dx)
-        for s in range(-CAVE_ALONG - 10, CAVE_ALONG + 11):
-            for d in range(1, CAVE_CLEARANCE + 1):
-                x, y = cell[0] + side[0] * s + dx * d, cell[1] + side[1] * s + dy * d
-                if canvas.get(x, y) >= 0:
-                    problems.append(f"{ids[canvas.get(x, y)]} stands in the mountains past {land_id}'s {edge} side, "
-                                    "where a road leads into a cave")
-                    break
-        found[land_id][exit["to"]] = cell
     return found, sorted(set(problems))
 
 
@@ -630,9 +608,10 @@ def river_line(river, number):
     return line
 
 
-def road_lines(land_id, land, middle, crossings, routes):
+def road_lines(land_id, land, middle, crossings, routes, intos=None):
     """A land's roads (to each crossing, from its hub through `routes`' turns) and trails, as
-    (what, [(x, y), ...]) in world cells: the lines rivers are bridged on."""
+    (what, [(x, y), ...]) in world cells: the lines rivers are bridged on. `intos`: for a road into a
+    cave, the way into its mouth (its crossing is the cell in front of it)."""
     mx, my = middle
     hub = land.get("hub") or [0, 0]
     found = []
@@ -640,9 +619,10 @@ def road_lines(land_id, land, middle, crossings, routes):
         exit = next((e for e in land["exits"] if e["to"] == to), None)
         if exit is None:
             continue
-        dx, dy = STEP[exit["edge"]]
+        dx, dy = INTO[intos[to]] if to in (intos or {}) else STEP[exit["edge"]]
+        last = GATE_APPROACH if to in (intos or {}) else 5
         stops = [(mx + hub[0], my + hub[1])] + [(mx + a, my + b) for a, b in routes.get(to) or []]
-        found.append((f"{land_id}'s road to {to}", stops + [(cx - dx * 5, cy - dy * 5), (cx, cy)]))
+        found.append((f"{land_id}'s road to {to}", stops + [(cx - dx * last, cy - dy * last), (cx, cy)]))
     for trail in land.get("trails") or []:
         stops = [trail.get("from") or hub] + (trail.get("via") or []) + [trail["to"]]
         found.append((f"{land_id}'s trail", [(mx + a, my + b) for a, b in stops]))
@@ -910,36 +890,203 @@ def ways(canvas, design, lands, grids, found):
             while path[-1] != start:
                 path.append(back[path[-1]])
             path.reverse()
-
-            def clear(a, b, least):
-                n = max(abs(b[0] - a[0]), abs(b[1] - a[1]), 1)
-                for t in range(n + 1):
-                    px = round(a[0] + (b[0] - a[0]) * t / n)
-                    py = round(a[1] + (b[1] - a[1]) * t / n)
-                    if depth[py, px] < least:
-                        return False
-                return True
-
-            # Cut down to the turns: from each waypoint, straight on as far as the way stays as deep
-            # in the land (up to 6 cells) as the path itself did.
-            via, i = [], 0
-            while i < len(path) - 1:
-                j = len(path) - 1
-                while j > i + 1:
-                    least = min(6.0, min(depth[py, px] for px, py in path[i:j + 1]))
-                    if clear(path[i], path[j], least) and j - i <= 60:
-                        break
-                    j -= 1
-                if j < len(path) - 1:
-                    via.append(path[j])
-                i = j
+            via = turns(path, depth)
             # The last stretch to the border is the game's (`WorldMap.carveRoad`).
             via = [v for v in via if max(abs(v[0] - goal[0]), abs(v[1] - goal[1])) > 6]
             found_ways[land_id][to] = [[px - mx, py - my] for px, py in lead + via]
     return found_ways, problems
 
 
-def write(data, lands, design, grids, roads, routes, shapes, lines):
+def cheapest(mine, depth, start):
+    """The cheapest ways from `start` over a land's cells (`mine`, in its box), 8 ways, a step
+    costing more the nearer the coast or the border it is (`depth`): each cell's cost and the cell
+    it's reached from."""
+    import heapq
+    h, w = mine.shape
+    best = {start: 0.0}
+    back = {}
+    queue = [(0.0, start)]
+    while queue:
+        cost, cell = heapq.heappop(queue)
+        if cost > best[cell]:
+            continue
+        for ox in (-1, 0, 1):
+            for oy in (-1, 0, 1):
+                if not ox and not oy:
+                    continue
+                nx, ny = cell[0] + ox, cell[1] + oy
+                if not (0 <= nx < w and 0 <= ny < h) or not mine[ny, nx]:
+                    continue
+                step = (1.4142 if ox and oy else 1.0) * (1 + 8 / max(1.0, depth[ny, nx]))
+                if cost + step < best.get((nx, ny), float("inf")):
+                    best[(nx, ny)] = cost + step
+                    back[(nx, ny)] = cell
+                    heapq.heappush(queue, (cost + step, (nx, ny)))
+    return best, back
+
+
+def turns(path, depth):
+    """A way cut down to its turns: from each waypoint, straight on as far as the way stays as deep
+    in the land (up to 6 cells) as the path itself did. The turns, without its ends."""
+    def clear(a, b, least):
+        n = max(abs(b[0] - a[0]), abs(b[1] - a[1]), 1)
+        for t in range(n + 1):
+            px = round(a[0] + (b[0] - a[0]) * t / n)
+            py = round(a[1] + (b[1] - a[1]) * t / n)
+            if depth[py, px] < least:
+                return False
+        return True
+
+    via, i = [], 0
+    while i < len(path) - 1:
+        j = len(path) - 1
+        while j > i + 1:
+            least = min(6.0, min(depth[py, px] for px, py in path[i:j + 1]))
+            if clear(path[i], path[j], least) and j - i <= 60:
+                break
+            j -= 1
+        if j < len(path) - 1:
+            via.append(path[j])
+        i = j
+    return via
+
+
+INTO = {"north": (0, 1), "east": (1, 0)}
+
+
+def gate_into(edge):
+    """The way you walk into a cave's mouth on a road out `edge`: north or east, so its face is
+    turned toward you (down the screen is south and west)."""
+    return "north" if edge in ("north", "west") else "east"
+
+
+def gate_cells(foot, into, shape):
+    """The cells a cave's hill (`shape`: how far past the mouth's foot its middle is, its reach along
+    the face and into it) covers, its ellipse grown by a cell: `foot` is the middle of the mouth's
+    foot line, in world cells (floats)."""
+    ix, iy = INTO[into]
+    ax, ay = iy, ix
+    centre = (foot[0] + ix * shape[0], foot[1] + iy * shape[0])
+    reach = int(max(shape[1], shape[2])) + 2
+    cells = []
+    for y in range(int(centre[1]) - reach, int(centre[1]) + reach + 1):
+        for x in range(int(centre[0]) - reach, int(centre[0]) + reach + 1):
+            dx, dy = x + 0.5 - centre[0], y + 0.5 - centre[1]
+            u, v = (dx * ax + dy * ay) / shape[1], (dx * ix + dy * iy) / shape[2]
+            if (1 - math.hypot(u, v)) * min(shape[1], shape[2]) > -1:
+                cells.append((x, y))
+    return cells
+
+
+def gate_foot(at, into):
+    """The middle of a cave's mouth's foot, in cells: the far side of `at`, the cell in front of it."""
+    ix, iy = INTO[into]
+    return (at[0] + 0.5 + ix * 0.5, at[1] + 0.5 + iy * 0.5)
+
+
+def cave_gates(canvas, design, lands, maps, grids, found, routes, under):
+    """Where each road into a cave ends (playtesting 2026-10-16): inland, at a rocky hill with the
+    mouth in its face, its face turned toward you, so you walk north or east into it (`gate_into`).
+    Out from the hub toward the side the exit names (`GATE_OUT` along that way, no further across it
+    than along), the hill's room clear of the coast and the lands next door, the rivers, the other
+    roads and everything set down by hand (`GATE_ROOM`, its main summit's further, `GATE_SUMMIT`),
+    and the way there from the hub (the cheapest, as `ways` finds) clear of the rivers and the hill,
+    running into the mouth straight for `GATE_APPROACH` cells. Of the places that fit, the one with
+    the way nearest `GATE_IDEAL` long that turns least into the mouth. Adds each to `found` (the cell
+    in front of the mouth) and `routes` (the way's turns); returns {land: {cave: into}} and problems."""
+    import numpy as np
+    from scipy import ndimage
+    intos, problems = {}, []
+    index = {land_id: k for k, land_id in enumerate(canvas.ids)}
+    wet_distance = ndimage.distance_transform_edt(~under)
+    for land_id, exit in cave_exits(maps, lands):
+        land = lands[land_id]
+        k = index[land_id]
+        x0, y0, w, h = grids[land_id]
+        r0, c0 = canvas.index(x0, y0)
+        mine = canvas.owner[r0:r0 + h, c0:c0 + w] == k
+        depth = ndimage.distance_transform_edt(np.pad(mine, 1))[1:-1, 1:-1]
+        wet = wet_distance[r0:r0 + h, c0:c0 + w]
+        mx, my = design[land_id]["at"][0] - x0, design[land_id]["at"][1] - y0
+        hub_offset = land.get("hub") or [0, 0]
+        hub = (mx + hub_offset[0], my + hub_offset[1])
+        # The other roads, and everything set down by hand.
+        roads = np.ones((h, w), bool)
+        lines = road_lines(land_id, land, (mx, my), {to: (x - x0, y - y0) for to, (x, y) in found[land_id].items()},
+                           routes.get(land_id, {}))
+        for _, stops in lines:
+            for x, y in along(stops):
+                i, j = int(math.floor(x)), int(math.floor(y))
+                if 0 <= i < w and 0 <= j < h:
+                    roads[j, i] = False
+        road_distance = ndimage.distance_transform_edt(roads)
+        alone = np.ones((h, w), bool)
+        for (dx, dy), _ in content_spots(land):
+            if 0 <= mx + dx < w and 0 <= my + dy < h:
+                alone[my + dy, mx + dx] = False
+        people_distance = ndimage.distance_transform_edt(alone)
+        best, back = cheapest(mine, depth, hub)
+        into = gate_into(exit["edge"])
+        ix, iy = INTO[into]
+        ox, oy = STEP[exit["edge"]]
+
+        def fits(cells, least):
+            coast, river, road, person = least
+            xs = np.array([c[0] for c in cells])
+            ys = np.array([c[1] for c in cells])
+            if xs.min() < 0 or ys.min() < 0 or xs.max() >= w or ys.max() >= h:
+                return False
+            return bool(mine[ys, xs].all() and (depth[ys, xs] >= coast).all() and (wet[ys, xs] >= river).all()
+                        and (road_distance[ys, xs] >= road).all() and (people_distance[ys, xs] >= person).all())
+
+        picked = None
+        for y in range(h):
+            for x in range(w):
+                vx, vy = x - hub[0], y - hub[1]
+                forward, across = vx * ox + vy * oy, abs(vx * oy - vy * ox)
+                if not (GATE_OUT[0] <= forward <= GATE_OUT[1]) or across > forward:
+                    continue
+                approach = (round(x - ix * GATE_APPROACH), round(y - iy * GATE_APPROACH))
+                if approach not in back:
+                    continue
+                foot = gate_foot((x, y), into)
+                room = gate_cells(foot, into, GATE_ROOM)
+                summit = gate_cells(foot, into, GATE_SUMMIT)
+                least = lambda n: (GATE_COAST[n], GATE_RIVER[n], GATE_ROAD[n], GATE_PEOPLE[n])
+                if not fits(room, least(0)) or not fits(summit, least(1)):
+                    continue
+                # The way there: clear of the rivers all along and of the hill, and the straight
+                # stretch into the mouth on the land.
+                path = [approach]
+                while path[-1] != hub:
+                    path.append(back[path[-1]])
+                path.reverse()
+                inside = set(room)
+                if any(wet[py, px] < RIVER_GATE_ROAD for px, py in path) or any(p in inside for p in path[:-3]):
+                    continue
+                straight = [(round(x - ix * t), round(y - iy * t)) for t in range(GATE_APPROACH + 1)]
+                if not all(0 <= px < w and 0 <= py < h and mine[py, px] and wet[py, px] >= RIVER_GATE_ROAD for px, py in straight):
+                    continue
+                # How it turns into the mouth: the way's last few cells against `into`.
+                tail = path[max(0, len(path) - 7)]
+                dx, dy = approach[0] - tail[0], approach[1] - tail[1]
+                length = math.hypot(dx, dy) or 1
+                turn = math.degrees(math.acos(max(-1.0, min(1.0, (dx * ix + dy * iy) / length))))
+                cost = abs(len(path) - GATE_IDEAL) / 12 + turn / 60 + across / max(forward, 1)
+                if picked is None or cost < picked[0]:
+                    picked = (cost, (x, y), path)
+        if picked is None:
+            problems.append(f"{land_id}'s road into the cave {exit['to']} has nowhere inland for its mouth")
+            continue
+        _, (x, y), path = picked
+        via = [v for v in turns(path + [(x, y)], depth) if math.hypot(v[0] - x, v[1] - y) > GATE_APPROACH + 2]
+        found[land_id][exit["to"]] = (x0 + x, y0 + y)
+        routes.setdefault(land_id, {})[exit["to"]] = [[px - mx, py - my] for px, py in via]
+        intos.setdefault(land_id, {})[exit["to"]] = into
+    return intos, problems
+
+
+def write(data, lands, design, grids, roads, routes, intos, shapes, lines):
     for land_id, (x, y, w, h) in grids.items():
         lands[land_id]["width"], lands[land_id]["height"] = w, h
     MAPS.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
@@ -960,6 +1107,8 @@ def write(data, lands, design, grids, roads, routes, shapes, lines):
             road = {"at": list(cell)}
             if routes.get(i, {}).get(to):
                 road["via"] = routes[i][to]
+            if intos.get(i, {}).get(to):
+                road["into"] = intos[i][to]
             entries.append(f'      {json.dumps(to)}: {json.dumps(road, separators=(", ", ": "))}')
         blocks.append(f'    "{i}": {{\n' + ",\n".join(entries) + "\n    }")
     out.append(",\n".join(blocks))
@@ -997,9 +1146,10 @@ def solve(data, maps, lands, design, world_rivers):
     grids = boxes(canvas, design, lands)
     routes, more = ways(canvas, design, lands, grids, found)
     river, lines, wet = rivers(canvas, world_rivers, design, lands, grids, found, routes)
+    intos, caves = cave_gates(canvas, design, lands, maps, grids, found, routes, river)
     # Roads in each land's own cells.
     roads = {i: {to: (x - grids[i][0], y - grids[i][1]) for to, (x, y) in found[i].items()} for i in found}
-    return canvas, grids, roads, routes, regions(canvas, grids, river), lines, problems + more + wet
+    return canvas, grids, roads, routes, intos, regions(canvas, grids, river), lines, problems + more + wet + caves
 
 
 # MARK: Checking (no numpy: check_content.py runs it)
@@ -1105,6 +1255,7 @@ def verify(maps, lands, world):
                 problems.append(f"world.json: {land_id}'s road to {exit['to']} crosses off its land")
             dx, dy = STEP[exit["edge"]]
             over = (here[0] + dx, here[1] + dy)
+            last = 5
             if exit["to"] in lands:
                 back = world["roads"].get(exit["to"], {}).get(land_id)
                 ox, oy = origins[exit["to"]]
@@ -1112,11 +1263,36 @@ def verify(maps, lands, world):
                     problems.append(f"world.json: the road from {land_id} {exit['edge']} doesn't meet {exit['to']}'s")
                 if owner.get(over) != exit["to"]:
                     problems.append(f"world.json: past {land_id}'s road {exit['edge']} isn't {exit['to']}")
-            elif over in owner:
-                problems.append(f"world.json: past {land_id}'s road into the cave {exit['to']} is land")
+            else:
+                # Into a cave: its mouth inland in a hill on the land, turned toward you, clear of
+                # the coast and the rivers (`cave_gates`).
+                into = road.get("into")
+                if into != gate_into(exit["edge"]):
+                    problems.append(f"world.json: {land_id}'s road into the cave {exit['to']} should go {gate_into(exit['edge'])} "
+                                    "into its mouth (run tools/world_layout.py)")
+                    continue
+                dx, dy = INTO[into]
+                last = GATE_APPROACH
+                foot = gate_foot(here, into)
+                mine = own.get(land_id, set())
+                water = wet.get(land_id, set())
+                for shape, n in ((GATE_ROOM, 0), (GATE_SUMMIT, 1)):
+                    coast, river = GATE_COAST[n], GATE_RIVER[n]
+                    # The cells nearer than that, as the search measures (`cave_gates`).
+                    near_coast = [(i, j) for i in range(-coast, coast + 1) for j in range(-coast, coast + 1) if i * i + j * j < coast * coast]
+                    near_river = [(i, j) for i in range(-river, river + 1) for j in range(-river, river + 1) if i * i + j * j < river * river]
+                    for x, y in gate_cells(foot, into, shape):
+                        if not all((x + i, y + j) in mine for i, j in near_coast):
+                            problems.append(f"world.json: the hill {land_id}'s road into {exit['to']} ends at reaches "
+                                            f"within {coast} cells of its land's edge")
+                            break
+                        if any((x + i, y + j) in water for i, j in near_river):
+                            problems.append(f"world.json: a river runs within {river} cells of the hill {land_id}'s road "
+                                            f"into {exit['to']} ends at")
+                            break
             hub = land.get("hub") or [0, 0]
             stops = [hub] + road.get("via", [])
-            points = [(middle[0] + x, middle[1] + y) for x, y in stops] + [(here[0] - dx * 5, here[1] - dy * 5)]
+            points = [(middle[0] + x, middle[1] + y) for x, y in stops] + [(here[0] - dx * last, here[1] - dy * last)]
             for start, end in zip(points, points[1:]):
                 steps = max(abs(end[0] - start[0]), abs(end[1] - start[1]), 1)
                 off = False
@@ -1149,7 +1325,8 @@ def bridged_lands(lands, world):
         mc, mr = world["middles"][land_id]
         roads = world["roads"].get(land_id, {})
         crossings = {to: (x0 + r["at"][0], y0 + r["at"][1]) for to, r in roads.items()}
-        lines = road_lines(land_id, land, (x0 + mc, y0 + mr), crossings, {to: r.get("via") for to, r in roads.items()})
+        lines = road_lines(land_id, land, (x0 + mc, y0 + mr), crossings, {to: r.get("via") for to, r in roads.items()},
+                           {to: r["into"] for to, r in roads.items() if "into" in r})
         if bridged(lines, lambda x, y: (x, y) in water) & own[land_id]:
             found.add(land_id)
     return found
@@ -1184,9 +1361,10 @@ def verify_rivers(lands, world, own, wet, away):
             return any((spot[0] + i, spot[1] + j) in water for i in range(-reach, reach + 1) for j in range(-reach, reach + 1))
 
         for to, road in world["roads"].get(land_id, {}).items():
-            reach = RIVER_CROSSING if to in lands else RIVER_CAVE
+            reach = RIVER_CROSSING if to in lands else RIVER_GATE_ROAD
             if near((x0 + road["at"][0], y0 + road["at"][1]), reach):
-                problems.append(f"world.json: a river runs within {reach} cells of where {land_id}'s road to {to} crosses")
+                problems.append(f"world.json: a river runs within {reach} cells of where {land_id}'s road to {to} "
+                                + ("crosses" if to in lands else "goes into the cave"))
         if near(middle, RIVER_MIDDLE):
             problems.append(f"world.json: a river runs within {RIVER_MIDDLE} cells of {land_id}'s middle")
         for (dx, dy), what in content_spots(land):
@@ -1197,7 +1375,8 @@ def verify_rivers(lands, world, own, wet, away):
             continue
         crossings = {to: (x0 + r["at"][0], y0 + r["at"][1]) for to, r in world["roads"].get(land_id, {}).items()}
         routes = {to: r.get("via") for to, r in world["roads"].get(land_id, {}).items()}
-        lines = road_lines(land_id, land, middle, crossings, routes)
+        intos = {to: r["into"] for to, r in world["roads"].get(land_id, {}).items() if "into" in r}
+        lines = road_lines(land_id, land, middle, crossings, routes, intos)
         dry = (own[land_id] - wet[land_id]) | (bridged(lines, lambda x, y: (x, y) in water) & own[land_id])
         hub = land.get("hub") or [0, 0]
         start = (middle[0] + hub[0], middle[1] + hub[1])
@@ -1265,8 +1444,15 @@ def preview(lands, world, path, names=None):
         # Its roads, as the game lays them out roughly.
         roads = world["roads"].get(land_id, {})
         crossings = {to: (x0 + r["at"][0], y0 + r["at"][1]) for to, r in roads.items()}
-        for _, stops in road_lines(land_id, land, (mx, my), crossings, {to: r.get("via") for to, r in roads.items()}):
+        intos = {to: r["into"] for to, r in roads.items() if "into" in r}
+        for _, stops in road_lines(land_id, land, (mx, my), crossings, {to: r.get("via") for to, r in roads.items()}, intos):
             draw.line([((x - left) * scale, (top - y) * scale) for x, y in stops], fill=(140, 100, 60), width=2)
+        # A cave's hill: its main summit, and the room round it for the rest.
+        for to, into in intos.items():
+            foot = gate_foot(crossings[to], into)
+            for cells, colour in ((gate_cells(foot, into, GATE_ROOM), (150, 140, 130)), (gate_cells(foot, into, GATE_SUMMIT), (110, 100, 95))):
+                for x, y in cells:
+                    draw.rectangle([(x - left) * scale, (top - 1 - y) * scale, (x - left) * scale + scale - 1, (top - 1 - y) * scale + scale - 1], fill=colour)
         label = (names or {}).get(land_id, land_id)
         draw.text(((mx - left) * scale - 3 * len(label), (top - my) * scale - 6), label, fill=(0, 0, 0))
         for to, road in world["roads"].get(land_id, {}).items():
@@ -1285,10 +1471,10 @@ def main():
     data, maps, lands = load_maps()
     world = json.loads(WORLD.read_text())
     if not args.check:
-        canvas, grids, roads, routes, shapes, lines, problems = solve(data, maps, lands, world["design"], world.get("rivers", []))
+        canvas, grids, roads, routes, intos, shapes, lines, problems = solve(data, maps, lands, world["design"], world.get("rivers", []))
         for problem in problems:
             print("  " + problem)
-        write(data, lands, world["design"], grids, roads, routes, shapes, lines)
+        write(data, lands, world["design"], grids, roads, routes, intos, shapes, lines)
         data, maps, lands = load_maps()
         world = json.loads(WORLD.read_text())
     problems = verify(maps, lands, world)

@@ -588,13 +588,15 @@ final class LandPlanner {
     }
 
     /// A free cell just off the side of the road out by `exit`, a few tiles in from where it leaves
-    /// (on the continent, from where it crosses the border; else from the edge), for its signpost.
+    /// (on the continent, from where it crosses the border, or for a road into a cave inland from
+    /// its mouth; else from the edge), for its signpost.
     private func signCell(near exit: MapDef.Exit, depth: Int = 4) -> GridPoint? {
         let edge = exit.edge
-        let alongColumns = edge == .north || edge == .south
         let line: [GridPoint]
         if let road = map.region?.roads[exit.to] {
-            let middle = road.at.stepped(edge.opposite, by: depth)
+            let way = road.into ?? edge
+            let alongColumns = way == .north || way == .south
+            let middle = road.at.stepped(way.opposite, by: depth)
             line = (-12...12).map { alongColumns ? GridPoint(col: middle.col + $0, row: middle.row) : GridPoint(col: middle.col, row: middle.row + $0) }
         } else {
             line = switch edge {
