@@ -182,10 +182,12 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   from), around the map's level: Gumdrop Star Charm 24, Shiverpeak Gloves 42, Crystal Crown Pendant 80,
   Frostpeak Boots 84, Firepeak Ring 132, Emerald Crest Gauntlets 192, their art palette swaps of other gear's.
   Since 0.7.1 (ours, asked for in playtesting 2026-10-15: a chest should always have something, and
-  something new a while after you've opened it) a chest fills again `refillHours` (4) after you last
+  something new a while after you've opened it) a chest fills again `refillHours` (1; 4 until 0.7.20,
+  when playtesting found them "always empty") after you last
   opened it (rewards.json `chests`, `GameSession.openChest`): gold for its level (its own treasure's) and
   a piece of gear around that level (`equipmentDrop`) or a potion, ether, Seal Stone or Homeward Feather.
-  It stands faded while it's empty and says roughly when to come back; one opened before 0.7.1 is full.
+  It stands faded while it's empty and says to come back later (the hours left until 0.7.20); one opened
+  before 0.7.1 is full.
   Since 0.4.5 ranges go where every summit has room round it (`clearance`: how far each cell is from a road,
   water, a building or another hill), picked at random among the places they fit; before, random spots
   tried 120 times often found nowhere on crowded maps (Gumdrop Peaks had no mountain). The first trail climbs from the ground in

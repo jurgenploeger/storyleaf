@@ -87,6 +87,6 @@
     ],
     "boss": {"above": 0, "chance": 1, "items": ["moon_seal", "heart_seal", "heart_seal", "star_seal"]}
   },
-  "chests": {"refillHours": 4, "goldPerLevel": 20, "gearChance": 0.6,
+  "chests": {"refillHours": 1, "goldPerLevel": 20, "gearChance": 0.6,
              "items": ["hi_potion", "hi_potion", "hi_ether", "moon_seal", "heart_seal", "star_seal", "homeward_feather"]}
 }
