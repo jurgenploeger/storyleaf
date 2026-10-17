@@ -2228,6 +2228,780 @@
           "hi_potion"
         ]
       }
+    },
+    {
+      "id": "reedwater_frogs",
+      "title": "Frogs in the Ferry",
+      "giver": "ferrywoman_brigid",
+      "description": "The Treefrogs have taken to jumping into my ferry halfway across, and one of them steered us into the reeds yesterday! Clear eight of them off the lake so Reedwater can cross in peace.",
+      "minLevel": 32,
+      "objective": {
+        "type": "defeat",
+        "target": "treefrog",
+        "count": 8
+      },
+      "reward": {
+        "gold": 480,
+        "exp": 1690,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "reedwater_thread",
+      "title": "Wisp-Light Thread",
+      "giver": "lacemaker_linnet",
+      "description": "My finest lace is stitched with thread spun from wisp-light. The Wisps drift over the lake at dusk, trailing it behind them. Bring me five skeins of their glow.",
+      "minLevel": 36,
+      "objective": {
+        "type": "bring",
+        "target": "wisp_silk",
+        "count": 5
+      },
+      "reward": {
+        "gold": 540,
+        "exp": 2140,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "wisp_silk",
+          "from": [
+            "wisp"
+          ],
+          "chance": 0.55
+        }
+      ]
+    },
+    {
+      "id": "reedwater_veil",
+      "title": "A Veil for Odette",
+      "giver": "lacemaker_linnet",
+      "description": "The swan girl on the island has watched over Reedwater for years, and nobody has ever given her anything. Piece three skeins of Wisp Silk together with an Emerald clasp, and we'll send her the finest veil the lake has seen.",
+      "requires": [
+        "reedwater_frogs",
+        "reedwater_thread"
+      ],
+      "minLevel": 40,
+      "objective": {
+        "type": "bring",
+        "target": "swan_lace_veil",
+        "count": 1
+      },
+      "reward": {
+        "gold": 900,
+        "exp": 3960,
+        "items": [
+          "swan_feather_brooch",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "wisp_silk",
+          "from": [
+            "wisp"
+          ],
+          "chance": 0.55,
+          "upTo": 3
+        }
+      ]
+    },
+    {
+      "id": "candle_lions",
+      "title": "Lions at the Lantern Fence",
+      "giver": "bellringer_prue",
+      "description": "The Earth Lions prowl round our lantern fence every night, roaring at the candles. Send six of them back to the hills, and Candlewick's children can sleep again.",
+      "minLevel": 34,
+      "objective": {
+        "type": "defeat",
+        "target": "earth_lion",
+        "count": 6
+      },
+      "reward": {
+        "gold": 510,
+        "exp": 1910,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "candle_horns",
+      "title": "Horn Lanterns",
+      "giver": "chandler_mabbott",
+      "description": "In Shiverdell a candle needs a horn lantern round it, or the first gust and the first Wisp put it out. Bring me five horns from the Bulls. They grow new ones, don't worry.",
+      "minLevel": 38,
+      "objective": {
+        "type": "bring",
+        "target": "bull_horn",
+        "count": 5
+      },
+      "reward": {
+        "gold": 570,
+        "exp": 2390,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "bull_horn",
+          "from": [
+            "black_bull",
+            "red_bull",
+            "shadow_red_bull"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "candle_bell",
+      "title": "The Silent Bell",
+      "giver": "bellringer_prue",
+      "description": "A Night Monkey climbed the belfry and ran off with the bell's clapper, and now the valley's gone quiet. Without the bell, everyone feels alone in the dark. Get it back!",
+      "requires": [
+        "candle_lions",
+        "candle_horns"
+      ],
+      "minLevel": 44,
+      "objective": {
+        "type": "bring",
+        "target": "bell_clapper",
+        "count": 1
+      },
+      "reward": {
+        "gold": 990,
+        "exp": 4800,
+        "items": [
+          "bellringers_gloves",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "bell_clapper",
+          "from": [
+            "night_monkey"
+          ],
+          "chance": 0.35
+        }
+      ]
+    },
+    {
+      "id": "ratcatch_rats",
+      "title": "Too Many Rats",
+      "giver": "ratcatcher_bodkin",
+      "description": "The Fire Rats breed faster than I can count, and I count fast. Thin them out, ten of them, and the camp might last the week.",
+      "minLevel": 44,
+      "objective": {
+        "type": "defeat",
+        "target": "fire_rat",
+        "count": 10
+      },
+      "reward": {
+        "gold": 660,
+        "exp": 3200,
+        "items": [
+          "hi_potion",
+          "hi_potion",
+          "hi_ether"
+        ]
+      }
+    },
+    {
+      "id": "ratcatch_scales",
+      "title": "Rat-Proof Boots",
+      "giver": "ratcatcher_bodkin",
+      "description": "Earth Snakes shed scales as hard as iron, and nothing makes a better boot. Not even a Fire Rat can bite through it. Bring me five, and I'll make you a pair too.",
+      "requires": [
+        "ratcatch_rats"
+      ],
+      "minLevel": 50,
+      "objective": {
+        "type": "bring",
+        "target": "snake_scale",
+        "count": 5
+      },
+      "reward": {
+        "gold": 1120,
+        "exp": 6190,
+        "items": [
+          "ratcatcher_boots",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "snake_scale",
+          "from": [
+            "earth_snake"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "lily_dew",
+      "title": "Sprites in the Dew",
+      "giver": "dewdrop_sorrel",
+      "description": "The Lotus Sprites drink the morning dew before I can gather it, and dew is all we tiny folk drink! Win back six Dew Pearls from them. They're round, and very, very clean.",
+      "minLevel": 40,
+      "objective": {
+        "type": "bring",
+        "target": "dew_pearl",
+        "count": 6
+      },
+      "reward": {
+        "gold": 600,
+        "exp": 2640,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "dew_pearl",
+          "from": [
+            "lotus_sprite"
+          ],
+          "chance": 0.55
+        }
+      ]
+    },
+    {
+      "id": "lily_slugs",
+      "title": "Slugs on the Lily Pads",
+      "giver": "mayor_pipkin",
+      "description": "The Water Slugs are eating the lily pads, and half of Lilypad Landing lives on lily pads! Send eight of the gluttons packing before we're all swimming.",
+      "minLevel": 44,
+      "objective": {
+        "type": "defeat",
+        "target": "water_slug",
+        "count": 8
+      },
+      "reward": {
+        "gold": 660,
+        "exp": 3200,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "lily_float",
+      "title": "The Lantern Float",
+      "giver": "mayor_pipkin",
+      "description": "Every summer we float a lantern down the stream for luck, and this year it's your turn to make it! Piece three Dew Pearls together on a stick of Bamboo, and bring the lantern to me.",
+      "requires": [
+        "lily_dew",
+        "lily_slugs"
+      ],
+      "minLevel": 48,
+      "objective": {
+        "type": "bring",
+        "target": "lotus_lantern",
+        "count": 1
+      },
+      "reward": {
+        "gold": 1080,
+        "exp": 5710,
+        "items": [
+          "lotus_dew_charm",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "dew_pearl",
+          "from": [
+            "lotus_sprite"
+          ],
+          "chance": 0.55,
+          "upTo": 3
+        }
+      ]
+    },
+    {
+      "id": "string_beetles",
+      "title": "Beetles in the Workshop",
+      "giver": "toymender_otto",
+      "description": "Dark Beetles bore into my wood and turn good puppets into sieves. Squash eight of them before they reach the workshop, and Stringwood's toys are safe.",
+      "minLevel": 50,
+      "objective": {
+        "type": "defeat",
+        "target": "dark_beetle",
+        "count": 8
+      },
+      "reward": {
+        "gold": 750,
+        "exp": 4130,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "string_strings",
+      "title": "Cut Strings",
+      "giver": "puppeteer_gianna",
+      "description": "The runaway puppets still trail their golden strings, and every string is a little bit of magic. Snip six of them free and bring them back to me.",
+      "minLevel": 54,
+      "objective": {
+        "type": "bring",
+        "target": "golden_string",
+        "count": 6
+      },
+      "reward": {
+        "gold": 810,
+        "exp": 4810,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "golden_string",
+          "from": [
+            "wooden_puppet"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "string_show",
+      "title": "The Midsummer Show",
+      "giver": "puppeteer_gianna",
+      "description": "The Midsummer Show starts at dusk, and the wild puppets want to take over the stage again! Round up twelve of them, so for once the show goes the way I wrote it.",
+      "requires": [
+        "string_beetles",
+        "string_strings"
+      ],
+      "minLevel": 58,
+      "objective": {
+        "type": "defeat",
+        "target": "wooden_puppet",
+        "count": 12
+      },
+      "reward": {
+        "gold": 1300,
+        "exp": 8330,
+        "items": [
+          "heartwood_locket",
+          "hi_ether"
+        ]
+      }
+    },
+    {
+      "id": "mirage_lizards",
+      "title": "Lizards in the Well",
+      "giver": "wellkeeper_samira",
+      "description": "The Black Lizards climb down into the well to cool off, and then they won't climb out! Chase eight of them away before the caravans arrive thirsty.",
+      "minLevel": 58,
+      "objective": {
+        "type": "defeat",
+        "target": "black_lizard",
+        "count": 8
+      },
+      "reward": {
+        "gold": 870,
+        "exp": 5550,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "mirage_quills",
+      "title": "Wicks of Light",
+      "giver": "lampseller_kasim",
+      "description": "A lamp burns brightest with a Light Hedgehog's quill for a wick. They shed them all over the dunes, but only when you've given them a good reason. Bring me five.",
+      "minLevel": 63,
+      "objective": {
+        "type": "bring",
+        "target": "sun_quill",
+        "count": 5
+      },
+      "reward": {
+        "gold": 940,
+        "exp": 6550,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "sun_quill",
+          "from": [
+            "light_hedgehog"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "mirage_lamp",
+      "title": "The Genie's Lamp",
+      "giver": "lampseller_kasim",
+      "description": "Storyteller Hakim swears a genie lived in the oasis long ago, and left when its lamp went dark. Piece three Sun Quills together round a Gold Ingot, and let's make a lamp worth coming home to.",
+      "requires": [
+        "mirage_lizards",
+        "mirage_quills"
+      ],
+      "minLevel": 68,
+      "objective": {
+        "type": "bring",
+        "target": "genie_lamp",
+        "count": 1
+      },
+      "reward": {
+        "gold": 1530,
+        "exp": 11450,
+        "items": [
+          "genies_ring",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "sun_quill",
+          "from": [
+            "light_hedgehog"
+          ],
+          "chance": 0.5,
+          "upTo": 3
+        }
+      ]
+    },
+    {
+      "id": "wharf_crabs",
+      "title": "Hot Crabs",
+      "giver": "harbourmaster_fitch",
+      "description": "Fire Crabs climb aboard every raft that comes in and set the ropes smouldering. Clear eight of them off the wharf before something important catches.",
+      "minLevel": 61,
+      "objective": {
+        "type": "defeat",
+        "target": "fire_crab",
+        "count": 8
+      },
+      "reward": {
+        "gold": 920,
+        "exp": 6140,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "wharf_ore",
+      "title": "Lizard-Licked Ore",
+      "giver": "smelter_bruna",
+      "description": "The Mining Lizards lick the ore off the rafts like it's candy, then wander off with a mouthful. Bring me back six lumps of Raw Ore, and my forge can roar again.",
+      "minLevel": 65,
+      "objective": {
+        "type": "bring",
+        "target": "raw_ore",
+        "count": 6
+      },
+      "reward": {
+        "gold": 980,
+        "exp": 6970,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "raw_ore",
+          "from": [
+            "mining_lizard"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "wharf_golems",
+      "title": "Golems on the Rafts",
+      "giver": "smelter_bruna",
+      "description": "Dreamstone Golems have started riding the ore rafts down the lake, and they sink every one they sit on. Teach eight of them to walk, and Emberwharf's rafts can float again.",
+      "requires": [
+        "wharf_crabs",
+        "wharf_ore"
+      ],
+      "minLevel": 70,
+      "objective": {
+        "type": "defeat",
+        "target": "ore_golem",
+        "count": 8
+      },
+      "reward": {
+        "gold": 1580,
+        "exp": 12130,
+        "items": [
+          "forgehand_gauntlets",
+          "hi_ether"
+        ]
+      }
+    },
+    {
+      "id": "geode_stones",
+      "title": "Stones That Float",
+      "giver": "prospector_flint",
+      "description": "The Floating Stones drift over our diggings and drop on whoever's below. Bring ten of them down for good, and Geode Hollow can dig without hard hats. Well, with fewer.",
+      "minLevel": 72,
+      "objective": {
+        "type": "defeat",
+        "target": "floating_stone",
+        "count": 10
+      },
+      "reward": {
+        "gold": 1080,
+        "exp": 8560,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "geode_gems",
+      "title": "Crawler Gems",
+      "giver": "gemcutter_iolanthe",
+      "description": "The Gem Crawlers swallow the rough gems we dig up and wear them on their backs. Win six of them back for my wheel.",
+      "minLevel": 77,
+      "objective": {
+        "type": "bring",
+        "target": "rough_gem",
+        "count": 6
+      },
+      "reward": {
+        "gold": 1160,
+        "exp": 9790,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "rough_gem",
+          "from": [
+            "gem_crawler",
+            "crimson_gem_crawler"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "geode_lamp",
+      "title": "The Prism Lamp",
+      "giver": "gemcutter_iolanthe",
+      "description": "Geode Hollow has always wanted a lamp that throws rainbows on the mountain at night. Piece three Rough Gems together round a Diamond, and we'll light it on the highest roof.",
+      "requires": [
+        "geode_stones",
+        "geode_gems"
+      ],
+      "minLevel": 82,
+      "objective": {
+        "type": "bring",
+        "target": "prism_lamp",
+        "count": 1
+      },
+      "reward": {
+        "gold": 1840,
+        "exp": 16650,
+        "items": [
+          "prism_pendant",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "rough_gem",
+          "from": [
+            "gem_crawler",
+            "crimson_gem_crawler"
+          ],
+          "chance": 0.5,
+          "upTo": 3
+        }
+      ]
+    },
+    {
+      "id": "wake_phantoms",
+      "title": "Bad Bedtime Stories",
+      "giver": "nightowl_nettie",
+      "description": "The Phantoms drift through our walls every night and whisper bedtime stories, and they're terrible stories! Send eight of them off, so Wakewell can stay awake in peace.",
+      "minLevel": 74,
+      "objective": {
+        "type": "defeat",
+        "target": "phantom",
+        "count": 8
+      },
+      "reward": {
+        "gold": 1110,
+        "exp": 9040,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "wake_beans",
+      "title": "Beans for the Roaster",
+      "giver": "roaster_bastian",
+      "description": "The Poison Skeletons raided my bean sacks! Skeletons don't sleep either, so they drink a lot of coffee. Rattle them till they drop my beans, and bring me six handfuls.",
+      "minLevel": 78,
+      "objective": {
+        "type": "bring",
+        "target": "coffee_beans",
+        "count": 6
+      },
+      "reward": {
+        "gold": 1170,
+        "exp": 10040,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "coffee_beans",
+          "from": [
+            "poison_skeleton",
+            "sunny_poison_skeleton"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "wake_dreams",
+      "title": "A Lullaby for Wakewell",
+      "giver": "nightowl_nettie",
+      "description": "The Dream Phantoms have hoarded every good dream in the valley, and that's why nobody here can sleep. Win five Sweet Dreams back from them. Tonight, Wakewell sleeps!",
+      "requires": [
+        "wake_phantoms",
+        "wake_beans"
+      ],
+      "minLevel": 84,
+      "objective": {
+        "type": "bring",
+        "target": "sweet_dream",
+        "count": 5
+      },
+      "reward": {
+        "gold": 1890,
+        "exp": 17470,
+        "items": [
+          "dozy_slippers",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "sweet_dream",
+          "from": [
+            "dream_phantom"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "hearth_bears",
+      "title": "Bears at the Woodpile",
+      "giver": "foreman_barrowby",
+      "description": "The Fire Bears come down for our firewood and set it alight before we've even carried it in. Send eight of them back up the mountain, and the seven hearths can burn on proper wood.",
+      "minLevel": 75,
+      "objective": {
+        "type": "defeat",
+        "target": "fire_bear",
+        "count": 8
+      },
+      "reward": {
+        "gold": 1120,
+        "exp": 9280,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "hearth_apples",
+      "title": "Frost Apples",
+      "giver": "housekeeper_blanche",
+      "description": "The Snowmen roll through the orchard and the apples freeze right into them. Frost Apples are the sweetest thing in the forest! Bring me five for the dwarfs' pie. Don't worry, they're not poisoned.",
+      "minLevel": 80,
+      "objective": {
+        "type": "bring",
+        "target": "frost_apple",
+        "count": 5
+      },
+      "reward": {
+        "gold": 1200,
+        "exp": 10560,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "frost_apple",
+          "from": [
+            "snowman",
+            "shadow_snowman"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "hearth_feast",
+      "title": "The Seven Hearths Feast",
+      "giver": "housekeeper_blanche",
+      "description": "Once a winter the seven dwarfs hold a feast by all seven hearths, and the Frost Bears always sniff it out. Keep eight of them away tonight, and you're our guest of honour.",
+      "requires": [
+        "hearth_bears",
+        "hearth_apples"
+      ],
+      "minLevel": 88,
+      "objective": {
+        "type": "defeat",
+        "target": "frost_bear",
+        "count": 8
+      },
+      "reward": {
+        "gold": 1980,
+        "exp": 19170,
+        "items": [
+          "seven_hearths_ring",
+          "hi_ether"
+        ]
+      }
     }
   ]
 }

@@ -695,7 +695,8 @@ struct ContentTests {
     /// story there that ends in a treasure.
     @Test func fieldsHaveVillages() throws {
         let lands = ["sunny_meadow", "northern_grassland", "pineapple_shore", "twilight_woods", "smiling_forest",
-                     "candy_mountain", "frog_swamp", "wolf_lair"]
+                     "candy_mountain", "frog_swamp", "wolf_lair", "swan_lake", "valley_of_fear", "lotus_land", "puppet_hill",
+                     "genie_desert", "goldburg_lake", "crystal_mountain", "sleepy_town", "snow_white_forest"]
         for id in lands {
             let def = try #require(content.map(id))
             let givers = (def.npcs ?? []).filter { $0.role == .quests }
@@ -3630,9 +3631,13 @@ struct LandPlanTests {
         for def in content.maps where def.theme.cave != nil {
             let (map, plan) = await planned(def)
             let arrivals = def.exits.map { map.entryCell(from: $0.edge) }
-            // Everywhere you can walk to from its middle, a side at a time as you walk.
-            var reached: Set<GridPoint> = [map.center]
-            var queue = [map.center]
+            // Everywhere you can walk to from its hub, where its roads meet and it's dug out from
+            // (`MapDef.hub`, else the middle), a side at a time as you walk. The middle itself can be
+            // rock when the hub's elsewhere: the Rat Cavern's is in its south west.
+            let hub = def.hub ?? [0, 0]
+            let start = GridPoint(col: map.center.col + (hub.first ?? 0), row: map.center.row + (hub.count > 1 ? hub[1] : 0))
+            var reached: Set<GridPoint> = [start]
+            var queue = [start]
             while let cell = queue.popLast() {
                 for step in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
                     let next = GridPoint(col: cell.col + step.0, row: cell.row + step.1)
@@ -3644,7 +3649,7 @@ struct LandPlanTests {
             print("🪧 \(def.id): signposts at \(plan.signposts.map { "\($0.cell) to \($0.exit.to)" }), arriving at \(arrivals)")
             for (exit, arrival) in zip(def.exits, arrivals) {
                 #expect(map.isWalkable(arrival) && reached.contains(arrival),
-                        "map \(def.id): where you come in from \(exit.to), \(arrival), doesn't lead to its middle")
+                        "map \(def.id): where you come in from \(exit.to), \(arrival), doesn't lead to its hub")
             }
             for sign in plan.signposts {
                 #expect(!arrivals.contains { max(abs($0.col - sign.cell.col), abs($0.row - sign.cell.row)) <= 1 },

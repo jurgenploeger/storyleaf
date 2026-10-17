@@ -5515,6 +5515,352 @@
       },
       "level": 33,
       "description": "A ribbon from Little Red's cape. Wolves think twice when they see it."
+    },
+    {
+      "id": "wisp_silk",
+      "icon": "sparkles",
+      "art": "item_wisp_silk",
+      "name": "Wisp Silk",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 36,
+      "description": "A skein of thread spun from a Wisp's glow. It's warm, and it hums very softly."
+    },
+    {
+      "id": "swan_lace_veil",
+      "icon": "star",
+      "art": "item_swan_lace_veil",
+      "name": "Swan Lace Veil",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 40,
+      "description": "A veil of glowing lace with an Emerald clasp, light as a swan's feather.",
+      "recipe": {
+        "wisp_silk": 3,
+        "emerald": 1
+      },
+      "make": "join"
+    },
+    {
+      "id": "swan_feather_brooch",
+      "icon": "gem",
+      "art": "item_swan_feather_brooch",
+      "name": "Swan Feather Brooch",
+      "type": "accessory",
+      "price": 1100,
+      "stats": {
+        "magic": 8,
+        "speed": 4,
+        "mp": 12
+      },
+      "level": 40,
+      "description": "A white swan's feather pinned with silver. Odette sent it over with the ferry, without a word."
+    },
+    {
+      "id": "bull_horn",
+      "icon": "mountain",
+      "art": "item_bull_horn",
+      "name": "Bull Horn",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 38,
+      "description": "A curved horn, polished smooth. Shaved thin, it lets candlelight through like amber."
+    },
+    {
+      "id": "bell_clapper",
+      "icon": "music",
+      "art": "item_bell_clapper",
+      "name": "Bell Clapper",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 44,
+      "description": "The iron tongue of Candlewick's bell. A monkey has been chewing it."
+    },
+    {
+      "id": "bellringers_gloves",
+      "icon": "sword",
+      "art": "item_bellringers_gloves",
+      "name": "Bell-Ringer's Gloves",
+      "type": "gloves",
+      "price": 1300,
+      "stats": {
+        "attack": 9,
+        "defense": 6,
+        "hp": 16
+      },
+      "level": 44,
+      "description": "Rope-worn gloves with brass bells on the cuffs. They ring when you fight."
+    },
+    {
+      "id": "snake_scale",
+      "icon": "shield",
+      "art": "item_snake_scale",
+      "name": "Snake Scale",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 50,
+      "description": "A brown scale as hard as iron and as smooth as a pebble."
+    },
+    {
+      "id": "ratcatcher_boots",
+      "icon": "wind",
+      "art": "item_ratcatcher_boots",
+      "name": "Ratcatcher's Boots",
+      "type": "boots",
+      "price": 1600,
+      "stats": {
+        "speed": 7,
+        "defense": 7,
+        "hp": 20
+      },
+      "level": 50,
+      "description": "Scaled boots that no rat can bite through. Bodkin made a pair for you, and three for himself."
+    },
+    {
+      "id": "dew_pearl",
+      "icon": "diamond",
+      "art": "item_dew_pearl",
+      "name": "Dew Pearl",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 40,
+      "description": "A dewdrop as round as a pearl. It never dries up, and it tastes of morning."
+    },
+    {
+      "id": "lotus_lantern",
+      "icon": "star",
+      "art": "item_lotus_lantern",
+      "name": "Lotus Lantern",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 48,
+      "description": "A tiny lantern of dew pearls on a bamboo stick. It floats.",
+      "recipe": {
+        "dew_pearl": 3,
+        "bamboo": 1
+      },
+      "make": "join"
+    },
+    {
+      "id": "lotus_dew_charm",
+      "icon": "clover",
+      "art": "item_lotus_dew_charm",
+      "name": "Lotus Dew Charm",
+      "type": "accessory",
+      "price": 1500,
+      "stats": {
+        "magic": 10,
+        "mp": 16,
+        "speed": 3
+      },
+      "level": 48,
+      "description": "A pink lotus bud with a dew pearl at its heart. The tiny folk say it brings gentle luck."
+    },
+    {
+      "id": "golden_string",
+      "icon": "sparkles",
+      "art": "item_golden_string",
+      "name": "Golden String",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 54,
+      "description": "A puppet's golden string. It still twitches now and then, out of habit."
+    },
+    {
+      "id": "heartwood_locket",
+      "icon": "gem",
+      "art": "item_heartwood_locket",
+      "name": "Heartwood Locket",
+      "type": "necklace",
+      "price": 1900,
+      "stats": {
+        "magic": 11,
+        "hp": 50,
+        "mp": 14
+      },
+      "level": 58,
+      "description": "A locket carved from the heart of the puppet tree, with a tiny puppet inside. It waves."
+    },
+    {
+      "id": "sun_quill",
+      "icon": "sparkles",
+      "art": "item_sun_quill",
+      "name": "Sun Quill",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 63,
+      "description": "A Light Hedgehog's quill, still glowing like a sunbeam."
+    },
+    {
+      "id": "genie_lamp",
+      "icon": "star",
+      "art": "item_genie_lamp",
+      "name": "Genie's Lamp",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 68,
+      "description": "A gold oil lamp with three Sun Quills for a wick. Rub it, if you dare.",
+      "recipe": {
+        "sun_quill": 3,
+        "gold_ingot": 1
+      },
+      "make": "join"
+    },
+    {
+      "id": "genies_ring",
+      "icon": "ring",
+      "art": "item_genies_ring",
+      "name": "Genie's Ring",
+      "type": "accessory",
+      "price": 2800,
+      "stats": {
+        "attack": 13,
+        "magic": 13,
+        "speed": 5
+      },
+      "level": 68,
+      "description": "When the lamp lit, a puff of blue smoke left this ring on Kasim's counter. No wishes, sadly."
+    },
+    {
+      "id": "raw_ore",
+      "icon": "mountain",
+      "art": "item_raw_ore",
+      "name": "Raw Ore",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 65,
+      "description": "A lump of ore, still sticky with lizard. Bruna doesn't mind."
+    },
+    {
+      "id": "forgehand_gauntlets",
+      "icon": "sword",
+      "art": "item_forgehand_gauntlets",
+      "name": "Forgehand Gauntlets",
+      "type": "gloves",
+      "price": 3000,
+      "stats": {
+        "attack": 14,
+        "defense": 9,
+        "hp": 24
+      },
+      "level": 70,
+      "description": "Bruna forged them in her own fire. They stay warm on the coldest morning."
+    },
+    {
+      "id": "rough_gem",
+      "icon": "diamond",
+      "art": "item_rough_gem",
+      "name": "Rough Gem",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 77,
+      "description": "An uncut gem, cloudy and lumpy. Iolanthe can see a shape in it already."
+    },
+    {
+      "id": "prism_lamp",
+      "icon": "star",
+      "art": "item_prism_lamp",
+      "name": "Prism Lamp",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 82,
+      "description": "A lamp of cut gems round a Diamond heart. Light it, and rainbows spill everywhere.",
+      "recipe": {
+        "rough_gem": 3,
+        "diamond": 1
+      },
+      "make": "join"
+    },
+    {
+      "id": "prism_pendant",
+      "icon": "gem",
+      "art": "item_prism_pendant",
+      "name": "Prism Pendant",
+      "type": "necklace",
+      "price": 3900,
+      "stats": {
+        "magic": 15,
+        "mp": 26,
+        "hp": 40
+      },
+      "level": 82,
+      "description": "A prism Iolanthe cut from the lamp's last gem. It throws tiny rainbows wherever you go."
+    },
+    {
+      "id": "coffee_beans",
+      "icon": "leaf",
+      "art": "item_coffee_beans",
+      "name": "Coffee Beans",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 78,
+      "description": "A handful of dark roasted beans. One sniff and you'll be up till Tuesday."
+    },
+    {
+      "id": "sweet_dream",
+      "icon": "moon",
+      "art": "item_sweet_dream",
+      "name": "Sweet Dream",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 84,
+      "description": "A good dream in a little glass jar, glowing like a night light. Shh."
+    },
+    {
+      "id": "dozy_slippers",
+      "icon": "wind",
+      "art": "item_dozy_slippers",
+      "name": "Dozy Slippers",
+      "type": "boots",
+      "price": 3600,
+      "stats": {
+        "speed": 11,
+        "defense": 8,
+        "hp": 24
+      },
+      "level": 84,
+      "description": "Fluffy slippers so soft you could fall asleep standing. You won't, though. You'll just walk very quietly."
+    },
+    {
+      "id": "frost_apple",
+      "icon": "heart",
+      "art": "item_frost_apple",
+      "name": "Frost Apple",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 80,
+      "description": "A rosy apple with a crust of frost. Perfectly safe. Perfectly delicious."
+    },
+    {
+      "id": "seven_hearths_ring",
+      "icon": "ring",
+      "art": "item_seven_hearths_ring",
+      "name": "Seven Hearths Ring",
+      "type": "accessory",
+      "price": 4200,
+      "stats": {
+        "attack": 15,
+        "magic": 8,
+        "hp": 40
+      },
+      "level": 88,
+      "description": "Seven tiny gems, one from each dwarf. Warm as a fireside, even in the snow."
     }
   ]
 }

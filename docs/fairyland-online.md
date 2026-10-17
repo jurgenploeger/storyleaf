@@ -967,7 +967,7 @@ the Wishing Seal, which stays the Monster Book's last reward.
     (`crowd.traders`). `botDensity` in content/crowd.json thins out every map's bots.
   - Us (since 0.4.12, asked for in playtesting 2026-10-12: "characters walking/standing around that give the
     place more character and a story"): every map has locals (maps.json `locals`, `MapDef.Local`), two or
-    three out in the fields and one in each cave and town, and two more in each village (below), 77 in all.
+    three out in the fields and one in each cave and town, and two more in each village (below), 96 in all.
     Each has a look of their own (race, gender, hair, outfit; the rest drawn from their place in the list, so
     they look the same on every visit), a home by a landmark (a jetty's end, a road's bridge, a lake's island
     or shore, a cave's mouth), on a summit or out from the middle, and stands there, strolls about it or walks
@@ -1000,8 +1000,13 @@ the Wishing Seal, which stays the Monster Book's last reward.
     Cloverdale (Sunny Meadow), Thistledown (Windswept Downs), Driftwood Cove (Pineapple Shore), the
     prospectors' camp in Gooey Grotto, Duskhollow (Twilight Woods), Hollyhock (Smiling Forest), Peppermint
     Row (Gumdrop Peaks), Bogbottom (Frog Swamp) and Woodsend (Big Bad Wolf's Lair, with Little Red and her
-    grandmother, public domain). The villagers are palette swaps of the race sheets (free), their houses
-    the buildings the towns use, graded by each land's palette.
+    grandmother, public domain). The middle lands followed in 0.7.24: Reedwater (Swan Lake, its lacemaker
+    sewing a veil for the swan girl on the island), Candlewick (Shiverdell), the ratcatchers' camp in the Rat
+    Cavern, Lilypad Landing (Lotus Land: tiny folk, their quest givers drawn at 0.7 like Thumbelina),
+    Stringwood (Marionette Rise), Mirage Wells (Genie Desert), Emberwharf (Ingothold Lake), Geode Hollow
+    (Crystal Mountain), Wakewell (the folk next to Dozywick who can't sleep) and Seven Hearths (Snow White
+    Forest's seven dwarfs, our own names, not any film's). The villagers are palette swaps of the race
+    sheets (free), their houses the buildings the towns use, graded by each land's palette.
   - The minimap shows everyone else on the map as dots (since 0.3.55, asked for in playtesting 2026-10-06):
     blue adventurers, white friends, red hostile ones, green party friends; on dark maps only on cells you've
     seen. Whether FO's minimap showed other players isn't in any source reachable from a cloud session.
