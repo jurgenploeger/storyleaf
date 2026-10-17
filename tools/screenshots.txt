@@ -527,6 +527,8 @@ battle_items      | newgame,level=30,bag=seal_stone+seal_stone,map=sunny_meadow,
 battle_skills     | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,map=sunny_meadow,battle=3,skills | 15
 # Every window in landscape (402 pt tall on the simulator): nothing may run off the top or bottom.
 worldmap_land     | newgame,level=30,map=pineapple_shore,visited=all,worldmap,landscape | 8
+cavemap      | newgame,level=152,map=glimmerdeep,from=starfall_isle,worldmap | 12
+cavemap_rats | newgame,level=20,map=rat_cavern,worldmap | 12
 character_land    | newgame,level=40,class=fighter,equip=iron_plate+steel_sword,menu=character,landscape | 8
 skills_land       | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,menu=character,sub=skills,landscape | 8
 equip_change_land | newgame,class=fighter,level=16,equip=leather_vest,bag=cloth_tunic+chain_mail+silk_robe+mossy_leather_vest+dragon_mail,menu=character,change=armor,landscape | 8

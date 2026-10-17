@@ -844,6 +844,8 @@
     "Rosy": "ばら色",
     "Tan": "小麦色",
     "Deep": "褐色",
+    "Cave maps": "どうくつのマップ",
+    "In a cave, tapping the minimap opens the cave's own map, showing the parts you've explored and where you are. The world map is a button away.": "どうくつの中でミニマップをタップすると、そのどうくつのマップが開き、探索した場所と今いる場所がわかります。ワールドマップはボタンひとつで開けます。",
     "Tidier portraits": "すっきりした顔アイコン",
     "The name card beside each portrait in the top left is as tall as the portrait, and the level badges fit their number: a circle for a single digit, a pill for more.": "左上の顔アイコンの横にある名前カードが、アイコンと同じ高さになりました。レベルのバッジは数字に合わせて伸び、1桁なら丸、それ以上なら横長になります。",
     "Festive seasons": "季節のお祭り",

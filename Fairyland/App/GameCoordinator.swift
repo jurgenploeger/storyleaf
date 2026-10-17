@@ -164,6 +164,15 @@ final class GameCoordinator {
         return (world.minimapPicture(explored: version, overviews: overviews), world.def.width, world.def.height)
     }
 
+    /// In a cave, its own map for the map window (playtesting 2026-10-17: the world map showed the
+    /// sea round the island instead): the minimap's picture of it, only as far as you've explored on
+    /// a dark one. Nil out on the continent, where the window shows the world.
+    var caveMap: CaveMap.Picture? {
+        guard !showsContinent, world.def.theme.cave != nil else { return nil }
+        return CaveMap.Picture(image: world.minimapImage(explored: session.exploredVersion),
+                               columns: world.def.width, rows: world.def.height)
+    }
+
     /// The continent as one place (`ContinentScene`, docs/continuous-world.md): every land on it, with
     /// no border between them. Made once, the first time you're on it, and kept while you're in a
     /// cave.

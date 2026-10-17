@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.32",
+      "date": "2026-10-17",
+      "title": "Cave maps",
+      "notes": [
+        "In a cave, tapping the minimap opens the cave's own map, showing the parts you've explored and where you are. The world map is a button away."
+      ]
+    },
+    {
       "version": "0.7.31",
       "date": "2026-10-17",
       "title": "Tidier portraits",

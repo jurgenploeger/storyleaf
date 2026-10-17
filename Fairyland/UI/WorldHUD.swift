@@ -612,7 +612,7 @@ private struct MinimapWindow: View {
 /// One of the minimap's icons for who does what (`GameSession.MinimapMark`), RuneScape-style: a
 /// small round in its own colour with a white sign, outlined like the dots. A quest giver shows the
 /// "!" or "?" floating over their head in gold, else a book.
-private struct MinimapIcon: View {
+struct MinimapIcon: View {
     let kind: GameSession.MinimapMark.Kind
 
     var body: some View {
