@@ -100,6 +100,10 @@ nonisolated struct QuestProgress: Codable, Equatable, Sendable {
     /// you really got; nil for quests handed in before 0.3.63, which paid their own reward.
     var paidGold: Int?
     var paidEXP: Int?
+    /// When you took it and when you handed it in, for the Quests list (the latest first); nil for
+    /// quests from before 0.7.19.
+    var taken: Date?
+    var finished: Date?
 }
 
 /// Everything that's written to disk.

@@ -373,6 +373,24 @@ struct ContentTests {
                     }
                 }
                 #expect(differ == 0, "\(def.id) | \(here.def.id): \(differ) cells of the band show a different land from each side")
+                // Where a road crosses, the cells over the line its tiles take for road are the land next
+                // door's road, cell for cell, so the two roads' edges meet (playtesting 2026-10-16:
+                // Ingothold's road into the Genie Desert stepped at the line).
+                if let road = grid(def).region?.roads[here.def.id], road.into == nil {
+                    let mine = grid(def), theirs = grid(here.def)
+                    var unmet: [GridPoint] = []
+                    for dr in -4...4 {
+                        for dc in -4...4 {
+                            let cell = GridPoint(col: road.at.col + dc, row: road.at.row + dr)
+                            let local = here.local(cell)
+                            guard !mine.owns(cell), theirs.owns(local) else { continue }
+                            let beside = (-1...1).contains { dy in (-1...1).contains { dx in mine.owns(GridPoint(col: cell.col + dx, row: cell.row + dy)) } }
+                            guard beside else { continue }
+                            if mine.roadsPast.contains(cell) != (theirs.ground[local.row][local.col] == .path) { unmet.append(cell) }
+                        }
+                    }
+                    #expect(unmet.isEmpty, "\(def.id) | \(here.def.id): its road takes \(unmet.count) cells over the line otherwise than there, first \(Array(unmet.prefix(3)))")
+                }
                 // Past the border, the cells round this land's own show to its tiles (`Blend.shows`)
                 // what the land holding them lays out there, a third land's patches too, so a tile
                 // meets the one past the border as it would its own (playtesting 2026-10-16).
@@ -1601,6 +1619,26 @@ struct RulesTests {
         #expect(session.data.gold == gold + (quest.reward.gold ?? 0))
         // Completing it unlocks the follow-ups.
         #expect(session.status(of: Content.shared.quest("new_friend")!) == .available)
+    }
+
+    /// The Quests list puts the quest you took last at the top, and the one you finished last first
+    /// (playtesting 2026-10-16); quests from saves before they kept dates come after, in the game's order.
+    @Test func newQuestsAreAtTheTop() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let quests = Content.shared.quests.map(\.id).filter { $0 != "hope_of_meadowbrook" && $0 != "jelly_trouble" }.prefix(4).map { $0 }
+        // A day ago, so taking one now dates it later.
+        let start = Date(timeIntervalSinceNow: -86_400)
+        session.data.quests[quests[0]] = QuestProgress(state: .active, count: 0)
+        session.data.quests[quests[1]] = QuestProgress(state: .active, count: 0, taken: start)
+        session.data.quests[quests[2]] = QuestProgress(state: .active, count: 0, taken: start.addingTimeInterval(60))
+        #expect(session.activeQuests.map(\.id) == [quests[2], quests[1], quests[0]])
+        session.data.quests[quests[3]] = QuestProgress(state: .completed, count: 0, finished: start)
+        session.data.quests[quests[1]] = QuestProgress(state: .completed, count: 0, taken: start, finished: start.addingTimeInterval(120))
+        #expect(session.completedQuests.map(\.id) == [quests[1], quests[3]])
+        // Taking one dates it: it goes to the top.
+        session.data.quests["hope_of_meadowbrook"] = QuestProgress(state: .completed, count: 3)
+        session.acceptQuest("jelly_trouble")
+        #expect(session.activeQuests.first?.id == "jelly_trouble")
     }
 
     @Test func questRewardsGrowWithYourLevel() {

@@ -86,10 +86,19 @@ final class GroundTiles {
         for dy in -1...1 {
             for dx in -1...1 {
                 let next = GridPoint(col: cell.col + dx, row: cell.row + dy)
-                // Off the land (past its box, or a land next door's) a road or patch carries on;
-                // water only where a river runs off it.
-                let hit = map.contains(next) && map.ground[next.row][next.col] != .away ? map.ground[next.row][next.col] == kind
-                    : kind == .water ? waterBeyond(next) : own
+                // Off the land (past its box, or a land next door's) a patch carries on; water only
+                // where a river runs off it; a road on a land next door only where its own runs on
+                // from this one's (`WorldMap.roadsPast`), as that land lays it out, so the two meet.
+                let hit: Bool
+                if map.contains(next), map.ground[next.row][next.col] != .away {
+                    hit = map.ground[next.row][next.col] == kind
+                } else if kind == .water {
+                    hit = waterBeyond(next)
+                } else if kind == .path, map.region != nil, !map.isOpenSea(next) {
+                    hit = map.roadsPast.contains(next)
+                } else {
+                    hit = own
+                }
                 if hit { bits |= 1 << ((1 - dy) * 3 + dx + 1) }
             }
         }

@@ -1312,7 +1312,7 @@
       "id": "a_spare_sail",
       "title": "A Spare Sail",
       "giver": "captain_brine",
-      "description": "Captain Brine won't cross open water without a spare sail: the winds past the reef tore her last one to ribbons. The fire crabs drag washed-up sailcloth into their burrows. Win back 4 Sailcloth Scraps from them.",
+      "description": "Captain Brine won't cross open water without a spare sail: the winds past the reef tore the Gull's last one to ribbons. The fire crabs drag washed-up sailcloth into their burrows. Win back 4 Sailcloth Scraps from them.",
       "minLevel": 122,
       "objective": {
         "type": "bring",

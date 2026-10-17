@@ -1359,8 +1359,10 @@ private struct CompletedQuestRow: View {
     }
 }
 
-/// What a quest pays at your level, on one line like a bounty's: gold, EXP and the items' icons.
-/// `more`: a chevron says a tap shows it all (item names, roads it opens).
+/// What a quest pays at your level, on one line like a bounty's: gold, EXP and the items' icons,
+/// onto a second line when there are more than fit (playtesting 2026-10-16: the Hundred-Toy Shelf's
+/// six toys squeezed its gold and EXP into a column of single letters). `more`: a chevron says a
+/// tap shows it all (item names, roads it opens).
 struct QuestRewardLine: View {
     let session: GameSession
     let quest: QuestDef
@@ -1368,16 +1370,21 @@ struct QuestRewardLine: View {
 
     var body: some View {
         let pay = session.questPay(quest)
-        HStack(spacing: 10) {
-            if pay.gold > 0 {
-                Label("\(pay.gold)", icon: .coins, size: 12)
-            }
-            if pay.exp > 0 {
-                Label(L("{exp} EXP", ["exp": pay.exp]), icon: .star, size: 12)
-            }
-            ForEach(RewardList.group(quest.reward.items ?? [], in: session), id: \.item.id) { entry in
-                ItemIcon(item: entry.item, size: 20, count: entry.count)
-                    .accessibilityLabel(entry.item.name)
+        HStack(spacing: 4) {
+            WrapRows(spacing: 10) {
+                if pay.gold > 0 {
+                    Label("\(pay.gold)", icon: .coins, size: 12)
+                        .frame(height: 22)
+                }
+                if pay.exp > 0 {
+                    Label(L("{exp} EXP", ["exp": pay.exp]), icon: .star, size: 12)
+                        .frame(height: 22)
+                }
+                ForEach(RewardList.group(quest.reward.items ?? [], in: session), id: \.item.id) { entry in
+                    ItemIcon(item: entry.item, size: 20, count: entry.count)
+                        .frame(height: 22)
+                        .accessibilityLabel(entry.item.name)
+                }
             }
             if more {
                 Spacer(minLength: 4)

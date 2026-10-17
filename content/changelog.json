@@ -2,6 +2,16 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.19",
+      "date": "2026-10-16",
+      "title": "Roads meet at the border",
+      "notes": [
+        "Where a road crosses from one land into the next, its edges now meet at the line: Ingothold's road into the Genie Desert had a notch and a step there. Each land draws the other's road where it runs on, and both keep the road its plain width for the last few cells.",
+        "Captain Brine's sail quest says now that it was the Gull's sail the winds tore: it read as if the captain were a woman.",
+        "The Quests list puts the quest you took last at the top, and the one you finished last first. A quest that pays many items wraps them onto a second line: the Hundred-Toy Shelf's six toys squeezed its gold and EXP into a column of single letters."
+      ]
+    },
+    {
       "version": "0.7.18",
       "date": "2026-10-16",
       "title": "Parties come and go",
