@@ -1624,7 +1624,7 @@
       "requires": [
         "the_fallen_star"
       ],
-      "description": "Since the star went home, the crystals it left are all the light we have, and Prism Crabs keep crawling up from the caves to snip them off for their shells! The way down to the Glimmerdeep is south of the village. Beat 10 of them for me.",
+      "description": "Since the star went home, the crystals it left are all the light we have, and Prism Crabs keep crawling up from the caves to snip them off for their shells! The way down to the Glimmerdeep is north of the village. Beat 10 of them for me.",
       "objective": {
         "type": "defeat",
         "target": "prism_crab",
