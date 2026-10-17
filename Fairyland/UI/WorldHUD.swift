@@ -275,12 +275,15 @@ private struct PortraitRow<Bars: View>: View {
             .frame(width: size > 40 ? 132 : 112, alignment: .leading)
             .padding(.horizontal, 7)
             .padding(.vertical, 4)
+            // As tall as the portrait beside it (playtesting 2026-10-17), its name and bars in the middle.
+            .frame(minHeight: size)
             .background(HUDStyle.panel)
         }
     }
 }
 
-/// A round, bevelled portrait with Fairyland's little level chip at the bottom left. It glows when
+/// A round, bevelled portrait with Fairyland's little level chip at the bottom left: a circle for one
+/// digit, a pill as wide as the number for more (playtesting 2026-10-17). It glows when
 /// there's something to spend (a class to choose, skill points).
 private struct Portrait: View {
     let face: UIImage
@@ -304,9 +307,11 @@ private struct Portrait: View {
                 Text("\(level)")
                     .font(HUDStyle.mono(size > 40 ? 10 : 8))
                     .foregroundStyle(.white)
-                    .padding(.horizontal, 4)
-                    .frame(minWidth: size * 0.36, minHeight: size * 0.32)
-                    .background(Circle().fill(HUDStyle.frameDark).overlay(Circle().strokeBorder(HUDStyle.bevel, lineWidth: 1.5)))
+                    .lineLimit(1)
+                    .fixedSize()
+                    .padding(.horizontal, size > 40 ? 4 : 3)
+                    .frame(minWidth: size * 0.34, minHeight: size * 0.34)
+                    .background(Capsule().fill(HUDStyle.frameDark).overlay(Capsule().strokeBorder(HUDStyle.bevel, lineWidth: 1.5)))
                     .offset(x: -2, y: 2)
             }
             .shadow(color: glowing ? HUDStyle.gold.opacity(pulse ? 1 : 0.3) : .black.opacity(0.35), radius: glowing ? 8 : 2, y: glowing ? 0 : 2)
