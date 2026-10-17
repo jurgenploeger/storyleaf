@@ -1658,6 +1658,254 @@ def cape(c, cloth, trim):
     c.set(15, 15, WHITE)
 
 
+# ---------------------------------------------------------------- the villages of the early lands
+# Each land's village (0.7.23): what its quests ask you to bring, and the treasure each one ends in.
+
+HONEY = [hexc("b8780e"), hexc("f2b632"), hexc("ffe48a")]
+SEAGLOW = [hexc("1a7a6e"), hexc("3ad2b8"), hexc("b4fff0")]
+MUD = [hexc("4a2e18"), hexc("7a5030"), hexc("a8794e")]
+MOSS = [hexc("3a5a24"), hexc("5e8a36"), hexc("9cc070")]
+CANDY = [hexc("c0306e"), hexc("ff7ab0"), hexc("ffd0e4")]
+BEETLE = [hexc("2a1a4a"), hexc("5a3a9a"), hexc("b090f0")]
+TAN = [hexc("8a5e30"), hexc("c49058"), hexc("ecc690")]
+
+
+def draw_seed_pouch(c):
+    """A tied cloth sack with a few seeds spilling out at its foot."""
+    c.poly([(11, 11), (21, 11), (26, 26), (6, 26)], CLOTH[1])
+    c.ellipse(16, 25, 10, 3, CLOTH[1])
+    c.shade(lambda x, y, col: col == CLOTH[1] and x > 20, CLOTH[0])
+    c.shade(lambda x, y, col: col == CLOTH[1] and x < 11 and y > 13, CLOTH[2])
+    c.poly([(12, 5), (20, 5), (19, 11), (13, 11)], CLOTH[1])                # the gathered neck
+    c.line(13, 6, 15, 10, CLOTH[0]); c.line(19, 6, 17, 10, CLOTH[0])
+    c.rect(11, 10, 21, 11, LEATHER[1])                                       # the tie, with a bow
+    c.disc(9, 11, 1.6, LEATHER[2]); c.disc(23, 11, 1.6, LEATHER[2])
+    for (x, y) in ((25, 28), (28, 27), (27, 29), (23, 29), (29, 29)):          # seeds
+        c.ellipse(x, y, 1.2, 0.8, STRAW[1])
+    c.line(10, 18, 13, 22, CLOTH[0]); c.line(19, 17, 22, 21, CLOTH[0])         # a chewed hole
+    c.disc(17, 20, 1, LEATHER[0])
+
+
+def draw_honeybee_charm(c):
+    """Three honeycomb cells of gold wax on a loop, a little bee sitting on them."""
+    def cell(cx, cy, color):
+        c.poly([(cx - 4, cy - 2), (cx, cy - 5), (cx + 4, cy - 2), (cx + 4, cy + 2), (cx, cy + 5), (cx - 4, cy + 2)], color)
+    for (cx, cy) in ((12, 18), (20, 18), (16, 25)):
+        cell(cx, cy, HONEY[1])
+        c.poly([(cx - 2, cy - 1), (cx, cy - 3), (cx + 2, cy - 1), (cx + 2, cy + 1), (cx, cy + 3), (cx - 2, cy + 1)], HONEY[0])
+        c.set(cx - 1, cy - 1, HONEY[2])
+    c.ring(16, 7, 3.4, 2, GOLD[1])                                            # the loop
+    c.ellipse(22, 12, 3.2, 2.2, hexc("2a2010"))                               # the bee
+    c.line(21, 10, 21, 14, HONEY[1]); c.line(23, 10, 23, 14, HONEY[1])
+    c.ellipse(21, 9, 1.8, 1.2, hexc("e8f4ff")); c.ellipse(24, 9, 1.8, 1.2, hexc("e8f4ff"))
+
+
+def draw_stray_sock(c):
+    """A striped woollen sock, its foot to the right, with a spiny hole or two."""
+    c.poly([(9, 3), (18, 3), (18, 19), (27, 21), (28, 28), (16, 29), (9, 23)], CLOTH[1])
+    c.shade(lambda x, y, col: col == CLOTH[1] and (y // 4) % 2 == 0 and y < 22, RED[1])
+    c.shade(lambda x, y, col: col in (CLOTH[1], RED[1]) and x > 16 and y < 19, CLOTH[0])
+    c.rect(9, 3, 18, 5, RED[0])                                               # the cuff
+    c.poly([(23, 21), (28, 22), (28, 28), (23, 28)], RED[1])                   # the toe
+    c.ellipse(11, 26, 2.5, 2.5, RED[1])                                        # the heel
+    for (x, y) in ((13, 12), (15, 16), (21, 25)):                              # holes from the spines
+        c.set(x, y, OUTLINE)
+
+
+def draw_windstep_sandals(c):
+    """Light sandals laced with red kite string, a feather tucked in the strap."""
+    c.rect(6, 24, 27, 28, TAN[1])                                            # the sole
+    c.rect(6, 28, 27, 28, TAN[0])
+    c.rect(6, 24, 27, 24, TAN[2])
+    c.line(10, 24, 16, 13, RED[1], width=2)                                  # kite-string straps
+    c.line(22, 24, 16, 13, RED[1], width=2)
+    c.line(13, 19, 19, 19, RED[0])
+    c.disc(16, 13, 1.6, RED[0])
+    c.line(17, 12, 28, 3, WHITE, width=2)                                    # the feather
+    c.line(18, 11, 27, 3, CLOTH[0])
+
+
+def draw_silver_fish(c):
+    """A fat silver herring, nose to the right."""
+    c.ellipse(15, 17, 10, 5.5, STEEL[1])
+    c.shade(lambda x, y, col: col == STEEL[1] and y < 15, STEEL[0])
+    c.shade(lambda x, y, col: col == STEEL[1] and y > 19, STEEL[2])
+    c.poly([(5, 17), (1, 11), (3, 17), (1, 23)], STEEL[0])                    # the tail
+    c.poly([(13, 12), (18, 8), (20, 12)], STEEL[0])                           # the fin
+    c.disc(22, 16, 1.4, WHITE); c.set(22, 16, OUTLINE)                        # the eye
+    c.line(19, 13, 19, 21, STEEL[0])                                          # the gill
+    for x in (9, 12, 15):
+        c.set(x, 16, STEEL[2])
+
+
+def draw_glow_shell(c):
+    """A spiral shell glowing sea-green."""
+    c.disc(15, 18, 9, SEAGLOW[1])
+    c.poly([(19, 26), (29, 27), (24, 21)], SEAGLOW[1])                         # its lip
+    for i in range(48):
+        t = i / 48 * math.pi * 3.4
+        r = 1 + i * 0.16
+        c.set(15 + r * math.cos(t), 18 + r * math.sin(t), SEAGLOW[0])
+    c.shade(lambda x, y, col: col == SEAGLOW[1] and x + y < 26, SEAGLOW[2])
+    c.set(15, 18, WHITE)
+
+
+def draw_shell_lantern(c):
+    """A little poplar-wood lantern, three glowing shells inside."""
+    c.ring(16, 5, 3.2, 1.8, WOOD[1])                                          # the handle
+    c.rect(8, 8, 24, 10, WOOD[1]); c.rect(8, 27, 24, 29, WOOD[1])
+    c.rect(8, 8, 24, 8, WOOD[2]); c.rect(8, 29, 24, 29, WOOD[0])
+    c.rect(9, 11, 23, 26, hexc("1e4a48"))                                     # the dark inside
+    for x in (8, 23):
+        c.rect(x, 10, x + 1, 27, WOOD[0])
+    for (x, y) in ((13, 15), (19, 17), (15, 22)):
+        c.disc(x, y, 3, SEAGLOW[1]); c.disc(x - 1, y - 1, 1, SEAGLOW[2])
+    c.set(18, 13, WHITE); c.set(11, 24, WHITE)
+
+
+def draw_tidecaller_pendant(c):
+    """A sea-green drop with a white wave across it, on a cord."""
+    pendant(c, LEATHER, SEAGLOW)
+    c.line(11, 23, 13, 21, WHITE); c.line(13, 21, 15, 23, WHITE)
+    c.line(15, 23, 17, 21, WHITE); c.line(17, 21, 19, 23, WHITE)
+
+
+def draw_gold_nugget(c):
+    """A lumpy nugget of gold."""
+    for (x, y, r) in ((14, 18, 7), (20, 16, 5), (11, 22, 5), (20, 22, 5)):
+        c.disc(x, y, r, GOLD[1])
+    light_top_left(c, GOLD, 16, 19, 9)
+    for (x, y) in ((12, 15), (18, 13), (9, 20)):
+        c.set(x, y, WHITE)
+    c.disc(22, 24, 1.5, GOLD[0]); c.disc(15, 22, 1, GOLD[0])
+
+
+def draw_prospectors_gloves(c):
+    """Thick tan work gloves with brass studs."""
+    glove(c, TAN, LEATHER, studs=GOLD[1])
+    c.line(10, 18, 23, 18, TAN[0])
+
+
+def draw_beetle_shell(c):
+    """A Dark Beetle's glossy wing case, split down the middle."""
+    c.ellipse(16, 17, 9, 12, BEETLE[1])
+    c.shade(lambda x, y, col: col == BEETLE[1] and x > 19, BEETLE[0])
+    c.line(16, 6, 16, 29, BEETLE[0])
+    c.line(11, 9, 9, 16, BEETLE[2]); c.line(12, 9, 10, 14, WHITE)             # gloss
+    c.line(20, 10, 21, 14, BEETLE[2])
+
+
+def draw_owl_eye_amulet(c):
+    """A round amber eye with a dark slit, feathers at its sides."""
+    pendant(c, BROWN, AMBER, shape="round")
+    c.line(16, 18, 16, 26, OUTLINE)                                           # the pupil
+    c.set(15, 20, hexc("5a2a08")); c.set(17, 24, hexc("5a2a08"))
+    for side in (-1, 1):                                                      # feather tufts
+        c.poly([(16 + side * 7, 18), (16 + side * 11, 14), (16 + side * 9, 21)], BROWN[1])
+
+
+def draw_crisp_apple(c):
+    """A shiny red apple with a leaf, and one small bite out of it."""
+    c.disc(13, 19, 8, RED[1]); c.disc(19, 19, 8, RED[1])
+    light_top_left(c, RED, 16, 19, 9)
+    c.disc(10, 15, 1.6, RED[2])
+    c.line(16, 11, 17, 6, BROWN[1], width=2)                                  # the stem
+    c.ellipse(21, 7, 4, 2, GREEN[1]); c.line(18, 7, 24, 7, GREEN[0])          # the leaf
+    for (x, y, r) in ((26, 19, 3), (25, 23, 2.5)):                            # the bite
+        c.disc(x, y, r, None)
+    c.shade(lambda x, y, col: col in RED and (x - 26) ** 2 + (y - 21) ** 2 < 22, CLOTH[2])
+
+
+def draw_forest_truffle(c):
+    """A knobbly brown truffle."""
+    for (x, y, r) in ((15, 19, 8), (21, 17, 5), (10, 15, 4), (19, 24, 5), (9, 22, 4)):
+        c.disc(x, y, r, MUD[1])
+    light_top_left(c, MUD, 15, 19, 10)
+    for (x, y) in ((12, 18), (17, 14), (20, 21), (14, 24), (22, 17), (10, 21)):
+        c.set(x, y, MUD[0])
+    c.set(9, 13, MUD[2]); c.set(13, 13, MUD[2])
+
+
+def draw_orchard_gloves(c):
+    """Soft green picking gloves, an apple leaf stitched on the back."""
+    glove(c, GREEN, CLOTH)
+    c.ellipse(16, 16, 3.5, 2, GREEN[2]); c.line(13, 16, 19, 16, GREEN[0])
+    c.disc(22, 25, 1.4, RED[1])
+
+
+def draw_sugar_crystal(c):
+    """A cluster of pink sugar crystals, sparkling."""
+    c.poly([(9, 28), (11, 12), (15, 8), (17, 28)], CANDY[1])
+    c.poly([(15, 28), (19, 5), (23, 10), (25, 28)], CANDY[1])
+    c.poly([(5, 28), (6, 19), (9, 17), (11, 28)], CANDY[1])
+    c.shade(lambda x, y, col: col == CANDY[1] and (x in (13, 14, 21, 22, 23, 9, 10)), CANDY[0])
+    c.line(12, 13, 12, 26, CANDY[2]); c.line(19, 8, 18, 26, CANDY[2])
+    for (x, y) in ((26, 6), (6, 12), (28, 18)):
+        c.set(x, y, WHITE); c.set(x + 1, y, CANDY[2]); c.set(x - 1, y, CANDY[2]); c.set(x, y + 1, CANDY[2]); c.set(x, y - 1, CANDY[2])
+
+
+def draw_rock_candy_crown(c):
+    """A small crown of pink rock candy with an amber jewel."""
+    c.poly([(5, 26), (5, 12), (10, 18), (16, 8), (22, 18), (27, 12), (27, 26)], CANDY[1])
+    c.shade(lambda x, y, col: col == CANDY[1] and x > 21, CANDY[0])
+    c.shade(lambda x, y, col: col == CANDY[1] and x < 9, CANDY[2])
+    c.rect(5, 24, 27, 27, CANDY[0])
+    for (x, y) in ((5, 11), (16, 7), (27, 11)):
+        c.disc(x, y, 1.6, CANDY[2])
+    c.disc(16, 19, 3, AMBER[1]); c.set(15, 18, AMBER[2]); c.set(17, 20, AMBER[0])
+    for x in (9, 23):
+        c.disc(x, 25, 1, WHITE)
+
+
+def draw_peppermint_boots(c):
+    """Boots striped red and white like a peppermint stick."""
+    boot(c, [hexc("e8e8ee"), WHITE, WHITE], RED[1], RED[0])
+    c.shade(lambda x, y, col: col == WHITE and ((x + y) // 3) % 2 == 0 and y > 8 and y < 26, RED[1])
+    c.shade(lambda x, y, col: col == hexc("e8e8ee") and ((x + y) // 3) % 2 == 0, RED[0])
+
+
+def draw_healing_mud(c):
+    """A clay jar of warm brown mud, a dollop spilling over the rim."""
+    c.poly([(9, 11), (23, 11), (25, 28), (7, 28)], TAN[1])
+    c.shade(lambda x, y, col: col == TAN[1] and x > 20, TAN[0])
+    c.shade(lambda x, y, col: col == TAN[1] and x < 11, TAN[2])
+    c.ellipse(16, 11, 8, 2.5, MUD[1])                                         # the mud in its mouth
+    c.disc(13, 9, 3, MUD[1]); c.disc(18, 8, 3.5, MUD[1])
+    c.disc(22, 13, 1.6, MUD[1]); c.line(22, 13, 22, 17, MUD[1], width=2)       # a drip
+    c.set(12, 7, MUD[2]); c.set(17, 6, MUD[2])
+    c.rect(7, 18, 25, 19, TAN[0])                                             # a band round the jar
+
+
+def draw_bogwalker_boots(c):
+    """Tall mossy waders with a dark sole."""
+    boot(c, MOSS, MOSS[0], MUD[0], laces=MOSS[2])
+    c.poly([(9, 3), (17, 3), (17, 7), (9, 7)], MOSS[1])                        # reaching up to the knee
+    c.rect(9, 3, 17, 4, MOSS[0])
+    c.set(10, 20, MUD[1]); c.set(13, 24, MUD[1]); c.set(20, 25, MUD[1])       # splashes of mud
+
+
+def draw_honey_muffin(c):
+    """A golden muffin in a striped paper case, honey running down its top."""
+    c.poly([(8, 18), (24, 18), (22, 29), (10, 29)], CLOTH[1])                 # the case
+    for x in (10, 13, 16, 19, 22):
+        c.line(x, 19, x - (1 if x < 16 else -1 if x > 16 else 0), 28, CLOTH[0])
+    c.ellipse(16, 15, 10, 6, AMBER[1])                                        # the top
+    light_top_left(c, AMBER, 16, 14, 8)
+    c.ellipse(16, 11, 5, 2, HONEY[2])                                         # honey on top, dripping
+    c.line(12, 12, 11, 17, HONEY[1], width=2); c.line(20, 12, 21, 16, HONEY[1], width=2)
+
+
+def draw_red_hood_ribbon(c):
+    """A bright red ribbon tied in a bow."""
+    c.poly([(16, 14), (5, 7), (3, 14), (5, 20)], RED[1])                       # the loops
+    c.poly([(16, 14), (27, 7), (29, 14), (27, 20)], RED[1])
+    c.shade(lambda x, y, col: col == RED[1] and y > 15, RED[0])
+    c.line(6, 10, 9, 14, RED[2]); c.line(26, 10, 23, 14, RED[2])
+    c.poly([(15, 15), (10, 28), (13, 28), (16, 19)], RED[1])                   # the tails
+    c.poly([(17, 15), (22, 28), (19, 28), (16, 19)], RED[0])
+    c.disc(16, 14, 2.6, RED[0]); c.set(15, 13, RED[2])                         # the knot
+
+
 # Every cape in items.json, in its own colour and trim (`color`, `accent`).
 for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
     if _item["type"] == "cape":
@@ -1749,6 +1997,28 @@ PROMPTS = {  # for a later Retro Diffusion upgrade (python3 tools/rd.py generate
     "starfall_blade": "sword with a pale star blade, gold wings on the guard",
     "starfall_axe": "axe with a pale crystal crescent head and a gold star",
     "starfall_whip": "lilac whip with a glowing star at its tip",
+    "seed_pouch": "small tied cloth pouch spilling seeds",
+    "honeybee_charm": "little golden honeycomb charm with a tiny bee",
+    "stray_sock": "striped woollen sock with little holes",
+    "windstep_sandals": "light sandals laced with red kite string and a little feather",
+    "silver_fish": "shiny silver fish",
+    "glow_shell": "small spiral seashell glowing sea green",
+    "shell_lantern": "lantern made of glowing seashells on a wooden frame",
+    "tidecaller_pendant": "sea green pendant shaped like a wave on a cord",
+    "gold_nugget": "shiny lump of gold ore",
+    "prospectors_gloves": "thick tan leather work gloves with brass studs",
+    "beetle_shell": "glossy dark violet beetle wing shell",
+    "owl_eye_amulet": "round amber amulet shaped like an owl's eye",
+    "crisp_apple": "shiny red apple with a leaf and a small bite",
+    "forest_truffle": "knobbly brown truffle mushroom",
+    "orchard_gloves": "soft green gardening gloves with an apple leaf stitched on",
+    "sugar_crystal": "sparkly pink sugar crystal",
+    "rock_candy_crown": "small crown of pink rock candy with an amber jewel",
+    "peppermint_boots": "red and white striped peppermint boots",
+    "healing_mud": "jar of warm brown healing mud",
+    "bogwalker_boots": "tall mossy green waders boots",
+    "honey_muffin": "golden honey muffin in a paper case",
+    "red_hood_ribbon": "bright red ribbon tied in a bow",
 }
 
 

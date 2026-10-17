@@ -1282,6 +1282,63 @@
             "Elder Oak says an adventurer will sort them out.",
             "Is that you? You look like an adventurer. Mostly."
           ]
+        },
+        {
+          "name": "Granny Maple",
+          "race": "human",
+          "gender": "female",
+          "hair": "white",
+          "outfit": "purple",
+          "style": "bob",
+          "x": -11,
+          "y": 6,
+          "props": [
+            {
+              "art": "water_well",
+              "x": 0,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "This well's older than I am, and I'm older than most of the hills.",
+            "Rosie's mother ran the mill before her, and her mother before that.",
+            "When the clover blooms, the whole of Cloverdale smells of honey.",
+            "Mind the Jelly Puffs on your way. They don't bite, but they do wobble."
+          ]
+        },
+        {
+          "name": "Farmhand Jem",
+          "race": "human",
+          "gender": "male",
+          "hair": "brown",
+          "outfit": "green",
+          "style": "messy",
+          "x": -15,
+          "y": 1,
+          "walk": {
+            "x": -17,
+            "y": 7
+          },
+          "hold": "small_hatchet",
+          "props": [
+            {
+              "art": "haystack",
+              "x": -2,
+              "y": 0
+            },
+            {
+              "art": "pumpkin_patch",
+              "x": 1,
+              "y": -2,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "Rosie mills the flour, Barnaby keeps the bees, and I eat the honey bread.",
+            "The hamsters only raid the granary when nobody's looking. So, always.",
+            "Barnaby talks to his bees. He says they talk back. I've never heard it.",
+            "Best bread between here and Meadowbrook. Don't tell Meadowbrook."
+          ]
         }
       ],
       "width": 150,
@@ -1796,6 +1853,26 @@
           "art": "windmill",
           "x": 5,
           "y": 5
+        },
+        {
+          "art": "windmill",
+          "x": -16,
+          "y": 12
+        },
+        {
+          "art": "house_green",
+          "x": -5,
+          "y": 12
+        },
+        {
+          "art": "house",
+          "x": -20,
+          "y": 4
+        },
+        {
+          "art": "bakery",
+          "x": -2,
+          "y": 4
         }
       ],
       "npcs": [
@@ -1807,6 +1884,24 @@
           "x": 4,
           "y": 3,
           "greeting": "Baa! Oh, a kind face at last."
+        },
+        {
+          "id": "miller_rosie",
+          "name": "Miller Rosie",
+          "role": "quests",
+          "art": "npc_miller_rosie",
+          "x": -17,
+          "y": 10,
+          "greeting": "Welcome to Cloverdale! Mind the flour. It gets everywhere, even in the bread."
+        },
+        {
+          "id": "beekeeper_barnaby",
+          "name": "Beekeeper Barnaby",
+          "role": "quests",
+          "art": "npc_beekeeper_barnaby",
+          "x": -6,
+          "y": 10,
+          "greeting": "Shh. Slow movements, please. The bees are watching, and so am I."
         }
       ]
     },
@@ -1860,6 +1955,67 @@
             "Then I came here. They don't swim. They hop.",
             "Some say a ship sank off this shore, full of gold.",
             "I say it was full of pineapples. Look around you."
+          ]
+        },
+        {
+          "name": "Little Coral",
+          "race": "human",
+          "gender": "female",
+          "hair": "black",
+          "outfit": "pink",
+          "style": "ponytail",
+          "x": 6,
+          "y": -12,
+          "props": [
+            {
+              "art": "sandcastle",
+              "x": 0,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "seashells",
+              "x": 2,
+              "y": 1,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "This sandcastle is for the Wood Crabs, so they leave Oskar's nets alone.",
+            "Mum says the lamp on the point went out in the storm. Now the boats get lost.",
+            "Captain Salt says he sailed past the edge of the map once. I believe him.",
+            "Nell finds the best shells. I find the best crabs. They find my toes."
+          ]
+        },
+        {
+          "name": "Bosun Ike",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "black",
+          "outfit": "blue",
+          "x": 11,
+          "y": -17,
+          "walk": {
+            "x": 11,
+            "y": -11
+          },
+          "props": [
+            {
+              "art": "barrels",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "wooden_crates",
+              "x": 2,
+              "y": 1
+            }
+          ],
+          "lines": [
+            "Driftwood Cove's built from whatever the sea throws up. Mostly driftwood.",
+            "The Salty Gull has the best fish stew on the shore. It's the only one.",
+            "Mud Eagles can spot a herring from the clouds. Clever birds. Rude, though.",
+            "No light on the point, no boats in at night. It's as simple as that."
           ]
         }
       ],
@@ -2170,6 +2326,46 @@
           "x": -4,
           "y": 3,
           "greeting": "Click-clack! Mind the tide pools, youngster."
+        },
+        {
+          "id": "fishwife_marla",
+          "name": "Fishwife Marla",
+          "role": "quests",
+          "art": "npc_fishwife_marla",
+          "x": 0,
+          "y": -8,
+          "greeting": "Fresh fish! Well, it was fresh this morning, before the Mud Eagles got to it."
+        },
+        {
+          "id": "netmender_oskar",
+          "name": "Net-Mender Oskar",
+          "role": "quests",
+          "art": "npc_netmender_oskar",
+          "x": 11,
+          "y": -8,
+          "greeting": "Every knot I tie, a crab snips. Every knot!"
+        }
+      ],
+      "buildings": [
+        {
+          "art": "house_green",
+          "x": 1,
+          "y": -6
+        },
+        {
+          "art": "house",
+          "x": 12,
+          "y": -6
+        },
+        {
+          "art": "inn_teal",
+          "x": -3,
+          "y": -14
+        },
+        {
+          "art": "house_purple",
+          "x": 15,
+          "y": -14
         }
       ]
     },
@@ -2221,6 +2417,56 @@
             "Never mix them up. Ask Dozywick how that went.",
             "Willow the Wisp fades a little more each night.",
             "The Shade Puffs drink the moonlight, poor dear."
+          ]
+        },
+        {
+          "name": "Lantern Girl Ivy",
+          "race": "elf",
+          "gender": "female",
+          "hair": "purple",
+          "outfit": "purple",
+          "style": "long",
+          "x": 17,
+          "y": -3,
+          "walk": {
+            "x": 11,
+            "y": -2
+          },
+          "props": [
+            {
+              "art": "spooky_lantern",
+              "x": 1,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "I light every lantern in Duskhollow, every evening. It's always evening.",
+            "Fenwick makes lantern glass from beetle shells. Don't tell the beetles.",
+            "The Night Market is the best night of the month. It's also every night.",
+            "Howling at night? Only the Werewolves. Nothing to worry about. Probably."
+          ]
+        },
+        {
+          "name": "Moth-Catcher Silas",
+          "race": "human",
+          "gender": "male",
+          "hair": "black",
+          "outfit": "black",
+          "style": "swept",
+          "x": 22,
+          "y": -8,
+          "props": [
+            {
+              "art": "market_stall",
+              "x": 2,
+              "y": 0
+            }
+          ],
+          "lines": [
+            "I catch moths and let them go again. It's a hobby, not a living.",
+            "Hettie's charcoal burns so slow you could cook a stew all week on it.",
+            "Willow the Wisp drifts by now and then. We wave. It flickers.",
+            "A Night Monkey took my best net last market. Bold as you like."
           ]
         }
       ],
@@ -2626,6 +2872,46 @@
           "x": -4,
           "y": -3,
           "greeting": "Shh... the woods are listening."
+        },
+        {
+          "id": "lampwright_fenwick",
+          "name": "Lampwright Fenwick",
+          "role": "quests",
+          "art": "npc_lampwright_fenwick",
+          "x": 11,
+          "y": 1,
+          "greeting": "In Duskhollow it's always nearly night. Good for lanterns. Bad for reading."
+        },
+        {
+          "id": "charcoal_hettie",
+          "name": "Charcoal-Burner Hettie",
+          "role": "quests",
+          "art": "npc_charcoal_hettie",
+          "x": 22,
+          "y": 1,
+          "greeting": "Soot on your boots? Then you've found Duskhollow."
+        }
+      ],
+      "buildings": [
+        {
+          "art": "item_shop",
+          "x": 12,
+          "y": 3
+        },
+        {
+          "art": "house",
+          "x": 23,
+          "y": 3
+        },
+        {
+          "art": "house_purple",
+          "x": 8,
+          "y": -5
+        },
+        {
+          "art": "mushroom_house_blue",
+          "x": 26,
+          "y": -5
         }
       ]
     },
@@ -2701,6 +2987,60 @@
             "Rivers don't move? Tell that to this one.",
             "Every land is a page of Liora's book, you know. I'm drawing them all.",
             "This is page... twelve? I've lost count of the pages."
+          ]
+        },
+        {
+          "name": "Cider-Taster Gus",
+          "race": "human",
+          "gender": "male",
+          "hair": "brown",
+          "outfit": "red",
+          "x": -37,
+          "y": -27,
+          "props": [
+            {
+              "art": "barrels",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "barrels",
+              "x": 2,
+              "y": 1
+            }
+          ],
+          "lines": [
+            "Tasting cider is hard work. Somebody has to do it, and it's me.",
+            "Beatrix's truffle cider tastes like mushrooms and regret. I love it.",
+            "The Apple Fair is next week, if the Flame Sheep leave us any apples.",
+            "Woodcutter Bram brings the wood for Beatrix's barrels. Good man."
+          ]
+        },
+        {
+          "name": "Little Poppy",
+          "race": "elf",
+          "gender": "female",
+          "hair": "pink",
+          "outfit": "green",
+          "style": "braids",
+          "x": -32,
+          "y": -22,
+          "walk": {
+            "x": -26,
+            "y": -21
+          },
+          "props": [
+            {
+              "art": "apple_tree",
+              "x": -2,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "I'm guarding the apples. From monkeys. And from Gus.",
+            "Moss says every tree in the orchard has a name. That one's Gertrude.",
+            "A Wood Monkey threw an apple at me! It was a good apple, though.",
+            "When I win the Apple Fair I'll get a ribbon as big as my head."
           ]
         }
       ],
@@ -3207,6 +3547,26 @@
           "art": "house",
           "x": 5,
           "y": -1
+        },
+        {
+          "art": "house_green",
+          "x": -25,
+          "y": -16
+        },
+        {
+          "art": "inn_red",
+          "x": -36,
+          "y": -16
+        },
+        {
+          "art": "house",
+          "x": -41,
+          "y": -24
+        },
+        {
+          "art": "mushroom_house",
+          "x": -23,
+          "y": -24
         }
       ],
       "npcs": [
@@ -3236,6 +3596,24 @@
               "It will never admit it, but it rather likes the Wood Monkeys swinging in its branches. The Smiling Forest lives up to its name again."
             ]
           }
+        },
+        {
+          "id": "orchard_moss",
+          "name": "Orchard-Keeper Moss",
+          "role": "quests",
+          "art": "npc_orchard_moss",
+          "x": -26,
+          "y": -18,
+          "greeting": "Hollyhock's apples are the sweetest in the forest. Ask the monkeys. They'd know."
+        },
+        {
+          "id": "cooper_beatrix",
+          "name": "Cooper Beatrix",
+          "role": "quests",
+          "art": "npc_cooper_beatrix",
+          "x": -37,
+          "y": -18,
+          "greeting": "Barrels! Kegs! Tubs! If it holds cider, I made it."
         }
       ]
     },
@@ -4888,6 +5266,58 @@
             "Every swan was a duckling once. Every single one.",
             "One day it'll fly north to Swan Lake. You'll see."
           ]
+        },
+        {
+          "name": "Stilt-Walker Nib",
+          "race": "human",
+          "gender": "male",
+          "hair": "ginger",
+          "outfit": "teal",
+          "style": "messy",
+          "x": -9,
+          "y": -27,
+          "roam": 3,
+          "props": [
+            {
+              "art": "cattail_log",
+              "x": 0,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "In Bogbottom everyone walks on stilts. Except when they fall off.",
+            "Mungo's mud cures everything. Colds, scrapes, wobbly knees.",
+            "The Blue Treefrogs croak under the boardwalk all night. Ribbit, ribbit.",
+            "Duck-Keeper Maud says her ducks don't like the slugs either."
+          ]
+        },
+        {
+          "name": "Old Croaker Bess",
+          "race": "dwarf",
+          "gender": "female",
+          "hair": "white",
+          "outfit": "green",
+          "x": -4,
+          "y": -32,
+          "props": [
+            {
+              "art": "swamp_stump",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "reeds",
+              "x": 1,
+              "y": -2,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "They call me Old Croaker. I sing to the frogs. They don't sing back.",
+            "Ida's chased the Great Eel for forty years. It's chased her for forty-one.",
+            "Slugs on the stilts again. Everything's slippery. My knees can't take it.",
+            "Mud's good for you. Mungo says so, and he's a hundred and three."
+          ]
         }
       ],
       "theme": {
@@ -5238,6 +5668,46 @@
           "x": -4,
           "y": -3,
           "greeting": "Oh... hello. You don't think I'm ugly, do you?"
+        },
+        {
+          "id": "eelcatcher_ida",
+          "name": "Eel-Catcher Ida",
+          "role": "quests",
+          "art": "npc_eelcatcher_ida",
+          "x": -15,
+          "y": -23,
+          "greeting": "Eels? No eels today. Only frogs. It's always frogs."
+        },
+        {
+          "id": "herbalist_mungo",
+          "name": "Herbalist Mungo",
+          "role": "quests",
+          "art": "npc_herbalist_mungo",
+          "x": -4,
+          "y": -23,
+          "greeting": "Mind where you step. Half of Bogbottom is medicine and the other half is mud."
+        }
+      ],
+      "buildings": [
+        {
+          "art": "mushroom_house",
+          "x": -14,
+          "y": -21
+        },
+        {
+          "art": "house_green",
+          "x": -3,
+          "y": -21
+        },
+        {
+          "art": "mushroom_house_blue",
+          "x": -18,
+          "y": -29
+        },
+        {
+          "art": "house",
+          "x": 0,
+          "y": -29
         }
       ]
     },
@@ -8121,6 +8591,52 @@
             "Something gooey and golden bounces out of there at night.",
             "Grandma says it's the Gilded Brute, counting his treasure."
           ]
+        },
+        {
+          "name": "Little Fen",
+          "race": "human",
+          "gender": "male",
+          "hair": "blonde",
+          "outfit": "red",
+          "style": "spiky",
+          "x": -12,
+          "y": -16,
+          "roam": 3,
+          "lines": [
+            "Wynn's my big brother. He flew a kite so high it touched a cloud!",
+            "Mum says Thistledown is the windiest place in the whole world.",
+            "I lost my hat in a gust last spring. I bet it's in Meadowbrook by now.",
+            "When I grow up I'm going to be a kite. Or a kitewright. One of those."
+          ]
+        },
+        {
+          "name": "Old Shepherd Tam",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "white",
+          "outfit": "blue",
+          "x": -17,
+          "y": -21,
+          "pet": "bunny",
+          "props": [
+            {
+              "art": "haystack",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "bench",
+              "x": -1,
+              "y": -1,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "Sheep up here grow the thickest wool. They have to, in this wind.",
+            "Wenna's washing line has been to more places than I have.",
+            "Bryn's kites can lift a lamb clean off the ground. Don't ask me how I know.",
+            "Kite Day is the best day of the year. Nobody works, and everybody runs."
+          ]
         }
       ],
       "width": 156,
@@ -8611,7 +9127,49 @@
           "azure_golden_hamster": 1,
           "starry_hedgehog": 1
         }
-      }
+      },
+      "buildings": [
+        {
+          "art": "house",
+          "x": -5,
+          "y": -10
+        },
+        {
+          "art": "item_shop_red",
+          "x": -16,
+          "y": -10
+        },
+        {
+          "art": "house_purple",
+          "x": -21,
+          "y": -18
+        },
+        {
+          "art": "windmill",
+          "x": -3,
+          "y": -18
+        }
+      ],
+      "npcs": [
+        {
+          "id": "washerwoman_wenna",
+          "name": "Washerwoman Wenna",
+          "role": "quests",
+          "art": "npc_washerwoman_wenna",
+          "x": -6,
+          "y": -12,
+          "greeting": "Hold on to your hat, dear. In Thistledown the wind takes anything that isn't tied down."
+        },
+        {
+          "id": "kitewright_bryn",
+          "name": "Kitewright Bryn",
+          "role": "quests",
+          "art": "npc_kitewright_bryn",
+          "x": -17,
+          "y": -12,
+          "greeting": "A kite's only a wish with a string on it. Want to see mine?"
+        }
+      ]
     },
     {
       "id": "slime_cave",
@@ -8638,6 +9196,30 @@
             "The slimes eat coins and get shinier. I just follow them about.",
             "Their boss calls himself the Gilded Brute. Says it's all for the Gilded King.",
             "Never met this king. I bet he's slimy too."
+          ]
+        },
+        {
+          "name": "Miner Mags",
+          "race": "human",
+          "gender": "female",
+          "hair": "ginger",
+          "outfit": "gold",
+          "style": "crop",
+          "x": 1,
+          "y": -1,
+          "hold": "small_hatchet",
+          "props": [
+            {
+              "art": "mine_cart",
+              "x": -2,
+              "y": 0
+            }
+          ],
+          "lines": [
+            "Dobbs says there's more gold in the goo than in the rock. He's not wrong.",
+            "Goldie weighs every nugget twice. Then she weighs it again, to be sure.",
+            "Don't swing at a Golden Slime near the cart. It gets everywhere.",
+            "Ten years I've dug this grotto, and I've never once been dry."
           ]
         }
       ],
@@ -8868,8 +9450,18 @@
               "If the Gilded King was ever here, it left long ago. With no one to shout at them, the Golden Slimes go back to bouncing, and Elder Oak will have a good laugh."
             ]
           }
+        },
+        {
+          "id": "foreman_dobbs",
+          "name": "Foreman Dobbs",
+          "role": "quests",
+          "art": "npc_foreman_dobbs",
+          "x": 3,
+          "y": 0,
+          "greeting": "Watch your step. That puddle's not a puddle. It's a Mud Slime having a nap."
         }
-      ]
+      ],
+      "buildings": []
     },
     {
       "id": "candy_mountain",
@@ -8914,6 +9506,62 @@
             "It is. Mostly.",
             "There's a chest at the very top of the peak. I hope it's full of fudge.",
             "Mother Sheep's lambs came through here. The wolves took them west."
+          ]
+        },
+        {
+          "name": "Little Taffy",
+          "race": "human",
+          "gender": "female",
+          "hair": "pink",
+          "outfit": "pink",
+          "style": "bob",
+          "x": 14,
+          "y": -15,
+          "props": [
+            {
+              "art": "lollipop_pink",
+              "x": -1,
+              "y": 2
+            },
+            {
+              "art": "gumdrops",
+              "x": 1,
+              "y": 2,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "Hansel and Gretel live up the hill. They know all about gingerbread houses.",
+            "Clementine lets me lick the spoon if I sweep the sprinkles.",
+            "The Candy Puffs are made of sugar, so they're always in a hurry.",
+            "This year I'm going to be crowned Gala Queen. I've practised waving."
+          ]
+        },
+        {
+          "name": "Sprinkle-Sweeper Lolly",
+          "race": "elf",
+          "gender": "male",
+          "hair": "blue",
+          "outfit": "teal",
+          "style": "crop",
+          "x": 19,
+          "y": -20,
+          "walk": {
+            "x": 19,
+            "y": -14
+          },
+          "props": [
+            {
+              "art": "candy_cane",
+              "x": 2,
+              "y": 0
+            }
+          ],
+          "lines": [
+            "I sweep the sprinkles off the path every morning. They grow back every night.",
+            "Tibbs's toffee can pull a tooth out. Ask him how many he's got left.",
+            "Mind the Flame Sheep. One sneeze and the whole row smells of burnt sugar.",
+            "Every year the Gala crown gets eaten before the Gala. Every year."
           ]
         }
       ],
@@ -9442,6 +10090,24 @@
           "summit": 0,
           "greeting": "A chest, left at the top for whoever climbs this far.",
           "gives": "gumdrop_star_charm"
+        },
+        {
+          "id": "confectioner_clementine",
+          "name": "Confectioner Clementine",
+          "role": "quests",
+          "art": "npc_confectioner_clementine",
+          "x": 8,
+          "y": -11,
+          "greeting": "Welcome to Peppermint Row! Please don't lick the houses. We've had complaints."
+        },
+        {
+          "id": "toffee_tibbs",
+          "name": "Toffee-Puller Tibbs",
+          "role": "quests",
+          "art": "npc_toffee_tibbs",
+          "x": 19,
+          "y": -11,
+          "greeting": "Pull, fold, pull, fold. Toffee's all in the elbows."
         }
       ],
       "decor": [
@@ -9458,6 +10124,28 @@
           "y": -2,
           "blocking": false,
           "summit": 0
+        }
+      ],
+      "buildings": [
+        {
+          "art": "bakery",
+          "x": 9,
+          "y": -9
+        },
+        {
+          "art": "mushroom_house_gold",
+          "x": 20,
+          "y": -9
+        },
+        {
+          "art": "house_purple",
+          "x": 5,
+          "y": -17
+        },
+        {
+          "art": "item_shop_red",
+          "x": 23,
+          "y": -17
         }
       ]
     },
@@ -9502,6 +10190,52 @@
             "He keeps the stolen lambs at the top, where he can watch them.",
             "I'm a huntsman. I don't fight wolves. I just keep an eye on them.",
             "From very far away. Like now."
+          ]
+        },
+        {
+          "name": "Woodcutter Hale",
+          "race": "human",
+          "gender": "male",
+          "hair": "brown",
+          "outfit": "red",
+          "style": "crop",
+          "x": -18,
+          "y": -2,
+          "hold": "iron_axe",
+          "props": [
+            {
+              "art": "tree_stump",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "fallen_log",
+              "x": 1,
+              "y": -2
+            }
+          ],
+          "lines": [
+            "I chop wood by Grandmother's cottage. Handy, when a wolf drops by.",
+            "Little Red takes the long way round. She says it's prettier.",
+            "Corwin hunts the wolves and I chop the trees. Woodsend keeps us both busy.",
+            "Grandmother's door has been mended four times this year. I did all four."
+          ]
+        },
+        {
+          "name": "Shepherd Boy Tom",
+          "race": "human",
+          "gender": "male",
+          "hair": "blonde",
+          "outfit": "blue",
+          "style": "messy",
+          "x": -13,
+          "y": 3,
+          "pet": "bunny",
+          "lines": [
+            "Wolf! Wolf! ...Sorry. Force of habit.",
+            "Nobody believes me any more. Even when there really are wolves. Like now.",
+            "Bo-Peep lost her sheep again. I didn't do it, honest.",
+            "Grandmother Hazel gives me a muffin if I don't shout. I shout less now."
           ]
         }
       ],
@@ -9870,6 +10604,24 @@
               "Mother Sheep's lambs are free, and they know the way home over Gumdrop Peaks. Nella the Tailor will be glad: no wool is finer than a happy lamb's."
             ]
           }
+        },
+        {
+          "id": "little_red",
+          "name": "Little Red",
+          "role": "quests",
+          "art": "npc_little_red",
+          "x": -7,
+          "y": 7,
+          "greeting": "Grandmother's cottage is just past the trees. Everyone says don't stray from the path. I don't. Mostly."
+        },
+        {
+          "id": "grandmother_hazel",
+          "name": "Grandmother Hazel",
+          "role": "quests",
+          "art": "npc_grandmother_hazel",
+          "x": -18,
+          "y": 7,
+          "greeting": "Come in, come in! Don't mind the wolf-shaped dent in the door."
         }
       ],
       "decor": [
@@ -9886,6 +10638,28 @@
           "y": -2,
           "blocking": false,
           "summit": 0
+        }
+      ],
+      "buildings": [
+        {
+          "art": "house",
+          "x": -6,
+          "y": 9
+        },
+        {
+          "art": "house_purple",
+          "x": -17,
+          "y": 9
+        },
+        {
+          "art": "house_green",
+          "x": -22,
+          "y": 1
+        },
+        {
+          "art": "mushroom_house",
+          "x": -4,
+          "y": 1
         }
       ]
     },

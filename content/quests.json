@@ -1546,6 +1546,688 @@
           "star_seal"
         ]
       }
+    },
+    {
+      "id": "cloverdale_hamsters",
+      "title": "Hamsters in the Granary",
+      "giver": "miller_rosie",
+      "description": "Golden Hamsters have found my granary, and they've been stuffing their cheeks all week. Shoo four of them off before there's no flour left for Cloverdale's bread!",
+      "minLevel": 2,
+      "objective": {
+        "type": "defeat",
+        "target": "golden_hamster",
+        "count": 4
+      },
+      "reward": {
+        "gold": 30,
+        "exp": 20,
+        "items": [
+          "potion",
+          "potion"
+        ]
+      }
+    },
+    {
+      "id": "cloverdale_clover",
+      "title": "The Clover Thieves",
+      "giver": "beekeeper_barnaby",
+      "description": "My bees won't leave the hive! The Yellow Butterflies have taken over the clover and won't share a single flower. Chase five of them off, and my bees will thank you. Quietly. They're shy.",
+      "requires": [
+        "cloverdale_hamsters"
+      ],
+      "minLevel": 3,
+      "objective": {
+        "type": "defeat",
+        "target": "yellow_butterfly",
+        "count": 5
+      },
+      "reward": {
+        "gold": 40,
+        "exp": 30,
+        "items": [
+          "potion",
+          "ether"
+        ]
+      }
+    },
+    {
+      "id": "cloverdale_seeds",
+      "title": "Seeds for Spring",
+      "giver": "miller_rosie",
+      "description": "Those hamsters didn't only eat the grain. They ran off with my seed pouches, every one, and spring planting is next week! Bring back four, and Barnaby and I will have something for you.",
+      "requires": [
+        "cloverdale_clover"
+      ],
+      "minLevel": 4,
+      "objective": {
+        "type": "bring",
+        "target": "seed_pouch",
+        "count": 4
+      },
+      "reward": {
+        "gold": 90,
+        "exp": 60,
+        "items": [
+          "honeybee_charm",
+          "potion"
+        ]
+      },
+      "drops": [
+        {
+          "item": "seed_pouch",
+          "from": [
+            "golden_hamster"
+          ],
+          "chance": 0.6
+        }
+      ]
+    },
+    {
+      "id": "thistledown_socks",
+      "title": "Socks on the Hedgehogs",
+      "giver": "washerwoman_wenna",
+      "description": "A gust took my whole washing line last night! Now the Hedgehogs are trundling round the Downs with my socks stuck on their spines. Bring back five socks. Odd ones are fine.",
+      "minLevel": 5,
+      "objective": {
+        "type": "bring",
+        "target": "stray_sock",
+        "count": 5
+      },
+      "reward": {
+        "gold": 80,
+        "exp": 50,
+        "items": [
+          "potion",
+          "potion"
+        ]
+      },
+      "drops": [
+        {
+          "item": "stray_sock",
+          "from": [
+            "hedgehog",
+            "starry_hedgehog"
+          ],
+          "chance": 0.55
+        }
+      ]
+    },
+    {
+      "id": "thistledown_hamster",
+      "title": "A Hamster for Kite Day",
+      "giver": "kitewright_bryn",
+      "description": "Every Kite Day, a brave little friend rides in the basket of the lead kite. Seal a Golden Hamster with these Seal Stones and bring it along. It stays your friend after, of course.",
+      "requires": [
+        "thistledown_socks"
+      ],
+      "minLevel": 6,
+      "objective": {
+        "type": "capture",
+        "target": "golden_hamster",
+        "count": 1
+      },
+      "reward": {
+        "gold": 90,
+        "exp": 60,
+        "items": [
+          "potion",
+          "ether"
+        ]
+      },
+      "starterItems": [
+        "seal_stone",
+        "seal_stone"
+      ]
+    },
+    {
+      "id": "thistledown_kite_day",
+      "title": "Kite Day",
+      "giver": "kitewright_bryn",
+      "description": "Kite Day is here, and the Fluffy Bunnies keep nibbling through the kite strings! Chase eight of them off so every kite in Thistledown can fly.",
+      "requires": [
+        "thistledown_hamster"
+      ],
+      "minLevel": 8,
+      "objective": {
+        "type": "defeat",
+        "target": "bunny",
+        "count": 8
+      },
+      "reward": {
+        "gold": 180,
+        "exp": 160,
+        "items": [
+          "windstep_sandals",
+          "potion"
+        ]
+      }
+    },
+    {
+      "id": "cove_crabs",
+      "title": "Crabs in the Nets",
+      "giver": "netmender_oskar",
+      "description": "The Wood Crabs have found my nets, and they snip through the knots faster than I can tie them. Send six of them scuttling, and I'll have these nets mended before the tide.",
+      "minLevel": 9,
+      "objective": {
+        "type": "defeat",
+        "target": "wood_crab",
+        "count": 6
+      },
+      "reward": {
+        "gold": 140,
+        "exp": 140,
+        "items": [
+          "potion",
+          "potion"
+        ]
+      }
+    },
+    {
+      "id": "cove_fish",
+      "title": "The Stolen Catch",
+      "giver": "fishwife_marla",
+      "description": "Every time the boats come in, the Mud Eagles swoop down and fly off with the best of the catch. Win five Silver Fish back from them, and the whole cove eats tonight.",
+      "requires": [
+        "cove_crabs"
+      ],
+      "minLevel": 11,
+      "objective": {
+        "type": "bring",
+        "target": "silver_fish",
+        "count": 5
+      },
+      "reward": {
+        "gold": 160,
+        "exp": 200,
+        "items": [
+          "potion",
+          "ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "silver_fish",
+          "from": [
+            "mud_eagle"
+          ],
+          "chance": 0.55
+        }
+      ]
+    },
+    {
+      "id": "cove_lamp",
+      "title": "A Light on the Point",
+      "giver": "fishwife_marla",
+      "description": "The lamp on the point went out in last week's storm, and the boats can't find the cove at night. Gather three Glow Shells from the Wood Crabs, piece them together on a frame of White Poplar, and bring me the lantern.",
+      "requires": [
+        "cove_fish"
+      ],
+      "minLevel": 14,
+      "objective": {
+        "type": "bring",
+        "target": "shell_lantern",
+        "count": 1
+      },
+      "reward": {
+        "gold": 320,
+        "exp": 490,
+        "items": [
+          "tidecaller_pendant",
+          "hi_potion"
+        ]
+      },
+      "drops": [
+        {
+          "item": "glow_shell",
+          "from": [
+            "wood_crab",
+            "rosy_wood_crab"
+          ],
+          "chance": 0.5,
+          "upTo": 3
+        }
+      ]
+    },
+    {
+      "id": "grotto_nuggets",
+      "title": "Gold in the Goo",
+      "giver": "foreman_dobbs",
+      "description": "The Golden Slimes swallow every nugget we dig up, then wobble off with them! Pop five of them and bring the gold back. Goldie will want to weigh it, of course.",
+      "minLevel": 12,
+      "objective": {
+        "type": "bring",
+        "target": "gold_nugget",
+        "count": 5
+      },
+      "reward": {
+        "gold": 180,
+        "exp": 240,
+        "items": [
+          "potion",
+          "potion",
+          "ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "gold_nugget",
+          "from": [
+            "golden_slime"
+          ],
+          "chance": 0.55
+        }
+      ]
+    },
+    {
+      "id": "grotto_lights",
+      "title": "Lights Out",
+      "giver": "foreman_dobbs",
+      "description": "The Mud Slimes keep oozing over our lanterns and putting them out, and nobody can dig in the dark. Clear eight of them out of the tunnels, and the camp's lamps stay lit.",
+      "requires": [
+        "grotto_nuggets"
+      ],
+      "minLevel": 15,
+      "objective": {
+        "type": "defeat",
+        "target": "mud_slime",
+        "count": 8
+      },
+      "reward": {
+        "gold": 340,
+        "exp": 560,
+        "items": [
+          "prospectors_gloves",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "dusk_shells",
+      "title": "Shells for the Lanterns",
+      "giver": "lampwright_fenwick",
+      "description": "My lantern glass has run out, so I make do with Dark Beetle shells. Polished up, they glow a lovely violet. Bring me six, and Duskhollow stays lit.",
+      "minLevel": 18,
+      "objective": {
+        "type": "bring",
+        "target": "beetle_shell",
+        "count": 6
+      },
+      "reward": {
+        "gold": 270,
+        "exp": 540,
+        "items": [
+          "hi_potion",
+          "ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "beetle_shell",
+          "from": [
+            "dark_beetle"
+          ],
+          "chance": 0.55
+        }
+      ]
+    },
+    {
+      "id": "dusk_woodpile",
+      "title": "Werewolves at the Woodpile",
+      "giver": "charcoal_hettie",
+      "description": "Something knocks over my woodpile every night and howls about it. Werewolves, five of them at least. Teach them some manners, and my kilns can burn again.",
+      "minLevel": 21,
+      "objective": {
+        "type": "defeat",
+        "target": "werewolf",
+        "count": 5
+      },
+      "reward": {
+        "gold": 320,
+        "exp": 730,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "dusk_market",
+      "title": "The Night Market",
+      "giver": "lampwright_fenwick",
+      "description": "Once a month Duskhollow holds a market by lantern light, and this time the Night Monkeys are raiding the stalls before we've even opened! Chase eight of them off, and the market's yours.",
+      "requires": [
+        "dusk_shells",
+        "dusk_woodpile"
+      ],
+      "minLevel": 24,
+      "objective": {
+        "type": "defeat",
+        "target": "night_monkey",
+        "count": 8
+      },
+      "reward": {
+        "gold": 540,
+        "exp": 1430,
+        "items": [
+          "owl_eye_amulet",
+          "hi_ether"
+        ]
+      }
+    },
+    {
+      "id": "holly_apples",
+      "title": "Monkeys in the Orchard",
+      "giver": "orchard_moss",
+      "description": "The Wood Monkeys raid my trees every morning and run off with the best apples. Win six back from them. I'd like to save a few for the fair.",
+      "minLevel": 16,
+      "objective": {
+        "type": "bring",
+        "target": "crisp_apple",
+        "count": 6
+      },
+      "reward": {
+        "gold": 240,
+        "exp": 430,
+        "items": [
+          "hi_potion",
+          "potion"
+        ]
+      },
+      "drops": [
+        {
+          "item": "crisp_apple",
+          "from": [
+            "wood_monkey",
+            "shadow_wood_monkey"
+          ],
+          "chance": 0.55
+        }
+      ]
+    },
+    {
+      "id": "holly_truffles",
+      "title": "Hog Wild",
+      "giver": "cooper_beatrix",
+      "description": "The Wood Hogs dig up truffles all over the forest and gobble them before anyone else gets a sniff. Bring me five, and I'll brew Hollyhock's famous Truffle Cider. It's an acquired taste.",
+      "minLevel": 19,
+      "objective": {
+        "type": "bring",
+        "target": "forest_truffle",
+        "count": 5
+      },
+      "reward": {
+        "gold": 280,
+        "exp": 600,
+        "items": [
+          "hi_potion",
+          "ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "forest_truffle",
+          "from": [
+            "wood_hog",
+            "violet_wood_hog"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "holly_fair",
+      "title": "The Apple Fair",
+      "giver": "orchard_moss",
+      "description": "The Flame Sheep keep wandering into the orchard and toasting the apples on the branch. Toasted apples are lovely, but not before the fair! Herd six of them away.",
+      "requires": [
+        "holly_apples",
+        "holly_truffles"
+      ],
+      "minLevel": 23,
+      "objective": {
+        "type": "defeat",
+        "target": "flame_sheep",
+        "count": 6
+      },
+      "reward": {
+        "gold": 520,
+        "exp": 1310,
+        "items": [
+          "orchard_gloves",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "pepper_crystals",
+      "title": "Sticky Fingers",
+      "giver": "confectioner_clementine",
+      "description": "The Candy Puffs have been licking my sugar crystals clean off the rocks! Pop five of them and bring the crystals back. I need them for Peppermint Row's rock candy.",
+      "minLevel": 18,
+      "objective": {
+        "type": "bring",
+        "target": "sugar_crystal",
+        "count": 5
+      },
+      "reward": {
+        "gold": 270,
+        "exp": 540,
+        "items": [
+          "hi_potion",
+          "potion"
+        ]
+      },
+      "drops": [
+        {
+          "item": "sugar_crystal",
+          "from": [
+            "candy_puff"
+          ],
+          "chance": 0.55
+        }
+      ]
+    },
+    {
+      "id": "pepper_sheep",
+      "title": "Toffee Too Hot",
+      "giver": "toffee_tibbs",
+      "description": "Toffee's all about the heat, and the Flame Sheep keep wandering through my kitchen and burning every batch! Herd six of them away from Peppermint Row.",
+      "minLevel": 21,
+      "objective": {
+        "type": "defeat",
+        "target": "flame_sheep",
+        "count": 6
+      },
+      "reward": {
+        "gold": 320,
+        "exp": 730,
+        "items": [
+          "hi_potion",
+          "ether"
+        ]
+      }
+    },
+    {
+      "id": "pepper_gala",
+      "title": "The Gingerbread Gala",
+      "giver": "confectioner_clementine",
+      "description": "Every year Peppermint Row crowns a Gala Queen, and every year the crown gets eaten. This year it's rock candy: piece four Sugar Crystals together round a piece of Amber, and bring me the crown.",
+      "requires": [
+        "pepper_crystals",
+        "pepper_sheep"
+      ],
+      "minLevel": 25,
+      "objective": {
+        "type": "bring",
+        "target": "rock_candy_crown",
+        "count": 1
+      },
+      "reward": {
+        "gold": 560,
+        "exp": 1550,
+        "items": [
+          "peppermint_boots",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "sugar_crystal",
+          "from": [
+            "candy_puff"
+          ],
+          "chance": 0.55,
+          "upTo": 4
+        }
+      ]
+    },
+    {
+      "id": "bog_frogs",
+      "title": "Croaking Under the Boardwalk",
+      "giver": "eelcatcher_ida",
+      "description": "The Blue Treefrogs croak under the boardwalks all night, and nobody in Bogbottom has slept in a week. Quiet six of them down, and we'll all thank you. In the morning. After a nap.",
+      "minLevel": 26,
+      "objective": {
+        "type": "defeat",
+        "target": "blue_treefrog",
+        "count": 6
+      },
+      "reward": {
+        "gold": 390,
+        "exp": 1120,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "bog_mud",
+      "title": "Mud for the Poultice",
+      "giver": "herbalist_mungo",
+      "description": "Mud Slimes are made of the best mud in the swamp, the warm, healing kind. Bring me five dollops for my poultices. Don't ask how I found out.",
+      "minLevel": 28,
+      "objective": {
+        "type": "bring",
+        "target": "healing_mud",
+        "count": 5
+      },
+      "reward": {
+        "gold": 420,
+        "exp": 1300,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "healing_mud",
+          "from": [
+            "mud_slime"
+          ],
+          "chance": 0.55
+        }
+      ]
+    },
+    {
+      "id": "bog_slugs",
+      "title": "Slime on the Stilts",
+      "giver": "eelcatcher_ida",
+      "description": "The Water Slugs climb our stilts at night and leave everything as slippery as soap. Old Bess fell in twice yesterday! Clear ten of them out, and Bogbottom can stand up straight again.",
+      "requires": [
+        "bog_frogs",
+        "bog_mud"
+      ],
+      "minLevel": 31,
+      "objective": {
+        "type": "defeat",
+        "target": "water_slug",
+        "count": 10
+      },
+      "reward": {
+        "gold": 700,
+        "exp": 2380,
+        "items": [
+          "bogwalker_boots",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "woodsend_basket",
+      "title": "Little Red's Basket",
+      "giver": "little_red",
+      "description": "I was taking a basket of honey muffins to Grandmother when the Earth Wolves knocked me over and ran off with them! Get five muffins back. Grandmother can tell if one's missing. She counts.",
+      "minLevel": 27,
+      "objective": {
+        "type": "bring",
+        "target": "honey_muffin",
+        "count": 5
+      },
+      "reward": {
+        "gold": 400,
+        "exp": 1210,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      },
+      "drops": [
+        {
+          "item": "honey_muffin",
+          "from": [
+            "earth_wolf"
+          ],
+          "chance": 0.55
+        }
+      ]
+    },
+    {
+      "id": "woodsend_window",
+      "title": "Wolves at the Window",
+      "giver": "grandmother_hazel",
+      "description": "The Flame Wolves prowl round my cottage every night and breathe on the windows till the glass steams up. Chase eight of them off and let an old woman get some sleep.",
+      "requires": [
+        "woodsend_basket"
+      ],
+      "minLevel": 30,
+      "objective": {
+        "type": "defeat",
+        "target": "flame_wolf",
+        "count": 8
+      },
+      "reward": {
+        "gold": 450,
+        "exp": 1490,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      }
+    },
+    {
+      "id": "woodsend_howl",
+      "title": "The Long Howl",
+      "giver": "little_red",
+      "description": "The Werewolves howl at Grandmother's cottage all night long. Huntsman Corwin says they only want the muffins, but I'm not taking chances. Make four of them think twice.",
+      "requires": [
+        "woodsend_window"
+      ],
+      "minLevel": 33,
+      "objective": {
+        "type": "defeat",
+        "target": "werewolf",
+        "count": 4
+      },
+      "reward": {
+        "gold": 740,
+        "exp": 2700,
+        "items": [
+          "red_hood_ribbon",
+          "hi_potion"
+        ]
+      }
     }
   ]
 }

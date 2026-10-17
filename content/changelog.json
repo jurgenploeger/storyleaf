@@ -2,6 +2,17 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.23",
+      "date": "2026-10-17",
+      "title": "Villages of the early lands",
+      "notes": [
+        "Every land from Sunny Meadow to the Big Bad Wolf's Lair has a little village of its own now, with houses, people going about their day and a story to help with: Cloverdale, Thistledown, Driftwood Cove, Duskhollow, Hollyhock, Peppermint Row, Bogbottom and Woodsend, and a prospectors' camp in Gooey Grotto.",
+        "26 new quests for levels 2 to 33, from a miller's runaway seed pouches and a washerwoman's socks to Kite Day, a lantern for the point, the Apple Fair, the Gingerbread Gala and Little Red's basket.",
+        "Each village's story ends in a treasure of its own: the Honeybee Charm, Windstep Sandals, the Tidecaller Pendant, Prospector's Gloves, the Owl-Eye Amulet, Orchard Gloves, Peppermint Boots, Bogwalker Boots and the Red Hood Ribbon.",
+        "17 new villagers to talk to round the villages, each with a story of their own."
+      ]
+    },
+    {
       "version": "0.7.22",
       "date": "2026-10-16",
       "title": "Glimmerbough",
