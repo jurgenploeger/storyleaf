@@ -744,6 +744,22 @@ for asset in art.values():
     if "derive" in asset:
         check(asset["derive"]["from"] in art, f"art {asset['id']} → unknown base {asset['derive']['from']}")
         check_rules(asset["derive"]["recolor"], f"art {asset['id']} derive")
+        for layer in asset["derive"].get("layers", []):
+            check(set(layer) <= {"id", "recolor"} and (ROOT / "art" / "sprites" / f"{layer.get('id')}.png").exists(),
+                  f"art {asset['id']} → derive layer {layer.get('id')} isn't an art/sprites PNG (python3 tools/hero_layers.py)")
+            check_rules(layer.get("recolor", []), f"art {asset['id']} derive layer {layer.get('id')}")
+# Townsfolk drawn from a hero's walk sheet stack its paper-doll layers, the hair on a layer of its
+# own: a palette swap of the whole sheet can't reach every shade of hair (orange tufts are left).
+townsfolk_sheets = hero_sheets | {"dwarf_npc_walk"}
+def derived_root(art_id, depth=0):
+    base = (art.get(art_id, {}).get("derive") or {}).get("from")
+    return art_id if not base or art_id in townsfolk_sheets or depth > 4 else derived_root(base, depth + 1)
+for map_def in maps.values():
+    for npc in map_def.get("npcs", []):
+        derive = art.get(npc["art"], {}).get("derive") or {}
+        root = derived_root(npc["art"])
+        check(root not in townsfolk_sheets or (derive.get("from") == root and bool(derive.get("layers"))),
+              f"npc {npc['id']} → art {npc['art']} recolours all of {root}: derive it from {root} with `layers`")
 for item in items.values():
     check_rules((item.get("recolor") or []) + (item.get("tint") or []), f"item {item['id']}")
 

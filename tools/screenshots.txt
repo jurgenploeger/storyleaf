@@ -329,6 +329,21 @@ quest_captain  | newgame,level=126,map=hachoo_island,harbor=0,npc=captain_brine,
 # RuneScape's): the Carve button on a quest's piece once the bag holds the rest, and a quest asking for wool.
 quest_carve    | newgame,level=12,map=pineapple_shore,taken=a_flute_for_shelly,bag=driftwood_piece+poplar+poplar,menu=bag,inspect=driftwood_piece | 8
 quest_bring    | newgame,level=6,map=sunny_meadow,done=lost_lambs,taken=wool_for_the_lambs,bag=tuft_of_wool+tuft_of_wool,menu=quests | 8
+# The villages of the early lands (0.7.23, playtesting 2026-10-17: "little villages or communities with characters
+# and their own stories or quests, similar to RuneScape"): standing in each one at noon, a quest giver's
+# dialog, Gooey Grotto's camp and a village in landscape.
+village_sunny_meadow        | newgame,level=4,map=sunny_meadow,at=-11_5,weather=clear,hour=12 | 10
+village_northern_grassland  | newgame,level=8,map=northern_grassland,at=-12_-17,weather=clear,hour=12 | 10
+village_pineapple_shore     | newgame,level=14,map=pineapple_shore,at=6_-13,weather=clear,hour=12 | 10
+village_slime_cave          | newgame,level=15,map=slime_cave,at=2_-2,weather=clear,hour=12 | 10
+village_twilight_woods      | newgame,level=24,map=twilight_woods,at=17_-4,weather=clear,hour=12 | 10
+village_smiling_forest      | newgame,level=23,map=smiling_forest,at=-32_-23,weather=clear,hour=12 | 10
+village_candy_mountain      | newgame,level=25,map=candy_mountain,at=14_-16,weather=clear,hour=12 | 10
+village_frog_swamp          | newgame,level=31,map=frog_swamp,at=-9_-28,weather=clear,hour=12 | 10
+village_wolf_lair           | newgame,level=33,map=wolf_lair,at=-13_2,weather=clear,hour=12 | 10
+village_land                | newgame,level=25,map=candy_mountain,at=14_-16,landscape,weather=clear,hour=12 | 10
+quest_rosie                 | newgame,level=4,map=sunny_meadow,at=-17_7,npc=miller_rosie,done=cloverdale_hamsters+cloverdale_clover,weather=clear,hour=12 | 8
+quest_little_red            | newgame,level=27,map=wolf_lair,at=-7_4,npc=little_red,weather=clear,hour=12 | 8
 # The people who live on the maps (`MapDef.Local`, `Crowd`): a couple of steps from one, who starts on
 # their story (a fisher at the end of a jetty, a girl at a bridge, a farmer among his things, a dancer
 # on an island, a mapmaker up a mountain, a mole by a cave's mouth, a tin man), in German and Japanese too.

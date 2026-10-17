@@ -689,6 +689,24 @@ struct ContentTests {
         }
     }
 
+    /// Every land out in the fields has a village (playtesting 2026-10-17: "little villages or
+    /// communities with characters and their own stories or quests, similar to RuneScape"): two
+    /// quest givers or more, each at the door of a house of their own, folk living round them, and a
+    /// story there that ends in a treasure.
+    @Test func fieldsHaveVillages() throws {
+        let lands = ["sunny_meadow", "northern_grassland", "pineapple_shore", "twilight_woods", "smiling_forest",
+                     "candy_mountain", "frog_swamp", "wolf_lair"]
+        for id in lands {
+            let def = try #require(content.map(id))
+            let givers = (def.npcs ?? []).filter { $0.role == .quests }
+            let houses = Set((def.buildings ?? []).map { [$0.x, $0.y] })
+            #expect(givers.filter { houses.contains([$0.x + 1, $0.y + 2]) }.count >= 2, "\(id): no village of quest givers at their doors")
+            #expect((def.locals ?? []).count >= 3, "\(id): hardly anyone lives there")
+            let quests = content.quests.filter { quest in givers.contains { $0.id == quest.giver } }
+            #expect(quests.contains { ($0.reward.items ?? []).contains { item in content.isQuestTreasure(item) } }, "\(id): no story there ends in a treasure")
+        }
+    }
+
     @Test func summitsHoldWhatsSetUpThere() throws {
         // A boss, a chest or a friend set up on a summit (`NPCDef.summit`) stands up on its top, on
         // ground you can walk on, and you can get there from the middle of the map.
@@ -952,6 +970,21 @@ struct LookTests {
         for asset in manifest.assets {
             if let base = asset.derive?.from {
                 #expect(ids.contains(base), "\(asset.id) derives from unknown \(base)")
+            }
+        }
+    }
+
+    @Test func townsfolksHairIsOneColour() throws {
+        // A whole-sheet palette swap can't reach every shade of hair (its deep reds and pale tips are
+        // the skin's and the boots' colours too), so townsfolk drawn from a hero's sheet stack its
+        // paper-doll layers, the hair on its own.
+        let content = Content.shared
+        let heroSheets = Set(content.races.flatMap { [$0.sheet] + ($0.sheets ?? [:]).values } + ["dwarf_npc_walk"])
+        for npc in content.maps.flatMap({ $0.npcs ?? [] }) {
+            guard let derive = ArtLibrary.shared.asset(npc.art)?.derive, heroSheets.contains(derive.from) else { continue }
+            let layers = try #require(derive.layers, "\(npc.id): \(npc.art) recolours all of \(derive.from), half its hair")
+            for layer in layers {
+                #expect(ArtLibrary.shared.artImage(layer.id) != nil, "\(npc.art): no layer \(layer.id)")
             }
         }
     }

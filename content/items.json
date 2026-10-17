@@ -5228,6 +5228,293 @@
       ],
       "level": 150,
       "description": "It cracks like a shooting star, and beasts follow its light."
+    },
+    {
+      "id": "seed_pouch",
+      "icon": "leaf",
+      "art": "item_seed_pouch",
+      "name": "Seed Pouch",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 4,
+      "description": "A little sack of seeds, slightly chewed. A hamster's idea of a packed lunch."
+    },
+    {
+      "id": "honeybee_charm",
+      "icon": "clover",
+      "art": "item_honeybee_charm",
+      "name": "Honeybee Charm",
+      "type": "accessory",
+      "price": 90,
+      "stats": {
+        "hp": 10,
+        "speed": 2
+      },
+      "level": 4,
+      "description": "Barnaby carved it from honeycomb wax, and Rosie dusted it with flour for luck. It smells of clover."
+    },
+    {
+      "id": "stray_sock",
+      "icon": "wind",
+      "art": "item_stray_sock",
+      "name": "Stray Sock",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 5,
+      "description": "A striped woollen sock with a few spiny holes in it. Its partner is still out there somewhere."
+    },
+    {
+      "id": "windstep_sandals",
+      "icon": "wind",
+      "art": "item_windstep_sandals",
+      "name": "Windstep Sandals",
+      "type": "boots",
+      "price": 160,
+      "stats": {
+        "speed": 3,
+        "defense": 2,
+        "hp": 6
+      },
+      "level": 8,
+      "description": "Bryn laced them with kite string. On a windy day you hardly touch the ground."
+    },
+    {
+      "id": "silver_fish",
+      "icon": "sparkles",
+      "art": "item_silver_fish",
+      "name": "Silver Fish",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 11,
+      "description": "A fat silver herring with eagle talon marks. Still fresh, more or less."
+    },
+    {
+      "id": "glow_shell",
+      "icon": "sparkles",
+      "art": "item_glow_shell",
+      "name": "Glow Shell",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 14,
+      "description": "A Wood Crab's spare shell. It glows a soft sea-green when the sun goes down."
+    },
+    {
+      "id": "shell_lantern",
+      "icon": "star",
+      "art": "item_shell_lantern",
+      "name": "Shell Lantern",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 14,
+      "description": "Three Glow Shells on a little frame of White Poplar. Bright enough to guide a boat home.",
+      "recipe": {
+        "glow_shell": 3,
+        "poplar": 1
+      },
+      "make": "join"
+    },
+    {
+      "id": "tidecaller_pendant",
+      "icon": "gem",
+      "art": "item_tidecaller_pendant",
+      "name": "Tidecaller Pendant",
+      "type": "necklace",
+      "price": 260,
+      "stats": {
+        "magic": 3,
+        "mp": 8,
+        "hp": 14
+      },
+      "level": 14,
+      "description": "Marla's mother wore it on the boats. Hold it to your ear and the sea talks back."
+    },
+    {
+      "id": "gold_nugget",
+      "icon": "mountain",
+      "art": "item_gold_nugget",
+      "name": "Gold Nugget",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 12,
+      "description": "A lump of real gold, still a little sticky. Goldie will want it washed first."
+    },
+    {
+      "id": "prospectors_gloves",
+      "icon": "sword",
+      "art": "item_prospectors_gloves",
+      "name": "Prospector's Gloves",
+      "type": "gloves",
+      "price": 300,
+      "stats": {
+        "attack": 4,
+        "defense": 4,
+        "hp": 8
+      },
+      "level": 15,
+      "description": "Thick leather gloves with brass knuckles, slime-proof and goo-proof. Mostly."
+    },
+    {
+      "id": "beetle_shell",
+      "icon": "shield",
+      "art": "item_beetle_shell",
+      "name": "Beetle Shell",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 18,
+      "description": "A Dark Beetle's wing case. Polish it and it glows a deep violet."
+    },
+    {
+      "id": "owl_eye_amulet",
+      "icon": "gem",
+      "art": "item_owl_eye_amulet",
+      "name": "Owl-Eye Amulet",
+      "type": "necklace",
+      "price": 600,
+      "stats": {
+        "magic": 6,
+        "mp": 12,
+        "hp": 16
+      },
+      "level": 24,
+      "description": "A round amber stone that sees in the dark. Fenwick swears it blinks."
+    },
+    {
+      "id": "crisp_apple",
+      "icon": "heart",
+      "art": "item_crisp_apple",
+      "name": "Crisp Apple",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 16,
+      "description": "A shiny red apple with one small monkey bite. Monkeys have good taste."
+    },
+    {
+      "id": "forest_truffle",
+      "icon": "leaf",
+      "art": "item_forest_truffle",
+      "name": "Forest Truffle",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 19,
+      "description": "A knobbly brown truffle that smells of earth, rain and hog."
+    },
+    {
+      "id": "orchard_gloves",
+      "icon": "sword",
+      "art": "item_orchard_gloves",
+      "name": "Orchard Gloves",
+      "type": "gloves",
+      "price": 560,
+      "stats": {
+        "attack": 6,
+        "defense": 4,
+        "speed": 2
+      },
+      "level": 23,
+      "description": "Moss's picking gloves, soft as moss and green as leaves. Apples just drop into them."
+    },
+    {
+      "id": "sugar_crystal",
+      "icon": "diamond",
+      "art": "item_sugar_crystal",
+      "name": "Sugar Crystal",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 18,
+      "description": "A pink crystal of pure sugar, only a little licked."
+    },
+    {
+      "id": "rock_candy_crown",
+      "icon": "star",
+      "art": "item_rock_candy_crown",
+      "name": "Rock Candy Crown",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 25,
+      "description": "A crown of pink rock candy with an Amber jewel. Please don't eat it before the Gala.",
+      "recipe": {
+        "sugar_crystal": 4,
+        "amber": 1
+      },
+      "make": "join"
+    },
+    {
+      "id": "peppermint_boots",
+      "icon": "wind",
+      "art": "item_peppermint_boots",
+      "name": "Peppermint Boots",
+      "type": "boots",
+      "price": 640,
+      "stats": {
+        "speed": 5,
+        "defense": 4,
+        "hp": 12
+      },
+      "level": 25,
+      "description": "Red and white like a peppermint stick, and they leave a minty smell wherever you walk."
+    },
+    {
+      "id": "healing_mud",
+      "icon": "flask",
+      "art": "item_healing_mud",
+      "name": "Healing Mud",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 28,
+      "description": "A warm dollop of swamp mud. It smells awful and works wonders."
+    },
+    {
+      "id": "bogwalker_boots",
+      "icon": "wind",
+      "art": "item_bogwalker_boots",
+      "name": "Bogwalker Boots",
+      "type": "boots",
+      "price": 800,
+      "stats": {
+        "speed": 5,
+        "defense": 6,
+        "hp": 16
+      },
+      "level": 31,
+      "description": "Tall waders that never leak. Ida swears by them, and at them, now and then."
+    },
+    {
+      "id": "honey_muffin",
+      "icon": "heart",
+      "art": "item_honey_muffin",
+      "name": "Honey Muffin",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 27,
+      "description": "A golden honey muffin, a bit squashed. Grandmother will still eat it."
+    },
+    {
+      "id": "red_hood_ribbon",
+      "icon": "heart",
+      "art": "item_red_hood_ribbon",
+      "name": "Red Hood Ribbon",
+      "type": "accessory",
+      "price": 900,
+      "stats": {
+        "attack": 6,
+        "speed": 5,
+        "hp": 20
+      },
+      "level": 33,
+      "description": "A ribbon from Little Red's cape. Wolves think twice when they see it."
     }
   ]
 }

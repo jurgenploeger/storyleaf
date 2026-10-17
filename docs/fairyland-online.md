@@ -965,20 +965,20 @@ the Wishing Seal, which stays the Monster Book's last reward.
     rare sightings that really raise a rare monster's odds on its map for 20 minutes.
   - Goldburg's square has market traders under signs, selling their real deals of the day
     (`crowd.traders`). `botDensity` in content/crowd.json thins out every map's bots.
-  - Us (since 0.4.12, asked for in playtesting 2026-10-12: "characters walking/standing around that give
-    the place more character and a story"): every map has locals (maps.json `locals`, `MapDef.Local`),
-    two or three out in the fields and one in each cave and town, 60 in all. Each has a look of their own
-    (race, gender, hair, outfit; the rest drawn from their place in the list, so they look the same on
-    every visit), a home by a landmark (a jetty's end, a road's bridge, a lake's island or shore, a cave's
-    mouth), on a summit or out from the middle, and stands there, strolls about it or walks an errand
-    there and back (`walk`). Some carry something (`hold`, a weapon from items.json, never a treasure),
-    wear armour, lead an animal (`pet`) or have their things set down round them (`props`). They tell a
-    short story a line at a time, in order, starting as you come within 160 points and going on every 9
+  - Us (since 0.4.12, asked for in playtesting 2026-10-12: "characters walking/standing around that give the
+    place more character and a story"): every map has locals (maps.json `locals`, `MapDef.Local`), two or
+    three out in the fields and one in each cave and town, and two more in each village (below), 77 in all.
+    Each has a look of their own (race, gender, hair, outfit; the rest drawn from their place in the list, so
+    they look the same on every visit), a home by a landmark (a jetty's end, a road's bridge, a lake's island
+    or shore, a cave's mouth), on a summit or out from the middle, and stands there, strolls about it or walks
+    an errand there and back (`walk`). Some carry something (`hold`, a weapon from items.json, never a
+    treasure), wear armour, lead an animal (`pet`) or have their things set down round them (`props`). They
+    tell a short story a line at a time, in order, starting as you come within 160 points and going on every 9
     to 14 seconds while you stay (a tap brings the next line at once), in white like the villagers. Some
     stories cross maps: Little Lou in Meadowbrook, Tess at Sunny Meadow's bridge and her brother Wil lost in
     Twilight Woods; Odile the Mapmaker on five maps, drawing the pages of Liora's book. Fairy-tale folk
-    (Hansel and Gretel, Bo-Peep, Odette, the Tin Woodman) are public domain. Whether FO had people like
-    this out in its fields isn't in any source reachable from a cloud session; they're ours.
+    (Hansel and Gretel, Bo-Peep, Odette, the Tin Woodman) are public domain. Whether FO had people like this
+    out in its fields isn't in any source reachable from a cloud session; they're ours.
   - Us (since 0.4.12, playtesting 2026-10-12: "near the temple keeper and other guilds there should
     actually be something like a temple or building"): whoever works somewhere has it at their back, a
     step right and two rows behind them (maps.json `buildings`), so they stand at its door.
@@ -990,6 +990,18 @@ the Wishing Seal, which stays the Monster Book's last reward.
       shop's door, and Prismhaven's toymaker at a toy shop's.
     - All existing art: new sprites (a real temple, a warrior hall, a lodge) were priced at $0.06 each
       and turned down for now (2026-10-12).
+  - Us (since 0.7.23, playtesting 2026-10-17: "in every map, create little villages or communities with
+    characters and their own stories or quests, similar to runescape"): each land out in the fields has a
+    village of its own a little way off its roads, the way RuneScape's lands have their hamlets. Two quest
+    givers stand at their houses' doors with two more houses round them, and two villagers (locals) live
+    there, one by the village well or its middle and one by their things (crates, a haystack, a market
+    stall). Their three quests tell one story and end in a treasure (`fieldsHaveVillages`); a cave has a
+    camp instead, one quest giver with a local beside them and two quests. The early lands came first:
+    Cloverdale (Sunny Meadow), Thistledown (Windswept Downs), Driftwood Cove (Pineapple Shore), the
+    prospectors' camp in Gooey Grotto, Duskhollow (Twilight Woods), Hollyhock (Smiling Forest), Peppermint
+    Row (Gumdrop Peaks), Bogbottom (Frog Swamp) and Woodsend (Big Bad Wolf's Lair, with Little Red and her
+    grandmother, public domain). The villagers are palette swaps of the race sheets (free), their houses
+    the buildings the towns use, graded by each land's palette.
   - The minimap shows everyone else on the map as dots (since 0.3.55, asked for in playtesting 2026-10-06):
     blue adventurers, white friends, red hostile ones, green party friends; on dark maps only on cells you've
     seen. Whether FO's minimap showed other players isn't in any source reachable from a cloud session.
