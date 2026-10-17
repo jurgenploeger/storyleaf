@@ -24,6 +24,8 @@ final class GameSession {
     var pendingPet: Pet?
     /// The adventurer you're standing next to (the HUD shows their card).
     var nearbyAdventurer: Adventurer?
+    /// How many travel together with them, them among them (`Crowd.groupSize`): 1 on their own.
+    var nearbyGroupSize = 1
     /// Adventurers walking around near you on this map: only they can be invited along.
     var adventurersAround: Set<UUID> = []
     /// Up to four friends can travel with you, a party of five, each with their companion. (In a

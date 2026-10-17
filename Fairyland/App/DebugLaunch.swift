@@ -51,6 +51,8 @@ import SpriteKit
 ///   boss=<npc>     once the map is on screen, fight that boss (as if you'd pressed Fight)
 ///   invite=n       once the map is on screen, the n nearest adventurers come over, become friends
 ///                  and join your party, through the same steps as their card's buttons
+///   group          every adventurer who can travels with friends (crowd.json `groupChance` 1), and
+///                  once the map is on screen the nearest group comes over, in line
 ///   wave=<n>       with boss: the fight opens at that wave (3: the boss's own)
 ///   orders         with battle: the hero picks Attack on the first monster, so your companion's turn shows
 ///   more           with battle: the More buttons are open (the commands behind it, Auto and the pace)
@@ -593,6 +595,7 @@ enum DebugLaunch {
             let grid = WorldMap(def: def)
             session.playerPosition = grid.center(of: grid.entryCell(from: road.edge))
         }
+        if flags["group"] != nil { Crowd.groupChanceOverride = 1 }
         if let at = flags["at"]?.split(separator: ";").first ?? flags["at"].map({ Substring($0) }),
            let def = Content.shared.map(session.data.mapID) {
             let parts = at.split(separator: "_").compactMap { Int($0) }
@@ -753,6 +756,18 @@ enum DebugLaunch {
                         coordinator.invite(adventurer)
                         try? await Task.sleep(for: .seconds(1))
                     }
+                    return
+                }
+            }
+        }
+        // `group`: the nearest adventurers travelling together come over, in line.
+        if flags["group"] != nil {
+            Task {
+                for _ in 0..<240 {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    guard coordinator.isReady, coordinator.mapScene.view != nil else { continue }
+                    try? await Task.sleep(for: .seconds(1))
+                    _ = coordinator.mapScene.summonAdventurersForDebug(0)
                     return
                 }
             }

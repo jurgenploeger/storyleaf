@@ -832,7 +832,11 @@ the Wishing Seal, which stays the Monster Book's last reward.
   monster at any HP, the odds best below 20% (see Pets).
 - **Party size:** more than two people, each bringing their pet, from a playtester's memory (2026-10-04).
   Not found in any source reachable from a cloud session.
-  - Us: you and up to four friends, each with a companion.
+  - Us: you and up to four friends, each with a companion. Since 0.7.15 the computer-run adventurers
+    travel together too (ours, asked for in playtesting 2026-10-16: "other bots in the game can also be with a
+    group"): now and then two to four of about the same level, one leading and the rest in single file
+    behind with their companions at their sides, as your party walks (crowd.json `groupChance`,
+    `groupSize`; `Crowd`). They stop together as you walk up to any of them; their card says how many.
   - Past five, the battle line splits: people in front, companions in a row behind.
   - Without a friend (since 0.3.83), you and your companion stand side by side in one line, as a
     playtester asked (2026-10-08); with friends, companions stand a row behind whoever they came with.

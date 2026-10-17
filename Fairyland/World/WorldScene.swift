@@ -2320,6 +2320,8 @@ final class WorldScene: SKScene {
             refreshAllies()
             let nearby = crowd?.adventurer(near: player.position, within: 80)
             if session.nearbyAdventurer?.id != nearby?.id { session.nearbyAdventurer = nearby }
+            let group = nearby.flatMap { crowd?.groupSize(of: $0.id) } ?? 1
+            if session.nearbyGroupSize != group { session.nearbyGroupSize = group }
             let around = crowd?.adventurers(near: player.position, within: 320) ?? []
             if session.adventurersAround != around { session.adventurersAround = around }
             let dots = minimapDots()

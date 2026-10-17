@@ -1358,6 +1358,8 @@ final class ContinentScene: SKScene {
             let you = stage.local(player.position)
             let nearby = crowd.adventurer(near: you, within: 80)
             if session.nearbyAdventurer?.id != nearby?.id { session.nearbyAdventurer = nearby }
+            let group = nearby.map { crowd.groupSize(of: $0.id) } ?? 1
+            if session.nearbyGroupSize != group { session.nearbyGroupSize = group }
             let around = crowd.adventurers(near: you, within: 320)
             if session.adventurersAround != around { session.adventurersAround = around }
         }

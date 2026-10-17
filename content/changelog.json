@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.15",
+      "date": "2026-10-16",
+      "title": "Travelling together",
+      "notes": [
+        "Other adventurers travel in groups of two to four now and then, as you do with your party: one leads, the rest walk behind in single file with their companions at their sides. Walk up to any of them and they all stop to say hello, and their card says how many travel together."
+      ]
+    },
+    {
       "version": "0.7.14",
       "date": "2026-10-16",
       "title": "Ground without seams",

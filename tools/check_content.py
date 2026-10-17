@@ -741,6 +741,10 @@ for item in items.values():
 # Crowds and announcements: whole-number counts, and only placeholders the game fills in.
 crowd = load("content/crowd.json")
 check(0 <= crowd.get("botDensity", 1) <= 1, "crowd botDensity → between 0 and 1")
+check(0 <= crowd.get("groupChance", 0) <= 1, "crowd groupChance → between 0 and 1")
+size = crowd.get("groupSize", [2, 2])
+check(isinstance(size, list) and len(size) == 2 and all(isinstance(n, int) for n in size) and 2 <= size[0] <= size[1] <= 5,
+      "crowd groupSize → [fewest, most], whole numbers from 2 to 5 (a leader and up to four behind, like your party)")
 for line in crowd.get("traderLines", []):
     check(("{item}" in line) != ("{buy}" in line), f"crowd traderLines → \"{line}\" needs {{item}} or {{buy}} (one of them)")
     check(set(re.findall(r"\{(\w+)\}", line)) <= {"item", "buy", "price"}, f"crowd traderLines → unknown placeholder in \"{line}\"")

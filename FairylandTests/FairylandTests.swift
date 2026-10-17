@@ -2578,6 +2578,38 @@ struct RulesTests {
         #expect(session.chat.last?.badge == nil)
     }
 
+    /// Some adventurers travel together, as you do with your party (crowd.json `groupChance`):
+    /// never troublemakers, no more in a group than `groupSize` lets, about the same level, all
+    /// counted among the map's adventurers; and when the one leading leaves (joining you, or after a
+    /// duel), the rest go on together in the same order.
+    @Test func adventurersTravelInGroups() throws {
+        let def = try #require(Content.shared.map("meadowbrook"))
+        let most = Content.shared.crowd.groupSize?.last ?? 1
+        let map = Layouts.of(def)
+        var seen = false
+        for _ in 0..<8 {
+            let crowd = Crowd(def: def, map: map, world: SKNode())
+            let everyone = crowd.adventurerPositions.map(\.profile)
+            #expect(everyone.count <= def.crowd?.adventurers ?? 0)
+            for adventurer in everyone {
+                let group = crowd.group(of: adventurer.id)
+                #expect(group.count <= most, "a group of \(group.count)")
+                #expect(group.contains { $0.id == adventurer.id })
+                guard group.count > 1 else { continue }
+                #expect(group.allSatisfy { !$0.hostile })
+                let levels = group.map(\.level)
+                #expect((levels.max() ?? 0) - (levels.min() ?? 0) <= 6, "levels \(levels) in one group")
+            }
+            let leaders = everyone.filter { crowd.groupSize(of: $0.id) > 1 && crowd.group(of: $0.id).first?.id == $0.id }
+            guard let leader = leaders.first else { continue }
+            seen = true
+            let rest = crowd.group(of: leader.id).dropFirst().map(\.id)
+            crowd.remove(leader.id, poof: false)
+            #expect(crowd.group(of: rest[0]).map(\.id) == rest)
+        }
+        #expect(seen, "no adventurers travelled together in Meadowbrook in eight tries")
+    }
+
     @Test func theWeatherHoldsForASpellAndFitsTheMap() throws {
         let start = Date(timeIntervalSince1970: 1_800_000_000)
         let swamp = try #require(Content.shared.map("frog_swamp"))
