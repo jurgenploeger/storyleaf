@@ -386,23 +386,36 @@ final class GameSession {
     var heroClass: ClassDef { content.classDef(data.hero.classID) }
 
     var heroStats: Stats {
-        heroRace.base + heroClass.growth * (data.hero.level - 1 + Self.rebirthLevelBonus * rebirths) + equipmentBonus + cardBonus
+        heroRace.base + heroClass.growth * (data.hero.level - 1) + equipmentBonus + cardBonus
     }
 
-    // MARK: - Levels & rebirth
+    // MARK: - Levels
     //
-    // Like Fairyland Online: levels go to 200, and from level 101 you can be reborn at level 1,
-    // keeping your skills and carrying some strength over. Each rebirth after the first needs
-    // 5 more levels (and more gold).
+    // Like Fairyland Online, levels go to 200. There's no rebirth (playtesting 2026-10-17: "The
+    // limit is just level 200"): the Goldleaf gear Elder Oak gives at 200 is the prize at the top.
 
     static let levelCap = 200
-    /// Each rebirth keeps the stat growth of this many levels.
-    static let rebirthLevelBonus = 8
 
-    var rebirths: Int { data.hero.rebirths ?? 0 }
-    var rebirthLevel: Int { 101 + 5 * rebirths }
-    var rebirthCost: Int { 20_000 * (rebirths + 1) }
-    var canRebirth: Bool { data.hero.level >= rebirthLevel && data.gold >= rebirthCost }
+    /// Rebirth was taken out in 0.7.27. A hero reborn before then is put back at the level their
+    /// last rebirth started from (101, and 5 more for each earlier one), with the skills they'd
+    /// learned, and the rebirth titles go.
+    func retireRebirthsIfNeeded() {
+        guard let rebirths = data.hero.rebirths else { return }
+        data.hero.rebirths = nil
+        let retired: Set<String> = ["reborn", "twice_reborn", "phoenix"]
+        data.titles = data.titles?.filter { !retired.contains($0) }
+        if let title = data.title, retired.contains(title) { data.title = nil }
+        guard rebirths > 0 else { save(); return }
+        let level = min(Self.levelCap, 101 + 5 * (rebirths - 1))
+        if data.hero.level < level {
+            data.hero.level = level
+            data.hero.exp = 0
+        }
+        restoreHero()
+        post(L("Rebirth is gone from Storyleaf: you're back at level {level}, where your rebirth began.", ["level": data.hero.level]), .reward)
+        checkTitles(quietly: true)
+        save()
+    }
 
     /// Maps a level from before the stretch (monsters topped out at 32) onto today's 1–105.
     static func stretchedLevel(_ old: Int) -> Int {
@@ -446,19 +459,6 @@ final class GameSession {
         post(L("The world grew bigger! You're now level {level}.", ["level": data.hero.level]), .reward)
     }
 
-    func rebirth() {
-        guard canRebirth else { return }
-        data.gold -= rebirthCost
-        data.hero.rebirths = rebirths + 1
-        data.hero.level = 1
-        data.hero.exp = 0
-        restoreHero()
-        post(L("You were reborn! Rebirth {rebirths}: back to level 1, a little stronger than before.", ["rebirths": rebirths]), .reward)
-        post(L("Reborn, you earn {percent}% more EXP in battle.", ["percent": Int(((rebirthEXPBoost - 1) * 100).rounded())]), .reward)
-        checkTitles()
-        save()
-    }
-
     var equipmentBonus: Stats {
         ItemType.equipmentSlots
             .compactMap { data.hero.equipment[$0] }
@@ -474,8 +474,7 @@ final class GameSession {
     /// Skills you've learned that your current class uses.
     var heroSkills: [SkillDef] {
         let learned = Set(data.hero.learnedSkills ?? [])
-        // Reborn heroes keep every skill they learned, whatever their level now.
-        return classSkills(upTo: rebirths > 0 ? Int.max : data.hero.level).filter { learned.contains($0.id) }
+        return classSkills(upTo: data.hero.level).filter { learned.contains($0.id) }
     }
 
     // MARK: - Battle buttons

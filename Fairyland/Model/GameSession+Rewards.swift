@@ -1,8 +1,7 @@
 import Foundation
 
 /// Reasons to come back: titles to earn and wear (content/titles.json), the Monster Book's
-/// milestones, a gift each day you play and the day's bounties (content/rewards.json), and a quicker
-/// climb after a rebirth.
+/// milestones, and a gift each day you play and the day's bounties (content/rewards.json).
 extension GameSession {
     // MARK: - Titles
 
@@ -19,7 +18,6 @@ extension GameSession {
         case .boss: return (have: title.target.map { data.defeatedBosses?.contains($0) == true ? 1 : 0 } ?? 0, need: 1)
         case .companions: have = data.pets.count
         case .friends: have = data.friends?.count ?? 0
-        case .rebirths: have = rebirths
         case .bounties: have = data.bountiesDone ?? 0
         case .days: have = data.giftDays ?? 0
         case .cards: return (have: cardCount, need: title.count ?? content.monsters.count)
@@ -75,7 +73,6 @@ extension GameSession {
         case .boss: L("Beat {boss}", ["boss": title.target.flatMap { bossName($0) } ?? "?"])
         case .companions: L("Travel with {count} companions", ["count": need])
         case .friends: L("Make {count} friends", ["count": need])
-        case .rebirths: need == 1 ? L("Be reborn") : L("Be reborn {count} times", ["count": need])
         case .bounties: L("Finish {count} daily bounties", ["count": need])
         case .days: L("Collect the daily gift on {count} days", ["count": need])
         case .cards: L("Find {count} kinds of monster card", ["count": need])
@@ -438,11 +435,6 @@ extension GameSession {
         save()
         return lines
     }
-
-    // MARK: - Rebirth
-
-    /// Reborn heroes climb back faster: a fifth more battle EXP for each rebirth, up to double.
-    var rebirthEXPBoost: Double { 1 + min(1, 0.2 * Double(rebirths)) }
 }
 
 // MARK: - Seal Stones from hard fights

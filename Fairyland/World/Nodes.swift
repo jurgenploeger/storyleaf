@@ -187,7 +187,7 @@ final class NameTag: SKNode {
         redraw()
     }
 
-    /// The name in another colour (a reborn hero's).
+    /// The name in another colour (gold, at the top level).
     func setColor(_ color: UIColor) {
         self.color = color
         redraw()

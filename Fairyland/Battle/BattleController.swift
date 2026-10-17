@@ -1234,8 +1234,6 @@ final class BattleController {
             session.record(.defeat, target: id)
             session.beatMonster(id, level: foe.level)
         }
-        // Reborn heroes climb back faster.
-        exp = Int((Double(exp) * session.rebirthEXPBoost).rounded())
         session.data.gold += gold
         rewardGold = gold
 

@@ -441,8 +441,6 @@ nonisolated struct NPCDef: Decodable, Identifiable, Sendable {
     let waves: Int?
     /// Bosses: what beating it means, told the first time you win (and kept in the Monster Book).
     let victory: Victory?
-    /// Offers rebirth once you're strong enough (Elder Oak).
-    let rebirth: Bool?
 
     nonisolated struct Victory: Decodable, Sendable {
         let title: String
@@ -955,7 +953,7 @@ nonisolated struct AnnouncementOptions: Decodable, Sendable {
 /// `count` of it (nil for lands, book and cards: every one), or `target` for one boss.
 nonisolated struct TitleDef: Decodable, Identifiable, Sendable {
     nonisolated enum Kind: String, Decodable, Sendable {
-        case level, lands, book, quests, bosses, boss, companions, friends, rebirths, bounties, days, cards
+        case level, lands, book, quests, bosses, boss, companions, friends, bounties, days, cards
     }
     let id: String
     let name: String

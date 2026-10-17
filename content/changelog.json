@@ -2,6 +2,16 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.27",
+      "date": "2026-10-17",
+      "title": "Goldleaf at level 200",
+      "notes": [
+        "No more rebirth: level 200 is the top, and you stay there. If you were reborn, you're back at the level your rebirth began, with every skill you learned.",
+        "At level 200, Elder Oak in Meadowbrook has three last quests and the Goldleaf gear to earn: ivory and gold armour and a robe, gauntlets, boots, a pendant, a ring and a weapon for every guild, all level 200.",
+        "Reach level 200 and your name shines gold over your head."
+      ]
+    },
+    {
       "version": "0.7.26",
       "date": "2026-10-17",
       "title": "The Glimmerdeep",

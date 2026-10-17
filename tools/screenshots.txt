@@ -111,6 +111,17 @@ character    | newgame,menu=character            | 8
 character_weapon | newgame,level=40,class=fighter,equip=iron_plate+steel_sword,menu=character | 8
 character_gear | newgame,level=70,class=fighter,equip=dragon_mail+battle_axe+dragonhide_gauntlets+phoenix_amulet+cloudstep_boots+power_band,menu=character | 8
 character_gear_land | newgame,level=70,class=fighter,equip=dragon_mail+battle_axe+dragonhide_gauntlets+phoenix_amulet+cloudstep_boots+power_band,menu=character,landscape | 8
+# Level 200 is the top (0.7.27, playtesting 2026-10-17: "The limit is just level 200. There should be
+# armor and other wearable items for level 200 for prestige"): the Goldleaf gear on each guild and race,
+# the gold name at 200, Elder Oak's quests (and no rebirth panel), and a piece's card in the bag.
+goldleaf_fighter | newgame,level=200,class=fighter,equip=goldleaf_plate+goldleaf_blade+goldleaf_gauntlets+goldleaf_pendant+goldleaf_boots+goldleaf_ring,menu=character | 8
+goldleaf_mage    | newgame,level=200,class=mage,equip=goldleaf_robe+goldleaf_staff+goldleaf_pendant+goldleaf_ring,menu=character | 8
+goldleaf_elf     | newgame,race=elf,level=200,class=tamer,equip=goldleaf_plate+goldleaf_whip,weather=clear,hour=12 | 8
+goldleaf_dwarf   | newgame,race=dwarf,level=200,class=fighter,equip=goldleaf_plate+goldleaf_axe,weather=clear,hour=12 | 8
+goldleaf_name    | newgame,level=200,class=mage,equip=goldleaf_robe+goldleaf_staff,weather=clear,hour=12,landscape | 8
+quest_living_legend | newgame,level=200,class=fighter,npc=elder,done=hope_of_meadowbrook+jelly_trouble+new_friend+wish_upon_a_star+choose_path+pineapple_harvest+bouncy_menace+swamp_song+forest_friends+valley_lights+rat_king+slime_gold+grumpy_oak+great_wisp | 8
+quest_goldleaf_dragon | newgame,level=200,class=fighter,npc=elder,done=hope_of_meadowbrook+jelly_trouble+new_friend+wish_upon_a_star+choose_path+pineapple_harvest+bouncy_menace+swamp_song+forest_friends+valley_lights+rat_king+slime_gold+grumpy_oak+great_wisp+living_legend+goldleaf_warden | 8
+goldleaf_card    | newgame,level=200,class=fighter,bag=goldleaf_plate,menu=bag,inspect=goldleaf_plate | 8
 character_spare | newgame,bag=leather_gloves+shell_pendant,menu=character | 8
 character_title_bronze | newgame,level=12,title=apprentice,menu=character | 8
 character_title_legend | newgame,level=160,title=legend,menu=character | 8

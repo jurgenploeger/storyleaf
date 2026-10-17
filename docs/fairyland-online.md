@@ -793,9 +793,9 @@ your class (`GameSession.equipmentDrop`), never a boss's own rare drop or a ques
 - **Fame (M):** quests are the main way to earn it.
 - **Kingdom Wars (H):** guild-vs-guild PvP.
 
-**Us:** titles, but no fame. 35 titles (content/titles.json, our own names) are earned for levels, lands
-visited, the Monster Book, monster cards, quests, bosses, companions, friends, rebirths, daily bounties and
-days played, and one is worn over your name; computer-run adventurers wear the level titles that fit them.
+**Us:** titles, but no fame. 33 titles (content/titles.json, our own names) are earned for levels, lands
+visited, the Monster Book, monster cards, quests, bosses, companions, friends, daily bounties and days
+played (the three rebirth titles went with rebirth in 0.7.27), and one is worn over your name; computer-run adventurers wear the level titles that fit them.
 Duels are with computer-run adventurers in 9 danger zones; a beaten adventurer drops everything they carry
 (the goods they'd sell you that day). The red-named troublemakers only pick a fight with a side about as
 strong as theirs or weaker: their level plus their companion's at least nine tenths of yours, your companion's
@@ -882,9 +882,17 @@ the Wishing Seal, which stays the Monster Book's last reward.
   memory (2026-10-04); check the rates on the ToM wiki.
 - **PK drops:** a player beaten in PvP drops their items. From a playtester's memory (2026-10-04);
   not in any source reachable from a cloud session. Check on the ToM wiki.
-- **Level cap 200; rebirth from level 101** (+5 levels per earlier rebirth) for 20,000 gold × (rebirths + 1),
-  keeping 8 levels of growth per rebirth, plus a fifth more battle EXP for each rebirth (up to double), the
-  rebirth titles and a new colour for the hero's name. FO does have rebirth (the 2026 video); the numbers are ours.
+- **Level cap 200, and no rebirth.** FO does have rebirth (the 2026 video), and we had it too until 0.7.26
+  (from level 101, back to level 1 with some strength kept). Since 0.7.27 it's gone (ours, playtesting
+  2026-10-17: "Remove the thing that you reborn. The limit is just level 200. There should be armor and
+  other wearable items for level 200 for prestige"): level 200 is the top, and the prize there is the
+  Goldleaf gear, ivory and gold, a piece for every slot and a weapon for every guild, all level 200. Elder Oak
+  gives it in three quests: Living Legend (on reaching 200: the ring and pendant), The Warden, Once More
+  (beat the Silverfang Warden again: gauntlets, boots and the four weapons) and The Dragon at the Top (beat
+  the Emerald Dragon again: the plate and robe). The hero's name turns gold at 200, as it once did for a third
+  rebirth. A hero reborn before then goes back to the level their last rebirth began at, 101 and 5 more
+  for each earlier one (`GameSession.retireRebirthsIfNeeded`), and their rebirth titles go.
+  `check_content.py` insists the top level keeps a piece for every slot and every guild.
 - **Capture rules:** at 20% HP or less, on the last monster standing. Ours until 0.3.65; since 0.3.66 any
   monster at any HP, the odds best below 20% (see Pets).
 - **Party size:** more than two people, each bringing their pet, from a playtester's memory (2026-10-04).
@@ -1053,7 +1061,6 @@ included; the translations were made with AI and haven't had a native speaker's 
   their element. FO lets physical attacks carry one (Arms fusion).
 - Finishing `new_friend` lets you walk to all 30 maps (frog_swamp → goldburg_lake → goldburg), so the other
   quest gates can be walked round.
-- No gear above level 105, while levels run to 200.
 
 ## Roadmap
 

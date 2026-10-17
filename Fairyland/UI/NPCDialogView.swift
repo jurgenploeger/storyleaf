@@ -75,9 +75,6 @@ struct NPCDialogView: View {
                         case .smith: SmithPanel(session: session, reply: $reply, info: $info)
                         case .weaver: CapePanel(session: session, reply: $reply, info: $info)
                         }
-                        if npc.rebirth == true {
-                            RebirthPanel(session: session, reply: $reply)
-                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -158,53 +155,6 @@ private nonisolated struct SpeechBubble: InsettableShape {
         guard abs(cross) > 0.000_001 else { return nil }
         let along = ((b.point.x - a.point.x) * b.direction.dy - (b.point.y - a.point.y) * b.direction.dx) / cross
         return CGPoint(x: a.point.x + a.direction.dx * along, y: a.point.y + a.direction.dy * along)
-    }
-}
-
-/// Fairyland Online's rebirth: from level 101 (5 more each time), for gold.
-private struct RebirthPanel: View {
-    let session: GameSession
-    @Binding var reply: String?
-    @State private var confirming = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Divider().overlay(HUDStyle.cream.opacity(0.3))
-            Text(L("Rebirth")).font(HUDStyle.font(13)).foregroundStyle(HUDStyle.gold)
-            Text(L("Each rebirth earns a fifth more EXP in battle (up to double), a title, and a new colour for your name."))
-                .font(HUDStyle.font(11)).foregroundStyle(HUDStyle.cream)
-                .fixedSize(horizontal: false, vertical: true)
-            if session.data.hero.level < session.rebirthLevel {
-                Text(L("Reach level {level} and I can help you be reborn: back to level 1, keeping your skills and some of your strength.", ["level": session.rebirthLevel]))
-                    .font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else if confirming {
-                Text(L("Start again at level 1? You keep your skills, pets and items."))
-                    .font(HUDStyle.font(11))
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack {
-                    Button(L("Be reborn ({gold}g)", ["gold": session.rebirthCost])) {
-                        session.rebirth()
-                        confirming = false
-                        reply = L("Welcome back, little one. You'll grow even stronger this time.")
-                    }
-                    .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
-                    Button(L("Not yet")) { confirming = false }
-                        .buttonStyle(PixelButtonStyle(compact: true))
-                }
-            } else {
-                Button {
-                    if session.canRebirth {
-                        confirming = true
-                    } else {
-                        reply = L("Rebirth costs {gold} gold. Come back when you have it.", ["gold": session.rebirthCost])
-                    }
-                } label: {
-                    Label(L("Be reborn ({gold}g)", ["gold": session.rebirthCost]), icon: .sparkles)
-                }
-                .buttonStyle(PixelButtonStyle(tint: session.canRebirth ? HUDStyle.gold : HUDStyle.dim, compact: true))
-            }
-        }
     }
 }
 

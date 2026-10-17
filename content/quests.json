@@ -998,6 +998,75 @@
       "minLevel": 41
     },
     {
+      "id": "living_legend",
+      "title": "Living Legend",
+      "giver": "elder",
+      "minLevel": 200,
+      "description": "Level 200! In all my years I've never seen anyone climb so high. There's no level past this one, but there is gold: Meadowbrook's oldest oak drops a leaf of gold once in a hundred years, and I've kept every one for a hero just like you. Take these first. When you're ready, I have two more tasks worthy of you.",
+      "objective": {
+        "type": "reachLevel",
+        "count": 200
+      },
+      "reward": {
+        "gold": 25000,
+        "exp": 231000,
+        "items": [
+          "goldleaf_ring",
+          "goldleaf_pendant"
+        ]
+      }
+    },
+    {
+      "id": "goldleaf_warden",
+      "title": "The Warden, Once More",
+      "giver": "elder",
+      "minLevel": 200,
+      "requires": [
+        "living_legend"
+      ],
+      "description": "Gold leaf has to be earned. The Silverfang Warden still holds Whispering Hollow, and he's grown no gentler. Beat him once more at the top of your strength, and the next leaves are yours: gauntlets, boots and a Goldleaf weapon for every guild.",
+      "objective": {
+        "type": "defeat",
+        "target": "silver_lieutenant",
+        "count": 1
+      },
+      "reward": {
+        "gold": 30000,
+        "exp": 254000,
+        "items": [
+          "goldleaf_gauntlets",
+          "goldleaf_boots",
+          "goldleaf_blade",
+          "goldleaf_axe",
+          "goldleaf_staff",
+          "goldleaf_whip"
+        ]
+      }
+    },
+    {
+      "id": "goldleaf_dragon",
+      "title": "The Dragon at the Top",
+      "giver": "elder",
+      "minLevel": 200,
+      "requires": [
+        "goldleaf_warden"
+      ],
+      "description": "One last foe. The Emerald Dragon waits at the end of the road, and only a hero who can beat it at full strength should wear Goldleaf armour. Show it who reached the top, then come home to Meadowbrook.",
+      "objective": {
+        "type": "defeat",
+        "target": "emerald_dragon",
+        "count": 1
+      },
+      "reward": {
+        "gold": 40000,
+        "exp": 346500,
+        "items": [
+          "goldleaf_plate",
+          "goldleaf_robe"
+        ]
+      }
+    },
+    {
       "id": "moon_queen",
       "title": "The Missing Moon-Mochi",
       "giver": "mayor",

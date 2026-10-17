@@ -1014,17 +1014,17 @@ final class ContinentScene: SKScene {
         }
     }
 
-    /// Picks up a new look or name from the Character screen, the title you wear, a reborn hero's
-    /// colour and what's in your hands (`WorldScene.refreshHero`).
+    /// Picks up a new look or name from the Character screen, the title you wear, the gold name at
+    /// the top level and what's in your hands (`WorldScene.refreshHero`).
     private func refreshHero() {
-        let key = "\(session.data.hero.name)|\(session.heroLookKey)|\(session.data.title ?? "")|\(session.rebirths)"
+        let key = "\(session.data.hero.name)|\(session.heroLookKey)|\(session.data.title ?? "")|\(session.data.hero.level)"
         guard key != heroKey else { return }
         if heroKey != nil {
             player.setCycle(art.walkCycle(GameSession.heroArt))
             player.setLabel(session.data.hero.name)
         }
         player.setTitle(session.wornTitle)
-        player.setLabelColor(WorldScene.nameColor(rebirths: session.rebirths))
+        player.setLabelColor(WorldScene.nameColor(level: session.data.hero.level))
         player.setWeapon(session.equipped(.weapon))
         heroKey = key
     }

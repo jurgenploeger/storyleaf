@@ -1,5 +1,5 @@
 {
-  "_about": "Titles you earn and wear over your name (Character tab → Titles), like Fairyland Online's collectable titles (docs/fairyland-online.md). `kind` is what earns one, with `count` of it: level (reach it), lands (set foot in that many maps; no count: every one), book (kinds of monster in the Monster Book; no count: all), quests (finished), bosses (different bosses beaten), companions (travelling with you), friends (befriended), rebirths, bounties (daily bounties finished) and days (days you've collected the daily gift on) and cards (kinds of monster card in the Book; no count: all). `boss` takes a `target` instead: the boss's NPC id. Earned titles stay earned. Computer-run adventurers wear the `level` titles that fit them now and then. `rank` (1 to 5) is how much honour it carries, shown as its badge: bronze, silver, gold, ruby, and a shining prismatic one for the rarest.",
+  "_about": "Titles you earn and wear over your name (Character tab → Titles), like Fairyland Online's collectable titles (docs/fairyland-online.md). `kind` is what earns one, with `count` of it: level (reach it), lands (set foot in that many maps; no count: every one), book (kinds of monster in the Monster Book; no count: all), quests (finished), bosses (different bosses beaten), companions (travelling with you), friends (befriended), bounties (daily bounties finished), days (days you've collected the daily gift on) and cards (kinds of monster card in the Book; no count: all). `boss` takes a `target` instead: the boss's NPC id. Earned titles stay earned. Computer-run adventurers wear the `level` titles that fit them now and then. `rank` (1 to 5) is how much honour it carries, shown as its badge: bronze, silver, gold, ruby, and a shining prismatic one for the rarest.",
   "titles": [
     {"id": "apprentice", "name": "Apprentice", "kind": "level", "count": 10, "rank": 1},
     {"id": "seasoned", "name": "Seasoned", "kind": "level", "count": 30, "rank": 2},
@@ -30,9 +30,6 @@
     {"id": "pack_leader", "name": "Pack Leader", "kind": "companions", "count": 5, "rank": 2},
     {"id": "good_company", "name": "Good Company", "kind": "friends", "count": 5, "rank": 2},
     {"id": "beloved", "name": "Beloved", "kind": "friends", "count": 15, "rank": 3},
-    {"id": "reborn", "name": "Reborn", "kind": "rebirths", "count": 1, "rank": 3},
-    {"id": "twice_reborn", "name": "Twice Reborn", "kind": "rebirths", "count": 2, "rank": 4},
-    {"id": "phoenix", "name": "Phoenix", "kind": "rebirths", "count": 5, "rank": 5},
     {"id": "bounty_hunter", "name": "Bounty Hunter", "kind": "bounties", "count": 10, "rank": 1},
     {"id": "town_favourite", "name": "Town Favourite", "kind": "bounties", "count": 50, "rank": 3},
     {"id": "faithful", "name": "Faithful", "kind": "days", "count": 7, "rank": 1},

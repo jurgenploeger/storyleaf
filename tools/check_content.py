@@ -274,6 +274,19 @@ for item in items.values():
     for required in quest.get("requires", []):
         check(required in quests, f"quest {quest['id']} → unknown quest {required}")
 
+# The top level (GameSession.levelCap) is as high as anyone climbs: there's no rebirth, so it has gear
+# of its own to show for it, a piece for every slot but the cape (capes are the weaver's) and a weapon
+# for every guild.
+LEVEL_CAP = 200
+top = [item for item in items.values() if item.get("level") == LEVEL_CAP]
+for slot in ("weapon", "armor", "gloves", "boots", "necklace", "accessory"):
+    check(any(item["type"] == slot for item in top), f"level {LEVEL_CAP} → no {slot} for a hero at the top level")
+for cls in classes["classes"]:
+    if cls["id"] != "novice":
+        check(any(item["type"] == "weapon" and cls["id"] in item.get("classes", []) for item in top),
+              f"level {LEVEL_CAP} → no weapon for the {cls['id']} guild")
+check(all(item.get("level", 1) <= LEVEL_CAP for item in items.values()), f"items → none above level {LEVEL_CAP}")
+
 # Quest treasures (Content.questGiving): gear a quest gives that no shop sells. Only that quest gives
 # it (no boss drops it, no smith forges it, no other quest), and you can wear it the moment it's yours.
 GEAR = {"weapon", "armor", "gloves", "boots", "necklace", "accessory"}
@@ -866,7 +879,7 @@ errors += world_layout.verify(maps, outdoor, load("content/world.json"))
 
 # Titles (content/titles.json): unique ids, a kind GameSession+Rewards knows, a count above 0 where
 # one's needed (lands and book may leave it out: every one), and a boss's NPC id for `boss`.
-TITLE_KINDS = {"level", "lands", "book", "quests", "bosses", "boss", "companions", "friends", "rebirths", "bounties", "days", "cards"}
+TITLE_KINDS = {"level", "lands", "book", "quests", "bosses", "boss", "companions", "friends", "bounties", "days", "cards"}
 titles = load("content/titles.json")["titles"]
 check(len({t.get("id") for t in titles}) == len(titles), "titles → duplicate id")
 for title in titles:
