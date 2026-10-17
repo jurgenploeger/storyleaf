@@ -1911,7 +1911,7 @@ def draw_red_hood_ribbon(c):
 
 WISPGLOW = [hexc("4a7ab8"), hexc("a8d8ff"), hexc("f0faff")]
 HORN = [hexc("a08a62"), hexc("e0d0a8"), hexc("fff6e0")]
-IRON = [hexc("3a3e4a"), hexc("6a7080"), hexc("a8b0c0")]
+WROUGHT = [hexc("3a3e4a"), hexc("6a7080"), hexc("a8b0c0")]
 SCALE = [hexc("5a4a24"), hexc("8a7438"), hexc("c0a860")]
 LOTUS = [hexc("c04a7a"), hexc("ff8ab8"), hexc("ffd8ea")]
 HEARTWOOD = [hexc("6a3a1a"), hexc("a8642e"), hexc("e0a060")]
@@ -1970,11 +1970,11 @@ def draw_bull_horn(c):
 def draw_bell_clapper(c):
     """The iron tongue of a bell on a short chain."""
     for i in range(4):
-        c.ring(16, 4 + i * 3, 1.8, 0.8, IRON[1])
-    c.line(16, 15, 16, 22, IRON[1], width=2)
-    c.disc(16, 24, 5, IRON[1])
-    light_top_left(c, IRON, 16, 24, 5)
-    c.set(13, 22, IRON[2])
+        c.ring(16, 4 + i * 3, 1.8, 0.8, WROUGHT[1])
+    c.line(16, 15, 16, 22, WROUGHT[1], width=2)
+    c.disc(16, 24, 5, WROUGHT[1])
+    light_top_left(c, WROUGHT, 16, 24, 5)
+    c.set(13, 22, WROUGHT[2])
     c.line(18, 21, 20, 25, hexc("6a4a2a"))                                    # a monkey's tooth marks
 
 
@@ -2086,7 +2086,7 @@ def draw_raw_ore(c):
 
 def draw_forgehand_gauntlets(c):
     """Heavy iron gauntlets glowing orange at the knuckles."""
-    glove(c, IRON, FORGE)
+    glove(c, WROUGHT, FORGE)
     for x in (11, 15, 19, 23):
         c.set(x, 12, FORGE[1]); c.set(x, 13, FORGE[2])
 
