@@ -3311,7 +3311,7 @@
       "id": "icemoor_swan",
       "title": "Ice Lantern Night",
       "giver": "icecarver_sigrun",
-      "description": "On Ice Lantern Night the whole of Icemoor lights the lake, and every year someone carves the Ice Swan at its heart. This year, you! Win three blocks of Clear Ice from the Snowmen and carve it in your bag.",
+      "description": "On Ice Lantern Night the whole of Icemoor lights the lake, and every year someone carves the Ice Swan at its heart. This year, you! Win three blocks of Clear Ice from the Snowmen and carve the swan in your bag.",
       "requires": [
         "icemoor_bears",
         "icemoor_soup"
