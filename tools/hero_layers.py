@@ -7,6 +7,9 @@
     art/sprites/hair_<style>_<race>.png  every hairstyle, fitted to every race's head
     art/sprites/hood_<race>.png          a hood and a helmet sized to the bare head; the game
     art/sprites/helmet_<race>.png        colours them like the armour (see MARKERS below)
+    art/sprites/nape_<style>_<race>.png  each hairstyle from a fifth of the way down the head:
+                                         worn under armour with a walk sheet of its own, so long
+                                         hair, a ponytail or braids show below the helmet or hood
 
 A gender with its own walk sheet (classes.json `sheets`) gets the same set with a _<gender> suffix
 (body_elf_male.png, ...). Every hairstyle is taken from the sheet it was drawn on (STYLES: a
@@ -68,6 +71,9 @@ LOCK_DEPTH = 14
 SKULL = (6.0, 7.0)
 # Races with long pointed ears, which poke out through any hairstyle.
 EARED = {"elf"}
+# Under armour with its own walk sheet (a helmet, a hood) only the hair this far down the head and
+# below shows, from the top of the head to the feet: none rises over the helmet.
+NAPE = 0.2
 # Brightness, for matching shades between two heads of hair.
 LUMA = np.array([0.299, 0.587, 0.114])
 
@@ -738,12 +744,26 @@ def build():
         layers[f"helmet_{rid}"] = headgear(race, "helmet")
         for style, (source, hair) in sources.items():
             layers[f"hair_{style}_{rid}"] = race.hair if source is race else fit_hair(hair, source, race)
+            layers[f"nape_{style}_{rid}"] = nape(layers[f"hair_{style}_{rid}"], race.body)
     for body, (race_id, sheet) in TOWNSFOLK.items():
         folk = Race(race_id, sheet, template=races[race_id], sidehair=True)
         layers[f"body_{body}"] = folk.body
         layers[f"locks_{body}"] = folk.locks
         layers[f"hair_{body}"] = folk.hair
     return races, layers
+
+
+def nape(hair, body):
+    """The hair from NAPE of the way down the head (the body's top row to its feet) and below."""
+    out = hair.copy()
+    for row in range(body.shape[0] // F):
+        for col in range(body.shape[1] // F):
+            rows = np.nonzero((body[row * F:(row + 1) * F, col * F:(col + 1) * F, 3] > 0.5).any(1))[0]
+            if len(rows) == 0:
+                continue
+            cut = rows[0] + int(round((rows[-1] - rows[0]) * NAPE))
+            out[row * F:row * F + cut, col * F:(col + 1) * F] = 0
+    return out
 
 
 def to_image(a):

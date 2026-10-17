@@ -161,6 +161,14 @@ hair_elf     | newgame,race=elf,style=spiky,menu=character                    | 
 face_female  | newgame,gender=female                                          | 8
 face_elf_male | newgame,race=elf,gender=male                                  | 8
 hood_dwarf   | newgame,race=dwarf,level=30,equip=ranger_cloak                 | 8
+# Gloves, boots and necklaces show on the hero in their colours, and armour with its own walk sheet keeps
+# the hair below the helmet or hood (0.7.28, playtesting 2026-10-17: "Gauntlets, boots and necklaces should
+# also change the appearance"; "The armors and colours should be more distinct for every gender, race").
+trinkets_her   | newgame,gender=female,level=60,equip=falcon_gloves+traveler_boots+phoenix_amulet,weather=clear,hour=12 | 8
+trinkets_char  | newgame,gender=female,level=70,class=fighter,equip=dragon_mail+dragonhide_gauntlets+speed_boots+phoenix_amulet+battle_axe,menu=character | 8
+plate_her      | newgame,gender=female,level=70,class=fighter,equip=iron_plate+dragonhide_gauntlets+cloudstep_boots+amber_amulet,weather=clear,hour=12 | 8
+plate_elf      | newgame,race=elf,level=70,class=fighter,equip=dragon_mail+falcon_gloves+speed_boots+moonstone_pendant,weather=clear,hour=12 | 8
+cloak_dwarf_her | newgame,race=dwarf,gender=female,level=80,equip=snow_cloak+iron_gauntlets+speed_boots+shell_pendant,weather=clear,hour=12 | 8
 hair_blue    | newgame,hair=blue                                              | 8
 hair_elf_male | newgame,race=elf,gender=male,hair=black,menu=character        | 8
 hair_dwarf_female | newgame,race=dwarf,gender=female,hair=white                | 8

@@ -586,8 +586,17 @@ for item in items.values():
 ITEM_TYPES = {"consumable", "weapon", "armor", "gloves", "necklace", "boots", "accessory", "material", "cape"}
 for item in items.values():
     check(item["type"] in ITEM_TYPES, f"item {item['id']} → unknown type {item['type']!r} ({sorted(ITEM_TYPES)})")
+# Gloves, boots and necklaces show on the hero (GearOverlay.trinkets) in their `color`; a necklace's
+# chain is its `accent`.
+HEX = re.compile(r"#[0-9A-Fa-f]{6}")
+for item in items.values():
+    if item["type"] in ("gloves", "boots", "necklace"):
+        check(isinstance(item.get("color"), str) and HEX.fullmatch(item["color"]) is not None,
+              f"item {item['id']} → color must be #RRGGBB: how the {item['type']} look when worn")
+        check(item.get("accent") is None or HEX.fullmatch(item["accent"]) is not None,
+              f"item {item['id']} → accent must be #RRGGBB")
 
-WEARS = {"armor": {"vest", "mail", "plate", "robe", "cloak"}, "boots": {"boots"}}
+WEARS = {"armor": {"vest", "mail", "plate", "robe", "cloak"}}
 for item in items.values():
     if "wear" in item:
         check(item["wear"] in WEARS.get(item["type"], set()),

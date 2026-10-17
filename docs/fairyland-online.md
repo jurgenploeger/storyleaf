@@ -578,6 +578,20 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   defence, each in five tiers from level 1 to 92 for every class. Speed Boots moved from accessory to boots, and
   saves that wore them as an accessory move them on load (`GameSession.moveGearToItsSlot`). The Character
   screen shows the hero in the middle with the slots around them like a paper doll.
+- Gloves, boots and necklaces show on the hero (ours, since 0.7.28, playtesting 2026-10-17: "Gauntlets, boots
+  and necklaces should also change the appearance"), each in its `color` (a necklace's chain its `accent`), at
+  the brightness of what was there (`GearOverlay.trinkets`): the hands are the skin below the chin on the
+  plain body (its biggest patch of skin is the face; the last three rows of each other patch are a hand), the
+  boots its brown near the feet, the necklace a V of chain under the chin with the stone hanging from it, seen
+  from the front. Armour with a walk sheet of its own is drawn on its race's poses, so they land on its
+  gauntlets and greaves too. Other adventurers wear gloves, boots and necklaces for their level and class, a
+  third of them without each (`GameSession.trinkets(for:)`). The speed boots' sky blue is now their colour.
+  `tools/gear_preview.py --trinkets` previews them on every body.
+- Armour with a walk sheet of its own (iron plate, dragon mail, the ranger and snow cloaks) keeps the hero's
+  hair (since 0.7.28, playtesting 2026-10-17: "The armors and colours should be more distinct for every
+  gender, race and fighter type"): it's drawn over their hairstyle from a fifth of the way down the head
+  (`nape_<style>_<body>`, tools/hero_layers.py), dyed their colour, so long hair, a ponytail or braids show
+  below the helmet or hood and a woman in plate isn't the same figure as a man.
 - Better gear (ours, since 0.4.0, asked for in playtesting 2026-10-11): a slot whose bag holds something better
   that the hero can put on now gets a gold arrow, as does the piece in the Bag and the slot's list. Better means
   worth more to the hero's class (`GameSession.gearValue`): each bonus weighted by the class's growth in that

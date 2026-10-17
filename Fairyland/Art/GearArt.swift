@@ -2,7 +2,8 @@ import SpriteKit
 
 /// What your equipment looks like on the hero: the weapon in hand (the item's own pixel art, in
 /// front of or behind the body depending on facing) and a sparkle in an accessory's colour.
-/// Armour and boots change the sprite itself (`GameSession.rules(for:armor:)` and GearOverlay).
+/// Armour, gloves, boots and a necklace change the sprite itself (`GameSession.rules(for:armor:)` and
+/// GearOverlay).
 enum GearArt {
     // MARK: Weapon
 

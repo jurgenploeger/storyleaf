@@ -76,9 +76,11 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   `locks_<race>` for a beard, `hair_<style>_<race>` for every hairstyle in that sheet's own hair colour, a
   gender sheet's own hair as a style of its own (appearance.json `styles` with `sheet`), `hood_`/`helmet_<race>`
   in magenta that GearOverlay paints in the armour's colours). The game stacks them (`GameSession.layers`) and
-  dyes every shade of the locks and hair (appearance.json `hairLayer`), never the body. `TOWNSFOLK` sheets no hero
-  wears are split too (`dwarf_npc`: the old bearded dwarf, his own mop as `hair_dwarf_npc`). Rerun after changing a
-  race's sheet, and look at `--preview` before committing.
+  dyes every shade of the locks and hair (appearance.json `hairLayer`), never the body. Armour with a walk sheet
+  of its own goes over `nape_<style>_<body>` (the hair from a fifth of the way down the head), so long hair
+  shows below the helmet. `TOWNSFOLK` sheets no hero wears are split too (`dwarf_npc`: the old bearded dwarf,
+  his own mop as `hair_dwarf_npc`). Rerun after changing a race's sheet, and look at `--preview` before
+  committing. Gloves, boots and necklaces are painted on by GearOverlay (`tools/gear_preview.py --trinkets`).
 - `tools/rd.py`: Retro Diffusion client. `tools/icons.py`: vendors Iconaut icons (MIT), plus our own drawings in
   `art/icons/` where Iconaut has no shape that works (fire's three-tongued flame).
   `tools/check_content.py`: validates the game data.

@@ -311,7 +311,7 @@ nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
     /// What a blacksmith needs to forge it: material id → how many.
     let recipe: [String: Int]?
     /// How it changes the hero's sprite (see GearOverlay): armour's cut (vest | mail | plate | robe |
-    /// cloak), or "boots" for footwear.
+    /// cloak).
     let wear: String?
     /// Finer work drawn on stronger armour: engraved | scales | fur | runes | pockets.
     let pattern: String?
@@ -319,9 +319,10 @@ nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
     let sheets: [String: String]?
     /// A rare colour variant's recolour of those sheets.
     let tint: [RecolorRule]?
-    /// Trim colour on the sprite (buttons, clasps, hems) and an accessory's sparkle, "#RRGGBB".
+    /// Trim colour on the sprite (buttons, clasps, hems), or a necklace's chain, "#RRGGBB".
     let accent: String?
-    /// A cape's colour, "#RRGGBB" (its trim and emblem are `accent`).
+    /// A cape's colour, or how gloves, boots and a necklace look worn (a necklace's chain is its
+    /// `accent`), "#RRGGBB".
     let color: String?
     /// Magic weapons: a soft light while held, "#RRGGBB", centred on `glowAt` ([x, y] in the 32×32 art).
     let glow: String?

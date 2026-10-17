@@ -1,37 +1,49 @@
 import CoreGraphics
 import Foundation
 
-/// What the hero has on, beyond the outfit's colours: the cut of their armour and their boots.
+/// What the hero has on, beyond the outfit's colours: the cut of their armour, a cape, and their
+/// gloves, boots and necklace.
 nonisolated struct GearLook: Sendable, Hashable {
     /// The armour's cut (content/items.json `wear`): vest | mail | plate | robe | cloak.
     var wear: String?
     /// Trim colour for buttons, clasps and hems, "#RRGGBB" (`accent`).
     var accent: String?
-    /// Speed boots: the boots turn sky blue.
-    var boots = false
     /// Finer work on stronger armour (`pattern`): engraved | scales | fur | runes | pockets.
     var pattern: String? = nil
     /// A status cape on the back (items.json type cape): its colour and its trim, "#RRGGBB".
     var cape: String? = nil
     var capeTrim: String? = nil
+    /// Gloves, boots and a necklace, each in its colour (items.json `color`; a necklace's chain is
+    /// its `accent`), "#RRGGBB".
+    var gloves: String? = nil
+    var boots: String? = nil
+    var necklace: String? = nil
+    var chain: String? = nil
+    /// The plain body (art/sprites `body_*`, tools/hero_layers.py) the hands, chin and boots are found
+    /// on: the hero's own, or their race's under armour with a walk sheet of its own, which is drawn
+    /// on the same poses.
+    var body: String? = nil
 
-    var isPlain: Bool { wear == nil && !boots && cape == nil }
+    var isPlain: Bool { wear == nil && cape == nil && gloves == nil && boots == nil && necklace == nil }
 }
 
 /// Draws worn gear onto a walk sheet, frame by frame. It finds the outfit (the green tunic) on the
 /// original sheet, then on the recoloured sheet adds what that kind of armour looks like: chain
 /// links, an open vest, pauldrons, a robe's long hem, a cape, and colours in a helmet or hood (drawn
-/// by tools/hero_layers.py in place of the hair). tools/gear_preview.py is the same algorithm in
-/// Python, to tune it without a Mac.
+/// by tools/hero_layers.py in place of the hair); then gloves, boots and a necklace in their colours.
+/// tools/gear_preview.py is the same algorithm in Python, to tune it without a Mac.
 enum GearOverlay {
-    nonisolated static func apply(_ gear: GearLook, original: CGImage, dressed: CGImage, frame: Int = 48,
-                                  directions: [String] = ["up", "right", "down", "left"]) -> CGImage? {
+    nonisolated static func apply(_ gear: GearLook, original: CGImage, dressed: CGImage, skeleton: CGImage? = nil,
+                                  frame: Int = 48, directions: [String] = ["up", "right", "down", "left"]) -> CGImage? {
         guard !gear.isPlain, original.width == dressed.width, original.height == dressed.height,
               let base = Bitmap(original), var out = Bitmap(dressed) else { return dressed }
+        var body = base
+        if let skeleton, let plain = Bitmap(skeleton), plain.width == base.width, plain.height == base.height { body = plain }
         let accent = color(hex: gear.accent) ?? RGB(0.95, 0.78, 0.25)
         for (row, facing) in directions.enumerated() {
             for column in 0..<(base.width / frame) {
                 dress(&out, base: base, origin: (column * frame, row * frame), size: frame, facing: facing, gear: gear, accent: accent)
+                trinkets(&out, body: body, origin: (column * frame, row * frame), size: frame, facing: facing, gear: gear)
                 if gear.cape != nil {
                     drape(&out, base: base, origin: (column * frame, row * frame), size: frame, facing: facing, gear: gear)
                 }
@@ -386,16 +398,84 @@ enum GearOverlay {
         default:
             break
         }
+    }
 
-        if gear.boots {
-            // Brown boots near the feet turn sky blue.
+    // MARK: Gloves, boots and a necklace
+
+    /// Gloves on the hands, boots on the feet and a necklace under the chin, each in its colour at
+    /// the brightness of what was there. They're found on the plain body: its skin in patches, the
+    /// biggest the face (with the neck and ears) and those below its chin the arms, whose last three
+    /// rows are the hands; the boots are its brown near the feet. Armour with a walk sheet of its own
+    /// is drawn on the same poses, so they land on its gauntlets and greaves. tools/gear_preview.py
+    /// `trinkets`.
+    nonisolated private static func trinkets(_ out: inout Bitmap, body: Bitmap, origin: (x: Int, y: Int), size: Int,
+                                             facing: String, gear: GearLook) {
+        let gloves = color(hex: gear.gloves), boots = color(hex: gear.boots), necklace = color(hex: gear.necklace)
+        guard gloves != nil || boots != nil || necklace != nil else { return }
+        func opaque(_ x: Int, _ y: Int) -> Bool {
+            x >= 0 && y >= 0 && x < size && y < size && body.alpha(origin.x + x, origin.y + y) > 0.5
+        }
+        /// Over what's drawn there (never into thin air): `c`, as bright as that was (`lift` + its value × `gain`).
+        func paint(_ x: Int, _ y: Int, _ c: RGB, lift: Double, gain: Double) {
+            guard x >= 0, y >= 0, x < size, y < size, out.alpha(origin.x + x, origin.y + y) > 0.5 else { return }
+            out.set(origin.x + x, origin.y + y, c.scaled(lift + hsv(out.rgb(origin.x + x, origin.y + y)).2 * gain))
+        }
+        let rows = (0..<size).filter { y in (0..<size).contains { opaque($0, y) } }
+        guard let top = rows.first, let feet = rows.last, feet - top > 8 else { return }
+        if let boots {
             for y in max(0, feet - 5)...feet {
                 for x in 0..<size where opaque(x, y) {
-                    let (h, s, v) = hsv(out.rgb(origin.x + x, origin.y + y))
-                    guard h >= 7, h <= 43, s > 0.35, v < 0.75 else { continue }
-                    out.set(origin.x + x, origin.y + y, rgb(209, min(1, s * 0.9), min(1, v * 1.5)))
+                    let (h, s, v) = hsv(body.rgb(origin.x + x, origin.y + y))
+                    if h >= 7, h <= 43, s > 0.35, v < 0.75 { paint(x, y, boots, lift: 0.55, gain: 0.9) }
                 }
             }
+        }
+        guard gloves != nil || necklace != nil else { return }
+        var skin = [Bool](repeating: false, count: size * size)
+        for y in 0..<size {
+            for x in 0..<size where opaque(x, y) {
+                let (h, s, v) = hsv(body.rgb(origin.x + x, origin.y + y))
+                skin[y * size + x] = (h <= 40 || h >= 342) && s > 0.12 && s < 0.65 && v > 0.55
+            }
+        }
+        var seen = [Bool](repeating: false, count: size * size)
+        var patches: [[(x: Int, y: Int)]] = []
+        for start in 0..<(size * size) where skin[start] && !seen[start] {
+            var stack = [start]
+            var cells: [(x: Int, y: Int)] = []
+            seen[start] = true
+            while let i = stack.popLast() {
+                let x = i % size, y = i / size
+                cells.append((x, y))
+                for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                    let nx = x + dx, ny = y + dy
+                    guard nx >= 0, ny >= 0, nx < size, ny < size, skin[ny * size + nx], !seen[ny * size + nx] else { continue }
+                    seen[ny * size + nx] = true
+                    stack.append(ny * size + nx)
+                }
+            }
+            patches.append(cells)
+        }
+        guard let face = patches.indices.max(by: { patches[$0].count < patches[$1].count }),
+              let chin = patches[face].map({ $0.y }).max() else { return }
+        if let gloves {
+            for (index, cells) in patches.enumerated() where index != face {
+                guard let high = cells.map({ $0.y }).min(), high >= chin - 1, let low = cells.map({ $0.y }).max() else { continue }
+                for cell in cells where cell.y >= low - 2 { paint(cell.x, cell.y, gloves, lift: 0.5, gain: 0.6) }
+            }
+        }
+        // From the front: a chain in a V under the chin, the stone hanging from it.
+        let under = patches[face].filter { $0.y == chin }.map { $0.x }
+        if let necklace, facing == "down", let left = under.min(), let right = under.max() {
+            let cx = (left + right) / 2
+            let chain = color(hex: gear.chain) ?? RGB(0.95, 0.78, 0.25)
+            func put(_ x: Int, _ y: Int, _ c: RGB) {
+                guard x >= 0, y >= 0, x < size, y < size, out.alpha(origin.x + x, origin.y + y) > 0.5 else { return }
+                out.set(origin.x + x, origin.y + y, c)
+            }
+            for (dx, dy) in [(-2, 1), (-1, 2), (1, 2), (2, 1)] { put(cx + dx, chin + dy, chain) }
+            put(cx, chin + 2, necklace.mixed(with: RGB(1, 1, 1), 0.4))
+            put(cx, chin + 3, necklace)
         }
     }
 
@@ -439,19 +519,6 @@ enum GearOverlay {
         }
         if hue < 0 { hue += 360 }
         return (hue, maximum == 0 ? 0 : delta / maximum, maximum)
-    }
-
-    nonisolated private static func rgb(_ h: Double, _ s: Double, _ v: Double) -> RGB {
-        let c = v * s, x = c * (1 - abs((h / 60).truncatingRemainder(dividingBy: 2) - 1)), m = v - c
-        let (r, g, b): (Double, Double, Double) = switch h {
-        case ..<60: (c, x, 0)
-        case ..<120: (x, c, 0)
-        case ..<180: (0, c, x)
-        case ..<240: (0, x, c)
-        case ..<300: (x, 0, c)
-        default: (c, 0, x)
-        }
-        return RGB(r + m, g + m, b + m)
     }
 
     // MARK: Pixels
