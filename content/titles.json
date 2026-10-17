@@ -25,6 +25,7 @@
     {"id": "hero_of_the_tales", "name": "Hero of the Tales", "kind": "bosses", "count": 8, "rank": 4},
     {"id": "rat_catcher", "name": "Rat Catcher", "kind": "boss", "target": "rat_throne", "rank": 2},
     {"id": "wolfbane", "name": "Wolfbane", "kind": "boss", "target": "wolf_den", "rank": 3},
+    {"id": "starcatcher", "name": "Starcatcher", "kind": "boss", "target": "fallen_star_hill", "rank": 3},
     {"id": "dragonheart", "name": "Dragonheart", "kind": "boss", "target": "emerald_gate", "rank": 4},
     {"id": "pack_leader", "name": "Pack Leader", "kind": "companions", "count": 5, "rank": 2},
     {"id": "good_company", "name": "Good Company", "kind": "friends", "count": 5, "rank": 2},

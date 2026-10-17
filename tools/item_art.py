@@ -1517,6 +1517,119 @@ def draw_star_chart(c):
     c.set(24, 13, GOLD[2])
 
 
+# ---------------------------------------------------------------- Starfall Isle
+# Glimmerbough's quests (content/quests.json) and the Fallen Star's spoils (its `drops`).
+
+STARLIGHT = [hexc("b89a40"), hexc("fff0a0"), WHITE]
+NIGHT = [hexc("1a1e5a"), hexc("2e3a9a"), hexc("6a7ae0")]
+MOTH = [hexc("4a2aa0"), hexc("8a5ae8"), hexc("d0b8ff")]
+STARGLASS = [hexc("4a8ab8"), hexc("a8e0ff"), WHITE]
+
+
+def glint(c, x, y, color=WHITE):
+    """A four-pointed glint of light."""
+    for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
+        c.set(x + dx, y + dy, color)
+
+
+def draw_starlight_dust(c):
+    """A little heap of violet dust flecked with gold, a few motes floating up from it."""
+    c.ellipse(16, 24, 11, 4.5, MOTH[1])
+    c.ellipse(16, 21, 7, 4, MOTH[1])
+    c.shade(lambda x, y, col: col == MOTH[1] and x > 19, MOTH[0])
+    c.shade(lambda x, y, col: col == MOTH[1] and x < 14 and y < 24, MOTH[2])
+    for (x, y) in ((10, 25), (14, 22), (19, 24), (22, 26), (16, 19), (12, 27), (20, 21)):
+        c.set(x, y, GOLD[2])
+    glint(c, 9, 10, GOLD[2])
+    glint(c, 22, 7)
+    c.set(15, 13, GOLD[2])
+    c.set(26, 14, WHITE)
+
+
+def draw_starfall_shard(c):
+    """A long shard of pale blue star-glass with a little star of light caught inside."""
+    c.poly([(16, 3), (23, 12), (20, 29), (11, 27), (9, 13)], STARGLASS[1])
+    c.shade(lambda x, y, col: col == STARGLASS[1] and x > 17, STARGLASS[0])
+    c.poly([(15, 6), (11, 13), (13, 22), (15, 13)], STARGLASS[2])             # a facet catching the light
+    star_shape(c, 17, 18, 3.6, STARLIGHT[1], inner=0.45)
+    c.set(17, 18, WHITE)
+
+
+def draw_star_lantern(c):
+    """A little glass lantern with a handle, Starlight Dust glowing gold inside."""
+    c.ring(16, 6, 4, 2.6, STEEL[1])                                          # the handle
+    c.rect(10, 9, 22, 10, STEEL[0])                                          # its cap
+    c.poly([(11, 11), (21, 11), (23, 25), (9, 25)], STARGLASS[1])            # the glass
+    c.shade(lambda x, y, col: col == STARGLASS[1] and x > 19, STARGLASS[0])
+    c.disc(16, 18, 4.2, STARLIGHT[1])                                        # the glow inside
+    c.disc(15.5, 17.5, 2, WHITE)
+    for (x, y) in ((13, 21), (19, 15), (18, 22)):
+        c.set(x, y, MOTH[2])
+    c.rect(8, 25, 24, 27, STEEL[0])                                          # its base
+    c.rect(9, 25, 23, 25, STEEL[2])
+
+
+def draw_glimmerwing_boots(c):
+    """Violet boots with a little moth wing at the heel and a gold sole."""
+    boot(c, MOTH, STARLIGHT[1], GOLD[0])
+    c.poly([(9, 10), (2, 6), (1, 12), (5, 15), (9, 15)], MOTH[2])            # the wing
+    c.line(8, 12, 3, 9, MOTH[0])
+    c.set(3, 12, WHITE)
+    for (x, y) in ((13, 13), (21, 25), (11, 20)):
+        c.set(x, y, STARLIGHT[2])
+
+
+def draw_starweave_robe(c):
+    """A night-blue robe with gold trim and stars woven all over it."""
+    robe(c, NIGHT, [GOLD[0], GOLD[1], GOLD[2]], star=STARLIGHT[1])
+    for (x, y) in ((9, 21), (12, 26), (24, 25), (7, 14), (20, 10), (11, 16)):
+        c.set(x, y, STARLIGHT[2])
+
+
+def draw_starpetal_gauntlets(c):
+    """Silver gauntlets with crystal petals set on the back of the hand."""
+    glove(c, SILVER, STARGLASS)
+    for (x, y) in ((13, 15), (19, 15), (16, 12), (16, 18)):                  # four petals round a gold heart
+        c.disc(x, y, 1.8, STARGLASS[1])
+    c.disc(16, 15, 1.2, GOLD[1])
+    c.set(15, 11, WHITE)
+
+
+def draw_stargazer_band(c):
+    """A band of night-blue silver with a tiny gold star on top."""
+    ring(c, NIGHT)
+    star_shape(c, 16, 10, 5.2, STARLIGHT[1], inner=0.45)
+    c.set(16, 10, WHITE)
+    c.set(9, 17, NIGHT[2])
+
+
+def draw_fallen_star_pendant(c):
+    """A white star stone glowing on a silver chain."""
+    pendant(c, SILVER, STARLIGHT, shape="star")
+    c.set(26, 20, WHITE)
+    c.set(6, 25, WHITE)
+
+
+def draw_starfall_staff(c):
+    """A pale wooden staff with a gold band and a star at its tip."""
+    staff_line(c, PLATINUM, star_head(STARLIGHT), GOLD[1])
+
+
+def draw_starfall_blade(c):
+    """A long pale blade, gold wings on its guard and a violet stone."""
+    sword_line(c, blade=STARGLASS, guard=GOLD, grip=NIGHT, length=15, width=5, wings=True, gem=MOTH)
+
+
+def draw_starfall_axe(c):
+    """A crescent head of star-glass on a night-blue handle, a gold stone set in it."""
+    axe_line(c, head=STARGLASS, handle=NIGHT, style="crescent", gem=STARLIGHT)
+
+
+def draw_starfall_whip(c):
+    """A lilac lash with a star of light at its tip."""
+    whip_line(c, leather=MOTH, grip=NIGHT, turns=3.6, tip=STARLIGHT[1], gem=GOLD, studs=WHITE)
+
+
 def ramp(colour):
     """A #RRGGBB colour's dark, mid and light."""
     r, g, b, _ = hexc(colour)
@@ -1624,6 +1737,18 @@ PROMPTS = {  # for a later Retro Diffusion upgrade (python3 tools/rd.py generate
     "chart_piece_reef": "torn piece of an old sea chart showing a reef",
     "chart_piece_isle": "torn corner of an old sea chart with a star shaped island",
     "star_chart": "old sea chart pieced together, a gold star island on it",
+    "starlight_dust": "a little heap of glittering violet and gold star dust",
+    "starfall_shard": "a pale blue crystal shard with a star of light inside",
+    "star_lantern": "a small glass lantern with glowing star dust inside",
+    "glimmerwing_boots": "violet boots with little moth wings at the heels",
+    "starweave_robe": "deep blue robe with gold trim and tiny stars on it",
+    "starpetal_gauntlets": "silver gauntlets set with pale blue crystal petals",
+    "stargazer_band": "night blue silver ring with a tiny gold star",
+    "fallen_star_pendant": "a glowing white star stone on a silver chain",
+    "starfall_staff": "white and gold magic staff with a glowing star at the tip",
+    "starfall_blade": "sword with a pale star blade, gold wings on the guard",
+    "starfall_axe": "axe with a pale crystal crescent head and a gold star",
+    "starfall_whip": "lilac whip with a glowing star at its tip",
 }
 
 

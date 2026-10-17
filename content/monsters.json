@@ -3558,6 +3558,195 @@
           "chance": 0.05
         }
       ]
+    },
+    {
+      "id": "star_moth",
+      "name": "Starmoth",
+      "art": "monster_yellow_butterfly_star",
+      "element": "light",
+      "lore": "Moths drawn to the fallen star's light. Their wings carry its dust, and they drink the glow from any lantern left out at night.",
+      "base": {
+        "hp": 98,
+        "mp": 52,
+        "attack": 22,
+        "defense": 18,
+        "magic": 40,
+        "speed": 40
+      },
+      "growth": {
+        "hp": 10,
+        "mp": 5,
+        "attack": 2,
+        "defense": 2,
+        "magic": 3,
+        "speed": 2
+      },
+      "exp": 64,
+      "gold": 38,
+      "captureRate": 0.22,
+      "skills": [
+        "flash",
+        "gust"
+      ],
+      "motion": "sway"
+    },
+    {
+      "id": "dawn_starmoth",
+      "name": "Dawn Starmoth",
+      "art": "monster_yellow_butterfly_dawn",
+      "element": "light",
+      "lore": "A Starmoth that flew too close to the sunrise. Its wings have blushed pink ever since.",
+      "base": {
+        "hp": 127,
+        "mp": 68,
+        "attack": 29,
+        "defense": 23,
+        "magic": 52,
+        "speed": 52
+      },
+      "growth": {
+        "hp": 11,
+        "mp": 6,
+        "attack": 2,
+        "defense": 2,
+        "magic": 4,
+        "speed": 3
+      },
+      "exp": 102,
+      "gold": 61,
+      "captureRate": 0.13,
+      "skills": [
+        "flash",
+        "gust"
+      ],
+      "motion": "sway",
+      "rare": true,
+      "variantOf": "star_moth"
+    },
+    {
+      "id": "nebula_puff",
+      "name": "Nebula Puff",
+      "art": "monster_jelly_nebula",
+      "element": "dark",
+      "lore": "A puff of the night sky that drifted down with the fallen star. It settles on moonflowers and lulls them to sleep.",
+      "base": {
+        "hp": 118,
+        "mp": 44,
+        "attack": 24,
+        "defense": 22,
+        "magic": 38,
+        "speed": 20
+      },
+      "growth": {
+        "hp": 12,
+        "mp": 4,
+        "attack": 2,
+        "defense": 2,
+        "magic": 3,
+        "speed": 1
+      },
+      "exp": 64,
+      "gold": 38,
+      "captureRate": 0.25,
+      "skills": [
+        "jelly_splash",
+        "evil_eye"
+      ],
+      "motion": "squish"
+    },
+    {
+      "id": "crystal_quill",
+      "name": "Crystal Quill",
+      "art": "monster_hedgehog_crystal",
+      "element": "earth",
+      "lore": "A hedgehog whose quills turned to crystal where the starlight landed. It digs up crystal gardens for a crunchy snack.",
+      "base": {
+        "hp": 128,
+        "mp": 20,
+        "attack": 40,
+        "defense": 34,
+        "magic": 12,
+        "speed": 22
+      },
+      "growth": {
+        "hp": 13,
+        "mp": 2,
+        "attack": 3,
+        "defense": 3,
+        "magic": 1,
+        "speed": 1
+      },
+      "exp": 64,
+      "gold": 38,
+      "captureRate": 0.25,
+      "skills": [
+        "rock_throw",
+        "mud_shot"
+      ],
+      "motion": "hop"
+    },
+    {
+      "id": "fallen_star",
+      "name": "Fallen Star",
+      "art": "boss_fallen_star",
+      "element": "light",
+      "lore": "The star that fell on Starfall Isle long ago. Awake on its hill, lonely and far from home, it blazes at anyone who comes near.",
+      "base": {
+        "hp": 450,
+        "mp": 100,
+        "attack": 125,
+        "defense": 70,
+        "magic": 115,
+        "speed": 85
+      },
+      "growth": {
+        "hp": 24,
+        "mp": 4,
+        "attack": 8,
+        "defense": 3,
+        "magic": 7,
+        "speed": 3
+      },
+      "exp": 420,
+      "gold": 315,
+      "captureRate": 0,
+      "skills": [
+        "flash",
+        "gust",
+        "roar"
+      ],
+      "motion": "sway",
+      "boss": true,
+      "drops": [
+        {
+          "item": "starfall_staff",
+          "chance": 0.12
+        },
+        {
+          "item": "starfall_blade",
+          "chance": 0.12
+        },
+        {
+          "item": "starfall_axe",
+          "chance": 0.12
+        },
+        {
+          "item": "starfall_whip",
+          "chance": 0.12
+        },
+        {
+          "item": "toy_music_box",
+          "chance": 0.3
+        },
+        {
+          "item": "star_seal",
+          "chance": 0.25
+        },
+        {
+          "item": "wishing_seal",
+          "chance": 0.05
+        }
+      ]
     }
   ]
 }

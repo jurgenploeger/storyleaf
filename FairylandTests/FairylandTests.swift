@@ -671,6 +671,24 @@ struct ContentTests {
         }
     }
 
+    /// Glimmerbough, Starfall Isle's fairy village (playtesting 2026-10-16: "something worthy to do on
+    /// Starfall Isle"): a healer, a shop and quest givers with five quests, and a boss up on its
+    /// mountain that drops a weapon for every class you can choose.
+    @Test func glimmerboughHasSomethingForEveryone() throws {
+        let isle = try #require(content.map("starfall_isle"))
+        let npcs = isle.npcs ?? []
+        for role in [NPCRole.healer, .shop, .quests, .boss] {
+            #expect(npcs.contains { $0.role == role }, "Starfall Isle has no \(role)")
+        }
+        let givers = Set(npcs.filter { $0.role == .quests }.map(\.id))
+        #expect(content.quests.filter { givers.contains($0.giver) }.count == 5)
+        let boss = try #require(npcs.first { $0.role == .boss }?.monster.flatMap(content.monster))
+        let weapons = (boss.drops ?? []).compactMap { content.item($0.item) }.filter { $0.type == .weapon }
+        for cls in content.classes where cls.id != "novice" {
+            #expect(weapons.contains { $0.classes?.contains(cls.id) == true }, "the Fallen Star drops no weapon for a \(cls.id)")
+        }
+    }
+
     @Test func summitsHoldWhatsSetUpThere() throws {
         // A boss, a chest or a friend set up on a summit (`NPCDef.summit`) stands up on its top, on
         // ground you can walk on, and you can get there from the middle of the map.

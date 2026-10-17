@@ -2,6 +2,18 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.22",
+      "date": "2026-10-16",
+      "title": "Glimmerbough",
+      "notes": [
+        "Starfall Isle has a village now: Glimmerbough, fairy folk living in hollow tree houses round the fallen star's crystals, lit by wisp lanterns. Dewdrop heals you, Thistle sells potions and seals, and Mother Lumen and Pip the Lamplighter have five new quests for levels 136 to 148.",
+        "New monsters on the island: Starmoths (and the rare Dawn Starmoth), Nebula Puffs and Crystal Quills.",
+        "Each quest gives a treasure of its own: Glimmerwing Boots, the Starweave Robe, Starpetal Gauntlets, the Stargazer's Band and the Fallen Star Pendant.",
+        "The Fallen Star waits on the island's highest hill, a level-150 boss with the Starcatcher title to earn. Now and then it drops a Starfall weapon for your class.",
+        "Sneezle Isle is called Sneezle Sands now: it's a sandy coast, not an island."
+      ]
+    },
+    {
       "version": "0.7.21",
       "date": "2026-10-16",
       "title": "Frost in the north",

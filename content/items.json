@@ -4142,7 +4142,7 @@
         "hp": 40
       },
       "level": 120,
-      "description": "Hammered from the rarest ore on Sneezle Isle. They tingle, like a sneeze on its way."
+      "description": "Hammered from the rarest ore on Sneezle Sands. They tingle, like a sneeze on its way."
     },
     {
       "id": "wisp_light_pendant",
@@ -4379,7 +4379,7 @@
         "speed": 6
       },
       "level": 132,
-      "description": "A ring of black glass from the old fire mountain at Sneezle Isle's heart. Still warm."
+      "description": "A ring of black glass from the old fire mountain at the heart of Sneezle Sands. Still warm."
     },
     {
       "id": "emerald_crest_gauntlets",
@@ -4841,14 +4841,14 @@
       "id": "hachoo_island_cape",
       "icon": "shield-star",
       "art": "item_hachoo_island_cape",
-      "name": "Sneezle Isle Cape",
+      "name": "Sneezle Sands Cape",
       "type": "cape",
       "price": 0,
       "stats": {
         "defense": 6,
         "hp": 37
       },
-      "description": "Woven in the colours of Sneezle Isle, for one who has beaten every monster that lives there.",
+      "description": "Woven in the colours of Sneezle Sands, for one who has beaten every monster that lives there.",
       "color": "#E2563C",
       "accent": "#2B2B2B"
     },
@@ -5027,6 +5027,207 @@
       "description": "For one who has earned every other cape. The whole tale, woven into one.",
       "color": "#2F7D4F",
       "accent": "#F2C14E"
+    },
+    {
+      "id": "starlight_dust",
+      "icon": "sparkles",
+      "art": "item_starlight_dust",
+      "name": "Starlight Dust",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 136,
+      "description": "Glittering dust from a Starmoth's wings. It glows a little brighter in the dark."
+    },
+    {
+      "id": "starfall_shard",
+      "icon": "diamond",
+      "art": "item_starfall_shard",
+      "name": "Starfall Shard",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 144,
+      "description": "A shard of star-glass a Crystal Quill dug up. It hums, very softly."
+    },
+    {
+      "id": "star_lantern",
+      "icon": "star",
+      "art": "item_star_lantern",
+      "name": "Star Lantern",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 144,
+      "description": "A lantern of star-glass with Starlight Dust glowing inside. It never needs lighting.",
+      "recipe": {
+        "starfall_shard": 1,
+        "starlight_dust": 3
+      },
+      "make": "join"
+    },
+    {
+      "id": "glimmerwing_boots",
+      "icon": "wind",
+      "art": "item_glimmerwing_boots",
+      "name": "Glimmerwing Boots",
+      "type": "boots",
+      "price": 10800,
+      "stats": {
+        "speed": 15,
+        "defense": 11,
+        "hp": 26
+      },
+      "level": 136,
+      "description": "Stitched from wings the Starmoths shed. You land more softly than you jumped."
+    },
+    {
+      "id": "starweave_robe",
+      "icon": "shield-star",
+      "art": "item_starweave_robe",
+      "name": "Starweave Robe",
+      "type": "armor",
+      "price": 11600,
+      "stats": {
+        "defense": 42,
+        "magic": 16,
+        "mp": 28,
+        "hp": 50
+      },
+      "level": 140,
+      "description": "Woven in Glimmerbough from moonflower silk. At night, tiny stars drift across it.",
+      "wear": "robe",
+      "pattern": "runes",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 238,
+          "saturation": 0.75,
+          "value": 0.8
+        }
+      ],
+      "accent": "#FFE680"
+    },
+    {
+      "id": "starpetal_gauntlets",
+      "icon": "sword",
+      "art": "item_starpetal_gauntlets",
+      "name": "Starpetal Gauntlets",
+      "type": "gloves",
+      "price": 11400,
+      "stats": {
+        "attack": 22,
+        "defense": 14,
+        "hp": 46
+      },
+      "level": 140,
+      "description": "Silver gauntlets set with crystal petals from Pip's garden. They chime when you make a fist."
+    },
+    {
+      "id": "stargazer_band",
+      "icon": "ring",
+      "art": "item_stargazer_band",
+      "name": "Stargazer's Band",
+      "type": "accessory",
+      "price": 12200,
+      "stats": {
+        "magic": 18,
+        "mp": 30,
+        "speed": 8
+      },
+      "level": 144,
+      "description": "Stargazer Lune's thank-you: a band of night-blue silver. Look through it, and the stars come closer."
+    },
+    {
+      "id": "fallen_star_pendant",
+      "icon": "gem",
+      "art": "item_fallen_star_pendant",
+      "name": "Fallen Star Pendant",
+      "type": "necklace",
+      "price": 13200,
+      "stats": {
+        "magic": 20,
+        "attack": 10,
+        "hp": 96,
+        "mp": 24
+      },
+      "level": 148,
+      "description": "A sliver of the Fallen Star, given gladly. It's warm, and it hums when you're far from home."
+    },
+    {
+      "id": "starfall_staff",
+      "icon": "wand",
+      "art": "item_starfall_staff",
+      "name": "Starfall Staff",
+      "type": "weapon",
+      "price": 15500,
+      "stats": {
+        "magic": 64
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 150,
+      "glow": "#FFF3A0",
+      "glowAt": [
+        22,
+        8
+      ],
+      "description": "Its tip holds a spark the Fallen Star left behind."
+    },
+    {
+      "id": "starfall_blade",
+      "icon": "sword",
+      "art": "item_starfall_blade",
+      "name": "Starfall Blade",
+      "type": "weapon",
+      "price": 15500,
+      "stats": {
+        "attack": 64,
+        "speed": 5
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 150,
+      "description": "Forged in starlight. It leaves a trail of sparks."
+    },
+    {
+      "id": "starfall_axe",
+      "icon": "axe",
+      "art": "item_starfall_axe",
+      "name": "Starfall Axe",
+      "type": "weapon",
+      "price": 15500,
+      "stats": {
+        "attack": 72
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 150,
+      "description": "Its edge glitters like a falling star."
+    },
+    {
+      "id": "starfall_whip",
+      "icon": "paw",
+      "art": "item_starfall_whip",
+      "name": "Starfall Whip",
+      "type": "weapon",
+      "price": 15500,
+      "stats": {
+        "attack": 45,
+        "speed": 16
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 150,
+      "description": "It cracks like a shooting star, and beasts follow its light."
     }
   ]
 }
