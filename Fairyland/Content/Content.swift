@@ -1003,8 +1003,8 @@ nonisolated struct RewardsDef: Decodable, Sendable {
     /// time in `chance` (`rareChance` for a rare one, `bossChance` for a boss). The first of each
     /// goes in the Monster Book and raises the hero's stat for its element (`gains`) for good:
     /// `perStep` for each step, one step and another for every `levelsPerStep` levels of where the
-    /// monster lives (`Content.cardLevel`), times `rare` or `boss` for theirs. A spare is sold on the
-    /// spot for `spareGold` times the gold the monster pays.
+    /// monster lives (`Content.cardLevel`), times `rare` or `boss` for theirs. A monster whose card
+    /// is in the Book leaves no other.
     nonisolated struct Cards: Decodable, Sendable {
         nonisolated struct Gain: Decodable, Sendable {
             /// hp, mp, attack, defense, magic or speed.
@@ -1019,7 +1019,6 @@ nonisolated struct RewardsDef: Decodable, Sendable {
         let boss: Double
         /// By element (`Element`'s raw value).
         let gains: [String: Gain]
-        let spareGold: Int
     }
     /// Seal Stones won in hard fights: the highest `tiers` rule whose `above` the strongest beaten
     /// monster's level is over yours, one time in `chance`, one of its `items` (repeats weigh more);

@@ -6,7 +6,8 @@ import Foundation
 extension GameSession {
     // MARK: - Monster cards
 
-    /// How many of a monster's cards you've found, spares included.
+    /// How many of a monster's cards you've found: one once it's in the Book (saves from before
+    /// 0.7.20 counted the spares, sold as they turned up, too).
     func cards(of monsterID: String) -> Int { data.cards?[monsterID] ?? 0 }
 
     func hasCard(_ monsterID: String) -> Bool { cards(of: monsterID) > 0 }
@@ -36,28 +37,17 @@ extension GameSession {
         return monster.boss == true ? rules.bossChance : monster.rare == true ? rules.rareChance : rules.chance
     }
 
-    /// What a spare card sells for: a few times the gold the monster pays at its card's level.
-    func spareCardGold(_ monster: MonsterDef) -> Int {
-        let level = content.cardLevel(monster.id)
-        let gold = Int((Double(monster.gold) * (1 + 0.25 * Double(level - 1))).rounded())
-        return max(1, gold * content.rewards.cards.spareGold)
-    }
-
-    /// A monster's card turns up: the first goes in the Book, a spare is sold on the spot. Returns
-    /// the line to show.
+    /// A monster's card turns up, for the Book. Only one you haven't got: a monster whose card is in
+    /// the Book leaves no other (playtesting 2026-10-16: spares were sold on the spot, and shouldn't
+    /// come at all). Returns the line to show, or nil with its card already in the Book.
     @discardableResult
-    func findCard(of monster: MonsterDef) -> String {
+    func findCard(of monster: MonsterDef) -> String? {
+        guard !hasCard(monster.id) else { return nil }
         var cards = data.cards ?? [:]
-        let count = (cards[monster.id] ?? 0) + 1
-        cards[monster.id] = count
+        cards[monster.id] = 1
         data.cards = cards
-        guard count > 1 else {
-            return L("New card for your Monster Book: {monster}! {bonus} for good.",
-                     ["monster": monster.name, "bonus": cardGain(of: monster).bonusSummary])
-        }
-        let gold = spareCardGold(monster)
-        data.gold += gold
-        return L("A spare {monster} card: sold for {gold} gold.", ["monster": monster.name, "gold": gold])
+        return L("New card for your Monster Book: {monster}! {bonus} for good.",
+                 ["monster": monster.name, "bonus": cardGain(of: monster).bonusSummary])
     }
 
     // MARK: - Companion toys

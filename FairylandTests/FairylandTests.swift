@@ -3289,12 +3289,12 @@ struct RewardTests {
         #expect(session.hasCard(monster.id))
         #expect(session.cardCount == 1)
         #expect(session.heroStats == before + gain)
-        // A spare is sold on the spot: gold, and no more strength.
+        // No second of it: none to sell, no gold, no more strength (playtesting 2026-10-16).
         let gold = session.data.gold
-        session.findCard(of: monster)
-        #expect(session.data.gold == gold + session.spareCardGold(monster))
+        #expect(session.findCard(of: monster) == nil)
+        #expect(session.data.gold == gold)
         #expect(session.heroStats == before + gain)
-        #expect(session.cards(of: monster.id) == 2)
+        #expect(session.cards(of: monster.id) == 1)
         #expect(session.cardCount == 1)
     }
 
@@ -3302,7 +3302,6 @@ struct RewardTests {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         for monster in Content.shared.monsters {
             #expect(session.cardGain(of: monster) != .zero, "\(monster.id)'s card gives nothing")
-            #expect(session.spareCardGold(monster) > 0)
         }
         // Rare monsters and bosses leave their cards more often.
         let common = try #require(Content.shared.monsters.first { $0.rare != true && $0.boss != true })

@@ -182,10 +182,12 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   from), around the map's level: Gumdrop Star Charm 24, Shiverpeak Gloves 42, Crystal Crown Pendant 80,
   Frostpeak Boots 84, Firepeak Ring 132, Emerald Crest Gauntlets 192, their art palette swaps of other gear's.
   Since 0.7.1 (ours, asked for in playtesting 2026-10-15: a chest should always have something, and
-  something new a while after you've opened it) a chest fills again `refillHours` (4) after you last
+  something new a while after you've opened it) a chest fills again `refillHours` (1; 4 until 0.7.20,
+  when playtesting found them "always empty") after you last
   opened it (rewards.json `chests`, `GameSession.openChest`): gold for its level (its own treasure's) and
   a piece of gear around that level (`equipmentDrop`) or a potion, ether, Seal Stone or Homeward Feather.
-  It stands faded while it's empty and says roughly when to come back; one opened before 0.7.1 is full.
+  It stands faded while it's empty and says to come back later (the hours left until 0.7.20); one opened
+  before 0.7.1 is full.
   Since 0.4.5 ranges go where every summit has room round it (`clearance`: how far each cell is from a road,
   water, a building or another hill), picked at random among the places they fit; before, random spots
   tried 120 times often found nowhere on crowded maps (Gumdrop Peaks had no mountain). The first trail climbs from the ground in
@@ -810,8 +812,9 @@ cards did. Every monster has one. A beaten monster leaves its card 3% of the tim
 `cards` in content/rewards.json). The first of each goes in the Monster Book and raises a stat for good, by
 element: Fire and Metal attack, Dark magic, Earth defence, Water speed, Wood HP, Light MP. It gives a step, and
 another for every 25 levels of where the monster lives, twice that for a rare card and three times for a
-boss's. The whole set adds about +107 ATK, +127 MAG, +44 DEF, +27 SPD, +375 HP and +154 MP. Spares sell on the
-spot. Tilly the Toymaker in Prismhaven has five quests for 5 to 100 kinds of card, paid in toys, and three
+boss's. The whole set adds about +107 ATK, +127 MAG, +44 DEF, +27 SPD, +375 HP and +154 MP. Since 0.7.20 a
+monster whose card is in the Book leaves no other (playtesting 2026-10-16: "Spare cards shouldn't be
+automatically sold. Duplicates shouldn't be rewarded at all"); before, spares sold on the spot. Tilly the Toymaker in Prismhaven has five quests for 5 to 100 kinds of card, paid in toys, and three
 titles count cards. FO's dolls aren't in yet.
 
 **Capes (since 0.7.16), ours, after RuneScape's:** asked for in playtesting (2026-10-16: "If I have all

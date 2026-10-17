@@ -933,7 +933,6 @@ for key in ("chance", "rareChance", "bossChance"):
 check(isinstance(cards.get("levelsPerStep"), int) and cards["levelsPerStep"] > 0, "rewards cards levelsPerStep → a whole number above 0")
 for key in ("rare", "boss"):
     check(isinstance(cards.get(key), (int, float)) and cards[key] >= 1, f"rewards cards {key} → at least 1")
-check(isinstance(cards.get("spareGold"), int) and cards["spareGold"] >= 0, "rewards cards spareGold → a whole number, at least 0")
 
 # Seal Stones from hard fights (rewards.json `seals`): tiers climbing in `above`, chances in (0, 1],
 # and only Seal Stones (items with `capture`).

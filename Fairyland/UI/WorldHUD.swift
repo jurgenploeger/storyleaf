@@ -6,6 +6,13 @@ import SwiftUI
 /// the controls step aside, so nothing peeks out from behind the conversation.
 struct WorldHUD: View {
     let coordinator: GameCoordinator
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    private var bottomGap: (joystick: CGFloat, buttons: CGFloat) { onItsSide ? (8, 8) : (10, 14) }
+    /// On a phone on its side the bottom controls sit down in the home indicator's strip, a few
+    /// points off the screen's edge (playtesting 2026-10-16: "should sit lower"): the indicator hides
+    /// itself and a swipe there moves the joystick first (`GameView`). Upright, they keep over it.
+    private var onItsSide: Bool { verticalSizeClass == .compact }
+    private var bottomEdge: SwiftUI.Edge.Set { onItsSide ? .bottom : [] }
 
     private var session: GameSession { coordinator.session }
     private var controlsHidden: Bool { coordinator.overlay != nil }
@@ -60,7 +67,8 @@ struct WorldHUD: View {
                 .stepsAside(controlsHidden)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 .padding(.leading, 8)
-                .padding(.bottom, 10)
+                .padding(.bottom, bottomGap.joystick)
+                .ignoresSafeArea(.container, edges: bottomEdge)
 
             VStack(alignment: .trailing, spacing: 10) {
                 if let id = session.nearbyNPC, let npc = Content.shared.npc(id) {
@@ -91,7 +99,8 @@ struct WorldHUD: View {
                 .coachTarget(.toolbar)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-            .padding(.bottom, 14)
+            .padding(.bottom, bottomGap.buttons)
+            .ignoresSafeArea(.container, edges: bottomEdge)
             .animation(.spring(response: 0.3, dampingFraction: 0.75), value: session.nearbyNPC)
             .animation(.spring(response: 0.3, dampingFraction: 0.75), value: session.nearbyAdventurer?.id)
             .stepsAside(controlsHidden)

@@ -482,11 +482,9 @@ final class GameCoordinator {
 
     private func openChest(_ chest: NPCDef) {
         if session.isOpened(chest.id) {
-            // Something new turns up in it after a while (`GameSession.refillsAt`).
-            let hours = session.refillsAt(chest.id).map { Int(($0.timeIntervalSinceNow / 3600).rounded(.up)) } ?? 0
-            let name = chest.name.midSentence
-            session.post(hours > 1 ? L("The {chest} is empty. Come back in about {hours} hours.", ["chest": name, "hours": hours])
-                                   : L("The {chest} is empty. Come back in a little while.", ["chest": name]))
+            // Something new turns up in it after a while (`GameSession.refillsAt`); just when isn't
+            // said (playtesting 2026-10-16: "come back later" instead of the exact hours).
+            session.post(L("The {chest} is empty. Come back later.", ["chest": chest.name.midSentence]))
         } else if session.openChest(chest) != nil {
             session.save()
         } else {
