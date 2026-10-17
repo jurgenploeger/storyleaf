@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.31",
+      "date": "2026-10-17",
+      "title": "Tidier portraits",
+      "notes": [
+        "The name card beside each portrait in the top left is as tall as the portrait, and the level badges fit their number: a circle for a single digit, a pill for more."
+      ]
+    },
+    {
       "version": "0.7.30",
       "date": "2026-10-17",
       "title": "Festive seasons",
