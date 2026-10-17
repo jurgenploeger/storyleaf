@@ -594,7 +594,7 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   a full set: a fighter's plate (the iron plate's own sheet in the tier's colour, `tint`), a mage's robe with
   runes, a tamer's hooded hide cloak lined with fur, and gauntlets and boots for anyone, which show on the hero
   in the same colour. So a fighter, a mage and a tamer of the same level wear the same colour in the cut of their
-  guild. Meadowbrook sells Copper, Rainbow City Silver and Onyx, Goldburg Sapphire, Jade and Aquamarine; Ruby,
+  guild. Meadowbrook sells Copper, Prismhaven Silver and Onyx, Ingothold Sapphire, Jade and Aquamarine; Ruby,
   Amethyst and Topaz only drop from monsters, like RuneScape's rune and dragon armour. Their stats sit a little
   under the quest treasures of the same level. Other adventurers wear them too (`GameSession.armor(for:)` picks
   their guild's best), so the crowd shows every colour. `check_content.py` insists every tier is a full set of
