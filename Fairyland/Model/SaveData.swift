@@ -10,6 +10,8 @@ nonisolated struct Equipment: Codable, Equatable, Sendable {
     var accessory: String?
     /// A status cape (the weaver's).
     var cape: String?
+    /// A festive hat (a season's).
+    var head: String?
 
     subscript(slot: ItemType) -> String? {
         get {
@@ -21,6 +23,7 @@ nonisolated struct Equipment: Codable, Equatable, Sendable {
             case .boots: boots
             case .accessory: accessory
             case .cape: cape
+            case .head: head
             case .consumable, .material: nil
             }
         }
@@ -33,6 +36,7 @@ nonisolated struct Equipment: Codable, Equatable, Sendable {
             case .boots: boots = newValue
             case .accessory: accessory = newValue
             case .cape: cape = newValue
+            case .head: head = newValue
             case .consumable, .material: break
             }
         }
@@ -172,6 +176,9 @@ nonisolated struct SaveData: Codable, Sendable {
     /// many days it's been given (its place in the round).
     var giftDay: String?
     var giftDays: Int?
+    /// The festive seasons whose gift you've had (rewards.json `seasons`): "halloween-2026", by the
+    /// year each began.
+    var seasonGifts: [String]?
     /// Quest treasures already handed over (`GameSession.deliverQuestTreasures`): a quest finished
     /// before it gave one sends it once.
     var questTreasuresGiven: [String]?

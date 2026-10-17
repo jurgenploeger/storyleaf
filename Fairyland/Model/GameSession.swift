@@ -307,21 +307,27 @@ final class GameSession {
     /// Armour with its own walk sheet for the race (items.json `sheets`) replaces the lot, over the
     /// hero's hair from a fifth of the way down the head (`nape_*`): long hair, a ponytail or braids
     /// show below the helmet or hood in the hero's colour, so a woman in plate doesn't look like the man.
-    static func layers(race: RaceDef, look: Look, armor: ItemDef? = nil) -> [ArtLayer] {
+    static func layers(race: RaceDef, look: Look, armor: ItemDef? = nil, hatted: Bool = false) -> [ArtLayer] {
         let style = Self.style(for: look, race: race)
         let body = Self.body(race: race, look: look)
         let hair = hairLayerRules(for: look, armor: armor)
         if let sheet = armor?.sheets?[race.id] {
             return [ArtLayer(id: "nape_\(style)_\(body)", recolor: hair), ArtLayer(id: sheet)]
         }
-        let headgear: String? = switch armor?.wear ?? "" {
+        // A festive hat sits on the hair, in place of a helmet or hood.
+        let headgear: String? = hatted ? nil : Self.headgear(for: armor)
+        let bald = ArtLayer(id: "body_\(body)", recolor: bodyRules(for: look, armor: armor))
+        return [bald, ArtLayer(id: "locks_\(body)", recolor: hair),
+                headgear.map { ArtLayer(id: "\($0)_\(body)") } ?? ArtLayer(id: "hair_\(style)_\(body)", recolor: hair)]
+    }
+
+    /// The helmet or hood (tools/hero_layers.py) armour of a cut puts on the head in place of the hair.
+    private static func headgear(for armor: ItemDef?) -> String? {
+        switch armor?.wear ?? "" {
         case "plate": "helmet"
         case "cloak": "hood"
         default: nil
         }
-        let bald = ArtLayer(id: "body_\(body)", recolor: bodyRules(for: look, armor: armor))
-        return [bald, ArtLayer(id: "locks_\(body)", recolor: hair),
-                headgear.map { ArtLayer(id: "\($0)_\(body)") } ?? ArtLayer(id: "hair_\(style)_\(body)", recolor: hair)]
     }
 
     /// Which of the paper-doll bodies a hero wears: each gender's walk sheet has its own set, and the
@@ -353,21 +359,24 @@ final class GameSession {
         let content = Content.shared
         registerArt(id, race: content.race(hero.raceID), look: hero.look ?? .standard,
                     armor: hero.equipment[.armor].flatMap(content.item),
-                    worn: [ItemType.gloves, .boots, .necklace].compactMap { hero.equipment[$0].flatMap(content.item) },
+                    worn: [ItemType.gloves, .boots, .necklace, .head].compactMap { hero.equipment[$0].flatMap(content.item) },
                     cape: hero.equipment[.cape].flatMap(content.item), key: Self.lookKey(for: hero))
     }
 
     /// Draws someone of `race` in `look` under the art id `id`: the hero, or another adventurer. Worn
     /// armour takes over the outfit's colours and adds its cut (or brings its own walk sheet); gloves,
-    /// boots and a necklace (`worn`) show in their colours. A status cape hangs on their back, over
-    /// everything.
+    /// boots and a necklace (`worn`) show in their colours. A status cape hangs on their back, and a
+    /// festive hat (`worn` too) sits on their head, over everything.
     private static func registerArt(_ id: String, race: RaceDef, look: Look, armor: ItemDef?, worn: [ItemDef] = [],
                                     cape: ItemDef? = nil, key: String) {
         let necklace = worn.first { $0.type == .necklace }
+        let hat = worn.first { $0.type == .head }
         var gear = GearLook(wear: armor?.wear, accent: armor?.accent, pattern: armor?.pattern,
                             cape: cape?.color, capeTrim: cape?.accent,
                             gloves: worn.first { $0.type == .gloves }?.color, boots: worn.first { $0.type == .boots }?.color,
-                            necklace: necklace?.color, chain: necklace?.accent, body: "body_\(Self.body(race: race, look: look))")
+                            necklace: necklace?.color, chain: necklace?.accent,
+                            hat: hat?.hat, hatColor: hat?.color, hatTrim: hat?.accent,
+                            body: "body_\(Self.body(race: race, look: look))")
         var rules = Self.rules(for: look, armor: armor)
         if let armor, armor.sheets?[race.id] != nil {
             // The armour's own sheet is already drawn and coloured: only the skin tone applies, plus a
@@ -379,7 +388,7 @@ final class GameSession {
             rules = (Content.shared.appearance.skin.first { $0.id == look.skin }?.recolor ?? []) + (armor.tint ?? [])
         }
         ArtLibrary.shared.register(id, from: race.sheet(for: look.gender), recolor: rules, key: key,
-                                   gear: gear, layers: Self.layers(race: race, look: look, armor: armor))
+                                   gear: gear, layers: Self.layers(race: race, look: look, armor: armor, hatted: hat != nil))
     }
 
     /// A companion looks like its species; colourful ones are rarer variants you catch.
@@ -800,11 +809,12 @@ final class GameSession {
         Self.registerAdventurer(adventurer)
     }
 
-    /// Draws another adventurer like a hero, in the armour that suits them (`armor(for:)`) and the
-    /// gloves, boots and necklace they have on (`trinkets(for:)`).
+    /// Draws another adventurer like a hero, in the armour that suits them (`armor(for:)`), the
+    /// gloves, boots and necklace they have on (`trinkets(for:)`) and in a festive season, the hat
+    /// they wear for it (`hat(for:)`).
     static func registerAdventurer(_ adventurer: Adventurer) -> String {
         registerPerson(race: adventurer.raceID, look: adventurer.look, armor: Self.armor(for: adventurer),
-                       worn: Self.trinkets(for: adventurer))
+                       worn: Self.trinkets(for: adventurer) + [Self.hat(for: adventurer)].compactMap { $0 })
     }
 
     /// Someone of a race and look (a villager in plain clothes without `armor`), drawn from the same
@@ -868,6 +878,15 @@ final class GameSession {
             let choices = wearable.filter { ($0.level ?? 1) == best }
             return choices[Int((draw / 3) % UInt64(choices.count))]
         }
+    }
+
+    /// The hat an adventurer wears in a festive season (rewards.json `seasons`): one of its hats for
+    /// half of them, the same one all season.
+    static func hat(for adventurer: Adventurer, on date: Date = GameSession.today) -> ItemDef? {
+        guard let festive = season(on: date)?.season, !festive.hats.isEmpty else { return nil }
+        let seed = Self.seed(adventurer.id) / 13
+        guard seed % 2 == 0 else { return nil }
+        return Content.shared.item(festive.hats[Int((seed / 2) % UInt64(festive.hats.count))])
     }
 
     /// The same number for the same adventurer on every launch (Swift's own hashes change each run).

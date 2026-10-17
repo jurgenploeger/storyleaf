@@ -44,8 +44,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   (`here`) brings its music, air and encounters. Caves are scenes of their own (`WorldScene`), behind the card;
   `GameCoordinator.mapScene` is whichever you're in.
 - `content/*.json`: all game data (maps, monsters, skills, items, quests, music, looks, crowd, announcements, titles,
-  rewards: the daily gift, bounties, Monster Book milestones, monster cards and the weaver's status capes). Data-driven;
-  most features are a JSON edit.
+  rewards: the daily gift, bounties, Monster Book milestones, monster cards, the weaver's status capes and the
+  festive seasons with their hats). Data-driven; most features are a JSON edit.
 - `art/assets.json` + `art/sprites/`: every sprite. `derive` makes free palette swaps of existing art. Recolour a whole
   colour family with one `to` + `spread` rule (`RecolorRule` in `Fairyland/Art/Recolor.swift`) so it keeps its hue-shifted
   shading; a bare `shift` lands on a different colour for every base, and a window that cuts a ramp splits it in two.

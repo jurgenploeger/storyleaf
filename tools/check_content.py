@@ -599,7 +599,7 @@ for item in items.values():
         check((ROOT / "art" / "sprites" / f"{item['art']}.png").exists() or "derive" in art.get(item["art"], {}),
               f"item {item['id']} → art/sprites/{item['art']}.png is missing (python3 tools/item_art.py)")
 
-ITEM_TYPES = {"consumable", "weapon", "armor", "gloves", "necklace", "boots", "accessory", "material", "cape"}
+ITEM_TYPES = {"consumable", "weapon", "armor", "head", "gloves", "necklace", "boots", "accessory", "material", "cape"}
 for item in items.values():
     check(item["type"] in ITEM_TYPES, f"item {item['id']} → unknown type {item['type']!r} ({sorted(ITEM_TYPES)})")
 # Gloves, boots and necklaces show on the hero (GearOverlay.trinkets) in their `color`; a necklace's
@@ -611,6 +611,18 @@ for item in items.values():
               f"item {item['id']} → color must be #RRGGBB: how the {item['type']} look when worn")
         check(item.get("accent") is None or HEX.fullmatch(item["accent"]) is not None,
               f"item {item['id']} → accent must be #RRGGBB")
+
+# Festive hats (type head) are drawn on the hero's head (GearOverlay.hat) as their `hat` in their
+# `color` (bunny ears pink inside, their `accent`); no one buys or sells one (the seasons give them).
+HATS = {"crown", "santa", "ears", "mask"}
+for item in items.values():
+    if item["type"] == "head":
+        check(item.get("hat") in HATS, f"item {item['id']} → hat must be one of {sorted(HATS)}: how it's drawn on the head")
+        check(isinstance(item.get("color"), str) and HEX.fullmatch(item["color"]) is not None,
+              f"item {item['id']} → color must be #RRGGBB: the hat's colour on the hero")
+        check(item.get("price") == 0, f"item {item['id']} → price 0 (only the festive seasons give hats)")
+    else:
+        check("hat" not in item, f"item {item['id']} → only a hat (type head) has a hat")
 
 WEARS = {"armor": {"vest", "mail", "plate", "robe", "cloak"}}
 for item in items.values():
@@ -984,6 +996,83 @@ for cape in capes:
     check(cape not in elsewhere and "recipe" not in item, f"cape {cape} → only the weaver gives it (no shop, quest, chest, smith or drop)")
     for key in ("color", "accent"):
         check(isinstance(item.get(key), str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", item[key]) is not None, f"cape {cape} → {key} must be #RRGGBB")
+# Festive seasons (rewards.json `seasons`, like RuneScape's holiday events): each on its days ("MM-DD"
+# to "MM-DD", round the new year when `to` comes first, or `easter`: days either side of Easter
+# Sunday), never two at once; its `hats` hats (every hat a season's), its `treats` things to eat
+# that heal; no shop, quest, chest, smith or monster has either.
+import datetime
+
+
+def easter_sunday(year):
+    """Easter Sunday in the Gregorian calendar (the anonymous algorithm, as GameSession.easter)."""
+    a, b, c = year % 19, year // 100, year % 100
+    d, e = b // 4, b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = c // 4, c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    month = (h + l - 7 * m + 114) // 31
+    return datetime.date(year, month, (h + l - 7 * m + 114) % 31 + 1)
+
+
+def month_day(text):
+    try:
+        month, day = (int(v) for v in str(text).split("-"))
+        datetime.date(2024, month, day)
+        return month, day
+    except (ValueError, TypeError):
+        return None
+
+
+def in_season(season, date):
+    if "easter" in season:
+        first, last = season["easter"]
+        return first <= (date - easter_sunday(date.year)).days <= last
+    start, end, today = month_day(season["from"]), month_day(season["to"]), (date.month, date.day)
+    return start <= today <= end if start <= end else today >= start or today <= end
+
+
+seasons = rewards.get("seasons", [])
+check(len({season.get("id") for season in seasons}) == len(seasons), "rewards seasons → each needs an id of its own")
+hats_given, treats_given = set(), set()
+for season in seasons:
+    where = f"rewards season {season.get('id')}"
+    if "easter" in season:
+        days = season["easter"]
+        check("from" not in season and "to" not in season and isinstance(days, list) and len(days) == 2
+              and all(isinstance(v, int) for v in days) and -30 <= days[0] <= days[1] <= 60,
+              f"{where} → easter must be [first, last] days from Easter Sunday (and no from or to)")
+    else:
+        check(month_day(season.get("from")) is not None and month_day(season.get("to")) is not None,
+              f"{where} → from and to must be \"MM-DD\" days (or easter: [first, last])")
+    for hat in season.get("hats", []):
+        check(items.get(hat, {}).get("type") == "head", f"{where} → hat {hat} must be an item of type head")
+    for treat in season.get("treats", []):
+        item = items.get(treat, {})
+        check(item.get("type") == "consumable" and ((item.get("heal") or 0) > 0 or (item.get("mp") or 0) > 0),
+              f"{where} → treat {treat} must be a consumable that heals")
+    check(bool(season.get("hats")) and bool(season.get("treats")), f"{where} → needs hats and treats")
+    check(isinstance(season.get("chance"), (int, float)) and 0 < season["chance"] <= 1, f"{where} → chance in (0, 1]")
+    check(isinstance(season.get("hatChance"), (int, float)) and 0 <= season["hatChance"] <= 1, f"{where} → hatChance in [0, 1]")
+    check(isinstance(season.get("greeting"), str) and season["greeting"].strip() != "", f"{where} → needs a greeting")
+    hats_given |= set(season.get("hats", []))
+    treats_given |= set(season.get("treats", []))
+if all(month_day(s.get("from")) or "easter" in s for s in seasons):
+    for year in (2026, 2027, 2028, 2029):
+        day = datetime.date(year, 1, 1)
+        while day.year == year:
+            on = [s["id"] for s in seasons if ("easter" in s or (month_day(s.get("from")) and month_day(s.get("to")))) and in_season(s, day)]
+            check(len(on) <= 1, f"rewards seasons → {', '.join(on)} both on {day}")
+            day += datetime.timedelta(days=1)
+hats = {item_id for item_id, item in items.items() if item["type"] == "head"}
+check(hats == hats_given, f"rewards seasons → every hat is a season's (hats no season gives: {sorted(hats - hats_given)})")
+handed = elsewhere | set((rewards.get("chests") or {}).get("items", [])) | {i for gift in rewards.get("dailyGifts", []) for i in gift.get("items") or []}
+for item_id in sorted(hats_given | treats_given):
+    check(item_id not in handed and "recipe" not in items.get(item_id, {}),
+          f"item {item_id} → only its season gives it (no shop, quest, chest, smith or drop)")
+
 weavers = [npc for npc in npcs.values() if npc["role"] == "weaver"]
 check(len(weavers) == (1 if prizes else 0), f"rewards prizes → one weaver to weave them (found {len(weavers)})")
 

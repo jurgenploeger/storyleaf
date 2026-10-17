@@ -18,6 +18,14 @@ struct DailyGiftCard: View {
                         .font(HUDStyle.font(14))
                         .foregroundStyle(HUDStyle.gold)
                     GiftRound(current: gift.day, days: gift.days)
+                    if let greeting = gift.greeting {
+                        // The first gift of a festive season brings its hat.
+                        Text(greeting)
+                            .font(HUDStyle.font(12))
+                            .foregroundStyle(HUDStyle.gold)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     HStack(spacing: 14) {
                         if gift.gold > 0 {
                             Label("\(gift.gold)", icon: .coins, size: 18)

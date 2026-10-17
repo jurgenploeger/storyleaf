@@ -80,6 +80,7 @@ struct ItemIcon: View {
         case .boots: Color(red: 0.4, green: 0.6, blue: 0.85)
         case .accessory: Color(red: 0.62, green: 0.4, blue: 0.85)
         case .cape: Color(red: 0.78, green: 0.36, blue: 0.62)
+        case .head: Color(red: 0.92, green: 0.5, blue: 0.28)
         case .material: Color(red: 0.55, green: 0.6, blue: 0.4)
         }
     }

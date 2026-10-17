@@ -1,5 +1,5 @@
 {
-  "_about": "Items. `art` is the item's sprite (art/sprites/item_<id>.png, drawn by tools/item_art.py); `icon` is a GameIcon name (Fairyland/UI/GameIcon.swift) used when there's no art; weapons are drawn in the hero's hand from their art (or icon). Armour `sheets` (per race) swaps in a whole walk sheet while it's worn (Retro Diffusion art in art/sprites; only the skin colour applies), recoloured by `tint` for the rare colour variants bosses drop. Armour `pattern` adds finer detail to the sprite (engraved | scales | fur | runes | pockets). Armour `recolor` changes the outfit colours while worn and `wear` its cut on the hero's sprite (vest | mail | plate | robe | cloak), drawn by Fairyland/Art/GearOverlay.swift. `accent` (#RRGGBB) is the trim colour on the sprite, or a necklace's chain. `color` (#RRGGBB) is how gloves, boots and a necklace look worn (on the hands, the feet and under the chin), or a cape's colour. `tier` puts armour in a RuneScape-style tier: one level and one colour for a whole set (a fighter's plate, a mage's robe, a tamer's hide cloak, gauntlets and boots), so the colour tells the level; tools/item_art.py draws their icons from `color`. `glow` (#RRGGBB) gives a magic weapon a soft light at `glowAt` ([x, y] in its 32×32 art): a halo in the icon (tools/item_art.py) and a gentle pulse while held. type: consumable | weapon | armor | gloves | necklace | boots | accessory (rings, charms and bands) | material. `classes` limits who can equip it (omit = everyone); `level` is the level needed. Materials (type material; `material` is wood | metal | gem | hide) drop from monsters of at least their `level`; a quest's pieces are `material: quest` (none for sale, never dropped but by the quests that want them, content/quests.json `drops`). `recipe` is what a blacksmith needs to forge the item; one with `make` (carve | join) is made by hand from the bag instead, for a quest that asks you to bring it. Companion toys (`toy`, Fairyland Online's Pet Toys) are consumables given to a companion from the bag: they raise its `stats` for good, up to ten toys a companion (GameSession.giveToy). Seal Stones (`capture`) are thrown in battle to befriend a monster and used up whether they hold or not: `sealPower` is how many times likelier than a plain one a stone is to hold (1 unless set), and a `sure` one (the Wishing Seal) never fails (BattleEngine.captureStatus).",
+  "_about": "Items. `art` is the item's sprite (art/sprites/item_<id>.png, drawn by tools/item_art.py); `icon` is a GameIcon name (Fairyland/UI/GameIcon.swift) used when there's no art; weapons are drawn in the hero's hand from their art (or icon). Armour `sheets` (per race) swaps in a whole walk sheet while it's worn (Retro Diffusion art in art/sprites; only the skin colour applies), recoloured by `tint` for the rare colour variants bosses drop. Armour `pattern` adds finer detail to the sprite (engraved | scales | fur | runes | pockets). Armour `recolor` changes the outfit colours while worn and `wear` its cut on the hero's sprite (vest | mail | plate | robe | cloak), drawn by Fairyland/Art/GearOverlay.swift. `accent` (#RRGGBB) is the trim colour on the sprite, or a necklace's chain. `color` (#RRGGBB) is how gloves, boots and a necklace look worn (on the hands, the feet and under the chin), or a cape's colour. `tier` puts armour in a RuneScape-style tier: one level and one colour for a whole set (a fighter's plate, a mage's robe, a tamer's hide cloak, gauntlets and boots), so the colour tells the level; tools/item_art.py draws their icons from `color`. `glow` (#RRGGBB) gives a magic weapon a soft light at `glowAt` ([x, y] in its 32×32 art): a halo in the icon (tools/item_art.py) and a gentle pulse while held. type: consumable | weapon | armor | head (festive hats) | gloves | necklace | boots | accessory (rings, charms and bands) | material | cape. A hat's `hat` is how it's drawn on the hero's head (GearOverlay.hat): crown (a paper party crown), santa, ears (a bunny's, pink inside: `accent`) or mask (the face in its `color`); only the festive seasons give them (content/rewards.json `seasons`). `classes` limits who can equip it (omit = everyone); `level` is the level needed. Materials (type material; `material` is wood | metal | gem | hide) drop from monsters of at least their `level`; a quest's pieces are `material: quest` (none for sale, never dropped but by the quests that want them, content/quests.json `drops`). `recipe` is what a blacksmith needs to forge the item; one with `make` (carve | join) is made by hand from the bag instead, for a quest that asks you to bring it. Companion toys (`toy`, Fairyland Online's Pet Toys) are consumables given to a companion from the bag: they raise its `stats` for good, up to ten toys a companion (GameSession.giveToy). Seal Stones (`capture`) are thrown in battle to befriend a monster and used up whether they hold or not: `sealPower` is how many times likelier than a plain one a stone is to hold (1 unless set), and a `sure` one (the Wishing Seal) never fails (BattleEngine.captureStatus).",
   "items": [
     {
       "id": "potion",
@@ -8445,6 +8445,172 @@
       ],
       "level": 200,
       "description": "A lash of braided gold with a leaf at its tip. Beasts follow it as leaves follow the wind."
+    },
+    {
+      "id": "red_party_hat",
+      "icon": "gift",
+      "art": "item_red_party_hat",
+      "name": "Red Party Hat",
+      "type": "head",
+      "price": 0,
+      "description": "A red paper crown for the New Year party. Rare in every colour; can you find all six?",
+      "hat": "crown",
+      "color": "#D83030"
+    },
+    {
+      "id": "yellow_party_hat",
+      "icon": "gift",
+      "art": "item_yellow_party_hat",
+      "name": "Yellow Party Hat",
+      "type": "head",
+      "price": 0,
+      "description": "A yellow paper crown for the New Year party. Rare in every colour; can you find all six?",
+      "hat": "crown",
+      "color": "#F0C830"
+    },
+    {
+      "id": "green_party_hat",
+      "icon": "gift",
+      "art": "item_green_party_hat",
+      "name": "Green Party Hat",
+      "type": "head",
+      "price": 0,
+      "description": "A green paper crown for the New Year party. Rare in every colour; can you find all six?",
+      "hat": "crown",
+      "color": "#3CA850"
+    },
+    {
+      "id": "blue_party_hat",
+      "icon": "gift",
+      "art": "item_blue_party_hat",
+      "name": "Blue Party Hat",
+      "type": "head",
+      "price": 0,
+      "description": "A blue paper crown for the New Year party. Rare in every colour; can you find all six?",
+      "hat": "crown",
+      "color": "#3060D8"
+    },
+    {
+      "id": "purple_party_hat",
+      "icon": "gift",
+      "art": "item_purple_party_hat",
+      "name": "Purple Party Hat",
+      "type": "head",
+      "price": 0,
+      "description": "A purple paper crown for the New Year party. Rare in every colour; can you find all six?",
+      "hat": "crown",
+      "color": "#8848C8"
+    },
+    {
+      "id": "white_party_hat",
+      "icon": "gift",
+      "art": "item_white_party_hat",
+      "name": "White Party Hat",
+      "type": "head",
+      "price": 0,
+      "description": "A white paper crown for the New Year party. Rare in every colour; can you find all six?",
+      "hat": "crown",
+      "color": "#F4F4F4"
+    },
+    {
+      "id": "green_halloween_mask",
+      "icon": "gift",
+      "art": "item_green_halloween_mask",
+      "name": "Green Halloween Mask",
+      "type": "head",
+      "price": 0,
+      "description": "A green mask with a ghoulish grin. Monsters can't tell whether to fight you or flee.",
+      "hat": "mask",
+      "color": "#58B040"
+    },
+    {
+      "id": "blue_halloween_mask",
+      "icon": "gift",
+      "art": "item_blue_halloween_mask",
+      "name": "Blue Halloween Mask",
+      "type": "head",
+      "price": 0,
+      "description": "A blue mask with a ghoulish grin. Monsters can't tell whether to fight you or flee.",
+      "hat": "mask",
+      "color": "#3C70D0"
+    },
+    {
+      "id": "red_halloween_mask",
+      "icon": "gift",
+      "art": "item_red_halloween_mask",
+      "name": "Red Halloween Mask",
+      "type": "head",
+      "price": 0,
+      "description": "A red mask with a ghoulish grin. Monsters can't tell whether to fight you or flee.",
+      "hat": "mask",
+      "color": "#C83030"
+    },
+    {
+      "id": "santa_hat",
+      "icon": "gift",
+      "art": "item_santa_hat",
+      "name": "Santa Hat",
+      "type": "head",
+      "price": 0,
+      "description": "Red and white, with a pom on the end that bobs as you walk. Ho ho ho!",
+      "hat": "santa",
+      "color": "#D02828"
+    },
+    {
+      "id": "bunny_ears",
+      "icon": "gift",
+      "art": "item_bunny_ears",
+      "name": "Bunny Ears",
+      "type": "head",
+      "price": 0,
+      "description": "Soft white ears for Easter, pink inside. They twitch when you're happy.",
+      "hat": "ears",
+      "color": "#F4F0F0",
+      "accent": "#F2A0B8"
+    },
+    {
+      "id": "pumpkin_pie",
+      "icon": "heart-plus",
+      "art": "item_pumpkin_pie",
+      "name": "Pumpkin Pie",
+      "type": "consumable",
+      "price": 0,
+      "heal": 100,
+      "mp": 30,
+      "description": "Halloween's treat, still warm from the oven. Restores 100 HP and 30 MP."
+    },
+    {
+      "id": "gingerbread_man",
+      "icon": "heart-plus",
+      "art": "item_gingerbread_man",
+      "name": "Gingerbread Man",
+      "type": "consumable",
+      "price": 0,
+      "heal": 100,
+      "mp": 30,
+      "description": "Christmas's treat, iced with a smile. Restores 100 HP and 30 MP."
+    },
+    {
+      "id": "party_cake",
+      "icon": "heart-plus",
+      "art": "item_party_cake",
+      "name": "Party Cake",
+      "type": "consumable",
+      "price": 0,
+      "heal": 100,
+      "mp": 30,
+      "description": "A slice of New Year cake, all sprinkles. Restores 100 HP and 30 MP."
+    },
+    {
+      "id": "chocolate_egg",
+      "icon": "heart-plus",
+      "art": "item_chocolate_egg",
+      "name": "Chocolate Egg",
+      "type": "consumable",
+      "price": 0,
+      "heal": 100,
+      "mp": 30,
+      "description": "Easter's treat, wrapped in coloured foil. Restores 100 HP and 30 MP."
     }
   ]
 }

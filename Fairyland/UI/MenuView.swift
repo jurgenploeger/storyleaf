@@ -498,10 +498,11 @@ private struct PaperDoll: View {
     let session: GameSession
     let change: (ItemType) -> Void
 
-    /// Each slot and where it sits on the ring, in degrees clockwise from the right.
+    /// Each slot and where it sits on the ring, in degrees clockwise from the right: evenly round
+    /// it, the hat and cape at the top, a gap under the hero's feet.
     private static let ring: [(slot: ItemType, angle: Double)] = [
-        (.weapon, -55), (.gloves, 0), (.accessory, 55),
-        (.boots, 125), (.armor, 180), (.necklace, 235), (.cape, 270),
+        (.head, 249), (.cape, 291), (.weapon, 334), (.gloves, 17), (.accessory, 60),
+        (.boots, 120), (.armor, 163), (.necklace, 206),
     ]
     /// The ring's radius (to each slot's middle), and the room a slot takes.
     private static let radius: CGFloat = 112
@@ -509,9 +510,10 @@ private struct PaperDoll: View {
 
     var body: some View {
         let width = Self.radius * 2 + Self.slot.width
-        // From the cape at the top of the ring down to the boots and the accessory.
-        let low = Self.radius * CGFloat(sin(55 * Double.pi / 180))
-        let height = Self.radius + low + Self.slot.height
+        // From the hat and cape at the top of the ring down to the boots and the accessory.
+        let high = Self.radius * CGFloat(Self.ring.map { -sin($0.angle * Double.pi / 180) }.max() ?? 1)
+        let low = Self.radius * CGFloat(Self.ring.map { sin($0.angle * Double.pi / 180) }.max() ?? 1)
+        let height = high + low + Self.slot.height
         ZStack {
             // A faint ring through the slots, and the hero on a soft disc in the middle.
             Circle()
@@ -526,8 +528,8 @@ private struct PaperDoll: View {
                     .offset(x: Self.radius * CGFloat(cos(angle)), y: Self.radius * CGFloat(sin(angle)))
             }
         }
-        // The ring's middle sits lower than the frame's, as much as the cape reaches higher than the boots.
-        .offset(y: (Self.radius - low) / 2)
+        // The ring's middle sits lower than the frame's, as much as the hat reaches higher than the boots.
+        .offset(y: (high - low) / 2)
         .frame(width: width, height: height)
         .padding(.vertical, 4)
     }
@@ -547,6 +549,7 @@ private struct DollSlot: View {
     private static let silhouettes: [ItemType: String] = [
         .weapon: "wooden_sword", .armor: "cloth_tunic", .gloves: "leather_gloves",
         .necklace: "shell_pendant", .boots: "straw_sandals", .accessory: "novice_ring", .cape: "wayfarer_cape",
+        .head: "white_party_hat",
     ]
 
     var body: some View {
