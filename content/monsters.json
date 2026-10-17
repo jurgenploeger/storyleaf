@@ -3747,6 +3747,146 @@
           "chance": 0.05
         }
       ]
+    },
+    {
+      "id": "prism_crab",
+      "name": "Prism Crab",
+      "art": "monster_crab_prism",
+      "element": "water",
+      "lore": "A crab whose shell grew into amethyst in the Glimmerdeep's pools. It snips crystals off the walls and wears the prettiest ones.",
+      "base": {
+        "hp": 132,
+        "mp": 24,
+        "attack": 44,
+        "defense": 40,
+        "magic": 14,
+        "speed": 20
+      },
+      "growth": {
+        "hp": 13,
+        "mp": 2,
+        "attack": 3,
+        "defense": 3,
+        "magic": 1,
+        "speed": 1
+      },
+      "exp": 66,
+      "gold": 40,
+      "captureRate": 0.22,
+      "skills": [
+        "bubble",
+        "rock_throw"
+      ],
+      "motion": "sway"
+    },
+    {
+      "id": "floating_geode",
+      "name": "Floating Geode",
+      "art": "monster_floating_geode",
+      "element": "earth",
+      "lore": "A hollow stone that drifts through the dark with a heart of glimmering crystal. Crack one open and it glows for a hundred years.",
+      "base": {
+        "hp": 124,
+        "mp": 42,
+        "attack": 28,
+        "defense": 44,
+        "magic": 36,
+        "speed": 16
+      },
+      "growth": {
+        "hp": 12,
+        "mp": 4,
+        "attack": 2,
+        "defense": 3,
+        "magic": 3,
+        "speed": 1
+      },
+      "exp": 66,
+      "gold": 40,
+      "captureRate": 0.2,
+      "skills": [
+        "rock_throw",
+        "flash"
+      ],
+      "motion": "bounce"
+    },
+    {
+      "id": "crystal_serpent",
+      "name": "Crystal Serpent",
+      "art": "monster_crystal_serpent",
+      "element": "light",
+      "lore": "A serpent of living glass that swims through the crystals as if they were water. You only see it by the light it bends.",
+      "base": {
+        "hp": 112,
+        "mp": 52,
+        "attack": 32,
+        "defense": 24,
+        "magic": 42,
+        "speed": 36
+      },
+      "growth": {
+        "hp": 11,
+        "mp": 5,
+        "attack": 2,
+        "defense": 2,
+        "magic": 3,
+        "speed": 2
+      },
+      "exp": 68,
+      "gold": 41,
+      "captureRate": 0.2,
+      "skills": [
+        "flash",
+        "frost_breath"
+      ],
+      "motion": "sway"
+    },
+    {
+      "id": "prism_drake",
+      "name": "Prism Drake",
+      "art": "boss_prism_drake",
+      "element": "light",
+      "lore": "A drake that crept into the Glimmerdeep long ago and fed on the starlight in its crystals until its scales turned to living prism. It sleeps curled round the brightest shard of all.",
+      "base": {
+        "hp": 490,
+        "mp": 106,
+        "attack": 152,
+        "defense": 86,
+        "magic": 112,
+        "speed": 92
+      },
+      "growth": {
+        "hp": 25,
+        "mp": 4,
+        "attack": 9,
+        "defense": 3,
+        "magic": 6,
+        "speed": 3
+      },
+      "exp": 470,
+      "gold": 350,
+      "captureRate": 0,
+      "skills": [
+        "flash",
+        "rock_throw",
+        "roar"
+      ],
+      "motion": "sway",
+      "boss": true,
+      "drops": [
+        {
+          "item": "toy_music_box",
+          "chance": 0.3
+        },
+        {
+          "item": "star_seal",
+          "chance": 0.25
+        },
+        {
+          "item": "wishing_seal",
+          "chance": 0.05
+        }
+      ]
     }
   ]
 }

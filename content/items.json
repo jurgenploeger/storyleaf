@@ -4868,6 +4868,21 @@
       "accent": "#FFE680"
     },
     {
+      "id": "glimmerdeep_cape",
+      "icon": "shield-star",
+      "art": "item_glimmerdeep_cape",
+      "name": "Glimmerdeep Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 7,
+        "hp": 44
+      },
+      "description": "Woven in the colours of Glimmerdeep, for one who has beaten every monster that lives there.",
+      "color": "#2A2160",
+      "accent": "#9FE8FF"
+    },
+    {
       "id": "rosen_lake_cape",
       "icon": "shield-star",
       "art": "item_rosen_lake_cape",
@@ -6149,6 +6164,64 @@
       },
       "level": 195,
       "description": "Fennimore's best lens, set in gold. Look through it and you'll see the city past the gate."
+    },
+    {
+      "id": "glimmerstone",
+      "icon": "diamond",
+      "art": "item_glimmerstone",
+      "name": "Glimmerstone",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 154,
+      "description": "A lump of geode from the Glimmerdeep, glowing softly from the inside. A lantern could burn on it for a hundred years."
+    },
+    {
+      "id": "prismscale_mail",
+      "icon": "shield-plus",
+      "art": "item_prismscale_mail",
+      "name": "Prismscale Mail",
+      "type": "armor",
+      "price": 14800,
+      "stats": {
+        "defense": 50,
+        "hp": 120,
+        "magic": 10
+      },
+      "level": 158,
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 200,
+          "saturation": 0.5,
+          "value": 1.15
+        }
+      ],
+      "description": "Scales the Prism Drake shed in its sleep, laced into mail. In the dark it glows like the Glimmerdeep.",
+      "wear": "plate",
+      "sheets": {
+        "human": "armor_dragon_mail_human",
+        "elf": "armor_dragon_mail_elf",
+        "dwarf": "armor_dragon_mail_dwarf"
+      },
+      "pattern": "scales",
+      "accent": "#C9A0FF",
+      "tint": [
+        {
+          "hue": [
+            335,
+            20
+          ],
+          "minSaturation": 0.55,
+          "to": 200,
+          "saturation": 0.45,
+          "value": 1.2
+        }
+      ]
     }
   ]
 }

@@ -54,6 +54,7 @@
     {"item": "secret_plain_cape", "kind": "land", "land": "secret_plain"},
     {"item": "hachoo_island_cape", "kind": "land", "land": "hachoo_island"},
     {"item": "starfall_isle_cape", "kind": "land", "land": "starfall_isle"},
+    {"item": "glimmerdeep_cape", "kind": "land", "land": "glimmerdeep"},
     {"item": "rosen_lake_cape", "kind": "land", "land": "rosen_lake"},
     {"item": "water_temple_cape", "kind": "land", "land": "water_temple"},
     {"item": "mysterious_cave_cape", "kind": "land", "land": "mysterious_cave"},
