@@ -2,6 +2,17 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.25",
+      "date": "2026-10-17",
+      "title": "Villages of the late lands",
+      "notes": [
+        "The last lands have villages too: Silvermoon Steps (Moonwhisper), Tallgrass (Hidden Steppe), Pepperpot Bay (Sneezle Sands), Icemoor (Briarmere), Pilgrim's Rest (Tidewater Shrine) and Greenglass (Emerald Road), and a silk-spinners' camp in Whispering Hollow. Every land out in the fields now has a village of its own.",
+        "20 new quests for levels 88 to 195: the Moon-Viewing Night, the Great Drum, the Great Sneeze, Ice Lantern Night, an offering for the tide, crystal silk and new spectacles for the Emerald Gate.",
+        "Seven new treasures to earn: the Moon Rabbit Charm, Steppe-Runner Boots, Pepperfire Gauntlets, the Frostlight Pendant, the Tidesong Ring, Crystal-Silk Gloves and the Emerald Glass Amulet.",
+        "13 more villagers with stories of their own."
+      ]
+    },
+    {
       "version": "0.7.24",
       "date": "2026-10-17",
       "title": "Villages of the middle lands",

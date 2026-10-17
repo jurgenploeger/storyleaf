@@ -3002,6 +3002,565 @@
           "hi_ether"
         ]
       }
+    },
+    {
+      "id": "silvermoon_rice",
+      "title": "Apes in the Rice",
+      "giver": "festival_selene",
+      "description": "The Shadow Apes raided the store of Moon Rice we keep for the festival mochi! Win six sacks back from them, or the Moon-Viewing Night will have nothing to eat.",
+      "minLevel": 88,
+      "objective": {
+        "type": "bring",
+        "target": "moon_rice",
+        "count": 6
+      },
+      "reward": {
+        "gold": 1320,
+        "exp": 12780,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "moon_rice",
+          "from": [
+            "black_kong",
+            "mint_black_kong"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "silvermoon_bones",
+      "title": "Rattling on the Steps",
+      "giver": "stargazer_bellamy",
+      "description": "Every night the Poison Skeletons climb our steps, rattling so loudly I can't hear myself think, let alone the stars. Send ten of them clattering back down the hill.",
+      "minLevel": 92,
+      "objective": {
+        "type": "defeat",
+        "target": "poison_skeleton",
+        "count": 10
+      },
+      "reward": {
+        "gold": 1380,
+        "exp": 13970,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "silvermoon_night",
+      "title": "The Moon-Viewing Night",
+      "giver": "festival_selene",
+      "description": "Tonight the moon is full, and the first tray of mochi is always left out for the Moon Rabbit Queen. Piece three sacks of Moon Rice together on a Bamboo tray, and bring it to me.",
+      "requires": [
+        "silvermoon_rice",
+        "silvermoon_bones"
+      ],
+      "minLevel": 97,
+      "objective": {
+        "type": "bring",
+        "target": "mochi_tray",
+        "count": 1
+      },
+      "reward": {
+        "gold": 2180,
+        "exp": 23290,
+        "items": [
+          "moon_rabbit_charm",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "moon_rice",
+          "from": [
+            "black_kong",
+            "mint_black_kong"
+          ],
+          "chance": 0.5,
+          "upTo": 3
+        }
+      ]
+    },
+    {
+      "id": "tallgrass_bulls",
+      "title": "Fire in the Grass",
+      "giver": "elder_kestrel",
+      "description": "When the Blaze Bulls stampede, the tall grass catches light behind them, and Tallgrass is made of grass. Turn ten of them before the whole steppe goes up.",
+      "minLevel": 108,
+      "objective": {
+        "type": "defeat",
+        "target": "red_bull",
+        "count": 10
+      },
+      "reward": {
+        "gold": 1620,
+        "exp": 23100,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "tallgrass_manes",
+      "title": "Manes for the Drums",
+      "giver": "drummaker_saba",
+      "description": "A Tallgrass drum is trimmed with an Earth Lion's mane, so it roars when you beat it. Bring me five tufts. The lions grow it back, and they're vain about it.",
+      "minLevel": 112,
+      "objective": {
+        "type": "bring",
+        "target": "lion_mane",
+        "count": 5
+      },
+      "reward": {
+        "gold": 1680,
+        "exp": 26910,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "lion_mane",
+          "from": [
+            "earth_lion",
+            "frosted_earth_lion"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "tallgrass_drum",
+      "title": "The Great Drum",
+      "giver": "drummaker_saba",
+      "description": "The Great Drum calls every herd on the steppe home, and its skin split in the last storm. Piece three Lion's Manes together with a Crocodile Hide, and bring me a drum worth beating.",
+      "requires": [
+        "tallgrass_bulls",
+        "tallgrass_manes"
+      ],
+      "minLevel": 118,
+      "objective": {
+        "type": "bring",
+        "target": "great_drum",
+        "count": 1
+      },
+      "reward": {
+        "gold": 2660,
+        "exp": 49980,
+        "items": [
+          "steppe_runner_boots",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "lion_mane",
+          "from": [
+            "earth_lion",
+            "frosted_earth_lion"
+          ],
+          "chance": 0.5,
+          "upTo": 3
+        }
+      ]
+    },
+    {
+      "id": "pepper_crabs",
+      "title": "Crabs in the Salt Pans",
+      "giver": "saltpanner_morrow",
+      "description": "The Fire Crabs scuttle through my salt pans and boil the water dry before the salt can set. Chase ten of them back to the rocks.",
+      "minLevel": 125,
+      "objective": {
+        "type": "defeat",
+        "target": "fire_crab",
+        "count": 10
+      },
+      "reward": {
+        "gold": 1880,
+        "exp": 41900,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "pepper_peppers",
+      "title": "Peppers Gone Missing",
+      "giver": "pepper_ginger",
+      "description": "The Wood Monkeys stripped my whole pepper patch, and now they sit in the trees sneezing at me. Win six Fire Peppers back. Don't rub your eyes after.",
+      "minLevel": 128,
+      "objective": {
+        "type": "bring",
+        "target": "fire_pepper",
+        "count": 6
+      },
+      "reward": {
+        "gold": 1920,
+        "exp": 45960,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "fire_pepper",
+          "from": [
+            "wood_monkey",
+            "shadow_wood_monkey"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "pepper_sneeze",
+      "title": "The Great Sneeze",
+      "giver": "pepper_ginger",
+      "description": "Every year the whole bay sneezes at once for luck, and somebody has to make the powder. This year it's you! Grind three Fire Peppers in a Bamboo mortar and bring it here. Stand back.",
+      "requires": [
+        "pepper_crabs",
+        "pepper_peppers"
+      ],
+      "minLevel": 133,
+      "objective": {
+        "type": "bring",
+        "target": "sneezing_powder",
+        "count": 1
+      },
+      "reward": {
+        "gold": 2990,
+        "exp": 79910,
+        "items": [
+          "pepperfire_gauntlets",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "fire_pepper",
+          "from": [
+            "wood_monkey",
+            "shadow_wood_monkey"
+          ],
+          "chance": 0.5,
+          "upTo": 3
+        }
+      ]
+    },
+    {
+      "id": "icemoor_bears",
+      "title": "Bears on the Ice",
+      "giver": "icecarver_sigrun",
+      "description": "The Frost Bears wander out onto the ice and sit on our fishing holes till they freeze over. Shoo ten of them back to the shore, and Icemoor can fish again.",
+      "minLevel": 138,
+      "objective": {
+        "type": "defeat",
+        "target": "frost_bear",
+        "count": 10
+      },
+      "reward": {
+        "gold": 2070,
+        "exp": 61280,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "icemoor_soup",
+      "title": "Something Wobbly for the Soup",
+      "giver": "soupwife_margery",
+      "description": "My secret? A spoonful of Temple Jelly thickens a soup like nothing else, and it keeps you warm all night. Bring me six frozen chunks. Don't tell anyone what's in it.",
+      "minLevel": 143,
+      "objective": {
+        "type": "bring",
+        "target": "frozen_jelly",
+        "count": 6
+      },
+      "reward": {
+        "gold": 2140,
+        "exp": 70020,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "frozen_jelly",
+          "from": [
+            "temple_jelly"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "icemoor_swan",
+      "title": "Ice Lantern Night",
+      "giver": "icecarver_sigrun",
+      "description": "On Ice Lantern Night the whole of Icemoor lights the lake, and every year someone carves the Ice Swan at its heart. This year, you! Win three blocks of Clear Ice from the Snowmen and carve it in your bag.",
+      "requires": [
+        "icemoor_bears",
+        "icemoor_soup"
+      ],
+      "minLevel": 150,
+      "objective": {
+        "type": "bring",
+        "target": "ice_swan",
+        "count": 1
+      },
+      "reward": {
+        "gold": 3380,
+        "exp": 125310,
+        "items": [
+          "frostlight_pendant",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "clear_ice",
+          "from": [
+            "snowman",
+            "shadow_snowman"
+          ],
+          "chance": 0.45,
+          "upTo": 3
+        }
+      ]
+    },
+    {
+      "id": "pilgrim_crawlers",
+      "title": "Thieves on the Steps",
+      "giver": "shrinekeeper_ondine",
+      "description": "The Gem Crawlers climb the shrine steps at low tide and pry the pearls out of the walls. Send ten of them scuttling back into the deep.",
+      "minLevel": 152,
+      "objective": {
+        "type": "defeat",
+        "target": "gem_crawler",
+        "count": 10
+      },
+      "reward": {
+        "gold": 2280,
+        "exp": 87690,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "pilgrim_pearls",
+      "title": "Pearls for the Pilgrims' Stew",
+      "giver": "innkeeper_bartholomew",
+      "description": "Every Temple Jelly carries a little pearl in its middle, and my stew isn't the same without one. Bring me six. The pilgrims say it's the pearls that give them their second wind.",
+      "minLevel": 158,
+      "objective": {
+        "type": "bring",
+        "target": "jelly_pearl",
+        "count": 6
+      },
+      "reward": {
+        "gold": 2370,
+        "exp": 100930,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "jelly_pearl",
+          "from": [
+            "temple_jelly"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "pilgrim_offering",
+      "title": "An Offering for the Tide",
+      "giver": "shrinekeeper_ondine",
+      "description": "Once a year the pilgrims set an offering on the shrine's last dry step, so the tide stays kind. Piece three Jelly Pearls together round a Dragon Pearl, and bring it here.",
+      "requires": [
+        "pilgrim_crawlers",
+        "pilgrim_pearls"
+      ],
+      "minLevel": 164,
+      "objective": {
+        "type": "bring",
+        "target": "offering_shell",
+        "count": 1
+      },
+      "reward": {
+        "gold": 3690,
+        "exp": 173090,
+        "items": [
+          "tidesong_ring",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "jelly_pearl",
+          "from": [
+            "temple_jelly"
+          ],
+          "chance": 0.5,
+          "upTo": 3
+        }
+      ]
+    },
+    {
+      "id": "hollow_silk",
+      "title": "Crystal Silk",
+      "giver": "spinner_arachne",
+      "description": "The Crystal Widows spin the finest thread in all the land, and they guard it jealously. Win six skeins from them, and I'll weave something the whole hollow will whisper about.",
+      "minLevel": 168,
+      "objective": {
+        "type": "bring",
+        "target": "crystal_silk",
+        "count": 6
+      },
+      "reward": {
+        "gold": 2520,
+        "exp": 125750,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "crystal_silk",
+          "from": [
+            "crystal_widow"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "hollow_widows",
+      "title": "Tangles in the Dark",
+      "giver": "spinner_arachne",
+      "description": "The Black Widows keep tangling my looms with their sticky webs, and their silk is no good to anyone. Clear ten of them away, and my gloves are yours.",
+      "requires": [
+        "hollow_silk"
+      ],
+      "minLevel": 176,
+      "objective": {
+        "type": "defeat",
+        "target": "black_widow",
+        "count": 10
+      },
+      "reward": {
+        "gold": 3960,
+        "exp": 222340,
+        "items": [
+          "crystal_silk_gloves",
+          "hi_ether"
+        ]
+      }
+    },
+    {
+      "id": "greenglass_pegasi",
+      "title": "Pegasi in the Poppies",
+      "giver": "poppyfarmer_dell",
+      "description": "The Emerald Pegasi land in my poppy field to graze, then fall asleep in it and squash every flower. Wake ten of them up and send them flying.",
+      "minLevel": 182,
+      "objective": {
+        "type": "defeat",
+        "target": "emerald_pegasus",
+        "count": 10
+      },
+      "reward": {
+        "gold": 2730,
+        "exp": 166710,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "greenglass_glass",
+      "title": "Cloud Glass",
+      "giver": "spectacle_fennimore",
+      "description": "The finest lenses are ground from Cloud Glass, the little golden drops a Golden Cloud rains when it's beaten. Bring me six, and I can finally fill my orders.",
+      "minLevel": 188,
+      "objective": {
+        "type": "bring",
+        "target": "cloud_glass",
+        "count": 6
+      },
+      "reward": {
+        "gold": 2820,
+        "exp": 186630,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "cloud_glass",
+          "from": [
+            "golden_cloud",
+            "azure_golden_cloud"
+          ],
+          "chance": 0.5
+        }
+      ]
+    },
+    {
+      "id": "greenglass_spectacles",
+      "title": "Spectacles for the Gate",
+      "giver": "spectacle_fennimore",
+      "description": "Nobody may walk through the Emerald Gate without green spectacles, and the gatekeeper's own pair cracked when the dragon came. Piece two Cloud Glass lenses together with an Emerald, and we'll make new ones.",
+      "requires": [
+        "greenglass_pegasi",
+        "greenglass_glass"
+      ],
+      "minLevel": 195,
+      "objective": {
+        "type": "bring",
+        "target": "emerald_spectacles",
+        "count": 1
+      },
+      "reward": {
+        "gold": 4390,
+        "exp": 317640,
+        "items": [
+          "emerald_glass_amulet",
+          "hi_ether"
+        ]
+      },
+      "drops": [
+        {
+          "item": "cloud_glass",
+          "from": [
+            "golden_cloud",
+            "azure_golden_cloud"
+          ],
+          "chance": 0.5,
+          "upTo": 2
+        }
+      ]
     }
   ]
 }
