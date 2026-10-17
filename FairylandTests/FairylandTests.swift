@@ -695,7 +695,8 @@ struct ContentTests {
     /// story there that ends in a treasure.
     @Test func fieldsHaveVillages() throws {
         let lands = ["sunny_meadow", "northern_grassland", "pineapple_shore", "twilight_woods", "smiling_forest",
-                     "candy_mountain", "frog_swamp", "wolf_lair"]
+                     "candy_mountain", "frog_swamp", "wolf_lair", "swan_lake", "valley_of_fear", "lotus_land", "puppet_hill",
+                     "genie_desert", "goldburg_lake", "crystal_mountain", "sleepy_town", "snow_white_forest"]
         for id in lands {
             let def = try #require(content.map(id))
             let givers = (def.npcs ?? []).filter { $0.role == .quests }

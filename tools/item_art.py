@@ -1906,6 +1906,262 @@ def draw_red_hood_ribbon(c):
     c.disc(16, 14, 2.6, RED[0]); c.set(15, 13, RED[2])                         # the knot
 
 
+# ---------------------------------------------------------------- the villages of the middle lands
+# (0.7.24): what their quests ask you to bring, and the treasure each one ends in.
+
+WISPGLOW = [hexc("4a7ab8"), hexc("a8d8ff"), hexc("f0faff")]
+HORN = [hexc("a08a62"), hexc("e0d0a8"), hexc("fff6e0")]
+IRON = [hexc("3a3e4a"), hexc("6a7080"), hexc("a8b0c0")]
+SCALE = [hexc("5a4a24"), hexc("8a7438"), hexc("c0a860")]
+LOTUS = [hexc("c04a7a"), hexc("ff8ab8"), hexc("ffd8ea")]
+HEARTWOOD = [hexc("6a3a1a"), hexc("a8642e"), hexc("e0a060")]
+ORE = [hexc("2e2a2a"), hexc("5a5250"), hexc("8a807a")]
+FORGE = [hexc("b04010"), hexc("ff8a2a"), hexc("ffd080")]
+PRISM = [hexc("6a5ab0"), hexc("c0b8ff"), WHITE]
+COFFEE = [hexc("2e1a0e"), hexc("5a3418"), hexc("8a5a30")]
+DREAMJAR = [hexc("5a6ab8"), hexc("a8b8f0"), hexc("e8eeff")]
+SLIPPER = [hexc("8a6ab8"), hexc("c8aaf0"), hexc("f0e4ff")]
+FROST = [hexc("8a2a3a"), hexc("d0506a"), hexc("ff9ab0")]
+
+
+def draw_wisp_silk(c):
+    """A small skein of glowing pale-blue thread."""
+    c.ellipse(16, 17, 10, 7, WISPGLOW[1])
+    for y in range(11, 24, 2):
+        c.line(7, y, 25, y + 1, WISPGLOW[2] if y % 4 == 1 else WISPGLOW[0])
+    c.rect(14, 9, 18, 25, WISPGLOW[0])                                        # the band round its middle
+    c.rect(15, 9, 17, 25, WISPGLOW[2])
+    c.line(25, 19, 29, 26, WISPGLOW[1])                                       # a loose end
+    for (x, y) in ((5, 8), (27, 7), (4, 25)):
+        c.set(x, y, WHITE)
+
+
+def draw_swan_lace_veil(c):
+    """A folded veil of white lace with a green clasp."""
+    c.poly([(6, 8), (26, 8), (28, 26), (4, 26)], CLOTH[2])
+    for y in range(10, 26, 3):                                                # the lace holes
+        for x in range(7 + (y % 2) * 2, 27, 4):
+            c.set(x, y, CLOTH[0])
+    c.line(5, 26, 27, 26, CLOTH[0])
+    c.shade(lambda x, y, col: col == CLOTH[2] and x > 22, CLOTH[1])
+    c.disc(16, 9, 3, GREEN[1]); c.set(15, 8, GREEN[2]); c.set(17, 10, GREEN[0])
+
+
+def draw_swan_feather_brooch(c):
+    """A white swan feather pinned with silver."""
+    c.poly([(9, 27), (13, 15), (20, 6), (23, 8), (19, 19), (11, 28)], WHITE)
+    c.line(10, 27, 21, 7, CLOTH[0])                                           # the quill
+    c.shade(lambda x, y, col: col == WHITE and x + y > 33, CLOTH[2])
+    c.line(5, 21, 25, 21, SILVER[1], width=2)                                 # the pin
+    c.disc(5, 21, 1.6, SILVER[2]); c.disc(26, 21, 1, SILVER[0])
+
+
+def draw_bull_horn(c):
+    """A curved cream horn."""
+    for i in range(24):
+        t = i / 23
+        x, y = 6 + t * 20, 26 - math.sin(t * math.pi * 0.8) * 16 - t * 4
+        c.disc(x, y, 4.5 * (1 - t) + 1, HORN[1])
+    c.shade(lambda x, y, col: col == HORN[1] and y > 18, HORN[0])
+    c.line(8, 20, 18, 9, HORN[2])
+    c.disc(6, 26, 3.2, HORN[0])
+
+
+def draw_bell_clapper(c):
+    """The iron tongue of a bell on a short chain."""
+    for i in range(4):
+        c.ring(16, 4 + i * 3, 1.8, 0.8, IRON[1])
+    c.line(16, 15, 16, 22, IRON[1], width=2)
+    c.disc(16, 24, 5, IRON[1])
+    light_top_left(c, IRON, 16, 24, 5)
+    c.set(13, 22, IRON[2])
+    c.line(18, 21, 20, 25, hexc("6a4a2a"))                                    # a monkey's tooth marks
+
+
+def draw_bellringers_gloves(c):
+    """Teal gloves with little brass bells on the cuffs."""
+    glove(c, TEAL, LEATHER)
+    for x in (11, 17, 23):
+        c.disc(x, 26, 1.8, GOLD[1]); c.set(x, 27, GOLD[0])
+
+
+def draw_snake_scale(c):
+    """A hard, smooth brown scale."""
+    c.poly([(16, 4), (26, 12), (24, 24), (16, 29), (8, 24), (6, 12)], SCALE[1])
+    c.shade(lambda x, y, col: col == SCALE[1] and x > 18, SCALE[0])
+    c.line(16, 6, 16, 27, SCALE[0])
+    c.line(10, 12, 13, 22, SCALE[2]); c.set(11, 10, WHITE)
+
+
+def draw_ratcatcher_boots(c):
+    """Tall brown boots covered in snake scales."""
+    boot(c, SCALE, SCALE[0], hexc("3a2410"))
+    for y in range(9, 24, 3):
+        for x in range(10 + (y % 2), 17, 3):
+            c.set(x, y, SCALE[2])
+
+
+def draw_dew_pearl(c):
+    """A dewdrop as round as a pearl."""
+    c.disc(16, 18, 9, WISPGLOW[1])
+    light_top_left(c, WISPGLOW, 16, 18, 9)
+    c.disc(12, 14, 2.4, WHITE)
+    c.disc(19, 23, 1.2, WISPGLOW[2])
+
+
+def draw_lotus_lantern(c):
+    """A tiny lotus-flower lantern glowing on a bamboo stick."""
+    c.line(6, 29, 16, 15, BAMBOO[1], width=2)                                 # the stick
+    for (x, y) in ((9, 25), (13, 19)):
+        c.set(x, y, BAMBOO[0])
+    for dx, h in ((-7, 6), (7, 6), (-4, 9), (4, 9), (0, 11)):                  # petals round a glow
+        c.ellipse(19 + dx * 0.9, 12 - h / 2, 3, h / 1.6, LOTUS[1])
+    c.shade(lambda x, y, col: col == LOTUS[1] and x > 22, LOTUS[0])
+    c.disc(19, 12, 3, HONEY[2]); c.set(19, 11, WHITE)
+
+
+def draw_lotus_dew_charm(c):
+    """A pink lotus bud with a dew pearl at its heart."""
+    c.ring(16, 6, 3, 1.6, SILVER[1])
+    c.poly([(16, 9), (24, 18), (16, 29), (8, 18)], LOTUS[1])
+    c.poly([(16, 12), (21, 19), (16, 27), (11, 19)], LOTUS[2])
+    c.shade(lambda x, y, col: col == LOTUS[1] and x > 17, LOTUS[0])
+    c.disc(16, 19, 2.6, WISPGLOW[1]); c.set(15, 18, WHITE)
+
+
+def draw_golden_string(c):
+    """A coil of shining golden string."""
+    for i in range(70):
+        t = i / 70 * math.pi * 5
+        r = 3 + i * 0.12
+        c.set(16 + r * math.cos(t), 16 + r * math.sin(t) * 0.8, GOLD[2] if i % 5 == 0 else GOLD[1])
+    c.line(25, 20, 29, 29, GOLD[1])
+    c.set(16, 16, GOLD[0])
+
+
+def draw_heartwood_locket(c):
+    """A carved wooden heart on a gold chain."""
+    pendant(c, GOLD, HEARTWOOD, shape="round")
+    c.disc(13, 21, 3.5, HEARTWOOD[1]); c.disc(19, 21, 3.5, HEARTWOOD[1])     # heart-shaped over the round
+    c.poly([(9, 22), (23, 22), (16, 29)], HEARTWOOD[1])
+    c.shade(lambda x, y, col: col == HEARTWOOD[1] and x > 17, HEARTWOOD[0])
+    c.line(16, 20, 16, 26, HEARTWOOD[0]); c.set(12, 19, HEARTWOOD[2])
+
+
+def draw_sun_quill(c):
+    """A Light Hedgehog's quill, glowing like a sunbeam."""
+    c.line(6, 27, 25, 6, GOLD[1], width=2)
+    c.line(7, 26, 24, 7, GOLD[2])
+    c.poly([(24, 4), (28, 4), (27, 8)], WHITE)                                # its bright tip
+    for (x, y) in ((27, 12), (20, 3), (30, 7)):
+        c.set(x, y, GOLD[2])
+
+
+def draw_genie_lamp(c):
+    """A gold oil lamp with a glowing wick."""
+    c.ellipse(15, 21, 10, 5, GOLD[1])
+    c.poly([(23, 19), (30, 15), (28, 19), (23, 23)], GOLD[1])                  # the spout
+    c.ellipse(4, 20, 2.6, 3.4, GOLD[0]); c.ellipse(4, 20, 1.2, 2, None)       # the handle
+    light_top_left(c, GOLD, 15, 21, 9)
+    c.ellipse(15, 16, 4, 1.6, GOLD[0]); c.disc(15, 14, 1.4, GOLD[1])          # the lid
+    c.rect(9, 25, 21, 27, GOLD[0])                                            # the foot
+    c.disc(30, 13, 1.6, HONEY[2]); c.set(30, 11, WHITE)                       # the flame
+
+
+def draw_genies_ring(c):
+    """A gold ring with a swirl of blue smoke in its stone."""
+    ring(c, GOLD, gem=True, gem_color=BLUE)
+    for (x, y) in ((14, 7), (17, 5), (19, 3), (15, 3)):
+        c.set(x, y, BLUE[2])
+
+
+def draw_raw_ore(c):
+    """A dark lump of ore with copper flecks."""
+    for (x, y, r) in ((15, 18, 9), (21, 15, 6), (10, 22, 6)):
+        c.disc(x, y, r, ORE[1])
+    light_top_left(c, ORE, 15, 18, 10)
+    for (x, y) in ((13, 15), (18, 20), (21, 13), (9, 21), (16, 24)):
+        c.set(x, y, COPPER[1]); c.set(x + 1, y, COPPER[2])
+
+
+def draw_forgehand_gauntlets(c):
+    """Heavy iron gauntlets glowing orange at the knuckles."""
+    glove(c, IRON, FORGE)
+    for x in (11, 15, 19, 23):
+        c.set(x, 12, FORGE[1]); c.set(x, 13, FORGE[2])
+
+
+def draw_rough_gem(c):
+    """A cloudy, uncut violet gem."""
+    c.poly([(10, 9), (21, 6), (27, 15), (23, 26), (11, 27), (5, 18)], VIOLET[1])
+    c.shade(lambda x, y, col: col == VIOLET[1] and x + y > 36, VIOLET[0])
+    c.poly([(11, 11), (17, 9), (15, 16), (9, 17)], VIOLET[2])
+    c.set(20, 18, VIOLET[2]); c.set(13, 22, VIOLET[0])
+
+
+def draw_prism_lamp(c):
+    """A lamp of cut crystal on a stand, throwing rainbows."""
+    c.rect(12, 26, 20, 28, SILVER[1]); c.rect(15, 21, 17, 26, SILVER[0])
+    c.poly([(16, 4), (24, 12), (16, 22), (8, 12)], PRISM[1])
+    c.shade(lambda x, y, col: col == PRISM[1] and x > 16, PRISM[0])
+    c.poly([(16, 6), (19, 12), (16, 15), (13, 12)], WHITE)
+    for (x0, color) in ((26, RED[1]), (27, ORANGE[1]), (28, GOLD[1]), (29, GREEN[1]), (30, BLUE[1])):
+        c.line(24, 12, x0 + 1, 20, color)
+
+
+def draw_prism_pendant(c):
+    """A clear prism on a silver chain, with a little rainbow."""
+    pendant(c, SILVER, PRISM)
+    for i, color in enumerate((RED[1], ORANGE[1], GOLD[1], GREEN[1], BLUE[1])):
+        c.set(22 + i, 27, color)
+
+
+def draw_coffee_beans(c):
+    """A small pile of dark roasted beans."""
+    for (x, y) in ((8, 24), (16, 26), (24, 24), (12, 18), (20, 18), (16, 11)):
+        c.ellipse(x, y, 3.6, 2.6, COFFEE[1])
+        c.line(x - 2, y + 1, x + 2, y - 1, COFFEE[0])
+        c.set(x - 2, y - 1, COFFEE[2]); c.set(x - 1, y - 2, COFFEE[2])
+
+
+def draw_sweet_dream(c):
+    """A good dream in a little glass jar, glowing like a night light."""
+    c.rect(9, 9, 23, 28, DREAMJAR[2])
+    c.rect(10, 10, 22, 27, hexc("2a3060"))                                    # the night inside
+    c.disc(16, 18, 5, HONEY[2]); c.disc(18, 16, 4.4, hexc("2a3060"))          # a crescent moon
+    for (x, y) in ((12, 13), (20, 24), (13, 24)):
+        c.set(x, y, WHITE)
+    c.rect(8, 5, 24, 8, WOOD[1]); c.rect(8, 5, 24, 5, WOOD[2])                # the cork lid
+
+
+def draw_dozy_slippers(c):
+    """A fluffy lavender slipper with a pompom."""
+    c.ellipse(16, 23, 13, 6, SLIPPER[1])
+    c.shade(lambda x, y, col: col == SLIPPER[1] and y > 25, SLIPPER[0])
+    c.ellipse(11, 20, 6, 2.5, hexc("4a3a6a"))                                 # the opening
+    c.disc(24, 17, 4, WHITE); c.disc(23, 16, 1.6, SLIPPER[2])                 # the pompom
+    c.rect(4, 28, 28, 29, SLIPPER[0])
+
+
+def draw_frost_apple(c):
+    """A rosy apple with a crust of frost."""
+    c.disc(13, 19, 8, FROST[1]); c.disc(19, 19, 8, FROST[1])
+    light_top_left(c, FROST, 16, 19, 9)
+    c.line(16, 11, 17, 6, BROWN[1], width=2)
+    c.ellipse(21, 7, 4, 2, GREEN[1])
+    c.shade(lambda x, y, col: col in FROST and y < 16, SNOW[2])               # frost on top
+    for (x, y) in ((10, 20), (21, 23), (15, 25), (24, 17)):
+        c.set(x, y, WHITE)
+
+
+def draw_seven_hearths_ring(c):
+    """A gold ring set with seven tiny gems."""
+    ring(c, GOLD)
+    for (x, y), color in zip(((8, 15), (10, 11), (13, 9), (16, 8), (19, 9), (22, 11), (24, 15)),
+                             (RED[1], ORANGE[1], GOLD[2], GREEN[1], BLUE[1], VIOLET[1], PINK[1])):
+        c.disc(x, y, 1.4, color)
+
+
 # Every cape in items.json, in its own colour and trim (`color`, `accent`).
 for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
     if _item["type"] == "cape":
@@ -2019,6 +2275,32 @@ PROMPTS = {  # for a later Retro Diffusion upgrade (python3 tools/rd.py generate
     "bogwalker_boots": "tall mossy green waders boots",
     "honey_muffin": "golden honey muffin in a paper case",
     "red_hood_ribbon": "bright red ribbon tied in a bow",
+    "wisp_silk": "small skein of glowing pale blue thread",
+    "swan_lace_veil": "folded white lace veil with a green gem clasp",
+    "swan_feather_brooch": "white swan feather brooch with a silver pin",
+    "bull_horn": "curved cream bull horn",
+    "bell_clapper": "iron bell clapper on a short chain",
+    "bellringers_gloves": "teal gloves with little brass bells on the cuffs",
+    "snake_scale": "hard brown snake scale",
+    "ratcatcher_boots": "tall brown boots covered in snake scales",
+    "dew_pearl": "clear round water drop pearl",
+    "lotus_lantern": "tiny lotus flower lantern glowing on a bamboo stick",
+    "lotus_dew_charm": "small pink lotus bud charm with a water drop",
+    "golden_string": "coil of shining golden string",
+    "heartwood_locket": "carved wooden heart locket on a gold chain",
+    "sun_quill": "glowing golden hedgehog quill",
+    "genie_lamp": "golden genie oil lamp with a glowing wick",
+    "genies_ring": "gold ring with a blue swirling smoke gem",
+    "raw_ore": "dark lump of raw iron ore with copper flecks",
+    "forgehand_gauntlets": "heavy iron gauntlets glowing orange at the knuckles",
+    "rough_gem": "cloudy uncut violet gemstone",
+    "prism_lamp": "crystal prism lamp casting rainbows",
+    "prism_pendant": "clear prism pendant with rainbow light on a silver chain",
+    "coffee_beans": "small pile of dark roasted coffee beans",
+    "sweet_dream": "small glass jar holding a glowing crescent moon dream",
+    "dozy_slippers": "fluffy lavender slippers with pompoms",
+    "frost_apple": "rosy red apple covered in white frost",
+    "seven_hearths_ring": "gold ring set with seven tiny colourful gems",
 }
 
 

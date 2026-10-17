@@ -10500,6 +10500,876 @@
         "height": 32,
         "remove_bg": true
       }
+    },
+    {
+      "id": "npc_ferrywoman_brigid",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "human_female_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 210,
+            "saturation": 0.45,
+            "value": 0.85
+          },
+          {
+            "hue": [
+              0,
+              32
+            ],
+            "minSaturation": 0.6,
+            "minValue": 0.35,
+            "to": 30,
+            "saturation": 0.5,
+            "value": 0.6
+          }
+        ]
+      },
+      "request": {
+        "prompt": "sturdy ferrywoman in a grey blue coat holding a punting pole, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_lacemaker_linnet",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "elf_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 275,
+            "saturation": 0.35,
+            "value": 1.25
+          },
+          {
+            "hue": [
+              12,
+              58
+            ],
+            "minSaturation": 0.55,
+            "minValue": 0.55,
+            "to": 40,
+            "saturation": 0.3,
+            "value": 1.25
+          }
+        ]
+      },
+      "request": {
+        "prompt": "graceful elf lacemaker in a pale lilac gown with lace at the cuffs, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_wisp_silk",
+      "kind": "item",
+      "request": {
+        "prompt": "small skein of glowing pale blue thread, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_swan_lace_veil",
+      "kind": "item",
+      "request": {
+        "prompt": "folded white lace veil with a green gem clasp, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_swan_feather_brooch",
+      "kind": "item",
+      "request": {
+        "prompt": "white swan feather brooch with a silver pin, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_chandler_mabbott",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "dwarf_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 5,
+            "saturation": 0.85,
+            "value": 2.4
+          }
+        ]
+      },
+      "request": {
+        "prompt": "cheery dwarf candle maker in a red apron with a tall candle, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_bellringer_prue",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "human_female_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 180,
+            "saturation": 0.6,
+            "value": 0.8
+          },
+          {
+            "hue": [
+              0,
+              32
+            ],
+            "minSaturation": 0.6,
+            "minValue": 0.35,
+            "to": 45,
+            "saturation": 0.7,
+            "value": 1.1
+          }
+        ]
+      },
+      "request": {
+        "prompt": "brave young bell ringer in a teal cloak with a rope over her shoulder, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_bull_horn",
+      "kind": "item",
+      "request": {
+        "prompt": "curved cream bull horn, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_bell_clapper",
+      "kind": "item",
+      "request": {
+        "prompt": "iron bell clapper on a short chain, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_bellringers_gloves",
+      "kind": "item",
+      "request": {
+        "prompt": "teal gloves with little brass bells on the cuffs, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_ratcatcher_bodkin",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "npc_journeyman",
+        "recolor": [
+          {
+            "hue": [
+              140,
+              200
+            ],
+            "minSaturation": 0.2,
+            "to": 30,
+            "saturation": 0.6,
+            "value": 0.9
+          }
+        ]
+      },
+      "request": {
+        "prompt": "wiry rat catcher in a brown coat with a long pole and a sack, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_snake_scale",
+      "kind": "item",
+      "request": {
+        "prompt": "hard brown snake scale, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_ratcatcher_boots",
+      "kind": "item",
+      "request": {
+        "prompt": "tall brown boots covered in snake scales, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_mayor_pipkin",
+      "kind": "walk_sheet",
+      "scale": 0.7,
+      "derive": {
+        "from": "player_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 48,
+            "saturation": 0.85,
+            "value": 1.1
+          }
+        ]
+      },
+      "request": {
+        "prompt": "tiny thumb-sized mayor in a gold waistcoat with a flower hat, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_dewdrop_sorrel",
+      "kind": "walk_sheet",
+      "scale": 0.7,
+      "derive": {
+        "from": "elf_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 330,
+            "saturation": 0.55,
+            "value": 1.15
+          },
+          {
+            "hue": [
+              12,
+              58
+            ],
+            "minSaturation": 0.55,
+            "minValue": 0.55,
+            "to": 330,
+            "saturation": 0.45,
+            "value": 1.1
+          }
+        ]
+      },
+      "request": {
+        "prompt": "tiny thumb-sized elf girl in a pink petal dress carrying a dewdrop, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_dew_pearl",
+      "kind": "item",
+      "request": {
+        "prompt": "clear round water drop pearl, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_lotus_lantern",
+      "kind": "item",
+      "request": {
+        "prompt": "tiny lotus flower lantern glowing on a bamboo stick, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_lotus_dew_charm",
+      "kind": "item",
+      "request": {
+        "prompt": "small pink lotus bud charm with a water drop, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_puppeteer_gianna",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "npc_toymaker",
+        "recolor": [
+          {
+            "hue": [
+              280,
+              340
+            ],
+            "minSaturation": 0.15,
+            "to": 345,
+            "saturation": 0.9,
+            "value": 0.9
+          }
+        ]
+      },
+      "request": {
+        "prompt": "dramatic puppeteer woman in a crimson dress holding marionette strings, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_toymender_otto",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "dwarf_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 28,
+            "saturation": 0.6,
+            "value": 2.2
+          }
+        ]
+      },
+      "request": {
+        "prompt": "kindly dwarf toy mender in a brown apron with a tiny hammer, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_golden_string",
+      "kind": "item",
+      "request": {
+        "prompt": "coil of shining golden string, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_heartwood_locket",
+      "kind": "item",
+      "request": {
+        "prompt": "carved wooden heart locket on a gold chain, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_lampseller_kasim",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "npc_journeyman",
+        "recolor": [
+          {
+            "hue": [
+              140,
+              200
+            ],
+            "minSaturation": 0.2,
+            "to": 45,
+            "saturation": 0.9,
+            "value": 1.1
+          }
+        ]
+      },
+      "request": {
+        "prompt": "smiling desert merchant in a gold vest and turban holding an oil lamp, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_wellkeeper_samira",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "human_female_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 185,
+            "saturation": 0.7,
+            "value": 0.9
+          },
+          {
+            "hue": [
+              0,
+              32
+            ],
+            "minSaturation": 0.6,
+            "minValue": 0.35,
+            "to": 15,
+            "saturation": 0.5,
+            "value": 0.35
+          }
+        ]
+      },
+      "request": {
+        "prompt": "calm desert well keeper in a teal robe and headscarf with a water jar, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_sun_quill",
+      "kind": "item",
+      "request": {
+        "prompt": "glowing golden hedgehog quill, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_genie_lamp",
+      "kind": "item",
+      "request": {
+        "prompt": "golden genie oil lamp with a glowing wick, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_genies_ring",
+      "kind": "item",
+      "request": {
+        "prompt": "gold ring with a blue swirling smoke gem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_smelter_bruna",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "dwarf_female_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 20,
+            "saturation": 0.9,
+            "value": 1.9
+          },
+          {
+            "hue": [
+              12,
+              58
+            ],
+            "minSaturation": 0.55,
+            "minValue": 0.55,
+            "to": 5,
+            "saturation": 0.9,
+            "value": 0.7
+          }
+        ]
+      },
+      "request": {
+        "prompt": "strong dwarf woman smelter in a leather apron with soot on her cheeks, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_harbourmaster_fitch",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "player_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 225,
+            "saturation": 0.75,
+            "value": 0.8
+          }
+        ]
+      },
+      "request": {
+        "prompt": "fussy harbourmaster in a navy coat with a clipboard, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_raw_ore",
+      "kind": "item",
+      "request": {
+        "prompt": "dark lump of raw iron ore with copper flecks, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_forgehand_gauntlets",
+      "kind": "item",
+      "request": {
+        "prompt": "heavy iron gauntlets glowing orange at the knuckles, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_gemcutter_iolanthe",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "npc_diviner",
+        "recolor": [
+          {
+            "hue": [
+              250,
+              310
+            ],
+            "minSaturation": 0.15,
+            "to": 200,
+            "saturation": 0.8,
+            "value": 1.1
+          }
+        ]
+      },
+      "request": {
+        "prompt": "elegant elf gem cutter in an ice blue robe holding a faceted crystal, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_prospector_flint",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "dwarf_npc_walk",
+        "recolor": [
+          {
+            "hue": [
+              140,
+              230
+            ],
+            "minSaturation": 0.3,
+            "to": 25,
+            "saturation": 0.3,
+            "value": 2.2
+          }
+        ]
+      },
+      "request": {
+        "prompt": "grizzled dwarf prospector in a grey coat with a pickaxe, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_rough_gem",
+      "kind": "item",
+      "request": {
+        "prompt": "cloudy uncut violet gemstone, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_prism_lamp",
+      "kind": "item",
+      "request": {
+        "prompt": "crystal prism lamp casting rainbows, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_prism_pendant",
+      "kind": "item",
+      "request": {
+        "prompt": "clear prism pendant with rainbow light on a silver chain, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_nightowl_nettie",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "human_female_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 235,
+            "saturation": 0.7,
+            "value": 0.75
+          },
+          {
+            "hue": [
+              0,
+              32
+            ],
+            "minSaturation": 0.6,
+            "minValue": 0.35,
+            "to": 270,
+            "saturation": 0.4,
+            "value": 0.45
+          }
+        ]
+      },
+      "request": {
+        "prompt": "wide-eyed young woman in a navy nightgown holding a candle, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_roaster_bastian",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "dwarf_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 25,
+            "saturation": 0.7,
+            "value": 1.8
+          }
+        ]
+      },
+      "request": {
+        "prompt": "jittery dwarf coffee roaster in a brown apron with a steaming mug, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_coffee_beans",
+      "kind": "item",
+      "request": {
+        "prompt": "small pile of dark roasted coffee beans, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_sweet_dream",
+      "kind": "item",
+      "request": {
+        "prompt": "small glass jar holding a glowing crescent moon dream, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_dozy_slippers",
+      "kind": "item",
+      "request": {
+        "prompt": "fluffy lavender slippers with pompoms, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_foreman_barrowby",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "dwarf_npc_walk",
+        "recolor": [
+          {
+            "hue": [
+              140,
+              230
+            ],
+            "minSaturation": 0.3,
+            "to": 0,
+            "saturation": 0.9,
+            "value": 2.2
+          }
+        ]
+      },
+      "request": {
+        "prompt": "stout dwarf miner foreman in a red cap and a lantern, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_housekeeper_blanche",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "human_female_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 220,
+            "saturation": 0.25,
+            "value": 1.25
+          },
+          {
+            "hue": [
+              0,
+              32
+            ],
+            "minSaturation": 0.6,
+            "minValue": 0.35,
+            "to": 0,
+            "saturation": 0.0,
+            "value": 0.2
+          }
+        ]
+      },
+      "request": {
+        "prompt": "kind young housekeeper with black hair in a white and blue dress holding a broom, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_frost_apple",
+      "kind": "item",
+      "request": {
+        "prompt": "rosy red apple covered in white frost, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_seven_hearths_ring",
+      "kind": "item",
+      "request": {
+        "prompt": "gold ring set with seven tiny colourful gems, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
     }
   ]
 }

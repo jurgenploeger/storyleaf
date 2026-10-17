@@ -4755,6 +4755,56 @@
             "I stayed for the apples. Have you tried them? Not the shiny ones.",
             "A princess kept house for us once. She's off being royal now."
           ]
+        },
+        {
+          "name": "Dwarf Grimbly",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "white",
+          "outfit": "red",
+          "x": 3,
+          "y": -16,
+          "hold": "iron_axe",
+          "props": [
+            {
+              "art": "mine_cart",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "ore_vein",
+              "x": 2,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "Off to the mine, back from the mine. That's the whole song.",
+            "Blanche makes us wash before supper. All seven of us. It takes a while.",
+            "The Fire Bears like our woodpile. They like it on fire.",
+            "Mister Frost up on the hill sends his regards. And a lot of snow."
+          ]
+        },
+        {
+          "name": "Dwarf Hobb",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "brown",
+          "outfit": "blue",
+          "x": 8,
+          "y": -11,
+          "props": [
+            {
+              "art": "snowman_prop",
+              "x": 1,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "I built this snowman. He's the eighth dwarf. Don't tell the others.",
+            "Seven hearths means seven fires. Lovely and warm, in the middle.",
+            "Granny Edda says Blanche turned up one winter and just stayed. Good thing too.",
+            "Frost Apples are sweet as honey, if you can get them off a Snowman."
+          ]
         }
       ],
       "theme": {
@@ -5110,6 +5160,24 @@
           "summit": 0,
           "greeting": "A chest, left at the top for whoever climbs this far.",
           "gives": "frostpeak_boots"
+        },
+        {
+          "id": "foreman_barrowby",
+          "name": "Foreman Barrowby",
+          "role": "quests",
+          "art": "npc_foreman_barrowby",
+          "x": 14,
+          "y": -7,
+          "greeting": "Seven dwarfs, seven hearths, one very small kitchen."
+        },
+        {
+          "id": "housekeeper_blanche",
+          "name": "Housekeeper Blanche",
+          "role": "quests",
+          "art": "npc_housekeeper_blanche",
+          "x": 3,
+          "y": -7,
+          "greeting": "Seven dwarfs, seven pairs of muddy boots, and one of me. Wipe your feet!"
         }
       ],
       "encounters": {
@@ -5224,6 +5292,28 @@
           "y": -2,
           "blocking": false,
           "summit": 0
+        }
+      ],
+      "buildings": [
+        {
+          "art": "house_green",
+          "x": 15,
+          "y": -5
+        },
+        {
+          "art": "house",
+          "x": 4,
+          "y": -5
+        },
+        {
+          "art": "mushroom_house",
+          "x": -1,
+          "y": -13
+        },
+        {
+          "art": "house_purple",
+          "x": 17,
+          "y": -13
         }
       ]
     },
@@ -5758,6 +5848,52 @@
             "Ingothold is cut off till someone sorts him out.",
             "Bring a light. And cheese. Rats love cheese."
           ]
+        },
+        {
+          "name": "Nervous Ned",
+          "race": "human",
+          "gender": "male",
+          "hair": "black",
+          "outfit": "gold",
+          "style": "swept",
+          "x": -10,
+          "y": -12,
+          "props": [
+            {
+              "art": "street_lamp",
+              "x": 1,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "Did you hear that? No? Good. Neither did I. Probably.",
+            "I moved to Candlewick because it's got the most candles. Dark's not for me.",
+            "Ansel lights the lamps on the road. I follow him home every night.",
+            "When the bell went quiet, I didn't sleep for a week. Still haven't, really."
+          ]
+        },
+        {
+          "name": "Brave Little Hester",
+          "race": "dwarf",
+          "gender": "female",
+          "hair": "ginger",
+          "outfit": "red",
+          "style": "braids",
+          "x": -15,
+          "y": -17,
+          "props": [
+            {
+              "art": "spooky_lantern",
+              "x": 2,
+              "y": 0
+            }
+          ],
+          "lines": [
+            "I'm not scared of Wisps. They're just lights with opinions.",
+            "The Brave Mouse is my hero. He stood up to a Blaze Bull!",
+            "Mabbott lets me dip the candles. I've made twelve. Eleven are lumpy.",
+            "When I grow up I'll ring the bell, louder than Prue even."
+          ]
         }
       ],
       "danger": true,
@@ -6095,6 +6231,24 @@
           "summit": 0,
           "greeting": "A chest, left at the top for whoever climbs this far.",
           "gives": "shiverpeak_gloves"
+        },
+        {
+          "id": "chandler_mabbott",
+          "name": "Chandler Mabbott",
+          "role": "quests",
+          "art": "npc_chandler_mabbott",
+          "x": -4,
+          "y": -8,
+          "greeting": "Candles! Tall ones, short ones, and ones that don't blow out when a Wisp says boo."
+        },
+        {
+          "id": "bellringer_prue",
+          "name": "Bell-Ringer Prue",
+          "role": "quests",
+          "art": "npc_bellringer_prue",
+          "x": -15,
+          "y": -8,
+          "greeting": "Every hour I ring the bell, so the whole valley knows it isn't alone."
         }
       ],
       "decor": [
@@ -6111,6 +6265,28 @@
           "y": -2,
           "blocking": false,
           "summit": 0
+        }
+      ],
+      "buildings": [
+        {
+          "art": "item_shop",
+          "x": -3,
+          "y": -6
+        },
+        {
+          "art": "magic_tower",
+          "x": -14,
+          "y": -6
+        },
+        {
+          "art": "house",
+          "x": -19,
+          "y": -14
+        },
+        {
+          "art": "house_purple",
+          "x": -1,
+          "y": -14
         }
       ]
     },
@@ -6141,6 +6317,29 @@
             "Big rats. And a king rat, with a crown made of spoons.",
             "Our spoons! From Ingothold!",
             "Sort him out and we'll make you a new set. Of spoons."
+          ]
+        },
+        {
+          "name": "Apprentice Squeak",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "brown",
+          "outfit": "green",
+          "style": "spiky",
+          "x": -14,
+          "y": -7,
+          "props": [
+            {
+              "art": "wooden_crates",
+              "x": -1,
+              "y": 1
+            }
+          ],
+          "lines": [
+            "Bodkin calls me Squeak because I squeak when I see a rat. I see a lot of rats.",
+            "The Rat King's down there somewhere. We don't go that far.",
+            "Scout Hode maps the tunnels. I map where I've been bitten.",
+            "One day I'll catch a Fire Rat with my bare hands. With gloves on."
           ]
         }
       ],
@@ -6329,6 +6528,15 @@
               "With no king in the way, the dwarves of Ingothold aren't cut off anymore. Tell Elder Oak: the road south through Shiverdell can open at last."
             ]
           }
+        },
+        {
+          "id": "ratcatcher_bodkin",
+          "name": "Ratcatcher Bodkin",
+          "role": "quests",
+          "art": "npc_ratcatcher_bodkin",
+          "x": -12,
+          "y": -6,
+          "greeting": "Rats! Rats everywhere! Good for business, bad for my nerves."
         }
       ],
       "encounters": {
@@ -6404,7 +6612,8 @@
             ]
           ]
         }
-      ]
+      ],
+      "buildings": []
     },
     {
       "id": "goldburg",
@@ -7310,6 +7519,62 @@
             "Somewhere out here, a lamp holds a genie. Or a very cramped lizard.",
             "This page of Liora's book is the hardest to draw."
           ]
+        },
+        {
+          "name": "Carpet-Weaver Layla",
+          "race": "human",
+          "gender": "female",
+          "hair": "black",
+          "outfit": "red",
+          "style": "long",
+          "x": 5,
+          "y": 13,
+          "props": [
+            {
+              "art": "flying_carpet",
+              "x": 2,
+              "y": 0,
+              "blocking": false
+            },
+            {
+              "art": "market_stall",
+              "x": 2,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "My carpets don't fly. Well, one did once, but it came back.",
+            "Kasim sells a hundred lamps and swears one of them has a genie.",
+            "Zara's caravans stop here for water, and for gossip.",
+            "A cat in boots came through last week. Very polite. Took nothing."
+          ]
+        },
+        {
+          "name": "Storyteller Hakim",
+          "race": "human",
+          "gender": "male",
+          "hair": "white",
+          "outfit": "gold",
+          "x": 0,
+          "y": 18,
+          "props": [
+            {
+              "art": "water_well",
+              "x": 0,
+              "y": 2
+            },
+            {
+              "art": "desert_pot",
+              "x": 2,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "Sit, sit. I know a thousand stories and one more besides.",
+            "Once a boy found a lamp in a cave, and rubbed it. You know the rest.",
+            "The well here never runs dry. Samira says it's luck. I say it's a genie.",
+            "Mirage Wells is real, you know. Unlike the one you saw on the way here."
+          ]
         }
       ],
       "theme": {
@@ -7600,6 +7865,24 @@
           "x": -4,
           "y": 3,
           "greeting": "Good day! A fine pair of boots you have."
+        },
+        {
+          "id": "lampseller_kasim",
+          "name": "Lamp-Seller Kasim",
+          "role": "quests",
+          "art": "npc_lampseller_kasim",
+          "x": -6,
+          "y": 22,
+          "greeting": "Lamps! Old lamps, new lamps, lamps with a genie in, lamps without. Mostly without."
+        },
+        {
+          "id": "wellkeeper_samira",
+          "name": "Well-Keeper Samira",
+          "role": "quests",
+          "art": "npc_wellkeeper_samira",
+          "x": 5,
+          "y": 22,
+          "greeting": "In the desert, a well is worth more than gold. Ask anyone who's been thirsty."
         }
       ],
       "encounters": {
@@ -7697,6 +7980,28 @@
             ]
           ]
         }
+      ],
+      "buildings": [
+        {
+          "art": "item_shop",
+          "x": -5,
+          "y": 24
+        },
+        {
+          "art": "inn_teal",
+          "x": 6,
+          "y": 24
+        },
+        {
+          "art": "house",
+          "x": -9,
+          "y": 16
+        },
+        {
+          "art": "inn",
+          "x": 9,
+          "y": 16
+        }
       ]
     },
     {
@@ -7757,6 +8062,61 @@
             "I can see Ingothold's chimneys from here.",
             "Somebody left that chest. Not me. I only leave footprints.",
             "Getting down is the part I never plan for."
+          ]
+        },
+        {
+          "name": "Polisher Mae",
+          "race": "human",
+          "gender": "female",
+          "hair": "blonde",
+          "outfit": "teal",
+          "style": "bob",
+          "x": -14,
+          "y": -3,
+          "props": [
+            {
+              "art": "crystal",
+              "x": 1,
+              "y": 2
+            },
+            {
+              "art": "pink_crystal",
+              "x": -1,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "I polish what Iolanthe cuts. My arms are very strong now.",
+            "Greta mines the rock, Flint finds the gems, and we make them shine.",
+            "A Golden Cloud rained on my crystals once. Golden rain! Very sticky.",
+            "Look closely and every crystal has a little rainbow inside."
+          ]
+        },
+        {
+          "name": "Apprentice Quill",
+          "race": "elf",
+          "gender": "male",
+          "hair": "blue",
+          "outfit": "white",
+          "style": "swept",
+          "x": -9,
+          "y": -8,
+          "walk": {
+            "x": -9,
+            "y": -2
+          },
+          "props": [
+            {
+              "art": "mine_cart",
+              "x": 2,
+              "y": 0
+            }
+          ],
+          "lines": [
+            "Iolanthe says I cut crystals like a bear cuts cake.",
+            "The Gem Crawlers eat the best crystals. We have to win them back.",
+            "Pebble up on the summit is the oldest stone on the mountain. And the chattiest.",
+            "One day I'll cut a crystal so clear you'll forget it's there."
           ]
         }
       ],
@@ -8086,6 +8446,24 @@
           "summit": 0,
           "greeting": "A chest, left at the top for whoever climbs this far.",
           "gives": "crystal_crown_pendant"
+        },
+        {
+          "id": "gemcutter_iolanthe",
+          "name": "Gemcutter Iolanthe",
+          "role": "quests",
+          "art": "npc_gemcutter_iolanthe",
+          "x": -20,
+          "y": 1,
+          "greeting": "Every crystal has a shape hiding inside it. I just let it out."
+        },
+        {
+          "id": "prospector_flint",
+          "name": "Prospector Flint",
+          "role": "quests",
+          "art": "npc_prospector_flint",
+          "x": -9,
+          "y": 1,
+          "greeting": "Mind the Floating Stones. They float until they don't."
         }
       ],
       "decor": [
@@ -8109,6 +8487,28 @@
           "y": 1,
           "blocking": false,
           "summit": 1
+        }
+      ],
+      "buildings": [
+        {
+          "art": "magic_tower",
+          "x": -19,
+          "y": 3
+        },
+        {
+          "art": "house",
+          "x": -8,
+          "y": 3
+        },
+        {
+          "art": "house_purple",
+          "x": -23,
+          "y": -5
+        },
+        {
+          "art": "mushroom_house_blue",
+          "x": -5,
+          "y": -5
         }
       ]
     },
@@ -11518,6 +11918,67 @@
             "The swans come home in spring. They land right... about... there.",
             "Old Swan Keeper's fed them since he was a cygnet himself."
           ]
+        },
+        {
+          "name": "Ferry Lad Corin",
+          "race": "human",
+          "gender": "male",
+          "hair": "brown",
+          "outfit": "blue",
+          "style": "messy",
+          "x": -9,
+          "y": -9,
+          "walk": {
+            "x": -9,
+            "y": -3
+          },
+          "props": [
+            {
+              "art": "wooden_crates",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "barrels",
+              "x": 2,
+              "y": 1
+            }
+          ],
+          "lines": [
+            "Brigid says one day the ferry's mine. I just have to stop falling in.",
+            "The Treefrogs ride the ferry for free. I've tried charging them.",
+            "Hugo builds the boats, Brigid sails them, I bail them out.",
+            "Odette never comes over to Reedwater. She just watches from the island."
+          ]
+        },
+        {
+          "name": "Swan-Feeder Agatha",
+          "race": "human",
+          "gender": "female",
+          "hair": "white",
+          "outfit": "white",
+          "style": "bob",
+          "x": -14,
+          "y": -4,
+          "props": [
+            {
+              "art": "water_well",
+              "x": 0,
+              "y": 2
+            },
+            {
+              "art": "bench",
+              "x": 2,
+              "y": 1,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "I've fed the swans every morning for fifty years. They still hiss at me.",
+            "Linnet's lace is so fine you can read through it. I've tried.",
+            "They say the swan girl on the island was a princess once. I believe it.",
+            "Wisps drift over the water at dusk. Linnet spins their light into thread."
+          ]
         }
       ],
       "width": 170,
@@ -12011,6 +12472,26 @@
           "art": "house_green",
           "x": 4,
           "y": 5
+        },
+        {
+          "art": "house",
+          "x": -19,
+          "y": 2
+        },
+        {
+          "art": "house_purple",
+          "x": -8,
+          "y": 2
+        },
+        {
+          "art": "inn_teal",
+          "x": -23,
+          "y": -6
+        },
+        {
+          "art": "house_green",
+          "x": -5,
+          "y": -6
         }
       ],
       "npcs": [
@@ -12022,6 +12503,24 @@
           "x": 3,
           "y": 3,
           "greeting": "The swans come home in spring. Every one of them was once an ugly duckling."
+        },
+        {
+          "id": "ferrywoman_brigid",
+          "name": "Ferrywoman Brigid",
+          "role": "quests",
+          "art": "npc_ferrywoman_brigid",
+          "x": -20,
+          "y": 0,
+          "greeting": "Mind the gap between the boat and the jetty. And the frogs. Mostly the frogs."
+        },
+        {
+          "id": "lacemaker_linnet",
+          "name": "Lacemaker Linnet",
+          "role": "quests",
+          "art": "npc_lacemaker_linnet",
+          "x": -9,
+          "y": 0,
+          "greeting": "Swan Lake lace is the finest anywhere. I learned the pattern from the swans themselves."
         }
       ]
     },
@@ -12064,6 +12563,63 @@
             "I asked Thumbelina to marry me. She said she'd think about it.",
             "That was three summers ago. Still thinking, I expect.",
             "The tunnels down there run to the Rat Cavern. Ghastly neighbours."
+          ]
+        },
+        {
+          "name": "Ferryman Bo",
+          "race": "human",
+          "gender": "male",
+          "hair": "black",
+          "outfit": "teal",
+          "style": "crop",
+          "x": -18,
+          "y": 3,
+          "props": [
+            {
+              "art": "lily_pad",
+              "x": 2,
+              "y": 0,
+              "blocking": false
+            },
+            {
+              "art": "lotus",
+              "x": 1,
+              "y": -2,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "I row the little folk across on a leaf. Six at a time, if they hold on.",
+            "Pipkin's the smallest mayor in the land, and the loudest.",
+            "The Water Slugs eat the lily pads. That's like eating someone's house!",
+            "Thumbelina visits sometimes. Everyone here thinks she's very tall."
+          ]
+        },
+        {
+          "name": "Snail-Keeper Mopsy",
+          "race": "elf",
+          "gender": "female",
+          "hair": "green",
+          "outfit": "pink",
+          "style": "ponytail",
+          "x": -23,
+          "y": 8,
+          "walk": {
+            "x": -29,
+            "y": 9
+          },
+          "props": [
+            {
+              "art": "toadstool",
+              "x": 1,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "The tiny folk ride snails to market. I keep the snails. It's slow work.",
+            "Sorrel says a dew pearl is a morning you can keep in your pocket.",
+            "The Lantern Float is the prettiest night of the year. If it happens.",
+            "Mister Mole digs tunnels under Lilypad Landing. Nobody minds, they're cosy."
           ]
         }
       ],
@@ -12381,6 +12937,46 @@
           "x": -3,
           "y": 3,
           "greeting": "Oh! Hello, giant. Please mind the lily pads, one of them is my house."
+        },
+        {
+          "id": "mayor_pipkin",
+          "name": "Mayor Pipkin",
+          "role": "quests",
+          "art": "npc_mayor_pipkin",
+          "x": -29,
+          "y": 12,
+          "greeting": "Welcome to Lilypad Landing! Mind your feet. We're smaller than we look. Well, we look small too."
+        },
+        {
+          "id": "dewdrop_sorrel",
+          "name": "Dew-Gatherer Sorrel",
+          "role": "quests",
+          "art": "npc_dewdrop_sorrel",
+          "x": -18,
+          "y": 12,
+          "greeting": "Every morning I gather the dew from the lotus petals, before the sprites drink it all."
+        }
+      ],
+      "buildings": [
+        {
+          "art": "mushroom_house",
+          "x": -28,
+          "y": 14
+        },
+        {
+          "art": "mushroom_house_blue",
+          "x": -17,
+          "y": 14
+        },
+        {
+          "art": "mushroom_house_gold",
+          "x": -32,
+          "y": 6
+        },
+        {
+          "art": "mushroom_house",
+          "x": -14,
+          "y": 6
         }
       ]
     },
@@ -12438,6 +13034,63 @@
             "They only dance for their king now.",
             "I play anyway. The animals will come back when it's safe.",
             "Hermit Orrin says they're waiting just over the hill."
+          ]
+        },
+        {
+          "name": "Little Lark",
+          "race": "human",
+          "gender": "female",
+          "hair": "blonde",
+          "outfit": "purple",
+          "style": "ponytail",
+          "x": 1,
+          "y": 12,
+          "props": [
+            {
+              "art": "marionette",
+              "x": 1,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "This puppet's called Mister Buttons. He never ran away, he's very loyal.",
+            "Gianna puts on a show every midsummer. Last year the puppets did it themselves.",
+            "Old Beppo carved half the puppets on the hill. He misses them.",
+            "Rook plays the fiddle and the wild puppets dance. It's a bit spooky."
+          ]
+        },
+        {
+          "name": "Woodcarver Fenna",
+          "race": "dwarf",
+          "gender": "female",
+          "hair": "brown",
+          "outfit": "green",
+          "style": "crop",
+          "x": -4,
+          "y": 7,
+          "walk": {
+            "x": -4,
+            "y": 13
+          },
+          "hold": "small_hatchet",
+          "props": [
+            {
+              "art": "tree_stump",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "toy_blocks",
+              "x": 2,
+              "y": 1,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "Beetles in the wood, beetles in the shop, beetles in my lunch.",
+            "A good puppet needs good wood. A good puppeteer needs patience.",
+            "Otto mends everything. He mended my heart once. Well, my chair.",
+            "The golden strings are the magic part. Without them it's just wood."
           ]
         }
       ],
@@ -12746,6 +13399,26 @@
           "art": "mushroom_house",
           "x": 4,
           "y": -1
+        },
+        {
+          "art": "item_shop_red",
+          "x": 8,
+          "y": 18
+        },
+        {
+          "art": "blacksmith",
+          "x": -3,
+          "y": 18
+        },
+        {
+          "art": "house",
+          "x": -8,
+          "y": 10
+        },
+        {
+          "art": "mushroom_house_blue",
+          "x": 10,
+          "y": 10
         }
       ],
       "npcs": [
@@ -12776,6 +13449,24 @@
               "Hermit Orrin says they used to dance for children. Maybe one day they will again, but only when they want to. The animals can come home to Marionette Rise."
             ]
           }
+        },
+        {
+          "id": "puppeteer_gianna",
+          "name": "Puppeteer Gianna",
+          "role": "quests",
+          "art": "npc_puppeteer_gianna",
+          "x": 7,
+          "y": 16,
+          "greeting": "Every puppet on this hill was carved in Stringwood. Some of them just forgot to come home."
+        },
+        {
+          "id": "toymender_otto",
+          "name": "Toymender Otto",
+          "role": "quests",
+          "art": "npc_toymender_otto",
+          "x": -4,
+          "y": 16,
+          "greeting": "Bring me a broken toy and I'll mend it. Bring me a broken puppet and I'll mend it twice."
         }
       ],
       "decor": [
@@ -12833,6 +13524,56 @@
             "Their cores glow like the lamps in Liora's temple.",
             "Some say her treasure lies south, in the Hidden Steppe.",
             "Something guards it there. Something that hits very hard."
+          ]
+        },
+        {
+          "name": "Raftsman Edric",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "black",
+          "outfit": "blue",
+          "x": -19,
+          "y": -7,
+          "props": [
+            {
+              "art": "wooden_crates",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "mine_cart",
+              "x": 2,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "I pole the ore rafts down from Ingothold. Slow, but steady.",
+            "Fire Crabs love a raft. Sets the ropes smoking every time.",
+            "Bruna's forge never goes out. Not even on holidays.",
+            "Hilde catches the fish and I eat them. We're a good team."
+          ]
+        },
+        {
+          "name": "Little Smudge",
+          "race": "human",
+          "gender": "male",
+          "hair": "black",
+          "outfit": "black",
+          "style": "messy",
+          "x": -14,
+          "y": -2,
+          "props": [
+            {
+              "art": "barrels",
+              "x": 1,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "They call me Smudge because of the soot. I've washed. It doesn't help.",
+            "Fitch shouts at the rafts. The rafts don't listen.",
+            "The Golems came down from the mountain and now they won't go back.",
+            "When I'm big I'll be a smelter, like Bruna. Or a raft."
           ]
         }
       ],
@@ -13123,6 +13864,26 @@
           "art": "magic_tower",
           "x": 4,
           "y": 5
+        },
+        {
+          "art": "blacksmith",
+          "x": -7,
+          "y": 4
+        },
+        {
+          "art": "house",
+          "x": -18,
+          "y": 4
+        },
+        {
+          "art": "house_green",
+          "x": -23,
+          "y": -4
+        },
+        {
+          "art": "inn_red",
+          "x": -5,
+          "y": -4
         }
       ],
       "npcs": [
@@ -13134,6 +13895,24 @@
           "x": 3,
           "y": 3,
           "greeting": "The goddess Liora hid her treasure where only the patient look."
+        },
+        {
+          "id": "smelter_bruna",
+          "name": "Smelter Bruna",
+          "role": "quests",
+          "art": "npc_smelter_bruna",
+          "x": -8,
+          "y": 2,
+          "greeting": "The ore comes down the lake on rafts, and I melt it. The crabs come too. I don't melt those."
+        },
+        {
+          "id": "harbourmaster_fitch",
+          "name": "Harbourmaster Fitch",
+          "role": "quests",
+          "art": "npc_harbourmaster_fitch",
+          "x": -19,
+          "y": 2,
+          "greeting": "Rafts in, rafts out, and not one of them on time."
         }
       ]
     },
@@ -13187,6 +13966,59 @@
             "Everyone in Dozywick's been asleep for a year. Even the cat.",
             "Except Jory and me. Jory's too worried. I'm too... what was I saying?",
             "The Craghulk snores in its cave. Every snore, the whole town sighs."
+          ]
+        },
+        {
+          "name": "Sleepless Sid",
+          "race": "human",
+          "gender": "male",
+          "hair": "brown",
+          "outfit": "blue",
+          "style": "messy",
+          "x": -10,
+          "y": -19,
+          "props": [
+            {
+              "art": "giant_pillow",
+              "x": 1,
+              "y": 2,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "I brought a pillow from Dozywick. It doesn't work here.",
+            "Everyone over there sleeps and everyone over here can't. It's not fair.",
+            "I've counted sheep. I've counted Phantoms. I've counted counting.",
+            "Nettie says when the Craghulk stops snoring, we'll all sleep at last."
+          ]
+        },
+        {
+          "name": "Knitting Gran Wink",
+          "race": "dwarf",
+          "gender": "female",
+          "hair": "white",
+          "outfit": "purple",
+          "x": -5,
+          "y": -24,
+          "props": [
+            {
+              "art": "bench",
+              "x": 1,
+              "y": 0,
+              "blocking": false
+            },
+            {
+              "art": "sleeping_cat",
+              "x": 2,
+              "y": 1,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "I've knitted a scarf for every night I couldn't sleep. That's a lot of scarves.",
+            "My cat sleeps. Only my cat. Show-off.",
+            "Bastian's coffee could wake a stone. Not the Craghulk, sadly.",
+            "A Phantom told me a bedtime story once. It was very boring. Still didn't sleep."
           ]
         }
       ],
@@ -13549,6 +14381,26 @@
           "art": "mushroom_house_blue",
           "x": 10,
           "y": -5
+        },
+        {
+          "art": "house_purple",
+          "x": -15,
+          "y": -13
+        },
+        {
+          "art": "inn",
+          "x": -4,
+          "y": -13
+        },
+        {
+          "art": "house",
+          "x": -19,
+          "y": -21
+        },
+        {
+          "art": "mushroom_house",
+          "x": -1,
+          "y": -21
         }
       ],
       "npcs": [
@@ -13578,6 +14430,24 @@
               "In town, someone yawns, then someone else. For the first time in a year, Rosalind's eyes open, and Jory has a whole year of news to tell."
             ]
           }
+        },
+        {
+          "id": "nightowl_nettie",
+          "name": "Night-Owl Nettie",
+          "role": "quests",
+          "art": "npc_nightowl_nettie",
+          "x": -16,
+          "y": -15,
+          "greeting": "Can't sleep? Neither can we. Welcome to Wakewell, where nobody has yawned in a year."
+        },
+        {
+          "id": "roaster_bastian",
+          "name": "Coffee-Roaster Bastian",
+          "role": "quests",
+          "art": "npc_roaster_bastian",
+          "x": -5,
+          "y": -15,
+          "greeting": "Coffee? Tea? A second coffee? We've got all night. We always have all night."
         }
       ]
     },
