@@ -672,8 +672,9 @@ struct ContentTests {
     }
 
     /// Glimmerbough, Starfall Isle's fairy village (playtesting 2026-10-16: "something worthy to do on
-    /// Starfall Isle"): a healer, a shop and quest givers with five quests, and a boss up on its
-    /// mountain that drops a weapon for every class you can choose.
+    /// Starfall Isle"): a healer, a shop and quest givers with five quests (and three more for the
+    /// Glimmerdeep, the crystal cave under it), and a boss up on its mountain that drops a weapon for
+    /// every class you can choose.
     @Test func glimmerboughHasSomethingForEveryone() throws {
         let isle = try #require(content.map("starfall_isle"))
         let npcs = isle.npcs ?? []
@@ -681,7 +682,7 @@ struct ContentTests {
             #expect(npcs.contains { $0.role == role }, "Starfall Isle has no \(role)")
         }
         let givers = Set(npcs.filter { $0.role == .quests }.map(\.id))
-        #expect(content.quests.filter { givers.contains($0.giver) }.count == 5)
+        #expect(content.quests.filter { givers.contains($0.giver) }.count == 8)
         let boss = try #require(npcs.first { $0.role == .boss }?.monster.flatMap(content.monster))
         let weapons = (boss.drops ?? []).compactMap { content.item($0.item) }.filter { $0.type == .weapon }
         for cls in content.classes where cls.id != "novice" {
