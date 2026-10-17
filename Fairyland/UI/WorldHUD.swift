@@ -65,8 +65,9 @@ struct WorldHUD: View {
             JoystickView(input: coordinator.input)
                 .coachTarget(.joystick)
                 .stepsAside(controlsHidden)
+                // As far in from the edge as every other control (the HUD's own 8 points; playtesting
+                // 2026-10-17: it sat twice as far in as the toolbar opposite).
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                .padding(.leading, 8)
                 .padding(.bottom, bottomGap.joystick)
                 .ignoresSafeArea(.container, edges: bottomEdge)
 

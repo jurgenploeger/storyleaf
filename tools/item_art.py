@@ -2162,6 +2162,224 @@ def draw_seven_hearths_ring(c):
         c.disc(x, y, 1.4, color)
 
 
+# ---------------------------------------------------------------- the villages of the late lands
+# (0.7.25): what their quests ask you to bring, and the treasure each one ends in.
+
+RICE = [hexc("b8b8d0"), hexc("eeeefa"), WHITE]
+MANE = [hexc("8a5a20"), hexc("c88a3a"), hexc("f0c070")]
+CHILI = [hexc("8a1010"), hexc("e02a1a"), hexc("ff8a6a")]
+LAKE_ICE = [hexc("6aa0d0"), hexc("b8e0ff"), WHITE]
+SEAPEARL = [hexc("4a9a9a"), hexc("a8f0e8"), WHITE]
+SILK = [hexc("9aa0c0"), hexc("e0e6ff"), WHITE]
+EMERALDGLASS = [hexc("1a7a3a"), hexc("3ad06a"), hexc("b0ffc8")]
+
+
+def draw_moon_rice(c):
+    """A little cloth sack of rice so white it glows."""
+    c.poly([(10, 12), (22, 12), (26, 27), (6, 27)], CLOTH[1])
+    c.ellipse(16, 26, 10, 3, CLOTH[1])
+    c.shade(lambda x, y, col: col == CLOTH[1] and x > 20, CLOTH[0])
+    c.ellipse(16, 12, 7, 3, RICE[1])                                          # the open top, full of rice
+    for (x, y) in ((13, 11), (16, 12), (19, 11), (15, 10), (18, 13)):
+        c.set(x, y, WHITE)
+    star_shape(c, 16, 20, 4, MOON[1], inner=0.5)                               # a moon mark stamped on it
+    for (x, y) in ((24, 8), (8, 7)):
+        c.set(x, y, WHITE)
+
+
+def draw_mochi_tray(c):
+    """Round white mochi on a bamboo tray, one on top."""
+    c.rect(3, 25, 29, 28, BAMBOO[1]); c.rect(3, 25, 29, 25, BAMBOO[2]); c.rect(3, 28, 29, 28, BAMBOO[0])
+    for (x, y) in ((8, 21), (16, 21), (24, 21), (12, 14), (20, 14)):
+        c.ellipse(x, y, 4.2, 3.6, RICE[0])
+        c.ellipse(x - 0.4, y - 0.4, 3.6, 3, RICE[1])
+        c.set(x - 2, y - 2, WHITE); c.set(x - 1, y - 2, WHITE)
+
+
+def draw_moon_rabbit_charm(c):
+    """A silver rabbit sitting in a crescent moon."""
+    c.disc(16, 17, 11, MOON[1]); c.disc(21, 13, 9, None)                       # the crescent
+    light_top_left(c, MOON, 13, 19, 9)
+    c.ellipse(19, 20, 3.5, 3, SILVER[2])                                      # the rabbit
+    c.disc(21, 16, 2.2, SILVER[2])
+    c.ellipse(20, 11, 0.9, 3, SILVER[2]); c.ellipse(22, 11, 0.9, 3, SILVER[2])
+    c.set(22, 16, OUTLINE)
+
+
+def draw_lion_mane(c):
+    """A shaggy tawny tuft of mane, wavy strands tied at the root."""
+    import random
+    rnd = random.Random(7)
+    for i in range(14):
+        angle = -math.pi / 2 + (i - 6.5) * 0.16 + rnd.uniform(-0.05, 0.05)
+        length = rnd.uniform(15, 22)
+        color = (MANE[2], MANE[1], MANE[1], MANE[0])[i % 4]
+        for step in range(int(length)):
+            t = step / length
+            wave = math.sin(t * 6 + i) * 1.6
+            x = 16 + math.cos(angle) * step + wave * math.sin(angle)
+            y = 27 + math.sin(angle) * step
+            c.disc(x, y, 1.5 * (1 - t) + 0.5, color)
+    c.rect(12, 25, 20, 29, LEATHER[1]); c.rect(12, 25, 20, 25, LEATHER[2])
+
+
+def draw_great_drum(c):
+    """A big round hide drum trimmed with mane."""
+    c.rect(6, 12, 26, 26, HEARTWOOD[1])
+    c.shade(lambda x, y, col: col == HEARTWOOD[1] and x > 21, HEARTWOOD[0])
+    c.ellipse(16, 12, 10, 3.5, CLOTH[2])                                      # the skin on top
+    c.ellipse(16, 26, 10, 3.5, HEARTWOOD[0])
+    for x in range(8, 26, 3):                                                 # lacing, and mane round the rim
+        c.line(x, 14, x + 2, 24, LEATHER[2])
+        c.line(x, 15, x - 1, 17, MANE[1])
+
+
+def draw_steppe_runner_boots(c):
+    """Soft tan hide boots with red woven bands."""
+    boot(c, TAN, RED[1], LEATHER[0])
+    for y in (11, 16):
+        c.line(9, y, 17, y, RED[1])
+        for x in range(10, 17, 2):
+            c.set(x, y, GOLD[1])
+
+
+def draw_fire_pepper(c):
+    """A shiny red chilli pepper."""
+    for i in range(18):
+        t = i / 17
+        c.disc(9 + t * 16, 10 + math.sin(t * math.pi * 0.9) * 10 + t * 6, 4.5 * (1 - t * 0.75), CHILI[1])
+    c.shade(lambda x, y, col: col == CHILI[1] and y > 20, CHILI[0])
+    c.line(10, 9, 15, 12, CHILI[2])
+    c.poly([(5, 6), (10, 5), (11, 9), (6, 10)], GREEN[1])                      # the cap and stalk
+    c.line(6, 6, 3, 2, GREEN[0])
+
+
+def draw_sneezing_powder(c):
+    """A bamboo pot of red powder, a cloud of it rising."""
+    c.rect(9, 16, 23, 28, BAMBOO[1])
+    for y in (20, 25):
+        c.line(9, y, 23, y, BAMBOO[0])
+    c.shade(lambda x, y, col: col == BAMBOO[1] and x > 20, BAMBOO[0])
+    c.ellipse(16, 16, 7, 2, CHILI[1])
+    for (x, y, r) in ((12, 11, 2.6), (16, 9, 3), (20, 11, 2.4), (14, 5, 2), (19, 4, 1.8), (10, 6, 1.4), (23, 7, 1.4)):
+        c.disc(x, y, r, CHILI[2])
+    for (x, y) in ((15, 8), (12, 10), (19, 3)):
+        c.set(x, y, WHITE)
+
+
+def draw_pepperfire_gauntlets(c):
+    """Red gauntlets with pepper-shaped studs."""
+    glove(c, CHILI, GOLD)
+    for x in (11, 15, 19, 23):
+        c.ellipse(x, 13, 1, 1.8, GREEN[1])
+
+
+def draw_frozen_jelly(c):
+    """A frozen cube of jelly, still wobbling a little."""
+    c.poly([(8, 12), (20, 8), (26, 13), (26, 25), (14, 29), (8, 24)], LAKE_ICE[1])
+    c.poly([(8, 12), (20, 8), (26, 13), (14, 17)], LAKE_ICE[2])
+    c.shade(lambda x, y, col: col == LAKE_ICE[1] and x > 14, LAKE_ICE[0])
+    c.line(14, 17, 14, 29, LAKE_ICE[0])
+    c.disc(17, 21, 3, SEAPEARL[1]); c.set(16, 20, WHITE)                      # the jelly inside
+
+
+def draw_clear_ice(c):
+    """A block of ice so clear you can read through it."""
+    c.poly([(6, 12), (18, 7), (27, 12), (27, 24), (15, 29), (6, 24)], LAKE_ICE[2])
+    c.poly([(6, 12), (18, 7), (27, 12), (15, 17)], WHITE)
+    c.shade(lambda x, y, col: col == LAKE_ICE[2] and x > 15, LAKE_ICE[1])
+    c.line(15, 17, 15, 29, LAKE_ICE[0])
+    c.line(9, 15, 12, 24, LAKE_ICE[1]); c.line(19, 20, 24, 18, LAKE_ICE[1])
+
+
+def draw_ice_swan(c):
+    """A swan carved out of clear ice, wings half open."""
+    c.ellipse(16, 22, 10, 5, LAKE_ICE[1])                                          # the body
+    c.poly([(9, 20), (6, 9), (14, 16)], LAKE_ICE[2])                                # a wing
+    c.poly([(21, 20), (27, 11), (20, 15)], LAKE_ICE[2])
+    c.line(10, 21, 8, 14, LAKE_ICE[1], width=2); c.line(8, 14, 9, 8, LAKE_ICE[1], width=2)   # the neck
+    c.disc(10, 7, 2, LAKE_ICE[2]); c.poly([(11, 7), (14, 8), (11, 8)], LAKE_ICE[0])     # head and beak
+    c.shade(lambda x, y, col: col == LAKE_ICE[1] and y > 23, LAKE_ICE[0])
+    c.rect(6, 27, 26, 28, LAKE_ICE[0])
+
+
+def draw_frostlight_pendant(c):
+    """A drop of lake ice with a warm light caught inside."""
+    pendant(c, SILVER, LAKE_ICE)
+    c.disc(16, 22, 2.4, HONEY[2]); c.set(16, 22, WHITE)
+
+
+def draw_jelly_pearl(c):
+    """A soft-glowing sea-green pearl."""
+    c.disc(16, 17, 8, SEAPEARL[1])
+    light_top_left(c, SEAPEARL, 16, 17, 8)
+    c.disc(13, 14, 2, WHITE)
+    for (x, y) in ((27, 9), (5, 24), (26, 26)):
+        c.set(x, y, SEAPEARL[2])
+
+
+def draw_offering_shell(c):
+    """An open white scallop shell holding glowing pearls."""
+    c.poly([(4, 20), (16, 26), (28, 20), (26, 29), (6, 29)], CLOTH[2])        # the bottom half
+    for x in (9, 13, 16, 19, 23):
+        c.line(16, 28, x, 21, CLOTH[0])
+    c.poly([(5, 18), (9, 6), (16, 3), (23, 6), (27, 18)], CLOTH[2])            # the lid, open behind
+    for x in (8, 12, 16, 20, 24):
+        c.line(16, 17, x, 6, CLOTH[0])
+    for (x, r, colors) in ((10, 2.2, SEAPEARL), (16, 2.8, DRAGON), (22, 2.2, SEAPEARL)):
+        c.disc(x, 22, r, colors[1]); c.set(x - 1, 21, WHITE)
+
+
+def draw_tidesong_ring(c):
+    """A sea-green silver ring with a little wave on top."""
+    ring(c, SEAPEARL)
+    c.line(9, 10, 12, 7, SEAPEARL[2]); c.line(12, 7, 15, 10, SEAPEARL[2])
+    c.line(15, 10, 18, 7, SEAPEARL[2]); c.line(18, 7, 21, 10, SEAPEARL[2])
+    c.set(22, 8, WHITE)
+
+
+def draw_crystal_silk(c):
+    """A skein of clear, glittering silk."""
+    c.ellipse(16, 17, 10, 7, SILK[1])
+    for y in range(11, 24, 2):
+        c.line(7, y, 25, y + 1, WHITE if y % 4 == 1 else SILK[0])
+    c.rect(14, 9, 18, 25, SILK[0]); c.rect(15, 9, 17, 25, WHITE)
+    for (x, y) in ((5, 8), (27, 7), (4, 25), (28, 26)):
+        c.set(x, y, WHITE); c.set(x + 1, y, SILK[1]); c.set(x, y + 1, SILK[1])
+
+
+def draw_crystal_silk_gloves(c):
+    """Shimmering silver-white woven gloves."""
+    glove(c, SILK, SILVER)
+    for y in (12, 16, 20):
+        c.line(10, y, 23, y + 1, WHITE)
+
+
+def draw_cloud_glass(c):
+    """A round drop of clear golden glass."""
+    c.disc(16, 18, 9, GOLD[2])
+    c.disc(16, 18, 7, hexc("fff6c8"))
+    c.shade(lambda x, y, col: col == hexc("fff6c8") and x + y > 37, GOLD[1])
+    c.disc(13, 15, 2.2, WHITE)
+    c.poly([(16, 4), (19, 9), (13, 9)], GOLD[2])                                # a drip on top, like a raindrop
+
+
+def draw_emerald_spectacles(c):
+    """Round spectacles with green glass."""
+    for x in (9, 23):
+        c.ring(x, 18, 6, 4.4, GOLD[1])
+        c.disc(x, 18, 4.4, EMERALDGLASS[1])
+        c.set(x - 2, 16, EMERALDGLASS[2]); c.set(x - 1, 15, WHITE)
+    c.line(15, 17, 17, 17, GOLD[1])                                           # the bridge and arms
+    c.line(3, 16, 1, 12, GOLD[1]); c.line(29, 16, 31, 12, GOLD[1])
+
+
+def draw_emerald_glass_amulet(c):
+    """A round green glass lens set in gold."""
+    pendant(c, GOLD, EMERALDGLASS, shape="round")
+    c.disc(14, 20, 1.6, WHITE)
+
+
 # Every cape in items.json, in its own colour and trim (`color`, `accent`).
 for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
     if _item["type"] == "cape":
@@ -2301,6 +2519,27 @@ PROMPTS = {  # for a later Retro Diffusion upgrade (python3 tools/rd.py generate
     "dozy_slippers": "fluffy lavender slippers with pompoms",
     "frost_apple": "rosy red apple covered in white frost",
     "seven_hearths_ring": "gold ring set with seven tiny colourful gems",
+    "moon_rice": "small cloth sack of glowing white rice",
+    "mochi_tray": "stack of round white mochi on a bamboo tray",
+    "moon_rabbit_charm": "silver charm of a rabbit sitting in a crescent moon",
+    "lion_mane": "tawny tuft of lion mane fur",
+    "great_drum": "big round hide drum trimmed with tawny mane fur",
+    "steppe_runner_boots": "soft tan hide boots with red woven bands",
+    "fire_pepper": "shiny red chili pepper",
+    "sneezing_powder": "small bamboo pot of red pepper powder with a puff of red dust",
+    "pepperfire_gauntlets": "red gauntlets with little pepper shaped studs",
+    "frozen_jelly": "frozen pale blue jelly cube",
+    "clear_ice": "clear blue block of ice",
+    "ice_swan": "small swan carved from clear ice",
+    "frostlight_pendant": "pale blue ice drop pendant with a warm light inside",
+    "jelly_pearl": "soft glowing pale teal pearl",
+    "offering_shell": "open white scallop shell holding glowing pearls",
+    "tidesong_ring": "sea green silver ring with a small wave",
+    "crystal_silk": "skein of clear glittering crystal silk thread",
+    "crystal_silk_gloves": "shimmering silver white woven gloves",
+    "cloud_glass": "round drop of clear golden glass",
+    "emerald_spectacles": "round spectacles with green emerald glass lenses",
+    "emerald_glass_amulet": "round green glass amulet set in gold",
 }
 
 

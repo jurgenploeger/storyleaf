@@ -5861,6 +5861,294 @@
       },
       "level": 88,
       "description": "Seven tiny gems, one from each dwarf. Warm as a fireside, even in the snow."
+    },
+    {
+      "id": "moon_rice",
+      "icon": "moon",
+      "art": "item_moon_rice",
+      "name": "Moon Rice",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 88,
+      "description": "A little sack of rice so white it glows by moonlight. Perfect for mochi."
+    },
+    {
+      "id": "mochi_tray",
+      "icon": "moon",
+      "art": "item_mochi_tray",
+      "name": "Mochi Tray",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 97,
+      "description": "Round white mochi stacked on a bamboo tray, the first for the Moon Rabbit Queen.",
+      "recipe": {
+        "moon_rice": 3,
+        "bamboo": 1
+      },
+      "make": "join"
+    },
+    {
+      "id": "moon_rabbit_charm",
+      "icon": "moon",
+      "art": "item_moon_rabbit_charm",
+      "name": "Moon Rabbit Charm",
+      "type": "accessory",
+      "price": 4800,
+      "stats": {
+        "magic": 15,
+        "mp": 22,
+        "speed": 6
+      },
+      "level": 97,
+      "description": "A silver rabbit sitting in a crescent moon. Selene says the Queen herself sent it down."
+    },
+    {
+      "id": "lion_mane",
+      "icon": "paw",
+      "art": "item_lion_mane",
+      "name": "Lion's Mane",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 112,
+      "description": "A tawny tuft of an Earth Lion's mane, thick and a little dusty."
+    },
+    {
+      "id": "great_drum",
+      "icon": "music",
+      "art": "item_great_drum",
+      "name": "Great Drum",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 118,
+      "description": "A big drum trimmed with lion's mane. Beat it once and the steppe answers.",
+      "recipe": {
+        "lion_mane": 3,
+        "crocodile_hide": 1
+      },
+      "make": "join"
+    },
+    {
+      "id": "steppe_runner_boots",
+      "icon": "wind",
+      "art": "item_steppe_runner_boots",
+      "name": "Steppe-Runner Boots",
+      "type": "boots",
+      "price": 9200,
+      "stats": {
+        "speed": 13,
+        "defense": 10,
+        "hp": 26
+      },
+      "level": 118,
+      "description": "Soft hide boots for running through grass taller than you. They never stumble."
+    },
+    {
+      "id": "fire_pepper",
+      "icon": "heart",
+      "art": "item_fire_pepper",
+      "name": "Fire Pepper",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 128,
+      "description": "A shiny red pepper so hot it's warm to hold. Achoo."
+    },
+    {
+      "id": "sneezing_powder",
+      "icon": "sparkles",
+      "art": "item_sneezing_powder",
+      "name": "Sneezing Powder",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 133,
+      "description": "A bamboo pot of red powder. Don't open it indoors. Don't open it at all, really.",
+      "recipe": {
+        "fire_pepper": 3,
+        "bamboo": 1
+      },
+      "make": "join"
+    },
+    {
+      "id": "pepperfire_gauntlets",
+      "icon": "sword",
+      "art": "item_pepperfire_gauntlets",
+      "name": "Pepperfire Gauntlets",
+      "type": "gloves",
+      "price": 10800,
+      "stats": {
+        "attack": 21,
+        "defense": 13,
+        "hp": 42
+      },
+      "level": 133,
+      "description": "Red gauntlets with pepper-shaped studs. Your punches come with a little heat."
+    },
+    {
+      "id": "frozen_jelly",
+      "icon": "flask",
+      "art": "item_frozen_jelly",
+      "name": "Frozen Jelly",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 143,
+      "description": "A frozen chunk of Temple Jelly. It still wobbles a little, somehow."
+    },
+    {
+      "id": "clear_ice",
+      "icon": "diamond",
+      "art": "item_clear_ice",
+      "name": "Clear Ice",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 150,
+      "description": "A block of ice so clear you can read through it. A Snowman was keeping it."
+    },
+    {
+      "id": "ice_swan",
+      "icon": "star",
+      "art": "item_ice_swan",
+      "name": "Ice Swan",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 150,
+      "description": "A swan carved out of clear ice, wings half open. It might fly off if you look away.",
+      "recipe": {
+        "clear_ice": 3
+      },
+      "make": "carve"
+    },
+    {
+      "id": "frostlight_pendant",
+      "icon": "gem",
+      "art": "item_frostlight_pendant",
+      "name": "Frostlight Pendant",
+      "type": "necklace",
+      "price": 13600,
+      "stats": {
+        "magic": 19,
+        "hp": 88,
+        "mp": 22
+      },
+      "level": 150,
+      "description": "A drop of lake ice that never melts, with a lantern's light caught inside."
+    },
+    {
+      "id": "jelly_pearl",
+      "icon": "diamond",
+      "art": "item_jelly_pearl",
+      "name": "Jelly Pearl",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 158,
+      "description": "A soft-glowing pearl from a Temple Jelly's middle. It smells faintly of the sea."
+    },
+    {
+      "id": "offering_shell",
+      "icon": "star",
+      "art": "item_offering_shell",
+      "name": "Offering Shell",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 164,
+      "description": "A white shell holding four pearls, one of them a dragon's. The tide will like it.",
+      "recipe": {
+        "jelly_pearl": 3,
+        "dragon_pearl": 1
+      },
+      "make": "join"
+    },
+    {
+      "id": "tidesong_ring",
+      "icon": "ring",
+      "art": "item_tidesong_ring",
+      "name": "Tidesong Ring",
+      "type": "accessory",
+      "price": 15800,
+      "stats": {
+        "magic": 20,
+        "mp": 32,
+        "speed": 8
+      },
+      "level": 164,
+      "description": "A ring of sea-green silver. Hold it to your ear, and the tide sings."
+    },
+    {
+      "id": "crystal_silk",
+      "icon": "sparkles",
+      "art": "item_crystal_silk",
+      "name": "Crystal Silk",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 168,
+      "description": "A skein of silk as clear as glass and stronger than steel. It whispers when it moves."
+    },
+    {
+      "id": "crystal_silk_gloves",
+      "icon": "sword",
+      "art": "item_crystal_silk_gloves",
+      "name": "Crystal-Silk Gloves",
+      "type": "gloves",
+      "price": 16800,
+      "stats": {
+        "attack": 23,
+        "defense": 15,
+        "hp": 48
+      },
+      "level": 176,
+      "description": "Woven from Crystal Widow silk by Arachne herself. Light as air, tough as steel."
+    },
+    {
+      "id": "cloud_glass",
+      "icon": "diamond",
+      "art": "item_cloud_glass",
+      "name": "Cloud Glass",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 188,
+      "description": "A drop of golden glass rained by a Golden Cloud. Perfectly round, perfectly clear."
+    },
+    {
+      "id": "emerald_spectacles",
+      "icon": "star",
+      "art": "item_emerald_spectacles",
+      "name": "Emerald Spectacles",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 195,
+      "description": "Round spectacles with green glass. Through them, the whole world is emerald.",
+      "recipe": {
+        "cloud_glass": 2,
+        "emerald": 1
+      },
+      "make": "join"
+    },
+    {
+      "id": "emerald_glass_amulet",
+      "icon": "gem",
+      "art": "item_emerald_glass_amulet",
+      "name": "Emerald Glass Amulet",
+      "type": "necklace",
+      "price": 19800,
+      "stats": {
+        "magic": 24,
+        "mp": 40,
+        "hp": 70
+      },
+      "level": 195,
+      "description": "Fennimore's best lens, set in gold. Look through it and you'll see the city past the gate."
     }
   ]
 }

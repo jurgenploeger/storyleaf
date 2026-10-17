@@ -14613,6 +14613,1452 @@
         "height": 32,
         "remove_bg": true
       }
+    },
+    {
+      "id": "npc_festival_selene",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "human_female_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 230,
+            "saturation": 0.3,
+            "value": 1.2
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human_female"
+          },
+          {
+            "id": "locks_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 230,
+                "saturation": 0.3,
+                "value": 1.2
+              }
+            ]
+          },
+          {
+            "id": "hair_long_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 230,
+                "saturation": 0.3,
+                "value": 1.2
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "prompt": "serene festival keeper with silver hair in a pale blue kimono-like robe holding a lantern, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_stargazer_bellamy",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "player_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 225,
+            "saturation": 0.385,
+            "value": 0.76
+          },
+          {
+            "hue": [
+              240,
+              300
+            ],
+            "minSaturation": 0.08,
+            "to": 225,
+            "saturation": 1.1,
+            "value": 0.8
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human"
+          },
+          {
+            "id": "locks_human",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 225,
+                "saturation": 0.385,
+                "value": 0.76
+              }
+            ]
+          },
+          {
+            "id": "hair_long_human",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 225,
+                "saturation": 0.385,
+                "value": 0.76
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "prompt": "old astronomer in a navy robe with a brass telescope, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_moon_rice",
+      "kind": "item",
+      "request": {
+        "prompt": "small cloth sack of glowing white rice, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_mochi_tray",
+      "kind": "item",
+      "request": {
+        "prompt": "stack of round white mochi on a bamboo tray, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_moon_rabbit_charm",
+      "kind": "item",
+      "request": {
+        "prompt": "silver charm of a rabbit sitting in a crescent moon, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_drummaker_saba",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "human_female_walk",
+        "recolor": [
+          {
+            "hue": [
+              5,
+              45
+            ],
+            "minSaturation": 0.08,
+            "maxSaturation": 0.54,
+            "minValue": 0.6,
+            "saturation": 1.8,
+            "value": 0.66
+          },
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 8,
+            "saturation": 0.8,
+            "value": 0.85
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human_female"
+          },
+          {
+            "id": "locks_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 8,
+                "saturation": 0.8,
+                "value": 0.85
+              }
+            ]
+          },
+          {
+            "id": "hair_braids_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 8,
+                "saturation": 0.8,
+                "value": 0.85
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "prompt": "strong steppe drum maker in a red tunic with a big drum on her back, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_elder_kestrel",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "player_walk",
+        "recolor": [
+          {
+            "hue": [
+              5,
+              45
+            ],
+            "minSaturation": 0.08,
+            "maxSaturation": 0.54,
+            "minValue": 0.6,
+            "saturation": 1.5,
+            "value": 0.85
+          },
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 35,
+            "saturation": 0.56,
+            "value": 0.684
+          },
+          {
+            "hue": [
+              240,
+              290
+            ],
+            "minSaturation": 0.08,
+            "to": 35,
+            "saturation": 1.6,
+            "value": 0.72
+          },
+          {
+            "hue": [
+              60,
+              130
+            ],
+            "minSaturation": 0.15,
+            "to": 35,
+            "saturation": 0.8,
+            "value": 0.9
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human"
+          },
+          {
+            "id": "locks_human",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 35,
+                "saturation": 0.56,
+                "value": 0.684
+              },
+              {
+                "hue": [
+                  240,
+                  290
+                ],
+                "minSaturation": 0.08,
+                "to": 35,
+                "saturation": 1.6,
+                "value": 0.72
+              }
+            ]
+          },
+          {
+            "id": "hair_crop_human",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 35,
+                "saturation": 0.56,
+                "value": 0.684
+              },
+              {
+                "hue": [
+                  240,
+                  290
+                ],
+                "minSaturation": 0.08,
+                "to": 35,
+                "saturation": 1.6,
+                "value": 0.72
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "prompt": "weathered steppe elder in a tan coat with a feathered staff, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_lion_mane",
+      "kind": "item",
+      "request": {
+        "prompt": "tawny tuft of lion mane fur, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_great_drum",
+      "kind": "item",
+      "request": {
+        "prompt": "big round hide drum trimmed with tawny mane fur, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_steppe_runner_boots",
+      "kind": "item",
+      "request": {
+        "prompt": "soft tan hide boots with red woven bands, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_pepper_ginger",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "human_female_walk",
+        "recolor": [
+          {
+            "hue": [
+              5,
+              45
+            ],
+            "minSaturation": 0.08,
+            "maxSaturation": 0.54,
+            "minValue": 0.6,
+            "saturation": 1.5,
+            "value": 0.85
+          },
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 15,
+            "saturation": 0.85,
+            "value": 0.9
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human_female"
+          },
+          {
+            "id": "locks_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 15,
+                "saturation": 0.85,
+                "value": 0.9
+              }
+            ]
+          },
+          {
+            "id": "hair_ponytail_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 15,
+                "saturation": 0.85,
+                "value": 0.9
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "prompt": "cheerful pepper farmer in an orange dress with a basket of red peppers, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_saltpanner_morrow",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "dwarf_walk",
+        "recolor": [
+          {
+            "hue": [
+              5,
+              45
+            ],
+            "minSaturation": 0.08,
+            "maxSaturation": 0.54,
+            "minValue": 0.6,
+            "saturation": 1.5,
+            "value": 0.85
+          },
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 200,
+            "saturation": 0.3,
+            "value": 2.6
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_dwarf"
+          },
+          {
+            "id": "locks_dwarf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 200,
+                "saturation": 0.3,
+                "value": 2.6
+              }
+            ]
+          },
+          {
+            "id": "hair_crop_dwarf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 200,
+                "saturation": 0.3,
+                "value": 2.6
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "prompt": "salt-crusted dwarf salt panner in a pale blue smock with a rake, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_fire_pepper",
+      "kind": "item",
+      "request": {
+        "prompt": "shiny red chili pepper, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_sneezing_powder",
+      "kind": "item",
+      "request": {
+        "prompt": "small bamboo pot of red pepper powder with a puff of red dust, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_pepperfire_gauntlets",
+      "kind": "item",
+      "request": {
+        "prompt": "red gauntlets with little pepper shaped studs, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_icecarver_sigrun",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "dwarf_female_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 205,
+            "saturation": 0.6,
+            "value": 2.2
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_dwarf_female"
+          },
+          {
+            "id": "locks_dwarf_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 48,
+                "saturation": 0.6,
+                "value": 1.12
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 205,
+                "saturation": 0.6,
+                "value": 2.2
+              }
+            ]
+          },
+          {
+            "id": "hair_braids_dwarf_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 48,
+                "saturation": 0.6,
+                "value": 1.12
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 205,
+                "saturation": 0.6,
+                "value": 2.2
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "prompt": "dwarf woman ice sculptor in a pale blue fur coat with a chisel, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_soupwife_margery",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "elf_walk",
+        "recolor": [
+          {
+            "hue": [
+              5,
+              45
+            ],
+            "minSaturation": 0.08,
+            "maxSaturation": 0.54,
+            "minValue": 0.6,
+            "to": 12,
+            "saturation": 1.25,
+            "value": 0.97
+          },
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 25,
+            "saturation": 0.6,
+            "value": 1.035
+          },
+          {
+            "hue": [
+              300,
+              360
+            ],
+            "minSaturation": 0.2,
+            "to": 25,
+            "saturation": 0.8,
+            "value": 0.9
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_elf"
+          },
+          {
+            "id": "locks_elf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 25,
+                "saturation": 0.6,
+                "value": 1.035
+              }
+            ]
+          },
+          {
+            "id": "hair_bob_elf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 25,
+                "saturation": 0.6,
+                "value": 1.035
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "prompt": "plump cheerful cook in a brown apron with a steaming ladle, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_frozen_jelly",
+      "kind": "item",
+      "request": {
+        "prompt": "frozen pale blue jelly cube, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_clear_ice",
+      "kind": "item",
+      "request": {
+        "prompt": "clear blue block of ice, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_ice_swan",
+      "kind": "item",
+      "request": {
+        "prompt": "small swan carved from clear ice, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_frostlight_pendant",
+      "kind": "item",
+      "request": {
+        "prompt": "pale blue ice drop pendant with a warm light inside, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_shrinekeeper_ondine",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "elf_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 190,
+            "saturation": 0.75,
+            "value": 1.0
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_elf"
+          },
+          {
+            "id": "locks_elf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 125,
+                "saturation": 0.7,
+                "value": 0.9
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 190,
+                "saturation": 0.75,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "id": "hair_long_elf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 125,
+                "saturation": 0.7,
+                "value": 0.9
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 190,
+                "saturation": 0.75,
+                "value": 1.0
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "prompt": "calm elf shrine keeper with sea green hair in a flowing aqua robe, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_innkeeper_bartholomew",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "dwarf_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 30,
+            "saturation": 0.5,
+            "value": 2.0
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_dwarf"
+          },
+          {
+            "id": "locks_dwarf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 30,
+                "saturation": 0.5,
+                "value": 2.0
+              }
+            ]
+          },
+          {
+            "id": "hair_crop_dwarf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 30,
+                "saturation": 0.5,
+                "value": 2.0
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "prompt": "jolly round dwarf innkeeper in a cream apron with a tankard, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_jelly_pearl",
+      "kind": "item",
+      "request": {
+        "prompt": "soft glowing pale teal pearl, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_offering_shell",
+      "kind": "item",
+      "request": {
+        "prompt": "open white scallop shell holding glowing pearls, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_tidesong_ring",
+      "kind": "item",
+      "request": {
+        "prompt": "sea green silver ring with a small wave, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_spinner_arachne",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "elf_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 210,
+            "saturation": 0.128,
+            "value": 1.14
+          },
+          {
+            "hue": [
+              250,
+              310
+            ],
+            "minSaturation": 0.15,
+            "to": 210,
+            "saturation": 0.15,
+            "value": 1.2
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_elf"
+          },
+          {
+            "id": "locks_elf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 210,
+                "saturation": 0.128,
+                "value": 1.14
+              }
+            ]
+          },
+          {
+            "id": "hair_long_elf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 210,
+                "saturation": 0.128,
+                "value": 1.14
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "prompt": "elegant silver haired weaver in a shimmering silver gown with a spindle, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_crystal_silk",
+      "kind": "item",
+      "request": {
+        "prompt": "skein of clear glittering crystal silk thread, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_crystal_silk_gloves",
+      "kind": "item",
+      "request": {
+        "prompt": "shimmering silver white woven gloves, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_spectacle_fennimore",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "player_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 130,
+            "saturation": 0.72,
+            "value": 0.85
+          },
+          {
+            "hue": [
+              140,
+              200
+            ],
+            "minSaturation": 0.2,
+            "to": 130,
+            "saturation": 0.9,
+            "value": 1.0
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human"
+          },
+          {
+            "id": "locks_human",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 48,
+                "saturation": 0.6,
+                "value": 1.12
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 130,
+                "saturation": 0.72,
+                "value": 0.85
+              }
+            ]
+          },
+          {
+            "id": "hair_swept_human",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 48,
+                "saturation": 0.6,
+                "value": 1.12
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 130,
+                "saturation": 0.72,
+                "value": 0.85
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "prompt": "fussy spectacle maker in a green coat wearing round green glasses, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "npc_poppyfarmer_dell",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "human_female_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 0,
+            "saturation": 0.85,
+            "value": 0.9
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human_female"
+          },
+          {
+            "id": "locks_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 0,
+                "saturation": 0.85,
+                "value": 0.9
+              }
+            ]
+          },
+          {
+            "id": "hair_messy_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 0,
+                "saturation": 0.85,
+                "value": 0.9
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "prompt": "sleepy poppy farmer in a red dress with a straw hat and red poppies, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
+    },
+    {
+      "id": "item_cloud_glass",
+      "kind": "item",
+      "request": {
+        "prompt": "round drop of clear golden glass, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_emerald_spectacles",
+      "kind": "item",
+      "request": {
+        "prompt": "round spectacles with green emerald glass lenses, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_emerald_glass_amulet",
+      "kind": "item",
+      "request": {
+        "prompt": "round green glass amulet set in gold, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
     }
   ]
 }

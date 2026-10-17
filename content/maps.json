@@ -6612,8 +6612,7 @@
             ]
           ]
         }
-      ],
-      "buildings": []
+      ]
     },
     {
       "id": "goldburg",
@@ -8551,7 +8550,7 @@
         {
           "name": "Stargazer Lune",
           "race": "elf",
-          "gender": "male",
+          "gender": "female",
           "hair": "white",
           "outfit": "purple",
           "wear": "mage_robe",
@@ -8563,6 +8562,57 @@
             "Out here the stars feel close enough to pocket.",
             "I count them every night. I'm on star nine thousand and four.",
             "Nine thousand and five. Oh, that one's moving. That's Stardust!"
+          ]
+        },
+        {
+          "name": "Lantern Boy Teo",
+          "race": "human",
+          "gender": "male",
+          "hair": "black",
+          "outfit": "blue",
+          "style": "crop",
+          "x": -7,
+          "y": -15,
+          "props": [
+            {
+              "art": "moon_lantern_post",
+              "x": 1,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "I hang the moon lanterns on the steps. Seventy-seven of them. I counted.",
+            "Selene says the Moon Rabbit Queen watches the festival from her hill.",
+            "Hana's mochi is the best. Don't tell her I had three.",
+            "The Shadow Apes stole the festival rice. Who steals rice?"
+          ]
+        },
+        {
+          "name": "Night Shepherd Ottilie",
+          "race": "elf",
+          "gender": "female",
+          "hair": "white",
+          "outfit": "purple",
+          "style": "long",
+          "x": -2,
+          "y": -20,
+          "walk": {
+            "x": -2,
+            "y": -14
+          },
+          "pet": "bunny",
+          "props": [
+            {
+              "art": "haystack",
+              "x": 2,
+              "y": 0
+            }
+          ],
+          "lines": [
+            "I shepherd at night. The sheep don't mind. They're asleep.",
+            "Bellamy's telescope can see the rabbit on the moon. Truly!",
+            "Skeletons rattle up the steps some nights. My bunny hides in my hood.",
+            "When the moon's full, the whole valley goes silver. You'll see."
           ]
         }
       ],
@@ -8930,6 +8980,24 @@
               "Mystery solved. The queen scoops up the little thief and hops back up to the moon, and Moonwhisper can sleep under a quiet full moon again."
             ]
           }
+        },
+        {
+          "id": "festival_selene",
+          "name": "Festival-Keeper Selene",
+          "role": "quests",
+          "art": "npc_festival_selene",
+          "x": -13,
+          "y": -11,
+          "greeting": "Welcome to Silvermoon Steps. On a full moon, the whole village climbs up to watch it rise."
+        },
+        {
+          "id": "stargazer_bellamy",
+          "name": "Old Stargazer Bellamy",
+          "role": "quests",
+          "art": "npc_stargazer_bellamy",
+          "x": -2,
+          "y": -11,
+          "greeting": "Lune taught me half of what I know about the stars. I taught her the other half."
         }
       ],
       "decor": [
@@ -8946,6 +9014,28 @@
           "y": -2,
           "blocking": false,
           "summit": 0
+        }
+      ],
+      "buildings": [
+        {
+          "art": "house_purple",
+          "x": -12,
+          "y": -9
+        },
+        {
+          "art": "magic_tower",
+          "x": -1,
+          "y": -9
+        },
+        {
+          "art": "house",
+          "x": -16,
+          "y": -17
+        },
+        {
+          "art": "mushroom_house_blue",
+          "x": 2,
+          "y": -17
         }
       ]
     },
@@ -9860,8 +9950,7 @@
           "y": 0,
           "greeting": "Watch your step. That puddle's not a puddle. It's a Mud Slime having a nap."
         }
-      ],
-      "buildings": []
+      ]
     },
     {
       "id": "candy_mountain",
@@ -14509,6 +14598,57 @@
             "There's a guardian, they say. Morvane. Hits for thousands.",
             "I'm waiting for someone else to go first. Want to go first?"
           ]
+        },
+        {
+          "name": "Little Drummer Tobi",
+          "race": "human",
+          "gender": "male",
+          "hair": "brown",
+          "outfit": "gold",
+          "style": "spiky",
+          "x": -23,
+          "y": -8,
+          "props": [
+            {
+              "art": "barrels",
+              "x": 1,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "Boom! Boom-boom! That's how we say hello in Tallgrass.",
+            "Saba's big drum can be heard all the way to the Old Ox. He nods along.",
+            "The Blaze Bulls set the grass on fire when they run. Then everybody runs.",
+            "Jasper says there's treasure out here. I think the treasure is the drums."
+          ]
+        },
+        {
+          "name": "Grass-Weaver Nan",
+          "race": "dwarf",
+          "gender": "female",
+          "hair": "white",
+          "outfit": "green",
+          "x": -28,
+          "y": -13,
+          "props": [
+            {
+              "art": "haystack",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "bench",
+              "x": 1,
+              "y": -2,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "I weave the tall grass into baskets, roofs and very scratchy hats.",
+            "Tamsin's herd grazes right up to our door. Very polite cows.",
+            "Kestrel's been telling the same story for sixty years. It gets better.",
+            "When the Great Drum sounds, every herd on the steppe comes home."
+          ]
         }
       ],
       "theme": {
@@ -14852,6 +14992,46 @@
           "x": 4,
           "y": 3,
           "greeting": "Moo... there were four of us once, and no lion dared come near."
+        },
+        {
+          "id": "drummaker_saba",
+          "name": "Drum-Maker Saba",
+          "role": "quests",
+          "art": "npc_drummaker_saba",
+          "x": -17,
+          "y": -4,
+          "greeting": "On the steppe, you hear a drum before you see the village. Welcome to Tallgrass."
+        },
+        {
+          "id": "elder_kestrel",
+          "name": "Steppe Elder Kestrel",
+          "role": "quests",
+          "art": "npc_elder_kestrel",
+          "x": -28,
+          "y": -4,
+          "greeting": "The grass grows taller than a man here, and the stories grow taller than the grass."
+        }
+      ],
+      "buildings": [
+        {
+          "art": "inn_red",
+          "x": -16,
+          "y": -2
+        },
+        {
+          "art": "house",
+          "x": -27,
+          "y": -2
+        },
+        {
+          "art": "house_green",
+          "x": -32,
+          "y": -10
+        },
+        {
+          "art": "inn",
+          "x": -14,
+          "y": -10
         }
       ]
     },
@@ -14910,6 +15090,60 @@
             "Who'd leave? Sun, persimmons, a mountain to climb.",
             "Somebody hid a chest at the top of the peak. Achoo!",
             "I'd fetch it myself, but... achoo! ...the pollen's worse up there."
+          ]
+        },
+        {
+          "name": "Salt-Girl Perla",
+          "race": "human",
+          "gender": "female",
+          "hair": "blonde",
+          "outfit": "white",
+          "style": "braids",
+          "x": -6,
+          "y": -15,
+          "props": [
+            {
+              "art": "water_well",
+              "x": 0,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "I rake the salt pans every morning. My hair's always a bit crunchy.",
+            "Ginger's peppers are so hot the crabs sneeze fire.",
+            "Castaway Fitz says he'll leave one day. He's been saying it for ten years.",
+            "The Great Sneeze is my favourite festival. It's very loud."
+          ]
+        },
+        {
+          "name": "Old Sniffles Bart",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "black",
+          "outfit": "red",
+          "x": -1,
+          "y": -20,
+          "walk": {
+            "x": -1,
+            "y": -14
+          },
+          "props": [
+            {
+              "art": "wooden_crates",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "barrels",
+              "x": 2,
+              "y": 1
+            }
+          ],
+          "lines": [
+            "Achoo! Don't mind me. Achoo! It's the pepper. Achoo!",
+            "I've sneezed every day for forty years. I'm very good at it now.",
+            "The monkeys stole the peppers and now they're sneezing in the trees.",
+            "Little Crab grows persimmons, Ginger grows peppers. I grow tissues."
           ]
         }
       ],
@@ -15229,6 +15463,24 @@
           "greeting": "An old chest by the path, a scrap of sea chart caught in its lid.",
           "gives": "chart_piece_compass",
           "quest": "the_star_chart"
+        },
+        {
+          "id": "pepper_ginger",
+          "name": "Pepper-Farmer Ginger",
+          "role": "quests",
+          "art": "npc_pepper_ginger",
+          "x": -12,
+          "y": -11,
+          "greeting": "Bless you! Oh, you didn't sneeze? You will. Everyone does in Pepperpot Bay."
+        },
+        {
+          "id": "saltpanner_morrow",
+          "name": "Salt-Panner Morrow",
+          "role": "quests",
+          "art": "npc_saltpanner_morrow",
+          "x": -1,
+          "y": -11,
+          "greeting": "Salt from the sea, pepper from the hill. We season the whole coast, we do."
         }
       ],
       "decor": [
@@ -15238,6 +15490,28 @@
           "y": 1,
           "blocking": false,
           "summit": 0
+        }
+      ],
+      "buildings": [
+        {
+          "art": "house_green",
+          "x": -11,
+          "y": -9
+        },
+        {
+          "art": "house",
+          "x": 0,
+          "y": -9
+        },
+        {
+          "art": "inn_teal",
+          "x": -15,
+          "y": -17
+        },
+        {
+          "art": "mushroom_house_gold",
+          "x": 3,
+          "y": -17
         }
       ]
     },
@@ -15298,6 +15572,57 @@
             "The lake's harder. It freezes, then it thaws.",
             "Briarmere's page is near the end of Liora's book.",
             "I wonder what's on the last page. A road, I think. A green one."
+          ]
+        },
+        {
+          "name": "Hut-Builder Torvald",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "ginger",
+          "outfit": "blue",
+          "x": 9,
+          "y": -13,
+          "hold": "iron_axe",
+          "props": [
+            {
+              "art": "ice_rock",
+              "x": 2,
+              "y": 0
+            },
+            {
+              "art": "wooden_crates",
+              "x": 2,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "I build the ice-fishing huts. In spring they float away. I build them again.",
+            "Brin catches the fish, Margery cooks them, I eat them. Teamwork.",
+            "The Frost Bears think our huts are for them. They're not.",
+            "Sigrun once carved a whole swan out of the lake. It quacked. I swear it."
+          ]
+        },
+        {
+          "name": "Little Ingrid",
+          "race": "human",
+          "gender": "female",
+          "hair": "blonde",
+          "outfit": "red",
+          "style": "braids",
+          "x": 14,
+          "y": -8,
+          "props": [
+            {
+              "art": "snowman_prop",
+              "x": 1,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "This snowman's called Mister Frostbottom. He's very brave.",
+            "Aldric lets me cross the bridge if I say the password. It's 'please'.",
+            "Margery's soup is made of fish, onions and something wobbly.",
+            "On Ice Lantern Night, the whole lake glows. Like a big moon lying down."
           ]
         }
       ],
@@ -15643,6 +15968,26 @@
           "art": "town_gate",
           "x": 4,
           "y": 5
+        },
+        {
+          "art": "house",
+          "x": 21,
+          "y": -2
+        },
+        {
+          "art": "inn",
+          "x": 10,
+          "y": -2
+        },
+        {
+          "art": "house_purple",
+          "x": 5,
+          "y": -10
+        },
+        {
+          "art": "mushroom_house",
+          "x": 23,
+          "y": -10
         }
       ],
       "decor": [
@@ -15661,6 +16006,24 @@
           "x": 3,
           "y": 3,
           "greeting": "The Tidewater Shrine sank beneath the lake long ago. Something still guards it."
+        },
+        {
+          "id": "icecarver_sigrun",
+          "name": "Ice-Carver Sigrun",
+          "role": "quests",
+          "art": "npc_icecarver_sigrun",
+          "x": 20,
+          "y": -4,
+          "greeting": "Ice is just water that's decided to hold still. I help it decide what shape."
+        },
+        {
+          "id": "soupwife_margery",
+          "name": "Soup-Wife Margery",
+          "role": "quests",
+          "art": "npc_soupwife_margery",
+          "x": 9,
+          "y": -4,
+          "greeting": "Soup! Hot soup! The only thing in Icemoor that isn't frozen solid."
         }
       ]
     },
@@ -15711,6 +16074,56 @@
             "The water rose long ago. We kept walking.",
             "The Wavecrest Dragon was a guardian once. Now it guards only its anger.",
             "Be gentle with it, if you can."
+          ]
+        },
+        {
+          "name": "Weary Pilgrim Anwen",
+          "race": "human",
+          "gender": "female",
+          "hair": "brown",
+          "outfit": "white",
+          "style": "long",
+          "x": -13,
+          "y": 3,
+          "props": [
+            {
+              "art": "bench",
+              "x": 1,
+              "y": 2,
+              "blocking": false
+            }
+          ],
+          "lines": [
+            "I walked here from Meadowbrook. My feet have opinions about it.",
+            "Sela walks the drowned halls every day. I walked them once. Once was enough.",
+            "Bartholomew's stew is the best thing about the pilgrimage. Don't tell Ondine.",
+            "They say if you listen at the shrine steps, the sea sings back."
+          ]
+        },
+        {
+          "name": "Bell-Polisher Ruth",
+          "race": "dwarf",
+          "gender": "female",
+          "hair": "ginger",
+          "outfit": "teal",
+          "x": -8,
+          "y": -2,
+          "walk": {
+            "x": -8,
+            "y": 4
+          },
+          "props": [
+            {
+              "art": "statue",
+              "x": 2,
+              "y": 0
+            }
+          ],
+          "lines": [
+            "I polish the shrine bells. The sea air turns them green overnight.",
+            "Marisol dives for the old offerings. She brings me the bells.",
+            "The Gem Crawlers pick the pearls out of the walls. Little thieves.",
+            "Ondine says the Wavecrest Dragon guards the deepest hall. I'll stay up here."
           ]
         }
       ],
@@ -15986,6 +16399,46 @@
               "The Tidewater Shrine still keeps its secrets, but no longer with teeth. The Temple Keeper can walk its halls again, and boats can cross Briarmere without fear."
             ]
           }
+        },
+        {
+          "id": "shrinekeeper_ondine",
+          "name": "Shrine-Keeper Ondine",
+          "role": "quests",
+          "art": "npc_shrinekeeper_ondine",
+          "x": -19,
+          "y": 7,
+          "greeting": "Pilgrims rest here before they walk the drowned halls. Rest a while too."
+        },
+        {
+          "id": "innkeeper_bartholomew",
+          "name": "Innkeeper Bartholomew",
+          "role": "quests",
+          "art": "npc_innkeeper_bartholomew",
+          "x": -8,
+          "y": 7,
+          "greeting": "A bed, a bowl and a bit of quiet. That's all a pilgrim needs, and all I've got."
+        }
+      ],
+      "buildings": [
+        {
+          "art": "magic_tower",
+          "x": -18,
+          "y": 9
+        },
+        {
+          "art": "inn_teal",
+          "x": -7,
+          "y": 9
+        },
+        {
+          "art": "house",
+          "x": -22,
+          "y": 1
+        },
+        {
+          "art": "house_green",
+          "x": -4,
+          "y": 1
         }
       ]
     },
@@ -16013,6 +16466,29 @@
             "Oh! A real person. I thought you were another echo.",
             "The hollow whispers. Mostly about the Silver Wraith.",
             "The Warden holds the only way through to the Emerald Road. Few get past."
+          ]
+        },
+        {
+          "name": "Silk-Winder Nita",
+          "race": "elf",
+          "gender": "female",
+          "hair": "white",
+          "outfit": "white",
+          "style": "bob",
+          "x": 0,
+          "y": -5,
+          "props": [
+            {
+              "art": "wooden_crates",
+              "x": 1,
+              "y": 1
+            }
+          ],
+          "lines": [
+            "I wind Arachne's silk onto spools. It hums when you wind it.",
+            "Lyle sings to the echoes. The echoes sing back, slightly worse.",
+            "Crystal Widow silk is stronger than steel and softer than a cloud.",
+            "The Silverfang Warden lives deeper down. We don't wind silk down there."
           ]
         }
       ],
@@ -16261,8 +16737,18 @@
               "Travellers can pass through the Whispering Hollow to the Emerald Road again. The Emerald Guard will want to hear. And somewhere far away, the Silver Wraith knows your name."
             ]
           }
+        },
+        {
+          "id": "spinner_arachne",
+          "name": "Spinner Arachne",
+          "role": "quests",
+          "art": "npc_spinner_arachne",
+          "x": -2,
+          "y": -4,
+          "greeting": "Hush. Listen. Every thread in this hollow whispers, if you're quiet enough."
         }
-      ]
+      ],
+      "buildings": []
     },
     {
       "id": "emerald_road",
@@ -16307,6 +16793,57 @@
             "I've drawn every page of Liora's book. All but one.",
             "I'll draw the city when someone clears the way.",
             "No rush. I'm very good at waiting, and very bad at dragons."
+          ]
+        },
+        {
+          "name": "Poppy-Picker Sam",
+          "race": "human",
+          "gender": "male",
+          "hair": "ginger",
+          "outfit": "green",
+          "style": "messy",
+          "x": 6,
+          "y": -22,
+          "props": [
+            {
+              "art": "poppy_patch",
+              "x": 2,
+              "y": 0,
+              "blocking": false
+            },
+            {
+              "art": "haystack",
+              "x": 2,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "Zzz... oh! I'm awake. I'm picking. I'm definitely picking.",
+            "Dell says if you pick poppies too long you fall asleep in the field. Zzz...",
+            "The Tin Woodman stood by the road so long a bird nested in his hat.",
+            "The Emerald City is just past the dragon. Nobody's been in for years."
+          ]
+        },
+        {
+          "name": "Green-Glass Grandpa Hux",
+          "race": "dwarf",
+          "gender": "male",
+          "hair": "white",
+          "outfit": "teal",
+          "x": 1,
+          "y": -17,
+          "props": [
+            {
+              "art": "street_lamp",
+              "x": 1,
+              "y": 2
+            }
+          ],
+          "lines": [
+            "Through green glass, everything looks like emeralds. Even porridge.",
+            "Fennimore polishes a thousand lenses a year. His eyes are very tired.",
+            "Odile drew my picture for her book. She made me taller. Good girl.",
+            "Golden Clouds drift over the road and rain little drops of gold. Sticky."
           ]
         }
       ],
@@ -16798,6 +17335,26 @@
           "art": "town_gate",
           "x": 4,
           "y": 5
+        },
+        {
+          "art": "item_shop",
+          "x": -4,
+          "y": -11
+        },
+        {
+          "art": "house_green",
+          "x": 7,
+          "y": -11
+        },
+        {
+          "art": "house",
+          "x": -8,
+          "y": -19
+        },
+        {
+          "art": "inn_red",
+          "x": 10,
+          "y": -19
         }
       ],
       "npcs": [
@@ -16838,6 +17395,24 @@
           "summit": 0,
           "greeting": "A chest, left at the top for whoever climbs this far.",
           "gives": "emerald_crest_gauntlets"
+        },
+        {
+          "id": "spectacle_fennimore",
+          "name": "Spectacle-Maker Fennimore",
+          "role": "quests",
+          "art": "npc_spectacle_fennimore",
+          "x": -5,
+          "y": -13,
+          "greeting": "Everyone who goes through the gate wears green spectacles. Who do you think makes them?"
+        },
+        {
+          "id": "poppyfarmer_dell",
+          "name": "Poppy-Farmer Dell",
+          "role": "quests",
+          "art": "npc_poppyfarmer_dell",
+          "x": 6,
+          "y": -13,
+          "greeting": "Mind the poppies. They make you sleepy. I've been yawning since I was four."
         }
       ],
       "decor": [
