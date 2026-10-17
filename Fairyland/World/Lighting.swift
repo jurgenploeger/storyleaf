@@ -153,13 +153,39 @@ final class Lighting {
     /// behind is lit by it.
     /// `alpha`: how bright it is at its brightest; `duration`: how long each half of a pulse takes
     /// (`LandPlanner` draws both).
-    static func glow(behind node: SKSpriteNode, color: UIColor, in world: SKNode, alpha: CGFloat, duration: TimeInterval) {
-        let glow = soft(color, size: CGSize(width: node.size.width * 1.9, height: node.size.width * 1.5))
-        glow.position = node.position + CGVector(dx: 0, dy: node.size.height * 0.4)
-        glow.zPosition = node.zPosition - 0.5
-        glow.alpha = alpha
-        glow.run(.repeatForever(.sequence([.fadeAlpha(to: alpha * 0.55, duration: duration), .fadeAlpha(to: alpha, duration: duration)])))
-        world.addChild(glow)
+    /// `layers`: on a hill, as `Shadow` takes them (where the strip it stands on and the two in front
+    /// begin on screen, and how deep each is sorted). Its lower part then lies over the strips in
+    /// front, a piece over each, so the slope in front doesn't cut it off in a hard line
+    /// (playtesting 2026-10-17, the crystals on Starfall Isle's mountain); the rest stays behind it.
+    static func glow(behind node: SKSpriteNode, color: UIColor, in world: SKNode, alpha: CGFloat, duration: TimeInterval,
+                     layers: [(from: CGFloat, z: CGFloat)] = []) {
+        let size = CGSize(width: node.size.width * 1.9, height: node.size.width * 1.5)
+        let middle = node.position + CGVector(dx: 0, dy: node.size.height * 0.4)
+        let bottom = middle.y - size.height / 2
+        // Each piece: from where on screen up to where, and how deep it's sorted.
+        var pieces: [(from: CGFloat, to: CGFloat, z: CGFloat)] = []
+        var to = CGFloat.infinity
+        for (index, layer) in layers.enumerated() {
+            let from = index == layers.count - 1 ? -CGFloat.infinity : layer.from
+            pieces.append((from: from, to: to, z: index == 0 ? node.zPosition - 0.5 : layer.z + 0.1))
+            to = from
+        }
+        if pieces.isEmpty { pieces = [(from: -CGFloat.infinity, to: CGFloat.infinity, z: node.zPosition - 0.5)] }
+        let pulse = SKAction.repeatForever(.sequence([.fadeAlpha(to: alpha * 0.55, duration: duration), .fadeAlpha(to: alpha, duration: duration)]))
+        for piece in pieces {
+            let low = max(bottom, piece.from), high = min(bottom + size.height, piece.to)
+            guard high > low else { continue }
+            let glow = soft(color, size: CGSize(width: size.width, height: high - low))
+            if high - low < size.height {
+                let part = CGRect(x: 0, y: (low - bottom) / size.height, width: 1, height: (high - low) / size.height)
+                glow.texture = SKTexture(rect: part, in: SoftTextures.glow)
+            }
+            glow.position = CGPoint(x: middle.x, y: (low + high) / 2)
+            glow.zPosition = piece.z
+            glow.alpha = alpha
+            glow.run(pulse)
+            world.addChild(glow)
+        }
     }
 
     /// A soft shadow on the ground under a tree or rock, cast away from the sun (`fall(from:)`): a

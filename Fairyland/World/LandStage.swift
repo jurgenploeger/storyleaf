@@ -642,16 +642,19 @@ final class LandStage {
             rise.timingMode = .easeInEaseOut
             node.run(.repeatForever(.sequence([rise, rise.reversed()])), withKey: "bob")
         }
+        // On a hill, the strip it stands on and the two in front, where its shadow and glow reach
+        // them (`HillArt.strip(at:)`).
+        var layers: [(from: CGFloat, z: CGFloat)] = []
+        if map.hillIndex(at: cell) != nil {
+            let strip = HillArt.strip(at: -node.zPosition)
+            layers = (0..<3).map { step in
+                let start = strip.start - CGFloat(step) * HillArt.stripHeight
+                return (from: start + map.height(at: CGPoint(x: node.position.x, y: start)),
+                        z: strip.z + CGFloat(step) * HillArt.stripHeight)
+            }
+        }
         if placement.shadow == true {
-            if map.hillIndex(at: cell) != nil {
-                // On a hill, over the strip it stands on, and over the two in front where it
-                // reaches them (`HillArt.strip(at:)`).
-                let strip = HillArt.strip(at: -node.zPosition)
-                let layers: [(from: CGFloat, z: CGFloat)] = (0..<3).map { step in
-                    let start = strip.start - CGFloat(step) * HillArt.stripHeight
-                    return (from: start + map.height(at: CGPoint(x: node.position.x, y: start)),
-                            z: strip.z + CGFloat(step) * HillArt.stripHeight)
-                }
+            if !layers.isEmpty {
                 shadows.append(Lighting.Shadow(under: node, in: chunk(at: node.position), layers: layers))
             } else if map.isSunken(cell) {
                 // On the shore, over the sunk ground it stands on (`HillArt.sunkenDepth`).
@@ -663,7 +666,10 @@ final class LandStage {
             }
         }
         if let hex = placement.glow, let color = UIColor(hex: hex), let glow = planted.glow {
-            Lighting.glow(behind: node, color: color, in: chunk(at: node.position), alpha: glow.alpha, duration: glow.duration)
+            // A light isn't darkened on a hill's shaded side (`shade`).
+            node.colorBlendFactor = 0
+            Lighting.glow(behind: node, color: color, in: chunk(at: node.position), alpha: glow.alpha, duration: glow.duration,
+                          layers: layers)
         }
     }
 

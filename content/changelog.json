@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.33",
+      "date": "2026-10-17",
+      "title": "Lights on the hills",
+      "notes": [
+        "Crystals, lanterns and other lights on a hillside keep their whole glow instead of being cut off by the slope in front, and they're no longer darkened on the shaded side."
+      ]
+    },
+    {
       "version": "0.7.32",
       "date": "2026-10-17",
       "title": "Cave maps",
