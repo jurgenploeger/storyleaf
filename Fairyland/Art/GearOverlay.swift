@@ -19,18 +19,24 @@ nonisolated struct GearLook: Sendable, Hashable {
     var boots: String? = nil
     var necklace: String? = nil
     var chain: String? = nil
+    /// A festive hat (items.json type head): how it's drawn (`ItemDef.hat`: crown | santa | ears |
+    /// mask), its colour and its trim (a bunny's ears' pink), "#RRGGBB".
+    var hat: String? = nil
+    var hatColor: String? = nil
+    var hatTrim: String? = nil
     /// The plain body (art/sprites `body_*`, tools/hero_layers.py) the hands, chin and boots are found
     /// on: the hero's own, or their race's under armour with a walk sheet of its own, which is drawn
     /// on the same poses.
     var body: String? = nil
 
-    var isPlain: Bool { wear == nil && cape == nil && gloves == nil && boots == nil && necklace == nil }
+    var isPlain: Bool { wear == nil && cape == nil && gloves == nil && boots == nil && necklace == nil && hat == nil }
 }
 
 /// Draws worn gear onto a walk sheet, frame by frame. It finds the outfit (the green tunic) on the
 /// original sheet, then on the recoloured sheet adds what that kind of armour looks like: chain
 /// links, an open vest, pauldrons, a robe's long hem, a cape, and colours in a helmet or hood (drawn
-/// by tools/hero_layers.py in place of the hair); then gloves, boots and a necklace in their colours.
+/// by tools/hero_layers.py in place of the hair); then gloves, boots and a necklace in their colours,
+/// and a festive hat over everything.
 /// tools/gear_preview.py is the same algorithm in Python, to tune it without a Mac.
 enum GearOverlay {
     nonisolated static func apply(_ gear: GearLook, original: CGImage, dressed: CGImage, skeleton: CGImage? = nil,
@@ -46,6 +52,9 @@ enum GearOverlay {
                 trinkets(&out, body: body, origin: (column * frame, row * frame), size: frame, facing: facing, gear: gear)
                 if gear.cape != nil {
                     drape(&out, base: base, origin: (column * frame, row * frame), size: frame, facing: facing, gear: gear)
+                }
+                if gear.hat != nil {
+                    hat(&out, body: body, origin: (column * frame, row * frame), size: frame, facing: facing, gear: gear)
                 }
             }
         }
@@ -476,6 +485,166 @@ enum GearOverlay {
             for (dx, dy) in [(-2, 1), (-1, 2), (1, 2), (2, 1)] { put(cx + dx, chin + dy, chain) }
             put(cx, chin + 2, necklace.mixed(with: RGB(1, 1, 1), 0.4))
             put(cx, chin + 3, necklace)
+        }
+    }
+
+    // MARK: A festive hat
+
+    /// A cell of a frame.
+    nonisolated private struct HatCell: Hashable {
+        let x: Int, y: Int
+    }
+
+    /// The head on a plain body's frame: its skin's biggest patch (the bald scalp is skin too), its
+    /// top and its lowest row. tools/gear_preview.py `head`.
+    nonisolated private static func head(_ body: Bitmap, origin: (x: Int, y: Int), size: Int) -> (top: Int, chin: Int, cells: [HatCell])? {
+        var skin = [Bool](repeating: false, count: size * size)
+        for y in 0..<size {
+            for x in 0..<size where body.alpha(origin.x + x, origin.y + y) > 0.5 {
+                let (h, s, v) = hsv(body.rgb(origin.x + x, origin.y + y))
+                skin[y * size + x] = (h <= 40 || h >= 342) && s > 0.12 && s < 0.65 && v > 0.55
+            }
+        }
+        var seen = [Bool](repeating: false, count: size * size)
+        var best: [HatCell] = []
+        for start in 0..<(size * size) where skin[start] && !seen[start] {
+            var stack = [start]
+            var cells: [HatCell] = []
+            seen[start] = true
+            while let i = stack.popLast() {
+                let x = i % size, y = i / size
+                cells.append(HatCell(x: x, y: y))
+                for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                    let nx = x + dx, ny = y + dy
+                    guard nx >= 0, ny >= 0, nx < size, ny < size, skin[ny * size + nx], !seen[ny * size + nx] else { continue }
+                    seen[ny * size + nx] = true
+                    stack.append(ny * size + nx)
+                }
+            }
+            if cells.count > best.count { best = cells }
+        }
+        guard let top = best.map(\.y).min(), let chin = best.map(\.y).max() else { return nil }
+        return (top, chin, best)
+    }
+
+    /// Part of a hat: its cells, the colour of each, and its outline.
+    nonisolated private struct HatPart {
+        let cells: Set<HatCell>
+        let fill: (HatCell) -> RGB
+        let line: RGB
+    }
+
+    /// A festive hat (`GearLook.hat`) on the head, measured on the plain body, frame by frame: the top
+    /// of its scalp and its width three rows down. crown: a paper party crown, a band at the scalp's
+    /// top and three points up from it (RuneScape's party hats); santa: a red cap with a white fur
+    /// brim and pom, its tip flopped over to the back; ears: a bunny's, tall from the head, pink inside
+    /// (`hatTrim`) from the front; mask: the face in the mask's colour, shaded as the skin was, with
+    /// hollow eyes and a toothy grin, from the front and the side. tools/gear_preview.py `hat`.
+    nonisolated private static func hat(_ out: inout Bitmap, body: Bitmap, origin: (x: Int, y: Int), size: Int,
+                                        facing: String, gear: GearLook) {
+        guard let kind = gear.hat, let colour = color(hex: gear.hatColor),
+              let found = Self.head(body, origin: origin, size: size) else { return }
+        let trim = color(hex: gear.hatTrim) ?? RGB(1, 1, 1)
+        let white = RGB(0.98, 0.98, 1), grey = RGB(0.8, 0.82, 0.88), hollow = RGB(0.08, 0.05, 0.08)
+        let top = found.top, chin = found.chin
+        let span = found.cells.filter { $0.y == top + 3 }.map(\.x)
+        let across = span.isEmpty ? found.cells.map(\.x) : span
+        guard let left = across.min(), let right = across.max() else { return }
+        let cx = (left + right) / 2
+        // Which way is behind them, across the frame: a cap's tip flops that way.
+        let back = facing == "right" || facing == "up" ? -1 : 1
+        func put(_ x: Int, _ y: Int, _ c: RGB) {
+            guard x >= 0, y >= 0, x < size, y < size else { return }
+            out.set(origin.x + x, origin.y + y, c)
+        }
+        /// Each part filled in turn, outlined where the hat meets the outside.
+        func stamp(_ parts: [HatPart]) {
+            let whole = parts.reduce(into: Set<HatCell>()) { $0.formUnion($1.cells) }
+            for part in parts {
+                for cell in part.cells {
+                    let edge = [(1, 0), (-1, 0), (0, 1), (0, -1)].contains { !whole.contains(HatCell(x: cell.x + $0.0, y: cell.y + $0.1)) }
+                    put(cell.x, cell.y, edge ? part.line : part.fill(cell))
+                }
+            }
+        }
+        switch kind {
+        case "crown":
+            // A band round the head at the scalp's top, three points up from it.
+            let l = left - 1, r = right + 1
+            let peaks = [l + 2, (l + r) / 2, r - 2]
+            var shape = Set<HatCell>()
+            for x in l...r {
+                let rise = max(0, 4 - 2 * (peaks.map { abs(x - $0) }.min() ?? 0))
+                for y in (top - 1 - rise)...(top + 1) { shape.insert(HatCell(x: x, y: y)) }
+            }
+            let light = colour.mixed(with: RGB(1, 1, 1), 0.4), low = colour.scaled(0.75)
+            stamp([HatPart(cells: shape, fill: { $0.y == top + 1 ? low : $0.y == top - 1 ? light : colour }, line: colour.scaled(0.42))])
+        case "santa":
+            // A white fur brim; the cap over the scalp, narrowing and flopping over to the back.
+            let l = left - 1, r = right + 1
+            let middle = Double(l + r) / 2, half = Double(r - l) / 2
+            var brim = Set<HatCell>(), cap = Set<HatCell>()
+            for x in l...r { for y in (top - 1)...(top + 1) { brim.insert(HatCell(x: x, y: y)) } }
+            for k in 2...8 {
+                let width = half * (1 - Double(k - 1) / 8.5)
+                let mid = middle + Double(back * (k - 1) * (k - 1)) / 10
+                for x in Int((mid - width).rounded())...Int((mid + width).rounded()) { cap.insert(HatCell(x: x, y: top - k)) }
+            }
+            let tip = HatCell(x: Int((middle + Double(back) * 5.3).rounded()), y: top - 8)
+            var pom = Set<HatCell>()
+            for dx in -1...1 { for dy in -1...1 where abs(dx) + abs(dy) < 2 { pom.insert(HatCell(x: tip.x + dx, y: tip.y + dy)) } }
+            let dark = colour.scaled(0.72), fur = grey.scaled(0.62)
+            stamp([HatPart(cells: cap, fill: { (Double($0.x) - middle) * Double(back) > half * 0.4 ? dark : colour }, line: colour.scaled(0.42)),
+                   HatPart(cells: brim, fill: { $0.y == top + 1 ? grey : white }, line: fur),
+                   HatPart(cells: pom, fill: { _ in white }, line: fur)])
+        case "ears":
+            // Two tall ears from the head, leaning out a little; pink inside, seen from the front.
+            let spots = switch facing {
+            case "right": [cx - 3, cx]
+            case "left": [cx - 1, cx + 2]
+            default: [cx - 4, cx + 2]
+            }
+            var parts: [HatPart] = []
+            for (n, x0) in spots.enumerated() {
+                let lean = n == 0 ? -1 : 1
+                var shape = Set<HatCell>(), inner = Set<HatCell>()
+                for k in 0...10 {
+                    let y = top + 1 - k, dx = lean * (k / 5), width = k >= 9 ? 2 : 3
+                    for x in (x0 + dx)...(x0 + dx + width) { shape.insert(HatCell(x: x, y: y)) }
+                    if facing == "down", (2...8).contains(k) { inner.insert(HatCell(x: x0 + dx + 1 + n, y: y)) }
+                }
+                let pink = inner
+                parts.append(HatPart(cells: shape, fill: { pink.contains($0) ? trim : colour }, line: colour.scaled(0.55)))
+            }
+            stamp(parts)
+        case "mask":
+            guard facing != "up" else { return }
+            let face = Set(found.cells.filter { $0.y < chin })
+            for cell in face {
+                let (h, s, v) = hsv(out.rgb(origin.x + cell.x, origin.y + cell.y))
+                if (h <= 40 || h >= 342) && s > 0.12 && s < 0.65 && v > 0.55 { put(cell.x, cell.y, colour.scaled(0.3 + v * 0.8)) }
+            }
+            // The eyes (what wasn't skin on the face) as hollows, a row deeper; a grin at the chin.
+            for y in top..<chin {
+                for x in 0..<size where !face.contains(HatCell(x: x, y: y)) {
+                    guard face.contains(HatCell(x: x - 1, y: y)) || face.contains(HatCell(x: x + 1, y: y)),
+                          face.contains(HatCell(x: x, y: y - 1)) || face.contains(HatCell(x: x, y: y + 1)) else { continue }
+                    put(x, y, hollow)
+                    if face.contains(HatCell(x: x, y: y - 1)) { put(x, y - 1, hollow) }
+                }
+            }
+            let mouth = chin - 1
+            let row = face.filter { $0.y == mouth }.map(\.x).sorted()
+            guard let first = row.first, let last = row.last else { return }
+            let teeth = switch facing {
+            case "down": (cx - 2)...(cx + 2)
+            case "right": (last - 3)...(last - 1)
+            default: (first + 1)...(first + 3)
+            }
+            let tooth = colour.mixed(with: RGB(1, 1, 1), 0.7)
+            for x in teeth where face.contains(HatCell(x: x, y: mouth)) { put(x, mouth, abs(x - cx) % 2 == 1 ? hollow : tooth) }
+        default:
+            break
         }
     }
 

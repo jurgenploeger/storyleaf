@@ -177,6 +177,15 @@ tiers_mage     | newgame,race=elf,level=150,class=mage,equip=amethyst_robe+ameth
 tiers_tamer    | newgame,race=dwarf,gender=female,level=80,class=tamer,equip=jade_hide+jade_gauntlets+jade_boots,weather=clear,hour=12 | 8
 tiers_sapphire | newgame,race=elf,gender=male,level=60,class=fighter,equip=sapphire_plate+sapphire_gauntlets+sapphire_boots,weather=clear,hour=12 | 8
 tiers_shop     | newgame,level=60,npc=goldburg_shop | 8
+# Festive seasons and their hats, like RuneScape's holiday events (0.7.30, playtesting 2026-10-17: "Also
+# add festive items like party, halloween, Christmas and Easter"): the season's first gift brings a hat
+# (`date=` sets the day), the hats on every body, and the crowd wearing them in town.
+festive_gift   | newgame,level=30,map=meadowbrook,date=10-31,gift | 10
+festive_halloween | newgame,level=30,map=meadowbrook,date=10-31,equip=green_halloween_mask,weather=clear,hour=20 | 8
+festive_party  | newgame,gender=female,level=40,map=rainbow_city,date=01-01,equip=purple_party_hat,weather=clear,hour=12 | 8
+festive_christmas | newgame,race=dwarf,level=60,map=meadowbrook,date=12-24,equip=santa_hat+copper_hide,weather=snow,hour=12 | 8
+festive_easter | newgame,race=elf,gender=female,level=20,map=meadowbrook,date=2027-03-28,equip=bunny_ears,weather=clear,hour=12 | 8
+festive_char   | newgame,race=elf,gender=male,level=60,class=fighter,date=01-01,equip=sapphire_plate+yellow_party_hat+sapphire_gauntlets+sapphire_boots,menu=character | 8
 hair_blue    | newgame,hair=blue                                              | 8
 hair_elf_male | newgame,race=elf,gender=male,hair=black,menu=character        | 8
 hair_dwarf_female | newgame,race=dwarf,gender=female,hair=white                | 8

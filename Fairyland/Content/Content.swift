@@ -251,10 +251,11 @@ nonisolated enum ItemType: String, Decodable, Sendable {
     /// `material`: wood, metal, gems and hides that monsters drop, for the blacksmith.
     /// `accessory`: rings, charms and bands; `gloves`, `necklace` and `boots` have slots of their own.
     /// `cape`: a status cape, the weaver's prize for a milestone (rewards.json `prizes`), worn on the back.
-    case consumable, weapon, armor, gloves, necklace, boots, accessory, material, cape
+    /// `head`: a festive hat, from a season (rewards.json `seasons`), worn on the head (`ItemDef.hat`).
+    case consumable, weapon, armor, head, gloves, necklace, boots, accessory, material, cape
 
     /// Every slot the hero wears something in, in the order lists show them.
-    static let equipmentSlots: [ItemType] = [.weapon, .armor, .gloves, .boots, .necklace, .accessory, .cape]
+    static let equipmentSlots: [ItemType] = [.weapon, .armor, .head, .gloves, .boots, .necklace, .accessory, .cape]
 
     /// The small pieces worn next to a weapon and armour: few next to dozens of weapons and
     /// armours, so they drop on a share of their own (`GameSession.accessoryShare`).
@@ -265,6 +266,7 @@ nonisolated enum ItemType: String, Decodable, Sendable {
         case .consumable: L("Consumable")
         case .weapon: L("Weapon")
         case .armor: L("Armor")
+        case .head: L("Hat")
         case .gloves: L("Gloves")
         case .necklace: L("Necklace")
         case .boots: L("Boots")
@@ -324,6 +326,9 @@ nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
     /// A cape's colour, or how gloves, boots and a necklace look worn (a necklace's chain is its
     /// `accent`), "#RRGGBB".
     let color: String?
+    /// A festive hat (type head): how it's drawn on the hero's head (GearOverlay.hat): crown (a paper
+    /// party crown), santa, ears (a bunny's, pink inside: `accent`) or mask (the face in `color`).
+    let hat: String?
     /// Magic weapons: a soft light while held, "#RRGGBB", centred on `glowAt` ([x, y] in the 32×32 art).
     let glow: String?
     let glowAt: [Double]?
@@ -1049,6 +1054,23 @@ nonisolated struct RewardsDef: Decodable, Sendable {
         let gearChance: Double
         let items: [String]
     }
+    /// Festive seasons, like RuneScape's holiday events: each on its days, `from` to `to` ("MM-DD",
+    /// round the new year when `to` comes first) or `easter`: [first, last] days from Easter Sunday.
+    /// The first daily gift of one brings one of its `hats` (one you haven't got, if any) with its
+    /// `greeting`; till it ends, a fight won against wild monsters leaves one of its `treats` `chance`
+    /// of the time (one of its `hats` instead `hatChance` of those), and other adventurers wear its
+    /// hats (GameSession+Rewards.swift).
+    nonisolated struct Season: Decodable, Sendable, Identifiable {
+        let id: String
+        let from: String?
+        let to: String?
+        let easter: [Int]?
+        let hats: [String]
+        let treats: [String]
+        let chance: Double
+        let hatChance: Double
+        let greeting: String
+    }
     let dailyGifts: [Gift]
     let bounties: Bounties
     let quests: Quests
@@ -1056,6 +1078,7 @@ nonisolated struct RewardsDef: Decodable, Sendable {
     let cards: Cards
     let seals: Seals
     let chests: Chests?
+    let seasons: [Season]?
     /// Status capes, like RuneScape's capes for a skill at 99: the weaver weaves each one's `item`
     /// once its milestone is met.
     let prizes: [Prize]?

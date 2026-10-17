@@ -2,6 +2,17 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.30",
+      "date": "2026-10-17",
+      "title": "Festive seasons",
+      "notes": [
+        "Halloween, Christmas, the New Year's party and Easter come to Storyleaf, each in its own season. The first daily gift of each brings a hat: a Halloween mask, a Santa hat, a paper party crown or bunny ears.",
+        "Hats have a slot of their own, at the top of the Character screen, and show on your hero. Party crowns come in six colours and the masks in three, so there's something to collect.",
+        "During a season, monsters carry its treats (pumpkin pie, gingerbread, cake or chocolate eggs, for HP and MP), and now and then one of its hats.",
+        "Halloween runs from October 15 to November 7, Christmas from December 1 to 30, the New Year's party from December 31 to January 7, and Easter for a week either side of Easter Sunday."
+      ]
+    },
+    {
       "version": "0.7.29",
       "date": "2026-10-17",
       "title": "Armour in every colour",

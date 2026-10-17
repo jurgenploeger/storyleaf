@@ -112,6 +112,8 @@ import SpriteKit
 ///   walk=dx_dy     once the map is up, the hero walks a loop that way (walk=1_0: east, a step up, west,
 ///                  a step down) over and over, with no fights, so a still catches them mid-stride
 ///   hour=<h>       the calendar starts at that hour of the day (0-23: 21 for night, 18 for dusk)
+///   date=<MM-DD>   it's that day (or YYYY-MM-DD) for the festive seasons and the daily gift
+///                  (rewards.json `seasons`: date=10-31 is Halloween, and with gift, its hat comes too)
 ///   weather=<kind> every map with a sky has this weather (clear | cloudy | rain | storm | fog | snow)
 ///   lang=<code>    play in this language (content/i18n/languages.json), without changing the saved choice
 ///   intro[=page]   open the title screen's story pages at that page (1 = the story, 4 = how to play)
@@ -179,6 +181,16 @@ enum DebugLaunch {
     static var bookPage: String? { flags["page"] }
     /// `card`: every beaten monster leaves its card (the victory's "New card!" for screenshots).
     static var dropsCards: Bool { flags["card"] != nil }
+    /// `date=10-31` (this year) or `date=2027-03-28`: the day it is for the festive seasons and the
+    /// daily gift (`GameSession.today`), at noon.
+    static var today: Date? {
+        guard let text = flags["date"] else { return nil }
+        let numbers = text.split(separator: "-").compactMap { Int($0) }
+        let calendar = Calendar(identifier: .gregorian)
+        let year = numbers.count == 3 ? numbers[0] : calendar.component(.year, from: Date())
+        guard numbers.count >= 2 else { return nil }
+        return calendar.date(from: DateComponents(year: year, month: numbers[numbers.count - 2], day: numbers[numbers.count - 1], hour: 12))
+    }
     /// `change=armor`: the Character tab opens with that slot's list of things to wear.
     static var changingSlot: ItemType? { flags["change"].flatMap(ItemType.init(rawValue:)) }
     static var inspectedItem: String? { flags["inspect"] }

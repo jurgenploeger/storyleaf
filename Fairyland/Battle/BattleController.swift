@@ -1355,6 +1355,13 @@ final class BattleController {
             }
         }
 
+        // A festive season's treat now and then, or once in a long while one of its hats.
+        if !wildFoes.isEmpty, let treat = session.seasonDrop() {
+            session.addItem(treat.id)
+            loot[treat.id, default: 0] += 1
+            lines.append(L("A festive find: {item}!", ["item": treat.name]))
+        }
+
         // Monster cards (Fairyland Online's card collection): now and then a beaten monster leaves
         // its card, a rare one or a boss more often; never one whose card is in your Book already.
         for foe in beaten {

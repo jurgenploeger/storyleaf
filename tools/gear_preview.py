@@ -6,10 +6,12 @@ the same paper-doll layers the game stacks (tools/hero_layers.py), to tune it wi
     python3 tools/gear_preview.py /tmp/gear.png      # every armour in items.json on every race
     python3 tools/gear_preview.py --capes /tmp/capes.png   # every status cape, over some armours
     python3 tools/gear_preview.py --trinkets /tmp/t.png    # gloves, boots and necklaces on every body
+    python3 tools/gear_preview.py --hats /tmp/h.png        # every festive hat on every body
 
 Needs pillow + numpy.
 """
 import colorsys
+import math
 import numpy as np
 
 FRAME = 48
@@ -374,6 +376,156 @@ def trinkets(body, out, gloves=None, boots=None, necklace=None, chain=None):
     return out
 
 
+def head(body):
+    """The head on a plain body frame (`body`, 48 × 48): its skin's biggest patch (the bald scalp is
+    skin too), as (top, chin, cells). None if there's none."""
+    a = body[..., 3] > 0.5
+    skin = np.zeros((FRAME, FRAME), bool)
+    for y in range(FRAME):
+        for x in range(FRAME):
+            if a[y, x]:
+                hh, s, v = hsv(tuple(body[y, x, :3]))
+                skin[y, x] = (hh <= 40 / 360 or hh >= 342 / 360) and 0.12 < s < 0.65 and v > 0.55
+    seen = np.zeros_like(skin)
+    best = []
+    for y in range(FRAME):
+        for x in range(FRAME):
+            if skin[y, x] and not seen[y, x]:
+                stack, cells = [(y, x)], []
+                seen[y, x] = True
+                while stack:
+                    cy, cx = stack.pop()
+                    cells.append((cy, cx))
+                    for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                        ny, nx = cy + dy, cx + dx
+                        if 0 <= ny < FRAME and 0 <= nx < FRAME and skin[ny, nx] and not seen[ny, nx]:
+                            seen[ny, nx] = True
+                            stack.append((ny, nx))
+                if len(cells) > len(best):
+                    best = cells
+    if not best:
+        return None
+    return min(y for y, _ in best), max(y for y, _ in best), best
+
+
+def half_up(v):
+    """Rounded, halves up (as Swift's `rounded()` for the positive numbers here; Python's round() rounds
+    halves to even)."""
+    return int(math.floor(v + 0.5))
+
+
+def hat(body, out, kind, colour, trim=None):
+    """A festive hat on the head (GearOverlay.hat), measured on the plain body: the top of its scalp
+    and its width a little below, every frame. `kind`: crown, a paper party crown with three points
+    (RuneScape's party hats); santa, a red cap with a white fur brim and pom, its tip flopped back;
+    ears, a bunny's, tall, pink inside (`trim`) from the front; mask, the face in the mask's colour
+    (`colour`, shaded as the skin was) with hollow eyes and a toothy grin, from the front and the side."""
+    col = hexc(colour)
+    acc = hexc(trim) if trim else np.array([1.0, 1.0, 1.0])
+    white, grey = np.array([0.98, 0.98, 1.0]), np.array([0.80, 0.82, 0.88])
+    hollow = np.array([0.08, 0.05, 0.08])
+    for row, facing in enumerate(DIRS):
+        for c in range(body.shape[1] // FRAME):
+            oy, ox = row * FRAME, c * FRAME
+            f = out[oy:oy + FRAME, ox:ox + FRAME]
+            found = head(body[oy:oy + FRAME, ox:ox + FRAME])
+            if found is None:
+                continue
+            top, chin, cells = found
+            span = [x for y, x in cells if y == top + 3] or [x for _, x in cells]
+            left, right = min(span), max(span)
+            cx = (left + right) // 2
+            back = {'right': -1, 'left': 1, 'down': 1, 'up': -1}[facing]
+
+            def put(x, y, cc):
+                if 0 <= x < FRAME and 0 <= y < FRAME:
+                    f[y, x, :3] = cc
+                    f[y, x, 3] = 1
+
+            def stamp(parts):
+                """Each part (cells, colour for a cell, its outline) filled, in order, outlined where
+                the hat meets the outside."""
+                whole = set().union(*(cells for cells, _, _ in parts))
+                for cells, fill, line in parts:
+                    for x, y in cells:
+                        edge = any((x + dx, y + dy) not in whole for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+                        put(x, y, line if edge else fill(x, y))
+
+            if kind == 'crown':
+                # A band round the head at the scalp's top, three points up from it.
+                l, r = left - 1, right + 1
+                peaks = [l + 2, (l + r) // 2, r - 2]
+                shape = set()
+                for x in range(l, r + 1):
+                    rise = max(0, 4 - 2 * min(abs(x - p) for p in peaks))
+                    for y in range(top - 1 - rise, top + 2):
+                        shape.add((x, y))
+                light = mix(col, (1, 1, 1), 0.4)
+                stamp([(shape, lambda x, y: shade(col, 0.75) if y == top + 1 else light if y == top - 1 else col, shade(col, 0.42))])
+            elif kind == 'santa':
+                # A white fur brim; the cap over the scalp, narrowing and flopping over to the back.
+                l, r = left - 1, right + 1
+                brim = {(x, y) for x in range(l, r + 1) for y in (top - 1, top, top + 1)}
+                half = (r - l) / 2
+                cap = set()
+                for k in range(2, 9):
+                    w = half * (1 - (k - 1) / 8.5)
+                    mid = (l + r) / 2 + back * ((k - 1) ** 2) / 10
+                    for x in range(half_up(mid - w), half_up(mid + w) + 1):
+                        cap.add((x, top - k))
+                tip = (half_up((l + r) / 2 + back * 5.3), top - 8)
+                pom = {(tip[0] + dx, tip[1] + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if abs(dx) + abs(dy) < 2}
+                dark = shade(col, 0.72)
+                stamp([(cap, lambda x, y: dark if (x - (l + r) / 2) * back > half * 0.4 else col, shade(col, 0.42)),
+                       (brim, lambda x, y: grey if y == top + 1 else white, grey * 0.62),
+                       (pom, lambda x, y: white, grey * 0.62)])
+            elif kind == 'ears':
+                # Two tall ears from the head, leaning out a little; pink inside, seen from the front.
+                spots = {'down': (cx - 4, cx + 2), 'up': (cx - 4, cx + 2), 'right': (cx - 3, cx), 'left': (cx - 1, cx + 2)}[facing]
+                parts = []
+                for n, x0 in enumerate(spots):
+                    lean = -1 if n == 0 else 1
+                    shape, inner = set(), set()
+                    for k in range(0, 11):
+                        y = top + 1 - k
+                        dx = lean * (k // 5)
+                        width = 2 if k >= 9 else 3
+                        for x in range(x0 + dx, x0 + dx + width + 1):
+                            shape.add((x, y))
+                        if facing == 'down' and 2 <= k <= 8:
+                            inner.add((x0 + dx + 1 + n, y))
+                    parts.append((shape, lambda x, y, inner=inner: acc if (x, y) in inner else col, shade(col, 0.55)))
+                stamp(parts)
+            elif kind == 'mask':
+                if facing == 'up':
+                    continue
+                face = {(x, y) for y, x in cells if y < chin}
+                for x, y in face:
+                    hh, s, v = hsv(tuple(f[y, x, :3]))
+                    if (hh <= 40 / 360 or hh >= 342 / 360) and 0.12 < s < 0.65 and v > 0.55:
+                        f[y, x, :3] = np.clip(col * (0.3 + v * 0.8), 0, 1)
+                # The eyes (what wasn't skin on the face) as hollows, a row deeper; a grin at the chin.
+                eyes = [(x, y) for y in range(top, chin) for x in range(FRAME)
+                        if (x, y) not in face and any((x + dx, y) in face for dx in (-1, 1)) and any((x, y + dy) in face for dy in (-1, 1))]
+                for x, y in eyes:
+                    put(x, y, hollow)
+                    if (x, y - 1) in face:
+                        put(x, y - 1, hollow)
+                mouth = chin - 1
+                row_ = sorted(x for x, y in face if y == mouth)
+                if row_:
+                    if facing == 'down':
+                        teeth = range(cx - 2, cx + 3)
+                    elif facing == 'right':
+                        teeth = range(row_[-1] - 3, row_[-1])
+                    else:
+                        teeth = range(row_[0] + 1, row_[0] + 4)
+                    for x in teeth:
+                        if (x, mouth) in face:
+                            put(x, mouth, hollow if abs(x - cx) % 2 else mix(col, (1, 1, 1), 0.7))
+    return out
+
+
 def cape(base, out, colour, trim):
     """A status cape over whatever is worn (GearOverlay.drape): from behind, hung from the shoulders
     (0.38 of the way from the top of the head to the feet) nearly to the feet, widening, its trim
@@ -525,7 +677,8 @@ def capes(out):
 def dressed(race, body, style, armour=None, worn=()):
     """A hero as the game draws them (GameSession.layers and registerArt): paper-doll layers, or an
     armour's own sheet over the hair from a fifth of the way down the head (nape_*); then the cut,
-    and the gloves, boots and necklace in `worn`, found on the plain body the armour is drawn on."""
+    and the gloves, boots, necklace and festive hat in `worn`, found on the plain body the armour is
+    drawn on."""
     import pathlib
     import sys
     from PIL import Image
@@ -543,7 +696,9 @@ def dressed(race, body, style, armour=None, worn=()):
         out = pp.recolor(base, armour["tint"]) if armour.get("tint") else base.copy()
         skeleton = f"body_{race}"
     else:
-        head = {"plate": "helmet", "cloak": "hood"}.get((armour or {}).get("wear"))
+        # A festive hat sits on the hair, in place of a helmet or hood.
+        hatted = any(item["type"] == "head" for item in worn)
+        head = None if hatted else {"plate": "helmet", "cloak": "hood"}.get((armour or {}).get("wear"))
         image = load(f"body_{body}")
         for layer in (f"locks_{body}", f"{head}_{body}" if head else f"hair_{style}_{body}"):
             image.alpha_composite(load(layer))
@@ -554,8 +709,12 @@ def dressed(race, body, style, armour=None, worn=()):
         skeleton = f"body_{body}"
     pieces = {item["type"]: item for item in worn}
     necklace = pieces.get("necklace", {})
-    return trinkets(np.asarray(load(skeleton)).astype(float) / 255, out, gloves=pieces.get("gloves", {}).get("color"),
-                    boots=pieces.get("boots", {}).get("color"), necklace=necklace.get("color"), chain=necklace.get("accent"))
+    plain = np.asarray(load(skeleton)).astype(float) / 255
+    out = trinkets(plain, out, gloves=pieces.get("gloves", {}).get("color"),
+                   boots=pieces.get("boots", {}).get("color"), necklace=necklace.get("color"), chain=necklace.get("accent"))
+    if "head" in pieces:
+        out = hat(plain, out, pieces["head"]["hat"], pieces["head"]["color"], pieces["head"].get("accent"))
+    return out
 
 
 def trinket_sheet(out):
@@ -586,11 +745,37 @@ def trinket_sheet(out):
     print(f"wrote {out}: {', '.join(b for _, b, _ in bodies)} in {', '.join(str(a) for a, _ in outfits)}")
 
 
+def hat_sheet(out, hats=None):
+    """Every body (each race, each gender) in each festive hat (items.json type head), over a few outfits."""
+    import json
+    import pathlib
+    from PIL import Image
+    root = pathlib.Path(__file__).resolve().parent.parent
+    items = {i["id"]: i for i in json.load(open(root / "content" / "items.json"))["items"]}
+    bodies = [("human", "human", "spiky"), ("human", "human_female", "ponytail"), ("elf", "elf", "long"),
+              ("elf", "elf_male", "swept"), ("dwarf", "dwarf", "crop"), ("dwarf", "dwarf_female", "braids")]
+    worn = hats or [i for i in items.values() if i["type"] == "head"]
+    outfits = [None, "leather_vest", "mage_robe", "iron_plate", "ranger_cloak"]
+    zoom = 3
+    sheet = Image.new("RGB", (len(bodies) * 4 * 48 * zoom, len(worn) * 48 * zoom), (80, 130, 80))
+    for k, (race, body, style) in enumerate(bodies):
+        for r, item in enumerate(worn):
+            img = dressed(race, body, style, items.get(outfits[(r + k) % len(outfits)]), [item])
+            image = Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8), "RGBA")
+            for c, row in enumerate((2, 1, 0, 3)):   # down, right, up, left
+                frame = image.crop((0, row * 48, 48, row * 48 + 48)).resize((48 * zoom, 48 * zoom), Image.NEAREST)
+                sheet.paste(frame, ((k * 4 + c) * 48 * zoom, r * 48 * zoom), frame)
+    sheet.save(out)
+    print(f"wrote {out}: {', '.join(i['id'] for i in worn)}")
+
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 2 and sys.argv[1] == "--capes":
         capes(sys.argv[2])
     elif len(sys.argv) > 2 and sys.argv[1] == "--trinkets":
         trinket_sheet(sys.argv[2])
+    elif len(sys.argv) > 2 and sys.argv[1] == "--hats":
+        hat_sheet(sys.argv[2])
     else:
         main(sys.argv[1] if len(sys.argv) > 1 else "gear-preview.png")

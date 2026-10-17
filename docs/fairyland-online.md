@@ -599,6 +599,16 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   under the quest treasures of the same level. Other adventurers wear them too (`GameSession.armor(for:)` picks
   their guild's best), so the crowd shows every colour. `check_content.py` insists every tier is a full set of
   one level and one colour, each tier's colour its own; tools/item_art.py draws the icons from `color`.
+- Festive seasons and hats, like RuneScape's holiday events (ours, since 0.7.30, playtesting 2026-10-17: "Also
+  add festive items like party, halloween, Christmas and Easter"): Halloween (October 15 to November 7),
+  Christmas (December 1 to 30), the New Year's party (December 31 to January 7) and Easter (a week either side
+  of Easter Sunday), in rewards.json `seasons`. The first daily gift of a season brings one of its hats (one you
+  haven't got) with a greeting; till it ends, won fights leave its treats (pumpkin pie, gingerbread, cake,
+  chocolate eggs: HP and MP) and, once in a long while, another of its hats; and about half the crowd wears
+  them. The hats go in a slot of their own (type `head`), with no stats, like RuneScape's: paper party crowns in
+  six colours (RuneScape's party hats), three Halloween masks, a Santa hat and bunny ears. GearOverlay draws
+  them on the head (`hat`: crown, santa, ears or mask), measured on the plain body, in place of a helmet or
+  hood; `tools/gear_preview.py --hats` previews them. No shop, quest or monster has them out of season.
 - Armour with a walk sheet of its own (iron plate, dragon mail, the ranger and snow cloaks) keeps the hero's
   hair (since 0.7.28, playtesting 2026-10-17: "The armors and colours should be more distinct for every
   gender, race and fighter type"): it's drawn over their hairstyle from a fifth of the way down the head

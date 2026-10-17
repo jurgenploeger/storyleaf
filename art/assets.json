@@ -16847,6 +16847,171 @@
         "height": 32,
         "remove_bg": true
       }
+    },
+    {
+      "id": "item_red_party_hat",
+      "kind": "item",
+      "request": {
+        "prompt": "a red paper party crown, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_yellow_party_hat",
+      "kind": "item",
+      "request": {
+        "prompt": "a yellow paper party crown, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_green_party_hat",
+      "kind": "item",
+      "request": {
+        "prompt": "a green paper party crown, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_blue_party_hat",
+      "kind": "item",
+      "request": {
+        "prompt": "a blue paper party crown, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_purple_party_hat",
+      "kind": "item",
+      "request": {
+        "prompt": "a purple paper party crown, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_white_party_hat",
+      "kind": "item",
+      "request": {
+        "prompt": "a white paper party crown, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_green_halloween_mask",
+      "kind": "item",
+      "request": {
+        "prompt": "a green ghoul Halloween mask, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_blue_halloween_mask",
+      "kind": "item",
+      "request": {
+        "prompt": "a blue ghoul Halloween mask, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_red_halloween_mask",
+      "kind": "item",
+      "request": {
+        "prompt": "a red ghoul Halloween mask, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_santa_hat",
+      "kind": "item",
+      "request": {
+        "prompt": "a red Santa hat with white fur, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_bunny_ears",
+      "kind": "item",
+      "request": {
+        "prompt": "white bunny ears on a band, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_pumpkin_pie",
+      "kind": "item",
+      "request": {
+        "prompt": "a slice of pumpkin pie, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_gingerbread_man",
+      "kind": "item",
+      "request": {
+        "prompt": "an iced gingerbread man, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_party_cake",
+      "kind": "item",
+      "request": {
+        "prompt": "a slice of party cake with sprinkles, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_chocolate_egg",
+      "kind": "item",
+      "request": {
+        "prompt": "a chocolate egg in blue foil, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
     }
   ]
 }

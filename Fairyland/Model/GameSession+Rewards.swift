@@ -257,31 +257,110 @@ extension GameSession {
         let days: Int
         let gold: Int
         let items: [String]
+        /// A festive season's greeting, the first gift of the season (its hat is in `items`).
+        var greeting: String? = nil
     }
 
     /// The place in the round of the next gift, from 1.
     var nextGiftDay: Int { (data.giftDays ?? 0) % max(1, content.rewards.dailyGifts.count) + 1 }
 
     /// Whether today's gift has been given.
-    func hasCollectedGift(on date: Date = Date()) -> Bool { data.giftDay == Self.dayKey(date) }
+    func hasCollectedGift(on date: Date = GameSession.today) -> Bool { data.giftDay == Self.dayKey(date) }
 
     /// Gives the day's gift, once a calendar day: the next in the round each day you play (missing
-    /// a day costs nothing). Nil when today's was given already.
+    /// a day costs nothing), and the first day of a festive season, one of its hats too
+    /// (`seasonGift`). Nil when today's was given already.
     @discardableResult
-    func collectDailyGift(on date: Date = Date()) -> DailyGift? {
+    func collectDailyGift(on date: Date = GameSession.today) -> DailyGift? {
         let gifts = content.rewards.dailyGifts
         guard !gifts.isEmpty, !hasCollectedGift(on: date) else { return nil }
         let place = (data.giftDays ?? 0) % gifts.count
         let gift = gifts[place]
         let gold = (gift.goldPerLevel ?? 0) * data.hero.level
         data.gold += gold
-        for id in gift.items ?? [] { addItem(id) }
+        var items = gift.items ?? []
+        for id in items { addItem(id) }
+        let festive = seasonGift(on: date)
+        if let festive { items.append(festive.hat) }
         data.giftDay = Self.dayKey(date)
         data.giftDays = (data.giftDays ?? 0) + 1
         SoundEffects.shared.play(.chest)
         checkTitles()
         save()
-        return DailyGift(day: place + 1, days: gifts.count, gold: gold, items: gift.items ?? [])
+        return DailyGift(day: place + 1, days: gifts.count, gold: gold, items: items, greeting: festive?.greeting)
+    }
+
+    // MARK: - Festive seasons
+
+    /// Today: the phone's, or the day a debug launch says it is (`date=`).
+    static var today: Date { DebugLaunch.today ?? Date() }
+
+    /// Easter Sunday in the Gregorian calendar, by the anonymous algorithm (tools/check_content.py
+    /// `easter_sunday` is the same): its month and day in `year`.
+    static func easter(year: Int) -> (month: Int, day: Int) {
+        let a = year % 19, b = year / 100, c = year % 100
+        let d = b / 4, e = b % 4
+        let f = (b + 8) / 25
+        let g = (b - f + 1) / 3
+        let h = (19 * a + b - d - g + 15) % 30
+        let i = c / 4, k = c % 4
+        let l = (32 + 2 * e + 2 * i - h - k) % 7
+        let m = (a + 11 * h + 22 * l) / 451
+        let n = h + l - 7 * m + 114
+        return (n / 31, n % 31 + 1)
+    }
+
+    /// The festive season on `date` (rewards.json `seasons`), if one is on, with the key its gift is
+    /// saved under: its id and the year it began ("party-2026" on New Year's Day 2027). Counted on
+    /// the Gregorian calendar, whatever the phone's.
+    static func season(on date: Date = GameSession.today) -> (season: RewardsDef.Season, key: String)? {
+        let calendar = Calendar(identifier: .gregorian)
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        guard let year = parts.year, let month = parts.month, let day = parts.day else { return nil }
+        let today = month * 100 + day
+        /// "10-31" as 1031.
+        func monthDay(_ text: String?) -> Int? {
+            let numbers = (text ?? "").split(separator: "-").compactMap { Int($0) }
+            return numbers.count == 2 ? numbers[0] * 100 + numbers[1] : nil
+        }
+        for festive in Content.shared.rewards.seasons ?? [] {
+            if let around = festive.easter, around.count == 2 {
+                let sunday = easter(year: year)
+                guard let easterDay = calendar.date(from: DateComponents(year: year, month: sunday.month, day: sunday.day)),
+                      let thisDay = calendar.date(from: DateComponents(year: year, month: month, day: day)),
+                      let offset = calendar.dateComponents([.day], from: easterDay, to: thisDay).day else { continue }
+                if around[0] <= offset, offset <= around[1] { return (festive, "\(festive.id)-\(year)") }
+            } else if let start = monthDay(festive.from), let end = monthDay(festive.to) {
+                let on = start <= end ? (start...end).contains(today) : (today >= start || today <= end)
+                // Round the new year, one that's on in January began the year before.
+                if on { return (festive, "\(festive.id)-\(start > end && today <= end ? year - 1 : year)") }
+            }
+        }
+        return nil
+    }
+
+    /// Whether the hero has the item, in the bag or on.
+    func owns(_ id: String) -> Bool {
+        count(of: id) > 0 || ItemType.equipmentSlots.contains { data.hero.equipment[$0] == id }
+    }
+
+    /// The festive season's gift, once a season (`seasonGifts`): one of its hats, one you haven't
+    /// got if there's one, and its greeting. Nil when no season's on or its gift was given.
+    private func seasonGift(on date: Date) -> (hat: String, greeting: String)? {
+        guard let festive = Self.season(on: date), !(data.seasonGifts ?? []).contains(festive.key) else { return nil }
+        let missing = festive.season.hats.filter { !owns($0) }
+        guard let hat = (missing.isEmpty ? festive.season.hats : missing).randomElement() else { return nil }
+        data.seasonGifts = (data.seasonGifts ?? []) + [festive.key]
+        addItem(hat)
+        return (hat, festive.season.greeting)
+    }
+
+    /// What a won fight leaves in a festive season, if anything: one of its treats `chance` of the
+    /// time, one of its hats instead `hatChance` of those.
+    func seasonDrop(on date: Date = GameSession.today) -> ItemDef? {
+        guard let festive = Self.season(on: date)?.season, Double.random(in: 0..<1) < festive.chance else { return nil }
+        let pool = Double.random(in: 0..<1) < festive.hatChance ? festive.hats : festive.treats
+        return pool.randomElement().flatMap(content.item)
     }
 
     // MARK: - Daily bounties

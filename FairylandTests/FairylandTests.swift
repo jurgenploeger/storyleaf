@@ -2976,6 +2976,38 @@ struct RulesTests {
         for layer in layers { #expect(ArtLibrary.shared.artImage(layer.id) != nil, "art/sprites/\(layer.id).png is missing") }
     }
 
+    /// A festive hat sits on the hair, in place of a helmet or hood; and in a festive season, about
+    /// half the crowd wears one of its hats, the same one all season.
+    @Test func festiveHatsSitOnTheHair() throws {
+        let content = Content.shared
+        let hide = try #require(content.item("copper_hide"))
+        let race = content.race("human")
+        #expect(GameSession.layers(race: race, look: .standard, armor: hide).map(\.id).contains("hood_human"))
+        let hatted = GameSession.layers(race: race, look: .standard, armor: hide, hatted: true).map(\.id)
+        #expect(!hatted.contains("hood_human") && hatted.contains { $0.hasPrefix("hair_") })
+        for hat in content.items where hat.type == .head {
+            #expect(["crown", "santa", "ears", "mask"].contains(hat.hat ?? ""), "\(hat.id) has no way to be drawn")
+            #expect(hat.color != nil && hat.price == 0)
+        }
+
+        let calendar = Calendar(identifier: .gregorian)
+        let party = try #require(calendar.date(from: DateComponents(year: 2027, month: 1, day: 1, hour: 12)))
+        let summer = try #require(calendar.date(from: DateComponents(year: 2027, month: 7, day: 1, hour: 12)))
+        let hats = try #require(GameSession.season(on: party)?.season.hats)
+        var wearing = 0
+        for _ in 0..<60 {
+            let someone = Adventurer(name: "Momo", raceID: "elf", classID: "mage", level: 40, look: .standard)
+            let hat = GameSession.hat(for: someone, on: party)
+            #expect(GameSession.hat(for: someone, on: party)?.id == hat?.id)
+            #expect(GameSession.hat(for: someone, on: summer) == nil)
+            if let hat {
+                #expect(hats.contains(hat.id))
+                wearing += 1
+            }
+        }
+        #expect((15...45).contains(wearing), "\(wearing) of 60 wear a party hat")
+    }
+
     /// Gloves, boots and a necklace on the crowd too, each for their level and class, the same every
     /// time, and not on everyone.
     @Test func botsWearGlovesBootsAndNecklaces() {
@@ -3317,6 +3349,51 @@ struct RewardTests {
             #expect(session.collectDailyGift(on: day) == nil)
         }
         #expect(session.data.giftDays == gifts.count + 1)
+    }
+
+    /// Festive seasons (playtesting 2026-10-17: "festive items like party, halloween, Christmas and
+    /// Easter"): each on its own days, the New Year's party round the turn of the year, Easter with
+    /// Easter Sunday. The first gift of one brings one of its hats you haven't got, once a season;
+    /// won fights leave its treats now and then, and only in a season.
+    @Test func festiveSeasonsComeOnTheirDays() throws {
+        let calendar = Calendar(identifier: .gregorian)
+        func day(_ year: Int, _ month: Int, _ day: Int) -> Date {
+            calendar.date(from: DateComponents(year: year, month: month, day: day, hour: 12)) ?? .distantPast
+        }
+        #expect(GameSession.season(on: day(2026, 10, 31))?.key == "halloween-2026")
+        #expect(GameSession.season(on: day(2026, 12, 24))?.key == "christmas-2026")
+        #expect(GameSession.season(on: day(2026, 12, 31))?.key == "party-2026")
+        #expect(GameSession.season(on: day(2027, 1, 7))?.key == "party-2026")
+        #expect(GameSession.season(on: day(2027, 3, 28))?.key == "easter-2027")
+        #expect(GameSession.season(on: day(2026, 4, 12))?.key == "easter-2026")
+        #expect(GameSession.season(on: day(2026, 7, 1)) == nil)
+        #expect(GameSession.season(on: day(2027, 1, 8)) == nil)
+        for (year, month, date) in [(2025, 4, 20), (2026, 4, 5), (2027, 3, 28), (2028, 4, 16)] {
+            let sunday = GameSession.easter(year: year)
+            #expect(sunday.month == month && sunday.day == date, "Easter \(year)")
+        }
+
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let halloween = try #require(GameSession.season(on: day(2026, 10, 20))?.season)
+        let first = try #require(session.collectDailyGift(on: day(2026, 10, 20)))
+        #expect(first.greeting == halloween.greeting)
+        let mask = try #require(first.items.first { halloween.hats.contains($0) })
+        #expect(session.count(of: mask) == 1)
+        let next = try #require(session.collectDailyGift(on: day(2026, 10, 21)))
+        #expect(next.greeting == nil && !next.items.contains { halloween.hats.contains($0) })
+        // A year on, another of its hats: one you haven't got.
+        let again = try #require(session.collectDailyGift(on: day(2027, 10, 20)))
+        #expect(again.items.contains { halloween.hats.contains($0) && $0 != mask })
+        #expect(!session.sellableItems.contains { $0.id == mask }, "\(mask) can be sold")
+
+        var drops: [String: Int] = [:]
+        for _ in 0..<2000 {
+            if let found = session.seasonDrop(on: day(2026, 10, 20)) { drops[found.id, default: 0] += 1 }
+            #expect(session.seasonDrop(on: day(2026, 7, 1)) == nil)
+        }
+        #expect(Set(drops.keys).isSubset(of: Set(halloween.treats + halloween.hats)))
+        let treats = halloween.treats.reduce(0) { $0 + (drops[$1] ?? 0) }
+        #expect((200...420).contains(treats), "\(treats) treats in 2000 fights")
     }
 
     @Test func bountiesStayAllDayCountAndPayOnce() throws {

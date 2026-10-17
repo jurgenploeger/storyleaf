@@ -9,6 +9,7 @@
   "maps": ["name", "greeting", "story", "title", "villagerLines", "lines"],
   "monsters": ["name", "lore"],
   "quests": ["title", "description", "text"],
+  "rewards": ["greeting"],
   "skills": ["name", "description"],
   "titles": ["name"]
 }

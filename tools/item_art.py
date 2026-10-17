@@ -2564,6 +2564,140 @@ for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
         globals()["draw_" + _item["id"]] = (lambda item: lambda c: tier_piece(c, item))(_item)
 
 
+def party_hat(c, paper):
+    """A paper party crown (RuneScape's party hats), from the front: a band, three points and a
+    crease down each."""
+    dark, mid, light = paper
+    c.poly([(4, 24), (4, 13), (9, 18), (16, 7), (23, 18), (28, 13), (28, 24)], mid)
+    c.rect(4, 21, 28, 25, mid)
+    c.shade(lambda x, y, col: col == mid and y >= 23, dark)
+    c.shade(lambda x, y, col: col == mid and y == 21, light)
+    for x0, top in ((4, 13), (16, 7), (28, 13)):
+        c.line(x0, top + 1, x0, 20, light if x0 < 20 else dark)
+    for x in (9, 16, 23):
+        c.disc(x, 23, 1.1, light)
+
+
+def halloween_mask(c, face):
+    """A Halloween mask: a ghoul's long face with hollow eyes and a toothy grin, and its strap."""
+    dark, mid, light = face
+    hollow = hexc("1a0e1c")
+    c.rect(2, 13, 29, 14, hexc("5a3a1a"))
+    c.ellipse(16, 15, 10, 12.5, mid)
+    c.shade(lambda x, y, col: col == mid and x + y * 0.4 > 27, dark)
+    c.shade(lambda x, y, col: col == mid and x + y * 0.5 < 13, light)
+    for cx in (11.5, 20.5):
+        c.poly([(cx - 3.5, 10), (cx + 3.5, 11), (cx + 2, 15), (cx - 2.5, 14.5)], hollow)
+    c.poly([(13, 17), (16, 20), (19, 17)], dark)
+    c.poly([(9, 21), (23, 21), (21, 25.5), (11, 25.5)], hollow)
+    for x in (11, 14, 17, 20):
+        c.rect(x, 21, x + 1, 22, hexc("f4f0dc"))
+    for x in (12.5, 15.5, 18.5):
+        c.rect(x, 24.5, x + 1, 25, hexc("f4f0dc"))
+
+
+def draw_santa_hat(c):
+    """A Santa hat: a red cap flopping over to the right, a white fur brim and pom."""
+    red = ramp("#D02828")
+    fur = [hexc("b8c0cc"), hexc("eef2f8"), WHITE]
+    c.poly([(4, 24), (11, 9), (18, 5), (25, 8), (28, 15), (24, 14), (21, 11), (23, 24)], red[1])
+    c.shade(lambda x, y, col: col == red[1] and x > 17 and y > 8, red[0])
+    c.shade(lambda x, y, col: col == red[1] and x < 11 and y > 14, red[2])
+    c.rect(3, 22, 25, 27, fur[1])
+    c.shade(lambda x, y, col: col == fur[1] and y >= 26, fur[0])
+    for x in range(4, 25, 3):
+        c.set(x, 23, WHITE)
+    c.disc(27, 17, 3.2, fur[1])
+    c.set(26, 16, WHITE); c.set(28, 19, fur[0])
+
+
+def draw_bunny_ears(c):
+    """Bunny ears on a band: tall, white, pink inside."""
+    fur = [hexc("b8c0cc"), hexc("f4f0f0"), WHITE]
+    pink = hexc("f2a0b8")
+    for cx, lean in ((10, -1), (22, 1)):
+        c.poly([(cx - 3, 24), (cx - 4 + lean * 2, 9), (cx + lean * 3, 2), (cx + 4 + lean * 2, 9), (cx + 3, 24)], fur[1])
+        c.poly([(cx - 1.2, 22), (cx - 2 + lean * 2, 10), (cx + lean * 3, 5), (cx + 2 + lean * 2, 10), (cx + 1.2, 22)], pink)
+    c.shade(lambda x, y, col: col == fur[1] and (x > 24 or (13 < x < 20)), fur[0])
+    c.ellipse(16, 26, 13, 3, hexc("e8a0b8"))
+    c.shade(lambda x, y, col: col == hexc("e8a0b8") and y >= 27, hexc("c07890"))
+
+
+def draw_pumpkin_pie(c):
+    """A slice of pumpkin pie: a wedge of orange filling, its golden crust round the back and under
+    it, a dab of cream on top."""
+    crust = [hexc("a8662a"), hexc("dc9a4a"), hexc("f4c87a")]
+    filling = [hexc("b0501a"), hexc("ee8a2a"), hexc("ffb060")]
+    c.poly([(3, 21), (24, 7), (29, 17)], filling[1])
+    c.poly([(3, 21), (29, 17), (29, 24), (4, 25)], filling[0])
+    c.line(4, 25, 29, 24, crust[1], width=2)
+    c.line(24, 6, 29, 17, crust[1], width=3)
+    c.line(29, 16, 29, 24, crust[0], width=2)
+    for (x, y) in ((24, 6), (26, 10), (28, 14)):
+        c.set(x, y, crust[2])
+    c.disc(17, 14, 2.6, WHITE)
+    c.disc(16.4, 13.3, 1.1, hexc("fff4e4"))
+    c.set(10, 19, filling[2]); c.set(21, 12, filling[2])
+
+
+def draw_gingerbread_man(c):
+    """A gingerbread man, iced: smile, buttons and wavy cuffs."""
+    dough = [hexc("8a4a1a"), hexc("c0702a"), hexc("e8a050")]
+    icing = WHITE
+    c.disc(16, 7.5, 5, dough[1])
+    c.poly([(11, 12), (21, 12), (27, 15), (27, 19), (21, 18), (22, 27), (18, 29), (16, 23), (14, 29), (10, 27), (11, 18), (5, 19), (5, 15)], dough[1])
+    c.shade(lambda x, y, col: col == dough[1] and x > 19 and y > 12, dough[0])
+    c.shade(lambda x, y, col: col == dough[1] and x < 13 and y < 10, dough[2])
+    c.set(14, 6, hexc("2a1a10")); c.set(18, 6, hexc("2a1a10"))
+    for x in range(14, 19):
+        c.set(x, 9 + (1 if 15 <= x <= 17 else 0), icing)
+    for y in (15, 19):
+        c.disc(16, y, 1, hexc("e0383a") if y == 15 else hexc("3a9ae0"))
+    for x0, y0 in ((6, 16), (25, 16)):
+        c.line(x0, y0, x0, y0 + 2, icing)
+    for x0 in (11, 20):
+        c.line(x0, 26, x0 + 2, 26, icing)
+
+
+def draw_party_cake(c):
+    """A slice of New Year cake: sponge and cream in layers, icing on top with sprinkles and a candle."""
+    sponge = [hexc("c89a50"), hexc("f0cc80"), hexc("fff0b8")]
+    cream = hexc("fff8f0")
+    pink = [hexc("c05a8a"), hexc("f08ab8"), hexc("ffc8e0")]
+    c.poly([(4, 15), (24, 9), (29, 12), (29, 26), (8, 29), (4, 26)], sponge[1])
+    c.poly([(4, 15), (24, 9), (29, 12), (9, 18)], pink[1])
+    c.poly([(9, 18), (29, 12), (29, 14), (9, 20)], pink[0])
+    c.line(5, 22, 28, 18, cream, width=2)
+    c.shade(lambda x, y, col: col == sponge[1] and x < 9, sponge[2])
+    c.shade(lambda x, y, col: col == sponge[1] and y > 25, sponge[0])
+    for (x, y, col) in ((10, 14, hexc("3a9ae0")), (15, 13, hexc("f6d743")), (20, 12, hexc("46b848")), (13, 16, WHITE), (23, 12, hexc("e0383a"))):
+        c.set(x, y, col)
+    c.rect(18, 4, 19, 10, hexc("7ac0f0"))
+    c.disc(18.5, 2.5, 1.2, hexc("ffd040"))
+
+
+def draw_chocolate_egg(c):
+    """A chocolate egg in coloured foil, peeled back at the top to show the chocolate."""
+    foil = [hexc("1c4fa8"), hexc("3a86e8"), hexc("9ccaff")]
+    choc = [hexc("3a2010"), hexc("6a3a1a"), hexc("9a6232")]
+    c.ellipse(16, 17, 10, 12.5, foil[1])
+    light_top_left(c, foil, 16, 17, 11)
+    c.shade(lambda x, y, col: y < 10 and col in foil, choc[1])
+    c.shade(lambda x, y, col: y < 7 and x < 15 and col == choc[1], choc[2])
+    for x in range(7, 26):
+        if c.get(x, 10) is not None:
+            c.set(x, 10 - (x % 3 == 0), foil[2])
+    for (x, y) in ((11, 16), (20, 14), (14, 23), (21, 22), (16, 19)):
+        c.set(x, y, hexc("f6d743"))
+
+
+for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
+    if _item.get("hat") == "crown":
+        globals()["draw_" + _item["id"]] = (lambda colour: lambda c: party_hat(c, ramp(colour)))(_item["color"])
+    elif _item.get("hat") == "mask":
+        globals()["draw_" + _item["id"]] = (lambda colour: lambda c: halloween_mask(c, ramp(colour)))(_item["color"])
+
+
 DRAWINGS = {name[5:]: fn for name, fn in globals().items() if name.startswith("draw_")}
 # Not drawn here: the Potion is a Retro Diffusion sprite (rd_pro__fantasy) and the Hi-Potion,
 # Ether and Hi-Ether are palette swaps of it (`derive` in art/assets.json).
