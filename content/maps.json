@@ -17533,12 +17533,12 @@
             "One day I'll catch a Starmoth and ride it all the way to the moon.",
             "Pip says the star on the hill is lonely. I'd be lonely too, so far from home.",
             "Shh! If you're very quiet, the lanterns hum.",
-            "South of here there's a cave where the crystals sing. I'm too little to go."
+            "North of here there's a cave where the crystals sing. I'm too little to go."
           ]
         }
       ],
-      "width": 89,
-      "height": 96,
+      "width": 98,
+      "height": 101,
       "music": "starfall",
       "theme": {
         "ground": "tile_grass",
@@ -17887,7 +17887,7 @@
           "ship": true
         },
         {
-          "edge": "south",
+          "edge": "north",
           "to": "glimmerdeep"
         }
       ],
