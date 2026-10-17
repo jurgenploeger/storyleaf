@@ -24,8 +24,8 @@ nonisolated struct ArtAsset: Decodable {
 }
 
 /// One paper-doll layer (an art/sprites PNG) and how it's recoloured before stacking: by its own
-/// rules, or with nil by the sprite's (`ArtLibrary.register`'s `recolor`).
-nonisolated struct ArtLayer: Sendable {
+/// rules, or with nil by the sprite's (`ArtLibrary.register`'s `recolor`, or its `derive`'s).
+nonisolated struct ArtLayer: Decodable, Sendable {
     let id: String
     var recolor: [RecolorRule]? = nil
 }
@@ -229,7 +229,8 @@ final class ArtLibrary {
         let recolored: CGImage?
         // Paper-doll layers are recoloured one by one (a layer's own rules, like the hair's, touch
         // only that layer), then stacked.
-        if let layers = layerSets[id], let original = stacked(layers), let dressed = stacked(layers, recolor: derive.recolor) {
+        if let layers = layerSets[id] ?? derive.layers, let original = stacked(layers),
+           let dressed = stacked(layers, recolor: derive.recolor) {
             base = original
             recolored = dressed
         } else if let sheet = sourceImage(derive.from, depth: depth + 1) {

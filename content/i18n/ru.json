@@ -860,6 +860,7 @@
     "26 new quests for levels 2 to 33, from a miller's runaway seed pouches and a washerwoman's socks to Kite Day, a lantern for the point, the Apple Fair, the Gingerbread Gala and Little Red's basket.": "26 новых заданий для уровней со 2-го по 33-й: от сбежавших мешочков с семенами мельничихи и носков прачки до Дня воздушных змеев, фонаря для мыса, Яблочной ярмарки, Пряничного бала и корзинки Красной Шапочки.",
     "Each village's story ends in a treasure of its own: the Honeybee Charm, Windstep Sandals, the Tidecaller Pendant, Prospector's Gloves, the Owl-Eye Amulet, Orchard Gloves, Peppermint Boots, Bogwalker Boots and the Red Hood Ribbon.": "История каждой деревни заканчивается своим сокровищем: Пчелиный оберег, Сандалии ветряного шага, Подвеска «Зов прилива», Перчатки старателя, Амулет «Совиный глаз», Садовые перчатки, Мятные сапожки, Сапоги-болотоходы и Лента Красной Шапочки.",
     "17 new villagers to talk to round the villages, each with a story of their own.": "17 новых жителей в деревнях, с которыми можно поговорить, и у каждого своя история.",
+    "Every quest giver's hair is one colour from root to tip now, with no stray orange tufts, and Mayor Poppy, Tilly the Toymaker, Thumbelina and Grandmother Hazel are finally drawn as the girls and women they are.": "Волосы у всех, кто даёт задания, теперь одного цвета от корней до кончиков, без случайных рыжих прядей, а Мэр Поппи, Мастерица игрушек Тилли, Дюймовочка и Бабушка Хейзел наконец нарисованы девочками и женщинами, какие они есть.",
     "Glimmerbough": "Мерцающая Ветвь",
     "Starfall Isle has a village now: Glimmerbough, fairy folk living in hollow tree houses round the fallen star's crystals, lit by wisp lanterns. Dewdrop heals you, Thistle sells potions and seals, and Mother Lumen and Pip the Lamplighter have five new quests for levels 136 to 148.": "На Острове Упавшей Звезды теперь есть деревня: Мерцающая Ветвь, где волшебный народец живёт в домиках в дуплистых деревьях вокруг кристаллов упавшей звезды, при свете фонарей-огоньков. Росинка тебя вылечит, Колючка продаёт зелья и печати, а у Матушки Люмен и Фонарщика Пипа есть пять новых заданий для уровней со 136 по 148.",
     "New monsters on the island: Starmoths (and the rare Dawn Starmoth), Nebula Puffs and Crystal Quills.": "Новые монстры на острове: звёздные мотыльки (и редкий рассветный звёздный мотылёк), пуфики-туманности и хрустальные ёжики.",
@@ -2309,7 +2310,7 @@
     "Beatrix's truffle cider tastes like mushrooms and regret. I love it.": "Трюфельный сидр Беатрикс на вкус как грибы и сожаление. Обожаю его.",
     "The Apple Fair is next week, if the Flame Sheep leave us any apples.": "Яблочная ярмарка на следующей неделе, если Огненные овцы оставят нам хоть одно яблоко.",
     "Woodcutter Bram brings the wood for Beatrix's barrels. Good man.": "Дровосек Брам привозит дерево для бочек Беатрикс. Славный малый.",
-    "Little Poppy": "Малышка Поппи",
+    "Little Posy": "Малышка Пози",
     "I'm guarding the apples. From monkeys. And from Gus.": "Я охраняю яблоки. От обезьянок. И от Гаса.",
     "Moss says every tree in the orchard has a name. That one's Gertrude.": "Мосс говорит, у каждого дерева в саду есть имя. Вот это Гертруда.",
     "A Wood Monkey threw an apple at me! It was a good apple, though.": "Лесная обезьянка бросила в меня яблоком! Зато яблоко было хорошее.",
@@ -3150,6 +3151,7 @@
     "The Stolen Catch": "Украденный улов",
     "Every time the boats come in, the Mud Eagles swoop down and fly off with the best of the catch. Win five Silver Fish back from them, and the whole cove eats tonight.": "Как только лодки возвращаются, Болотные орлы пикируют и уносят лучшую рыбу. Отбей у них пять серебристых рыбок, и сегодня вся бухта будет сыта.",
     "A Light on the Point": "Огонь на мысу",
+    "The lamp on the point went out in last week's storm, and the boats can't find the cove at night. Gather three Glow Shells from the Wood Crabs, piece them together on a frame of White Poplar, and bring me the lantern.": "Фонарь на мысу погас в шторм на прошлой неделе, и ночью лодки не могут найти бухту. Добудь у Лесных крабов три светящиеся ракушки, собери их на рамке из белого тополя и принеси мне фонарь.",
     "Gold in the Goo": "Золото в жиже",
     "The Golden Slimes swallow every nugget we dig up, then wobble off with them! Pop five of them and bring the gold back. Goldie will want to weigh it, of course.": "Золотые слаймы глотают каждый самородок, который мы выкапываем, и уковыливают с ним прочь! Лопни пятерых и верни золото. Голди, конечно, захочет его взвесить.",
     "Lights Out": "Свет погас",
@@ -3296,7 +3298,6 @@
     "Bounty Hunter": "Охотник за наградами",
     "Town Favourite": "Любимец города",
     "Faithful": "Верный",
-    "Old Friend": "Старый друг",
-    "The lamp on the point went out in last week's storm, and the boats can't find the cove at night. Gather three Glow Shells from the Wood Crabs, piece them together on a frame of White Poplar, and bring me the lantern.": "Фонарь на мысу погас в шторм на прошлой неделе, и ночью лодки не могут найти бухту. Добудь у Лесных крабов три светящиеся ракушки, собери их на рамке из белого тополя и принеси мне фонарь."
+    "Old Friend": "Старый друг"
   }
 }

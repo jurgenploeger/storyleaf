@@ -49,6 +49,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `art/assets.json` + `art/sprites/`: every sprite. `derive` makes free palette swaps of existing art. Recolour a whole
   colour family with one `to` + `spread` rule (`RecolorRule` in `Fairyland/Art/Recolor.swift`) so it keeps its hue-shifted
   shading; a bare `shift` lands on a different colour for every base, and a window that cuts a ramp splits it in two.
+  Never swap a hero's whole sheet for a townsperson: hair shares its shades with skin and boots, so the deep reds and
+  pale tips stay ginger. Derive them with `layers` instead (body, locks, hair from `tools/hero_layers.py`, the hair's
+  rules widened to appearance.json `hairLayer`), as every quest giver is; `check_content.py` insists.
 - `Fairyland/`: Swift code (World = maps and walking, Battle = combat, UI = SwiftUI HUD and menus).
 - `tools/item_art.py`: draws every item's 32×32 sprite in code (free); rerun it after editing a drawing.
 - `tools/store_slides.py`: App Store slides from the landscape `store_land_*` screenshot scenes: captions in the
@@ -73,7 +76,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   `locks_<race>` for a beard, `hair_<style>_<race>` for every hairstyle in that sheet's own hair colour, a
   gender sheet's own hair as a style of its own (appearance.json `styles` with `sheet`), `hood_`/`helmet_<race>`
   in magenta that GearOverlay paints in the armour's colours). The game stacks them (`GameSession.layers`) and
-  dyes every shade of the locks and hair (appearance.json `hairLayer`), never the body. Rerun after changing a
+  dyes every shade of the locks and hair (appearance.json `hairLayer`), never the body. `TOWNSFOLK` sheets no hero
+  wears are split too (`dwarf_npc`: the old bearded dwarf, his own mop as `hair_dwarf_npc`). Rerun after changing a
   race's sheet, and look at `--preview` before committing.
 - `tools/rd.py`: Retro Diffusion client. `tools/icons.py`: vendors Iconaut icons (MIT), plus our own drawings in
   `art/icons/` where Iconaut has no shape that works (fire's three-tongued flame).

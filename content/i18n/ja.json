@@ -860,6 +860,7 @@
     "26 new quests for levels 2 to 33, from a miller's runaway seed pouches and a washerwoman's socks to Kite Day, a lantern for the point, the Apple Fair, the Gingerbread Gala and Little Red's basket.": "レベル2から33向けの新しいクエストが26個。粉屋さんのにげだしたたねぶくろや洗たく屋さんのくつしたから、凧あげの日、岬のランタン、りんご祭り、ジンジャーブレッド祭り、赤ずきんのバスケットまで。",
     "Each village's story ends in a treasure of its own: the Honeybee Charm, Windstep Sandals, the Tidecaller Pendant, Prospector's Gloves, the Owl-Eye Amulet, Orchard Gloves, Peppermint Boots, Bogwalker Boots and the Red Hood Ribbon.": "どの村の物語も、その村だけの宝物でしめくくられます：ミツバチのお守り、風ふみのサンダル、潮よびのペンダント、金さがしのグローブ、フクロウの目のアミュレット、果樹園のグローブ、ペパーミントブーツ、沼歩きのブーツ、赤ずきんのリボン。",
     "17 new villagers to talk to round the villages, each with a story of their own.": "村々に、話しかけられる新しい村人が17人。みんなそれぞれの物語を持っています。",
+    "Every quest giver's hair is one colour from root to tip now, with no stray orange tufts, and Mayor Poppy, Tilly the Toymaker, Thumbelina and Grandmother Hazel are finally drawn as the girls and women they are.": "クエストをくれる人たちの髪が、根もとから毛先まで一色になり、オレンジのはねた毛がなくなりました。ポピー町長、おもちゃ職人ティリー、おやゆび姫、ヘイゼルおばあさんも、ようやく本来の女の子や女性の姿で描かれます。",
     "Glimmerbough": "きらめき枝の里",
     "Starfall Isle has a village now: Glimmerbough, fairy folk living in hollow tree houses round the fallen star's crystals, lit by wisp lanterns. Dewdrop heals you, Thistle sells potions and seals, and Mother Lumen and Pip the Lamplighter have five new quests for levels 136 to 148.": "星降る島に村ができました。きらめき枝の里では、妖精たちが落ちた星の水晶のまわりで、うろのある木の家に住んでいます。ウィスプのランタンが村を照らします。しずくがケガを治してくれて、アザミは薬と封印石を売っています。マザー・ルーメンとランプ灯しのピップからは、レベル136から148向けの新しいクエストが5つ。",
     "New monsters on the island: Starmoths (and the rare Dawn Starmoth), Nebula Puffs and Crystal Quills.": "島に新しいモンスター：スターモス（めずらしいあけぼのスターモスも）、セイウンパフ、すいしょうハリネズミ。",
@@ -2309,7 +2310,7 @@
     "Beatrix's truffle cider tastes like mushrooms and regret. I love it.": "ベアトリクスのトリュフ・シードルは、キノコと後悔の味。大好きだよ。",
     "The Apple Fair is next week, if the Flame Sheep leave us any apples.": "りんご祭りは来週だ。ホノオヒツジがりんごを残してくれればな。",
     "Woodcutter Bram brings the wood for Beatrix's barrels. Good man.": "木こりのブラムが、ベアトリクスのたるの木を運んでくる。いいやつだよ。",
-    "Little Poppy": "ちびのポピー",
+    "Little Posy": "ちびのポージー",
     "I'm guarding the apples. From monkeys. And from Gus.": "あたし、りんごの見はり番なの。サルから守るの。それとガスからも。",
     "Moss says every tree in the orchard has a name. That one's Gertrude.": "モスがね、果樹園の木にはみんな名前があるって。あれはガートルードよ。",
     "A Wood Monkey threw an apple at me! It was a good apple, though.": "モリザルにりんごを投げられた！ でも、おいしいりんごだったよ。",
@@ -3150,6 +3151,7 @@
     "The Stolen Catch": "ぬすまれた魚",
     "Every time the boats come in, the Mud Eagles swoop down and fly off with the best of the catch. Win five Silver Fish back from them, and the whole cove eats tonight.": "船がもどるたびに、ドロワシが舞いおりて、いちばんいい魚をさらっていくんだよ。やつらから銀のさかなを5ひき取りかえしておくれ。そしたら今夜は入り江のみんながおなかいっぱいさ。",
     "A Light on the Point": "岬に灯りを",
+    "The lamp on the point went out in last week's storm, and the boats can't find the cove at night. Gather three Glow Shells from the Wood Crabs, piece them together on a frame of White Poplar, and bring me the lantern.": "先週の嵐で岬の灯りが消えちまって、夜になると船が入り江を見つけられないんだよ。モリガニからひかり貝を3つ集めて、白ポプラの枠に組みあわせて、ランタンを持ってきておくれ。",
     "Gold in the Goo": "ネバネバの中の金",
     "The Golden Slimes swallow every nugget we dig up, then wobble off with them! Pop five of them and bring the gold back. Goldie will want to weigh it, of course.": "ゴールデンスライムどもが、掘りだした金のつぶをかたっぱしからのみこんで、ぷるぷる逃げていくんだ！ 5匹やっつけて金を取りかえしてくれ。もちろん、ゴールディが量りたがるだろうがな。",
     "Lights Out": "灯りが消えた",
@@ -3296,7 +3298,6 @@
     "Bounty Hunter": "賞金かせぎ",
     "Town Favourite": "町の人気者",
     "Faithful": "常連さん",
-    "Old Friend": "古なじみ",
-    "The lamp on the point went out in last week's storm, and the boats can't find the cove at night. Gather three Glow Shells from the Wood Crabs, piece them together on a frame of White Poplar, and bring me the lantern.": "先週の嵐で岬の灯りが消えちまって、夜になると船が入り江を見つけられないんだよ。モリガニからひかり貝を3つ集めて、白ポプラの枠に組みあわせて、ランタンを持ってきておくれ。"
+    "Old Friend": "古なじみ"
   }
 }

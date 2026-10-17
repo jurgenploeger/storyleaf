@@ -860,6 +860,7 @@
     "26 new quests for levels 2 to 33, from a miller's runaway seed pouches and a washerwoman's socks to Kite Day, a lantern for the point, the Apple Fair, the Gingerbread Gala and Little Red's basket.": "26 nuove missioni per i livelli da 2 a 33: dai sacchetti di semi scappati a una mugnaia e dai calzini di una lavandaia alla Festa degli Aquiloni, una lanterna per il promontorio, la Fiera delle Mele, il Galà del Pan di Zenzero e il cestino di Cappuccetto Rosso.",
     "Each village's story ends in a treasure of its own: the Honeybee Charm, Windstep Sandals, the Tidecaller Pendant, Prospector's Gloves, the Owl-Eye Amulet, Orchard Gloves, Peppermint Boots, Bogwalker Boots and the Red Hood Ribbon.": "La storia di ogni villaggio finisce con un tesoro tutto suo: il Ciondolo dell'Ape, i Sandali Passovento, il Pendente Chiamamaree, i Guanti del Cercatore, l'Amuleto Occhio di Gufo, i Guanti del Frutteto, gli Stivali alla Menta, gli Stivali Camminapalude e il Nastro del Cappuccio Rosso.",
     "17 new villagers to talk to round the villages, each with a story of their own.": "17 nuovi abitanti con cui chiacchierare nei villaggi, ognuno con una storia tutta sua.",
+    "Every quest giver's hair is one colour from root to tip now, with no stray orange tufts, and Mayor Poppy, Tilly the Toymaker, Thumbelina and Grandmother Hazel are finally drawn as the girls and women they are.": "I capelli di chi affida missioni ora sono di un solo colore dalla radice alle punte, senza ciuffi arancioni fuori posto, e la Sindaca Poppy, Tilly la Giocattolaia, Pollicina e Nonna Nocciola sono finalmente disegnate come le ragazze e le donne che sono.",
     "Glimmerbough": "Ramoluce",
     "Starfall Isle has a village now: Glimmerbough, fairy folk living in hollow tree houses round the fallen star's crystals, lit by wisp lanterns. Dewdrop heals you, Thistle sells potions and seals, and Mother Lumen and Pip the Lamplighter have five new quests for levels 136 to 148.": "L'Isola della Stella Caduta ora ha un villaggio: Ramoluce, dove il popolo delle fate vive in case negli alberi cavi attorno ai cristalli della stella caduta, illuminate da lanterne di fuochi fatui. Goccia di Rugiada ti cura, Cardo vende pozioni e sigilli, e Madre Lumen e Pip il Lampionaio hanno cinque nuove missioni per i livelli da 136 a 148.",
     "New monsters on the island: Starmoths (and the rare Dawn Starmoth), Nebula Puffs and Crystal Quills.": "Nuovi mostri sull'isola: le Falene Stellari (e la rara Falena Stellare dell'Alba), i Pallini Nebulosa e i Ricci di Cristallo.",
@@ -2309,7 +2310,7 @@
     "Beatrix's truffle cider tastes like mushrooms and regret. I love it.": "Il sidro al tartufo di Beatrix sa di funghi e di rimpianti. Lo adoro.",
     "The Apple Fair is next week, if the Flame Sheep leave us any apples.": "La Fiera delle Mele è la settimana prossima, se le Pecore Fiammanti ci lasciano due mele.",
     "Woodcutter Bram brings the wood for Beatrix's barrels. Good man.": "Bram il Taglialegna porta il legno per le botti di Beatrix. Brav'uomo.",
-    "Little Poppy": "Piccola Poppy",
+    "Little Posy": "Piccola Posy",
     "I'm guarding the apples. From monkeys. And from Gus.": "Faccio la guardia alle mele. Contro le scimmie. E contro Gus.",
     "Moss says every tree in the orchard has a name. That one's Gertrude.": "Moss dice che ogni albero del frutteto ha un nome. Quello è Geltrude.",
     "A Wood Monkey threw an apple at me! It was a good apple, though.": "Una Scimmia dei Boschi mi ha tirato una mela! Però era una mela buona.",
@@ -3150,6 +3151,7 @@
     "The Stolen Catch": "Il pescato rubato",
     "Every time the boats come in, the Mud Eagles swoop down and fly off with the best of the catch. Win five Silver Fish back from them, and the whole cove eats tonight.": "Ogni volta che le barche rientrano, le Aquile di Fango piombano giù e volano via con il pesce migliore. Strappa loro cinque Pesci d'Argento, e stasera tutta la cala mangerà.",
     "A Light on the Point": "Una luce sul promontorio",
+    "The lamp on the point went out in last week's storm, and the boats can't find the cove at night. Gather three Glow Shells from the Wood Crabs, piece them together on a frame of White Poplar, and bring me the lantern.": "Il lume sul promontorio si è spento nella tempesta della settimana scorsa, e di notte le barche non trovano più la cala. Raccogli tre Conchiglie Lucenti dai Granchi dei Boschi, montale su un telaio di Pioppo Bianco e portami la lanterna.",
     "Gold in the Goo": "Oro nella melma",
     "The Golden Slimes swallow every nugget we dig up, then wobble off with them! Pop five of them and bring the gold back. Goldie will want to weigh it, of course.": "Gli Slime Dorati inghiottono ogni pepita che scaviamo, poi se ne vanno via tremolando! Fanne scoppiare cinque e riporta indietro l'oro. Goldie vorrà pesarlo, naturalmente.",
     "Lights Out": "Luci spente",
@@ -3296,7 +3298,6 @@
     "Bounty Hunter": "Cacciatore di Taglie",
     "Town Favourite": "Beniamino del Paese",
     "Faithful": "Fedele",
-    "Old Friend": "Vecchio Amico",
-    "The lamp on the point went out in last week's storm, and the boats can't find the cove at night. Gather three Glow Shells from the Wood Crabs, piece them together on a frame of White Poplar, and bring me the lantern.": "Il lume sul promontorio si è spento nella tempesta della settimana scorsa, e di notte le barche non trovano più la cala. Raccogli tre Conchiglie Lucenti dai Granchi dei Boschi, montale su un telaio di Pioppo Bianco e portami la lanterna."
+    "Old Friend": "Vecchio Amico"
   }
 }

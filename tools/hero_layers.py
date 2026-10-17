@@ -50,6 +50,10 @@ STYLES = {
     "braids": ("dwarf", "dwarf_female_walk"), "bob": ("human", "human_other_walk"),
     "shoulder": ("elf", "elf_other_walk"), "messy": ("dwarf", "dwarf_other_walk"),
 }
+# Walk sheets no hero wears but townsfolk do (art/assets.json `derive` with `layers`), as (race,
+# sheet): split the same way, their own hair kept as hair_<body> (an old dwarf's bushy mop; his
+# beard is his locks).
+TOWNSFOLK = {"dwarf_npc": ("dwarf", "dwarf_npc_walk")}
 # Headgear is drawn in magenta, which no recolour touches (skin 5-45°, hair 12-58°, outfit 85-170°)
 # and no hero sheet uses. The game paints soft magenta (saturation 0.6) in the armour's colour,
 # keeping the shade (value: 0.92 light, 0.7 mid, 0.45 dark), and full magenta in its trim colour.
@@ -734,6 +738,11 @@ def build():
         layers[f"helmet_{rid}"] = headgear(race, "helmet")
         for style, (source, hair) in sources.items():
             layers[f"hair_{style}_{rid}"] = race.hair if source is race else fit_hair(hair, source, race)
+    for body, (race_id, sheet) in TOWNSFOLK.items():
+        folk = Race(race_id, sheet, template=races[race_id], sidehair=True)
+        layers[f"body_{body}"] = folk.body
+        layers[f"locks_{body}"] = folk.locks
+        layers[f"hair_{body}"] = folk.hair
     return races, layers
 
 

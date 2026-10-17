@@ -96,8 +96,17 @@ def raw(i, depth=0):
     try:
         im = np.asarray(Image.open(R + f'art/sprites/{i}.png').convert('RGBA')).astype(float) / 255
     except FileNotFoundError:
-        d = assets[i]['derive']; im = recolor(raw(d['from'], depth + 1), d['recolor'])
-        sc = assets[i].get('scale')
+        d = assets[i]['derive']
+        if d.get('layers'):
+            # Paper-doll layers, each by its own rules or else the derive's, stacked (ArtLibrary.sourceImage).
+            out = None
+            for layer in d['layers']:
+                im = recolor(raw(layer['id'], depth + 1), layer.get('recolor', d['recolor']))
+                im = Image.fromarray((np.clip(im, 0, 1) * 255).astype(np.uint8), 'RGBA')
+                out = im if out is None else Image.alpha_composite(out, im)
+            im = np.asarray(out).astype(float) / 255
+        else:
+            im = recolor(raw(d['from'], depth + 1), d['recolor'])
     _cache[i] = im
     return im
 
