@@ -2960,7 +2960,41 @@ struct RulesTests {
         // ...but the crowd doesn't all wear the same, and past their first steps it isn't a tunic.
         #expect(worn.count >= 8)
         #expect((GameSession.armor(for: bot("fighter", 45))?.level ?? 1) >= 14)
-        #expect(!GameSession.wearsBoots(bot("fighter", 30)))
+    }
+
+    /// A woman in armour with a walk sheet of its own still has her hair: the armour goes over her
+    /// hairstyle from a fifth of the way down the head (`nape_*`), dyed her colour.
+    @Test func armourSheetsKeepTheHerosHair() throws {
+        let content = Content.shared
+        let plate = try #require(content.item("iron_plate"))
+        let race = content.race("human")
+        let look = Look(hair: "blue", outfit: "green", skin: "fair", gender: "female")
+        let layers = GameSession.layers(race: race, look: look, armor: plate)
+        let sheet = try #require(plate.sheets?["human"])
+        #expect(layers.map(\.id) == ["nape_\(GameSession.style(for: look, race: race))_human_female", sheet])
+        #expect(layers.first?.recolor?.isEmpty == false)
+        for layer in layers { #expect(ArtLibrary.shared.artImage(layer.id) != nil, "art/sprites/\(layer.id).png is missing") }
+    }
+
+    /// Gloves, boots and a necklace on the crowd too, each for their level and class, the same every
+    /// time, and not on everyone.
+    @Test func botsWearGlovesBootsAndNecklaces() {
+        var counts: [ItemType: Int] = [:]
+        for _ in 0..<60 {
+            let someone = Adventurer(name: "Momo", raceID: "dwarf", classID: "tamer", level: 70, look: .standard)
+            let worn = GameSession.trinkets(for: someone)
+            #expect(GameSession.trinkets(for: someone).map(\.id) == worn.map(\.id))
+            #expect(Set(worn.map(\.type)).count == worn.count)
+            for item in worn {
+                #expect([ItemType.gloves, .boots, .necklace].contains(item.type))
+                #expect((item.level ?? 1) <= 70, "\(item.id) is above level 70")
+                #expect(item.color != nil, "\(item.id) has no colour to wear it in")
+                counts[item.type, default: 0] += 1
+            }
+        }
+        for slot in [ItemType.gloves, .boots, .necklace] {
+            #expect((10...59).contains(counts[slot] ?? 0), "\(counts[slot] ?? 0) of 60 wear \(slot)")
+        }
     }
 
     @Test func botsFightWithAWeaponForTheirClassAndLevel() {

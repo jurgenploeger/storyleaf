@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Previews worn armour on the hero: the same algorithm as Fairyland/Art/GearOverlay.swift (chain
-links, open vests, pauldrons, robe hems, capes, helmets and hoods, blue speed boots), on the same
-paper-doll layers the game stacks (tools/hero_layers.py), to tune it without a Mac.
+links, open vests, pauldrons, robe hems, capes, helmets and hoods, gloves, boots and necklaces), on
+the same paper-doll layers the game stacks (tools/hero_layers.py), to tune it without a Mac.
 
     python3 tools/gear_preview.py /tmp/gear.png      # every armour in items.json on every race
     python3 tools/gear_preview.py --capes /tmp/capes.png   # every status cape, over some armours
+    python3 tools/gear_preview.py --trinkets /tmp/t.png    # gloves, boots and necklaces on every body
 
 Needs pillow + numpy.
 """
@@ -169,7 +170,7 @@ def detail(f, b, m, a, facing, pattern, wear, mid, acc, box):
                     f[y0, x, :3] = light
 
 
-def apply(base, recolored, wear=None, accent=None, boots=False, pattern=None):
+def apply(base, recolored, wear=None, accent=None, pattern=None):
     out = recolored.copy()
     mask = outfit_mask(base)
     acc = hexc(accent) if accent else np.array([0.95, 0.78, 0.25])
@@ -292,15 +293,84 @@ def apply(base, recolored, wear=None, accent=None, boots=False, pattern=None):
                         f[y, x, :3] = acc if s > 0.85 else (light if v > 0.82 else (dark if v < 0.55 else mid))
             if pattern:
                 detail(f, base[oy:oy + FRAME, ox:ox + FRAME], m, a, facing, pattern, wear, mid, acc, (y0, y1, x0, x1, yb))
-            if boots:
-                for y in range(max(0, yb - 5), yb + 1):
+    return out
+
+
+def trinkets(body, out, gloves=None, boots=None, necklace=None, chain=None):
+    """Gloves on the hands, boots on the feet and a necklace under the chin (GearOverlay.trinkets),
+    each in its colour (#RRGGBB) at the brightness of what was there. Found on the plain body: its
+    skin in patches, the biggest the face and those below its chin the arms, whose last three rows
+    are the hands; the boots are its brown near the feet."""
+    gloves, boots, necklace = (hexc(c) if c else None for c in (gloves, boots, necklace))
+    ch = hexc(chain) if chain else np.array([0.95, 0.78, 0.25])
+    for row, facing in enumerate(DIRS):
+        for col in range(body.shape[1] // FRAME):
+            oy, ox = row * FRAME, col * FRAME
+            f = out[oy:oy + FRAME, ox:ox + FRAME]
+            b = body[oy:oy + FRAME, ox:ox + FRAME]
+            a = b[..., 3] > 0.5
+            rows = np.nonzero(a.any(1))[0]
+            if len(rows) == 0 or rows[-1] - rows[0] <= 8:
+                continue
+            feet = rows[-1]
+
+            def paint(x, y, c, lift, gain):
+                if 0 <= x < FRAME and 0 <= y < FRAME and f[y, x, 3] > 0.5:
+                    f[y, x, :3] = np.clip(c * (lift + hsv(tuple(f[y, x, :3]))[2] * gain), 0, 1)
+
+            def put(x, y, c):
+                if 0 <= x < FRAME and 0 <= y < FRAME and f[y, x, 3] > 0.5:
+                    f[y, x, :3] = c
+
+            if boots is not None:
+                for y in range(max(0, feet - 5), feet + 1):
                     for x in range(FRAME):
-                        if not a[y, x]:
-                            continue
-                        hh, s, v = hsv(tuple(f[y, x, :3]))
-                        if 0.02 <= hh <= 0.12 and s > 0.35 and v < 0.75:
-                            r, g, b = colorsys.hsv_to_rgb(0.58, min(1, s * 0.9), min(1, v * 1.5))
-                            f[y, x, :3] = (r, g, b)
+                        hh, s, v = hsv(tuple(b[y, x, :3]))
+                        if a[y, x] and 7 / 360 <= hh <= 43 / 360 and s > 0.35 and v < 0.75:
+                            paint(x, y, boots, 0.55, 0.9)
+            if gloves is None and necklace is None:
+                continue
+            skin = np.zeros((FRAME, FRAME), bool)
+            for y in range(FRAME):
+                for x in range(FRAME):
+                    if a[y, x]:
+                        hh, s, v = hsv(tuple(b[y, x, :3]))
+                        skin[y, x] = (hh <= 40 / 360 or hh >= 342 / 360) and 0.12 < s < 0.65 and v > 0.55
+            seen = np.zeros_like(skin)
+            patches = []
+            for y in range(FRAME):
+                for x in range(FRAME):
+                    if skin[y, x] and not seen[y, x]:
+                        stack, cells = [(y, x)], []
+                        seen[y, x] = True
+                        while stack:
+                            cy, cx = stack.pop()
+                            cells.append((cy, cx))
+                            for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                                ny, nx = cy + dy, cx + dx
+                                if 0 <= ny < FRAME and 0 <= nx < FRAME and skin[ny, nx] and not seen[ny, nx]:
+                                    seen[ny, nx] = True
+                                    stack.append((ny, nx))
+                        patches.append(cells)
+            if not patches:
+                continue
+            face = max(patches, key=len)
+            chin = max(y for y, _ in face)
+            if gloves is not None:
+                for cells in patches:
+                    if cells is face or min(y for y, _ in cells) < chin - 1:
+                        continue
+                    low = max(y for y, _ in cells)
+                    for y, x in cells:
+                        if y >= low - 2:
+                            paint(x, y, gloves, 0.5, 0.6)
+            under = [x for y, x in face if y == chin]
+            if necklace is not None and facing == 'down' and under:
+                cx = (min(under) + max(under)) // 2
+                for dx, dy in ((-2, 1), (-1, 2), (1, 2), (2, 1)):
+                    put(cx + dx, chin + dy, ch)
+                put(cx, chin + 2, mix(necklace, (1, 1, 1), 0.4))
+                put(cx, chin + 3, necklace)
     return out
 
 
@@ -452,9 +522,75 @@ def capes(out):
     print(f"wrote {out}: {', '.join(i['id'] for i in capes_)}")
 
 
+def dressed(race, body, style, armour=None, worn=()):
+    """A hero as the game draws them (GameSession.layers and registerArt): paper-doll layers, or an
+    armour's own sheet over the hair from a fifth of the way down the head (nape_*); then the cut,
+    and the gloves, boots and necklace in `worn`, found on the plain body the armour is drawn on."""
+    import pathlib
+    import sys
+    from PIL import Image
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import palette_preview as pp
+    sprites = pathlib.Path(__file__).resolve().parent.parent / "art" / "sprites"
+
+    def load(name):
+        return Image.open(sprites / f"{name}.png").convert("RGBA")
+    sheet = (armour or {}).get("sheets", {}).get(race)
+    if sheet:
+        image = load(f"nape_{style}_{body}")
+        image.alpha_composite(load(sheet))
+        base = np.asarray(image).astype(float) / 255
+        out = pp.recolor(base, armour["tint"]) if armour.get("tint") else base.copy()
+        skeleton = f"body_{race}"
+    else:
+        head = {"plate": "helmet", "cloak": "hood"}.get((armour or {}).get("wear"))
+        image = load(f"body_{body}")
+        for layer in (f"locks_{body}", f"{head}_{body}" if head else f"hair_{style}_{body}"):
+            image.alpha_composite(load(layer))
+        base = np.asarray(image).astype(float) / 255
+        out = pp.recolor(base, armour["recolor"]) if armour and armour.get("recolor") else base.copy()
+        if armour:
+            out = apply(base, out, armour.get("wear"), armour.get("accent"), pattern=armour.get("pattern"))
+        skeleton = f"body_{body}"
+    pieces = {item["type"]: item for item in worn}
+    necklace = pieces.get("necklace", {})
+    return trinkets(np.asarray(load(skeleton)).astype(float) / 255, out, gloves=pieces.get("gloves", {}).get("color"),
+                    boots=pieces.get("boots", {}).get("color"), necklace=necklace.get("color"), chain=necklace.get("accent"))
+
+
+def trinket_sheet(out):
+    """Every body (each race, each gender) in a few outfits, with gloves, boots and a necklace."""
+    import json
+    import pathlib
+    from PIL import Image
+    root = pathlib.Path(__file__).resolve().parent.parent
+    items = {i["id"]: i for i in json.load(open(root / "content" / "items.json"))["items"]}
+    bodies = [("human", "human", "spiky"), ("human", "human_female", "ponytail"), ("elf", "elf", "long"),
+              ("elf", "elf_male", "swept"), ("dwarf", "dwarf", "crop"), ("dwarf", "dwarf_female", "braids")]
+    outfits = [(None, ("leather_gloves", "speed_boots", "amber_amulet")),
+               ("leather_vest", ("falcon_gloves", "traveler_boots", "phoenix_amulet")),
+               ("mage_robe", ("starforged_gauntlets", "cloudstep_boots", "moonstone_pendant")),
+               ("iron_plate", ("dragonhide_gauntlets", "speed_boots", "emerald_glass_amulet")),
+               ("dragon_mail", ("goldleaf_gauntlets", "goldleaf_boots", "goldleaf_pendant")),
+               ("snow_cloak", ("iron_gauntlets", "leather_boots", "shell_pendant"))]
+    zoom = 3
+    sheet = Image.new("RGB", (len(bodies) * 4 * 48 * zoom, len(outfits) * 48 * zoom), (80, 130, 80))
+    for k, (race, body, style) in enumerate(bodies):
+        for r, (armour, worn) in enumerate(outfits):
+            img = dressed(race, body, style, items.get(armour), [items[i] for i in worn if i in items])
+            image = Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8), "RGBA")
+            for c, row in enumerate((2, 1, 0, 3)):   # down, right, up, left
+                frame = image.crop((0, row * 48, 48, row * 48 + 48)).resize((48 * zoom, 48 * zoom), Image.NEAREST)
+                sheet.paste(frame, ((k * 4 + c) * 48 * zoom, r * 48 * zoom), frame)
+    sheet.save(out)
+    print(f"wrote {out}: {', '.join(b for _, b, _ in bodies)} in {', '.join(str(a) for a, _ in outfits)}")
+
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 2 and sys.argv[1] == "--capes":
         capes(sys.argv[2])
+    elif len(sys.argv) > 2 and sys.argv[1] == "--trinkets":
+        trinket_sheet(sys.argv[2])
     else:
         main(sys.argv[1] if len(sys.argv) > 1 else "gear-preview.png")

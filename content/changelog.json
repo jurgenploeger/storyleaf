@@ -2,6 +2,15 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.28",
+      "date": "2026-10-17",
+      "title": "Gear you can see",
+      "notes": [
+        "Gloves, boots and necklaces now show on your hero: gauntlets on your hands, boots on your feet and a pendant under your chin, each in its own colour. Other adventurers wear theirs too.",
+        "Plate, dragon mail and the cloaks no longer hide who's inside: long hair, ponytails and braids show below the helmet or hood, in your own hair colour."
+      ]
+    },
+    {
       "version": "0.7.27",
       "date": "2026-10-17",
       "title": "Goldleaf at level 200",

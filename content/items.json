@@ -784,8 +784,8 @@
       },
       "level": 58,
       "description": "Zoom!",
-      "wear": "boots",
-      "accent": "#6FB8FF"
+      "accent": "#6FB8FF",
+      "color": "#3A86E8"
     },
     {
       "id": "leather_gloves",
@@ -798,7 +798,8 @@
         "attack": 2,
         "defense": 1
       },
-      "description": "Soft and sure for a first grip."
+      "description": "Soft and sure for a first grip.",
+      "color": "#9A6232"
     },
     {
       "id": "iron_gauntlets",
@@ -812,7 +813,8 @@
         "defense": 3
       },
       "level": 14,
-      "description": "Heavy knuckles, heavier blows."
+      "description": "Heavy knuckles, heavier blows.",
+      "color": "#B9C4D2"
     },
     {
       "id": "falcon_gloves",
@@ -826,7 +828,8 @@
         "speed": 2
       },
       "level": 38,
-      "description": "Made for a falconer: quick on the draw."
+      "description": "Made for a falconer: quick on the draw.",
+      "color": "#EE8A2A"
     },
     {
       "id": "dragonhide_gauntlets",
@@ -840,7 +843,8 @@
         "defense": 6
       },
       "level": 65,
-      "description": "Still warm from the dragon."
+      "description": "Still warm from the dragon.",
+      "color": "#D03A2A"
     },
     {
       "id": "starforged_gauntlets",
@@ -854,7 +858,8 @@
         "defense": 9
       },
       "level": 92,
-      "description": "Hammered out under a falling star."
+      "description": "Hammered out under a falling star.",
+      "color": "#2E4AA8"
     },
     {
       "id": "shell_pendant",
@@ -867,7 +872,9 @@
         "magic": 1,
         "mp": 6
       },
-      "description": "You can hear the sea, if you listen."
+      "description": "You can hear the sea, if you listen.",
+      "color": "#F6B8C0",
+      "accent": "#C88A4E"
     },
     {
       "id": "amber_amulet",
@@ -881,7 +888,9 @@
         "hp": 20
       },
       "level": 14,
-      "description": "A drop of honey-gold sunlight."
+      "description": "A drop of honey-gold sunlight.",
+      "color": "#E8A020",
+      "accent": "#FFF09A"
     },
     {
       "id": "moonstone_pendant",
@@ -895,7 +904,9 @@
         "mp": 15
       },
       "level": 38,
-      "description": "Glows softly when night falls."
+      "description": "Glows softly when night falls.",
+      "color": "#A8C4F0",
+      "accent": "#B9C4D2"
     },
     {
       "id": "phoenix_amulet",
@@ -909,7 +920,9 @@
         "hp": 60
       },
       "level": 65,
-      "description": "A little flame that never goes out."
+      "description": "A little flame that never goes out.",
+      "color": "#D03A2A",
+      "accent": "#FFF09A"
     },
     {
       "id": "starlight_necklace",
@@ -924,7 +937,9 @@
         "hp": 40
       },
       "level": 92,
-      "description": "A star to wear, caught on a golden chain."
+      "description": "A star to wear, caught on a golden chain.",
+      "color": "#E8B62C",
+      "accent": "#FFF09A"
     },
     {
       "id": "straw_sandals",
@@ -937,7 +952,8 @@
         "speed": 1,
         "defense": 1
       },
-      "description": "Light, breezy and a little scratchy."
+      "description": "Light, breezy and a little scratchy.",
+      "color": "#DCC060"
     },
     {
       "id": "leather_boots",
@@ -951,7 +967,8 @@
         "defense": 3
       },
       "level": 14,
-      "description": "Laced tight for the long road."
+      "description": "Laced tight for the long road.",
+      "color": "#9A6232"
     },
     {
       "id": "traveler_boots",
@@ -965,7 +982,8 @@
         "defense": 5
       },
       "level": 38,
-      "description": "They've seen every road and want more."
+      "description": "They've seen every road and want more.",
+      "color": "#46B848"
     },
     {
       "id": "cloudstep_boots",
@@ -979,7 +997,8 @@
         "defense": 8
       },
       "level": 80,
-      "description": "Every step lands on a little cloud."
+      "description": "Every step lands on a little cloud.",
+      "color": "#FFFFFF"
     },
     {
       "id": "bamboo_staff",
@@ -4040,7 +4059,8 @@
         "defense": 3
       },
       "level": 14,
-      "description": "Soft and springy, like the Bouncy Buns you chased off. Every step is a little hop."
+      "description": "Soft and springy, like the Bouncy Buns you chased off. Every step is a little hop.",
+      "color": "#CF829E"
     },
     {
       "id": "marquis_boots",
@@ -4054,7 +4074,8 @@
         "defense": 5
       },
       "level": 55,
-      "description": "Puss's second-best pair, fit for a marquis. Tall, proud and very quick."
+      "description": "Puss's second-best pair, fit for a marquis. Tall, proud and very quick.",
+      "color": "#714582"
     },
     {
       "id": "moonbeam_slippers",
@@ -4069,7 +4090,8 @@
         "mp": 6
       },
       "level": 95,
-      "description": "The moon rabbits' dancing slippers. They hardly touch the ground."
+      "description": "The moon rabbits' dancing slippers. They hardly touch the ground.",
+      "color": "#FFF9D2"
     },
     {
       "id": "silverfang_boots",
@@ -4084,7 +4106,8 @@
         "hp": 30
       },
       "level": 170,
-      "description": "Shod in the Silverfang Warden's own steel. They ring like bells on stone."
+      "description": "Shod in the Silverfang Warden's own steel. They ring like bells on stone.",
+      "color": "#ECF2FA"
     },
     {
       "id": "bricklayers_gloves",
@@ -4098,7 +4121,8 @@
         "defense": 5
       },
       "level": 14,
-      "description": "The third little pig's work gloves. Built to last, like a house of bricks."
+      "description": "The third little pig's work gloves. Built to last, like a house of bricks.",
+      "color": "#8A2F1A"
     },
     {
       "id": "netcutter_gloves",
@@ -4112,7 +4136,8 @@
         "speed": 3
       },
       "level": 35,
-      "description": "Light, nimble gloves from the brave little mouse. Quick enough to slip any net."
+      "description": "Light, nimble gloves from the brave little mouse. Quick enough to slip any net.",
+      "color": "#CAAD8F"
     },
     {
       "id": "craghulk_gauntlets",
@@ -4127,7 +4152,8 @@
         "hp": 30
       },
       "level": 80,
-      "description": "Carved from the Craghulk's own stone fists. Heavy, and very hard to argue with."
+      "description": "Carved from the Craghulk's own stone fists. Heavy, and very hard to argue with.",
+      "color": "#9C8D7C"
     },
     {
       "id": "sneezle_ore_gauntlets",
@@ -4142,7 +4168,8 @@
         "hp": 40
       },
       "level": 120,
-      "description": "Hammered from the rarest ore on Sneezle Sands. They tingle, like a sneeze on its way."
+      "description": "Hammered from the rarest ore on Sneezle Sands. They tingle, like a sneeze on its way.",
+      "color": "#905BD0"
     },
     {
       "id": "wisp_light_pendant",
@@ -4157,7 +4184,9 @@
         "hp": 10
       },
       "level": 18,
-      "description": "A little wisp-light caught in glass. Willow says it'll always find the way home."
+      "description": "A little wisp-light caught in glass. Willow says it'll always find the way home.",
+      "color": "#9BFFE7",
+      "accent": "#B9C4D2"
     },
     {
       "id": "swallow_feather_necklace",
@@ -4172,7 +4201,9 @@
         "speed": 2
       },
       "level": 40,
-      "description": "A feather from the swallow that carried Thumbelina south. Wear it and you feel lighter."
+      "description": "A feather from the swallow that carried Thumbelina south. Wear it and you feel lighter.",
+      "color": "#FFF0F0",
+      "accent": "#5A84C8"
     },
     {
       "id": "crystal_heart_pendant",
@@ -4187,7 +4218,9 @@
         "mp": 12
       },
       "level": 71,
-      "description": "A crystal heart from deep in the mines, warm to the touch."
+      "description": "A crystal heart from deep in the mines, warm to the touch.",
+      "color": "#6EDFF9",
+      "accent": "#FFF09A"
     },
     {
       "id": "temple_bell_amulet",
@@ -4202,7 +4235,9 @@
         "mp": 20
       },
       "level": 135,
-      "description": "A tiny bell from the temple below. Its chime calms the waves."
+      "description": "A tiny bell from the temple below. Its chime calms the waves.",
+      "color": "#51E8C6",
+      "accent": "#AEFFF0"
     },
     {
       "id": "widow_silk_necklace",
@@ -4217,7 +4252,9 @@
         "hp": 60
       },
       "level": 165,
-      "description": "Spun from crystal widow silk, stronger than steel and fine as frost."
+      "description": "Spun from crystal widow silk, stronger than steel and fine as frost.",
+      "color": "#FFFFFF",
+      "accent": "#F2B8FF"
     },
     {
       "id": "golden_ball_charm",
@@ -4334,7 +4371,8 @@
         "speed": 2
       },
       "level": 42,
-      "description": "Frost-stiff gloves left on Shiverdell's peak. Whoever wears them never feels their fingers shiver."
+      "description": "Frost-stiff gloves left on Shiverdell's peak. Whoever wears them never feels their fingers shiver.",
+      "color": "#81CFFF"
     },
     {
       "id": "crystal_crown_pendant",
@@ -4349,7 +4387,9 @@
         "hp": 40
       },
       "level": 80,
-      "description": "Cut from the crystal that crowns Crystal Mountain's peak. It hums when the wind blows."
+      "description": "Cut from the crystal that crowns Crystal Mountain's peak. It hums when the wind blows.",
+      "color": "#EFB2FF",
+      "accent": "#B9C4D2"
     },
     {
       "id": "frostpeak_boots",
@@ -4364,7 +4404,8 @@
         "hp": 20
       },
       "level": 84,
-      "description": "Boots that never slip, found high above Snow White Forest, where the snow never melts."
+      "description": "Boots that never slip, found high above Snow White Forest, where the snow never melts.",
+      "color": "#FFFFFF"
     },
     {
       "id": "firepeak_ring",
@@ -4394,7 +4435,8 @@
         "hp": 50
       },
       "level": 192,
-      "description": "Gauntlets of green steel from the crest above Emerald Road, where the dragon likes to sun itself."
+      "description": "Gauntlets of green steel from the crest above Emerald Road, where the dragon likes to sun itself.",
+      "color": "#2EA867"
     },
     {
       "id": "tuft_of_wool",
@@ -5094,7 +5136,8 @@
         "hp": 26
       },
       "level": 136,
-      "description": "Stitched from wings the Starmoths shed. You land more softly than you jumped."
+      "description": "Stitched from wings the Starmoths shed. You land more softly than you jumped.",
+      "color": "#8A5AE8"
     },
     {
       "id": "starweave_robe",
@@ -5140,7 +5183,8 @@
         "hp": 46
       },
       "level": 140,
-      "description": "Silver gauntlets set with crystal petals from Pip's garden. They chime when you make a fist."
+      "description": "Silver gauntlets set with crystal petals from Pip's garden. They chime when you make a fist.",
+      "color": "#D0D6E4"
     },
     {
       "id": "stargazer_band",
@@ -5171,7 +5215,9 @@
         "mp": 24
       },
       "level": 148,
-      "description": "A sliver of the Fallen Star, given gladly. It's warm, and it hums when you're far from home."
+      "description": "A sliver of the Fallen Star, given gladly. It's warm, and it hums when you're far from home.",
+      "color": "#FFF0A0",
+      "accent": "#FFFFFF"
     },
     {
       "id": "starfall_staff",
@@ -5293,7 +5339,8 @@
         "hp": 6
       },
       "level": 8,
-      "description": "Bryn laced them with kite string. On a windy day you hardly touch the ground."
+      "description": "Bryn laced them with kite string. On a windy day you hardly touch the ground.",
+      "color": "#C49058"
     },
     {
       "id": "silver_fish",
@@ -5346,7 +5393,9 @@
         "hp": 14
       },
       "level": 14,
-      "description": "Marla's mother wore it on the boats. Hold it to your ear and the sea talks back."
+      "description": "Marla's mother wore it on the boats. Hold it to your ear and the sea talks back.",
+      "color": "#3AD2B8",
+      "accent": "#C88A4E"
     },
     {
       "id": "gold_nugget",
@@ -5372,7 +5421,8 @@
         "hp": 8
       },
       "level": 15,
-      "description": "Thick leather gloves with brass knuckles, slime-proof and goo-proof. Mostly."
+      "description": "Thick leather gloves with brass knuckles, slime-proof and goo-proof. Mostly.",
+      "color": "#C49058"
     },
     {
       "id": "beetle_shell",
@@ -5398,7 +5448,9 @@
         "hp": 16
       },
       "level": 24,
-      "description": "A round amber stone that sees in the dark. Fenwick swears it blinks."
+      "description": "A round amber stone that sees in the dark. Fenwick swears it blinks.",
+      "color": "#FFE08A",
+      "accent": "#B07A44"
     },
     {
       "id": "crisp_apple",
@@ -5435,7 +5487,8 @@
         "speed": 2
       },
       "level": 23,
-      "description": "Moss's picking gloves, soft as moss and green as leaves. Apples just drop into them."
+      "description": "Moss's picking gloves, soft as moss and green as leaves. Apples just drop into them.",
+      "color": "#46B848"
     },
     {
       "id": "sugar_crystal",
@@ -5477,7 +5530,8 @@
         "hp": 12
       },
       "level": 25,
-      "description": "Red and white like a peppermint stick, and they leave a minty smell wherever you walk."
+      "description": "Red and white like a peppermint stick, and they leave a minty smell wherever you walk.",
+      "color": "#E0384A"
     },
     {
       "id": "healing_mud",
@@ -5503,7 +5557,8 @@
         "hp": 16
       },
       "level": 31,
-      "description": "Tall waders that never leak. Ida swears by them, and at them, now and then."
+      "description": "Tall waders that never leak. Ida swears by them, and at them, now and then.",
+      "color": "#5E8A36"
     },
     {
       "id": "honey_muffin",
@@ -5608,7 +5663,8 @@
         "hp": 16
       },
       "level": 44,
-      "description": "Rope-worn gloves with brass bells on the cuffs. They ring when you fight."
+      "description": "Rope-worn gloves with brass bells on the cuffs. They ring when you fight.",
+      "color": "#2CC0B5"
     },
     {
       "id": "snake_scale",
@@ -5634,7 +5690,8 @@
         "hp": 20
       },
       "level": 50,
-      "description": "Scaled boots that no rat can bite through. Bodkin made a pair for you, and three for himself."
+      "description": "Scaled boots that no rat can bite through. Bodkin made a pair for you, and three for himself.",
+      "color": "#8A7438"
     },
     {
       "id": "dew_pearl",
@@ -5702,7 +5759,9 @@
         "mp": 14
       },
       "level": 58,
-      "description": "A locket carved from the heart of the puppet tree, with a tiny puppet inside. It waves."
+      "description": "A locket carved from the heart of the puppet tree, with a tiny puppet inside. It waves.",
+      "color": "#A8642E",
+      "accent": "#FFF09A"
     },
     {
       "id": "sun_quill",
@@ -5770,7 +5829,8 @@
         "hp": 24
       },
       "level": 70,
-      "description": "Bruna forged them in her own fire. They stay warm on the coldest morning."
+      "description": "Bruna forged them in her own fire. They stay warm on the coldest morning.",
+      "color": "#6A7080"
     },
     {
       "id": "rough_gem",
@@ -5812,7 +5872,9 @@
         "hp": 40
       },
       "level": 82,
-      "description": "A prism Iolanthe cut from the lamp's last gem. It throws tiny rainbows wherever you go."
+      "description": "A prism Iolanthe cut from the lamp's last gem. It throws tiny rainbows wherever you go.",
+      "color": "#C0B8FF",
+      "accent": "#FFFFFF"
     },
     {
       "id": "coffee_beans",
@@ -5849,7 +5911,8 @@
         "hp": 24
       },
       "level": 84,
-      "description": "Fluffy slippers so soft you could fall asleep standing. You won't, though. You'll just walk very quietly."
+      "description": "Fluffy slippers so soft you could fall asleep standing. You won't, though. You'll just walk very quietly.",
+      "color": "#8A6AB8"
     },
     {
       "id": "frost_apple",
@@ -5959,7 +6022,8 @@
         "hp": 26
       },
       "level": 118,
-      "description": "Soft hide boots for running through grass taller than you. They never stumble."
+      "description": "Soft hide boots for running through grass taller than you. They never stumble.",
+      "color": "#C49058"
     },
     {
       "id": "fire_pepper",
@@ -6001,7 +6065,8 @@
         "hp": 42
       },
       "level": 133,
-      "description": "Red gauntlets with pepper-shaped studs. Your punches come with a little heat."
+      "description": "Red gauntlets with pepper-shaped studs. Your punches come with a little heat.",
+      "color": "#E02A1A"
     },
     {
       "id": "frozen_jelly",
@@ -6053,7 +6118,9 @@
         "mp": 22
       },
       "level": 150,
-      "description": "A drop of lake ice that never melts, with a lantern's light caught inside."
+      "description": "A drop of lake ice that never melts, with a lantern's light caught inside.",
+      "color": "#B8E0FF",
+      "accent": "#FFFFFF"
     },
     {
       "id": "jelly_pearl",
@@ -6121,7 +6188,8 @@
         "hp": 48
       },
       "level": 176,
-      "description": "Woven from Crystal Widow silk by Arachne herself. Light as air, tough as steel."
+      "description": "Woven from Crystal Widow silk by Arachne herself. Light as air, tough as steel.",
+      "color": "#E0E6FF"
     },
     {
       "id": "cloud_glass",
@@ -6163,7 +6231,9 @@
         "hp": 70
       },
       "level": 195,
-      "description": "Fennimore's best lens, set in gold. Look through it and you'll see the city past the gate."
+      "description": "Fennimore's best lens, set in gold. Look through it and you'll see the city past the gate.",
+      "color": "#3AD06A",
+      "accent": "#FFF09A"
     },
     {
       "id": "glimmerstone",
@@ -6349,7 +6419,8 @@
         "hp": 56
       },
       "level": 200,
-      "description": "Ivory gauntlets with a gold leaf on the back of each hand. What you hold, you hold for good."
+      "description": "Ivory gauntlets with a gold leaf on the back of each hand. What you hold, you hold for good.",
+      "color": "#ECE2C8"
     },
     {
       "id": "goldleaf_boots",
@@ -6364,7 +6435,8 @@
         "hp": 36
       },
       "level": 200,
-      "description": "They've walked every road there is. A gold leaf at each heel, like a little wing."
+      "description": "They've walked every road there is. A gold leaf at each heel, like a little wing.",
+      "color": "#ECE2C8"
     },
     {
       "id": "goldleaf_pendant",
@@ -6380,7 +6452,9 @@
         "hp": 90
       },
       "level": 200,
-      "description": "A single gold leaf from Meadowbrook's oldest oak. It never wilts."
+      "description": "A single gold leaf from Meadowbrook's oldest oak. It never wilts.",
+      "color": "#F0C030",
+      "accent": "#FFF4A8"
     },
     {
       "id": "goldleaf_ring",

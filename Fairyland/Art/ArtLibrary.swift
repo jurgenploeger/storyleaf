@@ -241,7 +241,10 @@ final class ArtLibrary {
         }
         if let gear = gearLooks[id], let recolored, let from = asset(derive.from) {
             let directions = from.directions ?? ["up", "right", "down", "left"]
-            return GearOverlay.apply(gear, original: base, dressed: recolored, frame: from.frame ?? 48, directions: directions)
+            // The plain body the hands, chin and boots are found on (GearLook.body).
+            let skeleton = gear.body.flatMap { pngURL($0) }.flatMap { UIImage(contentsOfFile: $0.path)?.cgImage }
+            return GearOverlay.apply(gear, original: base, dressed: recolored, skeleton: skeleton,
+                                     frame: from.frame ?? 48, directions: directions)
         }
         return recolored
     }
