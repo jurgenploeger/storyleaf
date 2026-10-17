@@ -3531,7 +3531,7 @@
       "id": "greenglass_spectacles",
       "title": "Spectacles for the Gate",
       "giver": "spectacle_fennimore",
-      "description": "Nobody may walk through the Emerald Gate without green spectacles, and the gatekeeper's own pair cracked when the dragon came. Piece two Cloud Glass lenses together with an Emerald, and we'll make new ones.",
+      "description": "Nobody may walk through the Emerald Gates without green spectacles, and the gatekeeper's own pair cracked when the dragon came. Piece two Cloud Glass lenses together with an Emerald, and we'll make new ones.",
       "requires": [
         "greenglass_pegasi",
         "greenglass_glass"
