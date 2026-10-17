@@ -975,6 +975,21 @@ struct LookTests {
         }
     }
 
+    @Test func townsfolksHairIsOneColour() throws {
+        // A whole-sheet palette swap can't reach every shade of hair (its deep reds and pale tips are
+        // the skin's and the boots' colours too), so townsfolk drawn from a hero's sheet stack its
+        // paper-doll layers, the hair on its own.
+        let content = Content.shared
+        let heroSheets = Set(content.races.flatMap { [$0.sheet] + ($0.sheets ?? [:]).values } + ["dwarf_npc_walk"])
+        for npc in content.maps.flatMap({ $0.npcs ?? [] }) {
+            guard let derive = ArtLibrary.shared.asset(npc.art)?.derive, heroSheets.contains(derive.from) else { continue }
+            let layers = try #require(derive.layers, "\(npc.id): \(npc.art) recolours all of \(derive.from), half its hair")
+            for layer in layers {
+                #expect(ArtLibrary.shared.artImage(layer.id) != nil, "\(npc.art): no layer \(layer.id)")
+            }
+        }
+    }
+
     @Test func spreadMeasuresFromTheWindowsMiddle() throws {
         // A green ramp (highlights 70, shadows 150) turned brown keeps its shading's hue shift:
         // the middle lands on `to` and each hue stays its distance from the middle times `spread`.

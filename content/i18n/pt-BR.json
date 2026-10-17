@@ -860,6 +860,7 @@
     "26 new quests for levels 2 to 33, from a miller's runaway seed pouches and a washerwoman's socks to Kite Day, a lantern for the point, the Apple Fair, the Gingerbread Gala and Little Red's basket.": "26 missões novas para os níveis 2 a 33, dos saquinhos de sementes fujões de uma moleira e das meias de uma lavadeira ao Dia das Pipas, uma lanterna para o pontal, a Feira da Maçã, a Gala do Gengibre e a cesta da Chapeuzinho Vermelho.",
     "Each village's story ends in a treasure of its own: the Honeybee Charm, Windstep Sandals, the Tidecaller Pendant, Prospector's Gloves, the Owl-Eye Amulet, Orchard Gloves, Peppermint Boots, Bogwalker Boots and the Red Hood Ribbon.": "A história de cada vilarejo termina com um tesouro só seu: o Amuleto da Abelhinha, as Sandálias Passo de Vento, o Pingente Chama-Maré, as Luvas de Garimpeiro, o Amuleto Olho de Coruja, as Luvas do Pomar, as Botas de Menta, as Botas Anda-Brejo e a Fita do Capuz Vermelho.",
     "17 new villagers to talk to round the villages, each with a story of their own.": "17 moradores novos para conversar pelos vilarejos, cada um com sua própria história.",
+    "Every quest giver's hair is one colour from root to tip now, with no stray orange tufts, and Mayor Poppy, Tilly the Toymaker, Thumbelina and Grandmother Hazel are finally drawn as the girls and women they are.": "O cabelo de quem dá missões agora tem uma só cor da raiz às pontas, sem mechas laranja perdidas, e a Prefeita Poppy, Tilly, a Brinquedista, a Polegarzinha e a Vovó Avelã enfim aparecem como as meninas e mulheres que são.",
     "Glimmerbough": "Ramo-Cintilante",
     "Starfall Isle has a village now: Glimmerbough, fairy folk living in hollow tree houses round the fallen star's crystals, lit by wisp lanterns. Dewdrop heals you, Thistle sells potions and seals, and Mother Lumen and Pip the Lamplighter have five new quests for levels 136 to 148.": "A Ilha Estrela Cadente agora tem uma vila: Ramo-Cintilante, onde o povo das fadas vive em casas de árvores ocas em volta dos cristais da estrela caída, iluminadas por lanternas de fogo-fátuo. Gota de Orvalho cura você, Cardo vende poções e selos, e Mãe Lumen e Pip, o Acendedor de Lampiões, têm cinco missões novas para os níveis 136 a 148.",
     "New monsters on the island: Starmoths (and the rare Dawn Starmoth), Nebula Puffs and Crystal Quills.": "Novos monstros na ilha: Mariposas Estelares (e a rara Mariposa Estelar da Aurora), Bolinhas Nebulosas e Ouriços de Cristal.",
@@ -2309,7 +2310,7 @@
     "Beatrix's truffle cider tastes like mushrooms and regret. I love it.": "A sidra de trufa da Beatrix tem gosto de cogumelo e arrependimento. Eu adoro.",
     "The Apple Fair is next week, if the Flame Sheep leave us any apples.": "A Feira da Maçã é semana que vem, se as Ovelhas Flamejantes deixarem alguma maçã.",
     "Woodcutter Bram brings the wood for Beatrix's barrels. Good man.": "O Lenhador Bram traz a madeira para os barris da Beatrix. Gente boa.",
-    "Little Poppy": "Pequena Poppy",
+    "Little Posy": "Pequena Posy",
     "I'm guarding the apples. From monkeys. And from Gus.": "Estou vigiando as maçãs. Dos macacos. E do Gus.",
     "Moss says every tree in the orchard has a name. That one's Gertrude.": "O Musgo diz que cada árvore do pomar tem nome. Aquela ali é a Gertrudes.",
     "A Wood Monkey threw an apple at me! It was a good apple, though.": "Um Macaco da Mata jogou uma maçã em mim! Mas era uma maçã boa.",
@@ -3150,6 +3151,7 @@
     "The Stolen Catch": "O Pescado Roubado",
     "Every time the boats come in, the Mud Eagles swoop down and fly off with the best of the catch. Win five Silver Fish back from them, and the whole cove eats tonight.": "Toda vez que os barcos chegam, as Águias de Lama descem voando e levam o melhor do pescado. Recupere cinco Peixes Prateados delas, e a enseada inteira janta hoje.",
     "A Light on the Point": "Uma Luz no Pontal",
+    "The lamp on the point went out in last week's storm, and the boats can't find the cove at night. Gather three Glow Shells from the Wood Crabs, piece them together on a frame of White Poplar, and bring me the lantern.": "A luz do pontal apagou na tempestade da semana passada, e os barcos não acham a enseada à noite. Junte três Conchas Luminosas dos Caranguejos de Madeira, monte tudo numa armação de Álamo e me traga a lanterna.",
     "Gold in the Goo": "Ouro na Gosma",
     "The Golden Slimes swallow every nugget we dig up, then wobble off with them! Pop five of them and bring the gold back. Goldie will want to weigh it, of course.": "As Gosmas Douradas engolem cada pepita que a gente desenterra e saem rebolando com elas! Estoure cinco delas e traga o ouro de volta. A Goldie vai querer pesar, é claro.",
     "Lights Out": "Luzes Apagadas",
@@ -3296,7 +3298,6 @@
     "Bounty Hunter": "Caçador de Recompensas",
     "Town Favourite": "Favorito da Cidade",
     "Faithful": "Fiel",
-    "Old Friend": "Velho Amigo",
-    "The lamp on the point went out in last week's storm, and the boats can't find the cove at night. Gather three Glow Shells from the Wood Crabs, piece them together on a frame of White Poplar, and bring me the lantern.": "A luz do pontal apagou na tempestade da semana passada, e os barcos não acham a enseada à noite. Junte três Conchas Luminosas dos Caranguejos de Madeira, monte tudo numa armação de Álamo e me traga a lanterna."
+    "Old Friend": "Velho Amigo"
   }
 }

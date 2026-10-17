@@ -860,6 +860,7 @@
     "26 new quests for levels 2 to 33, from a miller's runaway seed pouches and a washerwoman's socks to Kite Day, a lantern for the point, the Apple Fair, the Gingerbread Gala and Little Red's basket.": "26 nouvelles quêtes du niveau 2 au niveau 33, des sachets de graines envolés d'une meunière aux chaussettes d'une lavandière, jusqu'à la Fête des cerfs-volants, une lanterne pour la pointe, la Foire aux pommes, le Gala du pain d'épices et le panier du Petit Chaperon rouge.",
     "Each village's story ends in a treasure of its own: the Honeybee Charm, Windstep Sandals, the Tidecaller Pendant, Prospector's Gloves, the Owl-Eye Amulet, Orchard Gloves, Peppermint Boots, Bogwalker Boots and the Red Hood Ribbon.": "L'histoire de chaque village se termine par un trésor bien à lui : la Breloque Abeille, les Sandales Foulevent, le Pendentif Appel-des-Marées, les Gants de prospecteur, l'Amulette Œil-de-Chouette, les Gants de verger, les Bottes Berlingot, les Bottes Arpente-Marais et le Ruban du Chaperon rouge.",
     "17 new villagers to talk to round the villages, each with a story of their own.": "17 nouveaux villageois à qui parler dans les villages, chacun avec sa propre histoire.",
+    "Every quest giver's hair is one colour from root to tip now, with no stray orange tufts, and Mayor Poppy, Tilly the Toymaker, Thumbelina and Grandmother Hazel are finally drawn as the girls and women they are.": "Les cheveux de ceux qui confient des quêtes sont désormais d'une seule couleur, des racines aux pointes, sans mèches orange égarées, et Maire Poppy, Tilly la Fabricante de jouets, Poucette et Mère-Grand Noisette sont enfin dessinées comme les filles et les femmes qu'elles sont.",
     "Glimmerbough": "Brillebranche",
     "Starfall Isle has a village now: Glimmerbough, fairy folk living in hollow tree houses round the fallen star's crystals, lit by wisp lanterns. Dewdrop heals you, Thistle sells potions and seals, and Mother Lumen and Pip the Lamplighter have five new quests for levels 136 to 148.": "L'Île de l'Étoile Tombée a désormais un village : Brillebranche, où le peuple des fées vit dans des arbres creux autour des cristaux de l'étoile tombée, à la lueur des lanternes de feux follets. Goutte-de-Rosée te soigne, Chardon vend des potions et des sceaux, et Mère Lumen et Pip l'Allumeur de lanternes ont cinq nouvelles quêtes pour les niveaux 136 à 148.",
     "New monsters on the island: Starmoths (and the rare Dawn Starmoth), Nebula Puffs and Crystal Quills.": "De nouveaux monstres sur l'île : les Phalènes étoilées (et la rare Phalène étoilée de l'aube), les Poufs nébuleuse et les Hérissons de cristal.",
@@ -2309,7 +2310,7 @@
     "Beatrix's truffle cider tastes like mushrooms and regret. I love it.": "Le cidre aux truffes de Béatrix a un goût de champignon et de regrets. J'adore.",
     "The Apple Fair is next week, if the Flame Sheep leave us any apples.": "Foire aux pommes la semaine prochaine ! Si les Moutons de flamme nous laissent des pommes.",
     "Woodcutter Bram brings the wood for Beatrix's barrels. Good man.": "Bram le Bûcheron apporte le bois des tonneaux de Béatrix. Un brave homme.",
-    "Little Poppy": "Petite Coquelicot",
+    "Little Posy": "Petite Posy",
     "I'm guarding the apples. From monkeys. And from Gus.": "Je garde les pommes. Contre les singes. Et contre Gus.",
     "Moss says every tree in the orchard has a name. That one's Gertrude.": "Mousse dit que chaque arbre du verger a un nom. Celui-là, c'est Gertrude.",
     "A Wood Monkey threw an apple at me! It was a good apple, though.": "Un Singe des bois m'a lancé une pomme ! C'était une bonne pomme, remarque.",
@@ -3150,6 +3151,7 @@
     "The Stolen Catch": "La pêche volée",
     "Every time the boats come in, the Mud Eagles swoop down and fly off with the best of the catch. Win five Silver Fish back from them, and the whole cove eats tonight.": "Chaque fois que les bateaux rentrent, les Aigles de boue fondent sur eux et s'envolent avec le meilleur de la pêche. Reprends-leur cinq Poissons d'argent, et toute la crique mangera ce soir.",
     "A Light on the Point": "Une lumière sur la pointe",
+    "The lamp on the point went out in last week's storm, and the boats can't find the cove at night. Gather three Glow Shells from the Wood Crabs, piece them together on a frame of White Poplar, and bring me the lantern.": "La lampe de la pointe s'est éteinte pendant la tempête de la semaine dernière, et les bateaux ne trouvent plus la crique la nuit. Récupère trois Coquilles luisantes sur les Crabes des bois, assemble-les sur un cadre de Peuplier blanc, et rapporte-moi la lanterne.",
     "Gold in the Goo": "De l'or dans la glu",
     "The Golden Slimes swallow every nugget we dig up, then wobble off with them! Pop five of them and bring the gold back. Goldie will want to weigh it, of course.": "Les Gluants dorés avalent toutes les pépites qu'on déterre, puis s'en vont en tremblotant avec ! Fais-en éclater cinq et rapporte l'or. Goldie voudra le peser, bien sûr.",
     "Lights Out": "Extinction des feux",
@@ -3296,7 +3298,6 @@
     "Bounty Hunter": "Chasseur de primes",
     "Town Favourite": "Chouchou du village",
     "Faithful": "Fidèle",
-    "Old Friend": "Vieil ami",
-    "The lamp on the point went out in last week's storm, and the boats can't find the cove at night. Gather three Glow Shells from the Wood Crabs, piece them together on a frame of White Poplar, and bring me the lantern.": "La lampe de la pointe s'est éteinte pendant la tempête de la semaine dernière, et les bateaux ne trouvent plus la crique la nuit. Récupère trois Coquilles luisantes sur les Crabes des bois, assemble-les sur un cadre de Peuplier blanc, et rapporte-moi la lanterne."
+    "Old Friend": "Vieil ami"
   }
 }

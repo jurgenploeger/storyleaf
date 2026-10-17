@@ -860,6 +860,7 @@
     "26 new quests for levels 2 to 33, from a miller's runaway seed pouches and a washerwoman's socks to Kite Day, a lantern for the point, the Apple Fair, the Gingerbread Gala and Little Red's basket.": "26個新任務，適合2到33級：從磨坊主跑掉的種子袋、洗衣婦的襪子，到風箏節、岬角上的燈籠、蘋果節、薑餅盛會和小紅帽的籃子。",
     "Each village's story ends in a treasure of its own: the Honeybee Charm, Windstep Sandals, the Tidecaller Pendant, Prospector's Gloves, the Owl-Eye Amulet, Orchard Gloves, Peppermint Boots, Bogwalker Boots and the Red Hood Ribbon.": "每個村莊的故事最後都有專屬的寶物：蜜蜂護身符、踏風涼鞋、喚潮墜飾、淘金客手套、貓頭鷹眼護符、果園手套、薄荷糖靴、踏沼靴和紅帽緞帶。",
     "17 new villagers to talk to round the villages, each with a story of their own.": "村莊裡多了17位可以聊天的新村民，每個人都有自己的故事。",
+    "Every quest giver's hair is one colour from root to tip now, with no stray orange tufts, and Mayor Poppy, Tilly the Toymaker, Thumbelina and Grandmother Hazel are finally drawn as the girls and women they are.": "發布任務的人的頭髮現在從髮根到髮梢都是同一種顏色，不再有亂翹的橘色髮絲；波比鎮長、玩具師蒂莉、拇指姑娘和海柔外婆也終於畫成了她們本來的女孩和女士模樣。",
     "Glimmerbough": "微光枝村",
     "Starfall Isle has a village now: Glimmerbough, fairy folk living in hollow tree houses round the fallen star's crystals, lit by wisp lanterns. Dewdrop heals you, Thistle sells potions and seals, and Mother Lumen and Pip the Lamplighter have five new quests for levels 136 to 148.": "落星島現在有了一座村莊：微光枝村。精靈們住在墜落之星留下的水晶周圍的空心樹屋裡，鬼火燈籠把村子照得亮亮的。露珠會為你療傷，小薊賣藥水和封印石，盧門媽媽和點燈人皮普還有五個新任務，適合136到148級。",
     "New monsters on the island: Starmoths (and the rare Dawn Starmoth), Nebula Puffs and Crystal Quills.": "島上來了新怪物：星蛾（還有稀有的晨曦星蛾）、星雲球和水晶刺蝟。",
@@ -2309,7 +2310,7 @@
     "Beatrix's truffle cider tastes like mushrooms and regret. I love it.": "碧翠絲的松露蘋果酒，喝起來像蘑菇加後悔。我超愛。",
     "The Apple Fair is next week, if the Flame Sheep leave us any apples.": "蘋果節下禮拜就到了，前提是火焰羊有留蘋果給我們。",
     "Woodcutter Bram brings the wood for Beatrix's barrels. Good man.": "樵夫布拉姆幫碧翠絲送來做木桶的木頭。真是好人。",
-    "Little Poppy": "小波比",
+    "Little Posy": "小波西",
     "I'm guarding the apples. From monkeys. And from Gus.": "我在看守蘋果。防猴子，也防格斯。",
     "Moss says every tree in the orchard has a name. That one's Gertrude.": "莫斯說果園裡每棵樹都有名字。那棵叫葛楚。",
     "A Wood Monkey threw an apple at me! It was a good apple, though.": "一隻木猴拿蘋果丟我！不過那顆蘋果很好吃。",
@@ -3150,6 +3151,7 @@
     "The Stolen Catch": "被搶走的漁獲",
     "Every time the boats come in, the Mud Eagles swoop down and fly off with the best of the catch. Win five Silver Fish back from them, and the whole cove eats tonight.": "每次漁船一進港，泥鷹就俯衝下來，叼走最好的漁獲。從牠們那裡搶回五條銀魚，今晚整個海灣就有飯吃了。",
     "A Light on the Point": "岬角上的燈",
+    "The lamp on the point went out in last week's storm, and the boats can't find the cove at night. Gather three Glow Shells from the Wood Crabs, piece them together on a frame of White Poplar, and bring me the lantern.": "岬角上的燈在上禮拜的暴風雨中熄了，晚上船都找不到海灣。從木蟹身上收集三片夜光貝殼，裝在白楊木框上，把燈籠拿來給我。",
     "Gold in the Goo": "黏液裡的金子",
     "The Golden Slimes swallow every nugget we dig up, then wobble off with them! Pop five of them and bring the gold back. Goldie will want to weigh it, of course.": "我們挖出來的每塊金子都被黃金史萊姆吞下肚，然後牠們就晃啊晃地跑掉了！戳破五隻，把金子帶回來。當然，金妮會想秤一秤。",
     "Lights Out": "熄燈了",
@@ -3296,7 +3298,6 @@
     "Bounty Hunter": "賞金獵人",
     "Town Favourite": "小鎮紅人",
     "Faithful": "常客",
-    "Old Friend": "老朋友",
-    "The lamp on the point went out in last week's storm, and the boats can't find the cove at night. Gather three Glow Shells from the Wood Crabs, piece them together on a frame of White Poplar, and bring me the lantern.": "岬角上的燈在上禮拜的暴風雨中熄了，晚上船都找不到海灣。從木蟹身上收集三片夜光貝殼，裝在白楊木框上，把燈籠拿來給我。"
+    "Old Friend": "老朋友"
   }
 }

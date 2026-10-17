@@ -3,10 +3,13 @@ import Foundation
 
 /// A free "derived" sprite: an existing sprite with a palette swap, like classic games made
 /// villagers and monster variants. Declared in art/assets.json as
-/// `"derive": { "from": "player_walk", "recolor": [ … ] }`.
+/// `"derive": { "from": "player_walk", "recolor": [ … ] }`. With `layers` it's stacked from
+/// paper-doll layers instead, like a hero (`ArtLibrary.register`): a quest giver's hair, on a layer
+/// of its own, takes its colour on every shade.
 nonisolated struct Derivation: Decodable, Sendable {
     let from: String
     let recolor: [RecolorRule]
+    var layers: [ArtLayer]? = nil
 }
 
 /// Changes pixels whose colour falls in a hue range (optionally only saturated or bright ones).
