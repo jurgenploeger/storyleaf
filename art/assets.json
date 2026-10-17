@@ -12650,6 +12650,17 @@
         "recolor": [
           {
             "hue": [
+              5,
+              45
+            ],
+            "minSaturation": 0.08,
+            "maxSaturation": 0.54,
+            "minValue": 0.6,
+            "saturation": 1.5,
+            "value": 0.85
+          },
+          {
+            "hue": [
               85,
               170
             ],
@@ -12657,17 +12668,63 @@
             "to": 210,
             "saturation": 0.45,
             "value": 0.85
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human_female"
           },
           {
-            "hue": [
-              0,
-              32
-            ],
-            "minSaturation": 0.6,
-            "minValue": 0.35,
-            "to": 30,
-            "saturation": 0.5,
-            "value": 0.6
+            "id": "locks_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 210,
+                "saturation": 0.45,
+                "value": 0.85
+              }
+            ]
+          },
+          {
+            "id": "hair_ponytail_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 210,
+                "saturation": 0.45,
+                "value": 0.85
+              }
+            ]
           }
         ]
       },
@@ -12694,17 +12751,63 @@
             "to": 275,
             "saturation": 0.35,
             "value": 1.25
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_elf"
           },
           {
-            "hue": [
-              12,
-              58
-            ],
-            "minSaturation": 0.55,
-            "minValue": 0.55,
-            "to": 40,
-            "saturation": 0.3,
-            "value": 1.25
+            "id": "locks_elf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 48,
+                "saturation": 0.6,
+                "value": 1.12
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 275,
+                "saturation": 0.35,
+                "value": 1.25
+              }
+            ]
+          },
+          {
+            "id": "hair_long_elf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 48,
+                "saturation": 0.6,
+                "value": 1.12
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 275,
+                "saturation": 0.35,
+                "value": 1.25
+              }
+            ]
           }
         ]
       },
@@ -12765,6 +12868,63 @@
             "saturation": 0.85,
             "value": 2.4
           }
+        ],
+        "layers": [
+          {
+            "id": "body_dwarf"
+          },
+          {
+            "id": "locks_dwarf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 48,
+                "saturation": 0.6,
+                "value": 1.12
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 5,
+                "saturation": 0.85,
+                "value": 2.4
+              }
+            ]
+          },
+          {
+            "id": "hair_crop_dwarf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 48,
+                "saturation": 0.6,
+                "value": 1.12
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 5,
+                "saturation": 0.85,
+                "value": 2.4
+              }
+            ]
+          }
         ]
       },
       "request": {
@@ -12790,17 +12950,63 @@
             "to": 180,
             "saturation": 0.6,
             "value": 0.8
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human_female"
           },
           {
-            "hue": [
-              0,
-              32
-            ],
-            "minSaturation": 0.6,
-            "minValue": 0.35,
-            "to": 45,
-            "saturation": 0.7,
-            "value": 1.1
+            "id": "locks_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 48,
+                "saturation": 0.6,
+                "value": 1.12
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 180,
+                "saturation": 0.6,
+                "value": 0.8
+              }
+            ]
+          },
+          {
+            "id": "hair_ponytail_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 48,
+                "saturation": 0.6,
+                "value": 1.12
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 180,
+                "saturation": 0.6,
+                "value": 0.8
+              }
+            ]
           }
         ]
       },
@@ -12849,8 +13055,18 @@
       "id": "npc_ratcatcher_bodkin",
       "kind": "walk_sheet",
       "derive": {
-        "from": "npc_journeyman",
+        "from": "player_walk",
         "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 30,
+            "saturation": 0.48,
+            "value": 0.765
+          },
           {
             "hue": [
               140,
@@ -12860,6 +13076,63 @@
             "to": 30,
             "saturation": 0.6,
             "value": 0.9
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human"
+          },
+          {
+            "id": "locks_human",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 30,
+                "saturation": 0.48,
+                "value": 0.765
+              }
+            ]
+          },
+          {
+            "id": "hair_crop_human",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 30,
+                "saturation": 0.48,
+                "value": 0.765
+              }
+            ]
           }
         ]
       },
@@ -12910,6 +13183,63 @@
             "saturation": 0.85,
             "value": 1.1
           }
+        ],
+        "layers": [
+          {
+            "id": "body_human"
+          },
+          {
+            "id": "locks_human",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 48,
+                "saturation": 0.85,
+                "value": 1.1
+              }
+            ]
+          },
+          {
+            "id": "hair_crop_human",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 48,
+                "saturation": 0.85,
+                "value": 1.1
+              }
+            ]
+          }
         ]
       },
       "request": {
@@ -12936,17 +13266,63 @@
             "to": 330,
             "saturation": 0.55,
             "value": 1.15
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_elf"
           },
           {
-            "hue": [
-              12,
-              58
-            ],
-            "minSaturation": 0.55,
-            "minValue": 0.55,
-            "to": 330,
-            "saturation": 0.45,
-            "value": 1.1
+            "id": "locks_elf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 330,
+                "saturation": 0.7,
+                "value": 1.05
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 330,
+                "saturation": 0.55,
+                "value": 1.15
+              }
+            ]
+          },
+          {
+            "id": "hair_bob_elf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 330,
+                "saturation": 0.7,
+                "value": 1.05
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 330,
+                "saturation": 0.55,
+                "value": 1.15
+              }
+            ]
           }
         ]
       },
@@ -12995,8 +13371,18 @@
       "id": "npc_puppeteer_gianna",
       "kind": "walk_sheet",
       "derive": {
-        "from": "npc_toymaker",
+        "from": "human_female_walk",
         "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 350,
+            "saturation": 0.75,
+            "value": 1.0
+          },
           {
             "hue": [
               280,
@@ -13006,6 +13392,63 @@
             "to": 345,
             "saturation": 0.9,
             "value": 0.9
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human_female"
+          },
+          {
+            "id": "locks_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 350,
+                "saturation": 0.75,
+                "value": 1.0
+              }
+            ]
+          },
+          {
+            "id": "hair_long_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 350,
+                "saturation": 0.75,
+                "value": 1.0
+              }
+            ]
           }
         ]
       },
@@ -13032,6 +13475,63 @@
             "to": 28,
             "saturation": 0.6,
             "value": 2.2
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_dwarf"
+          },
+          {
+            "id": "locks_dwarf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 28,
+                "saturation": 0.6,
+                "value": 2.2
+              }
+            ]
+          },
+          {
+            "id": "hair_crop_dwarf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 28,
+                "saturation": 0.6,
+                "value": 2.2
+              }
+            ]
           }
         ]
       },
@@ -13069,8 +13569,29 @@
       "id": "npc_lampseller_kasim",
       "kind": "walk_sheet",
       "derive": {
-        "from": "npc_journeyman",
+        "from": "player_walk",
         "recolor": [
+          {
+            "hue": [
+              5,
+              45
+            ],
+            "minSaturation": 0.08,
+            "maxSaturation": 0.54,
+            "minValue": 0.6,
+            "saturation": 1.8,
+            "value": 0.66
+          },
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 45,
+            "saturation": 0.72,
+            "value": 0.935
+          },
           {
             "hue": [
               140,
@@ -13080,6 +13601,63 @@
             "to": 45,
             "saturation": 0.9,
             "value": 1.1
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human"
+          },
+          {
+            "id": "locks_human",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 45,
+                "saturation": 0.72,
+                "value": 0.935
+              }
+            ]
+          },
+          {
+            "id": "hair_crop_human",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 45,
+                "saturation": 0.72,
+                "value": 0.935
+              }
+            ]
           }
         ]
       },
@@ -13099,6 +13677,17 @@
         "recolor": [
           {
             "hue": [
+              5,
+              45
+            ],
+            "minSaturation": 0.08,
+            "maxSaturation": 0.54,
+            "minValue": 0.6,
+            "saturation": 1.8,
+            "value": 0.66
+          },
+          {
+            "hue": [
               85,
               170
             ],
@@ -13106,17 +13695,63 @@
             "to": 185,
             "saturation": 0.7,
             "value": 0.9
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human_female"
           },
           {
-            "hue": [
-              0,
-              32
-            ],
-            "minSaturation": 0.6,
-            "minValue": 0.35,
-            "to": 15,
-            "saturation": 0.5,
-            "value": 0.35
+            "id": "locks_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 185,
+                "saturation": 0.7,
+                "value": 0.9
+              }
+            ]
+          },
+          {
+            "id": "hair_long_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 185,
+                "saturation": 0.7,
+                "value": 0.9
+              }
+            ]
           }
         ]
       },
@@ -13169,6 +13804,18 @@
         "recolor": [
           {
             "hue": [
+              5,
+              45
+            ],
+            "minSaturation": 0.08,
+            "maxSaturation": 0.54,
+            "minValue": 0.6,
+            "to": 12,
+            "saturation": 1.25,
+            "value": 0.97
+          },
+          {
+            "hue": [
               85,
               170
             ],
@@ -13176,17 +13823,63 @@
             "to": 20,
             "saturation": 0.9,
             "value": 1.9
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_dwarf_female"
           },
           {
-            "hue": [
-              12,
-              58
-            ],
-            "minSaturation": 0.55,
-            "minValue": 0.55,
-            "to": 5,
-            "saturation": 0.9,
-            "value": 0.7
+            "id": "locks_dwarf_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 20,
+                "saturation": 0.9,
+                "value": 1.9
+              }
+            ]
+          },
+          {
+            "id": "hair_braids_dwarf_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 20,
+                "saturation": 0.9,
+                "value": 1.9
+              }
+            ]
           }
         ]
       },
@@ -13213,6 +13906,63 @@
             "to": 225,
             "saturation": 0.75,
             "value": 0.8
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human"
+          },
+          {
+            "id": "locks_human",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 48,
+                "saturation": 0.6,
+                "value": 1.12
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 225,
+                "saturation": 0.75,
+                "value": 0.8
+              }
+            ]
+          },
+          {
+            "id": "hair_swept_human",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 48,
+                "saturation": 0.6,
+                "value": 1.12
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 225,
+                "saturation": 0.75,
+                "value": 0.8
+              }
+            ]
           }
         ]
       },
@@ -13250,8 +14000,18 @@
       "id": "npc_gemcutter_iolanthe",
       "kind": "walk_sheet",
       "derive": {
-        "from": "npc_diviner",
+        "from": "elf_walk",
         "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 200,
+            "saturation": 0.68,
+            "value": 1.045
+          },
           {
             "hue": [
               250,
@@ -13261,6 +14021,63 @@
             "to": 200,
             "saturation": 0.8,
             "value": 1.1
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_elf"
+          },
+          {
+            "id": "locks_elf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 200,
+                "saturation": 0.68,
+                "value": 1.045
+              }
+            ]
+          },
+          {
+            "id": "hair_shoulder_elf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 200,
+                "saturation": 0.68,
+                "value": 1.045
+              }
+            ]
           }
         ]
       },
@@ -13280,6 +14097,17 @@
         "recolor": [
           {
             "hue": [
+              5,
+              45
+            ],
+            "minSaturation": 0.08,
+            "maxSaturation": 0.54,
+            "minValue": 0.6,
+            "saturation": 1.5,
+            "value": 0.85
+          },
+          {
+            "hue": [
               140,
               230
             ],
@@ -13287,6 +14115,63 @@
             "to": 25,
             "saturation": 0.3,
             "value": 2.2
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_dwarf_npc"
+          },
+          {
+            "id": "locks_dwarf_npc",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  140,
+                  230
+                ],
+                "minSaturation": 0.3,
+                "to": 25,
+                "saturation": 0.3,
+                "value": 2.2
+              }
+            ]
+          },
+          {
+            "id": "hair_dwarf_npc",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 40,
+                "saturation": 0.06,
+                "value": 1.3
+              },
+              {
+                "hue": [
+                  140,
+                  230
+                ],
+                "minSaturation": 0.3,
+                "to": 25,
+                "saturation": 0.3,
+                "value": 2.2
+              }
+            ]
           }
         ]
       },
@@ -13346,17 +14231,63 @@
             "to": 235,
             "saturation": 0.7,
             "value": 0.75
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human_female"
           },
           {
-            "hue": [
-              0,
-              32
-            ],
-            "minSaturation": 0.6,
-            "minValue": 0.35,
-            "to": 270,
-            "saturation": 0.4,
-            "value": 0.45
+            "id": "locks_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 235,
+                "saturation": 0.7,
+                "value": 0.75
+              }
+            ]
+          },
+          {
+            "id": "hair_ponytail_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 235,
+                "saturation": 0.7,
+                "value": 0.75
+              }
+            ]
           }
         ]
       },
@@ -13376,6 +14307,17 @@
         "recolor": [
           {
             "hue": [
+              5,
+              45
+            ],
+            "minSaturation": 0.08,
+            "maxSaturation": 0.54,
+            "minValue": 0.6,
+            "saturation": 1.5,
+            "value": 0.85
+          },
+          {
+            "hue": [
               85,
               170
             ],
@@ -13383,6 +14325,63 @@
             "to": 25,
             "saturation": 0.7,
             "value": 1.8
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_dwarf"
+          },
+          {
+            "id": "locks_dwarf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 25,
+                "saturation": 0.7,
+                "value": 1.8
+              }
+            ]
+          },
+          {
+            "id": "hair_crop_dwarf",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 25,
+                "saturation": 0.7,
+                "value": 1.8
+              }
+            ]
           }
         ]
       },
@@ -13443,6 +14442,63 @@
             "saturation": 0.9,
             "value": 2.2
           }
+        ],
+        "layers": [
+          {
+            "id": "body_dwarf_npc"
+          },
+          {
+            "id": "locks_dwarf_npc",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  140,
+                  230
+                ],
+                "minSaturation": 0.3,
+                "to": 0,
+                "saturation": 0.9,
+                "value": 2.2
+              }
+            ]
+          },
+          {
+            "id": "hair_dwarf_npc",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 25,
+                "saturation": 0.75,
+                "value": 0.6
+              },
+              {
+                "hue": [
+                  140,
+                  230
+                ],
+                "minSaturation": 0.3,
+                "to": 0,
+                "saturation": 0.9,
+                "value": 2.2
+              }
+            ]
+          }
         ]
       },
       "request": {
@@ -13468,17 +14524,63 @@
             "to": 220,
             "saturation": 0.25,
             "value": 1.25
+          }
+        ],
+        "layers": [
+          {
+            "id": "body_human_female"
           },
           {
-            "hue": [
-              0,
-              32
-            ],
-            "minSaturation": 0.6,
-            "minValue": 0.35,
-            "to": 0,
-            "saturation": 0.0,
-            "value": 0.2
+            "id": "locks_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 220,
+                "saturation": 0.25,
+                "value": 1.25
+              }
+            ]
+          },
+          {
+            "id": "hair_bob_human_female",
+            "recolor": [
+              {
+                "hue": [
+                  340,
+                  70
+                ],
+                "minSaturation": 0.3,
+                "minValue": 0.12,
+                "to": 230,
+                "saturation": 0.25,
+                "value": 0.35
+              },
+              {
+                "hue": [
+                  85,
+                  170
+                ],
+                "minSaturation": 0.3,
+                "to": 220,
+                "saturation": 0.25,
+                "value": 1.25
+              }
+            ]
           }
         ]
       },

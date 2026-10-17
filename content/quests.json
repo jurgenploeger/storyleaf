@@ -2870,7 +2870,7 @@
       "id": "wake_beans",
       "title": "Beans for the Roaster",
       "giver": "roaster_bastian",
-      "description": "The Poison Skeletons raided my bean sacks! Skeletons don't sleep either, so they drink a lot of coffee. Rattle six of them and bring back the beans.",
+      "description": "The Poison Skeletons raided my bean sacks! Skeletons don't sleep either, so they drink a lot of coffee. Rattle them till they drop my beans, and bring me six handfuls.",
       "minLevel": 78,
       "objective": {
         "type": "bring",
