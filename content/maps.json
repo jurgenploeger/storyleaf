@@ -12629,7 +12629,7 @@
         "accent": "tile_dark_grass",
         "accentPatches": 30,
         "water": "tile_water",
-        "ponds": 5,
+        "ponds": 3,
         "lakes": {
           "count": 1,
           "size": [
@@ -12641,8 +12641,8 @@
         "hills": {
           "count": 2,
           "size": [
-            6,
-            10
+            5,
+            8
           ],
           "chain": [
             3,
