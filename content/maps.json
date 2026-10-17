@@ -17496,14 +17496,15 @@
           "hair": "pink",
           "style": "braids",
           "outfit": "purple",
-          "x": -3,
-          "y": -9,
+          "x": -1,
+          "y": -12,
           "roam": 2,
           "lines": [
             "Are you a giant? Mother Lumen says giants are just people who ate their greens.",
             "One day I'll catch a Starmoth and ride it all the way to the moon.",
             "Pip says the star on the hill is lonely. I'd be lonely too, so far from home.",
-            "Shh! If you're very quiet, the lanterns hum."
+            "Shh! If you're very quiet, the lanterns hum.",
+            "South of here there's a cave where the crystals sing. I'm too little to go."
           ]
         }
       ],
@@ -17855,6 +17856,10 @@
           "edge": "west",
           "to": "hachoo_island",
           "ship": true
+        },
+        {
+          "edge": "south",
+          "to": "glimmerdeep"
         }
       ],
       "encounters": {
@@ -18010,6 +18015,274 @@
             "story": [
               "The Fallen Star flickers, then dims to a soft, warm glow. It was never angry, only lonely, and very far from home.",
               "Down in Glimmerbough the lanterns light up one by one. That night the star rises from the hill, slowly, and settles back into its place in the sky, and the wisps drift up after it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "glimmerdeep",
+      "name": "Glimmerdeep",
+      "width": 80,
+      "height": 60,
+      "music": "cave",
+      "crowd": {
+        "adventurers": 2
+      },
+      "locals": [
+        {
+          "name": "Crystal-Singer Opaline",
+          "race": "elf",
+          "gender": "female",
+          "hair": "blue",
+          "style": "long",
+          "outfit": "teal",
+          "x": -2,
+          "y": 2,
+          "roam": 1,
+          "lines": [
+            "Hush. Hear that? The crystals sing for anyone who stops to listen.",
+            "I came down to learn their song. Forty years on, I know the chorus.",
+            "The deeper you go, the brighter it gets. That's the Prism Drake.",
+            "Geodes float because they're full of light. Crack one and it glows."
+          ]
+        }
+      ],
+      "theme": {
+        "ground": "tile_cave_floor",
+        "path": "tile_scree",
+        "accent": "tile_cave_rock",
+        "accentPatches": 40,
+        "water": "tile_water",
+        "ponds": 3,
+        "props": [
+          {
+            "art": "crystal",
+            "count": 160,
+            "blocking": true,
+            "cluster": 4,
+            "size": [
+              0.75,
+              1.3
+            ],
+            "glow": "#9FE8FF"
+          },
+          {
+            "art": "violet_crystal",
+            "count": 90,
+            "blocking": true,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "glow": "#C9A0FF"
+          },
+          {
+            "art": "star_crystal",
+            "count": 40,
+            "blocking": true,
+            "cluster": 2,
+            "size": [
+              0.75,
+              1.2
+            ],
+            "glow": "#FFF3A0"
+          },
+          {
+            "art": "pink_shard",
+            "count": 120,
+            "blocking": false,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.2
+            ],
+            "glow": "#FF9FD8"
+          },
+          {
+            "art": "crystal_shard",
+            "count": 140,
+            "blocking": false,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "glow": "#9FE8FF"
+          },
+          {
+            "art": "stalagmite",
+            "count": 160,
+            "blocking": true,
+            "cluster": 5,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "small_stalagmite",
+            "count": 90,
+            "blocking": false,
+            "cluster": 4,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "glow_mushroom",
+            "count": 80,
+            "blocking": false,
+            "cluster": 4,
+            "glow": "#8FE8FF"
+          },
+          {
+            "art": "glow_moss_rock",
+            "count": 20,
+            "blocking": true,
+            "cluster": 2,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "glow": "#90FFB8"
+          },
+          {
+            "art": "pebbles",
+            "count": 50,
+            "blocking": false,
+            "cluster": 3,
+            "size": [
+              0.8,
+              1.2
+            ]
+          },
+          {
+            "art": "boulder",
+            "count": 30,
+            "blocking": true,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          }
+        ],
+        "palette": {
+          "recolor": [
+            {
+              "hue": [
+                180,
+                215
+              ],
+              "to": 200,
+              "saturation": 0.95
+            },
+            {
+              "hue": [
+                70,
+                160
+              ],
+              "to": 185,
+              "saturation": 0.9
+            }
+          ],
+          "saturation": 1.25,
+          "shadow": "#3020A0",
+          "highlight": "#C8E8FF",
+          "tone": 0.6,
+          "light": "#B0E0FF",
+          "lightStrength": 0.55,
+          "variation": 0.14
+        },
+        "cave": {
+          "rock": "tile_cave_rock",
+          "height": 36,
+          "width": 1.0,
+          "maze": 7,
+          "chambers": 3
+        }
+      },
+      "ambience": {
+        "particles": "motes+sparkles",
+        "clouds": false,
+        "tint": "#101838",
+        "tintAlpha": 0.2,
+        "vignette": 0.6,
+        "lightPatches": {
+          "color": "#A8ECFF",
+          "count": 60,
+          "size": [
+            60,
+            140
+          ],
+          "alpha": 0.18
+        },
+        "haze": "#182850",
+        "hazeAlpha": 0.28,
+        "darkness": {
+          "radius": 240,
+          "alpha": 0.85,
+          "light": "#B8E8FF"
+        },
+        "critters": [
+          {
+            "kind": "wisp",
+            "count": 6
+          },
+          {
+            "kind": "mouse",
+            "count": 2
+          }
+        ]
+      },
+      "danger": true,
+      "exits": [
+        {
+          "edge": "west",
+          "to": "starfall_isle"
+        }
+      ],
+      "encounters": {
+        "rate": 0.06,
+        "graceSteps": 8,
+        "levels": [
+          150,
+          162
+        ],
+        "groupSize": [
+          2,
+          6
+        ],
+        "monsters": {
+          "prism_crab": 4,
+          "floating_geode": 3,
+          "crystal_serpent": 3,
+          "crystal_quill": 2,
+          "nebula_puff": 1
+        }
+      },
+      "npcs": [
+        {
+          "id": "prism_drake_lair",
+          "name": "Prism Drake",
+          "role": "boss",
+          "art": "boss_prism_drake",
+          "x": 0,
+          "y": 14,
+          "greeting": "Light ripples across a coil of crystal scales. Something vast lifts its head, and every crystal in the cave flares at once.",
+          "monster": "prism_drake",
+          "level": 160,
+          "victory": {
+            "title": "The Glimmerdeep Shines",
+            "story": [
+              "The Prism Drake's scales soften from blinding white to a sleepy glow. It was never wicked, only hungry, and starlight is a hard habit to break.",
+              "It curls up round its shard and drifts off to sleep, and the light it drank seeps back up through the crystals. That night every lantern in Glimmerbough burns a little brighter."
             ]
           }
         }

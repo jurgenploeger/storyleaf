@@ -1548,6 +1548,84 @@
       }
     },
     {
+      "id": "glimmerdeep_crabs",
+      "title": "Into the Glimmerdeep",
+      "giver": "pip_lamplighter",
+      "minLevel": 150,
+      "requires": [
+        "the_fallen_star"
+      ],
+      "description": "Since the star went home, the crystals it left are all the light we have, and Prism Crabs keep crawling up from the caves to snip them off for their shells! The way down to the Glimmerdeep is south of the village. Beat 10 of them for me.",
+      "objective": {
+        "type": "defeat",
+        "target": "prism_crab",
+        "count": 10
+      },
+      "reward": {
+        "gold": 23000,
+        "exp": 83540,
+        "items": [
+          "hi_potion",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "glimmerstone_lanterns",
+      "title": "Lanterns That Never Go Out",
+      "giver": "mother_lumen",
+      "minLevel": 154,
+      "requires": [
+        "glimmerdeep_crabs"
+      ],
+      "description": "Floating Geodes drift through the Glimmerdeep with glimmerstone in their hearts, and a lantern could burn on one for a hundred years. Win 5 pieces of Glimmerstone from them, and Glimmerbough need never go dark again.",
+      "objective": {
+        "type": "bring",
+        "target": "glimmerstone",
+        "count": 5
+      },
+      "drops": [
+        {
+          "item": "glimmerstone",
+          "from": [
+            "floating_geode"
+          ],
+          "chance": 0.5
+        }
+      ],
+      "reward": {
+        "gold": 24000,
+        "exp": 91970,
+        "items": [
+          "hi_ether",
+          "hi_potion"
+        ]
+      }
+    },
+    {
+      "id": "the_prism_drake",
+      "title": "The Prism Drake",
+      "giver": "mother_lumen",
+      "minLevel": 158,
+      "requires": [
+        "glimmerstone_lanterns"
+      ],
+      "description": "At the bottom of the Glimmerdeep sleeps a drake with scales of living crystal, curled round the brightest shard of all. It has been drinking the light the star left behind, and the island's crystals grow dimmer each night. Wake it, calm it, and let the light go free.",
+      "objective": {
+        "type": "defeat",
+        "target": "prism_drake",
+        "count": 1
+      },
+      "reward": {
+        "gold": 30000,
+        "exp": 151390,
+        "items": [
+          "prismscale_mail",
+          "star_seal"
+        ]
+      }
+    },
+    {
       "id": "cloverdale_hamsters",
       "title": "Hamsters in the Granary",
       "giver": "miller_rosie",

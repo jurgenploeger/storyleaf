@@ -1630,6 +1630,30 @@ def draw_starfall_whip(c):
     whip_line(c, leather=MOTH, grip=NIGHT, turns=3.6, tip=STARLIGHT[1], gem=GOLD, studs=WHITE)
 
 
+GEODE = [hexc("4a3e6a"), hexc("7e6ea8"), hexc("b4a6d8")]
+GLIMMER = [hexc("1e98c0"), hexc("62dcf4"), hexc("d4fbff")]
+
+
+def draw_glimmerstone(c):
+    """A lavender geode cracked open, its hollow full of cyan crystals glowing from the inside, a
+    rose-pink glint among them."""
+    c.ellipse(16, 18, 12.5, 10.5, GEODE[1])                                  # the stone shell
+    c.shade(lambda x, y, col: col == GEODE[1] and (x - 16) + (y - 18) * 1.2 > 7, GEODE[0])
+    c.shade(lambda x, y, col: col == GEODE[1] and (x - 16) + (y - 18) * 1.2 < -9, GEODE[2])
+    c.ellipse(16, 18, 8.5, 6.8, GLIMMER[0])                                  # the hollow
+    for (tip, a, b) in (((16, 17), (9, 15), (11, 20)), ((16, 17), (13, 12), (18, 12)),
+                        ((16, 18), (21, 13), (24, 18)), ((16, 18), (22, 22), (17, 24)),
+                        ((16, 18), (10, 21), (14, 24))):                    # crystals pointing in
+        c.poly([a, tip, b], GLIMMER[1])
+    c.poly([(9, 15), (13, 12), (16, 17)], GLIMMER[2])
+    c.poly([(19, 21), (22, 22), (17, 24)], PINK[2])                          # a rose crystal
+    c.set(20, 22, PINK[1])
+    c.disc(16, 17.5, 1.6, WHITE)                                             # the glow at its heart
+    for (x, y) in ((8, 11), (23, 9), (26, 14)):
+        c.set(x, y, GLIMMER[2])
+    glint(c, 25, 7)
+
+
 def ramp(colour):
     """A #RRGGBB colour's dark, mid and light."""
     r, g, b, _ = hexc(colour)
@@ -2471,6 +2495,7 @@ PROMPTS = {  # for a later Retro Diffusion upgrade (python3 tools/rd.py generate
     "starfall_blade": "sword with a pale star blade, gold wings on the guard",
     "starfall_axe": "axe with a pale crystal crescent head and a gold star",
     "starfall_whip": "lilac whip with a glowing star at its tip",
+    "glimmerstone": "a cracked open lavender geode full of glowing cyan crystals",
     "seed_pouch": "small tied cloth pouch spilling seeds",
     "honeybee_charm": "little golden honeycomb charm with a tiny bee",
     "stray_sock": "striped woollen sock with little holes",

@@ -368,6 +368,18 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   (155), and the Fallen Star drops a level-150 weapon for each class now and then (Starfall Staff, Blade,
   Axe and Whip; the smiths' lines stop at 105). Whether FO had a village like it isn't in any source
   reachable from a cloud session; it's ours.
+- The Glimmerdeep (ours, since 0.7.26; playtesting 2026-10-17: "Add a crystal cave to the starfall isle you
+  can explore (a new map) with new boss"): a crystal cave under Starfall Isle, its road leaving Glimmerbough
+  south to a mouth in a rocky hill (world.json `roads`, the cave's own exit west, so you come in on its
+  west side). Inside, crystals in cyan, violet, gold and rose glow in the dark (props with `glow`, the
+  cave's palette colder and bluer than Gooey Grotto's), with three underground pools, side chambers off
+  its winding galleries and Crystal-Singer Opaline by the crossing. Three new monsters live there (free
+  palette swaps): Prism Crabs, Floating Geodes and Crystal Serpents, with the island's Crystal Quills and
+  Nebula Puffs (levels 150 to 162). At its bottom sleeps the Prism Drake (level 160, a palette swap of
+  the black lizard drawn 1.7 times its size), which drank the starlight the Fallen Star left behind. The
+  quests: Into the Glimmerdeep (10 Prism Crabs, Pip, 150), Lanterns That Never Go Out (5 Glimmerstone from
+  Floating Geodes, Mother Lumen, 154) and The Prism Drake (158), which gives Prismscale Mail (158), plate
+  between the Wavecrest Scale Mail (155) and the Emerald Dragon Mail (190). Ours.
 - Everyone starts in Meadowbrook, and all three guild masters are there.
 - Travel: you walk between maps; your checkpoint is the last town you entered (since 0.3.54; before, the
   last map, which could leave you fainting at the edge of a zone too hard for you, over and over). You wake

@@ -215,6 +215,7 @@
       "starfall_isle": {"at": [102, 51], "pier": "east"}
     },
     "starfall_isle": {
+      "glimmerdeep": {"at": [43, 22], "into": "east"},
       "hachoo_island": {"at": [1, 53], "pier": "west"}
     }
   },
