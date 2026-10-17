@@ -187,6 +187,8 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// The bands the land gives way to the lands beside it over (`Seam`; none for a cave, nor
     /// beside a town).
     let seams: [Seam]
+    /// All the bands round it at once, for what the cells past its border show (`Blend`). Nil for a cave.
+    let blend: Blend?
     /// The cells that show a land next door's ground, in its patches across a band: by cell, which
     /// of `seams`. Still this land's cells, to walk and to set things on.
     private(set) var foreign: [GridPoint: Int] = [:]
@@ -227,7 +229,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
         self.def = def
         region = around?.region
         neighbourhood = around
-        seams = Self.bands(of: def, in: around)
+        let blend = around.map(Blend.init)
+        self.blend = blend
+        seams = Self.bands(of: def, in: blend)
         lap("seams")
         columns = def.width
         rows = def.height
@@ -344,37 +348,37 @@ nonisolated final class WorldMap: @unchecked Sendable {
 
     /// The bands a land gives way to the lands beside it over (`Seam`): every land it shares a
     /// border with.
-    private static func bands(of def: MapDef, in around: Neighbourhood?) -> [Seam] {
-        guard let around, let here = around.lands.firstIndex(of: def.id) else { return [] }
-        var touching: Set<Int> = []
-        for row in 0..<def.height {
-            for col in 0..<def.width {
-                let cell = GridPoint(col: col, row: row)
-                guard around.owner(cell) == here else { continue }
-                for edge in [Edge.east, .west, .north, .south] {
-                    if let other = around.owner(cell.stepped(edge)), other != here { touching.insert(other) }
-                }
-            }
-        }
-        return touching.sorted().map { Seam(between: here, and: $0, in: around) }
+    private static func bands(of def: MapDef, in blend: Blend?) -> [Seam] {
+        guard let blend, let here = blend.around.lands.firstIndex(of: def.id) else { return [] }
+        return blend.neighbours(of: here).map { Seam(between: here, and: $0, in: blend) }
     }
 
-    /// Finds the cells that show a land next door's ground (`foreign`): where two bands overlap
-    /// near a corner, the land with the larger share. The land's accent (its flower patches, its
-    /// moss) keeps out of the band, so it never spills into the other land's.
+    /// Finds the cells that show a land next door's ground (`foreign`), as `Blend.shows` has it (so
+    /// as the lands next door see them too): where two bands overlap near a corner, the land with the
+    /// larger share. The land's accent (its flower patches, its moss) keeps out of the band, so it
+    /// never spills into the other land's.
     private func markForeign() {
-        guard !seams.isEmpty else { return }
-        var strongest: [GridPoint: Double] = [:]
+        guard let blend, !seams.isEmpty else { return }
+        let lands = blend.around.lands
+        var seamOf: [Int: Int] = [:]
         for (index, seam) in seams.enumerated() {
-            for row in 0..<rows {
-                for col in 0..<columns {
-                    let spot = GridPoint(col: col, row: row)
-                    guard isCountryside(spot), let share = seam.share(spot), share > 0 else { continue }
-                    if share > 0.03, ground[row][col] == .accent { ground[row][col] = .ground }
-                    guard seam.showsOther(spot), share > strongest[spot] ?? 0 else { continue }
-                    strongest[spot] = share
-                    foreign[spot] = index
-                }
+            if let land = lands.firstIndex(of: seam.neighbour) { seamOf[land] = index }
+        }
+        // A town's walled square takes none; out past it, its roads and streams take them as its grass
+        // does, as on any other land, so the land next door sees what's there (`Blend.shows`).
+        let square = def.fence == true ? townSquare : nil
+        func walledIn(_ cell: GridPoint) -> Bool {
+            guard let square else { return false }
+            return cell.col >= square.origin.col && cell.col < square.origin.col + square.width
+                && cell.row >= square.origin.row && cell.row < square.origin.row + square.height
+        }
+        for row in 0..<rows {
+            for col in 0..<columns {
+                let spot = GridPoint(col: col, row: row)
+                let kind = ground[row][col]
+                guard isCountryside(spot) || (square != nil && kind != .away && kind != .sea && !walledIn(spot)) else { continue }
+                if kind == .accent, seams.contains(where: { ($0.share(spot) ?? 0) > 0.03 }) { ground[row][col] = .ground }
+                if let land = blend.shows(spot), let seam = seamOf[land] { foreign[spot] = seam }
             }
         }
     }

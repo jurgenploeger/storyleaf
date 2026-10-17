@@ -264,6 +264,15 @@ lake_swamp     | newgame,level=20,map=frog_swamp,bridge=0,hour=10,weather=clear 
 lake_briarmere_land | newgame,level=110,map=rosen_lake,bridge=1,hour=10,weather=clear,landscape | 8
 river_forest   | newgame,level=26,map=smiling_forest,bridge=0,hour=10,weather=clear | 8
 river_border   | newgame,level=60,map=swan_lake,at=16_50,hour=10,weather=clear | 8
+# Where three lands meet (Swan Lake, Sunny Meadow, the Twilight Woods), each land's ground runs on over
+# the borders in patches without stopping dead along them (playtesting 2026-10-16); and the island in
+# Swan Lake open to walk about on, a few trees round its shore.
+seam_three     | newgame,level=60,map=swan_lake,at=-64_-32,hour=10,weather=clear | 8
+seam_three_land | newgame,level=60,map=swan_lake,at=-64_-34,hour=10,weather=clear,landscape | 8
+lake_island_open | newgame,level=60,map=swan_lake,at=-58_-12,hour=10,weather=clear | 8
+# Lotus Land's road beside the Rat Cavern's mountain, where it looked odd at night (playtesting 2026-10-16).
+gate_lotus_side | newgame,level=126,map=lotus_land,at=-4_-19,hour=0,weather=clear | 8
+gate_lotus_side_day | newgame,level=126,map=lotus_land,at=-4_-19,hour=12,weather=clear | 8
 # Where a road leads into a cave it ends inland, at a rocky hill with the cave's dark mouth in a wall
 # of rock turned toward you (playtesting 2026-10-16: the caves stood at the edge of the maps, out in
 # the sea); and at night, the butterflies and the sparkles dimmed with the rest.
