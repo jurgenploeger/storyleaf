@@ -587,6 +587,18 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   gauntlets and greaves too. Other adventurers wear gloves, boots and necklaces for their level and class, a
   third of them without each (`GameSession.trinkets(for:)`). The speed boots' sky blue is now their colour.
   `tools/gear_preview.py --trinkets` previews them on every body.
+- Armour tiers like RuneScape's metals (ours, since 0.7.29, playtesting 2026-10-17: "There should be all kinds
+  of colors for different armor levels, just like in runescape"): nine tiers, each a level and a colour of its
+  own, so the colour tells the level: Copper (10), Silver (25), Onyx (45), Sapphire (60), Jade (80), Aquamarine
+  (100), Ruby (125), Amethyst (150) and Topaz (175), under the Goldleaf gear at 200 (items.json `tier`). Each is
+  a full set: a fighter's plate (the iron plate's own sheet in the tier's colour, `tint`), a mage's robe with
+  runes, a tamer's hooded hide cloak lined with fur, and gauntlets and boots for anyone, which show on the hero
+  in the same colour. So a fighter, a mage and a tamer of the same level wear the same colour in the cut of their
+  guild. Meadowbrook sells Copper, Rainbow City Silver and Onyx, Goldburg Sapphire, Jade and Aquamarine; Ruby,
+  Amethyst and Topaz only drop from monsters, like RuneScape's rune and dragon armour. Their stats sit a little
+  under the quest treasures of the same level. Other adventurers wear them too (`GameSession.armor(for:)` picks
+  their guild's best), so the crowd shows every colour. `check_content.py` insists every tier is a full set of
+  one level and one colour, each tier's colour its own; tools/item_art.py draws the icons from `color`.
 - Armour with a walk sheet of its own (iron plate, dragon mail, the ranger and snow cloaks) keeps the hero's
   hair (since 0.7.28, playtesting 2026-10-17: "The armors and colours should be more distinct for every
   gender, race and fighter type"): it's drawn over their hairstyle from a fifth of the way down the head

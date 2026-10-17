@@ -169,6 +169,14 @@ trinkets_char  | newgame,gender=female,level=70,class=fighter,equip=dragon_mail+
 plate_her      | newgame,gender=female,level=70,class=fighter,equip=iron_plate+dragonhide_gauntlets+cloudstep_boots+amber_amulet,weather=clear,hour=12 | 8
 plate_elf      | newgame,race=elf,level=70,class=fighter,equip=dragon_mail+falcon_gloves+speed_boots+moonstone_pendant,weather=clear,hour=12 | 8
 cloak_dwarf_her | newgame,race=dwarf,gender=female,level=80,equip=snow_cloak+iron_gauntlets+speed_boots+shell_pendant,weather=clear,hour=12 | 8
+# Armour tiers like RuneScape's (0.7.29, playtesting 2026-10-17: "There should be all kinds of colors for
+# different armor levels, just like in runescape"): a set in each guild's cut, the colour telling the level.
+tiers_fighter  | newgame,level=125,class=fighter,equip=ruby_plate+ruby_gauntlets+ruby_boots,menu=character | 8
+tiers_onyx_her | newgame,gender=female,level=45,class=fighter,equip=onyx_plate+onyx_gauntlets+onyx_boots,weather=clear,hour=12 | 8
+tiers_mage     | newgame,race=elf,level=150,class=mage,equip=amethyst_robe+amethyst_gauntlets+amethyst_boots,weather=clear,hour=12 | 8
+tiers_tamer    | newgame,race=dwarf,gender=female,level=80,class=tamer,equip=jade_hide+jade_gauntlets+jade_boots,weather=clear,hour=12 | 8
+tiers_sapphire | newgame,race=elf,gender=male,level=60,class=fighter,equip=sapphire_plate+sapphire_gauntlets+sapphire_boots,weather=clear,hour=12 | 8
+tiers_shop     | newgame,level=60,npc=goldburg_shop | 8
 hair_blue    | newgame,hair=blue                                              | 8
 hair_elf_male | newgame,race=elf,gender=male,hair=black,menu=character        | 8
 hair_dwarf_female | newgame,race=dwarf,gender=female,hair=white                | 8

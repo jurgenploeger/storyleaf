@@ -2,6 +2,16 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.29",
+      "date": "2026-10-17",
+      "title": "Armour in every colour",
+      "notes": [
+        "Nine tiers of armour, each in a colour of its own so everyone can tell your level at a glance: Copper, Silver, Onyx, Sapphire, Jade, Aquamarine, Ruby, Amethyst and Topaz, from level 10 to 175.",
+        "Every tier is a full set for your guild: plate for fighters, a rune-stitched robe for mages and a hooded hide cloak for tamers, with gauntlets and boots to match.",
+        "Copper is sold in Meadowbrook, Silver and Onyx in Rainbow City, and Sapphire, Jade and Aquamarine in Goldburg. Ruby, Amethyst and Topaz you'll have to win from monsters."
+      ]
+    },
+    {
       "version": "0.7.28",
       "date": "2026-10-17",
       "title": "Gear you can see",
