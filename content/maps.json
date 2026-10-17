@@ -930,7 +930,12 @@
             "straw_sandals",
             "iron_gauntlets",
             "amber_amulet",
-            "leather_boots"
+            "leather_boots",
+            "copper_plate",
+            "copper_robe",
+            "copper_hide",
+            "copper_gauntlets",
+            "copper_boots"
           ]
         },
         {
@@ -4641,7 +4646,17 @@
             "toy_bubbles",
             "falcon_gloves",
             "moonstone_pendant",
-            "traveler_boots"
+            "traveler_boots",
+            "silver_plate",
+            "silver_robe",
+            "silver_hide",
+            "silver_gauntlets",
+            "silver_boots",
+            "onyx_plate",
+            "onyx_robe",
+            "onyx_hide",
+            "onyx_gauntlets",
+            "onyx_boots"
           ]
         },
         {
@@ -7181,7 +7196,22 @@
             "dragon_god_staff",
             "dragonhide_gauntlets",
             "phoenix_amulet",
-            "cloudstep_boots"
+            "cloudstep_boots",
+            "sapphire_plate",
+            "sapphire_robe",
+            "sapphire_hide",
+            "sapphire_gauntlets",
+            "sapphire_boots",
+            "jade_plate",
+            "jade_robe",
+            "jade_hide",
+            "jade_gauntlets",
+            "jade_boots",
+            "aquamarine_plate",
+            "aquamarine_robe",
+            "aquamarine_hide",
+            "aquamarine_gauntlets",
+            "aquamarine_boots"
           ]
         },
         {

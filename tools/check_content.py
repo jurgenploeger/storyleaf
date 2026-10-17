@@ -287,6 +287,22 @@ for cls in classes["classes"]:
               f"level {LEVEL_CAP} → no weapon for the {cls['id']} guild")
 check(all(item.get("level", 1) <= LEVEL_CAP for item in items.values()), f"items → none above level {LEVEL_CAP}")
 
+# Armour tiers (items.json `tier`, RuneScape-style): every tier a full set (a fighter's plate, a
+# mage's robe, a tamer's hide cloak, gauntlets and boots) of one level and one colour, every tier's
+# colour its own, so the colour tells the level.
+tiers = {}
+for item in items.values():
+    if "tier" in item:
+        tiers.setdefault(item["tier"], []).append(item)
+for tier, set_ in tiers.items():
+    kinds = sorted((i["type"], tuple(i.get("classes", []))) for i in set_)
+    check(kinds == sorted([("armor", ("fighter",)), ("armor", ("mage",)), ("armor", ("tamer",)), ("boots", ()), ("gloves", ())]),
+          f"armour tier {tier} → needs a fighter's, a mage's and a tamer's armour, gauntlets and boots (has {kinds})")
+    check(len({i.get("level") for i in set_}) == 1 and len({i.get("color") for i in set_}) == 1,
+          f"armour tier {tier} → every piece the same level and colour")
+colours = [set_[0].get("color") for set_ in tiers.values()]
+check(len(colours) == len(set(colours)), "armour tiers → each tier a colour of its own")
+
 # Quest treasures (Content.questGiving): gear a quest gives that no shop sells. Only that quest gives
 # it (no boss drops it, no smith forges it, no other quest), and you can wear it the moment it's yours.
 GEAR = {"weapon", "armor", "gloves", "boots", "necklace", "accessory"}

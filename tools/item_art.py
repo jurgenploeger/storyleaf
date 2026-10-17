@@ -2529,6 +2529,41 @@ for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
         globals()["draw_" + _item["id"]] = (lambda colour, trim: lambda c: cape(c, ramp(colour), hexc(trim)))(_item["color"], _item["accent"])
 
 
+def tier_piece(c, item):
+    """A piece of an armour tier (items.json `tier`, RuneScape-style: one colour for each level band),
+    in its `color` with its trim: a fighter's plate, a mage's robe with runes, a tamer's hooded hide
+    cloak lined with fur, gauntlets or boots."""
+    cloth = ramp(item["color"])
+    trim = SILVER if item.get("accent", "").upper() == "#E8F0FF" else GOLD
+    if item["type"] == "gloves":
+        glove(c, cloth, trim, studs=trim[2])
+    elif item["type"] == "boots":
+        boot(c, cloth, trim[1], cloth[0], laces=trim[1])
+    elif item.get("wear") == "plate":
+        dark, mid, light = cloth
+        c.poly([(8, 6), (24, 6), (26, 12), (23, 28), (9, 28), (6, 12)], mid)
+        c.disc(6, 9, 3.5, mid); c.disc(26, 9, 3.5, mid)
+        c.shade(lambda x, y, col: col == mid and x > 18, dark)
+        c.shade(lambda x, y, col: col == mid and x < 12 and y > 8, light)
+        c.line(16, 8, 16, 27, dark)
+        c.line(9, 17, 23, 17, dark)
+        c.ellipse(16, 6, 4, 1.8, trim[0])
+        c.rect(9, 27, 23, 28, trim[1])
+        c.disc(4.5, 8, 1.2, trim[2]); c.disc(27.5, 8, 1.2, trim[1])
+    elif item.get("wear") == "robe":
+        robe(c, cloth, trim)
+        for (x, y) in ((10, 20), (22, 24), (12, 26), (20, 14), (9, 13)):
+            c.set(x, y, trim[2])
+    else:
+        cloak(c, cloth, trim[1], fur=[hexc("c8b890"), hexc("f4ecd8")], hood=True)
+
+
+# The armour tiers, every piece in its tier's colour.
+for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
+    if _item.get("tier"):
+        globals()["draw_" + _item["id"]] = (lambda item: lambda c: tier_piece(c, item))(_item)
+
+
 DRAWINGS = {name[5:]: fn for name, fn in globals().items() if name.startswith("draw_")}
 # Not drawn here: the Potion is a Retro Diffusion sprite (rd_pro__fantasy) and the Hi-Potion,
 # Ether and Hi-Ether are palette swaps of it (`derive` in art/assets.json).

@@ -1,5 +1,5 @@
 {
-  "_about": "Items. `art` is the item's sprite (art/sprites/item_<id>.png, drawn by tools/item_art.py); `icon` is a GameIcon name (Fairyland/UI/GameIcon.swift) used when there's no art; weapons are drawn in the hero's hand from their art (or icon). Armour `sheets` (per race) swaps in a whole walk sheet while it's worn (Retro Diffusion art in art/sprites; only the skin colour applies), recoloured by `tint` for the rare colour variants bosses drop. Armour `pattern` adds finer detail to the sprite (engraved | scales | fur | runes | pockets). Armour `recolor` changes the outfit colours while worn and `wear` its cut on the hero's sprite (vest | mail | plate | robe | cloak; \"boots\" for footwear), drawn by Fairyland/Art/GearOverlay.swift. `accent` (#RRGGBB) is the trim colour on the sprite and an accessory's sparkle. `glow` (#RRGGBB) gives a magic weapon a soft light at `glowAt` ([x, y] in its 32×32 art): a halo in the icon (tools/item_art.py) and a gentle pulse while held. type: consumable | weapon | armor | gloves | necklace | boots | accessory (rings, charms and bands) | material. `classes` limits who can equip it (omit = everyone); `level` is the level needed. Materials (type material; `material` is wood | metal | gem | hide) drop from monsters of at least their `level`; a quest's pieces are `material: quest` (none for sale, never dropped but by the quests that want them, content/quests.json `drops`). `recipe` is what a blacksmith needs to forge the item; one with `make` (carve | join) is made by hand from the bag instead, for a quest that asks you to bring it. Companion toys (`toy`, Fairyland Online's Pet Toys) are consumables given to a companion from the bag: they raise its `stats` for good, up to ten toys a companion (GameSession.giveToy). Seal Stones (`capture`) are thrown in battle to befriend a monster and used up whether they hold or not: `sealPower` is how many times likelier than a plain one a stone is to hold (1 unless set), and a `sure` one (the Wishing Seal) never fails (BattleEngine.captureStatus).",
+  "_about": "Items. `art` is the item's sprite (art/sprites/item_<id>.png, drawn by tools/item_art.py); `icon` is a GameIcon name (Fairyland/UI/GameIcon.swift) used when there's no art; weapons are drawn in the hero's hand from their art (or icon). Armour `sheets` (per race) swaps in a whole walk sheet while it's worn (Retro Diffusion art in art/sprites; only the skin colour applies), recoloured by `tint` for the rare colour variants bosses drop. Armour `pattern` adds finer detail to the sprite (engraved | scales | fur | runes | pockets). Armour `recolor` changes the outfit colours while worn and `wear` its cut on the hero's sprite (vest | mail | plate | robe | cloak), drawn by Fairyland/Art/GearOverlay.swift. `accent` (#RRGGBB) is the trim colour on the sprite, or a necklace's chain. `color` (#RRGGBB) is how gloves, boots and a necklace look worn (on the hands, the feet and under the chin), or a cape's colour. `tier` puts armour in a RuneScape-style tier: one level and one colour for a whole set (a fighter's plate, a mage's robe, a tamer's hide cloak, gauntlets and boots), so the colour tells the level; tools/item_art.py draws their icons from `color`. `glow` (#RRGGBB) gives a magic weapon a soft light at `glowAt` ([x, y] in its 32×32 art): a halo in the icon (tools/item_art.py) and a gentle pulse while held. type: consumable | weapon | armor | gloves | necklace | boots | accessory (rings, charms and bands) | material. `classes` limits who can equip it (omit = everyone); `level` is the level needed. Materials (type material; `material` is wood | metal | gem | hide) drop from monsters of at least their `level`; a quest's pieces are `material: quest` (none for sale, never dropped but by the quests that want them, content/quests.json `drops`). `recipe` is what a blacksmith needs to forge the item; one with `make` (carve | join) is made by hand from the bag instead, for a quest that asks you to bring it. Companion toys (`toy`, Fairyland Online's Pet Toys) are consumables given to a companion from the bag: they raise its `stats` for good, up to ten toys a companion (GameSession.giveToy). Seal Stones (`capture`) are thrown in battle to befriend a monster and used up whether they hold or not: `sealPower` is how many times likelier than a plain one a stone is to hold (1 unless set), and a `sure` one (the Wishing Seal) never fails (BattleEngine.captureStatus).",
   "items": [
     {
       "id": "potion",
@@ -6437,6 +6437,1910 @@
       "level": 200,
       "description": "They've walked every road there is. A gold leaf at each heel, like a little wing.",
       "color": "#ECE2C8"
+    },
+    {
+      "id": "copper_plate",
+      "icon": "shield",
+      "art": "item_copper_plate",
+      "name": "Copper Plate",
+      "type": "armor",
+      "price": 150,
+      "stats": {
+        "defense": 12,
+        "hp": 8
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 10,
+      "description": "A fighter's plate armour in warm copper, from helm to greaves.",
+      "wear": "plate",
+      "sheets": {
+        "human": "armor_iron_plate_human",
+        "elf": "armor_iron_plate_elf",
+        "dwarf": "armor_iron_plate_dwarf"
+      },
+      "pattern": "engraved",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 27,
+          "saturation": 0.79,
+          "value": 0.99
+        }
+      ],
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 27,
+          "saturation": 4.14,
+          "value": 0.9,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 27,
+          "saturation": 2.82,
+          "value": 0.99,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 27,
+          "saturation": 2.56,
+          "value": 0.9,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 27,
+          "saturation": 1.75,
+          "value": 0.99,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 27,
+          "saturation": 1.43,
+          "value": 0.9
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 27,
+          "saturation": 0.98,
+          "value": 0.99
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#B8733A",
+      "tier": "copper"
+    },
+    {
+      "id": "copper_robe",
+      "icon": "shield-star",
+      "art": "item_copper_robe",
+      "name": "Copper Robe",
+      "type": "armor",
+      "price": 150,
+      "stats": {
+        "defense": 5,
+        "magic": 3,
+        "mp": 10
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 10,
+      "description": "A mage's robe in warm copper, stitched with glowing runes.",
+      "wear": "robe",
+      "pattern": "runes",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 27,
+          "saturation": 0.79,
+          "value": 0.99
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#B8733A",
+      "tier": "copper"
+    },
+    {
+      "id": "copper_hide",
+      "icon": "shield",
+      "art": "item_copper_hide",
+      "name": "Copper Hide Cloak",
+      "type": "armor",
+      "price": 150,
+      "stats": {
+        "defense": 7,
+        "speed": 2,
+        "hp": 4
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 10,
+      "description": "A tamer's hooded cloak of warm copper hide, lined with fur.",
+      "wear": "cloak",
+      "pattern": "fur",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 27,
+          "saturation": 0.79,
+          "value": 0.89
+        }
+      ],
+      "accent": "#E8D8B0",
+      "color": "#B8733A",
+      "tier": "copper"
+    },
+    {
+      "id": "copper_gauntlets",
+      "icon": "sword",
+      "art": "item_copper_gauntlets",
+      "name": "Copper Gauntlets",
+      "type": "gloves",
+      "price": 100,
+      "stats": {
+        "attack": 3,
+        "defense": 2
+      },
+      "level": 10,
+      "description": "Gauntlets in warm copper, to wear with the armour of the same name.",
+      "color": "#B8733A",
+      "tier": "copper"
+    },
+    {
+      "id": "copper_boots",
+      "icon": "wind",
+      "art": "item_copper_boots",
+      "name": "Copper Boots",
+      "type": "boots",
+      "price": 100,
+      "stats": {
+        "speed": 2,
+        "defense": 3
+      },
+      "level": 10,
+      "description": "Boots in warm copper, to wear with the armour of the same name.",
+      "color": "#B8733A",
+      "tier": "copper"
+    },
+    {
+      "id": "silver_plate",
+      "icon": "shield",
+      "art": "item_silver_plate",
+      "name": "Silver Plate",
+      "type": "armor",
+      "price": 490,
+      "stats": {
+        "defense": 16,
+        "hp": 20
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 25,
+      "description": "A fighter's plate armour in bright silver, from helm to greaves.",
+      "wear": "plate",
+      "sheets": {
+        "human": "armor_iron_plate_human",
+        "elf": "armor_iron_plate_elf",
+        "dwarf": "armor_iron_plate_dwarf"
+      },
+      "pattern": "engraved",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 216,
+          "saturation": 0.11,
+          "value": 1.09
+        }
+      ],
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 216,
+          "saturation": 0.73,
+          "value": 0.97,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 216,
+          "saturation": 0.49,
+          "value": 1.07,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 216,
+          "saturation": 0.45,
+          "value": 0.97,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 216,
+          "saturation": 0.31,
+          "value": 1.07,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 216,
+          "saturation": 0.25,
+          "value": 0.97
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 216,
+          "saturation": 0.17,
+          "value": 1.07
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#C4CCD8",
+      "tier": "silver"
+    },
+    {
+      "id": "silver_robe",
+      "icon": "shield-star",
+      "art": "item_silver_robe",
+      "name": "Silver Robe",
+      "type": "armor",
+      "price": 490,
+      "stats": {
+        "defense": 8,
+        "magic": 5,
+        "mp": 12
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 25,
+      "description": "A mage's robe in bright silver, stitched with glowing runes.",
+      "wear": "robe",
+      "pattern": "runes",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 216,
+          "saturation": 0.11,
+          "value": 1.09
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#C4CCD8",
+      "tier": "silver"
+    },
+    {
+      "id": "silver_hide",
+      "icon": "shield",
+      "art": "item_silver_hide",
+      "name": "Silver Hide Cloak",
+      "type": "armor",
+      "price": 490,
+      "stats": {
+        "defense": 10,
+        "speed": 2,
+        "hp": 9
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 25,
+      "description": "A tamer's hooded cloak of bright silver hide, lined with fur.",
+      "wear": "cloak",
+      "pattern": "fur",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 216,
+          "saturation": 0.11,
+          "value": 0.98
+        }
+      ],
+      "accent": "#E8D8B0",
+      "color": "#C4CCD8",
+      "tier": "silver"
+    },
+    {
+      "id": "silver_gauntlets",
+      "icon": "sword",
+      "art": "item_silver_gauntlets",
+      "name": "Silver Gauntlets",
+      "type": "gloves",
+      "price": 320,
+      "stats": {
+        "attack": 5,
+        "defense": 3
+      },
+      "level": 25,
+      "description": "Gauntlets in bright silver, to wear with the armour of the same name.",
+      "color": "#C4CCD8",
+      "tier": "silver"
+    },
+    {
+      "id": "silver_boots",
+      "icon": "wind",
+      "art": "item_silver_boots",
+      "name": "Silver Boots",
+      "type": "boots",
+      "price": 320,
+      "stats": {
+        "speed": 3,
+        "defense": 4
+      },
+      "level": 25,
+      "description": "Boots in bright silver, to wear with the armour of the same name.",
+      "color": "#C4CCD8",
+      "tier": "silver"
+    },
+    {
+      "id": "onyx_plate",
+      "icon": "shield",
+      "art": "item_onyx_plate",
+      "name": "Onyx Plate",
+      "type": "armor",
+      "price": 1150,
+      "stats": {
+        "defense": 20,
+        "hp": 36
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 45,
+      "description": "A fighter's plate armour in black onyx, from helm to greaves.",
+      "wear": "plate",
+      "sheets": {
+        "human": "armor_iron_plate_human",
+        "elf": "armor_iron_plate_elf",
+        "dwarf": "armor_iron_plate_dwarf"
+      },
+      "pattern": "engraved",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 249,
+          "saturation": 0.23,
+          "value": 0.66
+        }
+      ],
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 249,
+          "saturation": 1.21,
+          "value": 0.67,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 249,
+          "saturation": 0.83,
+          "value": 0.74,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 249,
+          "saturation": 0.75,
+          "value": 0.67,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 249,
+          "saturation": 0.51,
+          "value": 0.74,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 249,
+          "saturation": 0.42,
+          "value": 0.67
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 249,
+          "saturation": 0.29,
+          "value": 0.74
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#3A3846",
+      "tier": "onyx"
+    },
+    {
+      "id": "onyx_robe",
+      "icon": "shield-star",
+      "art": "item_onyx_robe",
+      "name": "Onyx Robe",
+      "type": "armor",
+      "price": 1150,
+      "stats": {
+        "defense": 13,
+        "magic": 7,
+        "mp": 15
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 45,
+      "description": "A mage's robe in black onyx, stitched with glowing runes.",
+      "wear": "robe",
+      "pattern": "runes",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 249,
+          "saturation": 0.23,
+          "value": 0.66
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#3A3846",
+      "tier": "onyx"
+    },
+    {
+      "id": "onyx_hide",
+      "icon": "shield",
+      "art": "item_onyx_hide",
+      "name": "Onyx Hide Cloak",
+      "type": "armor",
+      "price": 1150,
+      "stats": {
+        "defense": 14,
+        "speed": 3,
+        "hp": 16
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 45,
+      "description": "A tamer's hooded cloak of black onyx hide, lined with fur.",
+      "wear": "cloak",
+      "pattern": "fur",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 249,
+          "saturation": 0.23,
+          "value": 0.59
+        }
+      ],
+      "accent": "#E8D8B0",
+      "color": "#3A3846",
+      "tier": "onyx"
+    },
+    {
+      "id": "onyx_gauntlets",
+      "icon": "sword",
+      "art": "item_onyx_gauntlets",
+      "name": "Onyx Gauntlets",
+      "type": "gloves",
+      "price": 760,
+      "stats": {
+        "attack": 7,
+        "defense": 4,
+        "hp": 9
+      },
+      "level": 45,
+      "description": "Gauntlets in black onyx, to wear with the armour of the same name.",
+      "color": "#3A3846",
+      "tier": "onyx"
+    },
+    {
+      "id": "onyx_boots",
+      "icon": "wind",
+      "art": "item_onyx_boots",
+      "name": "Onyx Boots",
+      "type": "boots",
+      "price": 760,
+      "stats": {
+        "speed": 5,
+        "defense": 5,
+        "hp": 7
+      },
+      "level": 45,
+      "description": "Boots in black onyx, to wear with the armour of the same name.",
+      "color": "#3A3846",
+      "tier": "onyx"
+    },
+    {
+      "id": "sapphire_plate",
+      "icon": "shield",
+      "art": "item_sapphire_plate",
+      "name": "Sapphire Plate",
+      "type": "armor",
+      "price": 1800,
+      "stats": {
+        "defense": 24,
+        "hp": 48
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 60,
+      "description": "A fighter's plate armour in deep sapphire blue, from helm to greaves.",
+      "wear": "plate",
+      "sheets": {
+        "human": "armor_iron_plate_human",
+        "elf": "armor_iron_plate_elf",
+        "dwarf": "armor_iron_plate_dwarf"
+      },
+      "pattern": "engraved",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 227,
+          "saturation": 0.85,
+          "value": 1.04
+        }
+      ],
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 227,
+          "saturation": 4.45,
+          "value": 0.93,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 227,
+          "saturation": 3.03,
+          "value": 1.03,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 227,
+          "saturation": 2.75,
+          "value": 0.93,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 227,
+          "saturation": 1.87,
+          "value": 1.03,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 227,
+          "saturation": 1.54,
+          "value": 0.93
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 227,
+          "saturation": 1.05,
+          "value": 1.03
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#3555C8",
+      "tier": "sapphire"
+    },
+    {
+      "id": "sapphire_robe",
+      "icon": "shield-star",
+      "art": "item_sapphire_robe",
+      "name": "Sapphire Robe",
+      "type": "armor",
+      "price": 1800,
+      "stats": {
+        "defense": 16,
+        "magic": 9,
+        "mp": 18
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 60,
+      "description": "A mage's robe in deep sapphire blue, stitched with glowing runes.",
+      "wear": "robe",
+      "pattern": "runes",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 227,
+          "saturation": 0.85,
+          "value": 1.04
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#3555C8",
+      "tier": "sapphire"
+    },
+    {
+      "id": "sapphire_hide",
+      "icon": "shield",
+      "art": "item_sapphire_hide",
+      "name": "Sapphire Hide Cloak",
+      "type": "armor",
+      "price": 1800,
+      "stats": {
+        "defense": 18,
+        "speed": 4,
+        "hp": 21
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 60,
+      "description": "A tamer's hooded cloak of deep sapphire blue hide, lined with fur.",
+      "wear": "cloak",
+      "pattern": "fur",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 227,
+          "saturation": 0.85,
+          "value": 0.93
+        }
+      ],
+      "accent": "#E8D8B0",
+      "color": "#3555C8",
+      "tier": "sapphire"
+    },
+    {
+      "id": "sapphire_gauntlets",
+      "icon": "sword",
+      "art": "item_sapphire_gauntlets",
+      "name": "Sapphire Gauntlets",
+      "type": "gloves",
+      "price": 1200,
+      "stats": {
+        "attack": 9,
+        "defense": 6,
+        "hp": 12
+      },
+      "level": 60,
+      "description": "Gauntlets in deep sapphire blue, to wear with the armour of the same name.",
+      "color": "#3555C8",
+      "tier": "sapphire"
+    },
+    {
+      "id": "sapphire_boots",
+      "icon": "wind",
+      "art": "item_sapphire_boots",
+      "name": "Sapphire Boots",
+      "type": "boots",
+      "price": 1200,
+      "stats": {
+        "speed": 7,
+        "defense": 6,
+        "hp": 9
+      },
+      "level": 60,
+      "description": "Boots in deep sapphire blue, to wear with the armour of the same name.",
+      "color": "#3555C8",
+      "tier": "sapphire"
+    },
+    {
+      "id": "jade_plate",
+      "icon": "shield",
+      "art": "item_jade_plate",
+      "name": "Jade Plate",
+      "type": "armor",
+      "price": 2880,
+      "stats": {
+        "defense": 28,
+        "hp": 64
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 80,
+      "description": "A fighter's plate armour in jade green, from helm to greaves.",
+      "wear": "plate",
+      "sheets": {
+        "human": "armor_iron_plate_human",
+        "elf": "armor_iron_plate_elf",
+        "dwarf": "armor_iron_plate_dwarf"
+      },
+      "pattern": "engraved",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 143,
+          "saturation": 0.81,
+          "value": 0.9
+        }
+      ],
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 143,
+          "saturation": 4.24,
+          "value": 0.84,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 143,
+          "saturation": 2.89,
+          "value": 0.93,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 143,
+          "saturation": 2.62,
+          "value": 0.84,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 143,
+          "saturation": 1.79,
+          "value": 0.93,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 143,
+          "saturation": 1.47,
+          "value": 0.84
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 143,
+          "saturation": 1.0,
+          "value": 0.93
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#2E9A58",
+      "tier": "jade"
+    },
+    {
+      "id": "jade_robe",
+      "icon": "shield-star",
+      "art": "item_jade_robe",
+      "name": "Jade Robe",
+      "type": "armor",
+      "price": 2880,
+      "stats": {
+        "defense": 21,
+        "magic": 11,
+        "mp": 21
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 80,
+      "description": "A mage's robe in jade green, stitched with glowing runes.",
+      "wear": "robe",
+      "pattern": "runes",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 143,
+          "saturation": 0.81,
+          "value": 0.9
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#2E9A58",
+      "tier": "jade"
+    },
+    {
+      "id": "jade_hide",
+      "icon": "shield",
+      "art": "item_jade_hide",
+      "name": "Jade Hide Cloak",
+      "type": "armor",
+      "price": 2880,
+      "stats": {
+        "defense": 22,
+        "speed": 5,
+        "hp": 28
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 80,
+      "description": "A tamer's hooded cloak of jade green hide, lined with fur.",
+      "wear": "cloak",
+      "pattern": "fur",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 143,
+          "saturation": 0.81,
+          "value": 0.81
+        }
+      ],
+      "accent": "#E8D8B0",
+      "color": "#2E9A58",
+      "tier": "jade"
+    },
+    {
+      "id": "jade_gauntlets",
+      "icon": "sword",
+      "art": "item_jade_gauntlets",
+      "name": "Jade Gauntlets",
+      "type": "gloves",
+      "price": 1920,
+      "stats": {
+        "attack": 12,
+        "defense": 7,
+        "hp": 16
+      },
+      "level": 80,
+      "description": "Gauntlets in jade green, to wear with the armour of the same name.",
+      "color": "#2E9A58",
+      "tier": "jade"
+    },
+    {
+      "id": "jade_boots",
+      "icon": "wind",
+      "art": "item_jade_boots",
+      "name": "Jade Boots",
+      "type": "boots",
+      "price": 1920,
+      "stats": {
+        "speed": 9,
+        "defense": 7,
+        "hp": 12
+      },
+      "level": 80,
+      "description": "Boots in jade green, to wear with the armour of the same name.",
+      "color": "#2E9A58",
+      "tier": "jade"
+    },
+    {
+      "id": "aquamarine_plate",
+      "icon": "shield",
+      "art": "item_aquamarine_plate",
+      "name": "Aquamarine Plate",
+      "type": "armor",
+      "price": 4200,
+      "stats": {
+        "defense": 33,
+        "hp": 80
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 100,
+      "description": "A fighter's plate armour in sea-blue aquamarine, from helm to greaves.",
+      "wear": "plate",
+      "sheets": {
+        "human": "armor_iron_plate_human",
+        "elf": "armor_iron_plate_elf",
+        "dwarf": "armor_iron_plate_dwarf"
+      },
+      "pattern": "engraved",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 190,
+          "saturation": 0.83,
+          "value": 1.06
+        }
+      ],
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 190,
+          "saturation": 4.36,
+          "value": 0.95,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 190,
+          "saturation": 2.97,
+          "value": 1.05,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 190,
+          "saturation": 2.7,
+          "value": 0.95,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 190,
+          "saturation": 1.84,
+          "value": 1.05,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 190,
+          "saturation": 1.51,
+          "value": 0.95
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 190,
+          "saturation": 1.03,
+          "value": 1.05
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#3AB8D0",
+      "tier": "aquamarine"
+    },
+    {
+      "id": "aquamarine_robe",
+      "icon": "shield-star",
+      "art": "item_aquamarine_robe",
+      "name": "Aquamarine Robe",
+      "type": "armor",
+      "price": 4200,
+      "stats": {
+        "defense": 25,
+        "magic": 13,
+        "mp": 24
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 100,
+      "description": "A mage's robe in sea-blue aquamarine, stitched with glowing runes.",
+      "wear": "robe",
+      "pattern": "runes",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 190,
+          "saturation": 0.83,
+          "value": 1.06
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#3AB8D0",
+      "tier": "aquamarine"
+    },
+    {
+      "id": "aquamarine_hide",
+      "icon": "shield",
+      "art": "item_aquamarine_hide",
+      "name": "Aquamarine Hide Cloak",
+      "type": "armor",
+      "price": 4200,
+      "stats": {
+        "defense": 26,
+        "speed": 6,
+        "hp": 35
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 100,
+      "description": "A tamer's hooded cloak of sea-blue aquamarine hide, lined with fur.",
+      "wear": "cloak",
+      "pattern": "fur",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 190,
+          "saturation": 0.83,
+          "value": 0.96
+        }
+      ],
+      "accent": "#E8D8B0",
+      "color": "#3AB8D0",
+      "tier": "aquamarine"
+    },
+    {
+      "id": "aquamarine_gauntlets",
+      "icon": "sword",
+      "art": "item_aquamarine_gauntlets",
+      "name": "Aquamarine Gauntlets",
+      "type": "gloves",
+      "price": 2800,
+      "stats": {
+        "attack": 14,
+        "defense": 8,
+        "hp": 20
+      },
+      "level": 100,
+      "description": "Gauntlets in sea-blue aquamarine, to wear with the armour of the same name.",
+      "color": "#3AB8D0",
+      "tier": "aquamarine"
+    },
+    {
+      "id": "aquamarine_boots",
+      "icon": "wind",
+      "art": "item_aquamarine_boots",
+      "name": "Aquamarine Boots",
+      "type": "boots",
+      "price": 2800,
+      "stats": {
+        "speed": 10,
+        "defense": 8,
+        "hp": 15
+      },
+      "level": 100,
+      "description": "Boots in sea-blue aquamarine, to wear with the armour of the same name.",
+      "color": "#3AB8D0",
+      "tier": "aquamarine"
+    },
+    {
+      "id": "ruby_plate",
+      "icon": "shield",
+      "art": "item_ruby_plate",
+      "name": "Ruby Plate",
+      "type": "armor",
+      "price": 6190,
+      "stats": {
+        "defense": 39,
+        "hp": 100
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 125,
+      "description": "A fighter's plate armour in ruby red, from helm to greaves.",
+      "wear": "plate",
+      "sheets": {
+        "human": "armor_iron_plate_human",
+        "elf": "armor_iron_plate_elf",
+        "dwarf": "armor_iron_plate_dwarf"
+      },
+      "pattern": "engraved",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 354,
+          "saturation": 0.91,
+          "value": 1.01
+        }
+      ],
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 354,
+          "saturation": 4.79,
+          "value": 0.92,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 354,
+          "saturation": 3.27,
+          "value": 1.01,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 354,
+          "saturation": 2.96,
+          "value": 0.92,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 354,
+          "saturation": 2.02,
+          "value": 1.01,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 354,
+          "saturation": 1.65,
+          "value": 0.92
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 354,
+          "saturation": 1.13,
+          "value": 1.01
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#C02838",
+      "tier": "ruby"
+    },
+    {
+      "id": "ruby_robe",
+      "icon": "shield-star",
+      "art": "item_ruby_robe",
+      "name": "Ruby Robe",
+      "type": "armor",
+      "price": 6190,
+      "stats": {
+        "defense": 30,
+        "magic": 16,
+        "mp": 28
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 125,
+      "description": "A mage's robe in ruby red, stitched with glowing runes.",
+      "wear": "robe",
+      "pattern": "runes",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 354,
+          "saturation": 0.91,
+          "value": 1.01
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#C02838",
+      "tier": "ruby"
+    },
+    {
+      "id": "ruby_hide",
+      "icon": "shield",
+      "art": "item_ruby_hide",
+      "name": "Ruby Hide Cloak",
+      "type": "armor",
+      "price": 6190,
+      "stats": {
+        "defense": 31,
+        "speed": 7,
+        "hp": 44
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 125,
+      "description": "A tamer's hooded cloak of ruby red hide, lined with fur.",
+      "wear": "cloak",
+      "pattern": "fur",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 354,
+          "saturation": 0.91,
+          "value": 0.91
+        }
+      ],
+      "accent": "#E8D8B0",
+      "color": "#C02838",
+      "tier": "ruby"
+    },
+    {
+      "id": "ruby_gauntlets",
+      "icon": "sword",
+      "art": "item_ruby_gauntlets",
+      "name": "Ruby Gauntlets",
+      "type": "gloves",
+      "price": 4120,
+      "stats": {
+        "attack": 17,
+        "defense": 10,
+        "hp": 25
+      },
+      "level": 125,
+      "description": "Gauntlets in ruby red, to wear with the armour of the same name.",
+      "color": "#C02838",
+      "tier": "ruby"
+    },
+    {
+      "id": "ruby_boots",
+      "icon": "wind",
+      "art": "item_ruby_boots",
+      "name": "Ruby Boots",
+      "type": "boots",
+      "price": 4120,
+      "stats": {
+        "speed": 13,
+        "defense": 10,
+        "hp": 19
+      },
+      "level": 125,
+      "description": "Boots in ruby red, to wear with the armour of the same name.",
+      "color": "#C02838",
+      "tier": "ruby"
+    },
+    {
+      "id": "amethyst_plate",
+      "icon": "shield",
+      "art": "item_amethyst_plate",
+      "name": "Amethyst Plate",
+      "type": "armor",
+      "price": 8550,
+      "stats": {
+        "defense": 44,
+        "hp": 120
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 150,
+      "description": "A fighter's plate armour in amethyst violet, from helm to greaves.",
+      "wear": "plate",
+      "sheets": {
+        "human": "armor_iron_plate_human",
+        "elf": "armor_iron_plate_elf",
+        "dwarf": "armor_iron_plate_dwarf"
+      },
+      "pattern": "engraved",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 271,
+          "saturation": 0.74,
+          "value": 1.04
+        }
+      ],
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 271,
+          "saturation": 3.87,
+          "value": 0.93,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 271,
+          "saturation": 2.64,
+          "value": 1.03,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 271,
+          "saturation": 2.39,
+          "value": 0.93,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 271,
+          "saturation": 1.63,
+          "value": 1.03,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 271,
+          "saturation": 1.34,
+          "value": 0.93
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 271,
+          "saturation": 0.91,
+          "value": 1.03
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#8A48C8",
+      "tier": "amethyst"
+    },
+    {
+      "id": "amethyst_robe",
+      "icon": "shield-star",
+      "art": "item_amethyst_robe",
+      "name": "Amethyst Robe",
+      "type": "armor",
+      "price": 8550,
+      "stats": {
+        "defense": 36,
+        "magic": 18,
+        "mp": 32
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 150,
+      "description": "A mage's robe in amethyst violet, stitched with glowing runes.",
+      "wear": "robe",
+      "pattern": "runes",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 271,
+          "saturation": 0.74,
+          "value": 1.04
+        }
+      ],
+      "accent": "#F2C230",
+      "color": "#8A48C8",
+      "tier": "amethyst"
+    },
+    {
+      "id": "amethyst_hide",
+      "icon": "shield",
+      "art": "item_amethyst_hide",
+      "name": "Amethyst Hide Cloak",
+      "type": "armor",
+      "price": 8550,
+      "stats": {
+        "defense": 36,
+        "speed": 8,
+        "hp": 52
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 150,
+      "description": "A tamer's hooded cloak of amethyst violet hide, lined with fur.",
+      "wear": "cloak",
+      "pattern": "fur",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 271,
+          "saturation": 0.74,
+          "value": 0.93
+        }
+      ],
+      "accent": "#E8D8B0",
+      "color": "#8A48C8",
+      "tier": "amethyst"
+    },
+    {
+      "id": "amethyst_gauntlets",
+      "icon": "sword",
+      "art": "item_amethyst_gauntlets",
+      "name": "Amethyst Gauntlets",
+      "type": "gloves",
+      "price": 5700,
+      "stats": {
+        "attack": 20,
+        "defense": 12,
+        "hp": 30
+      },
+      "level": 150,
+      "description": "Gauntlets in amethyst violet, to wear with the armour of the same name.",
+      "color": "#8A48C8",
+      "tier": "amethyst"
+    },
+    {
+      "id": "amethyst_boots",
+      "icon": "wind",
+      "art": "item_amethyst_boots",
+      "name": "Amethyst Boots",
+      "type": "boots",
+      "price": 5700,
+      "stats": {
+        "speed": 15,
+        "defense": 12,
+        "hp": 22
+      },
+      "level": 150,
+      "description": "Boots in amethyst violet, to wear with the armour of the same name.",
+      "color": "#8A48C8",
+      "tier": "amethyst"
+    },
+    {
+      "id": "topaz_plate",
+      "icon": "shield",
+      "art": "item_topaz_plate",
+      "name": "Topaz Plate",
+      "type": "armor",
+      "price": 11290,
+      "stats": {
+        "defense": 50,
+        "hp": 140
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 175,
+      "description": "A fighter's plate armour in golden topaz, from helm to greaves.",
+      "wear": "plate",
+      "sheets": {
+        "human": "armor_iron_plate_human",
+        "elf": "armor_iron_plate_elf",
+        "dwarf": "armor_iron_plate_dwarf"
+      },
+      "pattern": "engraved",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 41,
+          "saturation": 0.9,
+          "value": 1.11
+        }
+      ],
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 41,
+          "saturation": 4.75,
+          "value": 0.98,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 41,
+          "saturation": 3.24,
+          "value": 1.08,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 41,
+          "saturation": 2.94,
+          "value": 0.98,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 41,
+          "saturation": 2.0,
+          "value": 1.08,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 41,
+          "saturation": 1.64,
+          "value": 0.98
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 41,
+          "saturation": 1.12,
+          "value": 1.08
+        }
+      ],
+      "accent": "#E8F0FF",
+      "color": "#E0A830",
+      "tier": "topaz"
+    },
+    {
+      "id": "topaz_robe",
+      "icon": "shield-star",
+      "art": "item_topaz_robe",
+      "name": "Topaz Robe",
+      "type": "armor",
+      "price": 11290,
+      "stats": {
+        "defense": 42,
+        "magic": 21,
+        "mp": 36
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 175,
+      "description": "A mage's robe in golden topaz, stitched with glowing runes.",
+      "wear": "robe",
+      "pattern": "runes",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 41,
+          "saturation": 0.9,
+          "value": 1.11
+        }
+      ],
+      "accent": "#E8F0FF",
+      "color": "#E0A830",
+      "tier": "topaz"
+    },
+    {
+      "id": "topaz_hide",
+      "icon": "shield",
+      "art": "item_topaz_hide",
+      "name": "Topaz Hide Cloak",
+      "type": "armor",
+      "price": 11290,
+      "stats": {
+        "defense": 42,
+        "speed": 10,
+        "hp": 61
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 175,
+      "description": "A tamer's hooded cloak of golden topaz hide, lined with fur.",
+      "wear": "cloak",
+      "pattern": "fur",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 41,
+          "saturation": 0.9,
+          "value": 1.0
+        }
+      ],
+      "accent": "#E8D8B0",
+      "color": "#E0A830",
+      "tier": "topaz"
+    },
+    {
+      "id": "topaz_gauntlets",
+      "icon": "sword",
+      "art": "item_topaz_gauntlets",
+      "name": "Topaz Gauntlets",
+      "type": "gloves",
+      "price": 7520,
+      "stats": {
+        "attack": 23,
+        "defense": 14,
+        "hp": 35
+      },
+      "level": 175,
+      "description": "Gauntlets in golden topaz, to wear with the armour of the same name.",
+      "color": "#E0A830",
+      "tier": "topaz"
+    },
+    {
+      "id": "topaz_boots",
+      "icon": "wind",
+      "art": "item_topaz_boots",
+      "name": "Topaz Boots",
+      "type": "boots",
+      "price": 7520,
+      "stats": {
+        "speed": 18,
+        "defense": 13,
+        "hp": 26
+      },
+      "level": 175,
+      "description": "Boots in golden topaz, to wear with the armour of the same name.",
+      "color": "#E0A830",
+      "tier": "topaz"
     },
     {
       "id": "goldleaf_pendant",

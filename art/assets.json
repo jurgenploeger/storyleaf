@@ -16352,6 +16352,501 @@
         "height": 32,
         "remove_bg": true
       }
+    },
+    {
+      "id": "item_copper_plate",
+      "kind": "item",
+      "request": {
+        "prompt": "warm copper plate armour, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_copper_robe",
+      "kind": "item",
+      "request": {
+        "prompt": "warm copper mage robe with glowing runes, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_copper_hide",
+      "kind": "item",
+      "request": {
+        "prompt": "warm copper hooded hide cloak lined with fur, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_copper_gauntlets",
+      "kind": "item",
+      "request": {
+        "prompt": "warm copper gauntlets, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_copper_boots",
+      "kind": "item",
+      "request": {
+        "prompt": "warm copper boots, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_silver_plate",
+      "kind": "item",
+      "request": {
+        "prompt": "bright silver plate armour, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_silver_robe",
+      "kind": "item",
+      "request": {
+        "prompt": "bright silver mage robe with glowing runes, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_silver_hide",
+      "kind": "item",
+      "request": {
+        "prompt": "bright silver hooded hide cloak lined with fur, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_silver_gauntlets",
+      "kind": "item",
+      "request": {
+        "prompt": "bright silver gauntlets, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_silver_boots",
+      "kind": "item",
+      "request": {
+        "prompt": "bright silver boots, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_onyx_plate",
+      "kind": "item",
+      "request": {
+        "prompt": "black onyx plate armour, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_onyx_robe",
+      "kind": "item",
+      "request": {
+        "prompt": "black onyx mage robe with glowing runes, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_onyx_hide",
+      "kind": "item",
+      "request": {
+        "prompt": "black onyx hooded hide cloak lined with fur, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_onyx_gauntlets",
+      "kind": "item",
+      "request": {
+        "prompt": "black onyx gauntlets, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_onyx_boots",
+      "kind": "item",
+      "request": {
+        "prompt": "black onyx boots, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_sapphire_plate",
+      "kind": "item",
+      "request": {
+        "prompt": "deep sapphire blue plate armour, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_sapphire_robe",
+      "kind": "item",
+      "request": {
+        "prompt": "deep sapphire blue mage robe with glowing runes, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_sapphire_hide",
+      "kind": "item",
+      "request": {
+        "prompt": "deep sapphire blue hooded hide cloak lined with fur, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_sapphire_gauntlets",
+      "kind": "item",
+      "request": {
+        "prompt": "deep sapphire blue gauntlets, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_sapphire_boots",
+      "kind": "item",
+      "request": {
+        "prompt": "deep sapphire blue boots, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_jade_plate",
+      "kind": "item",
+      "request": {
+        "prompt": "jade green plate armour, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_jade_robe",
+      "kind": "item",
+      "request": {
+        "prompt": "jade green mage robe with glowing runes, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_jade_hide",
+      "kind": "item",
+      "request": {
+        "prompt": "jade green hooded hide cloak lined with fur, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_jade_gauntlets",
+      "kind": "item",
+      "request": {
+        "prompt": "jade green gauntlets, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_jade_boots",
+      "kind": "item",
+      "request": {
+        "prompt": "jade green boots, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_aquamarine_plate",
+      "kind": "item",
+      "request": {
+        "prompt": "sea-blue aquamarine plate armour, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_aquamarine_robe",
+      "kind": "item",
+      "request": {
+        "prompt": "sea-blue aquamarine mage robe with glowing runes, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_aquamarine_hide",
+      "kind": "item",
+      "request": {
+        "prompt": "sea-blue aquamarine hooded hide cloak lined with fur, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_aquamarine_gauntlets",
+      "kind": "item",
+      "request": {
+        "prompt": "sea-blue aquamarine gauntlets, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_aquamarine_boots",
+      "kind": "item",
+      "request": {
+        "prompt": "sea-blue aquamarine boots, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_ruby_plate",
+      "kind": "item",
+      "request": {
+        "prompt": "ruby red plate armour, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_ruby_robe",
+      "kind": "item",
+      "request": {
+        "prompt": "ruby red mage robe with glowing runes, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_ruby_hide",
+      "kind": "item",
+      "request": {
+        "prompt": "ruby red hooded hide cloak lined with fur, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_ruby_gauntlets",
+      "kind": "item",
+      "request": {
+        "prompt": "ruby red gauntlets, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_ruby_boots",
+      "kind": "item",
+      "request": {
+        "prompt": "ruby red boots, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_amethyst_plate",
+      "kind": "item",
+      "request": {
+        "prompt": "amethyst violet plate armour, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_amethyst_robe",
+      "kind": "item",
+      "request": {
+        "prompt": "amethyst violet mage robe with glowing runes, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_amethyst_hide",
+      "kind": "item",
+      "request": {
+        "prompt": "amethyst violet hooded hide cloak lined with fur, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_amethyst_gauntlets",
+      "kind": "item",
+      "request": {
+        "prompt": "amethyst violet gauntlets, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_amethyst_boots",
+      "kind": "item",
+      "request": {
+        "prompt": "amethyst violet boots, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_topaz_plate",
+      "kind": "item",
+      "request": {
+        "prompt": "golden topaz plate armour, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_topaz_robe",
+      "kind": "item",
+      "request": {
+        "prompt": "golden topaz mage robe with glowing runes, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_topaz_hide",
+      "kind": "item",
+      "request": {
+        "prompt": "golden topaz hooded hide cloak lined with fur, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_topaz_gauntlets",
+      "kind": "item",
+      "request": {
+        "prompt": "golden topaz gauntlets, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_topaz_boots",
+      "kind": "item",
+      "request": {
+        "prompt": "golden topaz boots, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
     }
   ]
 }
