@@ -444,7 +444,7 @@ for map_def in maps.values():
         check(art_id in art, f"map {map_def['id']} → unknown art {art_id}")
     for npc in map_def.get("npcs", []):
         check(npc["art"] in art, f"npc {npc['id']} → unknown art {npc['art']}")
-        check(npc["role"] in ("healer", "shop", "quests", "guild", "chest", "boss", "smith"), f"npc {npc['id']} → unknown role {npc['role']}")
+        check(npc["role"] in ("healer", "shop", "quests", "guild", "chest", "boss", "smith", "weaver"), f"npc {npc['id']} → unknown role {npc['role']}")
         for item in npc.get("stock", []):
             check(item in items, f"shop {npc['id']} → unknown item {item}")
         if npc["role"] == "chest":
@@ -561,7 +561,7 @@ for item in items.values():
         check((ROOT / "art" / "sprites" / f"{item['art']}.png").exists() or "derive" in art.get(item["art"], {}),
               f"item {item['id']} → art/sprites/{item['art']}.png is missing (python3 tools/item_art.py)")
 
-ITEM_TYPES = {"consumable", "weapon", "armor", "gloves", "necklace", "boots", "accessory", "material"}
+ITEM_TYPES = {"consumable", "weapon", "armor", "gloves", "necklace", "boots", "accessory", "material", "cape"}
 for item in items.values():
     check(item["type"] in ITEM_TYPES, f"item {item['id']} → unknown type {item['type']!r} ({sorted(ITEM_TYPES)})")
 
@@ -887,6 +887,37 @@ check(all(0 < count <= len(monsters) for count in counts), f"rewards bookMilesto
 for milestone in milestones:
     check(milestone.get("gold", -1) >= 0, f"rewards bookMilestone {milestone.get('count', 'all')} → gold at least 0")
     check_items(milestone.get("items"), f"rewards bookMilestone {milestone.get('count', 'all')}")
+
+# Status capes (rewards.json `prizes`, GameSession+Rewards.swift): each a cape the weaver alone gives
+# (price 0, no shop, quest, chest, smith or monster has one), with a colour and a trim, for a milestone
+# that can be met: a land's own monsters, or the whole world's. One weaver weaves them.
+prizes = rewards.get("prizes", [])
+PRIZE_KINDS = {"land", "book", "cards", "quests", "bosses", "lands", "capes"}
+capes = {item_id for item_id, item in items.items() if item["type"] == "cape"}
+prized = [prize.get("item") for prize in prizes]
+check(len(prized) == len(set(prized)), "rewards prizes → a cape is the prize for one milestone only")
+check(set(prized) == capes, f"rewards prizes → every cape is a prize and every prize a cape (capes not prizes: {sorted(capes - set(prized))}, "
+                            f"prizes not capes: {sorted(set(prized) - capes)})")
+for prize in prizes:
+    where = f"rewards prize {prize.get('item')}"
+    check(prize.get("kind") in PRIZE_KINDS, f"{where} → kind must be one of {sorted(PRIZE_KINDS)}")
+    if prize.get("kind") == "land":
+        land = maps.get(prize.get("land"), {})
+        homes = set((land.get("encounters") or {}).get("monsters", {})) | {n["monster"] for n in land.get("npcs", []) if n["role"] == "boss" and n.get("monster")}
+        check(bool(homes), f"{where} → land {prize.get('land')} has no monsters to beat")
+    else:
+        check("land" not in prize, f"{where} → only a land prize names a land")
+lands_prized = [prize.get("land") for prize in prizes if prize.get("kind") == "land"]
+check(len(lands_prized) == len(set(lands_prized)), "rewards prizes → one cape a land")
+elsewhere = stocked | quest_rewards | boss_drops | {npc.get("gives") for npc in npcs.values()}
+for cape in capes:
+    item = items[cape]
+    check(item.get("price") == 0, f"cape {cape} → price 0 (the weaver gives it; no one buys or sells one)")
+    check(cape not in elsewhere and "recipe" not in item, f"cape {cape} → only the weaver gives it (no shop, quest, chest, smith or drop)")
+    for key in ("color", "accent"):
+        check(isinstance(item.get(key), str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", item[key]) is not None, f"cape {cape} → {key} must be #RRGGBB")
+weavers = [npc for npc in npcs.values() if npc["role"] == "weaver"]
+check(len(weavers) == (1 if prizes else 0), f"rewards prizes → one weaver to weave them (found {len(weavers)})")
 
 # Monster cards (rewards.json `cards`): chances in (0, 1], a gain for every element a monster can
 # have (so every card is worth something), each a stat the hero has.

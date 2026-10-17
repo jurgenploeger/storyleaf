@@ -211,6 +211,7 @@ final class LandStage {
             case .healer: kind = .healer
             case .shop: kind = .shop
             case .smith: kind = .smith
+            case .weaver: kind = session.notice(for: npc.def.id) == nil ? .weaver : .questNew
             case .guild: kind = .guild
             case .boss: kind = .boss
             case .chest:

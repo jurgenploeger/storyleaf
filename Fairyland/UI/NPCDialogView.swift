@@ -73,6 +73,7 @@ struct NPCDialogView: View {
                         case .chest: EmptyView()   // opened straight from the map (GameCoordinator.open)
                         case .boss: BossPanel(session: session, boss: npc, onFight: onFight)
                         case .smith: SmithPanel(session: session, reply: $reply, info: $info)
+                        case .weaver: CapePanel(session: session, reply: $reply, info: $info)
                         }
                         if npc.rebirth == true {
                             RebirthPanel(session: session, reply: $reply)
@@ -202,6 +203,53 @@ private struct RebirthPanel: View {
                     Label(L("Be reborn ({gold}g)", ["gold": session.rebirthCost]), icon: .sparkles)
                 }
                 .buttonStyle(PixelButtonStyle(tint: session.canRebirth ? HUDStyle.gold : HUDStyle.dim, compact: true))
+            }
+        }
+    }
+}
+
+/// The weaver's capes (rewards.json `prizes`), like RuneScape's capes for a skill at 99: each with
+/// what it takes and how far along you are, those she can weave you now first. Tap one to see it.
+private struct CapePanel: View {
+    let session: GameSession
+    @Binding var reply: String?
+    @Binding var info: ItemDef?
+
+    var body: some View {
+        let waiting = session.capesWaiting
+        let rest = session.prizes.filter { prize in !waiting.contains { $0.item == prize.item } }
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(waiting + rest) { prize in
+                if let item = session.content.item(prize.item) { row(prize, item) }
+            }
+        }
+    }
+
+    private func row(_ prize: RewardsDef.Prize, _ item: ItemDef) -> some View {
+        let progress = session.prizeProgress(prize)
+        let earned = session.hasEarned(prize)
+        return HStack(spacing: 8) {
+            Button { info = item } label: {
+                ItemIcon(item: item, size: 32).opacity(earned ? 1 : 0.55)
+            }
+            .buttonStyle(.plain)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.name).font(HUDStyle.font(12)).foregroundStyle(earned ? HUDStyle.gold : HUDStyle.cream)
+                Text(session.prizeRequirement(prize)).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 4)
+            if session.hasCape(prize) {
+                IconImage(.checkCircle, size: 16).foregroundStyle(HUDStyle.gold)
+            } else if earned {
+                Button(L("Weave it")) {
+                    if session.takeCape(prize) {
+                        reply = L("There: the {cape}. Wear it with pride.", ["cape": item.name])
+                    }
+                }
+                .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
+            } else {
+                Text(verbatim: "\(progress.have)/\(progress.need)").font(HUDStyle.mono(10)).foregroundStyle(HUDStyle.dim)
             }
         }
     }

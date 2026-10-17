@@ -1517,6 +1517,40 @@ def draw_star_chart(c):
     c.set(24, 13, GOLD[2])
 
 
+def ramp(colour):
+    """A #RRGGBB colour's dark, mid and light."""
+    r, g, b, _ = hexc(colour)
+    return [(int(r * 0.6), int(g * 0.6), int(b * 0.6), 255), (r, g, b, 255),
+            tuple(int(v + (255 - v) * 0.38) for v in (r, g, b)) + (255,)]
+
+
+def cape(c, cloth, trim):
+    """A status cape from behind (items.json type cape, a prize for a milestone): round shoulders and a
+    collar in its trim, falling wider to a trimmed hem, its emblem on the back."""
+    dark, mid, light = cloth
+    # Narrow at the neck, falling wide and long, its hem dipping in the middle.
+    c.poly([(12, 4), (20, 4), (23, 8), (27, 27), (21, 29), (16, 30), (11, 29), (5, 27), (9, 8)], mid)
+    c.shade(lambda x, y, col: col == mid and x >= 20 + (y - 4) // 4, dark)
+    c.shade(lambda x, y, col: col == mid and x <= 11 - (y - 4) // 4 and y > 6, light)
+    c.line(13, 10, 10, 27, dark)                     # folds
+    c.line(19, 10, 22, 27, dark)
+    c.shade(lambda x, y, col: y >= 27 - abs(x - 16) // 4 + (1 if abs(x - 16) < 6 else 0) and y >= 26, trim)   # the hem
+    c.rect(12, 3, 20, 4, trim)                       # the collar and its clasps
+    c.disc(12, 5, 1.2, trim)
+    c.disc(20, 5, 1.2, trim)
+    for dy in range(-3, 4):                          # the emblem: a diamond, lit in the middle
+        for dx in range(-3 + abs(dy), 4 - abs(dy)):
+            c.set(16 + dx, 16 + dy, trim)
+    c.set(16, 16, WHITE)
+    c.set(15, 15, WHITE)
+
+
+# Every cape in items.json, in its own colour and trim (`color`, `accent`).
+for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
+    if _item["type"] == "cape":
+        globals()["draw_" + _item["id"]] = (lambda colour, trim: lambda c: cape(c, ramp(colour), hexc(trim)))(_item["color"], _item["accent"])
+
+
 DRAWINGS = {name[5:]: fn for name, fn in globals().items() if name.startswith("draw_")}
 # Not drawn here: the Potion is a Retro Diffusion sprite (rd_pro__fantasy) and the Hi-Potion,
 # Ether and Hi-Ether are palette swaps of it (`derive` in art/assets.json).

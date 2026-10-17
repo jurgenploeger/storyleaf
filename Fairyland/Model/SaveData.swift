@@ -8,6 +8,8 @@ nonisolated struct Equipment: Codable, Equatable, Sendable {
     var necklace: String?
     var boots: String?
     var accessory: String?
+    /// A status cape (the weaver's).
+    var cape: String?
 
     subscript(slot: ItemType) -> String? {
         get {
@@ -18,6 +20,7 @@ nonisolated struct Equipment: Codable, Equatable, Sendable {
             case .necklace: necklace
             case .boots: boots
             case .accessory: accessory
+            case .cape: cape
             case .consumable, .material: nil
             }
         }
@@ -29,6 +32,7 @@ nonisolated struct Equipment: Codable, Equatable, Sendable {
             case .necklace: necklace = newValue
             case .boots: boots = newValue
             case .accessory: accessory = newValue
+            case .cape: cape = newValue
             case .consumable, .material: break
             }
         }
@@ -154,6 +158,8 @@ nonisolated struct SaveData: Codable, Sendable {
     var title: String?
     /// The Monster Book's milestones already paid (kinds of monster met).
     var bookRewards: [Int]?
+    /// The status capes you've been told you can have (rewards.json `prizes`, by item id).
+    var capesTold: [String]?
     /// Today's bounties, and how many you've ever finished.
     var bounties: BountyBoard?
     var bountiesDone: Int?

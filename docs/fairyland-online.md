@@ -811,6 +811,24 @@ boss's. The whole set adds about +107 ATK, +127 MAG, +44 DEF, +27 SPD, +375 HP a
 spot. Tilly the Toymaker in Prismhaven has five quests for 5 to 100 kinds of card, paid in toys, and three
 titles count cards. FO's dolls aren't in yet.
 
+**Capes (since 0.7.16), ours, after RuneScape's:** asked for in playtesting (2026-10-16: "If I have all
+the monsters from a land or in the whole world, or the monster cards, I should be able to collect a very
+special armor prize from a character, just like the lvl 99 capes in runescape, to show status. Same for
+completing number of quests or other milestones"). RuneScape sells a cape of accomplishment for each skill
+at level 99 (99,000 coins, from that skill's master, with a hood; each has its own emote, and the capes
+of a player with two or more 99s are trimmed), and a quest point cape once every quest is done
+([OSRS Wiki](https://oldschool.runescape.wiki/w/Capes_of_Accomplishment),
+[RuneScape Wiki](https://runescape.fandom.com/wiki/Farming_cape_(t)),
+[RuneScape Wiki](https://runescape.wiki/w/Quest_points)). Ours: Orla the Weaver in Meadowbrook weaves a
+cape for each of the 27 lands with monsters, once every monster living there (its wilds and its bosses,
+as the Monster Book lists homes) is beaten, in that land's colours; and six for the world: the Monster
+Book (every monster beaten), cards (every card), quests (every quest), bosses (every boss), lands (every
+land visited) and the Storyleaf Cape (every other cape) (rewards.json `prizes`). Free, worn in a slot of
+their own (so they never cost you your armour) and drawn on your back (`GearOverlay.drape`: from behind
+hung from the shoulders with a diamond emblem and a trimmed hem, the hair over it; from the front and
+side past your outline), a small bonus to stats; never sold or dropped, and woven again if lost. No
+emotes or trims yet.
+
 **Ours, not FO's (content/rewards.json):** a gift each day you play, in a round of seven; three daily
 bounties scaled to your level, with a bonus for all three; and rewards as the Monster Book fills (10, 25, 50,
 75 and every kind). They're built on FO's own calendar idea, but FO didn't have them as such.

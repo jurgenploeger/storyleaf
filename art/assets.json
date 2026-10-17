@@ -8862,6 +8862,406 @@
           }
         ]
       }
+    },
+    {
+      "id": "item_sunny_meadow_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Sunny Meadow's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_northern_grassland_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Windswept Downs's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_pineapple_shore_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Pineapple Shore's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_slime_cave_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Gooey Grotto's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_twilight_woods_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Twilight Woods's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_smiling_forest_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Smiling Forest's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_candy_mountain_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Gumdrop Peaks's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_frog_swamp_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Frog Swamp's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_wolf_lair_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Big Bad Wolf's Lair's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_swan_lake_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Swan Lake's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_valley_of_fear_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Shiverdell's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_lotus_land_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Lotus Land's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_rat_cavern_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Rat Cavern's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_puppet_hill_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Marionette Rise's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_genie_desert_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Genie Desert's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_goldburg_lake_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Ingothold Lake's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_crystal_mountain_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Crystal Mountain's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_sleepy_town_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Dozywick's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_snow_white_forest_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Snow White Forest's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_moonglow_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Moonwhisper's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_secret_plain_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Hidden Steppe's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_hachoo_island_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Sneezle Isle's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_starfall_isle_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Starfall Isle's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_rosen_lake_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Briarmere's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_water_temple_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Tidewater Shrine's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_mysterious_cave_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Whispering Hollow's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_emerald_road_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long cape in Emerald Road's colours with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_monster_book_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long monster book cape with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_card_collector_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long card collector's cape with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_quest_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long quest cape with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_bossbane_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long bossbane cape with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_wayfarer_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long wayfarer's cape with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_storyleaf_cape",
+      "kind": "item",
+      "request": {
+        "prompt": "a long storyleaf cape with a clasp and an emblem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "npc_weaver",
+      "kind": "walk_sheet",
+      "derive": {
+        "from": "elf_walk",
+        "recolor": [
+          {
+            "hue": [
+              85,
+              170
+            ],
+            "minSaturation": 0.3,
+            "to": 285,
+            "saturation": 0.7,
+            "value": 0.9
+          },
+          {
+            "hue": [
+              12,
+              58
+            ],
+            "minSaturation": 0.55,
+            "minValue": 0.55,
+            "to": 220,
+            "saturation": 0.12,
+            "value": 1.25
+          }
+        ]
+      },
+      "request": {
+        "prompt": "kind old weaver in a violet robe with a long patterned cape and a spool of golden thread, chibi",
+        "prompt_style": "rd_animation__four_angle_walking",
+        "width": 48,
+        "height": 48,
+        "return_spritesheet": true
+      }
     }
   ]
 }

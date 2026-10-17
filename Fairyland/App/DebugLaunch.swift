@@ -73,6 +73,8 @@ import SpriteKit
 ///                  chat: then the chat opens)
 ///   chat           open the chat window
 ///   say=<text>     once the map is on screen, the hero says that (no commas) in a bubble that stays
+///   facing=<way>   once the map is on screen, the hero turns up | down | left | right (up: a cape's back)
+///   beaten=a+b     every monster of these lands beaten (`all`: every monster), for the weaver's capes
 ///   meet=n         once the map is on screen, the n nearest adventurers come over as strangers, so the
 ///                  nearest one's card shows Befriend, Trade (and Duel where duels are allowed)
 ///   quiet          footsteps switched off in Settings, and left off (so its screenshot runs last)
@@ -516,6 +518,11 @@ enum DebugLaunch {
         for id in flags["bag"]?.split(separator: "+").map(String.init) ?? [] where Content.shared.item(id) != nil {
             session.addItem(id)
         }
+        // `beaten=a+b`: every monster living in those lands beaten once (`all`: every monster).
+        for land in flags["beaten"]?.split(separator: "+").map(String.init) ?? [] {
+            let monsters = land == "all" ? Content.shared.monsters.map(\.id) : session.monsters(of: land)
+            for monster in monsters { session.beatMonster(monster, level: session.data.hero.level) }
+        }
         for id in flags["done"]?.split(separator: "+").map(String.init) ?? [] where Content.shared.quest(id) != nil {
             session.data.quests[id] = QuestProgress(state: .completed, count: 0)
         }
@@ -826,6 +833,17 @@ enum DebugLaunch {
             }
         }
         // `say=<text>`: once the map is on screen, the hero says it in a bubble that stays.
+        if let way = flags["facing"].flatMap(Direction.init(rawValue:)) {
+            Task {
+                for _ in 0..<240 {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    guard coordinator.isReady, coordinator.mapScene.view != nil else { continue }
+                    try? await Task.sleep(for: .seconds(1))
+                    coordinator.mapScene.turnForDebug(way)
+                    return
+                }
+            }
+        }
         if let text = flags["say"] {
             Task {
                 for _ in 0..<240 {

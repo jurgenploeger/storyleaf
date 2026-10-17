@@ -2,6 +2,17 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.16",
+      "date": "2026-10-16",
+      "title": "Capes of renown",
+      "notes": [
+        "Status capes, like RuneScape's capes for a skill at 99: beat every monster that lives in a land, and Orla the Weaver in Meadowbrook weaves you that land's cape in its colours. There's one for each of the 27 lands with monsters.",
+        "Six more for the whole world: the Monster Book Cape (every kind of monster beaten), the Card Collector's Cape (every monster card), the Quest Cape (every quest), the Bossbane Cape (every boss), the Wayfarer's Cape (every land visited), and the Storyleaf Cape for earning all the others.",
+        "Capes have a slot of their own, at the top of the paper doll, so you keep your armour. You wear it on your back for everyone to see, with its emblem and trim; it adds a little to your stats. No shop sells one and no monster drops one, and if you ever lose one, Orla weaves it again.",
+        "Orla's list shows every cape with what it takes and how far along you are; a gold \"!\" over her says one is ready, and the game tells you when you've earned one."
+      ]
+    },
+    {
       "version": "0.7.15",
       "date": "2026-10-16",
       "title": "Travelling together",

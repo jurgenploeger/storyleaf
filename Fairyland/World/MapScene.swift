@@ -34,6 +34,8 @@ protocol MapScene: SKScene {
     func summonAdventurersForDebug(_ count: Int) -> [Adventurer]
     func featherAwayForDebug()
     func sayForDebug(_ text: String)
+    /// The hero turns that way (`facing=up`: their back to you, a cape's emblem showing).
+    func turnForDebug(_ direction: Direction)
     func localTellsForDebug()
     #endif
 }

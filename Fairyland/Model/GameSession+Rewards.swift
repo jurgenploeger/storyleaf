@@ -43,6 +43,8 @@ extension GameSession {
     /// line for the lot, without a fanfare (an older save earning what it already deserved).
     @discardableResult
     func checkTitles(quietly: Bool = false) -> [TitleDef] {
+        // And the capes newly earned, which the weaver weaves.
+        defer { tellOfCapes(quietly: quietly) }
         let new = content.titles.filter { title in
             guard !hasEarned(title) else { return false }
             let progress = titleProgress(title)
@@ -93,6 +95,112 @@ extension GameSession {
         guard let best = fitting.max(by: { ($0.count ?? 1) < ($1.count ?? 1) }) else { return nil }
         let coin = id.uuidString.unicodeScalars.reduce(0) { ($0 + Int($1.value)) % 7 }
         return coin < 3 ? best : nil
+    }
+
+    // MARK: - Status capes
+
+    /// The capes the weaver weaves (rewards.json `prizes`), like RuneScape's capes for a skill at 99.
+    var prizes: [RewardsDef.Prize] { content.rewards.prizes ?? [] }
+
+    /// A land's monsters, as the Monster Book says where each lives: those in its wilds, and its bosses.
+    func monsters(of landID: String) -> [String] {
+        guard let land = content.map(landID) else { return [] }
+        var ids = Set((land.encounters?.monsters ?? [:]).keys)
+        for npc in land.npcs ?? [] where npc.role == .boss {
+            if let monster = npc.monster { ids.insert(monster) }
+        }
+        return ids.sorted()
+    }
+
+    private func hasBeaten(_ monsterID: String) -> Bool { (data.monsterBook?[monsterID]?.defeated ?? 0) > 0 }
+
+    /// How far along a cape is: what you have toward it, and what it takes.
+    func prizeProgress(_ prize: RewardsDef.Prize) -> (have: Int, need: Int) {
+        switch prize.kind {
+        case .land:
+            let species = prize.land.map { monsters(of: $0) } ?? []
+            return (have: species.filter { hasBeaten($0) }.count, need: species.count)
+        case .book:
+            return (have: content.monsters.filter { hasBeaten($0.id) }.count, need: content.monsters.count)
+        case .cards:
+            return (have: cardCount, need: content.monsters.count)
+        case .quests:
+            return (have: completedQuests.count, need: content.quests.count)
+        case .bosses:
+            let bosses = Set(content.maps.flatMap { $0.npcs ?? [] }.filter { $0.role == .boss }.map(\.id))
+            return (have: bosses.intersection(data.defeatedBosses ?? []).count, need: bosses.count)
+        case .lands:
+            return (have: content.maps.filter { hasVisited($0.id) }.count, need: content.maps.count)
+        case .capes:
+            let others = prizes.filter { $0.kind != .capes }
+            return (have: others.filter { hasEarned($0) }.count, need: others.count)
+        }
+    }
+
+    func hasEarned(_ prize: RewardsDef.Prize) -> Bool {
+        let progress = prizeProgress(prize)
+        return progress.need > 0 && progress.have >= progress.need
+    }
+
+    /// Whether you have a cape, in the bag or on.
+    func hasCape(_ prize: RewardsDef.Prize) -> Bool {
+        count(of: prize.item) > 0 || data.hero.equipment.cape == prize.item
+    }
+
+    /// The capes you've earned and don't have (or no longer have): the weaver weaves them for you.
+    var capesWaiting: [RewardsDef.Prize] { prizes.filter { hasEarned($0) && !hasCape($0) } }
+
+    /// The weaver weaves you a cape you've earned.
+    @discardableResult
+    func takeCape(_ prize: RewardsDef.Prize) -> Bool {
+        guard hasEarned(prize), !hasCape(prize), let item = content.item(prize.item) else { return false }
+        addItem(item.id)
+        capeReady = !capesWaiting.isEmpty
+        post(L("Received {items}.", ["items": item.name]), .reward)
+        SoundEffects.shared.play(.questDone)
+        save()
+        return true
+    }
+
+    /// What a cape takes, in words.
+    func prizeRequirement(_ prize: RewardsDef.Prize) -> String {
+        switch prize.kind {
+        case .land: L("Beat every monster in {land}", ["land": prize.land.flatMap { content.map($0)?.name } ?? "?"])
+        case .book: L("Beat every kind of monster")
+        case .cards: L("Find every monster card")
+        case .quests: L("Finish every quest")
+        case .bosses: L("Beat every boss")
+        case .lands: L("Set foot in every land")
+        case .capes: L("Earn every other cape")
+        }
+    }
+
+    /// The weaver who weaves the capes, and the land she's in.
+    var weaver: (npc: NPCDef, land: MapDef)? {
+        for land in content.maps {
+            if let npc = land.npcs?.first(where: { $0.role == .weaver }) { return (npc, land) }
+        }
+        return nil
+    }
+
+    /// Tells you of each cape you've newly earned, once: who weaves it, and where. `quietly`: one
+    /// line for the lot (an older save that had already earned some).
+    func tellOfCapes(quietly: Bool = false) {
+        capeReady = !capesWaiting.isEmpty
+        let told = Set(data.capesTold ?? [])
+        let new = prizes.filter { !told.contains($0.item) && hasEarned($0) }
+        guard !new.isEmpty, let weaver else { return }
+        data.capesTold = (data.capesTold ?? []) + new.map(\.item)
+        if quietly, new.count > 1 {
+            post(L("You've earned {count} capes! {weaver} in {town} will weave them for you.",
+                   ["count": new.count, "weaver": weaver.npc.name, "town": weaver.land.name]), .reward)
+            return
+        }
+        for prize in new {
+            guard let cape = content.item(prize.item) else { continue }
+            post(L("You've earned the {cape}! {weaver} in {town} will weave it for you.",
+                   ["cape": cape.name, "weaver": weaver.npc.name, "town": weaver.land.name]), .reward)
+        }
     }
 
     // MARK: - The Monster Book's milestones
