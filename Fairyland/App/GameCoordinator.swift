@@ -91,6 +91,7 @@ final class GameCoordinator {
         session.markVisited(map.id)
         session.rescaleLevelsIfNeeded()
         session.rescaleSkillLevelsIfNeeded()
+        session.retireRebirthsIfNeeded()
         session.handOutMissingStarterGifts()
         session.claimBookMilestones()
         session.refreshBounties()

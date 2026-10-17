@@ -171,7 +171,6 @@ struct ProfileCard: View {
                               stats: session.heroStats, hp: hero.hp, mp: hero.mp,
                               exp: (hero.exp, GameSession.expToNext(level: hero.level)))
             facts.title = session.wornTitle
-            if session.rebirths > 0 { facts.note = L("Reborn {count}×", ["count": session.rebirths]) }
             facts.gear = ItemType.equipmentSlots.compactMap { session.equipped($0) }
             return facts
 

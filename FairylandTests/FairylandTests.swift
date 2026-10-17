@@ -1257,22 +1257,23 @@ struct RulesTests {
         #expect(session.learnableSkills.map(\.id) == ["first_aid"])
     }
 
-    @Test func rebirthKeepsSkillsAndStrength() {
+    /// Rebirth was taken out (0.7.27): a hero reborn twice and at level 30 again goes back to the
+    /// level their last rebirth began at, and the rebirth titles go. Once.
+    @Test func aRebornHeroGetsTheirLevelBack() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
-        let bashLevel = Content.shared.classDef("novice").skills.first { $0.skill == "bash" }!.level
-        session.data.hero.level = bashLevel
-        session.learnSkill("bash")
-        session.data.hero.level = session.rebirthLevel
-        #expect(!session.canRebirth)   // not enough gold yet
-        session.data.gold = session.rebirthCost
-        let strengthAtOne = GameSession.newGame(name: "Fresh", raceID: "human").heroStats.attack
-        session.rebirth()
-        #expect(session.data.hero.level == 1)
-        #expect(session.rebirths == 1)
-        #expect(session.data.gold == 0)
-        #expect(session.heroSkills.contains { $0.id == "bash" })
-        #expect(session.heroStats.attack > strengthAtOne)
-        #expect(session.rebirthLevel == 106)
+        session.data.hero.rebirths = 2
+        session.data.hero.level = 30
+        session.data.titles = ["apprentice", "reborn", "twice_reborn"]
+        session.data.title = "reborn"
+        session.retireRebirthsIfNeeded()
+        #expect(session.data.hero.level == 106)
+        #expect(session.data.hero.rebirths == nil)
+        #expect(session.data.titles?.contains("reborn") == false)
+        #expect(session.data.titles?.contains("apprentice") == true)
+        #expect(session.data.title == nil)
+        session.data.hero.level = 120
+        session.retireRebirthsIfNeeded()
+        #expect(session.data.hero.level == 120)
     }
 
     @Test func smithForgesFromMaterials() throws {
@@ -3170,8 +3171,8 @@ struct PerformanceTests {
     }
 }
 
-/// Reasons to come back (GameSession+Rewards.swift): titles, the daily gift, bounties, the Monster
-/// Book's milestones and rebirth's quicker climb.
+/// Reasons to come back (GameSession+Rewards.swift): titles, the daily gift, bounties and the
+/// Monster Book's milestones.
 @MainActor
 struct RewardTests {
     @Test func titlesAreEarnedOnceAndWorn() throws {
@@ -3182,7 +3183,7 @@ struct RewardTests {
         #expect(progress.have == 1 && progress.need == 10)
         session.data.hero.level = 10
         #expect(session.checkTitles().contains { $0.id == apprentice.id })
-        // Earned once, and it stays earned (a rebirth takes the level back down).
+        // Earned once, and it stays earned.
         #expect(session.checkTitles().isEmpty)
         session.data.hero.level = 1
         #expect(session.hasEarned(apprentice))
@@ -3425,15 +3426,6 @@ struct RewardTests {
         // A potion isn't a toy.
         session.addItem("potion")
         #expect(session.giveToy("potion", to: pet.id) == nil)
-    }
-
-    @Test func rebornHeroesClimbFaster() {
-        let session = GameSession.newGame(name: "Test", raceID: "human")
-        #expect(session.rebirthEXPBoost == 1)
-        session.data.hero.rebirths = 1
-        #expect(abs(session.rebirthEXPBoost - 1.2) < 0.0001)
-        session.data.hero.rebirths = 9
-        #expect(session.rebirthEXPBoost == 2)
     }
 
     @Test func botsWearTitlesThatFitTheirLevel() {

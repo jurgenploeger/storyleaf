@@ -358,7 +358,7 @@ private struct CharacterTab: View {
             .frame(minWidth: 250)
             .frame(maxWidth: .infinity)
 
-            StatsPanel(level: session.rebirths > 0 ? L("Level {level} · Reborn ×{rebirths}", ["level": hero.level, "rebirths": session.rebirths]) : L("Level {level}", ["level": hero.level]),
+            StatsPanel(level: L("Level {level}", ["level": hero.level]),
                        exp: hero.exp, expToNext: GameSession.expToNext(level: hero.level), hp: hero.hp, mp: hero.mp, stats: stats)
         }
     }
@@ -366,9 +366,7 @@ private struct CharacterTab: View {
     /// Skill points, what you know and can learn (SkillChoices), and what your class unlocks later:
     /// the next two, the rest a tap away.
     private func skills(hero: Hero) -> some View {
-        // Reborn heroes keep the skills they learned, so those aren't "still locked".
-        let learned = Set(hero.learnedSkills ?? [])
-        let upcoming = session.heroClass.skills.filter { $0.level > hero.level && !learned.contains($0.skill) }
+        let upcoming = session.heroClass.skills.filter { $0.level > hero.level }
         return VStack(alignment: .leading, spacing: 10) {
             if session.canSpendSkillPoint {
                 Text(session.unspentSkillPoints == 1 ? L("1 skill point to spend") : L("{count} skill points to spend", ["count": session.unspentSkillPoints]))

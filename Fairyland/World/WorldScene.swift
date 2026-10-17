@@ -1832,29 +1832,24 @@ final class WorldScene: SKScene {
         follower = node
     }
 
-    /// Picks up a new look or name from the Character screen, the title you wear, and a reborn
-    /// hero's colour.
+    /// Picks up a new look or name from the Character screen, the title you wear, and the gold
+    /// name of a hero at the top level.
     private func refreshHero() {
-        let key = "\(session.data.hero.name)|\(session.heroLookKey)|\(session.data.title ?? "")|\(session.rebirths)"
+        let key = "\(session.data.hero.name)|\(session.heroLookKey)|\(session.data.title ?? "")|\(session.data.hero.level)"
         guard key != heroKey else { return }
         if heroKey != nil {
             player.setCycle(art.walkCycle(GameSession.heroArt))
             player.setLabel(session.data.hero.name)
         }
         player.setTitle(session.wornTitle)
-        player.setLabelColor(Self.nameColor(rebirths: session.rebirths))
+        player.setLabelColor(Self.nameColor(level: session.data.hero.level))
         player.setWeapon(session.equipped(.weapon))
         heroKey = key
     }
 
-    /// The hero's name over their head: white, then sky blue, violet and gold as they're reborn.
-    static func nameColor(rebirths: Int) -> UIColor {
-        switch rebirths {
-        case ...0: .white
-        case 1: UIColor(red: 0.55, green: 0.85, blue: 1, alpha: 1)
-        case 2: UIColor(red: 0.82, green: 0.66, blue: 1, alpha: 1)
-        default: Nodes.gold
-        }
+    /// The hero's name over their head: white, and gold once they reach the top level.
+    static func nameColor(level: Int) -> UIColor {
+        level >= GameSession.levelCap ? Nodes.gold : .white
     }
 
 

@@ -22,9 +22,8 @@ Built with SwiftUI + SpriteKit. Art is generated with [Retro Diffusion](https://
 - **Classes and skills:** start as a Novice, join a guild at level 10. Each level gives a skill point to learn
   a new skill or power one up (levels 1–10), each with its own animation.
 - **The long climb, like Fairyland Online:** zones run from level 1 to 200. Past level 100 each level takes
-  more EXP (twice as much by 140), like the original's slow late game. From level 101 Elder Oak can help you
-  be reborn at level 1, keeping your skills and some strength; each rebirth needs 5 more levels. Roughly
-  19 hours of battling to the first rebirth, about 145 to level 200, and about 280 with five rebirth climbs.
+  more EXP (twice as much by 140), like the original's slow late game. Level 200 is the top, and there Elder
+  Oak gives the Goldleaf gear, ivory and gold, to show for it. Roughly 145 hours of battling to level 200.
 - **A living world:** villagers and other adventurers (computer-run for now, tagged BOT) wander and chat (see
   the chat window), you can befriend adventurers and bring up to four along in your party, with their
   companions (they fight on if you faint, and wait for you where you fell), and danger zones allow duels.

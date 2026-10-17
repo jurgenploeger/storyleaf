@@ -55,7 +55,8 @@ nonisolated struct Hero: Codable, Equatable, Sendable {
     var learnedSkills: [String]?
     /// Extra points, e.g. for skills older saves got for free.
     var bonusSkillPoints: Int?
-    /// Times reborn (Fairyland Online's 轉生): back to level 1, keeping skills and some strength.
+    /// Times reborn, from before rebirth was taken out (0.7.27): read once to give a reborn hero
+    /// their level back (`GameSession.retireRebirthsIfNeeded`), then cleared.
     var rebirths: Int?
 }
 

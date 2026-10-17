@@ -35,6 +35,7 @@ engine's formulas, and the CI screenshots. Every finding here was checked agains
 - Settings → Battle → Time to choose: Off, 10, 20 or 30 seconds; no clock with VoiceOver or Switch Control on.
 - Reasons to come back: 32 titles worn over your name (bots wear theirs), daily bounties with a bonus, a daily
   gift in a round of seven, Monster Book milestones, and rebirth worth more (EXP boost, titles, name colour).
+  Rebirth itself went in 0.7.27: level 200 is the top, with Elder Oak's Goldleaf gear to earn there.
 
 ## Before you submit
 

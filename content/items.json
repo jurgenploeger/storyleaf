@@ -6222,6 +6222,251 @@
           "value": 1.2
         }
       ]
+    },
+    {
+      "id": "goldleaf_plate",
+      "icon": "shield-plus",
+      "art": "item_goldleaf_plate",
+      "name": "Goldleaf Plate",
+      "type": "armor",
+      "price": 24000,
+      "stats": {
+        "defense": 62,
+        "hp": 180,
+        "attack": 10,
+        "magic": 6
+      },
+      "level": 200,
+      "description": "Ivory plate edged with gold leaf from Meadowbrook's oldest oak. Only a hero at the very top can wear it.",
+      "wear": "plate",
+      "sheets": {
+        "human": "armor_iron_plate_human",
+        "elf": "armor_iron_plate_elf",
+        "dwarf": "armor_iron_plate_dwarf"
+      },
+      "pattern": "engraved",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 45,
+          "saturation": 0.2,
+          "value": 1.25
+        }
+      ],
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxSaturation": 0.25,
+          "maxValue": 0.7,
+          "to": 42,
+          "saturation": 4.5,
+          "value": 1.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 42,
+          "saturation": 2.6,
+          "value": 1.2
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxSaturation": 0.25,
+          "to": 45,
+          "saturation": 1.5,
+          "value": 1.45
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 45,
+          "saturation": 0.7,
+          "value": 1.4
+        }
+      ],
+      "accent": "#F2C230"
+    },
+    {
+      "id": "goldleaf_robe",
+      "icon": "shield-star",
+      "art": "item_goldleaf_robe",
+      "name": "Goldleaf Robe",
+      "type": "armor",
+      "price": 24000,
+      "stats": {
+        "defense": 50,
+        "magic": 26,
+        "mp": 44,
+        "hp": 70
+      },
+      "level": 200,
+      "description": "White silk stitched with gold leaf from Meadowbrook's oldest oak, for a mage at the top of the world.",
+      "wear": "robe",
+      "pattern": "runes",
+      "recolor": [
+        {
+          "hue": [
+            85,
+            170
+          ],
+          "minSaturation": 0.3,
+          "to": 45,
+          "saturation": 0.2,
+          "value": 1.4
+        }
+      ],
+      "accent": "#F2C230"
+    },
+    {
+      "id": "goldleaf_gauntlets",
+      "icon": "sword",
+      "art": "item_goldleaf_gauntlets",
+      "name": "Goldleaf Gauntlets",
+      "type": "gloves",
+      "price": 23000,
+      "stats": {
+        "attack": 27,
+        "defense": 18,
+        "hp": 56
+      },
+      "level": 200,
+      "description": "Ivory gauntlets with a gold leaf on the back of each hand. What you hold, you hold for good."
+    },
+    {
+      "id": "goldleaf_boots",
+      "icon": "wind",
+      "art": "item_goldleaf_boots",
+      "name": "Goldleaf Boots",
+      "type": "boots",
+      "price": 22000,
+      "stats": {
+        "speed": 21,
+        "defense": 16,
+        "hp": 36
+      },
+      "level": 200,
+      "description": "They've walked every road there is. A gold leaf at each heel, like a little wing."
+    },
+    {
+      "id": "goldleaf_pendant",
+      "icon": "gem",
+      "art": "item_goldleaf_pendant",
+      "name": "Goldleaf Pendant",
+      "type": "necklace",
+      "price": 23000,
+      "stats": {
+        "magic": 26,
+        "attack": 8,
+        "mp": 46,
+        "hp": 90
+      },
+      "level": 200,
+      "description": "A single gold leaf from Meadowbrook's oldest oak. It never wilts."
+    },
+    {
+      "id": "goldleaf_ring",
+      "icon": "ring",
+      "art": "item_goldleaf_ring",
+      "name": "Goldleaf Ring",
+      "type": "accessory",
+      "price": 23000,
+      "stats": {
+        "attack": 22,
+        "magic": 22,
+        "speed": 10
+      },
+      "level": 200,
+      "description": "A gold band with a leaf curled round it, still green at the tip. Elder Oak's thank-you for the long climb."
+    },
+    {
+      "id": "goldleaf_blade",
+      "icon": "sword",
+      "art": "item_goldleaf_blade",
+      "name": "Goldleaf Blade",
+      "type": "weapon",
+      "price": 24000,
+      "stats": {
+        "attack": 78,
+        "speed": 6
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 200,
+      "description": "A long ivory blade with two gold leaves for a guard, given only to heroes at the top."
+    },
+    {
+      "id": "goldleaf_axe",
+      "icon": "axe",
+      "art": "item_goldleaf_axe",
+      "name": "Goldleaf Axe",
+      "type": "weapon",
+      "price": 24000,
+      "stats": {
+        "attack": 88
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 200,
+      "description": "An ivory crescent on a handle of heart-oak. It cuts as clean as the first frost."
+    },
+    {
+      "id": "goldleaf_staff",
+      "icon": "wand",
+      "art": "item_goldleaf_staff",
+      "name": "Goldleaf Staff",
+      "type": "weapon",
+      "price": 24000,
+      "stats": {
+        "magic": 78
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 200,
+      "glow": "#FFF3C0",
+      "glowAt": [
+        21,
+        8
+      ],
+      "description": "Heartwood from Meadowbrook's oldest oak, crowned with gold leaves round a light that never dims."
+    },
+    {
+      "id": "goldleaf_whip",
+      "icon": "paw",
+      "art": "item_goldleaf_whip",
+      "name": "Goldleaf Whip",
+      "type": "weapon",
+      "price": 24000,
+      "stats": {
+        "attack": 55,
+        "speed": 19
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 200,
+      "description": "A lash of braided gold with a leaf at its tip. Beasts follow it as leaves follow the wind."
     }
   ]
 }

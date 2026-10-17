@@ -16242,6 +16242,116 @@
           }
         ]
       }
+    },
+    {
+      "id": "item_goldleaf_plate",
+      "kind": "item",
+      "request": {
+        "prompt": "ivory plate armour with gold edges and a golden leaf on the chest, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_goldleaf_robe",
+      "kind": "item",
+      "request": {
+        "prompt": "white robe trimmed in gold with a golden leaf, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_goldleaf_gauntlets",
+      "kind": "item",
+      "request": {
+        "prompt": "ivory gauntlets with a gold cuff and a golden leaf, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_goldleaf_boots",
+      "kind": "item",
+      "request": {
+        "prompt": "ivory boots with gold cuffs and a golden leaf at the heel, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_goldleaf_pendant",
+      "kind": "item",
+      "request": {
+        "prompt": "a golden leaf pendant on a gold chain, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_goldleaf_ring",
+      "kind": "item",
+      "request": {
+        "prompt": "gold ring with a golden green leaf curled over the top, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_goldleaf_blade",
+      "kind": "item",
+      "request": {
+        "prompt": "long ivory sword with a guard of gold leaves, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_goldleaf_axe",
+      "kind": "item",
+      "request": {
+        "prompt": "ivory crescent axe on a dark oak handle with a gold leaf, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_goldleaf_staff",
+      "kind": "item",
+      "request": {
+        "prompt": "dark oak staff crowned with golden leaves round a white light, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_goldleaf_whip",
+      "kind": "item",
+      "request": {
+        "prompt": "golden whip with a leaf at its tip and a dark oak grip, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
     }
   ]
 }

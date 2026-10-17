@@ -26,8 +26,7 @@
     "{bot} beat {boss} in {map}!",
     "{bot} sealed a rare {rare} in {map}!",
     "{bot} forged a shiny new {item}!",
-    "{bot} hatched a new companion!",
-    "{bot} was reborn and starts over at level 1!"
+    "{bot} hatched a new companion!"
   ],
   "sighting": {
     "text": "A rare {monster} has been sighted in {map}! For the next {minutes} minutes it turns up there far more often.",

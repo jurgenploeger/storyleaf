@@ -940,8 +940,7 @@
           "art": "npc_elder",
           "x": 2,
           "y": 3,
-          "greeting": "Ah, a new face! Meadowbrook could use a helping hand.",
-          "rebirth": true
+          "greeting": "Ah, a new face! Meadowbrook could use a helping hand."
         },
         {
           "id": "guild_warrior",

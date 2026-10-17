@@ -1654,6 +1654,125 @@ def draw_glimmerstone(c):
     glint(c, 25, 7)
 
 
+# ---------------------------------------------------------------- Goldleaf (level 200)
+# Elder Oak's gift to a hero at the top level (content/quests.json, giver `elder`): ivory and gold, each
+# piece with a golden leaf from Meadowbrook's oldest oak on it.
+
+IVORY = [hexc("a8987a"), hexc("ece2c8"), WHITE]
+LEAFGOLD = [hexc("9a6a0e"), hexc("f0c030"), hexc("fff4a8")]
+HEARTOAK = [hexc("4a2c14"), hexc("7a4a22"), hexc("a8703a")]
+
+
+def gold_leaf(c, cx, cy, length, angle=-math.pi / 4, colors=LEAFGOLD, broad=0.36):
+    """A pointed leaf, `length` from stem to tip along `angle` and `broad` times as wide, lit on
+    one side, with a midrib."""
+    dx, dy = math.cos(angle), math.sin(angle)
+    nx, ny = -dy, dx
+    width = length * broad
+    points = []
+    for i in range(9):
+        t = i / 8
+        w = math.sin(t * math.pi) * width
+        points.append((cx + dx * length * t + nx * w, cy + dy * length * t + ny * w))
+    for i in range(7, 0, -1):
+        t = i / 8
+        w = math.sin(t * math.pi) * width
+        points.append((cx + dx * length * t - nx * w, cy + dy * length * t - ny * w))
+    c.poly(points, colors[1])
+    c.shade(lambda x, y, col: col == colors[1] and (x - cx) * nx + (y - cy) * ny < 0, colors[0])
+    c.line(cx, cy, cx + dx * length * 0.85, cy + dy * length * 0.85, colors[2])
+    if length >= 12:   # a stem, and veins off the midrib, so a big one reads as a leaf
+        c.line(cx, cy, cx - dx * 2, cy - dy * 2, colors[0])
+        for t in (0.35, 0.6):
+            x0, y0 = cx + dx * length * t, cy + dy * length * t
+            for side in (1, -1):
+                c.line(x0, y0, x0 + dx * length * 0.15 + side * nx * width * 0.7, y0 + dy * length * 0.15 + side * ny * width * 0.7,
+                       colors[2] if side > 0 else colors[1])
+
+
+def draw_goldleaf_plate(c):
+    """Ivory plate with gold edges and a golden leaf on the breast."""
+    c.poly([(8, 6), (24, 6), (26, 12), (23, 28), (9, 28), (6, 12)], IVORY[1])
+    c.disc(6, 9, 3.5, IVORY[1]); c.disc(26, 9, 3.5, IVORY[1])
+    c.shade(lambda x, y, col: col == IVORY[1] and x > 18, IVORY[0])
+    c.shade(lambda x, y, col: col == IVORY[1] and x < 12 and y > 8, IVORY[2])
+    c.ellipse(16, 6, 4, 1.8, LEAFGOLD[0])
+    c.line(6, 12, 9, 28, LEAFGOLD[1]); c.line(26, 12, 23, 28, LEAFGOLD[0])     # gold edges
+    c.rect(9, 27, 23, 28, LEAFGOLD[1])
+    c.disc(4.5, 8, 1.2, LEAFGOLD[2]); c.disc(27.5, 8, 1.2, LEAFGOLD[1])           # shoulder studs
+    gold_leaf(c, 11, 24, 14, broad=0.42)
+
+
+def draw_goldleaf_robe(c):
+    """A white robe trimmed in gold, a golden leaf on its skirt."""
+    robe(c, IVORY, LEAFGOLD)
+    gold_leaf(c, 18, 25, 8, angle=-math.pi / 3)
+    for (x, y) in ((9, 22), (12, 16), (23, 13)):
+        c.set(x, y, LEAFGOLD[1])
+
+
+def draw_goldleaf_gauntlets(c):
+    """Ivory gauntlets with a gold cuff and a golden leaf on the back of the hand."""
+    glove(c, IVORY, LEAFGOLD, studs=LEAFGOLD[1])
+    gold_leaf(c, 12, 20, 9, angle=-math.pi / 5)
+
+
+def draw_goldleaf_boots(c):
+    """An ivory boot with a gold cuff and sole, a golden leaf like a wing at the heel."""
+    boot(c, IVORY, LEAFGOLD[1], LEAFGOLD[0], laces=LEAFGOLD[1])
+    gold_leaf(c, 9, 16, 9, angle=-math.pi * 0.85)
+
+
+def draw_goldleaf_pendant(c):
+    """A golden leaf hanging from a gold chain."""
+    for i in range(12):
+        color = LEAFGOLD[2] if i % 2 else LEAFGOLD[1]
+        c.set(5 + i * 0.95, 2 + i * 1.0, color)
+        c.set(27 - i * 0.95, 2 + i * 1.0, color)
+    c.disc(16, 14, 1.6, LEAFGOLD[1])
+    gold_leaf(c, 16, 15, 15, angle=math.pi / 2, broad=0.5)
+    c.set(26, 22, WHITE)
+
+
+def draw_goldleaf_ring(c):
+    """A gold band with a golden leaf curled over the top."""
+    ring(c, LEAFGOLD)
+    gold_leaf(c, 10, 13, 13, angle=-math.pi / 9, colors=[hexc("6a8a1e"), hexc("b8d040"), hexc("f4ffb0")])
+    c.set(23, 9, WHITE)
+
+
+def draw_goldleaf_blade(c):
+    """A long ivory blade, gold leaves for a guard and a heart-oak grip."""
+    sword_line(c, blade=IVORY, guard=LEAFGOLD, grip=HEARTOAK, length=15, width=5, gem=GREEN)
+    gold_leaf(c, 9, 19, 6, angle=math.pi * 0.85)
+    gold_leaf(c, 12, 22, 6, angle=math.pi * 0.35)
+
+
+def draw_goldleaf_axe(c):
+    """A crescent of ivory steel on a heart-oak handle, a golden leaf on the cheek."""
+    axe_line(c, head=IVORY, handle=HEARTOAK, style="crescent", gem=LEAFGOLD)
+    gold_leaf(c, 23, 12, 6, angle=-math.pi / 3)
+
+
+def leaf_crown(c):
+    """Golden leaves round a white heart of light: the Goldleaf Staff's head."""
+    for angle in (-math.pi * 0.95, -math.pi * 0.6, -math.pi * 0.25, math.pi * 0.1):
+        gold_leaf(c, 21.5, 8.5, 6.5, angle=angle)
+    c.disc(21.5, 8.5, 2.4, hexc("fff8d0"))
+    c.set(21, 8, WHITE)
+
+
+def draw_goldleaf_staff(c):
+    """A heart-oak staff banded in gold, crowned with golden leaves round a light."""
+    staff_line(c, HEARTOAK, leaf_crown, LEAFGOLD[1])
+
+
+def draw_goldleaf_whip(c):
+    """A golden lash with a leaf at its tip and a heart-oak grip."""
+    whip_line(c, leather=LEAFGOLD, grip=HEARTOAK, turns=3.6, gem=GREEN, studs=WHITE)
+    gold_leaf(c, 20, 14, 5, angle=-math.pi / 2, colors=[hexc("6a8a1e"), hexc("b8d040"), hexc("f4ffb0")])
+
+
 def ramp(colour):
     """A #RRGGBB colour's dark, mid and light."""
     r, g, b, _ = hexc(colour)
@@ -2496,6 +2615,16 @@ PROMPTS = {  # for a later Retro Diffusion upgrade (python3 tools/rd.py generate
     "starfall_axe": "axe with a pale crystal crescent head and a gold star",
     "starfall_whip": "lilac whip with a glowing star at its tip",
     "glimmerstone": "a cracked open lavender geode full of glowing cyan crystals",
+    "goldleaf_plate": "ivory plate armour with gold edges and a golden leaf on the chest",
+    "goldleaf_robe": "white robe trimmed in gold with a golden leaf",
+    "goldleaf_gauntlets": "ivory gauntlets with a gold cuff and a golden leaf",
+    "goldleaf_boots": "ivory boots with gold cuffs and a golden leaf at the heel",
+    "goldleaf_pendant": "a golden leaf pendant on a gold chain",
+    "goldleaf_ring": "gold ring with a golden green leaf curled over the top",
+    "goldleaf_blade": "long ivory sword with a guard of gold leaves",
+    "goldleaf_axe": "ivory crescent axe on a dark oak handle with a gold leaf",
+    "goldleaf_staff": "dark oak staff crowned with golden leaves round a white light",
+    "goldleaf_whip": "golden whip with a leaf at its tip and a dark oak grip",
     "seed_pouch": "small tied cloth pouch spilling seeds",
     "honeybee_charm": "little golden honeycomb charm with a tiny bee",
     "stray_sock": "striped woollen sock with little holes",
