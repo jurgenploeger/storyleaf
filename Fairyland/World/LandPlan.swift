@@ -598,20 +598,54 @@ final class LandPlanner {
         return planted
     }
 
-    /// A small sign where each road leaves the map, just off the side of the road.
+    /// A small sign where each road leaves the map, just off the side of the road. Never where you
+    /// arrive, nor where it would close the way (playtesting 2026-10-16: in the Rat Cavern's narrow
+    /// tunnels there was no room beside the road, so the sign stood where you came in from Lotus Land
+    /// and shut you in); with no room for it anywhere near, the road has none.
     private func planSignposts() {
-        for exit in def.exits {
-            guard Content.shared.map(exit.to) != nil else { continue }
-            let cell = signCell(near: exit) ?? map.entryCell(from: exit.edge)
+        // Where you arrive by each road, before any sign's set down.
+        let arrivals = def.exits.map { map.entryCell(from: $0.edge) }
+        for exit in def.exits where Content.shared.map(exit.to) != nil {
+            var spot: GridPoint?
+            for depth in Self.signDepths where spot == nil {
+                spot = signCell(near: exit, depth: depth, clearOf: arrivals)
+            }
+            guard let cell = spot else { continue }
             plan.signposts.append((exit: exit, cell: cell))
-            if map.isWalkable(cell) { map.occupy(cell, blocking: true) }
+            map.occupy(cell, blocking: true)
         }
     }
 
-    /// A free cell just off the side of the road out by `exit`, a few tiles in from where it leaves
+    /// How many cells in from where a road leaves its signpost may stand, the likeliest first.
+    private static let signDepths = [4, 5, 6, 3, 7, 8]
+
+    /// Whether something standing in `cell` leaves every way past it open: the cells you could step
+    /// to from it still reach each other round it. You walk one way at a time (`canStand` is tried
+    /// across, then up or down), so only cells side by side join; corner to corner doesn't.
+    private func keepsTheWayOpen(_ cell: GridPoint) -> Bool {
+        // The eight cells round it, in order round the ring: those beside it at the even places.
+        let ring = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)]
+        let open: [Bool] = ring.map { step in
+            let next = GridPoint(col: cell.col + step.0, row: cell.row + step.1)
+            return map.isWalkable(next) && map.ground[next.row][next.col] != .water
+        }
+        guard let shut = open.firstIndex(of: false) else { return true }
+        // The open cells make runs round the ring, broken where one's shut; the cells beside it that
+        // are open must all be in one run.
+        var run = 0
+        var runsBeside: Set<Int> = []
+        for offset in 1...8 {
+            let index = (shut + offset) % 8
+            if !open[index] { run += 1 } else if index % 2 == 0 { runsBeside.insert(run) }
+        }
+        return runsBeside.count <= 1
+    }
+
+    /// A free cell just off the side of the road out by `exit`, `depth` tiles in from where it leaves
     /// (on the continent, from where it crosses the border, or for a road into a cave inland from
-    /// its mouth; else from the edge), for its signpost.
-    private func signCell(near exit: MapDef.Exit, depth: Int = 4) -> GridPoint? {
+    /// its mouth; else from the edge), for its signpost: not beside where you arrive (`arrivals`),
+    /// and closing no way past it.
+    private func signCell(near exit: MapDef.Exit, depth: Int, clearOf arrivals: [GridPoint]) -> GridPoint? {
         let edge = exit.edge
         let line: [GridPoint]
         if let road = map.region?.roads[exit.to] {
@@ -631,7 +665,9 @@ final class LandPlanner {
         guard let first = road.first, let last = road.last else { return nil }
         for index in [first - 1, last + 1, first - 2, last + 2] where line.indices.contains(index) {
             let cell = line[index]
-            if map.isWalkable(cell), map.ground[cell.row][cell.col] != .water { return cell }
+            guard map.isWalkable(cell), map.ground[cell.row][cell.col] != .water, keepsTheWayOpen(cell) else { continue }
+            if arrivals.contains(where: { max(abs($0.col - cell.col), abs($0.row - cell.row)) <= 1 }) { continue }
+            return cell
         }
         return nil
     }

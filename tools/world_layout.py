@@ -91,9 +91,9 @@ CROSSING_DEEP = 9
 # far in front of the mouth the road runs straight at it, and the hill's room round it (from the
 # mouth's foot: how far in its middle is, and its reach along the face and into it), its main
 # summit's top (the same; `WorldMap.raiseGate` raises them, the main summit's foot out over the
-# hill's room since 0.7.13), and how far each keeps from the coast or a
-# land next door, the rivers, the other roads (the game sways them up to 6 cells) and everything set
-# down by hand.
+# hill's room since 0.7.13, narrower across where a road sways close, `WorldMap.gateAcross`), and
+# how far each keeps from the coast or a land next door, the rivers, the other roads (the game sways
+# them up to 6 cells) and everything set down by hand.
 GATE_OUT = (16, 70)
 GATE_IDEAL = 34
 GATE_APPROACH = 7

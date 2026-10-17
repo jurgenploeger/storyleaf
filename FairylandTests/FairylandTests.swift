@@ -181,6 +181,17 @@ struct ContentTests {
                         #expect(!map.isWalkable(cell), "map \(def.id): you can climb its rock at \(cell)")
                     }
                 }
+                // No road climbs it but its own, up to the mouth (playtesting 2026-10-16: Lotus Land's
+                // road to the Rat Cavern ran up over the mountain's flank on its way from the hub).
+                var climbed: [GridPoint] = []
+                for cell in hill.cells where map.ground[cell.row][cell.col] == .path {
+                    let dx = Double(cell.col) + 0.5 - mouth.x, dy = Double(cell.row) + 0.5 - mouth.y
+                    let across = dx * mouth.along.x + dy * mouth.along.y, inward = dx * mouth.into.x + dy * mouth.into.y
+                    if abs(across) <= 2.5, inward >= -Double(WorldMap.gateApproach) - 2, inward <= 1.5 { continue }
+                    if hill.height(atCells: Double(cell.col) + 0.5, Double(cell.row) + 0.5) > 6 { climbed.append(cell) }
+                }
+                print("⛰ \(def.id) cave hill: \(Int(hill.lobes[0].across)) across")
+                #expect(climbed.isEmpty, "map \(def.id): a road climbs its cave's hill at \(Array(climbed.prefix(5)))")
                 // And it never leans out of sight.
                 for cell in hill.cells where (cell.col + cell.row) % 3 == 0 {
                     let x = Double(cell.col) + 0.5, y = Double(cell.row) + 0.5, e = 0.1
@@ -3395,6 +3406,36 @@ struct LandPlanTests {
         await planner.planUpToLocals(pause: {})
         await planner.planTheRest(pause: {})
         return (map, planner.plan)
+    }
+
+    /// Every way into a cave still leads on once its scenery and signposts are set down
+    /// (playtesting 2026-10-16: the Rat Cavern's signpost stood where you came in from Lotus Land, in
+    /// a tunnel a cell wide, and shut you in).
+    @Test func cavesStayOpenFromEveryWayIn() async {
+        for def in content.maps where def.theme.cave != nil {
+            let (map, plan) = await planned(def)
+            let arrivals = def.exits.map { map.entryCell(from: $0.edge) }
+            // Everywhere you can walk to from its middle, a side at a time as you walk.
+            var reached: Set<GridPoint> = [map.center]
+            var queue = [map.center]
+            while let cell = queue.popLast() {
+                for step in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                    let next = GridPoint(col: cell.col + step.0, row: cell.row + step.1)
+                    guard map.isWalkable(next), !reached.contains(next) else { continue }
+                    reached.insert(next)
+                    queue.append(next)
+                }
+            }
+            print("🪧 \(def.id): signposts at \(plan.signposts.map { "\($0.cell) to \($0.exit.to)" }), arriving at \(arrivals)")
+            for (exit, arrival) in zip(def.exits, arrivals) {
+                #expect(map.isWalkable(arrival) && reached.contains(arrival),
+                        "map \(def.id): where you come in from \(exit.to), \(arrival), doesn't lead to its middle")
+            }
+            for sign in plan.signposts {
+                #expect(!arrivals.contains { max(abs($0.col - sign.cell.col), abs($0.row - sign.cell.row)) <= 1 },
+                        "map \(def.id): the signpost to \(sign.exit.to) stands where you come in")
+            }
+        }
     }
 
     /// Building the scene takes no cell the plan didn't: where you can walk is settled once the plan's
