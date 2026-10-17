@@ -80,7 +80,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   of its own goes over `nape_<style>_<body>` (the hair from a fifth of the way down the head), so long hair
   shows below the helmet. `TOWNSFOLK` sheets no hero wears are split too (`dwarf_npc`: the old bearded dwarf,
   his own mop as `hair_dwarf_npc`). Rerun after changing a race's sheet, and look at `--preview` before
-  committing. Gloves, boots and necklaces are painted on by GearOverlay (`tools/gear_preview.py --trinkets`).
+  committing. Gloves, boots and necklaces are painted on by GearOverlay (`tools/gear_preview.py --trinkets`),
+  and so are the festive seasons' hats, measured on each frame's head (`GearOverlay.hat`, `--hats`).
 - `tools/rd.py`: Retro Diffusion client. `tools/icons.py`: vendors Iconaut icons (MIT), plus our own drawings in
   `art/icons/` where Iconaut has no shape that works (fire's three-tongued flame).
   `tools/check_content.py`: validates the game data.
