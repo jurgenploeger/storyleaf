@@ -2,6 +2,16 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.18",
+      "date": "2026-10-16",
+      "title": "Parties come and go",
+      "notes": [
+        "Adventurers don't always say yes now. Invite one to your party and they might turn you down: more often when you're far apart in level or they're travelling with friends, and for a few minutes after saying no.",
+        "You can join their parties too: walk up to anyone in a group and tap Ask to join their party. If whoever leads says yes, you walk at the back of their line as they lead you about, and they fight beside you. Walk off far enough, or tap Leave party under your portrait, to go your own way.",
+        "Nobody stays for ever: after a while in a party with you, an adventurer says goodbye and heads off on their own, and a party you joined moves on without you. Out in the world, adventurers leave their groups and join others now and then."
+      ]
+    },
+    {
       "version": "0.7.17",
       "date": "2026-10-16",
       "title": "A clear way in",

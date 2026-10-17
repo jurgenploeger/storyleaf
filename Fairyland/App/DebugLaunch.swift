@@ -53,6 +53,10 @@ import SpriteKit
 ///                  and join your party, through the same steps as their card's buttons
 ///   group          every adventurer who can travels with friends (crowd.json `groupChance` 1), and
 ///                  once the map is on screen the nearest group comes over, in line
+///   joinparty      with group: their leader lets you join them, and you follow them about
+///   declined       with meet=1: they become your friend, and turn down your invite to your party
+///   stay=s         anyone in a party with you heads off after s seconds of play, and the crowd's
+///                  adventurers leave their group or join one every s seconds
 ///   wave=<n>       with boss: the fight opens at that wave (3: the boss's own)
 ///   orders         with battle: the hero picks Attack on the first monster, so your companion's turn shows
 ///   more           with battle: the More buttons are open (the commands behind it, Auto and the pace)
@@ -603,6 +607,10 @@ enum DebugLaunch {
             session.playerPosition = grid.center(of: grid.entryCell(from: road.edge))
         }
         if flags["group"] != nil { Crowd.groupChanceOverride = 1 }
+        if let seconds = flags["stay"].flatMap({ Double($0) }) {
+            GameSession.stayOverride = seconds
+            Crowd.mingleOverride = seconds...seconds
+        }
         if let at = flags["at"]?.split(separator: ";").first ?? flags["at"].map({ Substring($0) }),
            let def = Content.shared.map(session.data.mapID) {
             let parts = at.split(separator: "_").compactMap { Int($0) }
@@ -760,7 +768,9 @@ enum DebugLaunch {
                     for adventurer in newcomers {
                         coordinator.befriend(adventurer)
                         try? await Task.sleep(for: .seconds(1))
-                        coordinator.invite(adventurer)
+                        // They always say yes here (`declined` shows a no).
+                        coordinator.session.invite(adventurer.id)
+                        coordinator.session.nearbyAdventurer = nil
                         try? await Task.sleep(for: .seconds(1))
                     }
                     return
@@ -774,7 +784,12 @@ enum DebugLaunch {
                     try? await Task.sleep(for: .milliseconds(500))
                     guard coordinator.isReady, coordinator.mapScene.view != nil else { continue }
                     try? await Task.sleep(for: .seconds(1))
-                    _ = coordinator.mapScene.summonAdventurersForDebug(0)
+                    let group = coordinator.mapScene.summonAdventurersForDebug(0)
+                    // `joinparty`: whoever leads lets you join, and they set off with you behind.
+                    if flags["joinparty"] != nil, let leader = group.first,
+                       let reply = coordinator.session.askToJoin(group, roll: 0) {
+                        coordinator.mapScene.adventurerSays(reply.line, leader.id)
+                    }
                     return
                 }
             }
@@ -786,7 +801,16 @@ enum DebugLaunch {
                     try? await Task.sleep(for: .milliseconds(500))
                     guard coordinator.isReady, coordinator.mapScene.view != nil else { continue }
                     try? await Task.sleep(for: .seconds(1))
-                    _ = coordinator.mapScene.summonAdventurersForDebug(count)
+                    let met = coordinator.mapScene.summonAdventurersForDebug(count)
+                    // `declined`: friends now, they turn down your invite (the map notes who's around
+                    // every 0.4 s first).
+                    if flags["declined"] != nil, let first = met.first {
+                        coordinator.befriend(first)
+                        try? await Task.sleep(for: .seconds(1))
+                        if let reply = coordinator.session.askAlong(first.id, roll: 1) {
+                            coordinator.mapScene.adventurerSays(reply.line, first.id)
+                        }
+                    }
                     return
                 }
             }

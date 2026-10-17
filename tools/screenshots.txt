@@ -276,6 +276,11 @@ gate_lotus_side_day | newgame,level=126,map=lotus_land,at=-4_-8,hour=12,weather=
 # Adventurers travelling together, as you do with your party (crowd.json `groupChance`), in town, with the
 # card of the one nearest saying how many there are.
 bot_group      | newgame,map=meadowbrook,group,hour=12,weather=clear | 10
+# Partying up with adventurers (0.7.18): joining a group, walking at the back of its line with the plate
+# under your party; a friend turning down your invite; friends heading off after a while (stay=s).
+bot_join       | newgame,level=20,map=meadowbrook,group,joinparty,hour=12,weather=clear | 14
+bot_declined   | newgame,level=45,class=fighter,map=wolf_lair,meet=1,declined | 12
+bot_goodbye    | newgame,level=49,class=fighter,friends=2,map=sunny_meadow,stay=5,hour=12,weather=clear | 11
 # Status capes (rewards.json `prizes`): one on your back (its emblem and trim), over plate from the side,
 # the weaver's list with two to weave, the cape's slot on the paper doll, and a cape's card.
 cape_back      | newgame,level=60,map=meadowbrook,equip=swan_lake_cape,facing=up,hour=12,weather=clear | 8

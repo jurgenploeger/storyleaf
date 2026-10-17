@@ -2425,6 +2425,83 @@ struct RulesTests {
         #expect(session.friends.count == 1)
     }
 
+    /// Friends don't always come along (playtesting 2026-10-16): mostly yes, but no again for a while
+    /// after a no, mostly no far apart in level, and less keen with friends of their own.
+    @Test func friendsCanTurnDownAnInvite() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.hero.level = 30
+        let chance = Content.shared.crowd.acceptChance ?? 0.75
+        let momo = Adventurer(name: "Momo", raceID: "elf", classID: "mage", level: 28, look: .standard)
+        let pip = Adventurer(name: "Pip", raceID: "human", classID: "fighter", level: 80, look: .standard)
+        let kip = Adventurer(name: "Kip", raceID: "dwarf", classID: "fighter", level: 31, look: .standard)
+        let lia = Adventurer(name: "Lia", raceID: "human", classID: "mage", level: 29, look: .standard)
+        for friend in [momo, pip, kip, lia] { #expect(session.befriend(friend)) }
+        session.adventurersAround = Set([momo, pip, kip, lia].map(\.id))
+        let now = Date()
+        // A no, and no again a moment later however the dice fall; asked again later, a yes.
+        #expect(session.askAlong(momo.id, roll: 0.99, now: now)?.accepted == false)
+        #expect(session.partyMembers.isEmpty)
+        #expect(session.askAlong(momo.id, roll: 0, now: now.addingTimeInterval(60))?.line == "Still no, sorry!")
+        #expect(session.askAlong(momo.id, roll: 0, now: now.addingTimeInterval(GameSession.declineFor + 1))?.accepted == true)
+        #expect(session.partyMembers.map(\.name) == ["Momo"])
+        // Fifty levels apart, dice that'd mean yes for anyone else mean no.
+        #expect(session.askAlong(pip.id, roll: chance * 0.5, now: now)?.accepted == false)
+        // With friends of their own they're half as keen.
+        #expect(session.askAlong(kip.id, busy: true, roll: chance * 0.75, now: now)?.accepted == false)
+        #expect(session.askAlong(lia.id, roll: chance * 0.75, now: now)?.accepted == true)
+    }
+
+    /// You can join a party of adventurers (playtesting 2026-10-16): whoever leads answers, they fight
+    /// beside you, with room for you and your party's friends or not at all; and after a while they
+    /// head off on their own, as a friend at your side does, who then won't come straight back.
+    @Test func youCanJoinTheirPartyAndTheyHeadOffAfterAWhile() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.hero.level = 20
+        let group = ["Ash", "Bree", "Cole"].map { Adventurer(name: $0, raceID: "human", classID: "fighter", level: 21, look: .standard) }
+        let grump = Adventurer(name: "Grump", raceID: "dwarf", classID: "fighter", level: 20, look: .standard, hostile: true)
+        // On their own, there's no party to join.
+        #expect(session.askToJoin([group[0]], roll: 0) == nil)
+        let now = Date()
+        #expect(session.askToJoin(group, roll: 0.99, now: now)?.accepted == false)
+        #expect(session.askToJoin(group, roll: 0, now: now.addingTimeInterval(60))?.accepted == false)
+        #expect(session.joinedParty == nil)
+        #expect(session.askToJoin(group, roll: 0, now: now.addingTimeInterval(GameSession.declineFor + 1))?.accepted == true)
+        #expect(session.joinedParty?.leader?.name == "Ash")
+        #expect(session.isInJoinedParty(group[2]))
+        // They fight beside you, but they're not your friends: they throw no Seal Stones of yours.
+        let controller = BattleController.duel(with: grump, session: session)
+        for member in group {
+            let fighter = controller.party.first { $0.name == member.name }
+            #expect(fighter != nil, "\(member.name) isn't in the fight")
+            #expect(fighter?.sealStones == 0)
+        }
+        // Room for one friend more, a party of five.
+        let momo = Adventurer(name: "Momo", raceID: "elf", classID: "mage", level: 19, look: .standard)
+        #expect(session.befriend(momo))
+        session.adventurersAround = [momo.id]
+        #expect(!session.partyIsFull)
+        session.invite(momo.id)
+        #expect(session.partyIsFull)
+        #expect(session.fightersAtYourSide.map(\.name) == ["Momo", "Ash", "Bree", "Cole"])
+        // Time passes: Momo heads off first, and won't come straight back; then their party does.
+        session.partyStays[momo.id] = 100
+        session.joinedStay = 200
+        #expect(session.passPartyTime(99).left.isEmpty)
+        let first = session.passPartyTime(2)
+        #expect(first.left.map(\.name) == ["Momo"] && first.headedOff == nil)
+        #expect(session.partyMembers.isEmpty && session.isFriend(momo))
+        #expect(session.askAlong(momo.id, roll: 0)?.accepted == false)
+        #expect(session.passPartyTime(100).headedOff?.name == "Ash")
+        #expect(session.joinedParty == nil && session.fightersAtYourSide.isEmpty)
+        // A party of four has no room for you and a friend of yours.
+        let four = group + [Adventurer(name: "Dot", raceID: "elf", classID: "mage", level: 22, look: .standard)]
+        let pip = Adventurer(name: "Pip", raceID: "human", classID: "fighter", level: 20, look: .standard)
+        #expect(session.befriend(pip))
+        session.adventurersAround = [pip.id]
+        session.invite(pip.id)
+        #expect(session.askToJoin(four, roll: 0)?.line == "Sorry, our party's full!")
+    }
+
     @Test func friendsSayWhenTheyGoUpALevelWithYou() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         session.data.hero.level = 30
@@ -2619,6 +2696,32 @@ struct RulesTests {
             #expect(crowd.group(of: rest[0]).map(\.id) == rest)
         }
         #expect(seen, "no adventurers travelled together in Meadowbrook in eight tries")
+    }
+
+    /// Adventurers don't keep together for ever (playtesting 2026-10-16): after a while whoever walks
+    /// behind in a group heads off on their own (`Crowd.mingle`); the party you've joined keeps
+    /// together, leading you about.
+    @Test func adventurersComeAndGoFromGroups() throws {
+        let def = try #require(Content.shared.map("meadowbrook"))
+        let map = Layouts.of(def)
+        var tried = 0
+        for _ in 0..<16 where tried < 3 {
+            let crowd = Crowd(def: def, map: map, world: SKNode(), mingle: 0.05...0.05)
+            let everyone = crowd.adventurerPositions.map(\.profile)
+            let leaders = everyone.filter { crowd.groupSize(of: $0.id) > 1 && crowd.group(of: $0.id).first?.id == $0.id }
+            guard leaders.count >= 2 else { continue }
+            tried += 1
+            let yours = crowd.group(of: leaders[0].id).map(\.id)
+            let theirs = crowd.group(of: leaders[1].id).map(\.id)
+            #expect(crowd.lead(you: leaders[0].id))
+            #expect(crowd.yourLeader == leaders[0].id && crowd.yourPlace != nil)
+            crowd.update(dt: 0.1, player: CGPoint(x: -100_000, y: -100_000))
+            #expect(crowd.group(of: leaders[0].id).map(\.id) == yours, "the party you joined split up")
+            #expect(crowd.group(of: leaders[1].id).map(\.id) != theirs, "no one left their group")
+            crowd.letYouGo()
+            #expect(crowd.yourLeader == nil && crowd.yourPlace == nil)
+        }
+        #expect(tried > 0, "never two groups in Meadowbrook in sixteen tries")
     }
 
     @Test func theWeatherHoldsForASpellAndFitsTheMap() throws {

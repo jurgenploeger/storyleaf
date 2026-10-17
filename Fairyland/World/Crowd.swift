@@ -7,7 +7,10 @@ import SpriteKit
 /// look around and chat now and then. They never block the way. Walk up to an adventurer to see
 /// their card: befriend them, invite them along, trade, or (in danger zones) duel. Some adventurers
 /// travel together, as you do with your party (crowd.json `groupChance`): one leads, the rest walk
-/// behind in single file, their companions at their sides.
+/// behind in single file, their companions at their sides. Now and then one heads off on their own,
+/// or joins a group near them with room (crowd.json `groupMinutes`). Ask whoever leads a group and
+/// you can join it (`GameSession.askToJoin`): you walk at the back of their line as they lead you
+/// about (`lead(you:)`).
 final class Crowd {
     private final class Member {
         let name: String
@@ -43,6 +46,9 @@ final class Crowd {
         var ahead: Member?
         var place = 0
         var leads = false
+        /// How much longer they keep to how they travel, alone or in a group, before they leave
+        /// their group or join one near them (`mingle`).
+        var mingle: TimeInterval = 0
 
         init(name: String, kind: GameSession.ChatLine.Kind, walker: Walker, pet: Walker?, home: GridPoint, roam: Int,
              lines: [String], profile: Adventurer? = nil, trades: Bool = false, story: Bool = false,
@@ -105,6 +111,12 @@ final class Crowd {
 
     private let map: WorldMap
     private var members: [Member] = []
+    /// Whoever leads the party you've joined, if it's here (`lead(you:)`).
+    private var host: Member?
+    /// How long anyone keeps to how they travel (`Member.mingle`), in seconds, and how many there
+    /// can be in a group.
+    private let mingleSpan: ClosedRange<TimeInterval>
+    private let largestGroup: Int
     private let replies = Content.shared.crowd.replies
     private var rng = SystemRandomNumberGenerator()
     private let market: Market?
@@ -117,11 +129,16 @@ final class Crowd {
     /// other adventurers about, if it suits their level, so you can meet them again and invite them.
     /// `heroLevel`: yours, which a town's adventurers are about. `market`: what the town's traders
     /// (`crowd.traders`) have, if it has any. `locals`: the map's own people, where the scene set them.
+    /// `mingle`: how long anyone keeps to how they travel, in seconds (tests; crowd.json `groupMinutes`).
     init(def: MapDef, map: WorldMap, world: SKNode, heroLevel: Int = 1, friends: [Adventurer] = [], market: Market? = nil,
-         locals: [Local] = []) {
+         locals: [Local] = [], mingle: ClosedRange<TimeInterval>? = nil) {
         self.map = map
         self.market = market
         let options = Content.shared.crowd
+        let minutes = options.groupMinutes ?? [3, 10]
+        let shortest = (minutes.first ?? 3) * 60
+        mingleSpan = mingle ?? Self.mingleOverride ?? shortest...max(shortest, (minutes.last ?? 3) * 60)
+        largestGroup = max(2, options.groupSize?.last ?? 2)
         let town = def.fence == true
         // In a town, about its square (its countryside round it is no place for a crowd).
         let spread = (town ? max(map.townSquare.width, map.townSquare.height) : max(map.columns, map.rows)) / 2
@@ -201,6 +218,9 @@ final class Crowd {
 
     /// Debug launches (`group`): how often adventurers travel together, in place of crowd.json's.
     static var groupChanceOverride: Double?
+    /// Debug launches (`mingle=s`) and tests: how long anyone keeps to how they travel, in seconds,
+    /// in place of crowd.json's `groupMinutes`.
+    static var mingleOverride: ClosedRange<TimeInterval>?
 
     private func addAdventurer(_ profile: Adventurer, home: GridPoint, roam: Int, world: SKNode, trades: Bool = false) {
         let walker = Self.person(profile.name, art: GameSession.registerAdventurer(profile),
@@ -343,6 +363,7 @@ final class Crowd {
     }
 
     private func add(_ member: Member, to world: SKNode) {
+        member.mingle = .random(in: mingleSpan, using: &rng)
         member.walker.position = map.center(of: member.home)
         member.walker.face(Direction.allCases.randomElement() ?? .down)
         // On a busy map they chat less often each, and traders less often still; the first lines
@@ -376,8 +397,10 @@ final class Crowd {
             let head = Self.head(of: member)
             let together = nearest[ObjectIdentifier(head)] ?? distance
             walker.isNear = together < Walker.nameRange
-            // Adventurers and locals stop to chat when you walk up to them.
-            if member.profile?.hostile == false || member.story, together < 90 {
+            // Adventurers and locals stop to chat when you walk up to them; not the party you've
+            // joined, with you among them.
+            let hosting = host != nil && head === host
+            if !hosting, member.profile?.hostile == false || member.story, together < 90 {
                 walker.path = []
                 walker.face(Direction(player - walker.position, current: walker.facing))
                 member.wait = max(member.wait, 1.5)
@@ -386,7 +409,7 @@ final class Crowd {
             if let ahead = member.ahead {
                 // In line behind the one ahead, on the trail of whoever leads.
                 walker.follow(ahead.walker, dt: dt, footstep: head.walker.footstep(behind: CGFloat(member.place) * 36), canStand: standable)
-                if together < 90 { walker.face(Direction(player - walker.position, current: walker.facing)) }
+                if !hosting, together < 90 { walker.face(Direction(player - walker.position, current: walker.facing)) }
             } else if !walker.path.isEmpty {
                 walker.followPath(dt: dt)
                 walker.setWalking(true)
@@ -413,6 +436,13 @@ final class Crowd {
                 let deal = member.trades ? member.profile.flatMap { market?.shout($0) } : nil
                 if near || member.kind == .adventurer, let line = deal ?? member.nextLine() {
                     speak(line, by: member, bubble: near)
+                }
+            }
+            if let profile = member.profile, !profile.hostile, !member.trades {
+                member.mingle -= dt
+                if member.mingle <= 0 {
+                    member.mingle = .random(in: mingleSpan, using: &rng)
+                    mingle(member)
                 }
             }
             if let profile = member.profile, profile.hostile {
@@ -487,9 +517,95 @@ final class Crowd {
     /// How many travel together with the adventurer `id`, them among them: 1 on their own.
     func groupSize(of id: UUID) -> Int { max(1, group(of: id).count) }
 
+    // MARK: - The party you've joined
+
+    /// Takes you along in the group `leader` leads, the party you've joined
+    /// (`GameSession.joinedParty`): at the back of their line, they no longer stop to face you, and
+    /// whoever leads goes further afield each time instead of keeping near home. Returns whether
+    /// they lead a group here.
+    @discardableResult
+    func lead(you leader: UUID) -> Bool {
+        guard let member = members.first(where: { $0.profile?.id == leader }), member.ahead == nil, member.leads else { return false }
+        host = member
+        member.wait = min(member.wait, 1)
+        return true
+    }
+
+    /// You've left the party you'd joined: they keep about where they've got to.
+    func letYouGo() {
+        guard let host else { return }
+        host.home = map.cell(at: host.walker.position)
+        self.host = nil
+    }
+
+    /// Who leads the party you've joined, if they're here (`lead(you:)`).
+    var yourLeader: UUID? { host?.profile?.id }
+
+    /// Where you walk in the party you've joined, on the trail of whoever leads it behind the last
+    /// of them, and whether they're on the move; where whoever leads stands.
+    var yourPlace: (spot: CGPoint, going: Bool, leader: CGPoint)? {
+        guard let host else { return nil }
+        let count = members.filter { Self.head(of: $0) === host }.count
+        return (host.walker.footstep(behind: CGFloat(count) * 36), host.walker.isWalking, host.walker.position)
+    }
+
+    // MARK: - Coming and going
+
+    /// What someone says as they leave their group, and as they join one.
+    static var partings: [String] {
+        [L("I'm heading off on my own. See you!"), L("Thanks for the company, everyone!"), L("I'll go my own way from here. Bye!")]
+    }
+    static var joinings: [String] {
+        [L("Mind if I tag along?"), L("Room for one more?"), L("Hey, wait for me!")]
+    }
+
+    /// Someone's had a while travelling as they do (`Member.mingle`): one walking behind in a group
+    /// heads off on their own; one on their own joins a group near them with room, of about their
+    /// level, at the back of its line. Never the party you've joined, nor whoever leads a group.
+    private func mingle(_ member: Member) {
+        guard host == nil || Self.head(of: member) !== host else { return }
+        let heard = member.walker.position.distance(to: player) < 420
+        if member.ahead != nil {
+            leaveGroup(member)
+            member.home = map.cell(at: member.walker.position)
+            member.walker.walkSpeed = .random(in: 72...92)
+            member.wait = .random(in: 1...3)
+            if let line = Self.partings.randomElement() { speak(line, by: member, bubble: heard) }
+            return
+        }
+        guard !member.leads, let profile = member.profile else { return }
+        let levels = max(1, profile.level - 5)...(profile.level + 5)
+        var joining: (last: Member, distance: CGFloat)?
+        for leader in members where leader.leads && leader.ahead == nil && leader !== host {
+            guard let theirs = leader.profile, !theirs.hostile, levels.contains(theirs.level) else { continue }
+            let distance = leader.walker.position.distance(to: member.walker.position)
+            guard distance < 260, distance < (joining?.distance ?? .infinity) else { continue }
+            let line = members.filter { Self.head(of: $0) === leader }
+            guard line.count < largestGroup, let last = line.max(by: { $0.place < $1.place }) else { continue }
+            joining = (last, distance)
+        }
+        guard let last = joining?.last else { return }
+        member.ahead = last
+        member.place = last.place + 1
+        last.leads = true
+        member.walker.path = []
+        // Quicker than whoever leads, so they keep up (as your friends do).
+        member.walker.walkSpeed = 105
+        if let line = Self.joinings.randomElement() { speak(line, by: member, bubble: heard) }
+    }
+
     /// Standing around is over: look about, or stroll somewhere near home (traders and locals who
     /// stand mind their spot; locals out on an errand go on to where they're going).
     private func decide(_ member: Member) {
+        if member === host {
+            // Leading you about: on somewhere further afield each time, from wherever they've got to.
+            member.home = map.cell(at: member.walker.position)
+            member.wait = .random(in: 1...3, using: &rng)
+            guard let target = map.strollTarget(near: member.home, radius: member.roam * 2, using: &rng) else { return }
+            let path = map.path(from: member.walker.position, to: map.center(of: target))
+            if path.count <= member.roam * 6 { member.walker.path = path }
+            return
+        }
         if let route = member.route {
             let goal = member.outward ? route : member.home
             if member.walker.position.distance(to: map.center(of: goal)) < 30 {
@@ -572,9 +688,11 @@ final class Crowd {
     }
     #endif
 
-    /// The adventurer standing closest to `point`, if anyone is within reach.
+    /// The adventurer standing closest to `point`, if anyone is within reach: not one in the party
+    /// you've joined, who you walk among (their card would never close).
     func adventurer(near point: CGPoint, within reach: CGFloat) -> Adventurer? {
         members
+            .filter { host == nil || Self.head(of: $0) !== host }
             .compactMap { member in member.profile.map { (profile: $0, distance: member.walker.position.distance(to: point)) } }
             .filter { $0.distance < reach }
             .min { $0.distance < $1.distance }?
@@ -613,6 +731,7 @@ final class Crowd {
     /// They left: joined your party, or ran off after a duel.
     func remove(_ id: UUID, poof: Bool) {
         guard let found = members.first(where: { $0.profile?.id == id }) else { return }
+        if found === host { host = nil }
         leaveGroup(found)
         guard let index = members.firstIndex(where: { $0 === found }) else { return }
         let member = members.remove(at: index)

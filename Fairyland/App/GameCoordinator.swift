@@ -411,9 +411,27 @@ final class GameCoordinator {
         open(.trade(adventurer))
     }
 
+    /// Asks a friend along: they join you, or say why not (`GameSession.askAlong`). One travelling
+    /// with others is less keen.
     func invite(_ adventurer: Adventurer) {
-        session.invite(adventurer.id)
+        let busy = session.nearbyGroup.count > 1 && session.nearbyGroup.contains { $0.id == adventurer.id }
+        if let reply = session.askAlong(adventurer.id, busy: busy) { mapScene.adventurerSays(reply.line, adventurer.id) }
         session.nearbyAdventurer = nil
+    }
+
+    /// Asks the group the adventurer travels with to let you join them: whoever leads answers
+    /// (`GameSession.askToJoin`), and with a yes you follow them about.
+    func askToJoin(_ adventurer: Adventurer) {
+        let group = session.nearbyGroup
+        guard group.contains(where: { $0.id == adventurer.id }), let reply = session.askToJoin(group) else { return }
+        mapScene.adventurerSays(reply.line, group.first?.id ?? adventurer.id)
+        session.nearbyAdventurer = nil
+    }
+
+    /// Leaves the party you've joined, of your own accord.
+    func leaveJoinedParty() {
+        guard let leader = session.leaveJoinedParty(.wandered) else { return }
+        mapScene.adventurerSays([L("See you around!"), L("Take care out there!"), L("Bye for now!")].randomElement() ?? L("See you around!"), leader.id)
     }
 
     func challenge(_ adventurer: Adventurer) {

@@ -858,6 +858,17 @@ the Wishing Seal, which stays the Monster Book's last reward.
     group"): now and then two to four of about the same level, one leading and the rest in single file
     behind with their companions at their sides, as your party walks (crowd.json `groupChance`,
     `groupSize`; `Crowd`). They stop together as you walk up to any of them; their card says how many.
+  - Since 0.7.18 partying up works both ways, and not for ever (ours, asked for in playtesting 2026-10-16:
+    "bots should also decline to follow you in your party. You can also join bots' parties and follow them.
+    Bots can also decide to leave a party again after a while"). FO's parties were other players, who could
+    say no and leave as they liked. An invite is a yes `acceptChance` of the time (crowd.json), a quarter
+    as often over 20 levels apart, half as often to one travelling with friends, and a no holds for three
+    minutes (`GameSession.askAlong`). Ask whoever leads a group and you can join it with room for you and
+    your party's friends, five in all (`askToJoin`): you walk at the back of their line as they lead you
+    about (`Crowd.lead(you:)`) and they fight beside you; you leave once you're far from whoever leads, or
+    from the plate under your party. Anyone in a party with you heads off after `stayMinutes` of play
+    (`passPartyTime`), and among themselves adventurers leave their group or join one near them every
+    `groupMinutes` (`Crowd.mingle`).
   - Past five, the battle line splits: people in front, companions in a row behind.
   - Without a friend (since 0.3.83), you and your companion stand side by side in one line, as a
     playtester asked (2026-10-08); with friends, companions stand a row behind whoever they came with.

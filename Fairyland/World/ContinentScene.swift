@@ -194,6 +194,10 @@ final class ContinentScene: SKScene {
     private var allies: [Ally] = []
     /// How close you come to a friend waiting for you before they set off with you again.
     private let rejoinRange: CGFloat = 64
+    /// The land whose crowd leads you about, in the party you've joined (`GameSession.joinedParty`).
+    private var hostLand: String?
+    /// Time played since the last look round, for how long others stay in a party with you.
+    private var partyClock: TimeInterval = 0
     /// Set while a window or a battle is up (`MapScene`).
     var isInputLocked = false
     /// Debug launches walking you about (`crossing`): no battles on the way.
@@ -434,11 +438,16 @@ final class ContinentScene: SKScene {
             player.zPosition = -next.y
             player.face(Direction(stick, current: player.facing))
             player.setWalking(true)
+        } else if player.path.isEmpty, let place = yourPlace() {
+            // In a party you've joined: along at the back of its line, never off into a cave or aboard.
+            player.walk(toward: place.spot, going: place.going, dt: dt) { [unowned self] in self.canStand(at: $0) && !self.leadsAway($0) }
+            player.zPosition = -player.position.y
         } else {
             player.setWalking(player.followPath(dt: dt) || !player.path.isEmpty)
             player.zPosition = -player.position.y
         }
         if !isInputLocked {
+            partyClock += dt
             checkCell()
             checkTalkTarget()
         }
@@ -940,6 +949,71 @@ final class ContinentScene: SKScene {
         return local + land.shift
     }
 
+    /// Who's heading off on their own after a while in a party with you (`GameSession.passPartyTime`),
+    /// to say goodbye once they're back among the crowd.
+    private var goodbyes: [UUID] = []
+
+    /// Keeps the party you've joined in step (`GameSession.joinedParty`): the crowd its leader's in
+    /// leads you, and who walks with them is who's in it. You've left it once you're far from whoever
+    /// leads it, or they're nowhere about. Time passes for the friends at your side and for it: whoever
+    /// heads off says goodbye (`sayGoodbyes`).
+    private func keepUpWithParties() {
+        if !isInputLocked {
+            let gone = session.passPartyTime(partyClock)
+            goodbyes += gone.left.map(\.id)
+            if let leader = gone.headedOff { goodbyes.append(leader.id) }
+        }
+        partyClock = 0
+        if let leader = session.joinedParty?.leader {
+            if hostLand == nil {
+                for (id, land) in lands where land.stage.crowd?.lead(you: leader.id) == true {
+                    hostLand = id
+                    break
+                }
+            }
+            if let id = hostLand, let land = lands[id], let crowd = land.stage.crowd, crowd.yourLeader == leader.id,
+               let place = crowd.yourPlace {
+                if (place.leader + land.shift).distance(to: player.position) > GameSession.joinedReach {
+                    session.leaveJoinedParty(.wandered)
+                } else {
+                    let group = crowd.group(of: leader.id)
+                    if group.map(\.id) != session.joinedParty?.members.map(\.id) { session.joinedParty?.members = group }
+                }
+            } else {
+                session.leaveJoinedParty(.gone)
+            }
+        }
+        if session.joinedParty == nil, let id = hostLand {
+            lands[id]?.stage.crowd?.letYouGo()
+            hostLand = nil
+        }
+    }
+
+    /// Those heading off say goodbye, from among the crowd (a friend who left your party has just
+    /// rejoined it, `refreshAllies`).
+    private func sayGoodbyes() {
+        for id in goodbyes {
+            adventurerSays(GameSession.goodbyes.randomElement() ?? L("See you around!"), id)
+        }
+        goodbyes = []
+    }
+
+    /// Where you walk in the party you've joined, in the scene's points, while its land's crowd
+    /// leads you.
+    private func yourPlace() -> (spot: CGPoint, going: Bool)? {
+        guard let id = hostLand, let land = lands[id], let place = land.stage.crowd?.yourPlace else { return nil }
+        return (place.spot + land.shift, place.going)
+    }
+
+    /// Whether a point is a way off the continent: into a cave's mouth, or aboard a ship.
+    private func leadsAway(_ point: CGPoint) -> Bool {
+        let cell = Self.cell(at: point)
+        guard let owner = store.land(at: cell) ?? store.pier(at: cell), let land = lands[owner.id] else { return false }
+        let local = store.local(cell, in: land.place)
+        let cave = land.map.exit(at: local).map { Content.shared.world[$0.to] == nil } ?? false
+        return cave || land.map.boarding(at: local) != nil
+    }
+
     /// Friends waiting for you set off with you again once you reach them.
     private func rejoinWaitingFriends() {
         guard !isInputLocked else { return }
@@ -1340,11 +1414,14 @@ final class ContinentScene: SKScene {
         refreshHero()
         refreshFollower()
         rejoinWaitingFriends()
+        keepUpWithParties()
         refreshAllies()
+        sayGoodbyes()
         // The minimap's people and their jobs, in the land you're in.
         if let here, let stage = lands[here.id]?.stage {
             let party = allies.map { GameSession.MinimapDot(cell: stage.map.cell(at: stage.local($0.node.position)), kind: .party) }
-            let dots = stage.minimapDots(friends: Set(session.friends.map(\.id))) + party
+            let joined = Set(session.joinedParty?.members.map(\.id) ?? [])
+            let dots = stage.minimapDots(friends: Set(session.friends.map(\.id)), party: joined) + party
             if session.minimapDots != dots { session.minimapDots = dots }
             let marks = stage.minimapMarks()
             if session.minimapMarks != marks { session.minimapMarks = marks }
@@ -1363,8 +1440,8 @@ final class ContinentScene: SKScene {
             let you = stage.local(player.position)
             let nearby = crowd.adventurer(near: you, within: 80)
             if session.nearbyAdventurer?.id != nearby?.id { session.nearbyAdventurer = nearby }
-            let group = nearby.map { crowd.groupSize(of: $0.id) } ?? 1
-            if session.nearbyGroupSize != group { session.nearbyGroupSize = group }
+            let group = nearby.map { crowd.group(of: $0.id) } ?? []
+            if session.nearbyGroup != group { session.nearbyGroup = group }
             let around = crowd.adventurers(near: you, within: 320)
             if session.adventurersAround != around { session.adventurersAround = around }
         }

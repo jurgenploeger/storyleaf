@@ -775,7 +775,8 @@ private struct FriendsTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HowItWorks(L("Befriend adventurers you meet (walk up to one). Up to {count} friends can travel and fight with you, and they bring their companions. They fight on if you faint, and wait where you fell; a friend who faints wakes up at their own checkpoint. Walk up to them to set off together again.", ["count": GameSession.maxAllies]),
+            HowItWorks(L("Befriend adventurers you meet (walk up to one). Up to {count} friends can travel and fight with you, and they bring their companions. They fight on if you faint, and wait where you fell; a friend who faints wakes up at their own checkpoint. Walk up to them to set off together again.", ["count": GameSession.maxAllies])
+                       + "\n" + L("They don't always say yes, and after a while they head off on their own. You can also ask whoever leads a group of adventurers to let you join them, and follow them about."),
                        open: session.friends.isEmpty)
             if session.friends.isEmpty {
                 EmptyNote(L("No friends yet.\nSay hi to the adventurers you meet!"))
@@ -838,8 +839,8 @@ private struct FriendRow: View {
                 Text(L("Not around"))
                     .font(HUDStyle.font(10))
                     .foregroundStyle(HUDStyle.dim)
-            } else if session.partyMembers.count < GameSession.maxAllies {
-                Button(L("Invite")) { session.invite(friend.id) }
+            } else if !session.partyIsFull {
+                Button(L("Invite")) { session.askAlong(friend.id) }
                     .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
             } else {
                 Text(L("Party full"))

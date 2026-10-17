@@ -98,7 +98,8 @@ final class BattleController {
         }
     }
 
-    /// You, your companion and the friends in your party who are at your side.
+    /// You, your companion, and everyone fighting beside you: the friends in your party at your
+    /// side, and the party of adventurers you've joined (`GameSession.fightersAtYourSide`).
     private static func party(for session: GameSession) -> [Combatant] {
         var hero = Combatant(
             id: 0, side: .party, source: .hero, name: session.data.hero.name, art: GameSession.heroArt,
@@ -120,7 +121,7 @@ final class BattleController {
             companion.ownerID = hero.id
             party.append(companion)
         }
-        for (index, friend) in session.friendsAtYourSide.enumerated() {
+        for (index, friend) in session.fightersAtYourSide.enumerated() {
             party.append(adventurer(friend, id: 2 + index, side: .party, session: session))
             // A friend's companion fights behind them (a step below their level, like a rival's),
             // named for its owner so it's never mistaken for yours.
@@ -153,8 +154,9 @@ final class BattleController {
         fighter.skillLevels = Dictionary(uniqueKeysWithValues: skills.map { ($0.id, Combatant.naturalSkillLevel(for: person.level)) })
         fighter.classID = person.classID
         fighter.raceID = person.raceID
-        // A friend still without a companion brings their Seal Stones to catch one with.
-        if side == .party, person.petSpecies == nil { fighter.sealStones = person.stonesLeft }
+        // A friend still without a companion brings their Seal Stones to catch one with (not the
+        // party you've joined: theirs is theirs to keep).
+        if side == .party, person.petSpecies == nil, session.isFriend(person) { fighter.sealStones = person.stonesLeft }
         return fighter
     }
 
@@ -163,7 +165,9 @@ final class BattleController {
     func person(behind fighter: Combatant) -> Adventurer? {
         guard fighter.art.hasPrefix("adv:") else { return nil }
         switch fighter.source {
-        case .ally(let id): return session.friends.first { $0.id == id }
+        case .ally(let id):
+            if let friend = session.friends.first(where: { $0.id == id }) { return friend }
+            return session.joinedParty?.members.first(where: { $0.id == id })
         case .rival(let id): return rival?.id == id ? rival : nil
         default: return nil
         }
