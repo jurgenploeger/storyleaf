@@ -8876,6 +8876,17 @@
       }
     },
     {
+      "id": "cave_ladder",
+      "kind": "prop",
+      "request": {
+        "prompt": "wooden ladder going down into a dark round pit in a cave floor ringed with stones",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 48,
+        "height": 48,
+        "remove_bg": true
+      }
+    },
+    {
       "id": "candy_cane",
       "kind": "prop",
       "request": {

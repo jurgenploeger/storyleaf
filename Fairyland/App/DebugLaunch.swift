@@ -621,6 +621,10 @@ enum DebugLaunch {
            let road = def.exits.first(where: { $0.to == from }) {
             let grid = WorldMap(def: def)
             session.playerPosition = grid.center(of: grid.entryCell(from: road.edge))
+        } else if let from = flags["from"], let def = Content.shared.map(session.data.mapID) {
+            // A cave's other level: in front of the stairs that lead back to it, as if just climbed.
+            let grid = WorldMap(def: def)
+            if let cell = grid.stairsArrival(from: from) { session.playerPosition = grid.center(of: cell) }
         }
         if flags["group"] != nil { Crowd.groupChanceOverride = 1 }
         if let seconds = flags["stay"].flatMap({ Double($0) }) {

@@ -2,6 +2,15 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.38",
+      "date": "2026-10-18",
+      "title": "Deeper caves",
+      "notes": [
+        "The Glimmerdeep goes deeper: find the ladder down to the Glimmerdeep Depths, with stronger monsters and a treasure chest, and from there another down to the Heart of the Glimmerdeep, where the Prism Drake sleeps now. Stairs lead back up to where you climbed down.",
+        "On the minimap, a grey arrow marks the way down or up once you've seen it."
+      ]
+    },
+    {
       "version": "0.7.37",
       "date": "2026-10-18",
       "title": "Finding quests",

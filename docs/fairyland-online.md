@@ -368,6 +368,16 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   (155), and the Fallen Star drops a level-150 weapon for each class now and then (Starfall Staff, Blade,
   Axe and Whip; the smiths' lines stop at 105). Whether FO had a village like it isn't in any source
   reachable from a cloud session; it's ours.
+- Cave depths (ours, since 0.7.38; playtesting 2026-10-18: "In caves, you should be able to go deeper in
+  a cave, so a deeper level, similar to runescape", then "Only the new land should have 2 deeper cave levels
+  with the drake in the deepest cave level"): the Glimmerdeep goes two levels down (maps.json `depth` 1 and
+  2: the Glimmerdeep Depths, 155 to 165, with a treasure chest of a Heart Seal, and the Heart of the
+  Glimmerdeep, 156 to 166, where the Prism Drake sleeps now, still level 160 for its quest). Each level is
+  reached only by a ladder down into a pit in the floor and left only by stone stairs back up, as
+  RuneScape's dungeons are by their ladders (NPCs with role `stairs` and `to`, tapped or Talked to like a
+  chest; you come out in front of the stairs that lead back, `WorldMap.stairsArrival`), and each is smaller
+  and darker than the one over it. The minimap marks the ladders and stairs with a grey arrow down or up.
+  Whether FO's caves had floors under them isn't in any source reachable from a cloud session.
 - The Glimmerdeep (ours, since 0.7.26; playtesting 2026-10-17: "Add a crystal cave to the starfall isle you
   can explore (a new map) with new boss"): a crystal cave under Starfall Isle, its road leaving Glimmerbough
   south to a mouth in a rocky hill (world.json `roads`, the cave's own exit west, so you come in on its
@@ -375,7 +385,7 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   cave's palette colder and bluer than Gooey Grotto's), with three underground pools, side chambers off
   its winding galleries and Crystal-Singer Opaline by the crossing. Three new monsters live there (free
   palette swaps): Prism Crabs, Floating Geodes and Crystal Serpents, with the island's Crystal Quills and
-  Nebula Puffs (levels 150 to 162). At its bottom sleeps the Prism Drake (level 160, a palette swap of
+  Nebula Puffs (levels 150 to 162). At its bottom (since 0.7.38 two levels down, see Cave depths) sleeps the Prism Drake (level 160, a palette swap of
   the black lizard drawn 1.7 times its size), which drank the starlight the Fallen Star left behind. The
   quests: Into the Glimmerdeep (10 Prism Crabs, Pip, 150), Lanterns That Never Go Out (5 Glimmerstone from
   Floating Geodes, Mother Lumen, 154) and The Prism Drake (158), which gives Prismscale Mail (158), plate

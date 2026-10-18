@@ -485,6 +485,14 @@ nonisolated final class WorldMap: @unchecked Sendable {
         return spot(x: npc.x, y: npc.y, summit: npc.summit)
     }
 
+    /// Where you come out climbing from `map` (`NPCRole.stairs`): in front of the stairs here that
+    /// lead back there (a step down the screen), on the nearest cell you can walk on. Nil without them.
+    func stairsArrival(from map: String) -> GridPoint? {
+        guard let stairs = def.npcs?.first(where: { $0.role == .stairs && $0.to == map }) else { return nil }
+        let at = spot(of: stairs)
+        return nearestWalkable(to: GridPoint(col: at.col - 1, row: at.row - 1))
+    }
+
     /// Where a local lives or walks to (`MapDef.Place`): `x` and `y` steps from its landmark (from
     /// the middle if the map hasn't one), from a summit's top or from the middle, on the nearest
     /// cell you can walk on. Nil when nowhere near is open.

@@ -414,7 +414,13 @@ nonisolated enum NPCRole: String, Decodable, Sendable {
     /// `boss`: a mighty monster waiting on the map; talk to it to fight.
     /// `smith`: forges weapons from materials (the item's `recipe`).
     /// `weaver`: weaves the status capes (rewards.json `prizes`) for those who've earned them.
-    case healer, shop, quests, guild, chest, boss, smith, weaver
+    /// `stairs`: in a cave, the way down to the level under it, or back up (`NPCDef.to`), like
+    /// RuneScape's ladders: tap them and you're there, by the stairs that lead back.
+    case healer, shop, quests, guild, chest, boss, smith, weaver, stairs
+
+    /// A thing rather than a person (a chest, stairs): it stands still, never looks round, and
+    /// does what it does straight from the map, with no conversation.
+    var isObject: Bool { self == .chest || self == .stairs }
 }
 
 nonisolated struct NPCDef: Decodable, Identifiable, Sendable {
@@ -437,6 +443,8 @@ nonisolated struct NPCDef: Decodable, Identifiable, Sendable {
     /// Chests: the item inside, and the quest that unlocks them.
     let gives: String?
     let quest: String?
+    /// Stairs: the cave level they lead to (`MapDef.depth`), where stairs lead back.
+    let to: String?
     /// Bosses: which monster, at what level, and how many of the map's own monsters fight at its
     /// side in its own wave (9 unless set, so the wave is 10 strong; 0 for none).
     let monster: String?
@@ -726,6 +734,9 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
     let locals: [Local]?
     /// A danger zone: adventurers can duel here, and some will pick a fight.
     let danger: Bool?
+    /// A cave's level under the one you walk into (1 for the first one down, reached by stairs,
+    /// `NPCRole.stairs`); nil for the cave itself and everywhere else.
+    let depth: Int?
     /// The snowy north or the hot south-east (`Climate`); nil for the mild lands between, and caves.
     /// Frost monsters live only where it's cold, and the adventurers about walk companions at home
     /// in a land like theirs (`Crowd.companion`).
@@ -1405,6 +1416,12 @@ final class Content {
     /// The boss that fights as this monster, if it's one.
     func boss(fighting monsterID: String) -> NPCDef? {
         maps.lazy.compactMap { $0.npcs?.first { $0.role == .boss && $0.monster == monsterID } }.first
+    }
+
+    /// Whether stairs (`NPCRole.stairs`) lead down, deeper into the cave, rather than back up.
+    func leadsDown(_ stairs: NPCDef) -> Bool {
+        let here = home(ofNPC: stairs.id)?.depth ?? 0
+        return (stairs.to.flatMap { self.map($0) }?.depth ?? 0) > here
     }
 
     /// The map a character lives on.
