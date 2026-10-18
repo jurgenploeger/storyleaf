@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.36",
+      "date": "2026-10-18",
+      "title": "Tidier companions",
+      "notes": [
+        "The Companions page is tidier: a companion's species shows only once you've given it a name of its own, Rename is a pencil beside the name, whether it follows you is one pill, and its skills sit in chips."
+      ]
+    },
+    {
       "version": "0.7.35",
       "date": "2026-10-18",
       "title": "One width in the corner",

@@ -883,24 +883,25 @@ private struct CompanionCard: View {
         }
     }
 
-    /// Like the hero's overview: the companion big on its disc with its name, what it is and what
-    /// it can do, and its stats beside or under it.
+    /// Like the hero's overview: the companion big on its disc, its name with a pencil to rename
+    /// it, what it is (once it has a name of its own), whether it follows you, and what it can do;
+    /// its stats beside or under it. Tidied up after playtesting (2026-10-18): one line each, the
+    /// species not said twice, one status, the skills in chips.
     private func overview(species: MonsterDef?, stats: Stats, isActive: Bool) -> some View {
         AdaptiveStack(spacing: 18) {
-            VStack(spacing: 6) {
-                SpriteImage(art: session.artID(for: pet), size: 128)
+            VStack(spacing: 8) {
+                SpriteImage(art: session.artID(for: pet), size: 120)
                     .background(Circle().fill(.white.opacity(0.06)))
-                HStack(spacing: 6) {
-                    Text(pet.name).font(HUDStyle.font(18))
-                    if let element = species?.element { ElementBadge(element: element) }
+                nameLine(species: species, size: 18)
+                if let kind = renamed(species) {
+                    Text(kind)
+                        .font(HUDStyle.font(12))
+                        .foregroundStyle(HUDStyle.gold)
                 }
-                Text(species?.name ?? pet.speciesID)
-                    .font(HUDStyle.font(12))
-                    .foregroundStyle(HUDStyle.gold)
-                notes(stats: stats, isActive: isActive)
+                status(isActive: isActive)
+                notes(stats: stats, isActive: isActive, hint: true)
                     .multilineTextAlignment(.center)
-                skillsRow(species: species)
-                actions(isActive: isActive)
+                chips(species: species)
             }
             .frame(minWidth: 250)
             .frame(maxWidth: .infinity)
@@ -910,9 +911,55 @@ private struct CompanionCard: View {
         }
     }
 
-    /// Fainted (and how to heal it), and its toys.
+    /// Its species' name, when you've named it something else (else the name already says it).
+    private func renamed(_ species: MonsterDef?) -> String? {
+        guard let species, species.name != pet.name else { return nil }
+        return species.name
+    }
+
+    /// Its name and element, and the pencil that renames it.
+    private func nameLine(species: MonsterDef?, size: CGFloat) -> some View {
+        HStack(spacing: 6) {
+            Text(pet.name)
+                .font(HUDStyle.font(size))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            if let element = species?.element { ElementBadge(element: element) }
+            Button { editing = true } label: {
+                IconImage(.edit, size: 12)
+                    .foregroundStyle(HUDStyle.cream)
+                    .frame(width: 26, height: 26)
+                    .background(Circle().fill(.white.opacity(0.1)))
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(L("Rename"))
+        }
+    }
+
+    /// Following you, or resting (still your choice: it comes along again once it's healed), in a
+    /// pill; or Bring along.
     @ViewBuilder
-    private func notes(stats: Stats, isActive: Bool) -> some View {
+    private func status(isActive: Bool) -> some View {
+        if isActive {
+            let resting = pet.hp <= 0
+            let tint = resting ? HUDStyle.orange : HUDStyle.green
+            Label(resting ? L("Chosen, resting") : L("Following you"), icon: resting ? GameIcon.heart : .checkCircle)
+                .font(HUDStyle.font(11))
+                .foregroundStyle(tint)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(tint.opacity(0.15)))
+        } else {
+            Button(L("Bring along")) { session.setActivePet(pet.id) }
+                .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
+        }
+    }
+
+    /// Fainted (and how to heal it), and its toys. `hint`: say a toy from the Bag would do it good
+    /// when it has none yet (only on the one you bring along, not on every card).
+    @ViewBuilder
+    private func notes(stats: Stats, isActive: Bool, hint: Bool) -> some View {
         if pet.hp <= 0 {
             // A fainted companion stays off the map and out of fights until it's healed.
             Text(isActive ? L("Fainted: it can't follow you or fight until it's healed.") : L("Fainted: heal it before it comes along."))
@@ -932,8 +979,9 @@ private struct CompanionCard: View {
         if let toys = pet.toys, toys > 0 {
             Text(L("Toys {count}/{max}: {bonus}", ["count": toys, "max": GameSession.toysPerCompanion, "bonus": (pet.toyStats ?? .zero).bonusSummary]))
                 .font(HUDStyle.font(10))
-                .foregroundStyle(HUDStyle.green)
-        } else if !session.bagToys.isEmpty {
+                .foregroundStyle(HUDStyle.dim)
+                .fixedSize(horizontal: false, vertical: true)
+        } else if hint, !session.bagToys.isEmpty {
             Text(L("Give it a toy from your Bag."))
                 .font(HUDStyle.font(10))
                 .foregroundStyle(HUDStyle.dim)
@@ -941,59 +989,38 @@ private struct CompanionCard: View {
         }
     }
 
-    /// What it can do in a fight.
+    /// What it can do in a fight, a chip each.
     @ViewBuilder
-    private func skillsRow(species: MonsterDef?) -> some View {
+    private func chips(species: MonsterDef?) -> some View {
         if let skills = species?.skills.compactMap({ session.content.skill($0) }), !skills.isEmpty {
-            HStack(spacing: 6) {
+            WrapRows(spacing: 6) {
                 ForEach(skills) { skill in
-                    HStack(spacing: 3) {
-                        SkillIcon(skill: skill, size: 22)
+                    HStack(spacing: 4) {
+                        SkillIcon(skill: skill, size: 18)
                         Text(skill.name)
                             .font(HUDStyle.font(10))
                             .foregroundStyle(HUDStyle.cream)
+                            .lineLimit(1)
                     }
+                    .padding(.leading, 3)
+                    .padding(.trailing, 9)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(.white.opacity(0.07)))
                 }
             }
         }
     }
 
-    /// Following you (or resting), or Bring along; and Rename.
-    private func actions(isActive: Bool) -> some View {
-        HStack(spacing: 8) {
-            if isActive, pet.hp > 0 {
-                Label(L("Following you"), icon: .checkCircle)
-                    .font(HUDStyle.font(11))
-                    .foregroundStyle(HUDStyle.green)
-            } else if isActive {
-                // Still your choice: it comes along again once it's healed.
-                Label(L("Chosen, resting"), icon: .heart)
-                    .font(HUDStyle.font(11))
-                    .foregroundStyle(HUDStyle.orange)
-            } else {
-                Button(L("Bring along")) { session.setActivePet(pet.id) }
-                    .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
-            }
-            Button {
-                editing = true
-            } label: {
-                Label(L("Rename"), icon: .edit)
-            }
-            .buttonStyle(PixelButtonStyle(compact: true))
-        }
-    }
-
+    /// One of the others: its face, its name (and pencil) over what it is and its level, its HP
+    /// and EXP, its stats in a line, its skills, and Bring along.
     @ViewBuilder
     private func card(species: MonsterDef?, stats: Stats, isActive: Bool) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            SpriteImage(art: session.artID(for: pet), size: 72)
+            SpriteImage(art: session.artID(for: pet), size: 64)
                 .background(Circle().fill(.white.opacity(0.06)))
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(pet.name).font(HUDStyle.font(14))
-                    if let element = species?.element { ElementBadge(element: element) }
-                }
-                Text(L("{species} · Lv {level}", ["species": species?.name ?? pet.speciesID, "level": pet.level]))
+            VStack(alignment: .leading, spacing: 5) {
+                nameLine(species: species, size: 14)
+                Text(renamed(species).map { L("{species} · Lv {level}", ["species": $0, "level": pet.level]) } ?? L("Lv {level}", ["level": pet.level]))
                     .font(HUDStyle.font(11))
                     .foregroundStyle(HUDStyle.gold)
                 StatBar(label: L("HP"), value: pet.hp, maximum: stats.hp, color: HUDStyle.hp)
@@ -1001,9 +1028,10 @@ private struct CompanionCard: View {
                 Text(L("ATK {attack} · DEF {defense} · MAG {magic} · SPD {speed}", ["attack": stats.attack, "defense": stats.defense, "magic": stats.magic, "speed": stats.speed]))
                     .font(HUDStyle.font(10))
                     .foregroundStyle(HUDStyle.dim)
-                notes(stats: stats, isActive: isActive)
-                skillsRow(species: species)
-                actions(isActive: isActive)
+                notes(stats: stats, isActive: isActive, hint: false)
+                chips(species: species)
+                status(isActive: isActive)
+                    .padding(.top, 2)
             }
         }
         .padding(10)
