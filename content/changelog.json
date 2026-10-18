@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.34",
+      "date": "2026-10-18",
+      "title": "An even ring",
+      "notes": [
+        "The eight gear slots round your hero on the Character screen, the hat's among them, are spaced evenly all the way round."
+      ]
+    },
+    {
       "version": "0.7.33",
       "date": "2026-10-17",
       "title": "Lights on the hills",
