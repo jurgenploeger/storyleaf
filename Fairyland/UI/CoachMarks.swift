@@ -52,7 +52,7 @@ private struct CoachStep {
                   text: L("Your character, companions, bag and quests. A gold dot means there's something new.")),
         CoachStep(target: .chat, icon: .talk, title: L("Other adventurers"),
                   text: L("Adventurers wander Storyleaf too. Read what they say and chat back here.")),
-        CoachStep(target: nil, icon: .book, title: L("Your first quest"),
+        CoachStep(target: nil, icon: .star, title: L("Your first quest"),
                   text: L("Walk up to someone with a gold ! and tap Talk. New adventurers start with Elder Oak in Meadowbrook.")),
     ] }
 }

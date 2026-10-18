@@ -1593,6 +1593,11 @@ final class GameSession {
         Self.latestFirst(content.quests.filter { data.quests[$0.id]?.state == .active }) { data.quests[$0.id]?.taken }
     }
 
+    /// A quest's number in the Quests list: where it comes in content/quests.json, from 1.
+    func questNumber(_ quest: QuestDef) -> Int {
+        (content.quests.firstIndex { $0.id == quest.id } ?? 0) + 1
+    }
+
     /// The quests you've handed in, the one you finished last first, as `activeQuests`.
     var completedQuests: [QuestDef] {
         Self.latestFirst(content.quests.filter { data.quests[$0.id]?.state == .completed }) { data.quests[$0.id]?.finished }

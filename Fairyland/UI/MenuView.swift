@@ -1252,8 +1252,46 @@ private nonisolated enum QuestsPage: String, CaseIterable {
 
     @MainActor var icon: GameIcon {
         switch self {
-        case .quests: .book
+        case .quests: .star
         case .daily: .sun
+        }
+    }
+}
+
+/// How the Quests list is ordered. Nonisolated like the other enums shown with `ForEach(id: \.self)`.
+private nonisolated enum QuestSort: String, CaseIterable {
+    /// The one you took (or finished) last first.
+    case newest
+    /// By number: the order they come in, land by land.
+    case number
+    /// Ready to hand in first, then the nearest to done.
+    case progress
+    /// By where whoever gave it lives, then by number.
+    case place
+    /// The most EXP first.
+    case exp
+
+    var title: String {
+        switch self {
+        case .newest: L("Newest")
+        case .number: L("Number")
+        case .progress: L("Nearest done")
+        case .place: L("Place")
+        case .exp: L("Most EXP")
+        }
+    }
+}
+
+/// Which quests the list shows.
+private nonisolated enum QuestShelf: String, CaseIterable {
+    case all, ready, going, done
+
+    var title: String {
+        switch self {
+        case .all: L("All")
+        case .ready: L("Ready")
+        case .going: L("In progress")
+        case .done: L("Completed")
         }
     }
 }
@@ -1261,6 +1299,12 @@ private nonisolated enum QuestsPage: String, CaseIterable {
 private struct QuestsTab: View {
     let session: GameSession
     @Binding var page: QuestsPage
+    /// Finding a quest (playtesting 2026-10-18): what you typed, the order, which ones, and only
+    /// those given in the land you're in.
+    @State private var search = ""
+    @AppStorage("questSort") private var sort: QuestSort = .newest
+    @State private var shelf: QuestShelf = .all
+    @State private var hereOnly = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1268,22 +1312,102 @@ private struct QuestsTab: View {
                 .padding(.bottom, 4)
             switch page {
             case .quests:
-                SectionTitle(text: L("Active"))
-                if session.activeQuests.isEmpty {
-                    Text(L("No active quests. Elder Oak in Meadowbrook always needs help.")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
-                }
-                ForEach(session.activeQuests) { quest in
-                    QuestRow(session: session, quest: quest, showsGiver: true)
-                }
-                if !session.completedQuests.isEmpty {
-                    SectionTitle(text: L("Completed"))
-                    ForEach(session.completedQuests) { quest in
-                        CompletedQuestRow(session: session, quest: quest)
-                    }
-                }
+                questList
             case .daily:
                 BountiesSection(session: session)
             }
+        }
+    }
+
+    /// The search, the order and the chips, then the active quests and the finished ones as they
+    /// narrow them down.
+    @ViewBuilder
+    private var questList: some View {
+        let numbers = Dictionary(session.content.quests.enumerated().map { ($0.element.id, $0.offset + 1) }) { first, _ in first }
+        let active: [QuestDef] = shelf == .done ? [] : arrange(session.activeQuests, numbers: numbers).filter { quest in
+            let ready = session.status(of: quest) == .ready
+            return shelf == .ready ? ready : shelf == .going ? !ready : true
+        }
+        let completed: [QuestDef] = shelf == .all || shelf == .done ? arrange(session.completedQuests, numbers: numbers) : []
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                ItemSearchField(text: $search)
+                QuestSortMenu(sort: $sort)
+            }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(QuestShelf.allCases, id: \.self) { kind in
+                        FilterChip(title: kind.title, on: shelf == kind) { shelf = kind }
+                    }
+                    FilterChip(title: L("This land"), on: hereOnly) { hereOnly.toggle() }
+                }
+            }
+        }
+        if shelf != .done {
+            SectionTitle(text: L("Active"))
+            if session.activeQuests.isEmpty {
+                Text(L("No active quests. Elder Oak in Meadowbrook always needs help.")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+            } else if active.isEmpty {
+                Text(L("No quests match.")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+            }
+            ForEach(active) { quest in
+                QuestRow(session: session, quest: quest, showsGiver: true)
+            }
+        }
+        if !completed.isEmpty || shelf == .done {
+            SectionTitle(text: L("Completed"))
+            if completed.isEmpty {
+                Text(L("No quests match.")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+            }
+            ForEach(completed) { quest in
+                CompletedQuestRow(session: session, quest: quest)
+            }
+        }
+    }
+
+    /// `quests` narrowed to those that hold what you typed (in the title, the story, who gave it or
+    /// where they live, or its number), and to this land's if you asked, in the order chosen. Ties
+    /// keep the order they came in (the newest first).
+    private func arrange(_ quests: [QuestDef], numbers: [String: Int]) -> [QuestDef] {
+        let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        let digits = query.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        let found = quests.filter { quest in
+            let home = session.content.home(ofNPC: quest.giver)
+            if hereOnly, home?.id != session.data.mapID { return false }
+            guard !query.isEmpty else { return true }
+            if let number = numbers[quest.id], String(number) == digits { return true }
+            let giver = session.content.npc(quest.giver)?.name ?? ""
+            return [quest.title, quest.description, giver, home?.name ?? ""].contains { $0.localizedStandardContains(query) }
+        }
+        let number = { (quest: QuestDef) in numbers[quest.id] ?? 0 }
+        switch sort {
+        case .newest:
+            return found
+        case .number:
+            return found.sorted { number($0) < number($1) }
+        case .place:
+            let place = { (quest: QuestDef) in session.content.home(ofNPC: quest.giver)?.name ?? "" }
+            return found.sorted {
+                let order = place($0).localizedStandardCompare(place($1))
+                return order == .orderedSame ? number($0) < number($1) : order == .orderedAscending
+            }
+        case .progress, .exp:
+            let value: (QuestDef) -> Double
+            if sort == .exp {
+                value = { Double(session.questPay($0).exp) }
+            } else {
+                value = { quest in
+                    switch session.status(of: quest) {
+                    case .ready: return 2
+                    case .active(let progress, let goal): return Double(progress) / Double(max(goal, 1))
+                    default: return 0
+                    }
+                }
+            }
+            return found.enumerated()
+                .map { (quest: $0.element, place: $0.offset, value: value($0.element)) }
+                .sorted { $0.value != $1.value ? $0.value > $1.value : $0.place < $1.place }
+                .map { $0.quest }
         }
     }
 
@@ -1313,7 +1437,8 @@ struct QuestRow: View {
                 GiverFace(npcID: quest.giver, size: 44)
             }
             VStack(alignment: .leading, spacing: 3) {
-                HStack {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    QuestNumber(number: session.questNumber(quest))
                     Text(quest.title).font(HUDStyle.font(13))
                     Spacer()
                     switch session.status(of: quest) {
@@ -1353,6 +1478,46 @@ struct QuestRow: View {
     }
 }
 
+/// A quest's number (`GameSession.questNumber`), small and gold before its title.
+private struct QuestNumber: View {
+    let number: Int
+
+    var body: some View {
+        Text(L("#{number}", ["number": number]))
+            .font(HUDStyle.mono(10))
+            .foregroundStyle(HUDStyle.gold.opacity(0.85))
+            .accessibilityLabel(L("Quest {number}", ["number": number]))
+    }
+}
+
+/// The Quests list's order: a button showing the one in use, which opens the choice (as
+/// `ItemSortMenu` does for the Bag).
+private struct QuestSortMenu: View {
+    @Binding var sort: QuestSort
+
+    var body: some View {
+        Menu {
+            Picker(L("Sort by"), selection: $sort) {
+                ForEach(QuestSort.allCases, id: \.self) { Text($0.title).tag($0) }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                IconImage(.sort, size: 14)
+                Text(sort.title)
+                    .lineLimit(1)
+            }
+            .font(HUDStyle.font(11))
+            .foregroundStyle(HUDStyle.cream)
+            .padding(.horizontal, 10)
+            .frame(minHeight: 32)
+            .background(Capsule().fill(.white.opacity(0.1)))
+            .fixedSize()
+        }
+        .accessibilityLabel(L("Sort by"))
+        .accessibilityValue(sort.title)
+    }
+}
+
 /// A finished quest: who gave it and its name; a tap shows what it said and what you earned.
 private struct CompletedQuestRow: View {
     let session: GameSession
@@ -1363,6 +1528,7 @@ private struct CompletedQuestRow: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 GiverFace(npcID: quest.giver, size: 24)
+                QuestNumber(number: session.questNumber(quest))
                 Label(quest.title, icon: .badgeCheck)
                     .font(HUDStyle.font(12))
                     .foregroundStyle(HUDStyle.dim)

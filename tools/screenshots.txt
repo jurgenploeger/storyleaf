@@ -472,6 +472,7 @@ quests       | newgame,menu=quests                                 | 8
 # The quest taken last at the top; the Hundred-Toy Shelf's six toys wrap under its gold and EXP
 # (playtesting 2026-10-16: they squeezed them into a column of single letters).
 quests_many  | newgame,level=127,taken=great_wisp+the_hundred_toy_shelf+monkey_and_crab,menu=quests | 8
+quests_finder | newgame,level=127,done=hope_of_meadowbrook+jelly_trouble+new_friend+wish_upon_a_star+choose_path+pineapple_harvest,taken=great_wisp+the_hundred_toy_shelf+monkey_and_crab,menu=quests | 8
 # The first world map lays every land out in the background (later ones read them back from disk).
 worldmap     | newgame,worldmap                                    | 180
 monster_book | newgame,book                                        | 8
