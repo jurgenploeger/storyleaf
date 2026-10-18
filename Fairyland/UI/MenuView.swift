@@ -490,19 +490,20 @@ struct StatCell: View {
     }
 }
 
-/// The hero in the middle with what they wear in a ring around them, like a paper doll: the body's
-/// slots round the left (necklace, armour, boots, top to bottom), the hands' round the right
-/// (weapon, gloves, accessory), and a cape over their head. A tap on a slot opens everything you
+/// The hero in the middle with what they wear in a ring around them, like a paper doll: the hat and
+/// cape over their head, the body's slots round the left (necklace, armour, boots, top to bottom),
+/// the hands' round the right (weapon, gloves, accessory). A tap on a slot opens everything you
 /// have for it (EquipmentPicker).
 private struct PaperDoll: View {
     let session: GameSession
     let change: (ItemType) -> Void
 
-    /// Each slot and where it sits on the ring, in degrees clockwise from the right: evenly round
-    /// it, the hat and cape at the top, a gap under the hero's feet.
+    /// Each slot and where it sits on the ring, in degrees clockwise from the right: an eighth of
+    /// the way round apart (playtesting 2026-10-18: no wider gap under the hero's feet), the hat
+    /// and cape either side of the top, the boots and accessory either side of the bottom.
     private static let ring: [(slot: ItemType, angle: Double)] = [
-        (.head, 249), (.cape, 291), (.weapon, 334), (.gloves, 17), (.accessory, 60),
-        (.boots, 120), (.armor, 163), (.necklace, 206),
+        (.head, 247.5), (.cape, 292.5), (.weapon, 337.5), (.gloves, 22.5), (.accessory, 67.5),
+        (.boots, 112.5), (.armor, 157.5), (.necklace, 202.5),
     ]
     /// The ring's radius (to each slot's middle), and the room a slot takes.
     private static let radius: CGFloat = 112
