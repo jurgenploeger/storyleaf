@@ -2,6 +2,15 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.37",
+      "date": "2026-10-18",
+      "title": "Finding quests",
+      "notes": [
+        "Every quest has a number, and the Quests page can search them (by name, story, who gave it, where, or number), sort them (newest, number, nearest done, place or most EXP) and show only those ready to hand in, in progress, completed or from the land you're in.",
+        "Quests have a gold star for an icon, on the button, the menu's tab and the minimap."
+      ]
+    },
+    {
       "version": "0.7.36",
       "date": "2026-10-18",
       "title": "Tidier companions",

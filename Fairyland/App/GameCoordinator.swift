@@ -30,7 +30,7 @@ enum MenuTab: String, CaseIterable, Identifiable {
         case .friends: .users
         case .settings: .settings
         case .bag: .backpack
-        case .quests: .book
+        case .quests: .star
         }
     }
 }

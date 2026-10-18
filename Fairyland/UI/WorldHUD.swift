@@ -643,7 +643,7 @@ struct MinimapIcon: View {
         switch kind {
         case .questNew: mark("!")
         case .questReady: mark("?")
-        case .quest: glyph(.book)
+        case .quest: glyph(.star)
         case .healer: glyph(.heart)
         case .shop: glyph(.coins)
         case .smith: glyph(.hammer)
