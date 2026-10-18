@@ -120,6 +120,12 @@ struct WorldHUD: View {
     }
 }
 
+/// The top-left column's width: every panel in it as wide as the next (playtesting 2026-10-18), and
+/// clear of the minimap on the narrowest phones. A party folded into one row just fits.
+private enum TopLeft {
+    static let width: CGFloat = 214
+}
+
 /// Fairyland's top-left faces: you in a big round frame with your level, HP and MP; your companion
 /// underneath with its own; and the friends in your party, smaller. Once three or more of you travel
 /// together, the others fold into one row of small faces under yours so they don't cover the map:
@@ -169,8 +175,10 @@ private struct StatusCluster: View {
                     let statsLabel = away.map { L("{name}, level {level}, waiting at {map}: stats", ["name": friend.name, "level": friend.level, "map": $0]) } ?? L("{name}, level {level}: stats", ["name": friend.name, "level": friend.level])
                     HStack(spacing: 4) {
                         Button { onInspect(.adventurer(friend)) } label: {
+                            // With the fold arrow beside it (4 apart, 28 wide), together as wide as the rest.
                             PortraitRow(face: ArtLibrary.shared.face(session.artID(for: friend)), level: friend.level, name: friend.name,
-                                        detail: away == nil ? session.content.classDef(friend.classID).name : L("Waiting"), size: 30) {
+                                        detail: away == nil ? session.content.classDef(friend.classID).name : L("Waiting"), size: 30,
+                                        width: TopLeft.width - (crowded && friend.id == friends.last?.id ? 32 : 0)) {
                                 EmptyView()
                             }
                             .saturation(away == nil ? 1 : 0)
@@ -205,7 +213,7 @@ private struct FoldedParty: View {
 
     var body: some View {
         Button(action: unfold) {
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 if let pet {
                     let stats = session.stats(of: pet)
                     let health: CGFloat = stats.hp > 0 ? min(1, CGFloat(pet.hp) / CGFloat(stats.hp)) : 0
@@ -224,6 +232,7 @@ private struct FoldedParty: View {
             }
             .padding(.horizontal, 7)
             .padding(.vertical, 4)
+            .frame(width: TopLeft.width, alignment: .leading)
             .background(HUDStyle.panel)
         }
         .buttonStyle(.plain)
@@ -255,6 +264,8 @@ private struct PortraitRow<Bars: View>: View {
     var detail: String? = nil
     let size: CGFloat
     var glowing = false
+    /// The whole row's width, portrait and panel.
+    var width: CGFloat = TopLeft.width
     @ViewBuilder let bars: () -> Bars
 
     var body: some View {
@@ -272,7 +283,8 @@ private struct PortraitRow<Bars: View>: View {
                 .shadow(color: .black, radius: 0, x: 1, y: 1)
                 bars()
             }
-            .frame(width: size > 40 ? 132 : 112, alignment: .leading)
+            // The panel takes what the portrait (and the 5 between) leaves, less its own padding.
+            .frame(width: width - size - 5 - 14, alignment: .leading)
             .padding(.horizontal, 7)
             .padding(.vertical, 4)
             // As tall as the portrait beside it (playtesting 2026-10-17), its name and bars in the middle.
@@ -361,13 +373,14 @@ private struct JoinedPartyPlate: View {
             }
             .lineLimit(1)
             .minimumScaleFactor(0.8)
+            Spacer(minLength: 0)
             Button(L("Leave party"), action: leave)
                 .buttonStyle(PixelButtonStyle(compact: true))
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 5)
+        .frame(width: TopLeft.width)
         .background(HUDStyle.panel)
-        .frame(maxWidth: 230, alignment: .leading)
     }
 }
 
@@ -408,7 +421,7 @@ private struct CalendarPlate: View {
                 }
                 .padding(.horizontal, 4)
             }
-            .frame(width: 214)
+            .frame(width: TopLeft.width)
         }
     }
 }
@@ -426,7 +439,7 @@ private struct SystemLog: View {
                         .transition(.opacity)
                 }
             }
-            .frame(width: 240, alignment: .leading)
+            .frame(width: TopLeft.width, alignment: .leading)
             .animation(.easeOut(duration: 0.3), value: lines.count)
         }
     }
@@ -442,6 +455,8 @@ private struct SystemLog: View {
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            // As wide as the panels above it.
+            .frame(maxWidth: .infinity, alignment: .leading)
             .foregroundStyle(HUDStyle.gold)
             .padding(.horizontal, 7)
             .padding(.vertical, 4)
