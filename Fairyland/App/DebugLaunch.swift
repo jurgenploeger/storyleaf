@@ -549,9 +549,11 @@ enum DebugLaunch {
         for (index, id) in taken.enumerated() {
             session.data.quests[id] = QuestProgress(state: .active, count: 0, taken: Date(timeIntervalSinceNow: Double(index - taken.count) * 60))
         }
-        if let species = flags["pet"], let pet = session.makePet(species: species, level: max(1, session.data.hero.level - 15)) {
+        // `pet=a+b`: the first follows you, the rest wait on the Companions tab, each a little lower.
+        for (index, species) in (flags["pet"]?.split(separator: "+").map(String.init) ?? []).enumerated() {
+            guard let pet = session.makePet(species: species, level: max(1, session.data.hero.level - 15 - 10 * index)) else { continue }
             session.addPet(pet, countsForQuests: false)
-            session.data.activePetID = pet.id
+            if index == 0 { session.data.activePetID = pet.id }
         }
         if let count = flags["cards"].flatMap({ Int($0) }) {
             for monster in Content.shared.monsters.prefix(max(0, count)) {
