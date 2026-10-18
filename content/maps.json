@@ -6551,16 +6551,6 @@
           "x": -12,
           "y": -6,
           "greeting": "Rats! Rats everywhere! Good for business, bad for my nerves."
-        },
-        {
-          "id": "rat_cavern_ladder",
-          "name": "Ladder down",
-          "role": "stairs",
-          "art": "cave_ladder",
-          "x": 26,
-          "y": -20,
-          "greeting": "A ladder goes down into the dark. You hear scratching from below, a lot of it.",
-          "to": "rat_cavern_depths"
         }
       ],
       "encounters": {
@@ -6633,269 +6623,6 @@
             [
               2,
               -20
-            ]
-          ]
-        }
-      ]
-    },
-    {
-      "id": "rat_cavern_depths",
-      "name": "Rat Cavern Depths",
-      "depth": 1,
-      "width": 64,
-      "height": 48,
-      "music": "cave",
-      "battleMusic": "battle_dark",
-      "theme": {
-        "ground": "tile_cave_floor",
-        "path": "tile_scree",
-        "accent": "tile_cave_rock",
-        "accentPatches": 40,
-        "water": "tile_water",
-        "ponds": 0,
-        "cave": {
-          "rock": "tile_cave_rock",
-          "height": 36,
-          "width": 0.6,
-          "maze": 9,
-          "chambers": 2
-        },
-        "props": [
-          {
-            "art": "stalagmite",
-            "count": 150,
-            "blocking": true,
-            "cluster": 6,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "shadow": true
-          },
-          {
-            "art": "boulder",
-            "count": 40,
-            "blocking": true,
-            "cluster": 3,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "shadow": true
-          },
-          {
-            "art": "crystal",
-            "count": 50,
-            "blocking": true,
-            "cluster": 3,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "glow": "#9FE8FF"
-          },
-          {
-            "art": "mine_cart",
-            "count": 10,
-            "blocking": true
-          },
-          {
-            "art": "skull_bones",
-            "count": 20,
-            "blocking": false
-          },
-          {
-            "art": "small_stalagmite",
-            "count": 90,
-            "blocking": false,
-            "cluster": 4,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "shadow": true
-          },
-          {
-            "art": "amber_crystal",
-            "count": 30,
-            "blocking": true,
-            "cluster": 3,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "glow": "#FFC870"
-          },
-          {
-            "art": "crystal_shard",
-            "count": 40,
-            "blocking": false,
-            "cluster": 3,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "glow": "#9FE8FF"
-          },
-          {
-            "art": "pebbles",
-            "count": 40,
-            "blocking": false,
-            "cluster": 3,
-            "size": [
-              0.8,
-              1.2
-            ]
-          },
-          {
-            "art": "ore_vein",
-            "count": 12,
-            "blocking": true,
-            "cluster": 2,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "glow": "#FFD27A"
-          },
-          {
-            "art": "mine_beam",
-            "count": 4,
-            "blocking": true
-          },
-          {
-            "art": "glow_moss_rock",
-            "count": 10,
-            "blocking": true,
-            "cluster": 2,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "glow": "#90FFB8"
-          }
-        ],
-        "palette": {
-          "recolor": [
-            {
-              "hue": [
-                180,
-                215
-              ],
-              "to": 170,
-              "saturation": 0.9
-            },
-            {
-              "hue": [
-                70,
-                160
-              ],
-              "to": 175,
-              "saturation": 0.9
-            }
-          ],
-          "saturation": 1.3,
-          "shadow": "#3020D0",
-          "highlight": "#20F0FF",
-          "tone": 0.65,
-          "light": "#8CB0FF",
-          "lightStrength": 0.55,
-          "variation": 0.14
-        }
-      },
-      "exits": [],
-      "npcs": [
-        {
-          "id": "rat_cavern_depths_stairs",
-          "name": "Stairs up",
-          "role": "stairs",
-          "art": "stone_stairs",
-          "x": -20,
-          "y": -12,
-          "greeting": "Worn steps lead back up to the Rat Cavern.",
-          "to": "rat_cavern"
-        },
-        {
-          "id": "rat_cavern_depths_chest",
-          "name": "Treasure Chest",
-          "role": "chest",
-          "art": "treasure_chest",
-          "x": 20,
-          "y": 14,
-          "greeting": "A chest, gnawed at the corners. The rats never got it open.",
-          "gives": "moon_seal"
-        }
-      ],
-      "encounters": {
-        "rate": 0.07,
-        "graceSteps": 6,
-        "levels": [
-          58,
-          72
-        ],
-        "groupSize": [
-          3,
-          8
-        ],
-        "monsters": {
-          "fire_rat": 3,
-          "sunny_fire_rat": 2,
-          "dark_beetle": 3,
-          "earth_snake": 2,
-          "mud_slime": 1
-        }
-      },
-      "ambience": {
-        "particles": "motes",
-        "clouds": false,
-        "tint": "#101838",
-        "tintAlpha": 0.2,
-        "vignette": 0.65,
-        "lightPatches": {
-          "color": "#60E0FF",
-          "count": 40,
-          "size": [
-            60,
-            130
-          ],
-          "alpha": 0.14
-        },
-        "haze": "#102040",
-        "hazeAlpha": 0.3,
-        "darkness": {
-          "radius": 190,
-          "alpha": 0.95,
-          "light": "#FFC27A"
-        },
-        "critters": [
-          {
-            "kind": "mouse",
-            "count": 6
-          },
-          {
-            "kind": "rat",
-            "count": 5
-          },
-          {
-            "kind": "spider",
-            "count": 3
-          }
-        ]
-      },
-      "hub": [
-        -20,
-        -12
-      ],
-      "trails": [
-        {
-          "to": [
-            20,
-            14
-          ],
-          "via": [
-            [
-              0,
-              4
             ]
           ]
         }
@@ -10251,270 +9978,6 @@
           "x": 3,
           "y": 0,
           "greeting": "Watch your step. That puddle's not a puddle. It's a Mud Slime having a nap."
-        },
-        {
-          "id": "slime_cave_ladder",
-          "name": "Ladder down",
-          "role": "stairs",
-          "art": "cave_ladder",
-          "x": -24,
-          "y": 10,
-          "greeting": "A ladder goes down into the dark. Something gooey bubbles far below.",
-          "to": "slime_cave_depths"
-        }
-      ]
-    },
-    {
-      "id": "slime_cave_depths",
-      "name": "Gooey Grotto Depths",
-      "depth": 1,
-      "width": 64,
-      "height": 48,
-      "music": "cave",
-      "battleMusic": "battle_dark",
-      "theme": {
-        "ground": "tile_cave_floor",
-        "path": "tile_scree",
-        "accent": "tile_cave_rock",
-        "accentPatches": 40,
-        "water": "tile_water",
-        "ponds": 0,
-        "props": [
-          {
-            "art": "stalagmite",
-            "count": 300,
-            "blocking": true,
-            "cluster": 6,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "shadow": true
-          },
-          {
-            "art": "boulder",
-            "count": 80,
-            "blocking": true,
-            "cluster": 3,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "shadow": true
-          },
-          {
-            "art": "crystal",
-            "count": 50,
-            "blocking": true,
-            "cluster": 3,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "glow": "#9FE8FF"
-          },
-          {
-            "art": "mine_cart",
-            "count": 10,
-            "blocking": true
-          },
-          {
-            "art": "skull_bones",
-            "count": 20,
-            "blocking": false
-          },
-          {
-            "art": "small_stalagmite",
-            "count": 150,
-            "blocking": false,
-            "cluster": 4,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "shadow": true
-          },
-          {
-            "art": "amber_crystal",
-            "count": 30,
-            "blocking": true,
-            "cluster": 3,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "glow": "#FFC870"
-          },
-          {
-            "art": "crystal_shard",
-            "count": 40,
-            "blocking": false,
-            "cluster": 3,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "glow": "#9FE8FF"
-          },
-          {
-            "art": "pebbles",
-            "count": 60,
-            "blocking": false,
-            "cluster": 3,
-            "size": [
-              0.8,
-              1.2
-            ]
-          },
-          {
-            "art": "ore_vein",
-            "count": 12,
-            "blocking": true,
-            "cluster": 2,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "glow": "#FFD27A"
-          },
-          {
-            "art": "mine_beam",
-            "count": 4,
-            "blocking": true
-          },
-          {
-            "art": "glow_moss_rock",
-            "count": 10,
-            "blocking": true,
-            "cluster": 2,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "glow": "#90FFB8"
-          }
-        ],
-        "palette": {
-          "recolor": [
-            {
-              "hue": [
-                180,
-                215
-              ],
-              "to": 170,
-              "saturation": 0.9
-            },
-            {
-              "hue": [
-                70,
-                160
-              ],
-              "to": 175,
-              "saturation": 0.9
-            }
-          ],
-          "saturation": 1.3,
-          "shadow": "#206040",
-          "highlight": "#FFE040",
-          "tone": 0.65,
-          "light": "#C8FF90",
-          "lightStrength": 0.55,
-          "variation": 0.14
-        },
-        "cave": {
-          "rock": "tile_cave_rock",
-          "height": 36,
-          "width": 0.6,
-          "maze": 9,
-          "chambers": 2
-        }
-      },
-      "exits": [],
-      "npcs": [
-        {
-          "id": "slime_cave_depths_stairs",
-          "name": "Stairs up",
-          "role": "stairs",
-          "art": "stone_stairs",
-          "x": -20,
-          "y": -12,
-          "greeting": "Worn steps lead back up to the Gooey Grotto.",
-          "to": "slime_cave"
-        },
-        {
-          "id": "slime_cave_depths_chest",
-          "name": "Treasure Chest",
-          "role": "chest",
-          "art": "treasure_chest",
-          "x": 20,
-          "y": 14,
-          "greeting": "A chest, sticky with slime, left where few dare to go.",
-          "gives": "seal_stone"
-        }
-      ],
-      "encounters": {
-        "rate": 0.07,
-        "graceSteps": 6,
-        "levels": [
-          20,
-          30
-        ],
-        "groupSize": [
-          2,
-          5
-        ],
-        "monsters": {
-          "golden_slime": 3,
-          "mud_slime": 3,
-          "shade_puff": 3,
-          "jelly": 1
-        }
-      },
-      "ambience": {
-        "particles": "motes",
-        "clouds": false,
-        "tint": "#10301A",
-        "tintAlpha": 0.2,
-        "vignette": 0.65,
-        "lightPatches": {
-          "color": "#FFE060",
-          "count": 40,
-          "size": [
-            60,
-            130
-          ],
-          "alpha": 0.14
-        },
-        "haze": "#102040",
-        "hazeAlpha": 0.3,
-        "darkness": {
-          "radius": 190,
-          "alpha": 0.95,
-          "light": "#FFC27A"
-        },
-        "critters": [
-          {
-            "kind": "mouse",
-            "count": 2
-          }
-        ]
-      },
-      "hub": [
-        -20,
-        -12
-      ],
-      "trails": [
-        {
-          "to": [
-            20,
-            14
-          ],
-          "via": [
-            [
-              0,
-              4
-            ]
-          ]
         }
       ]
     },
@@ -17312,285 +16775,9 @@
           "x": -2,
           "y": -4,
           "greeting": "Hush. Listen. Every thread in this hollow whispers, if you're quiet enough."
-        },
-        {
-          "id": "mysterious_cave_ladder",
-          "name": "Ladder down",
-          "role": "stairs",
-          "art": "cave_ladder",
-          "x": 26,
-          "y": 8,
-          "greeting": "A ladder goes down into the dark. The whispers are louder down there.",
-          "to": "mysterious_cave_depths"
         }
       ],
       "buildings": []
-    },
-    {
-      "id": "mysterious_cave_depths",
-      "name": "Whispering Hollow Depths",
-      "depth": 1,
-      "width": 64,
-      "height": 48,
-      "music": "cave",
-      "battleMusic": "battle_dark",
-      "theme": {
-        "ground": "tile_cave_floor",
-        "path": "tile_scree",
-        "accent": "tile_cave_rock",
-        "accentPatches": 40,
-        "water": "tile_water",
-        "ponds": 0,
-        "props": [
-          {
-            "art": "stalagmite",
-            "count": 300,
-            "blocking": true,
-            "cluster": 6,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "shadow": true
-          },
-          {
-            "art": "boulder",
-            "count": 80,
-            "blocking": true,
-            "cluster": 3,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "shadow": true
-          },
-          {
-            "art": "crystal",
-            "count": 50,
-            "blocking": true,
-            "cluster": 3,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "glow": "#9FE8FF"
-          },
-          {
-            "art": "mine_cart",
-            "count": 10,
-            "blocking": true
-          },
-          {
-            "art": "skull_bones",
-            "count": 20,
-            "blocking": false
-          },
-          {
-            "art": "small_stalagmite",
-            "count": 150,
-            "blocking": false,
-            "cluster": 4,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "shadow": true
-          },
-          {
-            "art": "amber_crystal",
-            "count": 30,
-            "blocking": true,
-            "cluster": 3,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "glow": "#FFC870"
-          },
-          {
-            "art": "crystal_shard",
-            "count": 40,
-            "blocking": false,
-            "cluster": 3,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "glow": "#9FE8FF"
-          },
-          {
-            "art": "pebbles",
-            "count": 60,
-            "blocking": false,
-            "cluster": 3,
-            "size": [
-              0.8,
-              1.2
-            ]
-          },
-          {
-            "art": "ore_vein",
-            "count": 12,
-            "blocking": true,
-            "cluster": 2,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "glow": "#FFD27A"
-          },
-          {
-            "art": "mine_beam",
-            "count": 4,
-            "blocking": true
-          },
-          {
-            "art": "glow_moss_rock",
-            "count": 10,
-            "blocking": true,
-            "cluster": 2,
-            "size": [
-              0.75,
-              1.25
-            ],
-            "glow": "#90FFB8"
-          }
-        ],
-        "palette": {
-          "recolor": [
-            {
-              "hue": [
-                180,
-                215
-              ],
-              "to": 170,
-              "saturation": 0.9
-            },
-            {
-              "hue": [
-                70,
-                160
-              ],
-              "to": 175,
-              "saturation": 0.9
-            }
-          ],
-          "saturation": 1.3,
-          "shadow": "#5020C0",
-          "highlight": "#C0A0FF",
-          "tone": 0.65,
-          "light": "#B8A0FF",
-          "lightStrength": 0.55,
-          "variation": 0.14
-        },
-        "cave": {
-          "rock": "tile_cave_rock",
-          "height": 40,
-          "width": 0.6,
-          "maze": 8,
-          "chambers": 2
-        }
-      },
-      "exits": [],
-      "npcs": [
-        {
-          "id": "mysterious_cave_depths_stairs",
-          "name": "Stairs up",
-          "role": "stairs",
-          "art": "stone_stairs",
-          "x": -20,
-          "y": -12,
-          "greeting": "Worn steps lead back up to the Whispering Hollow.",
-          "to": "mysterious_cave"
-        },
-        {
-          "id": "mysterious_cave_depths_chest",
-          "name": "Treasure Chest",
-          "role": "chest",
-          "art": "treasure_chest",
-          "x": 20,
-          "y": 14,
-          "greeting": "A chest wrapped in old silk. Whatever spun it is long gone, or watching.",
-          "gives": "star_seal"
-        }
-      ],
-      "encounters": {
-        "rate": 0.07,
-        "graceSteps": 6,
-        "levels": [
-          185,
-          200
-        ],
-        "groupSize": [
-          4,
-          10
-        ],
-        "monsters": {
-          "crystal_widow": 3,
-          "black_widow": 3,
-          "violet_black_lizard": 2,
-          "azure_dark_beetle": 3
-        }
-      },
-      "ambience": {
-        "particles": "motes",
-        "clouds": false,
-        "tint": "#180C30",
-        "tintAlpha": 0.22,
-        "vignette": 0.65,
-        "lightPatches": {
-          "color": "#60E0FF",
-          "count": 40,
-          "size": [
-            60,
-            130
-          ],
-          "alpha": 0.14
-        },
-        "haze": "#102040",
-        "hazeAlpha": 0.3,
-        "darkness": {
-          "radius": 190,
-          "alpha": 0.95,
-          "light": "#FFC27A"
-        },
-        "critters": [
-          {
-            "kind": "mouse",
-            "count": 3
-          },
-          {
-            "kind": "spider",
-            "count": 5
-          },
-          {
-            "kind": "rat",
-            "count": 3
-          },
-          {
-            "kind": "wisp",
-            "count": 3
-          }
-        ]
-      },
-      "hub": [
-        -20,
-        -12
-      ],
-      "trails": [
-        {
-          "to": [
-            20,
-            14
-          ],
-          "via": [
-            [
-              0,
-              4
-            ]
-          ]
-        }
-      ]
     },
     {
       "id": "emerald_road",
@@ -19111,24 +18298,6 @@
       },
       "npcs": [
         {
-          "id": "prism_drake_lair",
-          "name": "Prism Drake",
-          "role": "boss",
-          "art": "boss_prism_drake",
-          "x": 0,
-          "y": 14,
-          "greeting": "Light ripples across a coil of crystal scales. Something vast lifts its head, and every crystal in the cave flares at once.",
-          "monster": "prism_drake",
-          "level": 160,
-          "victory": {
-            "title": "The Glimmerdeep Shines",
-            "story": [
-              "The Prism Drake's scales soften from blinding white to a sleepy glow. It was never wicked, only hungry, and starlight is a hard habit to break.",
-              "It curls up round its shard and drifts off to sleep, and the light it drank seeps back up through the crystals. That night every lantern in Glimmerbough burns a little brighter."
-            ]
-          }
-        },
-        {
           "id": "glimmerdeep_ladder",
           "name": "Ladder down",
           "role": "stairs",
@@ -19329,14 +18498,24 @@
           "y": 14,
           "greeting": "A chest, grown over with tiny crystals.",
           "gives": "heart_seal"
+        },
+        {
+          "id": "glimmerdeep_depths_ladder",
+          "name": "Ladder down",
+          "role": "stairs",
+          "art": "cave_ladder",
+          "x": 20,
+          "y": -14,
+          "greeting": "Another ladder, further down. Below it, a light pulses like a slow heartbeat.",
+          "to": "glimmerdeep_heart"
         }
       ],
       "encounters": {
         "rate": 0.07,
         "graceSteps": 6,
         "levels": [
-          162,
-          175
+          155,
+          165
         ],
         "groupSize": [
           3,
@@ -19397,6 +18576,276 @@
             [
               0,
               4
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "glimmerdeep_heart",
+      "name": "Heart of the Glimmerdeep",
+      "depth": 2,
+      "width": 56,
+      "height": 44,
+      "music": "cave",
+      "battleMusic": "battle_dark",
+      "theme": {
+        "ground": "tile_cave_floor",
+        "path": "tile_scree",
+        "accent": "tile_cave_rock",
+        "accentPatches": 40,
+        "water": "tile_water",
+        "ponds": 3,
+        "props": [
+          {
+            "art": "crystal",
+            "count": 160,
+            "blocking": true,
+            "cluster": 4,
+            "size": [
+              0.75,
+              1.3
+            ],
+            "glow": "#9FE8FF"
+          },
+          {
+            "art": "violet_crystal",
+            "count": 90,
+            "blocking": true,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "glow": "#C9A0FF"
+          },
+          {
+            "art": "star_crystal",
+            "count": 40,
+            "blocking": true,
+            "cluster": 2,
+            "size": [
+              0.75,
+              1.2
+            ],
+            "glow": "#FFF3A0"
+          },
+          {
+            "art": "pink_shard",
+            "count": 120,
+            "blocking": false,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.2
+            ],
+            "glow": "#FF9FD8"
+          },
+          {
+            "art": "crystal_shard",
+            "count": 140,
+            "blocking": false,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "glow": "#9FE8FF"
+          },
+          {
+            "art": "stalagmite",
+            "count": 160,
+            "blocking": true,
+            "cluster": 5,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "small_stalagmite",
+            "count": 90,
+            "blocking": false,
+            "cluster": 4,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          },
+          {
+            "art": "glow_mushroom",
+            "count": 80,
+            "blocking": false,
+            "cluster": 4,
+            "glow": "#8FE8FF"
+          },
+          {
+            "art": "glow_moss_rock",
+            "count": 20,
+            "blocking": true,
+            "cluster": 2,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "glow": "#90FFB8"
+          },
+          {
+            "art": "pebbles",
+            "count": 50,
+            "blocking": false,
+            "cluster": 3,
+            "size": [
+              0.8,
+              1.2
+            ]
+          },
+          {
+            "art": "boulder",
+            "count": 30,
+            "blocking": true,
+            "cluster": 3,
+            "size": [
+              0.75,
+              1.25
+            ],
+            "shadow": true
+          }
+        ],
+        "palette": {
+          "recolor": [
+            {
+              "hue": [
+                180,
+                215
+              ],
+              "to": 200,
+              "saturation": 0.95
+            },
+            {
+              "hue": [
+                70,
+                160
+              ],
+              "to": 185,
+              "saturation": 0.9
+            }
+          ],
+          "saturation": 1.25,
+          "shadow": "#3020A0",
+          "highlight": "#C8E8FF",
+          "tone": 0.6,
+          "light": "#B0E0FF",
+          "lightStrength": 0.55,
+          "variation": 0.14
+        },
+        "cave": {
+          "rock": "tile_cave_rock",
+          "height": 44,
+          "width": 1.0,
+          "maze": 9,
+          "chambers": 6
+        }
+      },
+      "exits": [],
+      "npcs": [
+        {
+          "id": "glimmerdeep_heart_stairs",
+          "name": "Stairs up",
+          "role": "stairs",
+          "art": "stone_stairs",
+          "x": -16,
+          "y": -10,
+          "greeting": "Worn steps lead back up to the Glimmerdeep Depths.",
+          "to": "glimmerdeep_depths"
+        },
+        {
+          "id": "prism_drake_lair",
+          "name": "Prism Drake",
+          "role": "boss",
+          "art": "boss_prism_drake",
+          "x": 10,
+          "y": 8,
+          "greeting": "Light ripples across a coil of crystal scales. Something vast lifts its head, and every crystal in the cave flares at once.",
+          "monster": "prism_drake",
+          "level": 160,
+          "victory": {
+            "title": "The Glimmerdeep Shines",
+            "story": [
+              "The Prism Drake's scales soften from blinding white to a sleepy glow. It was never wicked, only hungry, and starlight is a hard habit to break.",
+              "It curls up round its shard and drifts off to sleep, and the light it drank seeps back up through the crystals. That night every lantern in Glimmerbough burns a little brighter."
+            ]
+          }
+        }
+      ],
+      "encounters": {
+        "rate": 0.065,
+        "graceSteps": 6,
+        "levels": [
+          156,
+          166
+        ],
+        "groupSize": [
+          3,
+          7
+        ],
+        "monsters": {
+          "prism_crab": 2,
+          "floating_geode": 3,
+          "crystal_serpent": 3,
+          "crystal_quill": 3,
+          "nebula_puff": 2
+        }
+      },
+      "ambience": {
+        "particles": "motes+sparkles",
+        "clouds": false,
+        "tint": "#101838",
+        "tintAlpha": 0.2,
+        "vignette": 0.6,
+        "lightPatches": {
+          "color": "#A8ECFF",
+          "count": 60,
+          "size": [
+            60,
+            140
+          ],
+          "alpha": 0.18
+        },
+        "haze": "#182850",
+        "hazeAlpha": 0.28,
+        "darkness": {
+          "radius": 190,
+          "alpha": 0.93,
+          "light": "#B8E8FF"
+        },
+        "critters": [
+          {
+            "kind": "wisp",
+            "count": 6
+          },
+          {
+            "kind": "mouse",
+            "count": 2
+          }
+        ]
+      },
+      "hub": [
+        -16,
+        -10
+      ],
+      "trails": [
+        {
+          "to": [
+            10,
+            8
+          ],
+          "via": [
+            [
+              -2,
+              0
             ]
           ]
         }
