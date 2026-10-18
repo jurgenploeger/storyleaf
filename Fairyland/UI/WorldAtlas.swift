@@ -282,8 +282,15 @@ struct WorldAtlas: View {
             return GridPoint(col: origin.col + Int((grid.x / WorldMap.tileSize).rounded(.down)),
                              row: origin.row + Int((grid.y / WorldMap.tileSize).rounded(.down)))
         }
+        // On a cave's deeper level, where the cave over it opens: up its stairs (`NPCRole.stairs`).
+        var cave = id
+        for _ in 0..<8 {
+            guard let up = Content.shared.map(cave)?.npcs?.first(where: { $0.role == .stairs && !Content.shared.leadsDown($0) })?.to
+            else { break }
+            cave = up
+        }
         for land in lands {
-            if let exit = land.def.exits.first(where: { $0.to == id }) { return Self.crossing(of: exit, in: land) }
+            if let exit = land.def.exits.first(where: { $0.to == cave }) { return Self.crossing(of: exit, in: land) }
         }
         return nil
     }

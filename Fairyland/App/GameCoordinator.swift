@@ -280,9 +280,18 @@ final class GameCoordinator {
         go(to: destination, entry: back ?? exit.edge.opposite)
     }
 
+    /// Stairs in a cave (`NPCRole.stairs`): down to the level under it, or back up, coming out in
+    /// front of the stairs there that lead back (RuneScape's ladders; playtesting 2026-10-18).
+    private func climb(_ stairs: NPCDef) {
+        guard let to = stairs.to, let destination = Content.shared.map(to) else { return }
+        SoundEffects.shared.play(.whoosh)
+        go(to: destination, entry: nil, byStairsFrom: session.data.mapID)
+    }
+
     /// Shows the loading card first, then builds the (big) map behind it. `arrival`: where to stand
-    /// there instead of where its road from `entry` comes in.
-    private func go(to map: MapDef, entry: Edge?, arrival: CGPoint? = nil) {
+    /// there instead of where its road from `entry` comes in. `byStairsFrom`: climbing from that
+    /// cave level, in front of the stairs leading back to it (`WorldMap.stairsArrival`).
+    private func go(to map: MapDef, entry: Edge?, arrival: CGPoint? = nil, byStairsFrom stairs: String? = nil) {
         // The map you're leaving stays on screen under the card for a moment: nothing more happens on it.
         mapScene.isInputLocked = true
         loadingMapName = map.name
@@ -312,7 +321,8 @@ final class GameCoordinator {
             try? await Task.sleep(for: .milliseconds(280))
             let began = Date()
             let grid = await GameCoordinator.layOut(map)
-            loadMap(map, grid: grid, began: began, entry: entry, arrival: arrival)
+            let landing = arrival ?? stairs.flatMap { grid.stairsArrival(from: $0) }.map { grid.center(of: $0) }
+            loadMap(map, grid: grid, began: began, entry: entry, arrival: landing)
         }
     }
 
@@ -475,14 +485,15 @@ final class GameCoordinator {
     // MARK: Menus & dialogs
 
     func open(_ overlay: Overlay) {
-        // Gift boxes aren't people: walking up and tapping opens them, no conversation.
-        if case .npc(let id) = overlay, let npc = Content.shared.npc(id), npc.role == .chest {
-            openChest(npc)
+        // Gift boxes and stairs aren't people: walking up and tapping opens them, or takes you down
+        // (or up), no conversation.
+        if case .npc(let id) = overlay, let npc = Content.shared.npc(id), npc.role.isObject {
+            if npc.role == .stairs { climb(npc) } else { openChest(npc) }
             return
         }
         self.overlay = overlay
         if case .npc = overlay { SoundEffects.shared.play(.talk) }
-        if case .npc(let id) = overlay, let npc = Content.shared.npc(id), npc.role != .chest {
+        if case .npc(let id) = overlay, let npc = Content.shared.npc(id), !npc.role.isObject {
             session.postChat(npc.greeting, from: npc.name, kind: .npc)
             session.unreadChat = max(0, session.unreadChat - 1)
         }

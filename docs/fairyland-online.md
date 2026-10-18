@@ -368,6 +368,16 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   (155), and the Fallen Star drops a level-150 weapon for each class now and then (Starfall Staff, Blade,
   Axe and Whip; the smiths' lines stop at 105). Whether FO had a village like it isn't in any source
   reachable from a cloud session; it's ours.
+- Cave depths (ours, since 0.7.38; playtesting 2026-10-18: "In caves, you should be able to go deeper in
+  a cave, so a deeper level, similar to runescape"): every cave has a level under it (maps.json `depth`
+  1, `<cave>_depths`), reached only by a ladder down into a pit in the cave floor and left only by stone
+  stairs back up, as RuneScape's dungeons are by their ladders (NPCs with role `stairs` and `to`, tapped
+  or Talked to like a chest; you come out in front of the stairs that lead back, `WorldMap.stairsArrival`).
+  Each level is smaller and darker than the cave over it, its monsters the cave's own a band of levels
+  higher (Gooey Grotto 20 to 30, Rat Cavern 58 to 72, Glimmerdeep 162 to 175, Whispering Hollow 185 to
+  200), with a treasure chest of Seal Stones (a Seal, Moon, Heart and Star Seal) at its far end. The
+  minimap marks the ladder and stairs with a grey arrow down or up. Whether FO's caves had floors under
+  them isn't in any source reachable from a cloud session.
 - The Glimmerdeep (ours, since 0.7.26; playtesting 2026-10-17: "Add a crystal cave to the starfall isle you
   can explore (a new map) with new boss"): a crystal cave under Starfall Isle, its road leaving Glimmerbough
   south to a mouth in a rocky hill (world.json `roads`, the cave's own exit west, so you come in on its

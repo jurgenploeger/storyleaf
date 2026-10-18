@@ -78,9 +78,9 @@ final class GameSession {
 
     /// Someone with a job, as an icon on the minimap (like RuneScape's): a quest giver (with a quest
     /// for you, or one to hand in), the healer, the shop, the smith, the weaver, a guild, a chest
-    /// still to open and a boss still to beat.
+    /// still to open, a boss still to beat, and a cave's stairs down or up.
     struct MinimapMark: Hashable {
-        enum Kind { case quest, questNew, questReady, healer, shop, smith, weaver, guild, chest, boss }
+        enum Kind { case quest, questNew, questReady, healer, shop, smith, weaver, guild, chest, boss, stairsDown, stairsUp }
         let cell: GridPoint
         let kind: Kind
     }
@@ -998,7 +998,9 @@ final class GameSession {
             for id in frontier {
                 guard let map = content.map(id) else { continue }
                 if map.fence == true { return id }
-                let roads = map.exits.map(\.to) + content.maps.filter { $0.exits.contains { $0.to == id } }.map(\.id)
+                // A cave's levels count as roads too, by their stairs (`NPCRole.stairs`).
+                let stairs = (map.npcs ?? []).compactMap { $0.role == .stairs ? $0.to : nil }
+                let roads = map.exits.map(\.to) + content.maps.filter { $0.exits.contains { $0.to == id } }.map(\.id) + stairs
                 for other in roads where seen.insert(other).inserted { next.append(other) }
             }
             frontier = next

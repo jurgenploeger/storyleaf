@@ -389,6 +389,14 @@ for map_def in maps.values():
         check(map_def["battleMusic"] in songs, f"map {map_def['id']} → unknown battle song {map_def['battleMusic']}")
     theme = map_def["theme"]
     town = map_def.get("town") or {}
+    # A cave's level under it (`MapDef.depth`): reached only by stairs, from the level over it.
+    if "depth" in map_def:
+        depth = map_def["depth"]
+        check(isinstance(depth, int) and not isinstance(depth, bool) and depth >= 1 and "cave" in theme,
+              f"map {map_def['id']} → depth is a cave level's, 1 or more")
+        check(not map_def["exits"], f"map {map_def['id']} → a cave's deeper level has no roads out, only stairs")
+        check(any(n["role"] == "stairs" and (maps.get(n.get("to")) or {}).get("depth", 0) == depth - 1 for n in map_def.get("npcs", [])),
+              f"map {map_def['id']} → no stairs up to the level over it")
     if map_def.get("fence") is True:
         # A town's walled square (`WorldMap.townSquare`), its countryside painted round it on the continent.
         size = town.get("size")
@@ -473,7 +481,21 @@ for map_def in maps.values():
         check(art_id in art, f"map {map_def['id']} → unknown art {art_id}")
     for npc in map_def.get("npcs", []):
         check(npc["art"] in art, f"npc {npc['id']} → unknown art {npc['art']}")
-        check(npc["role"] in ("healer", "shop", "quests", "guild", "chest", "boss", "smith", "weaver"), f"npc {npc['id']} → unknown role {npc['role']}")
+        check(npc["role"] in ("healer", "shop", "quests", "guild", "chest", "boss", "smith", "weaver", "stairs"), f"npc {npc['id']} → unknown role {npc['role']}")
+        # A cave's stairs (`NPCRole.stairs`): one level down or up, to another level of the same cave,
+        # and stairs there that lead back (you come out in front of them, `WorldMap.stairsArrival`).
+        if npc["role"] == "stairs" or "to" in npc:
+            where = f"stairs {npc['id']}"
+            other = maps.get(npc.get("to"))
+            check(npc["role"] == "stairs", f"npc {npc['id']} → only stairs lead somewhere (to)")
+            check(other is not None, f"{where} → unknown map {npc.get('to')}")
+            check("cave" in theme and other is not None and "cave" in other["theme"], f"{where} → stairs join two levels of a cave")
+            if other is not None:
+                check(abs(other.get("depth", 0) - map_def.get("depth", 0)) == 1, f"{where} → stairs go one level down or up (depth)")
+                back = [n for n in other.get("npcs", []) if n["role"] == "stairs" and n.get("to") == map_def["id"]]
+                check(len(back) == 1, f"{where} → {npc.get('to')} needs one stairs back to {map_def['id']}")
+            check(sum(1 for n in map_def.get("npcs", []) if n.get("to") == npc.get("to")) == 1,
+                  f"{where} → two stairs to {npc.get('to')}")
         for item in npc.get("stock", []):
             check(item in items, f"shop {npc['id']} → unknown item {item}")
         if npc["role"] == "chest":

@@ -1141,7 +1141,7 @@ final class WorldScene: SKScene {
     private func placeNPCs(_ planned: [(npc: NPCDef, cell: GridPoint)]) {
         for (npc, cell) in planned {
             let node = Walker(cycle: art.walkCycle(npc.art), label: npc.name)
-            node.idles = npc.role != .chest
+            node.idles = !npc.role.isObject
             node.tagMode = .onDemand
             if npc.role == .boss { node.motion = IdleMotion.of(art: npc.art) }
             node.position = map.center(of: cell)
@@ -1658,6 +1658,7 @@ final class WorldScene: SKScene {
             case .weaver: kind = session.notice(for: npc.def.id) == nil ? .weaver : .questNew
             case .guild: kind = .guild
             case .boss: kind = .boss
+            case .stairs: kind = Content.shared.leadsDown(npc.def) ? .stairsDown : .stairsUp
             case .chest:
                 guard !session.isOpened(npc.def.id) else { return nil }
                 kind = .chest
@@ -2568,7 +2569,7 @@ final class WorldScene: SKScene {
                 nearest = (npc.def.id, distance)
             }
             // Townsfolk at their posts turn to watch you pass, and glance around otherwise.
-            if npc.def.role != .chest, npc.def.role != .boss {
+            if !npc.def.role.isObject, npc.def.role != .boss {
                 if distance < 130 {
                     npc.node.face(Direction(player.position - npc.node.position, current: npc.node.facing))
                 } else if Int.random(in: 0..<12) == 0 {

@@ -78,6 +78,12 @@ struct WorldHUD: View {
                     } label: {
                         if npc.role == .chest {
                             Label(L("Open {name}", ["name": npc.name]), icon: .gift)
+                        } else if npc.role == .stairs {
+                            if Content.shared.leadsDown(npc) {
+                                Label(L("Go down"), icon: .arrowDown)
+                            } else {
+                                Label(L("Go up"), icon: .arrowUp)
+                            }
                         } else {
                             Label(L("Talk to {name}", ["name": npc.name]), icon: .talk)
                         }
@@ -651,6 +657,8 @@ struct MinimapIcon: View {
         case .guild: glyph(.shield)
         case .chest: glyph(.gift)
         case .boss: glyph(.sword)
+        case .stairsDown: glyph(.arrowDown)
+        case .stairsUp: glyph(.arrowUp)
         }
     }
 
@@ -675,6 +683,7 @@ struct MinimapIcon: View {
         case .guild: Color(red: 0.58, green: 0.4, blue: 0.86)
         case .chest: Color(red: 0.74, green: 0.47, blue: 0.2)
         case .boss: Color(red: 0.62, green: 0.1, blue: 0.16)
+        case .stairsDown, .stairsUp: Color(red: 0.42, green: 0.42, blue: 0.5)
         }
     }
 }

@@ -2,6 +2,15 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.38",
+      "date": "2026-10-18",
+      "title": "Deeper caves",
+      "notes": [
+        "Every cave goes deeper: find the ladder down in the Gooey Grotto, the Rat Cavern, the Glimmerdeep and the Whispering Hollow to a darker level below, with stronger monsters and a treasure chest of Seal Stones. Stairs lead back up to where you climbed down.",
+        "On the minimap, a grey arrow marks the way down or up once you've seen it."
+      ]
+    },
+    {
       "version": "0.7.37",
       "date": "2026-10-18",
       "title": "Finding quests",

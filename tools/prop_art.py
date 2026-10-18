@@ -296,6 +296,57 @@ def draw_ship():
     return canvas
 
 
+def draw_cave_ladder():
+    """A way down to a cave's deeper level (RuneScape's ladders into the dark): a round pit in the
+    cave floor, ringed with stones, black at its heart, and a wooden ladder standing up out of it,
+    leaning back a little, lit from the top left."""
+    c = Canvas(48, 48)
+    cx, cy, rx, ry = 24.0, 35.0, 19.0, 9.5
+    stones = [hexc("3b3a48"), hexc("5d5c6e"), hexc("8a8a9c")]
+    dark = [hexc("07060c"), hexc("15131f"), hexc("262333")]
+    for y in range(c.height):
+        for x in range(c.width):
+            u, v = (x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry
+            r = math.hypot(u, v)
+            if r > 1.0:
+                continue
+            if r > 0.72:
+                # The rim's stones: a ring broken into blocks, lit on the side toward the light.
+                angle = math.atan2(v, u)
+                block = int((angle + math.pi) / (2 * math.pi) * 14)
+                lit = -(u * 0.6 + v * 0.8)
+                tone = 2 if lit > 0.35 else 0 if lit < -0.35 else 1
+                if (block % 2 == 0 and tone > 0):
+                    tone -= 1
+                c.px[y][x] = stones[tone]
+            else:
+                # The pit: darker toward the middle, its far wall (the top) catching a little light.
+                tone = 0 if r < 0.45 else 1 if v > -0.35 else 2
+                c.px[y][x] = dark[tone]
+    woods = [hexc("5a3518"), hexc("8c5a2b"), hexc("c08a4c")]
+    # Two rails from down in the pit to above its far rim, leaning back toward the top right.
+    rails = [((17.0, 38.0), (19.5, 6.0)), ((29.0, 38.0), (31.5, 6.0))]
+    for (ax, ay), (bx, by) in rails:
+        for t in frange(0, 1, 0.01):
+            x, y = ax + (bx - ax) * t, ay + (by - ay) * t
+            for dx in (0, 1, 2):
+                px, py = int(x) + dx, int(y)
+                if 0 <= px < c.width and 0 <= py < c.height:
+                    c.px[py][px] = woods[2 if dx == 0 else 1 if dx == 1 else 0]
+    # Rungs every five pixels, between the rails.
+    for k in range(6):
+        t = 0.12 + k * 0.155
+        y = int(38.0 + (6.0 - 38.0) * t)
+        left = int(17.0 + 2.5 * t) + 3
+        right = int(29.0 + 2.5 * t)
+        for x in range(left, right):
+            c.px[y][x] = woods[1]
+            if y + 1 < c.height and c.px[y + 1][x] in dark + stones:
+                c.px[y + 1][x] = woods[0]
+    c.outline()
+    return c
+
+
 def frange(start, stop, step):
     """From `start` to `stop` (inclusive) in steps of `step`."""
     count = int(round((stop - start) / step))
@@ -327,6 +378,7 @@ def in_star(x, y, radius):
 
 DRAWINGS = {
     "candy_cane": draw_candy_cane,
+    "cave_ladder": draw_cave_ladder,
     "ship": draw_ship,
 }
 

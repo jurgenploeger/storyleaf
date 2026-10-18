@@ -139,6 +139,15 @@ cave_in_downs   | newgame,level=12,map=slime_cave,from=northern_grassland | 8
 cave_in_valley  | newgame,level=30,map=rat_cavern,from=valley_of_fear | 8
 cave_in_lotus   | newgame,level=40,map=rat_cavern,from=lotus_land | 8
 cave_in_emerald | newgame,level=190,map=mysterious_cave,from=emerald_road | 8
+# Deeper caves (playtesting 2026-10-18: "you should be able to go deeper in a cave, similar to
+# runescape"): by the ladder down in each cave, and on the level under it by its stairs back up.
+cave_ladder        | newgame,level=60,map=rat_cavern,from=rat_cavern_depths | 8
+depths_rats        | newgame,level=65,map=rat_cavern_depths,from=rat_cavern | 8
+depths_rats_map    | newgame,level=65,map=rat_cavern_depths,from=rat_cavern,worldmap | 12
+depths_slime       | newgame,level=25,map=slime_cave_depths,from=slime_cave | 8
+depths_hollow      | newgame,level=195,map=mysterious_cave_depths,from=mysterious_cave | 8
+depths_glimmer     | newgame,level=170,map=glimmerdeep_depths,from=glimmerdeep | 8
+depths_battle      | newgame,level=65,class=fighter,map=rat_cavern_depths,from=rat_cavern,battle=4 | 15
 behind_tree  | newgame,map=smiling_forest,at=0_-14   | 15
 intro_story  | intro                             | 6
 intro_shadows | intro=2                          | 6

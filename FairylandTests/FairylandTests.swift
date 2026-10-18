@@ -3760,6 +3760,16 @@ struct LandPlanTests {
                 #expect(!arrivals.contains { max(abs($0.col - sign.cell.col), abs($0.row - sign.cell.row)) <= 1 },
                         "map \(def.id): the signpost to \(sign.exit.to) stands where you come in")
             }
+            // Climbing in by its stairs from the level over or under it (`NPCRole.stairs`), you come
+            // out in front of them, somewhere that leads on too.
+            for stairs in def.npcs ?? [] where stairs.role == .stairs {
+                let other = stairs.to ?? ""
+                let landing = map.stairsArrival(from: other)
+                #expect(landing.map { map.isWalkable($0) && reached.contains($0) } == true,
+                        "map \(def.id): where you climb in from \(other), \(String(describing: landing)), doesn't lead to its hub")
+                #expect(content.map(other)?.npcs?.contains { $0.role == .stairs && $0.to == def.id } == true,
+                        "map \(other) has no stairs back to \(def.id)")
+            }
         }
     }
 
