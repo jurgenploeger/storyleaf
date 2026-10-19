@@ -86,7 +86,10 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   his own mop as `hair_dwarf_npc`). Rerun after changing a race's sheet, and look at `--preview` before
   committing. Gloves, boots and necklaces are painted on by GearOverlay (`tools/gear_preview.py --trinkets`),
   and so are the festive seasons' hats, measured on each frame's head (`GearOverlay.hat`, `--hats`).
-- `tools/rd.py`: Retro Diffusion client. `tools/icons.py`: vendors Iconaut icons (MIT), plus our own drawings in
+- `tools/rd.py`: Retro Diffusion client. `rd.py edit` inpaints a mask of an existing sheet (pilot 2026-10-19: wearables
+  painted onto a hero's own body keep its face and walk; faces, about 10 px wide, come out muddy), its results only in
+  `art-variants/<name>/` (`rd.py fetch` gets any that didn't download). `tools/character_art.py` makes the masks (face,
+  body, helmet) from `hero_layers.py`'s heads, into `art-variants/_masks/`, outside `art/` so they never ship. `tools/icons.py`: vendors Iconaut icons (MIT), plus our own drawings in
   `art/icons/` where Iconaut has no shape that works (fire's three-tongued flame).
   `tools/check_content.py`: validates the game data.
 - `tools/deslab.py`: cuts the raised slab of ground some generated buildings came with (`inn`, `magic_tower`) out

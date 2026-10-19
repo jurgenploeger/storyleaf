@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 1,
+    "prompt": "cute chibi dwarf kid, very short, stocky and chubby with a round belly, short legs and a big round head, thick ginger hair with a full fringe covering the forehead down to the eyebrows, big round friendly eyes, soft small eyebrows, rosy cheeks, smiling, clean-shaven, green tunic, brown belt and boots",
+    "prompt_style": "rd_animation__four_angle_walking",
+    "width": 48,
+    "height": 48,
+    "return_spritesheet": true
+  },
+  "result": {
+    "created_at": 1792402860,
+    "credit_cost": 10,
+    "balance_cost": 0.07,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 42.881,
+    "request_id": "997cfa2e-678d-409d-897f-96c846bfd9fa",
+    "outputs_retained_until": 1792489222
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "tool": "inpainting",
+  "input": "art/sprites/player_walk.png",
+  "mask": "art/masks/player_walk_helmet.png",
+  "prompt": "chibi pixel art hero in shiny steel plate armour: a round steel helmet over the hair with the face showing, breastplate, round shoulder pauldrons, armoured gauntlets and greaves, same armour in every frame",
+  "seed": 1000,
+  "result": {
+    "tool_id": "inpainting",
+    "inference_id": "inf_M0jyORNa2PWvmwZknl3GdAe9bzn3rEYZ",
+    "balance_cost": 0.18,
+    "credit_cost": 20,
+    "charged": true,
+    "remaining_balance": 42.49099999999991,
+    "output_urls": [
+      "https://da8ztllw6by0f.cloudfront.net/169fff15060f3fd2f42f63aa340e178e.png"
+    ],
+    "output_width": 192,
+    "output_height": 192,
+    "toolId": "inpainting",
+    "outputImageUrl": "https://da8ztllw6by0f.cloudfront.net/169fff15060f3fd2f42f63aa340e178e.png",
+    "inferenceId": "inf_M0jyORNa2PWvmwZknl3GdAe9bzn3rEYZ",
+    "balanceCost": 0.18,
+    "creditCost": 20
+  }
+}
