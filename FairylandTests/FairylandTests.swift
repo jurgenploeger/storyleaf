@@ -682,7 +682,7 @@ struct ContentTests {
             #expect(npcs.contains { $0.role == role }, "Starfall Isle has no \(role)")
         }
         let givers = Set(npcs.filter { $0.role == .quests }.map(\.id))
-        #expect(content.quests.filter { givers.contains($0.giver) }.count == 8)
+        #expect(content.quests.filter { givers.contains($0.giver) }.count == 9)
         let boss = try #require(npcs.first { $0.role == .boss }?.monster.flatMap(content.monster))
         let weapons = (boss.drops ?? []).compactMap { content.item($0.item) }.filter { $0.type == .weapon }
         for cls in content.classes where cls.id != "novice" {

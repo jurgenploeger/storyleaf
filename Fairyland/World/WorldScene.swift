@@ -1675,7 +1675,7 @@ final class WorldScene: SKScene {
 
     /// Whether you've seen a cell (on a dark map, as the minimap shows it; everywhere elsewhere).
     private func seenCells() -> (GridPoint) -> Bool {
-        guard lantern != nil else { return { _ in true } }
+        guard lantern != nil, !session.isCharted(def) else { return { _ in true } }
         let seen = session.explored(def.id) ?? Data()
         return { cell in
             let index = cell.row * self.map.columns + cell.col
@@ -1683,10 +1683,12 @@ final class WorldScene: SKScene {
         }
     }
 
-    /// The HUD's minimap. On a dark map it shows only the cells you've seen; `version` is the
-    /// session's count of new sightings (`exploredVersion`), so it's redrawn as you explore.
+    /// The HUD's minimap. On a dark map it shows only the cells you've seen, until you have its
+    /// whole map (`GameSession.isCharted`; playtesting 2026-10-19: "you're not able to see the full
+    /// map from the mini map, unless you completed a quest that gives you [...] a map"); `version`
+    /// is the session's count of new sightings (`exploredVersion`), so it's redrawn as you explore.
     func minimapImage(explored version: Int) -> UIImage {
-        guard lantern != nil else { return minimap }
+        guard lantern != nil, !session.isCharted(def) else { return minimap }
         if let fogged, fogged.version == version { return fogged.image }
         let image = Self.fog(minimap, seen: session.explored(def.id), columns: map.columns, rows: map.rows)
         fogged = (version, image)

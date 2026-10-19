@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.40",
+      "date": "2026-10-19",
+      "title": "A map of the deep",
+      "notes": [
+        "In the dark Glimmerdeep your minimap shows only where you've been, until Pip the Lamplighter draws you a map of it: finish A Map of the Deep and every level shows in full."
+      ]
+    },
+    {
       "version": "0.7.39",
       "date": "2026-10-19",
       "title": "A cave of crystal",

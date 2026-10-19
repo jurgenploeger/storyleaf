@@ -734,6 +734,9 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
     let locals: [Local]?
     /// A danger zone: adventurers can duel here, and some will pick a fight.
     let danger: Bool?
+    /// The quest that charts a dark map (a cave's): once it's done, the minimap and the cave's map show
+    /// all of it, not only where you've been (`GameSession.isCharted`).
+    let chart: String?
     /// A cave's level under the one you walk into (1 for the first one down, reached by stairs,
     /// `NPCRole.stairs`); nil for the cave itself and everywhere else.
     let depth: Int?

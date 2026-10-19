@@ -372,6 +372,12 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   scenery"): its three levels have violet crystal walls and a glinting blue crystal floor (`tile_crystal_rock`,
   `tile_crystal_floor`), icy and amethyst spires instead of stalagmites and geodes instead of boulders, all drawn
   from the caves' own rock by `tools/crystal_art.py`, and its crystal clusters grown bigger.
+- A map of the deep (ours, since 0.7.40; playtesting 2026-10-19: "Maybe the glimmerdeep caves you're not
+  able to see the full map from the mini map, unless you completed a quest that gives you the ability to
+  remember or have a map"): on a dark map the minimap and the cave's map show only where you've been, and
+  the Glimmerdeep's three levels name a quest that charts them (maps.json `chart`, `GameSession.isCharted`):
+  Pip the Lamplighter's A Map of the Deep (12 Floating Geodes, their light for ink, from level 152 after Into
+  the Glimmerdeep). Once it's done, every level shows in full. Its reward says so.
 - Cave depths (ours, since 0.7.38; playtesting 2026-10-18: "In caves, you should be able to go deeper in
   a cave, so a deeper level, similar to runescape", then "Only the new land should have 2 deeper cave levels
   with the drake in the deepest cave level"): the Glimmerdeep goes two levels down (maps.json `depth` 1 and
