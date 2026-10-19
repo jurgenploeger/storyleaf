@@ -415,11 +415,13 @@ def half_up(v):
 
 
 def hat(body, out, kind, colour, trim=None):
-    """A festive hat on the head (GearOverlay.hat), measured on the plain body: the top of its scalp
-    and its width a little below, every frame. `kind`: crown, a paper party crown with three points
-    (RuneScape's party hats); santa, a red cap with a white fur brim and pom, its tip flopped back;
-    ears, a bunny's, tall, pink inside (`trim`) from the front; mask, the face in the mask's colour
-    (`colour`, shaded as the skin was) with hollow eyes and a toothy grin, from the front and the side."""
+    """A festive hat on the head (GearOverlay.hat), every frame, fitted to the head as drawn, hair and
+    all: measured on the plain body (the scalp, the eyes) and on `out` before the hat goes on.
+    `kind`: crown, a paper party crown round the head's widest rows over the eyes, three points up
+    (RuneScape's party hats); santa, a red cap with a white fur brim there and a pom, over all the hair
+    above, its tip flopped back; ears, a bunny's, out of the hair and as tall over it whatever the hair,
+    pink inside (`trim`) from the front; mask, the face in the mask's colour (`colour`, shaded as the
+    skin was) with hollow eyes and a toothy grin, from the front and the side."""
     col = hexc(colour)
     acc = hexc(trim) if trim else np.array([1.0, 1.0, 1.0])
     white, grey = np.array([0.98, 0.98, 1.0]), np.array([0.80, 0.82, 0.88])
@@ -436,6 +438,42 @@ def hat(body, out, kind, colour, trim=None):
             left, right = min(span), max(span)
             cx = (left + right) // 2
             back = {'right': -1, 'left': 1, 'down': 1, 'up': -1}[facing]
+            drawn = f[..., 3] > 0.5     # the head as drawn, hair and all, before the hat goes on
+
+            def around(y):
+                """The head as drawn on row `y`: the run through its middle, hair and all, never
+                narrower than the scalp and its outline. A hat measured on the scalp alone came out
+                smaller than any hair round it."""
+                if not 0 <= y < FRAME:
+                    return left - 1, right + 1
+                near = [x for x in range(max(0, cx - 3), min(FRAME, cx + 4)) if drawn[y, x]]
+                if not near:
+                    return left - 1, right + 1
+                l = r = min(near, key=lambda x: abs(x - cx))
+                while l - 1 >= max(0, left - 6) and drawn[y, l - 1]:
+                    l -= 1
+                while r + 1 < min(FRAME, right + 7) and drawn[y, r + 1]:
+                    r += 1
+                return min(l, left - 1), max(r, right + 1)
+
+            # The eyes: gaps in the face's skin (none from behind). The hat's brim sits on the widest
+            # row of the head as drawn, hair and all, at least two rows over them: worn round the
+            # head, not perched on top of it.
+            # Never lower than three fifths of the way from the scalp's top to the eyes: a cowl or a
+            # helmet round the face is wide all the way down.
+            skin = {(y, x) for y, x in cells}
+            eyes = [y for y, x in cells if y > top + 2 and (y, x + 1) not in skin
+                    and ((y, x + 2) in skin or (y, x + 3) in skin)]
+            eye = min(eyes) if eyes else top + max(4, (chin - top) // 2)
+            deep = min(eye - 2, top + max(2, (eye - top) * 3 // 5))
+            crown_top = min((y for y in range(FRAME) if drawn[y, max(0, left):right + 1].any()), default=top)
+            widths = {y: around(y)[1] - around(y)[0] for y in range(crown_top, deep + 1)}
+            brim = max(widths, key=lambda y: (widths[y], y)) if widths else top + 1
+
+            def crest(x0, x1):
+                """The highest row drawn over columns x0 to x1 (the top of the hair there)."""
+                rows = [y for y in range(FRAME) if drawn[y, max(0, x0):min(FRAME, x1 + 1)].any()]
+                return min(rows) if rows else top
 
             def put(x, y, cc):
                 if 0 <= x < FRAME and 0 <= y < FRAME:
@@ -452,32 +490,38 @@ def hat(body, out, kind, colour, trim=None):
                         put(x, y, line if edge else fill(x, y))
 
             if kind == 'crown':
-                # A band round the head at the scalp's top, three points up from it.
-                l, r = left - 1, right + 1
+                # A band round the head at the scalp's top, as wide as the head is there, hair and
+                # all; three points up from its top row.
+                shape = {(x, y) for y in (brim - 2, brim - 1, brim) for x in range(around(y)[0], around(y)[1] + 1)}
+                l, r = around(brim - 2)
                 peaks = [l + 2, (l + r) // 2, r - 2]
-                shape = set()
                 for x in range(l, r + 1):
                     rise = max(0, 4 - 2 * min(abs(x - p) for p in peaks))
-                    for y in range(top - 1 - rise, top + 2):
+                    for y in range(brim - 2 - rise, brim - 2):
                         shape.add((x, y))
                 light = mix(col, (1, 1, 1), 0.4)
-                stamp([(shape, lambda x, y: shade(col, 0.75) if y == top + 1 else light if y == top - 1 else col, shade(col, 0.42))])
+                stamp([(shape, lambda x, y: shade(col, 0.75) if y == brim else light if y == brim - 2 else col, shade(col, 0.42))])
             elif kind == 'santa':
-                # A white fur brim; the cap over the scalp, narrowing and flopping over to the back.
-                l, r = left - 1, right + 1
-                brim = {(x, y) for x in range(l, r + 1) for y in (top - 1, top, top + 1)}
+                # A white fur brim round the head, hair and all; the cap over everything above it,
+                # narrowing and flopping over to the back.
+                band = {(x, y) for y in (brim - 2, brim - 1, brim) for x in range(around(y)[0] - 1, around(y)[1] + 2)}
+                l, r = around(brim - 2)
                 half = (r - l) / 2
-                cap = set()
-                for k in range(2, 9):
-                    w = half * (1 - (k - 1) / 8.5)
-                    mid = (l + r) / 2 + back * ((k - 1) ** 2) / 10
+                # Up from the brim to past the top of the hair, narrowing; everything drawn up there
+                # is under the cap.
+                rise = max(8, brim - 2 - crown_top + 3)
+                cap = {(x, y) for y in range(crown_top, brim - 2) for x in range(FRAME)
+                       if drawn[y, x] and around(y)[0] <= x <= around(y)[1]}
+                for k in range(1, rise + 1):
+                    w = half * (1 - (k - 1) / (rise + 0.5))
+                    mid = (l + r) / 2 + back * ((k - 1) ** 2) / (10 * rise / 8)
                     for x in range(half_up(mid - w), half_up(mid + w) + 1):
-                        cap.add((x, top - k))
-                tip = (half_up((l + r) / 2 + back * 5.3), top - 8)
+                        cap.add((x, brim - 2 - k))
+                tip = (half_up((l + r) / 2 + back * (((rise - 1) ** 2) / (10 * rise / 8) + 0.4)), brim - 2 - rise)
                 pom = {(tip[0] + dx, tip[1] + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if abs(dx) + abs(dy) < 2}
                 dark = shade(col, 0.72)
                 stamp([(cap, lambda x, y: dark if (x - (l + r) / 2) * back > half * 0.4 else col, shade(col, 0.42)),
-                       (brim, lambda x, y: grey if y == top + 1 else white, grey * 0.62),
+                       (band, lambda x, y: grey if y == brim else white, grey * 0.62),
                        (pom, lambda x, y: white, grey * 0.62)])
             elif kind == 'ears':
                 # Two tall ears from the head, leaning out a little; pink inside, seen from the front.
@@ -486,13 +530,17 @@ def hat(body, out, kind, colour, trim=None):
                 for n, x0 in enumerate(spots):
                     lean = -1 if n == 0 else 1
                     shape, inner = set(), set()
-                    for k in range(0, 11):
-                        y = top + 1 - k
+                    # Out of the hair there (or the scalp), as tall over it whatever the hair is like.
+                    hair = crest(x0, x0 + 3)
+                    base = min(top + 1, hair + 2)
+                    length = base - min(top - 9, hair - 7)
+                    for k in range(0, length + 1):
+                        y = base - k
                         dx = lean * (k // 5)
-                        width = 2 if k >= 9 else 3
+                        width = 2 if k >= length - 1 else 3
                         for x in range(x0 + dx, x0 + dx + width + 1):
                             shape.add((x, y))
-                        if facing == 'down' and 2 <= k <= 8:
+                        if facing == 'down' and 2 <= k <= length - 2:
                             inner.add((x0 + dx + 1 + n, y))
                     parts.append((shape, lambda x, y, inner=inner: acc if (x, y) in inner else col, shade(col, 0.55)))
                 stamp(parts)

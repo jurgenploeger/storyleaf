@@ -86,7 +86,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   his own mop as `hair_dwarf_npc`, a mouth drawn into his beard by `tools/character_art.py mouth`). The bald head is painted only inside the sprite as drawn (`_scalp`), so a
   body wearing its own hair matches its sheet: a skull painted past a side-view face stuck out like a brow ridge.
   Rerun after changing a race's sheet, and look at `--preview` before committing. Gloves, boots and necklaces are painted on by GearOverlay (`tools/gear_preview.py --trinkets`),
-  and so are the festive seasons' hats, measured on each frame's head (`GearOverlay.hat`, `--hats`).
+  and so are the festive seasons' hats, fitted to each frame's head as drawn, hair and all: a brim round its widest
+  rows over the eyes, the cap over the hair above (`GearOverlay.hat`, `--hats`).
 - `tools/rd.py`: Retro Diffusion client. `rd.py edit` inpaints a mask of an existing sheet (pilot 2026-10-19: inpainting
   of walk sheets is a dead end: faces, about 10 px wide, come out muddy, and armour or a robe painted onto a hero comes
   out too bulky, with side and back views that don't match the pose), its results only in
