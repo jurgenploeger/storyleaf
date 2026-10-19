@@ -78,6 +78,12 @@ one body and wrong on another isn't done.
 - From behind it hangs over the body, under the hair; from the front and side it shows past the outline.
 - Stretched to each body's height and shoulders.
 
+### Portraits
+
+- The round HUD portrait (`ArtLibrary.face`) is centred on the face in every outfit: a hero's is cut round
+  their head as their plain body has it, sized by that body. Measured from the top of the sprite, a pointed
+  hat or a hood pushed the face to the bottom of the circle.
+
 ### Held weapons and item icons
 
 - Item icons are 32 × 32, drawn in `tools/item_art.py`, outlined.
@@ -159,6 +165,11 @@ python3 tools/check_content.py
   same shading; leave its white, outline and holes. Choose the floor for "coloured" per piece: a cape's
   deepest shadows are its colour too.
 - From behind there's no face: use the front view of the same walk frame.
+
+### Painted-on gear
+
+- A hood's fur (pattern `fur`) goes round its opening only: the hood's pixels next to the face's skin. Laid
+  on all its dark pixels it ran down the hood's side as a white wedge that read as a wing.
 
 ### Hero layers (`tools/hero_layers.py`)
 

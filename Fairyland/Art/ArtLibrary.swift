@@ -778,17 +778,86 @@ final class ArtLibrary {
     }
 
     /// A round-portrait crop, like Fairyland's HUD faces: a square about one head high from the top
-    /// of the sprite's visible pixels, centred on it. Cleared with the sprite when it's re-registered.
+    /// of the sprite's visible pixels, centred on it. A hero's (or another adventurer's) is centred on
+    /// their head as their plain body has it (`GearLook.body`, same poses, no hat), sized by that body:
+    /// a tall hat or a hood measured from the top pushed the face to the bottom of the circle.
+    /// Cleared with the sprite when it's re-registered.
     func face(_ id: String) -> UIImage {
         let cacheKey = id + "#face"
         if let cached = images[cacheKey] { return cached }
         let whole = image(id)
         guard let cgImage = whole.cgImage, let box = Self.visibleBounds(of: cgImage) else { return whole }
-        let side = max(8, min(box.width, box.height * 0.62).rounded())
-        let rect = CGRect(x: (box.midX - side / 2).rounded(), y: max(0, box.minY - 1), width: side, height: side)
+        var side = max(8, min(box.width, box.height * 0.62).rounded())
+        var rect = CGRect(x: (box.midX - side / 2).rounded(), y: max(0, box.minY - 1), width: side, height: side)
+        if let plain = plainFrame(id), let body = Self.visibleBounds(of: plain), let head = Self.skinBounds(of: plain) {
+            side = max(8, min(body.width, body.height * 0.62).rounded())
+            let x = min(max(0, (head.midX - side / 2).rounded()), CGFloat(cgImage.width) - side)
+            let y = min(max(0, (head.midY - side / 2).rounded()), CGFloat(cgImage.height) - side)
+            rect = CGRect(x: x, y: y, width: side, height: side)
+        }
         let face = cgImage.cropping(to: rect).map { UIImage(cgImage: $0) } ?? whole
         images[cacheKey] = face
         return face
+    }
+
+    /// The plain body (`GearLook.body`) a hero's sprite `id` is drawn on, facing you, cut from its
+    /// sheet as `image(id)` cuts the sprite's frame; nil for anyone else.
+    private func plainFrame(_ id: String) -> CGImage? {
+        guard let body = gearLooks[id]?.body, let sheet = pngURL(body).flatMap({ UIImage(contentsOfFile: $0.path)?.cgImage }) else { return nil }
+        let asset = asset(id)
+        let frame = CGFloat(asset?.frame ?? 48)
+        let layout = SheetLayout(asset: asset, width: CGFloat(sheet.width), height: CGFloat(sheet.height))
+        guard let cell = layout.cells(for: .down).first else { return nil }
+        return sheet.cropping(to: CGRect(x: CGFloat(cell.column) * frame, y: CGFloat(cell.row) * frame, width: frame, height: frame))
+    }
+
+    /// The box around a plain body's head: its skin's biggest patch (the bald scalp is skin too), as
+    /// GearOverlay finds it, in pixels from the top left.
+    private static func skinBounds(of image: CGImage) -> CGRect? {
+        let width = image.width, height = image.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let drawn: Bool = pixels.withUnsafeMutableBytes { buffer in
+            guard let context = CGContext(data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8,
+                                          bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        guard drawn else { return nil }
+        var skin = [Bool](repeating: false, count: width * height)
+        for i in 0..<(width * height) where pixels[i * 4 + 3] > 128 {
+            let a = Double(pixels[i * 4 + 3])
+            let r = Double(pixels[i * 4]) / a, g = Double(pixels[i * 4 + 1]) / a, b = Double(pixels[i * 4 + 2]) / a
+            let high = max(r, g, b), low = min(r, g, b), delta = high - low
+            var hue = 0.0
+            if delta > 0 {
+                if high == r { hue = 60 * ((g - b) / delta).truncatingRemainder(dividingBy: 6) }
+                else if high == g { hue = 60 * ((b - r) / delta + 2) }
+                else { hue = 60 * ((r - g) / delta + 4) }
+            }
+            if hue < 0 { hue += 360 }
+            let saturation = high == 0 ? 0 : delta / high
+            skin[i] = (hue <= 40 || hue >= 342) && saturation > 0.12 && saturation < 0.65 && high > 0.55
+        }
+        var seen = [Bool](repeating: false, count: width * height)
+        var best: [Int] = []
+        for start in 0..<(width * height) where skin[start] && !seen[start] {
+            var stack = [start], patch: [Int] = []
+            seen[start] = true
+            while let i = stack.popLast() {
+                patch.append(i)
+                let x = i % width, y = i / width
+                for (nx, ny) in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+                where nx >= 0 && ny >= 0 && nx < width && ny < height && skin[ny * width + nx] && !seen[ny * width + nx] {
+                    seen[ny * width + nx] = true
+                    stack.append(ny * width + nx)
+                }
+            }
+            if patch.count > best.count { best = patch }
+        }
+        guard let left = best.map({ $0 % width }).min(), let right = best.map({ $0 % width }).max(),
+              let top = best.map({ $0 / width }).min(), let bottom = best.map({ $0 / width }).max() else { return nil }
+        return CGRect(x: left, y: top, width: right - left + 1, height: bottom - top + 1)
     }
 
     /// The box around a picture's opaque pixels, in pixels from its top left.

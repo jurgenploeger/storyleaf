@@ -406,9 +406,15 @@ enum GearOverlay {
                 }
             }
         case "fur":
-            // White fur round the hood's opening (and the cape's hem, drawn with the cape).
+            // White fur round the hood's opening: the hood next to the face (and the cape's hem, drawn
+            // with the cape). Its dark pixels made a white wedge down the side, like a wing.
+            func bare(_ x: Int, _ y: Int) -> Bool {
+                guard opaque(x, y) else { return false }
+                let (h, s, v) = hsv(base.rgb(origin.x + x, origin.y + y))
+                return (h <= 40 || h >= 342) && s > 0.12 && s < 0.65 && v > 0.55
+            }
             for y in 0..<size {
-                for x in 0..<size where isMark(x, y) && hsv(base.rgb(origin.x + x, origin.y + y)).2 < 0.5 {
+                for x in 0..<size where isMark(x, y) && (bare(x + 1, y) || bare(x - 1, y) || bare(x, y + 1) || bare(x, y - 1)) {
                     put(x, y, fur(x, y))
                 }
             }

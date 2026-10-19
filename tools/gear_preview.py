@@ -141,10 +141,16 @@ def detail(f, b, m, a, facing, pattern, wear, mid, acc, box):
                         f[yy, xx, :3] = (0.16, 0.12, 0.18)
                         f[yy, xx, 3] = 1
     elif pattern == 'fur':
-        # White fur round the hood's opening (and the cape's hem, drawn with the cape).
+        # White fur round the hood's opening: the hood next to the face (and the cape's hem, drawn
+        # with the cape). Its dark pixels made a white wedge down the side, like a wing.
+        def bare(yy, xx):
+            if not (0 <= yy < FRAME and 0 <= xx < FRAME) or b[yy, xx, 3] < 0.5:
+                return False
+            hh, ss, vv = hsv(tuple(b[yy, xx, :3]))
+            return (hh <= 40 / 360 or hh >= 342 / 360) and 0.12 < ss < 0.65 and vv > 0.55
         for y in range(FRAME):
             for x in range(FRAME):
-                if is_mark(b[y, x]) and hsv(tuple(b[y, x, :3]))[2] < 0.5:
+                if is_mark(b[y, x]) and any(bare(y + dy, x + dx) for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1))):
                     f[y, x, :3] = fur(x, y)
     elif pattern == 'runes':
         # Glowing runes: a stitched band down the front, and marks along the hem.
