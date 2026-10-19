@@ -5,6 +5,7 @@ art keeps the sheets' own poses, proportions and faces (`tools/rd.py edit … --
     python3 tools/character_art.py masks dwarf_walk:dwarf dwarf_female_walk:dwarf
     python3 tools/character_art.py masks dwarf_walk:dwarf --kind body
     python3 tools/character_art.py preview out.png dwarf_walk:dwarf
+    python3 tools/character_art.py mouth dwarf_npc_walk:dwarf   # in place, then rerun hero_layers.py
 
 Each sheet is named with its race (hero_layers.py finds the heads the same way it does for the
 paper-doll layers). Masks go to art-variants/_masks/<sheet>_<kind>.png (outside art/, so they never ship), white where the art is redrawn:
@@ -14,6 +15,11 @@ paper-doll layers). Masks go to art-variants/_masks/<sheet>_<kind>.png (outside 
     body   everything below the chin, a little wider than the body so armour can stand out from
            it; the head is kept, so every armour is worn by the same character.
     helmet like body, with the hair and the top of the head too: a helmet or a hood, the face kept.
+
+`mouth` draws a mouth into a bearded sheet, which Retro Diffusion drew as one block of beard from
+the nose down (playtesting 2026-10-19: "the beard covers the mouth"): a short line in the sheet's
+outline colour, which no hair dye touches, four rows under the eyes, between them seen from the
+front and just past the pupil seen from the side. It only draws on beard, so a rerun changes nothing.
 
 Needs pillow + numpy.
 """
@@ -108,6 +114,47 @@ def cmd_preview(args):
     print(args.out)
 
 
+MOUTH = np.array([0x07, 0x0B, 0x13]) / 255
+
+
+def draw_mouth(race):
+    sheet = race.sheet.copy()
+    drawn = 0
+    for (row, col), head in race.heads.items():
+        if head.facing == "up":
+            continue
+        f = sheet[row * F:(row + 1) * F, col * F:(col + 1) * F]
+        whites = [(y, x) for y in range(head.brow, head.brow + 6) for x in range(F)
+                  if hl.opaque(f[y, x]) and hl.hsv(f[y, x])[1] < 0.12 and hl.hsv(f[y, x])[2] > 0.9]
+        if not whites:
+            continue
+        y = min(y for y, _ in whites) + 4
+        xs = [x for _, x in whites]
+        if head.facing == "down":
+            mid = round((min(xs) + max(xs)) / 2)
+            cols = [mid - 1, mid, mid + 1]
+        else:
+            # The pupil, near-black beside a white, steadier than the beard's front from step to step.
+            pupils = [x for yy, xx in whites for x in (xx - 1, xx + 1)
+                      if hl.opaque(f[yy, x]) and hl.hsv(f[yy, x])[2] < 0.15]
+            if not pupils:
+                continue
+            cols = [max(pupils) + 1, max(pupils) + 2] if head.facing == "right" else [min(pupils) - 2, min(pupils) - 1]
+        if all(hl.lockish(f[y, x]) for x in cols):
+            for x in cols:
+                f[y, x, :3] = MOUTH
+            drawn += 1
+    return sheet, drawn
+
+
+def cmd_mouth(args):
+    for sheet_id, race in races(args.sheets):
+        sheet, drawn = draw_mouth(race)
+        Image.fromarray((np.clip(sheet, 0, 1) * 255).round().astype(np.uint8), "RGBA").save(
+            hl.ROOT / "art" / "sprites" / f"{sheet_id}.png")
+        print(f"art/sprites/{sheet_id}.png: a mouth in {drawn} frames")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -120,6 +167,9 @@ def main():
     preview.add_argument("sheets", nargs="+")
     preview.add_argument("--kind", default="face", choices=["face", "body", "helmet"])
     preview.set_defaults(run=cmd_preview)
+    mouth = commands.add_parser("mouth", help="draw a mouth into a bearded sheet, in place")
+    mouth.add_argument("sheets", nargs="+")
+    mouth.set_defaults(run=cmd_mouth)
     args = parser.parse_args()
     args.run(args)
 
