@@ -387,8 +387,10 @@ final class GameSession {
             gear.body = "body_\(race.id)"
             rules = (Content.shared.appearance.skin.first { $0.id == look.skin }?.recolor ?? []) + (armor.tint ?? [])
         }
+        // A festive hat takes the place of a helmet or hood; a scarf, round the neck, leaves them be.
+        let hatted = hat.map { $0.hat != "scarf" } ?? false
         ArtLibrary.shared.register(id, from: race.sheet(for: look.gender), recolor: rules, key: key,
-                                   gear: gear, layers: Self.layers(race: race, look: look, armor: armor, hatted: hat != nil))
+                                   gear: gear, layers: Self.layers(race: race, look: look, armor: armor, hatted: hatted))
     }
 
     /// A companion looks like its species; colourful ones are rarer variants you catch.

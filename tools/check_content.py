@@ -640,7 +640,7 @@ for item in items.values():
 
 # Festive hats (type head) are drawn on the hero's head (GearOverlay.hat) as their `hat` in their
 # `color` (bunny ears pink inside, their `accent`); no one buys or sells one (the seasons give them).
-HATS = {"crown", "santa", "ears", "mask"}
+HATS = {"crown", "santa", "ears", "mask", "scarf"}
 for item in items.values():
     if item["type"] == "head":
         check(item.get("hat") in HATS, f"item {item['id']} → hat must be one of {sorted(HATS)}: how it's drawn on the head")

@@ -2986,7 +2986,7 @@ struct RulesTests {
         let hatted = GameSession.layers(race: race, look: .standard, armor: hide, hatted: true).map(\.id)
         #expect(!hatted.contains("hood_human") && hatted.contains { $0.hasPrefix("hair_") })
         for hat in content.items where hat.type == .head {
-            #expect(["crown", "santa", "ears", "mask"].contains(hat.hat ?? ""), "\(hat.id) has no way to be drawn")
+            #expect(["crown", "santa", "ears", "mask", "scarf"].contains(hat.hat ?? ""), "\(hat.id) has no way to be drawn")
             #expect(hat.color != nil && hat.price == 0)
         }
 

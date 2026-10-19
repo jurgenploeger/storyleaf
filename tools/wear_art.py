@@ -21,6 +21,12 @@ up, right, down, left; 48 × 192), and moved so the game can fit them to any hea
     art/sprites/wear_mask.png    the Halloween mask: its eye holes' top row on ANCHOR_Y, centred on
                                  ANCHOR_X between them (from the side, its front eye hole there);
                                  none from behind
+    art/sprites/wear_scarf.png   the Christmas scarf: its wearer's shoulders (0.38 of the way down
+                                 from the top of the head to the feet) on SHOULDER_Y, the middle of
+                                 the figure there on ANCHOR_X
+    art/sprites/wear_cape.png    a status cape, the same, stretched to CAPE_DROP rows from the
+                                 shoulders to the feet and CAPE_SPAN pixels across the shoulders, so
+                                 the game stretches it to any body (GearOverlay.drape)
 
 Needs pillow + numpy.
 """
@@ -64,9 +70,13 @@ WEAR = {
     "ears": ("ref_bunny_ears/20261019-115203_0.png",
              lambda h, s, v: (s < 0.25 and v > 0.6) or (s > 0.2 and v > 0.5 and (h > 290 or h < 15))),
     "mask": ("ref_halloween_mask/20261019-113847_0.png", lambda h, s, v: 60 <= h <= 110 and s > 0.2 and v > 0.45),
+    "scarf": ("ref_christmas_scarf/20261019-115247_0.png",
+              lambda h, s, v: (s > 0.45 and (h < 20 or h > 330) and v > 0.3) or (s < 0.2 and v > 0.75)),
+    "cape": ("ref_cape/20261019-115231_0.png", lambda h, s, v: s > 0.5 and (h < 12 or h > 330) and v < 0.97),
 }
 # Every hero's eyes are six pixels apart from the front, the reference mask's holes five.
 MASK_WIDEN = 1
+SHOULDER_Y, CAPE_DROP, CAPE_SPAN = 24, 20, 14
 
 
 def load(path):
@@ -109,8 +119,13 @@ def piece(frame, kind):
     h, s, v = rgb2hsv(frame[..., :3])
     test = WEAR[kind][1]
     core = np.array([[a[y, x] and test(h[y, x], s[y, x], v[y, x]) for x in range(F)] for y in range(F)])
-    core[np.nonzero(a.any(1))[0].min() + 15:] = False
-    seen, best = np.zeros_like(core), []
+    top = np.nonzero(a.any(1))[0].min()
+    if kind == "scarf":     # round the neck
+        core[:top + 9] = False
+        core[top + 26:] = False
+    elif kind != "cape":    # on the head
+        core[top + 15:] = False
+    seen, best, patches = np.zeros_like(core), [], []
     for y0, x0 in zip(*np.nonzero(core)):
         if seen[y0, x0]:
             continue
@@ -125,8 +140,11 @@ def piece(frame, kind):
                     if 0 <= q[0] < F and 0 <= q[1] < F and core[q] and not seen[q]:
                         seen[q] = True
                         stack.append(q)
+        patches.append(patch)
         if len(patch) > len(best):
             best = patch
+    if kind == "cape":  # from the front it shows either side of its wearer: every big patch
+        best = [q for patch in patches if len(patch) >= max(6, len(best) / 6) for q in patch]
     if len(best) < 8:
         return None
     ys, xs = np.array([y for y, _ in best]), np.array([x for _, x in best])
@@ -204,6 +222,38 @@ def holes(t):
     return top, [sum(g) / len(g) for g in groups]
 
 
+def lengthened(t, by, start):
+    """Pixel-art stretch down: `by` rows repeated (or dropped) through the middle of the piece's rows
+    from `start` down, the rows above staying where they are (GearOverlay's Piece.lengthened)."""
+    rows = [y for y in range(start, F) if (t[y, :, 3] > 0.5).any()]
+    if by == 0 or not rows:
+        return t
+    body = [t[y] for y in range(start, max(rows) + 1)]
+    for k in range(abs(by)):
+        m = max(0, min(len(body) - 1, len(body) // 2 + (k % 3 - 1)))
+        if by > 0:
+            body.insert(m, body[m])
+        elif len(body) > 1:
+            body.pop(m)
+    out = t.copy()
+    out[start:] = 0
+    for i, row in enumerate(body):
+        if start + i < F:
+            out[start + i] = row
+    return out
+
+
+def figure(frame):
+    """A figure's top, feet, shoulders (0.38 of the way down) and the middle of it there, as the game
+    measures a hero for a cape (GearOverlay.figure)."""
+    a = frame[..., 3] > 0.5
+    rows = np.nonzero(a.any(1))[0]
+    top, feet = rows.min(), rows.max()
+    shoulder = top + int(np.floor((feet - top) * 0.38 + 0.5))
+    xs = np.nonzero(a[shoulder])[0]
+    return top, feet, shoulder, xs.min(), xs.max()
+
+
 def moved(t, dy, dx):
     out = np.zeros_like(t)
     ys, xs = np.nonzero(t[..., 3] > 0.5)
@@ -224,7 +274,12 @@ def wear():
                 frames.append(np.zeros((F, F, 4)))
                 continue
             t0, t1, tl, tr = bbox(t)
-            if kind == "mask":
+            if kind in ("cape", "scarf"):
+                _, feet, shoulder, left, right = figure(sheet[row * F:(row + 1) * F, :F])
+                t = moved(t, SHOULDER_Y - shoulder, ANCHOR_X - (left + right) // 2)
+                if kind == "cape":
+                    t = widen(lengthened(t, CAPE_DROP - (feet - shoulder), SHOULDER_Y), CAPE_SPAN - (right - left + 1))
+            elif kind == "mask":
                 if facing == "down":
                     t = widen(t, MASK_WIDEN)
                 top, xs = holes(t)

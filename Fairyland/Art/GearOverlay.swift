@@ -39,10 +39,10 @@ nonisolated struct GearLook: Sendable, Hashable {
 /// and a festive hat over everything.
 /// tools/gear_preview.py is the same algorithm in Python, to tune it without a Mac.
 enum GearOverlay {
-    /// `piece` is a festive hat's (GearLook.hat) as tools/wear_art.py cut it out: a frame a row, one
-    /// row for each of `directions`.
+    /// `piece` is a festive hat's (GearLook.hat) and `capePiece` a status cape's, as tools/wear_art.py
+    /// cut them out: a frame a row, one row for each of `directions`.
     nonisolated static func apply(_ gear: GearLook, original: CGImage, dressed: CGImage, skeleton: CGImage? = nil,
-                                  piece: CGImage? = nil, frame: Int = 48,
+                                  piece: CGImage? = nil, capePiece: CGImage? = nil, frame: Int = 48,
                                   directions: [String] = ["up", "right", "down", "left"]) -> CGImage? {
         guard !gear.isPlain, original.width == dressed.width, original.height == dressed.height,
               let base = Bitmap(original), var out = Bitmap(dressed) else { return dressed }
@@ -54,12 +54,19 @@ enum GearOverlay {
            let colour = color(hex: gear.hatColor) {
             pieces = directions.indices.map { Self.painted(sheet, row: $0, size: frame, colour: color(hex: gear.hatTrim) ?? colour) }
         }
+        var capes: [Piece] = []
+        if let capePiece, let sheet = Bitmap(capePiece), sheet.width == frame, sheet.height >= frame * directions.count,
+           let colour = color(hex: gear.cape) {
+            let trim = color(hex: gear.capeTrim) ?? RGB(0.95, 0.78, 0.25)
+            capes = directions.indices.map { Self.cape(sheet, row: $0, size: frame, colour: colour, trim: trim) }
+        }
         for (row, facing) in directions.enumerated() {
             for column in 0..<(base.width / frame) {
                 dress(&out, base: base, origin: (column * frame, row * frame), size: frame, facing: facing, gear: gear, accent: accent)
                 trinkets(&out, body: body, origin: (column * frame, row * frame), size: frame, facing: facing, gear: gear)
-                if gear.cape != nil {
-                    drape(&out, base: base, origin: (column * frame, row * frame), size: frame, facing: facing, gear: gear)
+                if gear.cape != nil, row < capes.count {
+                    drape(&out, base: base, origin: (column * frame, row * frame), size: frame, facing: facing,
+                          gear: gear, piece: capes[row])
                 }
                 if gear.hat != nil, row < pieces.count {
                     hat(&out, body: body, origin: (column * frame, row * frame), size: frame, facing: facing,
@@ -72,18 +79,18 @@ enum GearOverlay {
 
     // MARK: A cape
 
-    /// A status cape (items.json type cape) over whatever else is worn: from behind it hangs from the
-    /// shoulders nearly to the feet, widening as it falls, its trim along the hem and its emblem (a
-    /// diamond) on the back, the hair falling over its top; from the front and the side it shows past
-    /// the body's outline, a clasp at the collar. It measures the body from its outline, the shoulders
-    /// 0.38 of the way down from the top of the head to the feet (where the tunic starts on every
-    /// race's sheet), so it fits armour with a sheet of its own too. tools/gear_preview.py `cape`.
+    /// A status cape (items.json type cape) over whatever else is worn: the cape Retro Diffusion drew
+    /// (art/sprites/wear_cape.png, cut out by tools/wear_art.py) in its colour, its trim along the hem,
+    /// stretched to the body: its shoulders 0.38 of the way down from the top of the head to the feet
+    /// (where the tunic starts on every race's sheet), as wide as it is there, and as long down to the
+    /// feet, measured from its outline so it fits armour with a sheet of its own too. From behind it
+    /// hangs over the body, the hair falling over its top, its emblem (a diamond) on the back; from
+    /// the front and the side it shows past the body's outline, a clasp at the collar.
+    /// tools/gear_preview.py `cape`.
     nonisolated private static func drape(_ out: inout Bitmap, base: Bitmap, origin: (x: Int, y: Int), size: Int,
-                                          facing: String, gear: GearLook) {
-        guard let colour = color(hex: gear.cape) else { return }
+                                          facing: String, gear: GearLook, piece: Piece) {
+        guard piece.box != nil, let figure = Self.figure(base, origin: origin, size: size) else { return }
         let trim = color(hex: gear.capeTrim) ?? RGB(0.95, 0.78, 0.25)
-        let dark = colour.scaled(0.62), light = colour.mixed(with: RGB(1, 1, 1), 0.3)
-        let outline = RGB(0.16, 0.12, 0.18)
         func opaque(_ x: Int, _ y: Int) -> Bool {
             x >= 0 && y >= 0 && x < size && y < size && base.alpha(origin.x + x, origin.y + y) > 0.5
         }
@@ -91,65 +98,71 @@ enum GearOverlay {
             guard x >= 0, y >= 0, x < size, y < size, !onlyEmpty || !opaque(x, y) else { return }
             out.set(origin.x + x, origin.y + y, c)
         }
-        let rows = (0..<size).filter { y in (0..<size).contains { opaque($0, y) } }
-        guard let top = rows.first, let feet = rows.last, feet - top > 8 else { return }
-        let shoulder = top + Int((Double(feet - top) * 0.38).rounded())
-        let hem = feet - 3
-        guard hem > shoulder + 2,
-              let left = (0..<size).first(where: { opaque($0, shoulder) }),
-              let right = (0..<size).last(where: { opaque($0, shoulder) }) else { return }
-        let cx = (left + right) / 2
+        let shoulder = figure.shoulder, cx = (figure.left + figure.right) / 2
         /// Hair falling over the cape's top: bright and warm on the original sheet.
         func hair(_ x: Int, _ y: Int) -> Bool {
             guard y < shoulder + 11, opaque(x, y) else { return false }
             let (h, s, v) = hsv(base.rgb(origin.x + x, origin.y + y))
             return h >= 10 && h <= 65 && s > 0.4 && v > 0.6
         }
+        // From the front and the side a little wider than the body, so it shows past its outline.
+        let flare = facing == "up" ? 0 : facing == "down" ? 4 : 2
+        let fitted = piece.lengthened(by: (figure.feet - shoulder) - capeDrop, start: shoulderY)
+            .widened(by: (figure.right - figure.left + 1) - capeSpan + flare, keepTop: 0)
+        let dy = shoulder - shoulderY, dx = cx - anchorX
+        for y in 0..<size {
+            for x in 0..<size {
+                guard let c = fitted[x: x, y: y] else { continue }
+                if facing == "up" {
+                    if !hair(x + dx, y + dy) { put(x + dx, y + dy, c) }
+                } else {
+                    put(x + dx, y + dy, c, onlyEmpty: true)
+                }
+            }
+        }
         if facing == "up" {
-            for y in shoulder...hem {
-                let widen = (y - shoulder) / 4
-                let lo = left + 1 - widen, hi = right - 1 + widen
-                guard lo < hi else { continue }
-                for x in lo...hi where !hair(x, y) {
-                    let c: RGB = x == lo || x == hi || y == hem ? outline
-                        : y == hem - 1 ? trim : x == lo + 1 ? light : x == hi - 1 ? dark : colour
-                    put(x, y, c)
-                }
-            }
             let emblem = shoulder + 6
-            for dy in -2...2 {
-                for dx in (abs(dy) - 2)...(2 - abs(dy)) where !hair(cx + dx, emblem + dy) {
-                    put(cx + dx, emblem + dy, abs(dx) + abs(dy) < 2 ? trim : trim.scaled(0.7))
+            for ey in -2...2 {
+                for ex in (abs(ey) - 2)...(2 - abs(ey)) where !hair(cx + ex, emblem + ey) {
+                    put(cx + ex, emblem + ey, abs(ex) + abs(ey) < 2 ? trim : trim.scaled(0.7))
                 }
             }
-            return
-        }
-        for y in (shoulder + 1)...hem {
-            guard let l = (0..<size).first(where: { opaque($0, y) }),
-                  let r = (0..<size).last(where: { opaque($0, y) }) else { continue }
-            // Out past the body's outline: a pixel at the shoulders, more toward the hem.
-            let flare = 1 + (y - shoulder) / 4
-            var spots: [(x: Int, outer: Bool)] = []
-            switch facing {
-            case "down":
-                spots = [(l - flare, true), (r + flare, true)]
-                for k in stride(from: 1, to: flare, by: 1) { spots += [(l - k, false), (r + k, false)] }
-            case "right":
-                spots = [(l - flare - 1, true)]
-                for k in 1...flare { spots.append((l - k, false)) }
-            default:
-                spots = [(r + flare + 1, true)]
-                for k in 1...flare { spots.append((r + k, false)) }
-            }
-            for spot in spots {
-                put(spot.x, y, spot.outer ? outline : y == hem ? trim : colour, onlyEmpty: true)
-            }
-        }
-        if facing == "down" {
+        } else if facing == "down" {
             put(cx, shoulder, trim)
             put(cx - 1, shoulder, trim)
             put(cx, shoulder + 1, trim.scaled(0.7))
         }
+    }
+
+    /// Row `row` of the cape's sheet in a cape's colours (`painted`), its trim on the lowest coloured
+    /// pixel of each column with an outline under it.
+    nonisolated private static func cape(_ sheet: Bitmap, row: Int, size: Int, colour: RGB, trim: RGB) -> Piece {
+        var piece = painted(sheet, row: row, size: size, colour: colour)
+        let outline = RGB(0.16, 0.12, 0.18)
+        for x in 0..<size {
+            let coloured = (0..<size).filter { y in
+                guard sheet.alpha(x, row * size + y) > 0.5 else { return false }
+                let (_, s, v) = hsv(sheet.rgb(x, row * size + y))
+                return s > 0.2 && v > 0.25
+            }
+            guard let hem = coloured.max() else { continue }
+            piece.pixels[hem * size + x] = trim
+            if hem + 1 < size, piece.pixels[(hem + 1) * size + x] == nil { piece.pixels[(hem + 1) * size + x] = outline }
+        }
+        return piece
+    }
+
+    /// A figure on a frame, measured from its outline: its top, its feet, its shoulders (0.38 of the
+    /// way down) and its left and right there; nil if it's too small. tools/gear_preview.py `figure`.
+    nonisolated private static func figure(_ image: Bitmap, origin: (x: Int, y: Int), size: Int)
+        -> (top: Int, feet: Int, shoulder: Int, left: Int, right: Int)? {
+        func opaque(_ x: Int, _ y: Int) -> Bool { image.alpha(origin.x + x, origin.y + y) > 0.5 }
+        let rows = (0..<size).filter { y in (0..<size).contains { opaque($0, y) } }
+        guard let top = rows.first, let feet = rows.last, feet - top > 8 else { return nil }
+        let shoulder = top + Int((Double(feet - top) * 0.38).rounded())
+        guard let left = (0..<size).first(where: { opaque($0, shoulder) }),
+              let right = (0..<size).last(where: { opaque($0, shoulder) }) else { return nil }
+        return (top, feet, shoulder, left, right)
     }
 
     // MARK: One frame
@@ -540,6 +553,10 @@ enum GearOverlay {
     /// `hatBrim`, centred on column `anchorX`; a mask's eye holes' top row on `anchorY`, centred on
     /// `anchorX` between them (from the side, its front eye hole there). tools/gear_preview.py too.
     nonisolated private static let hatBrim = 40, anchorX = 24, anchorY = 20
+    /// Where tools/wear_art.py puts a scarf or a cape: its wearer's shoulders on row `shoulderY`, the
+    /// middle of the figure there on `anchorX`; a cape stretched to `capeDrop` rows from the shoulders to
+    /// the feet and `capeSpan` pixels across the shoulders.
+    nonisolated private static let shoulderY = 24, capeDrop = 20, capeSpan = 14
 
     /// One frame of a worn piece: each pixel's colour, nil where it's clear.
     nonisolated private struct Piece {
@@ -581,6 +598,24 @@ enum GearOverlay {
             }
             return out
         }
+
+        /// Pixel-art stretch down: `by` rows repeated (or dropped) through the middle of its rows from
+        /// `start` down, the rows above staying where they are. tools/gear_preview.py `lengthened`.
+        func lengthened(by: Int, start: Int) -> Piece {
+            guard by != 0, start >= 0, start < size,
+                  let last = (start..<size).last(where: { width($0) > 0 }) else { return self }
+            var rows = (start...last).map { y in (0..<size).map { self[x: $0, y: y] } }
+            for k in 0..<abs(by) where !rows.isEmpty {
+                let m = max(0, min(rows.count - 1, rows.count / 2 + (k % 3 - 1)))
+                if by > 0 { rows.insert(rows[m], at: m) } else if rows.count > 1 { rows.remove(at: m) }
+            }
+            var out = self
+            for y in start..<size { for x in 0..<size { out.pixels[y * size + x] = nil } }
+            for (i, row) in rows.enumerated() where start + i < size {
+                for (x, c) in row.enumerated() { out.pixels[(start + i) * size + x] = c }
+            }
+            return out
+        }
     }
 
     /// Row `row` of a piece's sheet in the hat's colours: its coloured pixels (not its white fur, its
@@ -609,11 +644,24 @@ enum GearOverlay {
     /// hat goes on. A crown (a party crown), a Santa hat or a bunny's ears go round the head: their band
     /// on the widest row of the head as drawn over the eyes, as wide as the scalp and a little more, over
     /// all the hair above it. A mask (none from behind) goes over the face, its eye holes on the eyes,
-    /// found on the face as drawn: armour with a sheet of its own has a face of its own.
-    /// tools/gear_preview.py `hat`.
+    /// found on the face as drawn: armour with a sheet of its own has a face of its own. A scarf goes
+    /// round the neck, hung from the shoulders as a cape is. tools/gear_preview.py `hat`.
     nonisolated private static func hat(_ out: inout Bitmap, body: Bitmap, origin: (x: Int, y: Int), size: Int,
                                         facing: String, kind: String, piece: Piece) {
-        guard piece.box != nil, let found = Self.head(body, origin: origin, size: size) else { return }
+        guard piece.box != nil else { return }
+        if kind == "scarf" {
+            // Round the neck, over everything: hung from the shoulders, as a cape is.
+            guard let figure = Self.figure(body, origin: origin, size: size) else { return }
+            let dy = figure.shoulder - shoulderY, dx = (figure.left + figure.right) / 2 - anchorX
+            for y in 0..<size {
+                for x in 0..<size {
+                    guard let c = piece[x: x, y: y], y + dy >= 0, x + dx >= 0, y + dy < size, x + dx < size else { continue }
+                    out.set(origin.x + x + dx, origin.y + y + dy, c)
+                }
+            }
+            return
+        }
+        guard let found = Self.head(body, origin: origin, size: size) else { return }
         let top = found.top, chin = found.chin
         let span = found.cells.filter { $0.y == top + 3 }.map(\.x)
         let across = span.isEmpty ? found.cells.map(\.x) : span

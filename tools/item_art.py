@@ -2596,6 +2596,28 @@ def halloween_mask(c, face):
         c.rect(x, 24.5, x + 1, 25, hexc("f4f0dc"))
 
 
+def christmas_scarf(c, wool):
+    """A knitted Christmas scarf, wound round once and knotted, its two ends hanging down striped in
+    its colour and white, a fringe at each end."""
+    dark, mid, light = wool
+    snow = [hexc("c8d0dc"), hexc("f4f6fa")]
+    c.poly([(4, 9), (9, 4), (23, 4), (28, 9), (27, 14), (21, 16), (11, 16), (5, 14)], mid)
+    c.poly([(10, 14), (17, 14), (16, 27), (9, 27)], mid)
+    c.poly([(16, 14), (23, 14), (25, 26), (18, 27)], mid)
+    c.shade(lambda x, y, col: col == mid and (y > 15 and (y // 3) % 2 == 0 or y <= 15 and ((x + y) // 3) % 2 == 0), snow[1])
+    c.shade(lambda x, y, col: col == mid and (x > 22 or (y <= 15 and y >= 13)), dark)
+    c.shade(lambda x, y, col: col == snow[1] and (x > 22 or (y <= 15 and y >= 13)), snow[0])
+    c.shade(lambda x, y, col: col == mid and x < 9 and y < 11, light)
+    # The neck's hole in the loop, in shadow, and the knot the ends hang from.
+    c.ellipse(16, 9, 7.5, 2.4, hexc("3a2430"))
+    c.ellipse(16, 15, 3.2, 2.2, dark)
+    c.set(15, 14, mid)
+    for x in range(9, 17, 2):
+        c.line(x, 28, x, 30, snow[0])
+    for x in range(18, 26, 2):
+        c.line(x, 28, x + 1, 30, snow[0])
+
+
 def draw_santa_hat(c):
     """A Santa hat: a red cap flopping over to the right, a white fur brim and pom."""
     red = ramp("#D02828")
@@ -2696,6 +2718,8 @@ for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
         globals()["draw_" + _item["id"]] = (lambda colour: lambda c: party_hat(c, ramp(colour)))(_item["color"])
     elif _item.get("hat") == "mask":
         globals()["draw_" + _item["id"]] = (lambda colour: lambda c: halloween_mask(c, ramp(colour)))(_item["color"])
+    elif _item.get("hat") == "scarf":
+        globals()["draw_" + _item["id"]] = (lambda colour: lambda c: christmas_scarf(c, ramp(colour)))(_item["color"])
 
 
 DRAWINGS = {name[5:]: fn for name, fn in globals().items() if name.startswith("draw_")}
