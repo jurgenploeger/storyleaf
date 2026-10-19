@@ -246,8 +246,9 @@ final class ArtLibrary {
             // A festive hat's piece, cut out by tools/wear_art.py (art/sprites/wear_<hat>.png).
             let piece = gear.hat.flatMap { pngURL("wear_\($0)") }.flatMap { UIImage(contentsOfFile: $0.path)?.cgImage }
             let cape = gear.cape == nil ? nil : pngURL("wear_cape").flatMap { UIImage(contentsOfFile: $0.path)?.cgImage }
+            let scarf = gear.scarf == nil ? nil : pngURL("wear_scarf").flatMap { UIImage(contentsOfFile: $0.path)?.cgImage }
             return GearOverlay.apply(gear, original: base, dressed: recolored, skeleton: skeleton, piece: piece,
-                                     capePiece: cape, frame: from.frame ?? 48, directions: directions)
+                                     capePiece: cape, scarfPiece: scarf, frame: from.frame ?? 48, directions: directions)
         }
         return recolored
     }

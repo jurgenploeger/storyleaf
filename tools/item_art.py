@@ -2718,7 +2718,7 @@ for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
         globals()["draw_" + _item["id"]] = (lambda colour: lambda c: party_hat(c, ramp(colour)))(_item["color"])
     elif _item.get("hat") == "mask":
         globals()["draw_" + _item["id"]] = (lambda colour: lambda c: halloween_mask(c, ramp(colour)))(_item["color"])
-    elif _item.get("hat") == "scarf":
+    elif _item.get("wear") == "scarf":
         globals()["draw_" + _item["id"]] = (lambda colour: lambda c: christmas_scarf(c, ramp(colour)))(_item["color"])
 
 

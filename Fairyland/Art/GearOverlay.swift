@@ -24,12 +24,15 @@ nonisolated struct GearLook: Sendable, Hashable {
     var hat: String? = nil
     var hatColor: String? = nil
     var hatTrim: String? = nil
+    /// A festive scarf round the neck (a necklace that wears `scarf`), in its colour, "#RRGGBB", in place
+    /// of a necklace.
+    var scarf: String? = nil
     /// The plain body (art/sprites `body_*`, tools/hero_layers.py) the hands, chin and boots are found
     /// on: the hero's own, or their race's under armour with a walk sheet of its own, which is drawn
     /// on the same poses.
     var body: String? = nil
 
-    var isPlain: Bool { wear == nil && cape == nil && gloves == nil && boots == nil && necklace == nil && hat == nil }
+    var isPlain: Bool { wear == nil && cape == nil && gloves == nil && boots == nil && necklace == nil && hat == nil && scarf == nil }
 }
 
 /// Draws worn gear onto a walk sheet, frame by frame. It finds the outfit (the green tunic) on the
@@ -39,10 +42,10 @@ nonisolated struct GearLook: Sendable, Hashable {
 /// and a festive hat over everything.
 /// tools/gear_preview.py is the same algorithm in Python, to tune it without a Mac.
 enum GearOverlay {
-    /// `piece` is a festive hat's (GearLook.hat) and `capePiece` a status cape's, as tools/wear_art.py
-    /// cut them out: a frame a row, one row for each of `directions`.
+    /// `piece` is a festive hat's (GearLook.hat), `capePiece` a status cape's and `scarfPiece` a scarf's,
+    /// as tools/wear_art.py cut them out: a frame a row, one row for each of `directions`.
     nonisolated static func apply(_ gear: GearLook, original: CGImage, dressed: CGImage, skeleton: CGImage? = nil,
-                                  piece: CGImage? = nil, capePiece: CGImage? = nil, frame: Int = 48,
+                                  piece: CGImage? = nil, capePiece: CGImage? = nil, scarfPiece: CGImage? = nil, frame: Int = 48,
                                   directions: [String] = ["up", "right", "down", "left"]) -> CGImage? {
         guard !gear.isPlain, original.width == dressed.width, original.height == dressed.height,
               let base = Bitmap(original), var out = Bitmap(dressed) else { return dressed }
@@ -54,7 +57,12 @@ enum GearOverlay {
            let colour = color(hex: gear.hatColor) {
             pieces = directions.indices.map { Self.painted(sheet, row: $0, size: frame, colour: color(hex: gear.hatTrim) ?? colour) }
         }
-        // The frame a hat finds the face on from behind (a scarf's chin): the one facing you.
+        var scarves: [Piece] = []
+        if let scarfPiece, let sheet = Bitmap(scarfPiece), sheet.width == frame, sheet.height >= frame * directions.count,
+           let colour = color(hex: gear.scarf) {
+            scarves = directions.indices.map { Self.painted(sheet, row: $0, size: frame, colour: colour) }
+        }
+        // The frame a scarf finds the chin on from behind: the one facing you.
         let frontRow = directions.firstIndex(of: "down")
         var capes: [Piece] = []
         if let capePiece, let sheet = Bitmap(capePiece), sheet.width == frame, sheet.height >= frame * directions.count,
@@ -70,9 +78,13 @@ enum GearOverlay {
                     drape(&out, base: base, origin: (column * frame, row * frame), size: frame, facing: facing,
                           gear: gear, piece: capes[row])
                 }
+                if gear.scarf != nil, row < scarves.count {
+                    scarf(&out, body: body, origin: (column * frame, row * frame), size: frame, facing: facing,
+                          piece: scarves[row], front: (column * frame, (frontRow ?? row) * frame))
+                }
                 if gear.hat != nil, row < pieces.count {
                     hat(&out, body: body, origin: (column * frame, row * frame), size: frame, facing: facing,
-                        kind: gear.hat ?? "", piece: pieces[row], front: (column * frame, (frontRow ?? row) * frame))
+                        kind: gear.hat ?? "", piece: pieces[row])
                 }
             }
         }
@@ -606,6 +618,28 @@ enum GearOverlay {
             return out
         }
 
+        /// Narrower by `by` columns, dropped next to its edges in turn, left then right: what's between
+        /// them, a mask's eye holes, stays put. tools/gear_preview.py `pinched`.
+        func pinched(by: Int) -> Piece {
+            var out = self
+            for k in 0..<max(0, by) {
+                let used = (0..<size).filter { x in (0..<size).contains { out[x: x, y: $0] != nil } }
+                guard used.count >= 8, let l = used.min(), let r = used.max() else { break }
+                for y in 0..<size {
+                    if k % 2 == 0 {
+                        out.pixels[y * size + l + 2] = out.pixels[y * size + l + 1]
+                        out.pixels[y * size + l + 1] = out.pixels[y * size + l]
+                        out.pixels[y * size + l] = nil
+                    } else {
+                        out.pixels[y * size + r - 2] = out.pixels[y * size + r - 1]
+                        out.pixels[y * size + r - 1] = out.pixels[y * size + r]
+                        out.pixels[y * size + r] = nil
+                    }
+                }
+            }
+            return out
+        }
+
         /// Upside down, to stretch or shrink its rows from the bottom up (`lengthened` on it).
         func flipped() -> Piece {
             var out = self
@@ -731,35 +765,38 @@ enum GearOverlay {
                     high: high, low: low, span: span, size: size, most: most, least: least)
     }
 
+    /// A festive scarf (`GearLook.scarf`) round the neck, over everything: the piece Retro Diffusion drew
+    /// (art/sprites/wear_scarf.png, what's under its wearer's chin, cut out by tools/wear_art.py) in its
+    /// colour, under the chin as drawn (armour with a sheet of its own draws its head higher or lower than
+    /// the plain body; from behind, the chin found on the frame facing you, `front`), across the middle
+    /// of the body at the shoulders. tools/gear_preview.py `scarf`.
+    nonisolated private static func scarf(_ out: inout Bitmap, body: Bitmap, origin: (x: Int, y: Int), size: Int,
+                                          facing: String, piece: Piece, front: (x: Int, y: Int)) {
+        let at = facing == "up" ? front : origin
+        guard piece.box != nil, let figure = Self.figure(body, origin: origin, size: size),
+              let found = Self.head(body, origin: at, size: size) else { return }
+        let chin = Self.face(out, origin: at, size: size, found: found)?.low ?? found.chin
+        let dy = chin - chinY, dx = (figure.left + figure.right) / 2 - anchorX
+        for y in 0..<size {
+            for x in 0..<size {
+                guard let c = piece[x: x, y: y], y + dy >= 0, x + dx >= 0, y + dy < size, x + dx < size else { continue }
+                out.set(origin.x + x + dx, origin.y + y + dy, c)
+            }
+        }
+    }
+
     /// A festive hat (`GearLook.hat`) on the head, frame by frame: a piece Retro Diffusion drew on a
     /// hero (art/sprites/wear_<kind>.png, cut out by tools/wear_art.py), fitted to the head as drawn,
     /// hair and all, measured on the plain body (the scalp, the eyes) and on what's drawn before the
     /// hat goes on. A crown (a party crown), a Santa hat or a bunny's ears go round the head: their band
     /// on the widest row of the head as drawn over the eyes, as wide as the scalp and a little more, over
     /// all the hair above it. A mask (none from behind) goes over the face, its eye holes on the eyes,
-    /// found on the face as drawn (armour with a sheet of its own has a face of its own), no taller
-    /// than the face and from the side as far forward as it reaches. A scarf goes round the neck,
-    /// under the chin as drawn. tools/gear_preview.py `hat`.
+    /// found on the face as drawn (armour with a sheet of its own has a face of its own), no wider or
+    /// taller than the face, a little over a beard, and from the side as far forward as it reaches.
+    /// tools/gear_preview.py `hat`.
     nonisolated private static func hat(_ out: inout Bitmap, body: Bitmap, origin: (x: Int, y: Int), size: Int,
-                                        facing: String, kind: String, piece: Piece, front: (x: Int, y: Int)) {
+                                        facing: String, kind: String, piece: Piece) {
         guard piece.box != nil else { return }
-        if kind == "scarf" {
-            // Round the neck, over everything: under the chin as drawn (armour with a sheet of its own
-            // draws its head higher or lower than the plain body; from behind, the front's chin, no
-            // face there to find), across the middle of the body at the shoulders.
-            let at = facing == "up" ? front : origin
-            guard let figure = Self.figure(body, origin: origin, size: size),
-                  let found = Self.head(body, origin: at, size: size) else { return }
-            let chin = Self.face(out, origin: at, size: size, found: found)?.low ?? found.chin
-            let dy = chin - chinY, dx = (figure.left + figure.right) / 2 - anchorX
-            for y in 0..<size {
-                for x in 0..<size {
-                    guard let c = piece[x: x, y: y], y + dy >= 0, x + dx >= 0, y + dy < size, x + dx < size else { continue }
-                    out.set(origin.x + x + dx, origin.y + y + dy, c)
-                }
-            }
-            return
-        }
         guard let found = Self.head(body, origin: origin, size: size) else { return }
         let top = found.top, chin = found.chin
         let span = found.cells.filter { $0.y == top + 3 }.map(\.x)
@@ -791,12 +828,23 @@ enum GearOverlay {
             default: (first + last) / 2
             }
             var dx = Int((anchor + 0.5).rounded(.down)) - anchorX
-            // The mask stops a row under the chin (a dwarf's beard shows below it) and starts no more
-            // than a row over the face (on the hair).
-            guard let box = piece.box else { return }
-            let below = max(0, min(3, box.bottom - (low - eyeTop + anchorY + 1)))
+            // The mask stops two rows under the chin (over the top of a dwarf's beard) and starts no
+            // more than a row over the face (on the hair).
+            var narrow = piece
+            if facing == "down", let whole = piece.box {
+                // No wider than the face (its outermost skin or eye pixels from just over the eyes to
+                // the chin) and its outline: on a narrow face it spilled onto the hair.
+                let wide = (eyeTop - 1...low).compactMap { y -> Int? in
+                    let row = span.filter { facial($0, y) }
+                    guard let l = row.min(), let r = row.max() else { return nil }
+                    return r - l + 1
+                }.max() ?? 0
+                if wide > 0 { narrow = piece.pinched(by: max(0, min(4, (whole.right - whole.left + 1) - (wide + 2)))) }
+            }
+            guard let box = narrow.box else { return }
+            let below = max(0, min(3, box.bottom - (low - eyeTop + anchorY + 2)))
             let above = max(0, min(3, (high - eyeTop + anchorY - 1) - box.top))
-            let fitted = piece.lengthened(by: -below, start: anchorY + 2)
+            let fitted = narrow.lengthened(by: -below, start: anchorY + 2)
                 .flipped().lengthened(by: -above, start: size - anchorY + 1).flipped()
             let dy = eyeTop - anchorY
             if facing == "right" || facing == "left" {

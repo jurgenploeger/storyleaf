@@ -202,7 +202,7 @@ festive_char   | newgame,race=elf,gender=male,level=60,class=fighter,date=01-01,
 # Worn gear drawn by Retro Diffusion (0.7.43, playtesting 2026-10-19: "The blue robe and chain mail look bad. Also hats,
 # weapons and capes look bad"): a robe and chain mail with walk sheets of their own, a cape, a scarf and a crown cut
 # out of reference sheets and fitted to each body (tools/wear_art.py).
-wear_robe_scarf | newgame,race=elf,gender=female,level=60,class=mage,date=12-24,equip=sapphire_robe+red_christmas_scarf+storyleaf_cape,menu=character | 8
+wear_robe_scarf | newgame,race=elf,gender=female,level=60,class=mage,date=12-24,equip=sapphire_robe+red_christmas_scarf+santa_hat+storyleaf_cape,menu=character | 8
 wear_chain_crown | newgame,race=dwarf,level=30,class=fighter,date=01-01,equip=gilded_chain_mail+red_party_hat+monster_book_cape,weather=clear,hour=12 | 8
 wear_mask_human | newgame,level=30,class=fighter,date=10-31,equip=chain_mail+blue_halloween_mask,menu=character | 8
 hair_blue    | newgame,hair=blue                                              | 8

@@ -1070,7 +1070,8 @@ nonisolated struct RewardsDef: Decodable, Sendable {
     }
     /// Festive seasons, like RuneScape's holiday events: each on its days, `from` to `to` ("MM-DD",
     /// round the new year when `to` comes first) or `easter`: [first, last] days from Easter Sunday.
-    /// The first daily gift of one brings one of its `hats` (one you haven't got, if any) with its
+    /// The first daily gift of one brings one of its `hats` (one you haven't got, if any; a scarf is a
+    /// necklace that wears `scarf`, worn round the neck) with its
     /// `greeting`; till it ends, a fight won against wild monsters leaves one of its `treats` `chance`
     /// of the time (one of its `hats` instead `hatChance` of those), and other adventurers wear its
     /// hats (GameSession+Rewards.swift).
@@ -1445,6 +1446,10 @@ final class Content {
     func chestHolding(_ itemID: String) -> NPCDef? {
         loaded.chestTreasures[itemID].flatMap(npc)
     }
+
+    /// A festive season's hat or scarf (rewards.json `seasons`): only the seasons give them, so no
+    /// monster drops one and no adventurer wears one but in its season.
+    func isFestive(_ itemID: String) -> Bool { rewards.seasons?.contains { $0.hats.contains(itemID) } ?? false }
 
     /// A quest's or a chest's treasure, or a weaver's cape: yours alone, found only there.
     func isTreasure(_ itemID: String) -> Bool { isQuestTreasure(itemID) || loaded.chestTreasures[itemID] != nil || prize(for: itemID) != nil }

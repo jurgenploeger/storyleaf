@@ -500,6 +500,24 @@ def widen(t, by, keep_top=0):
     return out
 
 
+def pinched(t, by):
+    """Narrower by `by` columns, dropped next to its edges in turn, left then right (GearOverlay's
+    Piece.pinched): what's between them, a mask's eye holes, stays put."""
+    out = t.copy()
+    for k in range(by):
+        cols = [x for x in range(FRAME) if (out[:, x, 3] > 0.5).any()]
+        if len(cols) < 8:
+            break
+        l, r = min(cols), max(cols)
+        if k % 2 == 0:
+            out[:, l + 1:l + 3] = out[:, l:l + 2].copy()
+            out[:, l] = 0
+        else:
+            out[:, r - 2:r] = out[:, r - 1:r + 1].copy()
+            out[:, r] = 0
+    return out
+
+
 def bbox(t):
     ys, xs = np.nonzero(t[..., 3] > 0.5)
     return (ys.min(), ys.max(), xs.min(), xs.max()) if len(ys) else None
@@ -576,17 +594,13 @@ def face(f, cells, top, chin):
     return eye, mids, high, low, facial, span
 
 
-def hat(body, out, kind, colour, trim=None):
-    """A festive hat on the head (GearOverlay.hat), every frame: a piece Retro Diffusion drew on a
-    hero (art/sprites/wear_<kind>.png, cut out by tools/wear_art.py), fitted to the head as drawn, hair
-    and all, measured on the plain body (the scalp, the eyes) and on `out` before the hat goes on.
-    crown (a party crown), santa and ears (a bunny's, its band in `trim`) go round the head: their band
-    on the head's widest row over the eyes, as wide as the scalp and a little more, over all the hair
-    above it. A mask (none from behind) goes over the face, its eye holes on the
-    eyes, found on the face as drawn (armour with a sheet of its own has a face of its own), no taller
-    than the face and from the side as far forward as it reaches. A scarf goes round the neck, under
-    the chin as drawn."""
-    sheet = piece_sheet(kind)
+def scarf(body, out, colour):
+    """A festive scarf (a necklace that wears `scarf`; GearOverlay.scarf) round the neck, over
+    everything: the piece Retro Diffusion drew (art/sprites/wear_scarf.png), what's under its wearer's
+    chin, in its colour, put under the chin as drawn (armour with a sheet of its own draws its head
+    higher or lower than the plain body; from behind, the chin found from the front), across the middle
+    of the body at the shoulders."""
+    sheet = piece_sheet("scarf")
 
     def chin_of(row, c):
         """The bottom of the face as drawn in that frame: from behind, the front's; with no face to
@@ -597,8 +611,35 @@ def hat(body, out, kind, colour, trim=None):
             return None
         seen = face(out[oy:oy + FRAME, ox:ox + FRAME], found[2], found[0], found[1])
         return seen[3] if seen else found[1]
-    chins = {(row, c): chin_of(row, c) for row in range(len(DIRS)) for c in range(body.shape[1] // FRAME)} \
-        if kind == 'scarf' else {}
+    chins = {(row, c): chin_of(row, c) for row in range(len(DIRS)) for c in range(body.shape[1] // FRAME)}
+    for row, facing in enumerate(DIRS):
+        piece = painted(sheet[row * FRAME:(row + 1) * FRAME], colour)
+        if bbox(piece) is None:
+            continue
+        for c in range(body.shape[1] // FRAME):
+            oy, ox = row * FRAME, c * FRAME
+            f = out[oy:oy + FRAME, ox:ox + FRAME]
+            fig = figure(body[oy:oy + FRAME, ox:ox + FRAME])
+            if fig is None or chins[(row, c)] is None:
+                continue
+            for y, x in zip(*np.nonzero(piece[..., 3] > 0.5)):
+                ty, tx = y + chins[(row, c)] - CHIN_Y, x + (fig[3] + fig[4]) // 2 - ANCHOR_X
+                if 0 <= ty < FRAME and 0 <= tx < FRAME:
+                    f[ty, tx, :3] = piece[y, x, :3]
+                    f[ty, tx, 3] = 1
+    return out
+
+
+def hat(body, out, kind, colour, trim=None):
+    """A festive hat on the head (GearOverlay.hat), every frame: a piece Retro Diffusion drew on a
+    hero (art/sprites/wear_<kind>.png, cut out by tools/wear_art.py), fitted to the head as drawn, hair
+    and all, measured on the plain body (the scalp, the eyes) and on `out` before the hat goes on.
+    crown (a party crown), santa and ears (a bunny's, its band in `trim`) go round the head: their band
+    on the head's widest row over the eyes, as wide as the scalp and a little more, over all the hair
+    above it. A mask (none from behind) goes over the face, its eye holes on the
+    eyes, found on the face as drawn (armour with a sheet of its own has a face of its own), no wider
+    or taller than the face, a little over a beard, and from the side as far forward as it reaches."""
+    sheet = piece_sheet(kind)
     for row, facing in enumerate(DIRS):
         piece = painted(sheet[row * FRAME:(row + 1) * FRAME], colour, trim)
         if bbox(piece) is None:
@@ -606,18 +647,6 @@ def hat(body, out, kind, colour, trim=None):
         for c in range(body.shape[1] // FRAME):
             oy, ox = row * FRAME, c * FRAME
             f = out[oy:oy + FRAME, ox:ox + FRAME]
-            if kind == 'scarf':
-                # Round the neck, over everything: under the chin as drawn (armour with a sheet of
-                # its own draws its head higher or lower than the plain body), across the middle of
-                # the body at the shoulders.
-                fig = figure(body[oy:oy + FRAME, ox:ox + FRAME])
-                if fig is not None and chins[(row, c)] is not None:
-                    for y, x in zip(*np.nonzero(piece[..., 3] > 0.5)):
-                        ty, tx = y + chins[(row, c)] - CHIN_Y, x + (fig[3] + fig[4]) // 2 - ANCHOR_X
-                        if 0 <= ty < FRAME and 0 <= tx < FRAME:
-                            f[ty, tx, :3] = piece[y, x, :3]
-                            f[ty, tx, 3] = 1
-                continue
             found = head(body[oy:oy + FRAME, ox:ox + FRAME])
             if found is None:
                 continue
@@ -640,9 +669,19 @@ def hat(body, out, kind, colour, trim=None):
                 oy_, mids, high, low, facial, span = seen
                 ox_ = (mids[0] + mids[-1]) / 2 if facing == 'down' else max(mids) if facing == 'right' else min(mids)
                 dx = half_up(ox_) - ANCHOR_X
+                # The mask stops two rows under the chin (over the top of a dwarf's beard) and starts no
+                # more than a row over the face (on the hair).
                 t = piece
+                if facing == 'down':
+                    # No wider than the face (its outermost skin or eye pixels from just over the eyes
+                    # to the chin) and its outline: on a narrow face it spilled onto the hair.
+                    rows = [[x for x in span if facial(y, x)] for y in range(oy_ - 1, low + 1)]
+                    wide = max((max(r) - min(r) + 1 for r in rows if r), default=0)
+                    _, _, tl, tr = bbox(t)
+                    if wide:
+                        t = pinched(t, max(0, min(4, (tr - tl + 1) - (wide + 2))))
                 t0, t1, _, _ = bbox(t)
-                below = max(0, min(3, t1 - (low - oy_ + ANCHOR_Y + 1)))
+                below = max(0, min(3, t1 - (low - oy_ + ANCHOR_Y + 2)))
                 t = lengthened(t, -below, ANCHOR_Y + 2)
                 above = max(0, min(3, (high - oy_ + ANCHOR_Y - 1) - t0))
                 t = lengthened(t[::-1], -above, FRAME - ANCHOR_Y + 1)[::-1]
@@ -887,8 +926,8 @@ def dressed(race, body, style, armour=None, worn=()):
         out = pp.recolor(base, armour["tint"]) if armour.get("tint") else base.copy()
         skeleton = f"body_{race}"
     else:
-        # A festive hat sits on the hair, in place of a helmet or hood (a scarf leaves them be).
-        hatted = any(item["type"] == "head" and item.get("hat") != "scarf" for item in worn)
+        # A festive hat sits on the hair, in place of a helmet or hood.
+        hatted = any(item["type"] == "head" for item in worn)
         head = None if hatted else {"plate": "helmet", "cloak": "hood"}.get((armour or {}).get("wear"))
         image = load(f"body_{body}")
         for layer in (f"locks_{body}", f"{head}_{body}" if head else f"hair_{style}_{body}"):
@@ -899,12 +938,16 @@ def dressed(race, body, style, armour=None, worn=()):
             out = apply(base, out, armour.get("wear"), armour.get("accent"), pattern=armour.get("pattern"))
         skeleton = f"body_{body}"
     pieces = {item["type"]: item for item in worn}
+    # A festive scarf is worn as a necklace, drawn round the neck instead of a pendant.
+    wrap = pieces.pop("necklace") if pieces.get("necklace", {}).get("wear") == "scarf" else None
     necklace = pieces.get("necklace", {})
     plain = np.asarray(load(skeleton)).astype(float) / 255
     out = trinkets(plain, out, gloves=pieces.get("gloves", {}).get("color"),
                    boots=pieces.get("boots", {}).get("color"), necklace=necklace.get("color"), chain=necklace.get("accent"))
     if "cape" in pieces:
         out = cape(base, out, pieces["cape"]["color"], pieces["cape"]["accent"])
+    if wrap:
+        out = scarf(plain, out, wrap["color"])
     if "head" in pieces:
         out = hat(plain, out, pieces["head"]["hat"], pieces["head"]["color"], pieces["head"].get("accent"))
     return out

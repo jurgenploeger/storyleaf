@@ -53,8 +53,11 @@ snow cloak, plate, dragon mail). A fix that's right on one body and wrong on ano
 - From the front, the eye holes are on the eyes; from the side, the front eye hole on the front eye.
 - From the side, the mask's front edge reaches the face's front on every face row: no skin peeking out in
   front of it (it sat a pixel behind on the dwarves).
-- Its bottom is at most a row under the chin, so a dwarf's beard shows below it; its top at most a row above
-  where the face shows. It was too tall on the dwarves.
+- Its bottom is at most two rows under the chin, over the top of a dwarf's beard and no more; its top at most
+  a row above where the face shows. It was too tall on the dwarves.
+- From the front, no wider than the face and its outline: it spilled onto the hair on narrow faces. It's
+  narrowed beside its edges, so the eye holes stay on the eyes.
+- Every colour (green, blue, red) recolours cleanly: check them all, not just the one the reference was.
 - None from behind.
 - It shows on every armour: an eye's white may be cream on an armour sheet, not pure white.
 
@@ -63,7 +66,8 @@ snow cloak, plate, dragon mail). A fix that's right on one body and wrong on ano
 - Under the chin as drawn, on every armour: never over the mouth. Armour sheets draw the head higher or
   lower than the plain body, so the plain body's measurements can't place it.
 - From behind, the chin found on the front view of the same walk frame.
-- It leaves a helmet or hood on (`hatted` is false for a scarf).
+- It's worn in the necklace slot (a necklace with `wear: scarf`), so it goes with any hat, helmet or hood.
+  Festive items never drop from monsters or turn up on other adventurers out of season (`Content.isFestive`).
 
 ### Capes
 
