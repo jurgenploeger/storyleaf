@@ -644,6 +644,8 @@ HATS = {"crown", "santa", "ears", "mask"}
 for item in items.values():
     if item["type"] == "head":
         check(item.get("hat") in HATS, f"item {item['id']} → hat must be one of {sorted(HATS)}: how it's drawn on the head")
+        check((ROOT / "art" / "sprites" / f"wear_{item.get('hat')}.png").exists(),
+              f"item {item['id']} → art/sprites/wear_{item.get('hat')}.png is missing (tools/wear_art.py cuts it out)")
         check(isinstance(item.get("color"), str) and HEX.fullmatch(item["color"]) is not None,
               f"item {item['id']} → color must be #RRGGBB: the hat's colour on the hero")
         check(item.get("price") == 0, f"item {item['id']} → price 0 (only the festive seasons give hats)")

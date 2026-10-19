@@ -243,7 +243,9 @@ final class ArtLibrary {
             let directions = from.directions ?? ["up", "right", "down", "left"]
             // The plain body the hands, chin and boots are found on (GearLook.body).
             let skeleton = gear.body.flatMap { pngURL($0) }.flatMap { UIImage(contentsOfFile: $0.path)?.cgImage }
-            return GearOverlay.apply(gear, original: base, dressed: recolored, skeleton: skeleton,
+            // A festive hat's piece, cut out by tools/wear_art.py (art/sprites/wear_<hat>.png).
+            let piece = gear.hat.flatMap { pngURL("wear_\($0)") }.flatMap { UIImage(contentsOfFile: $0.path)?.cgImage }
+            return GearOverlay.apply(gear, original: base, dressed: recolored, skeleton: skeleton, piece: piece,
                                      frame: from.frame ?? 48, directions: directions)
         }
         return recolored

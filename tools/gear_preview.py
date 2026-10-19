@@ -414,19 +414,74 @@ def half_up(v):
     return int(math.floor(v + 0.5))
 
 
+# Where tools/wear_art.py puts each piece in its frame (GearOverlay's constants of the same names).
+HAT_BRIM, ANCHOR_X, ANCHOR_Y = 40, 24, 20
+
+
+def widen(t, by, keep_top=0):
+    """Pixel-art stretch (GearOverlay.widen): repeat (or drop) `by` columns through the middle of the
+    piece's rows from `keep_top` down, spread a little either side, so a pom over it keeps its shape."""
+    if by == 0:
+        return t
+    cols = [x for x in range(FRAME) if (t[keep_top:, x, 3] > 0.5).any()]
+    if not cols:
+        return t
+    l, r = min(cols), max(cols)
+    out = t.copy()
+    out[keep_top:] = 0
+    body = t[keep_top:, l:r + 1]
+    for k in range(abs(by)):
+        m = max(0, min(body.shape[1] - 1, body.shape[1] // 2 + (k % 3 - 1)))
+        if by > 0:
+            body = np.concatenate([body[:, :m + 1], body[:, m:]], 1)
+        elif body.shape[1] > 1:
+            body = np.concatenate([body[:, :m], body[:, m + 1:]], 1)
+    x0 = half_up((l + r) / 2 - (body.shape[1] - 1) / 2)
+    for i in range(body.shape[1]):
+        if 0 <= x0 + i < FRAME:
+            out[keep_top:, x0 + i] = body[:, i]
+    return out
+
+
+def bbox(t):
+    ys, xs = np.nonzero(t[..., 3] > 0.5)
+    return (ys.min(), ys.max(), xs.min(), xs.max()) if len(ys) else None
+
+
+def painted(t, colour, trim=None):
+    """A piece in the hat's colours: its coloured pixels (not its white fur, its outline or its eye
+    holes) in `trim` if it has one (a bunny's pink band), else `colour`, as light or dark as they were
+    against their middle shade."""
+    out = t.copy()
+    tone = hexc(trim) if trim else hexc(colour)
+    cells = [(y, x) for y, x in zip(*np.nonzero(t[..., 3] > 0.5))]
+    lit = [(y, x, hsv(tuple(t[y, x, :3]))[2]) for y, x in cells
+           if hsv(tuple(t[y, x, :3]))[1] > 0.2 and hsv(tuple(t[y, x, :3]))[2] > 0.25]
+    if not lit:
+        return out
+    middle = sorted(v for _, _, v in lit)[len(lit) // 2]
+    for y, x, v in lit:
+        out[y, x, :3] = np.clip(tone * (v / middle), 0, 1)
+        out[y, x, 3] = 1
+    return out
+
+
 def hat(body, out, kind, colour, trim=None):
-    """A festive hat on the head (GearOverlay.hat), every frame, fitted to the head as drawn, hair and
-    all: measured on the plain body (the scalp, the eyes) and on `out` before the hat goes on.
-    `kind`: crown, a paper party crown round the head's widest rows over the eyes, three points up
-    (RuneScape's party hats); santa, a red cap with a white fur brim there and a pom, over all the hair
-    above, its tip flopped back; ears, a bunny's, out of the hair and as tall over it whatever the hair,
-    pink inside (`trim`) from the front; mask, the face in the mask's colour (`colour`, shaded as the
-    skin was) with hollow eyes and a toothy grin, from the front and the side."""
-    col = hexc(colour)
-    acc = hexc(trim) if trim else np.array([1.0, 1.0, 1.0])
-    white, grey = np.array([0.98, 0.98, 1.0]), np.array([0.80, 0.82, 0.88])
-    hollow = np.array([0.08, 0.05, 0.08])
+    """A festive hat on the head (GearOverlay.hat), every frame: a piece Retro Diffusion drew on a
+    hero (art/sprites/wear_<kind>.png, cut out by tools/wear_art.py), fitted to the head as drawn, hair
+    and all, measured on the plain body (the scalp, the eyes) and on `out` before the hat goes on.
+    crown (a party crown), santa and ears (a bunny's, its band in `trim`) go round the head: their band
+    on the head's widest row over the eyes, as wide as the scalp and a little more, over all the hair
+    above it. A mask (none from behind) goes over the face, its eye holes on the
+    eyes, found on the face as drawn (armour with a sheet of its own has a face of its own)."""
+    import pathlib
+    from PIL import Image
+    sprites = pathlib.Path(__file__).resolve().parent.parent / "art" / "sprites"
+    sheet = np.asarray(Image.open(sprites / f"wear_{kind}.png").convert("RGBA")).astype(float) / 255
     for row, facing in enumerate(DIRS):
+        piece = painted(sheet[row * FRAME:(row + 1) * FRAME], colour, trim)
+        if bbox(piece) is None:
+            continue
         for c in range(body.shape[1] // FRAME):
             oy, ox = row * FRAME, c * FRAME
             f = out[oy:oy + FRAME, ox:ox + FRAME]
@@ -437,13 +492,49 @@ def hat(body, out, kind, colour, trim=None):
             span = [x for y, x in cells if y == top + 3] or [x for _, x in cells]
             left, right = min(span), max(span)
             cx = (left + right) // 2
-            back = {'right': -1, 'left': 1, 'down': 1, 'up': -1}[facing]
             drawn = f[..., 3] > 0.5     # the head as drawn, hair and all, before the hat goes on
+
+            def stamp(t, dy, dx):
+                for y, x in zip(*np.nonzero(t[..., 3] > 0.5)):
+                    if 0 <= y + dy < FRAME and 0 <= x + dx < FRAME:
+                        f[y + dy, x + dx, :3] = t[y, x, :3]
+                        f[y + dy, x + dx, 3] = 1
+
+            if kind == 'mask':
+                # The eyes as drawn: whites with a pupil or lash beside or over them and the face's
+                # skin near (a glint in a beard or on a helmet has none), the highest pair.
+                xs_all = [x for _, x in cells]
+                whites, near = [], []
+                for y in range(max(0, top + 2), min(FRAME, chin + 3)):
+                    for x in range(max(0, min(xs_all) - 1), min(FRAME, max(xs_all) + 3)):
+                        if not drawn[y, x]:
+                            continue
+                        _, s_, v_ = hsv(tuple(f[y, x, :3]))
+                        if s_ >= 0.06 or v_ <= 0.92:
+                            continue
+                        dark = lambda yy, xx: 0 <= yy < FRAME and 0 <= xx < FRAME and drawn[yy, xx] and hsv(tuple(f[yy, xx, :3]))[2] < 0.35
+                        if not (dark(y, x - 1) or dark(y, x + 1) or dark(y - 1, x)):
+                            continue
+                        whites.append((y, x))
+                        if any(0 <= xx < FRAME and drawn[yy, xx] and is_skin(f[yy, xx])
+                               for yy in (y, y + 1) if yy < FRAME for xx in (x - 2, x - 1, x + 1, x + 2)):
+                            near.append((y, x))
+                eyes = near or whites
+                if not eyes:
+                    continue
+                oy_ = min(y for y, _ in eyes)
+                xs = sorted({x for y, x in eyes if y <= oy_ + 1})
+                groups = [[xs[0]]]
+                for x in xs[1:]:
+                    (groups[-1].append(x) if x - groups[-1][-1] <= 2 else groups.append([x]))
+                mids = [sum(g) / len(g) for g in groups]
+                ox_ = (mids[0] + mids[-1]) / 2 if facing == 'down' else max(mids) if facing == 'right' else min(mids)
+                stamp(piece, oy_ - ANCHOR_Y, half_up(ox_) - ANCHOR_X)
+                continue
 
             def around(y):
                 """The head as drawn on row `y`: the run through its middle, hair and all, never
-                narrower than the scalp and its outline. A hat measured on the scalp alone came out
-                smaller than any hair round it."""
+                narrower than the scalp and its outline."""
                 if not 0 <= y < FRAME:
                     return left - 1, right + 1
                 near = [x for x in range(max(0, cx - 3), min(FRAME, cx + 4)) if drawn[y, x]]
@@ -456,11 +547,10 @@ def hat(body, out, kind, colour, trim=None):
                     r += 1
                 return min(l, left - 1), max(r, right + 1)
 
-            # The eyes: gaps in the face's skin (none from behind). The hat's brim sits on the widest
-            # row of the head as drawn, hair and all, at least two rows over them: worn round the
-            # head, not perched on top of it.
-            # Never lower than three fifths of the way from the scalp's top to the eyes: a cowl or a
-            # helmet round the face is wide all the way down.
+            # The eyes: gaps in the face's skin (none from behind). The band sits on the widest row of
+            # the head as drawn, hair and all, at least two rows over them: worn round the head, not
+            # perched on top of it. Never lower than three fifths of the way from the scalp's top to
+            # the eyes: a cowl or a helmet round the face is wide all the way down.
             skin = {(y, x) for y, x in cells}
             eyes = [y for y, x in cells if y > top + 2 and (y, x + 1) not in skin
                     and ((y, x + 2) in skin or (y, x + 3) in skin)]
@@ -469,109 +559,28 @@ def hat(body, out, kind, colour, trim=None):
             crown_top = min((y for y in range(FRAME) if drawn[y, max(0, left):right + 1].any()), default=top)
             widths = {y: around(y)[1] - around(y)[0] for y in range(crown_top, deep + 1)}
             brim = max(widths, key=lambda y: (widths[y], y)) if widths else top + 1
-
-            def crest(x0, x1):
-                """The highest row drawn over columns x0 to x1 (the top of the hair there)."""
-                rows = [y for y in range(FRAME) if drawn[y, max(0, x0):min(FRAME, x1 + 1)].any()]
-                return min(rows) if rows else top
-
-            def put(x, y, cc):
-                if 0 <= x < FRAME and 0 <= y < FRAME:
-                    f[y, x, :3] = cc
-                    f[y, x, 3] = 1
-
-            def stamp(parts):
-                """Each part (cells, colour for a cell, its outline) filled, in order, outlined where
-                the hat meets the outside."""
-                whole = set().union(*(cells for cells, _, _ in parts))
-                for cells, fill, line in parts:
-                    for x, y in cells:
-                        edge = any((x + dx, y + dy) not in whole for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
-                        put(x, y, line if edge else fill(x, y))
-
-            if kind == 'crown':
-                # A band round the head at the scalp's top, as wide as the head is there, hair and
-                # all; three points up from its top row.
-                shape = {(x, y) for y in (brim - 2, brim - 1, brim) for x in range(around(y)[0], around(y)[1] + 1)}
-                l, r = around(brim - 2)
-                peaks = [l + 2, (l + r) // 2, r - 2]
-                for x in range(l, r + 1):
-                    rise = max(0, 4 - 2 * min(abs(x - p) for p in peaks))
-                    for y in range(brim - 2 - rise, brim - 2):
-                        shape.add((x, y))
-                light = mix(col, (1, 1, 1), 0.4)
-                stamp([(shape, lambda x, y: shade(col, 0.75) if y == brim else light if y == brim - 2 else col, shade(col, 0.42))])
-            elif kind == 'santa':
-                # A white fur brim round the head, hair and all; the cap over everything above it,
-                # narrowing and flopping over to the back.
-                band = {(x, y) for y in (brim - 2, brim - 1, brim) for x in range(around(y)[0] - 1, around(y)[1] + 2)}
-                l, r = around(brim - 2)
-                half = (r - l) / 2
-                # Up from the brim to past the top of the hair, narrowing; everything drawn up there
-                # is under the cap.
-                rise = max(8, brim - 2 - crown_top + 3)
-                cap = {(x, y) for y in range(crown_top, brim - 2) for x in range(FRAME)
-                       if drawn[y, x] and around(y)[0] <= x <= around(y)[1]}
-                for k in range(1, rise + 1):
-                    w = half * (1 - (k - 1) / (rise + 0.5))
-                    mid = (l + r) / 2 + back * ((k - 1) ** 2) / (10 * rise / 8)
-                    for x in range(half_up(mid - w), half_up(mid + w) + 1):
-                        cap.add((x, brim - 2 - k))
-                tip = (half_up((l + r) / 2 + back * (((rise - 1) ** 2) / (10 * rise / 8) + 0.4)), brim - 2 - rise)
-                pom = {(tip[0] + dx, tip[1] + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if abs(dx) + abs(dy) < 2}
-                dark = shade(col, 0.72)
-                stamp([(cap, lambda x, y: dark if (x - (l + r) / 2) * back > half * 0.4 else col, shade(col, 0.42)),
-                       (band, lambda x, y: grey if y == brim else white, grey * 0.62),
-                       (pom, lambda x, y: white, grey * 0.62)])
-            elif kind == 'ears':
-                # Two tall ears from the head, leaning out a little; pink inside, seen from the front.
-                spots = {'down': (cx - 4, cx + 2), 'up': (cx - 4, cx + 2), 'right': (cx - 3, cx), 'left': (cx - 1, cx + 2)}[facing]
-                parts = []
-                for n, x0 in enumerate(spots):
-                    lean = -1 if n == 0 else 1
-                    shape, inner = set(), set()
-                    # Out of the hair there (or the scalp), as tall over it whatever the hair is like.
-                    hair = crest(x0, x0 + 3)
-                    base = min(top + 1, hair + 2)
-                    length = base - min(top - 9, hair - 7)
-                    for k in range(0, length + 1):
-                        y = base - k
-                        dx = lean * (k // 5)
-                        width = 2 if k >= length - 1 else 3
-                        for x in range(x0 + dx, x0 + dx + width + 1):
-                            shape.add((x, y))
-                        if facing == 'down' and 2 <= k <= length - 2:
-                            inner.add((x0 + dx + 1 + n, y))
-                    parts.append((shape, lambda x, y, inner=inner: acc if (x, y) in inner else col, shade(col, 0.55)))
-                stamp(parts)
-            elif kind == 'mask':
-                if facing == 'up':
-                    continue
-                face = {(x, y) for y, x in cells if y < chin}
-                for x, y in face:
-                    hh, s, v = hsv(tuple(f[y, x, :3]))
-                    if (hh <= 40 / 360 or hh >= 342 / 360) and 0.12 < s < 0.65 and v > 0.55:
-                        f[y, x, :3] = np.clip(col * (0.3 + v * 0.8), 0, 1)
-                # The eyes (what wasn't skin on the face) as hollows, a row deeper; a grin at the chin.
-                eyes = [(x, y) for y in range(top, chin) for x in range(FRAME)
-                        if (x, y) not in face and any((x + dx, y) in face for dx in (-1, 1)) and any((x, y + dy) in face for dy in (-1, 1))]
-                for x, y in eyes:
-                    put(x, y, hollow)
-                    if (x, y - 1) in face:
-                        put(x, y - 1, hollow)
-                mouth = chin - 1
-                row_ = sorted(x for x, y in face if y == mouth)
-                if row_:
-                    if facing == 'down':
-                        teeth = range(cx - 2, cx + 3)
-                    elif facing == 'right':
-                        teeth = range(row_[-1] - 3, row_[-1])
-                    else:
-                        teeth = range(row_[0] + 1, row_[0] + 4)
-                    for x in teeth:
-                        if (x, mouth) in face:
-                            put(x, mouth, hollow if abs(x - cx) % 2 else mix(col, (1, 1, 1), 0.7))
+            # As wide as the scalp and its outline and a little more, within three pixels of as drawn;
+            # a pom (the rows narrower than half the piece) keeps its shape.
+            t0, t1, tl, tr = bbox(piece)
+            keep = next(y for y in range(t0, t1 + 1) if (piece[y, :, 3] > 0.5).sum() >= max(1, (tr - tl + 1) // 2))
+            band = int((piece[HAT_BRIM, :, 3] > 0.5).sum())
+            t = widen(piece, max(-3, min(3, (right - left + 5) - band)), keep)
+            t0, t1, tl, tr = bbox(t)
+            dy, dx = brim + 1 - HAT_BRIM, (left + right + 1) // 2 - (tl + tr + 1) // 2
+            # It sits on the head: the hair above the band it doesn't cover goes (spiky hair stuck up
+            # between a crown's points or a bunny's ears).
+            for y in range(0, brim - 1):
+                for x in range(max(0, left - 1), min(FRAME, right + 2)):
+                    ty, tx = y - dy, x - dx
+                    if drawn[y, x] and not (0 <= ty < FRAME and 0 <= tx < FRAME and t[ty, tx, 3] > 0.5):
+                        f[y, x] = 0
+            stamp(t, dy, dx)
     return out
+
+
+def is_skin(p):
+    hh, s, v = hsv(tuple(p[:3]))
+    return (hh <= 40 / 360 or hh >= 342 / 360) and 0.12 < s < 0.65 and v > 0.55
 
 
 def cape(base, out, colour, trim):
