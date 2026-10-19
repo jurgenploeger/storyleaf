@@ -368,6 +368,10 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   (155), and the Fallen Star drops a level-150 weapon for each class now and then (Starfall Staff, Blade,
   Axe and Whip; the smiths' lines stop at 105). Whether FO had a village like it isn't in any source
   reachable from a cloud session; it's ours.
+- The Glimmerdeep's crystal (since 0.7.39; playtesting 2026-10-19: "The cave should have more crystal looking
+  scenery"): its three levels have violet crystal walls and a glinting blue crystal floor (`tile_crystal_rock`,
+  `tile_crystal_floor`), icy and amethyst spires instead of stalagmites and geodes instead of boulders, all drawn
+  from the caves' own rock by `tools/crystal_art.py`, and its crystal clusters grown bigger.
 - Cave depths (ours, since 0.7.38; playtesting 2026-10-18: "In caves, you should be able to go deeper in
   a cave, so a deeper level, similar to runescape", then "Only the new land should have 2 deeper cave levels
   with the drake in the deepest cave level"): the Glimmerdeep goes two levels down (maps.json `depth` 1 and
