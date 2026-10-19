@@ -8887,6 +8887,68 @@
       }
     },
     {
+      "id": "tile_crystal_rock",
+      "kind": "tile",
+      "request": {
+        "prompt": "violet crystal cave wall with glinting facets",
+        "prompt_style": "rd_tile__single_tile",
+        "width": 32,
+        "height": 32
+      }
+    },
+    {
+      "id": "tile_crystal_floor",
+      "kind": "tile",
+      "request": {
+        "prompt": "dark blue crystal cave floor with tiny glints",
+        "prompt_style": "rd_tile__single_tile",
+        "width": 32,
+        "height": 32
+      }
+    },
+    {
+      "id": "crystal_spire",
+      "kind": "prop",
+      "request": {
+        "prompt": "tall icy cyan crystal spire growing from a cave floor",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "amethyst_spire",
+      "kind": "prop",
+      "request": {
+        "prompt": "tall violet amethyst crystal spire growing from a cave floor",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "crystal_geode",
+      "kind": "prop",
+      "request": {
+        "prompt": "large round amethyst geode boulder bristling with crystals",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 64,
+        "height": 64,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "small_crystal_spire",
+      "kind": "prop",
+      "scale": 0.55,
+      "derive": {
+        "from": "crystal_spire",
+        "recolor": []
+      }
+    },
+    {
       "id": "candy_cane",
       "kind": "prop",
       "request": {

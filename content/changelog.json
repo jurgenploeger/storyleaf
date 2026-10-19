@@ -2,6 +2,14 @@
   "_note": "Newest first. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks). 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.39",
+      "date": "2026-10-19",
+      "title": "A cave of crystal",
+      "notes": [
+        "The Glimmerdeep looks like a crystal cave all the way down: violet crystal walls, a floor that glints, icy and amethyst spires where the stalagmites stood, geodes for boulders and bigger crystal clusters."
+      ]
+    },
+    {
       "version": "0.7.38",
       "date": "2026-10-18",
       "title": "Deeper caves",

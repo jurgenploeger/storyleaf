@@ -62,6 +62,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   as a two-sided arch) or none was made for (the harbors' `ship`, built in 3D and projected as the game's view is;
   `cave_ladder`, the way down to a cave's deeper level, `depth` and NPC role `stairs` in maps.json).
   Rerun it after editing a drawing; `--sheet out.png` previews them.
+- `tools/crystal_art.py`: the Glimmerdeep's crystal scenery from the caves' own rock (its walls, floor, spires and
+  geodes): each pixel's brightness laid on a ramp of crystal colours, as a `derive` can't tint the grey tiles.
+  Rerun it after editing a ramp; `--sheet out.png` previews them.
 - `tools/ui_icon_art.py`: the same for the UI's button icons (`art/sprites/ui_<GameIcon>.png`): `IconImage` shows
   them from 18 pt up (battle buttons, the HUD's buttons, the menu's tabs) and keeps Iconaut's vector icons for
   small inline glyphs. `--sheet out.png` previews them on the game's button colours.
