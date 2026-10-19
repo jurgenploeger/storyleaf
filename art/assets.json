@@ -16166,42 +16166,12 @@
     {
       "id": "boss_prism_drake",
       "kind": "monster",
-      "scale": 1.7,
-      "derive": {
-        "from": "monster_black_lizard",
-        "recolor": [
-          {
-            "hue": [
-              10,
-              50
-            ],
-            "minSaturation": 0.4,
-            "to": 185,
-            "saturation": 1.0,
-            "value": 1.5
-          },
-          {
-            "hue": [
-              180,
-              360
-            ],
-            "minSaturation": 0.04,
-            "to": 205,
-            "spread": 0.6,
-            "saturation": 2.4,
-            "value": 1.75
-          },
-          {
-            "hue": [
-              0,
-              60
-            ],
-            "minSaturation": 0.04,
-            "to": 290,
-            "saturation": 2.6,
-            "value": 1.7
-          }
-        ]
+      "request": {
+        "prompt": "majestic mythical crystal dragon, great spread wings of glowing prismatic crystal, long swept-back pearl horns, pearl white scales shimmering with rainbow light, a shining star gem on its chest, long elegant tail, boss monster, fantasy, chibi",
+        "prompt_style": "rd_plus__low_res",
+        "width": 64,
+        "height": 64,
+        "remove_bg": true
       }
     },
     {
