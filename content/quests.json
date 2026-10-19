@@ -3708,6 +3708,28 @@
           "upTo": 2
         }
       ]
+    },
+    {
+      "id": "a_map_of_the_deep",
+      "title": "A Map of the Deep",
+      "giver": "pip_lamplighter",
+      "minLevel": 152,
+      "requires": [
+        "glimmerdeep_crabs"
+      ],
+      "description": "Pip wants to draw a map of the Glimmerdeep, every level of it, so nobody gets lost in the dark again. The ink is light, and the brightest light down there is inside the Floating Geodes. Bring Pip theirs, and the map is yours.",
+      "objective": {
+        "type": "defeat",
+        "target": "floating_geode",
+        "count": 12
+      },
+      "reward": {
+        "gold": 23500,
+        "exp": 87000,
+        "items": [
+          "hi_ether"
+        ]
+      }
     }
   ]
 }

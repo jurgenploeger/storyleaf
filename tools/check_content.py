@@ -389,6 +389,10 @@ for map_def in maps.values():
         check(map_def["battleMusic"] in songs, f"map {map_def['id']} → unknown battle song {map_def['battleMusic']}")
     theme = map_def["theme"]
     town = map_def.get("town") or {}
+    # The quest that charts a dark map (`MapDef.chart`): its minimap shows all of it once that's done.
+    if "chart" in map_def:
+        check(map_def["chart"] in quests, f"map {map_def['id']} → chart: unknown quest {map_def['chart']}")
+        check(bool((map_def.get("ambience") or {}).get("darkness")), f"map {map_def['id']} → only a dark map has a chart (it shows all of it once)")
     # A cave's level under it (`MapDef.depth`): reached only by stairs, from the level over it.
     if "depth" in map_def:
         depth = map_def["depth"]

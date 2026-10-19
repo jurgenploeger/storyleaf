@@ -1619,6 +1619,12 @@ struct QuestRewardsView: View {
         return result
     }
 
+    /// The caves it gives you the whole map of (`MapDef.chart`), each by its own name, not its
+    /// levels'.
+    private var charts: [String] {
+        session.content.maps.filter { $0.chart == quest.id && $0.depth == nil }.map(\.name)
+    }
+
     private var roads: [String] {
         let content = session.content
         return content.maps.flatMap { map in
@@ -1658,6 +1664,11 @@ struct QuestRewardsView: View {
                         }
                     }
                 }
+            }
+            ForEach(charts, id: \.self) { place in
+                Label(L("A map of the {place}: every level of it on your minimap"), icon: .map, size: 14)
+                    .font(HUDStyle.font(11))
+                    .foregroundStyle(HUDStyle.cream)
             }
             ForEach(roads, id: \.self) { road in
                 Label(earned ? L("Opened the road {road}", ["road": road]) : L("Opens the road {road}", ["road": road]), icon: .map, size: 14)

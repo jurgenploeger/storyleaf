@@ -18318,7 +18318,8 @@
           "greeting": "A ladder goes down into the dark. Far below, the crystals glow brighter still.",
           "to": "glimmerdeep_depths"
         }
-      ]
+      ],
+      "chart": "a_map_of_the_deep"
     },
     {
       "id": "glimmerdeep_depths",
@@ -18601,7 +18602,8 @@
             ]
           ]
         }
-      ]
+      ],
+      "chart": "a_map_of_the_deep"
     },
     {
       "id": "glimmerdeep_heart",
@@ -18882,7 +18884,8 @@
             ]
           ]
         }
-      ]
+      ],
+      "chart": "a_map_of_the_deep"
     }
   ]
 }

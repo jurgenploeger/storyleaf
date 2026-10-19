@@ -1595,6 +1595,11 @@ final class GameSession {
         Self.latestFirst(content.quests.filter { data.quests[$0.id]?.state == .active }) { data.quests[$0.id]?.taken }
     }
 
+    /// Whether you have a dark map's whole map (`MapDef.chart`): its quest is done.
+    func isCharted(_ map: MapDef) -> Bool {
+        map.chart.map { data.quests[$0]?.state == .completed } ?? false
+    }
+
     /// A quest's number in the Quests list: where it comes in content/quests.json, from 1.
     func questNumber(_ quest: QuestDef) -> Int {
         (content.quests.firstIndex { $0.id == quest.id } ?? 0) + 1
