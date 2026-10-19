@@ -205,6 +205,8 @@ festive_char   | newgame,race=elf,gender=male,level=60,class=fighter,date=01-01,
 wear_robe_scarf | newgame,race=elf,gender=female,level=60,class=mage,date=12-24,equip=sapphire_robe+red_christmas_scarf+santa_hat+storyleaf_cape,menu=character | 8
 wear_chain_crown | newgame,race=dwarf,level=30,class=fighter,date=01-01,equip=gilded_chain_mail+red_party_hat+monster_book_cape,weather=clear,hour=12 | 8
 wear_mask_human | newgame,level=30,class=fighter,date=10-31,equip=chain_mail+blue_halloween_mask,menu=character | 8
+# A mask on a deep skin tone (2026-10-19: "The mask front view shows a gap in the face": the face wasn't found on it).
+wear_mask_deep | newgame,level=90,class=fighter,skin=deep,date=10-31,equip=woodcutters_coat+red_halloween_mask,menu=character | 8
 hair_blue    | newgame,hair=blue                                              | 8
 hair_elf_male | newgame,race=elf,gender=male,hair=black,menu=character        | 8
 hair_dwarf_female | newgame,race=dwarf,gender=female,hair=white                | 8

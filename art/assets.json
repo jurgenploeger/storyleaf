@@ -16166,42 +16166,12 @@
     {
       "id": "boss_prism_drake",
       "kind": "monster",
-      "scale": 1.7,
-      "derive": {
-        "from": "monster_black_lizard",
-        "recolor": [
-          {
-            "hue": [
-              10,
-              50
-            ],
-            "minSaturation": 0.4,
-            "to": 185,
-            "saturation": 1.0,
-            "value": 1.5
-          },
-          {
-            "hue": [
-              180,
-              360
-            ],
-            "minSaturation": 0.04,
-            "to": 205,
-            "spread": 0.6,
-            "saturation": 2.4,
-            "value": 1.75
-          },
-          {
-            "hue": [
-              0,
-              60
-            ],
-            "minSaturation": 0.04,
-            "to": 290,
-            "saturation": 2.6,
-            "value": 1.7
-          }
-        ]
+      "request": {
+        "prompt": "majestic mythical crystal dragon, great spread wings of glowing prismatic crystal, long swept-back pearl horns, pearl white scales shimmering with rainbow light, a shining star gem on its chest, long elegant tail, boss monster, fantasy, chibi",
+        "prompt_style": "rd_plus__low_res",
+        "width": 64,
+        "height": 64,
+        "remove_bg": true
       }
     },
     {
@@ -16255,6 +16225,56 @@
         ]
       }
     },
+    {
+      "id": "monster_comet_hare",
+      "kind": "monster",
+      "request": {
+        "prompt": "small white star rabbit with long ears and a glowing pale blue comet tail streaming behind it, a tiny gold star on its forehead, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 40,
+        "height": 40,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "monster_lantern_sprite",
+      "kind": "monster",
+      "request": {
+        "prompt": "tiny fairy sprite with soft moth wings holding a glowing paper lantern on a stick, warm golden light, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 40,
+        "height": 40,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "monster_shardwing_bat",
+      "kind": "monster",
+      "request": {
+        "prompt": "purple cave bat with wings made of sharp amethyst crystal shards and glowing eyes, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 40,
+        "height": 40,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "monster_geode_golem",
+      "kind": "monster",
+      "request": {
+        "prompt": "small round stone golem with a cracked grey rock body and violet amethyst crystals growing from its back and shoulders, stubby arms, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 40,
+        "height": 40,
+        "remove_bg": true
+      }
+    },
+    {"id": "monster_comet_hare_dusk", "kind": "monster", "derive": {"from": "monster_comet_hare", "recolor": [{"hue": [160, 250], "minSaturation": 0.12, "to": 38, "spread": 1, "saturation": 2.0, "value": 1.1}]}},
+    {"id": "monster_lantern_sprite_moon", "kind": "monster", "derive": {"from": "monster_lantern_sprite", "recolor": [{"hue": [20, 75], "minSaturation": 0.12, "minValue": 0.72, "to": 190, "spread": 1, "saturation": 0.75, "value": 1.05}, {"hue": [0, 75], "minSaturation": 0.12, "to": 238, "spread": 0.5, "saturation": 0.9, "value": 1.0}, {"hue": [330, 360], "minSaturation": 0.12, "to": 238, "spread": 0.5, "saturation": 0.9, "value": 1.0}]}},
+    {"id": "monster_shardwing_bat_rose", "kind": "monster", "derive": {"from": "monster_shardwing_bat", "recolor": [{"hue": [225, 335], "minSaturation": 0.12, "to": 335, "spread": 1, "saturation": 1.1, "value": 1.2}]}},
+    {"id": "monster_shardwing_bat_gloom", "kind": "monster", "derive": {"from": "monster_shardwing_bat", "recolor": [{"hue": [225, 335], "minSaturation": 0.12, "to": 222, "spread": 1, "saturation": 0.8, "value": 0.72}]}},
+    {"id": "monster_geode_golem_sapphire", "kind": "monster", "derive": {"from": "monster_geode_golem", "recolor": [{"hue": [225, 335], "minSaturation": 0.12, "to": 212, "spread": 1, "saturation": 1.1, "value": 1.1}]}},
+    {"id": "monster_geode_golem_heart", "kind": "monster", "derive": {"from": "monster_geode_golem", "recolor": [{"hue": [225, 335], "minSaturation": 0.12, "to": 352, "spread": 1, "saturation": 1.1, "value": 1.1}, {"maxSaturation": 0.12, "minSaturation": 0, "to": 15, "saturation": 2.5, "value": 0.85}]}},
     {
       "id": "monster_floating_geode",
       "kind": "monster",

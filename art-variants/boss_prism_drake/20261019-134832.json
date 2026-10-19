@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 4,
+    "prompt": "majestic mythical crystal dragon, great spread wings of glowing prismatic crystal, long swept-back pearl horns, pearl white scales shimmering with rainbow light, a shining star gem on its chest, long elegant tail, boss monster, fantasy, chibi",
+    "prompt_style": "rd_plus__low_res",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792417710,
+    "credit_cost": 8,
+    "balance_cost": 0.24,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 40.151,
+    "request_id": "5bc94995-2e18-457e-9b55-7188f622814b",
+    "outputs_retained_until": 1792504087
+  }
+}

@@ -79,11 +79,11 @@ enum GearOverlay {
                           gear: gear, piece: capes[row])
                 }
                 if gear.scarf != nil, row < scarves.count {
-                    scarf(&out, body: body, origin: (column * frame, row * frame), size: frame, facing: facing,
+                    scarf(&out, body: body, base: base, origin: (column * frame, row * frame), size: frame, facing: facing,
                           piece: scarves[row], front: (column * frame, (frontRow ?? row) * frame))
                 }
                 if gear.hat != nil, row < pieces.count {
-                    hat(&out, body: body, origin: (column * frame, row * frame), size: frame, facing: facing,
+                    hat(&out, body: body, base: base, origin: (column * frame, row * frame), size: frame, facing: facing,
                         kind: gear.hat ?? "", piece: pieces[row])
                 }
             }
@@ -406,9 +406,15 @@ enum GearOverlay {
                 }
             }
         case "fur":
-            // White fur round the hood's opening (and the cape's hem, drawn with the cape).
+            // White fur round the hood's opening: the hood next to the face (and the cape's hem, drawn
+            // with the cape). Its dark pixels made a white wedge down the side, like a wing.
+            func bare(_ x: Int, _ y: Int) -> Bool {
+                guard opaque(x, y) else { return false }
+                let (h, s, v) = hsv(base.rgb(origin.x + x, origin.y + y))
+                return (h <= 40 || h >= 342) && s > 0.12 && s < 0.65 && v > 0.55
+            }
             for y in 0..<size {
-                for x in 0..<size where isMark(x, y) && hsv(base.rgb(origin.x + x, origin.y + y)).2 < 0.5 {
+                for x in 0..<size where isMark(x, y) && (bare(x + 1, y) || bare(x - 1, y) || bare(x, y + 1) || bare(x, y - 1)) {
                     put(x, y, fur(x, y))
                 }
             }
@@ -769,13 +775,15 @@ enum GearOverlay {
     /// (art/sprites/wear_scarf.png, what's under its wearer's chin, cut out by tools/wear_art.py) in its
     /// colour, under the chin as drawn (armour with a sheet of its own draws its head higher or lower than
     /// the plain body; from behind, the chin found on the frame facing you, `front`), across the middle
-    /// of the body at the shoulders. tools/gear_preview.py `scarf`.
-    nonisolated private static func scarf(_ out: inout Bitmap, body: Bitmap, origin: (x: Int, y: Int), size: Int,
+    /// of the body at the shoulders. The chin is found on `base`, the sprite before any recolouring:
+    /// the skin test knows the sheets' own fair skin, not a darker tone the hero chose.
+    /// tools/gear_preview.py `scarf`.
+    nonisolated private static func scarf(_ out: inout Bitmap, body: Bitmap, base: Bitmap, origin: (x: Int, y: Int), size: Int,
                                           facing: String, piece: Piece, front: (x: Int, y: Int)) {
         let at = facing == "up" ? front : origin
         guard piece.box != nil, let figure = Self.figure(body, origin: origin, size: size),
               let found = Self.head(body, origin: at, size: size) else { return }
-        let chin = Self.face(out, origin: at, size: size, found: found)?.low ?? found.chin
+        let chin = Self.face(base, origin: at, size: size, found: found)?.low ?? found.chin
         let dy = chin - chinY, dx = (figure.left + figure.right) / 2 - anchorX
         for y in 0..<size {
             for x in 0..<size {
@@ -792,9 +800,11 @@ enum GearOverlay {
     /// on the widest row of the head as drawn over the eyes, as wide as the scalp and a little more, over
     /// all the hair above it. A mask (none from behind) goes over the face, its eye holes on the eyes,
     /// found on the face as drawn (armour with a sheet of its own has a face of its own), no wider or
-    /// taller than the face, a little over a beard, and from the side as far forward as it reaches.
-    /// tools/gear_preview.py `hat`.
-    nonisolated private static func hat(_ out: inout Bitmap, body: Bitmap, origin: (x: Int, y: Int), size: Int,
+    /// taller than the face, a little over a beard, and from the side as far forward as it reaches. The
+    /// face is found on `base`, the sprite before any recolouring: the skin test knows the sheets' own
+    /// fair skin, not a darker tone the hero chose (it found no face on a deep one, and the mask slid
+    /// off it). tools/gear_preview.py `hat`.
+    nonisolated private static func hat(_ out: inout Bitmap, body: Bitmap, base: Bitmap, origin: (x: Int, y: Int), size: Int,
                                         facing: String, kind: String, piece: Piece) {
         guard piece.box != nil else { return }
         guard let found = Self.head(body, origin: origin, size: size) else { return }
@@ -818,10 +828,10 @@ enum GearOverlay {
             }
         }
         if kind == "mask" {
-            guard let seen = Self.face(out, origin: origin, size: size, found: found),
+            guard let seen = Self.face(base, origin: origin, size: size, found: found),
                   let first = seen.middles.first, let last = seen.middles.last else { return }
             let eyeTop = seen.eyeTop, low = seen.low, high = seen.high, span = seen.span
-            func facial(_ x: Int, _ y: Int) -> Bool { seen.shows(out, origin: origin, x, y) }
+            func facial(_ x: Int, _ y: Int) -> Bool { seen.shows(base, origin: origin, x, y) }
             let anchor = switch facing {
             case "right": seen.middles.max() ?? last
             case "left": seen.middles.min() ?? first

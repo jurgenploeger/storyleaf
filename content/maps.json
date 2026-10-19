@@ -17903,18 +17903,15 @@
           5
         ],
         "monsters": {
-          "wisp": 3,
-          "pegasus": 2,
-          "golden_cloud": 2,
-          "dream_phantom": 2,
-          "lotus_sprite": 1,
           "star_moth": 4,
+          "comet_hare": 4,
+          "lantern_sprite": 3,
           "nebula_puff": 3,
           "crystal_quill": 3,
-          "rosy_wisp": 1,
-          "rosy_pegasus": 1,
-          "azure_golden_cloud": 1,
-          "dawn_starmoth": 1
+          "pegasus": 2,
+          "dawn_starmoth": 1,
+          "dusk_comet_hare": 1,
+          "moonlamp_sprite": 1
         }
       },
       "decor": [
@@ -18301,10 +18298,11 @@
         ],
         "monsters": {
           "prism_crab": 4,
+          "shardwing_bat": 4,
           "floating_geode": 3,
           "crystal_serpent": 3,
-          "crystal_quill": 2,
-          "nebula_puff": 1
+          "geode_golem": 2,
+          "crystal_quill": 1
         }
       },
       "npcs": [
@@ -18545,11 +18543,13 @@
           7
         ],
         "monsters": {
-          "prism_crab": 2,
-          "floating_geode": 3,
+          "rosequartz_bat": 3,
           "crystal_serpent": 3,
-          "crystal_quill": 3,
-          "nebula_puff": 2
+          "floating_geode": 3,
+          "geode_golem": 2,
+          "sapphire_golem": 3,
+          "shardwing_bat": 1,
+          "prism_crab": 1
         }
       },
       "ambience": {
@@ -18827,11 +18827,12 @@
           7
         ],
         "monsters": {
-          "prism_crab": 2,
-          "floating_geode": 3,
-          "crystal_serpent": 3,
-          "crystal_quill": 3,
-          "nebula_puff": 2
+          "gloomwing_bat": 4,
+          "heartstone_golem": 3,
+          "sapphire_golem": 2,
+          "rosequartz_bat": 2,
+          "crystal_serpent": 2,
+          "floating_geode": 2
         }
       },
       "ambience": {

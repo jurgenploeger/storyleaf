@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 2,
+    "prompt": "small white star rabbit with long ears and a glowing pale blue comet tail streaming behind it, a tiny gold star on its forehead, chibi, cute monster",
+    "prompt_style": "rd_plus__low_res",
+    "width": 40,
+    "height": 40,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792416983,
+    "credit_cost": 4,
+    "balance_cost": 0.12,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 40.751,
+    "request_id": "d6413b2d-f106-4f2c-8c0a-26d01f91cdfa",
+    "outputs_retained_until": 1792503366
+  }
+}

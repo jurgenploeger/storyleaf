@@ -141,10 +141,16 @@ def detail(f, b, m, a, facing, pattern, wear, mid, acc, box):
                         f[yy, xx, :3] = (0.16, 0.12, 0.18)
                         f[yy, xx, 3] = 1
     elif pattern == 'fur':
-        # White fur round the hood's opening (and the cape's hem, drawn with the cape).
+        # White fur round the hood's opening: the hood next to the face (and the cape's hem, drawn
+        # with the cape). Its dark pixels made a white wedge down the side, like a wing.
+        def bare(yy, xx):
+            if not (0 <= yy < FRAME and 0 <= xx < FRAME) or b[yy, xx, 3] < 0.5:
+                return False
+            hh, ss, vv = hsv(tuple(b[yy, xx, :3]))
+            return (hh <= 40 / 360 or hh >= 342 / 360) and 0.12 < ss < 0.65 and vv > 0.55
         for y in range(FRAME):
             for x in range(FRAME):
-                if is_mark(b[y, x]) and hsv(tuple(b[y, x, :3]))[2] < 0.5:
+                if is_mark(b[y, x]) and any(bare(y + dy, x + dx) for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1))):
                     f[y, x, :3] = fur(x, y)
     elif pattern == 'runes':
         # Glowing runes: a stitched band down the front, and marks along the hem.
@@ -594,12 +600,13 @@ def face(f, cells, top, chin):
     return eye, mids, high, low, facial, span
 
 
-def scarf(body, out, colour):
+def scarf(body, out, colour, base=None):
     """A festive scarf (a necklace that wears `scarf`; GearOverlay.scarf) round the neck, over
     everything: the piece Retro Diffusion drew (art/sprites/wear_scarf.png), what's under its wearer's
     chin, in its colour, put under the chin as drawn (armour with a sheet of its own draws its head
     higher or lower than the plain body; from behind, the chin found from the front), across the middle
-    of the body at the shoulders."""
+    of the body at the shoulders. The chin is found on `base`, the sprite before any recolouring (the
+    game's `original`): the skin test knows the sheets' own fair skin, not a darker tone the hero chose."""
     sheet = piece_sheet("scarf")
 
     def chin_of(row, c):
@@ -609,7 +616,7 @@ def scarf(body, out, colour):
         found = head(body[oy:oy + FRAME, ox:ox + FRAME])
         if found is None:
             return None
-        seen = face(out[oy:oy + FRAME, ox:ox + FRAME], found[2], found[0], found[1])
+        seen = face((out if base is None else base)[oy:oy + FRAME, ox:ox + FRAME], found[2], found[0], found[1])
         return seen[3] if seen else found[1]
     chins = {(row, c): chin_of(row, c) for row in range(len(DIRS)) for c in range(body.shape[1] // FRAME)}
     for row, facing in enumerate(DIRS):
@@ -630,7 +637,7 @@ def scarf(body, out, colour):
     return out
 
 
-def hat(body, out, kind, colour, trim=None):
+def hat(body, out, kind, colour, trim=None, base=None):
     """A festive hat on the head (GearOverlay.hat), every frame: a piece Retro Diffusion drew on a
     hero (art/sprites/wear_<kind>.png, cut out by tools/wear_art.py), fitted to the head as drawn, hair
     and all, measured on the plain body (the scalp, the eyes) and on `out` before the hat goes on.
@@ -638,7 +645,10 @@ def hat(body, out, kind, colour, trim=None):
     on the head's widest row over the eyes, as wide as the scalp and a little more, over all the hair
     above it. A mask (none from behind) goes over the face, its eye holes on the
     eyes, found on the face as drawn (armour with a sheet of its own has a face of its own), no wider
-    or taller than the face, a little over a beard, and from the side as far forward as it reaches."""
+    or taller than the face, a little over a beard, and from the side as far forward as it reaches. The
+    face is found on `base`, the sprite before any recolouring (the game's `original`): the skin test
+    knows the sheets' own fair skin, not a darker tone the hero chose (it found no face on a deep one,
+    and the mask slid off it)."""
     sheet = piece_sheet(kind)
     for row, facing in enumerate(DIRS):
         piece = painted(sheet[row * FRAME:(row + 1) * FRAME], colour, trim)
@@ -663,7 +673,7 @@ def hat(body, out, kind, colour, trim=None):
                         f[y + dy, x + dx, 3] = 1
 
             if kind == 'mask':
-                seen = face(f, cells, top, chin)
+                seen = face(f if base is None else base[oy:oy + FRAME, ox:ox + FRAME], cells, top, chin)
                 if seen is None:
                     continue
                 oy_, mids, high, low, facial, span = seen
@@ -904,11 +914,12 @@ def capes(out):
     print(f"wrote {out}: {', '.join(i['id'] for i in capes_)}")
 
 
-def dressed(race, body, style, armour=None, worn=()):
+def dressed(race, body, style, armour=None, worn=(), skin=None):
     """A hero as the game draws them (GameSession.layers and registerArt): paper-doll layers, or an
     armour's own sheet over the hair from a fifth of the way down the head (nape_*); then the cut,
     and the gloves, boots, necklace and festive hat in `worn`, found on the plain body the armour is
-    drawn on."""
+    drawn on. `skin` is a skin tone's id (appearance.json `skin`): its recolour goes on the body, or on
+    the armour's sheet, as the game's does, never on the hair."""
     import pathlib
     import sys
     from PIL import Image
@@ -918,22 +929,37 @@ def dressed(race, body, style, armour=None, worn=()):
 
     def load(name):
         return Image.open(sprites / f"{name}.png").convert("RGBA")
+    import json
+    tones = json.load(open(sprites.parent.parent / "content" / "appearance.json"))["skin"]
+    tone = next((t.get("recolor") or [] for t in tones if t["id"] == skin), [])
+
+    def array(img):
+        return np.asarray(img).astype(float) / 255
+
+    def stacked(layers):
+        """Layers (arrays) drawn on each other, bottom first."""
+        img = Image.fromarray((np.clip(layers[0], 0, 1) * 255).round().astype(np.uint8), "RGBA")
+        for layer in layers[1:]:
+            img.alpha_composite(Image.fromarray((np.clip(layer, 0, 1) * 255).round().astype(np.uint8), "RGBA"))
+        return array(img)
     sheet = (armour or {}).get("sheets", {}).get(race)
     if sheet:
-        image = load(f"nape_{style}_{body}")
-        image.alpha_composite(load(sheet))
-        base = np.asarray(image).astype(float) / 255
-        out = pp.recolor(base, armour["tint"]) if armour.get("tint") else base.copy()
+        nape, worn_sheet = array(load(f"nape_{style}_{body}")), array(load(sheet))
+        base = stacked([nape, worn_sheet])
+        rules = tone + (armour.get("tint") or [])
+        out = stacked([nape, pp.recolor(worn_sheet, rules)]) if rules else base.copy()
         skeleton = f"body_{race}"
     else:
         # A festive hat sits on the hair, in place of a helmet or hood.
         hatted = any(item["type"] == "head" for item in worn)
         head = None if hatted else {"plate": "helmet", "cloak": "hood"}.get((armour or {}).get("wear"))
-        image = load(f"body_{body}")
-        for layer in (f"locks_{body}", f"{head}_{body}" if head else f"hair_{style}_{body}"):
-            image.alpha_composite(load(layer))
-        base = np.asarray(image).astype(float) / 255
-        out = pp.recolor(base, armour["recolor"]) if armour and armour.get("recolor") else base.copy()
+        layers = [array(load(name)) for name in (f"body_{body}", f"locks_{body}", f"{head}_{body}" if head else f"hair_{style}_{body}")]
+        base = stacked(layers)
+        # The skin tone and the armour's colours on the body only (GameSession.bodyRules), and the
+        # armour's on a helmet or hood too.
+        rules = tone + ((armour or {}).get("recolor") or [])
+        top = pp.recolor(layers[2], armour["recolor"]) if head and armour and armour.get("recolor") else layers[2]
+        out = stacked([pp.recolor(layers[0], rules) if rules else layers[0], layers[1], top])
         if armour:
             out = apply(base, out, armour.get("wear"), armour.get("accent"), pattern=armour.get("pattern"))
         skeleton = f"body_{body}"
@@ -947,14 +973,16 @@ def dressed(race, body, style, armour=None, worn=()):
     if "cape" in pieces:
         out = cape(base, out, pieces["cape"]["color"], pieces["cape"]["accent"])
     if wrap:
-        out = scarf(plain, out, wrap["color"])
+        out = scarf(plain, out, wrap["color"], base)
     if "head" in pieces:
-        out = hat(plain, out, pieces["head"]["hat"], pieces["head"]["color"], pieces["head"].get("accent"))
+        out = hat(plain, out, pieces["head"]["hat"], pieces["head"]["color"], pieces["head"].get("accent"), base)
     return out
 
 
 BODIES = [("human", "human", "spiky"), ("human", "human_female", "ponytail"), ("elf", "elf", "long"),
           ("elf", "elf_male", "swept"), ("dwarf", "dwarf", "crop"), ("dwarf", "dwarf_female", "braids")]
+# Every skin tone (appearance.json `skin`), taken in turn across the --wear grid.
+SKINS = ["fair", "rosy", "tan", "brown", "deep"]
 # One armour of every cut, and every walk sheet of its own: what a wearable must fit over.
 OUTFITS = [None, "leather_vest", "copper_hide", "chain_mail", "mage_robe", "ranger_cloak", "snow_cloak",
            "iron_plate", "dragon_mail"]
@@ -962,8 +990,9 @@ OUTFITS = [None, "leather_vest", "copper_hide", "chain_mail", "mage_robe", "rang
 
 def wear_sheet(out, worn_ids):
     """The wearables `worn_ids` (a hat, a cape, ...) on every body (each race, each gender) under every
-    armour cut and sheet (OUTFITS, a row each), facing down, right, up and left, drawn in the game's
-    order: what docs/sprite-acceptance.md asks to look at before a wearable ships."""
+    armour cut and sheet (OUTFITS, a row each), facing down, right, up and left, in every skin tone in
+    turn, drawn in the game's order: what docs/sprite-acceptance.md asks to look at before a wearable
+    ships."""
     import json
     import pathlib
     from PIL import Image
@@ -973,7 +1002,7 @@ def wear_sheet(out, worn_ids):
     sheet = Image.new("RGB", (len(BODIES) * 4 * 48 * zoom + (len(BODIES) - 1) * 8, len(OUTFITS) * 48 * zoom), (80, 130, 80))
     for r, outfit in enumerate(OUTFITS):
         for k, (race, body, style) in enumerate(BODIES):
-            img = dressed(race, body, style, items.get(outfit), [items[i] for i in worn_ids])
+            img = dressed(race, body, style, items.get(outfit), [items[i] for i in worn_ids], skin=SKINS[(r + k) % len(SKINS)])
             image = Image.fromarray((np.clip(img, 0, 1) * 255).round().astype(np.uint8), "RGBA")
             for c, row in enumerate((2, 1, 0, 3)):   # down, right, up, left
                 frame = image.crop((0, row * 48, 48, row * 48 + 48)).resize((48 * zoom, 48 * zoom), Image.NEAREST)

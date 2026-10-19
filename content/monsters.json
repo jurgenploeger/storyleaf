@@ -3887,6 +3887,320 @@
           "chance": 0.05
         }
       ]
+    },
+    {
+      "id": "comet_hare",
+      "name": "Comet Hare",
+      "art": "monster_comet_hare",
+      "element": "light",
+      "lore": "A hare that hops so fast across the isle's meadows that it leaves a tail of starlight behind it. The fairies say a fallen star taught it to run.",
+      "base": {
+        "hp": 104,
+        "mp": 44,
+        "attack": 30,
+        "defense": 18,
+        "magic": 30,
+        "speed": 48
+      },
+      "growth": {
+        "hp": 10,
+        "mp": 4,
+        "attack": 2,
+        "defense": 2,
+        "magic": 2,
+        "speed": 3
+      },
+      "exp": 64,
+      "gold": 38,
+      "captureRate": 0.22,
+      "skills": [
+        "flash",
+        "bounce"
+      ],
+      "motion": "hop"
+    },
+    {
+      "id": "dusk_comet_hare",
+      "name": "Dusk Comet Hare",
+      "art": "monster_comet_hare_dusk",
+      "element": "light",
+      "lore": "A Comet Hare that only runs at sunset. Its tail glows gold instead of blue, and it's gone before you can blink.",
+      "base": {
+        "hp": 135,
+        "mp": 57,
+        "attack": 39,
+        "defense": 23,
+        "magic": 39,
+        "speed": 62
+      },
+      "growth": {
+        "hp": 11,
+        "mp": 5,
+        "attack": 3,
+        "defense": 2,
+        "magic": 3,
+        "speed": 4
+      },
+      "exp": 102,
+      "gold": 61,
+      "captureRate": 0.13,
+      "skills": [
+        "flash",
+        "bounce"
+      ],
+      "motion": "hop",
+      "rare": true,
+      "variantOf": "comet_hare"
+    },
+    {
+      "id": "lantern_sprite",
+      "name": "Lantern Sprite",
+      "art": "monster_lantern_sprite",
+      "element": "fire",
+      "lore": "A moth-winged sprite that carries a lantern lit from the fallen star. It leads lost travellers home, or deeper into the woods if it's feeling cheeky.",
+      "base": {
+        "hp": 92,
+        "mp": 56,
+        "attack": 22,
+        "defense": 16,
+        "magic": 42,
+        "speed": 40
+      },
+      "growth": {
+        "hp": 9,
+        "mp": 5,
+        "attack": 2,
+        "defense": 2,
+        "magic": 3,
+        "speed": 2
+      },
+      "exp": 64,
+      "gold": 38,
+      "captureRate": 0.22,
+      "skills": [
+        "ember",
+        "gust"
+      ],
+      "motion": "sway"
+    },
+    {
+      "id": "moonlamp_sprite",
+      "name": "Moonlamp Sprite",
+      "art": "monster_lantern_sprite_moon",
+      "element": "fire",
+      "lore": "A Lantern Sprite whose flame burns cold and blue. It only comes out on moonless nights, to stand in for the moon.",
+      "base": {
+        "hp": 120,
+        "mp": 73,
+        "attack": 29,
+        "defense": 21,
+        "magic": 55,
+        "speed": 52
+      },
+      "growth": {
+        "hp": 10,
+        "mp": 6,
+        "attack": 2,
+        "defense": 2,
+        "magic": 4,
+        "speed": 3
+      },
+      "exp": 102,
+      "gold": 61,
+      "captureRate": 0.13,
+      "skills": [
+        "ember",
+        "gust"
+      ],
+      "motion": "sway",
+      "rare": true,
+      "variantOf": "lantern_sprite"
+    },
+    {
+      "id": "shardwing_bat",
+      "name": "Shardwing Bat",
+      "art": "monster_shardwing_bat",
+      "element": "dark",
+      "lore": "A bat whose wings grew crystal in the Glimmerdeep's dark. It hangs from the ceiling in rows, chiming softly when it shivers.",
+      "base": {
+        "hp": 118,
+        "mp": 40,
+        "attack": 40,
+        "defense": 26,
+        "magic": 22,
+        "speed": 46
+      },
+      "growth": {
+        "hp": 11,
+        "mp": 4,
+        "attack": 3,
+        "defense": 2,
+        "magic": 2,
+        "speed": 3
+      },
+      "exp": 66,
+      "gold": 40,
+      "captureRate": 0.22,
+      "skills": [
+        "shadow_bite",
+        "gust"
+      ],
+      "motion": "sway"
+    },
+    {
+      "id": "rosequartz_bat",
+      "name": "Rosequartz Bat",
+      "art": "monster_shardwing_bat_rose",
+      "element": "dark",
+      "lore": "Shardwing Bats from the Depths, where the crystal blushes pink. They're bigger and bolder than their cousins up top.",
+      "base": {
+        "hp": 130,
+        "mp": 44,
+        "attack": 44,
+        "defense": 29,
+        "magic": 24,
+        "speed": 50
+      },
+      "growth": {
+        "hp": 12,
+        "mp": 4,
+        "attack": 3,
+        "defense": 2,
+        "magic": 2,
+        "speed": 3
+      },
+      "exp": 74,
+      "gold": 45,
+      "captureRate": 0.2,
+      "skills": [
+        "shadow_bite",
+        "evil_eye"
+      ],
+      "motion": "sway"
+    },
+    {
+      "id": "gloomwing_bat",
+      "name": "Gloomwing Bat",
+      "art": "monster_shardwing_bat_gloom",
+      "element": "dark",
+      "lore": "Down by the Glimmerdeep's heart, where no light has ever reached, the bats' crystal wings have gone as dark as the night sky.",
+      "base": {
+        "hp": 142,
+        "mp": 48,
+        "attack": 48,
+        "defense": 32,
+        "magic": 26,
+        "speed": 54
+      },
+      "growth": {
+        "hp": 13,
+        "mp": 4,
+        "attack": 3,
+        "defense": 3,
+        "magic": 2,
+        "speed": 3
+      },
+      "exp": 82,
+      "gold": 50,
+      "captureRate": 0.18,
+      "skills": [
+        "shadow_bite",
+        "evil_eye"
+      ],
+      "motion": "sway"
+    },
+    {
+      "id": "geode_golem",
+      "name": "Geode Golem",
+      "art": "monster_geode_golem",
+      "element": "earth",
+      "lore": "A little golem made of cave rock, with amethyst growing out of its back. It collects pretty stones and gets very upset if you take one.",
+      "base": {
+        "hp": 140,
+        "mp": 20,
+        "attack": 36,
+        "defense": 48,
+        "magic": 12,
+        "speed": 14
+      },
+      "growth": {
+        "hp": 13,
+        "mp": 2,
+        "attack": 3,
+        "defense": 3,
+        "magic": 1,
+        "speed": 1
+      },
+      "exp": 66,
+      "gold": 40,
+      "captureRate": 0.2,
+      "skills": [
+        "rock_throw",
+        "mud_shot"
+      ],
+      "motion": "breathe"
+    },
+    {
+      "id": "sapphire_golem",
+      "name": "Sapphire Golem",
+      "art": "monster_geode_golem_sapphire",
+      "element": "earth",
+      "lore": "A Geode Golem from the Depths, its crystals blue as deep water. It sits so still that miners have built shelves on it.",
+      "base": {
+        "hp": 154,
+        "mp": 22,
+        "attack": 40,
+        "defense": 53,
+        "magic": 13,
+        "speed": 15
+      },
+      "growth": {
+        "hp": 14,
+        "mp": 2,
+        "attack": 3,
+        "defense": 4,
+        "magic": 1,
+        "speed": 1
+      },
+      "exp": 74,
+      "gold": 45,
+      "captureRate": 0.18,
+      "skills": [
+        "rock_throw",
+        "mud_shot"
+      ],
+      "motion": "breathe"
+    },
+    {
+      "id": "heartstone_golem",
+      "name": "Heartstone Golem",
+      "art": "monster_geode_golem_heart",
+      "element": "earth",
+      "lore": "The oldest golems keep watch at the Glimmerdeep's heart, their crystals glowing red as embers. They say the Prism Drake raised them.",
+      "base": {
+        "hp": 168,
+        "mp": 24,
+        "attack": 44,
+        "defense": 58,
+        "magic": 14,
+        "speed": 16
+      },
+      "growth": {
+        "hp": 15,
+        "mp": 2,
+        "attack": 4,
+        "defense": 4,
+        "magic": 1,
+        "speed": 1
+      },
+      "exp": 82,
+      "gold": 50,
+      "captureRate": 0.16,
+      "skills": [
+        "rock_throw",
+        "ember"
+      ],
+      "motion": "breathe"
     }
   ]
 }
