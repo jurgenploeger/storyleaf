@@ -2,14 +2,14 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
-      "version": "0.7.42",
+      "version": "0.7.43",
       "date": "2026-10-19",
       "title": "Into the deep",
       "notes": [
         "The Glimmerdeep goes two levels deeper, down ladders to its heart, where the Prism Drake sleeps. Its caves glitter with crystal, and Pip can draw you a map of them all.",
         "Every cave has a map of its own: tap the minimap to see what you've explored.",
         "Quests are numbered and marked with a gold star, and the Quests page can search, sort and filter them.",
-        "Tidier Character and Companions screens, and recoloured monsters and characters take their new colour all over.",
+        "Tidier Character and Companions screens, gentler dwarf faces, and recoloured monsters and characters take their new colour all over.",
         "What's new sums up each big update in a few lines."
       ]
     },

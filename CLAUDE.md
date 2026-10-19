@@ -83,8 +83,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   dyes every shade of the locks and hair (appearance.json `hairLayer`), never the body. Armour with a walk sheet
   of its own goes over `nape_<style>_<body>` (the hair from a fifth of the way down the head), so long hair
   shows below the helmet. `TOWNSFOLK` sheets no hero wears are split too (`dwarf_npc`: the old bearded dwarf,
-  his own mop as `hair_dwarf_npc`). Rerun after changing a race's sheet, and look at `--preview` before
-  committing. Gloves, boots and necklaces are painted on by GearOverlay (`tools/gear_preview.py --trinkets`),
+  his own mop as `hair_dwarf_npc`). The dwarves' sheets (`SOFT_BROWS`) are drawn with heavy brows: they're
+  softened on the body layer after the split (`soften_brows`), so the hair layers stay as the sheet has them.
+  Rerun after changing a race's sheet, and look at `--preview` before committing. Gloves, boots and necklaces are painted on by GearOverlay (`tools/gear_preview.py --trinkets`),
   and so are the festive seasons' hats, measured on each frame's head (`GearOverlay.hat`, `--hats`).
 - `tools/rd.py`: Retro Diffusion client. `rd.py edit` inpaints a mask of an existing sheet (pilot 2026-10-19: inpainting
   of walk sheets is a dead end: faces, about 10 px wide, come out muddy, and armour or a robe painted onto a hero comes

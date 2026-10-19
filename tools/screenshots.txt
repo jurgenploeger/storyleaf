@@ -205,6 +205,8 @@ hair_dwarf_female | newgame,race=dwarf,gender=female,hair=white                |
 look_male_ponytail | titlepage=create,gender=male,style=ponytail  | 6
 look_female_elf_swept | titlepage=create,race=elf,gender=female,style=swept,hair=black | 6
 look_female_dwarf | titlepage=create,race=dwarf,gender=female,hair=blue | 6
+# The dwarves' softened brows (0.7.43): the boy on the create page.
+look_male_dwarf | titlepage=create,race=dwarf,gender=male,hair=black | 6
 # Recolours with nothing of the original left (0.7.41): a black-haired girl's ponytail and a dwarf girl's
 # braids to their palest strands, and Golden Plate gold on a dwarf.
 colours_ponytail | newgame,gender=female,hair=black,weather=clear,hour=12 | 8

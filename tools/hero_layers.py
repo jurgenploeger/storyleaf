@@ -22,7 +22,9 @@ body is recoloured like the whole sheet used to be (skin, hair, outfit); the loc
 hold nothing but hair, so the hair colour reaches every shade of them (appearance.json
 `hairLayer`). A style moved onto another head is lined up with its skull and brow, kept off its
 face, opened where an elf's ears poke through, and painted in that sheet's own hair colours, so
-one head has one hair colour before any dye. Rerun after changing a walk sheet:
+one head has one hair colour before any dye. The dwarves' heavy brows are softened on the body
+layer once it's split (SOFT_BROWS), never on the sheet, so the split reads the sheet as drawn.
+Rerun after changing a walk sheet:
 
     python3 tools/hero_layers.py            # writes the PNGs
     python3 tools/hero_layers.py --preview /tmp/layers.png
@@ -53,6 +55,15 @@ STYLES = {
     "braids": ("dwarf", "dwarf_female_walk"), "bob": ("human", "human_other_walk"),
     "shoulder": ("elf", "elf_other_walk"), "messy": ("dwarf", "dwarf_other_walk"),
 }
+# Sheets drawn with heavy brows (a near-black line on the eyes; playtesting 2026-10-19: "a forehead
+# sticking out ... too barbaric"), softened on the body layer only (soften_brows): the split reads
+# the sheet as drawn, so no hair moves between layers.
+SOFT_BROWS = {"dwarf_walk", "dwarf_female_walk", "dwarf_npc_walk"}
+# The softened brow: the skin's own hue, darker and greyer (value, saturation), so no hair rule takes
+# it for hair (hairish wants saturation 0.3 and up) and the skin tone recolours it with the face.
+# The lash left over a pupil is near-black.
+BROW_SHADE = (0.55, 0.28)
+LASH = np.array([0x2A, 0x22, 0x20]) / 255
 # Walk sheets no hero wears but townsfolk do (art/assets.json `derive` with `layers`), as (race,
 # sheet): split the same way, their own hair kept as hair_<body> (an old dwarf's bushy mop; his
 # beard is his locks).
@@ -351,6 +362,11 @@ class Race:
         self._steady(found)
         for (row, col), (take, beard) in found.items():
             self._cut(row, col, take, beard)
+        if sheet_id in SOFT_BROWS:
+            # Only where the body still shows the sheet as drawn (not a scalp painted in).
+            soft = soften_brows(self)
+            keep = (np.abs(soft - self.sheet).max(2) > 1e-6) & (np.abs(self.body - self.sheet).max(2) < 1e-6)
+            self.body[keep] = soft[keep]
 
     def _bearded(self, down, top):
         brow = top + self.drop
@@ -552,6 +568,47 @@ class Race:
             seen |= piece
             if piece.sum() <= 12 and not (piece & ~near).any():
                 body[piece] = 0
+
+
+def brow_colour(skin):
+    h, s, v = colorsys.rgb_to_hsv(*skin)
+    return np.array(colorsys.hsv_to_rgb(h, BROW_SHADE[1], v * BROW_SHADE[0]))
+
+
+def soften_brows(race):
+    """A copy of the race's sheet with the brows lifted off the eyes (SOFT_BROWS): the near-black
+    line on the eyes (dark pixels right above an eye's white, and those joined to them along the
+    row) is skin again, a thin lash stays over each pupil, and a soft brow in a darker shade of the
+    skin sits a row above, every frame but the back views. The hair's own shadow stays as it is."""
+    sheet = race.sheet.copy()
+
+    def line_pixel(f, y, x):
+        return 0 <= y < F and lo - 1 <= x <= hi + 1 and dark(f[y, x]) and not lockish(f[y, x])
+
+    for (row, col), head in race.heads.items():
+        if head.facing == "up":
+            continue
+        f = frame(sheet, row, col)
+        lo, hi = head.face if head.face else (int(head.cx - head.half), int(head.cx + head.half))
+        rows = range(head.brow, min(F - 1, head.brow + 8))
+        whites = [(y, x) for y in rows for x in range(max(0, lo - 1), min(F, hi + 2))
+                  if opaque(f[y, x]) and hsv(f[y, x])[1] < 0.12 and hsv(f[y, x])[2] > 0.9]
+        skins = [f[y, x, :3] for y in rows for x in range(max(0, lo), min(F, hi + 1)) if is_skin(f[y, x])]
+        if not whites or not skins:
+            continue
+        skin = np.median(skins, axis=0)
+        line = {(y - 1, x) for y, x in whites if line_pixel(f, y - 1, x)}
+        grown = True
+        while grown:
+            more = {(y, x + d) for y, x in line for d in (-1, 1) if line_pixel(f, y, x + d)} - line
+            line |= more
+            grown = bool(more)
+        for y, x in sorted(line):
+            below = f[y + 1, x]
+            f[y, x, :3] = LASH if opaque(below) and hsv(below)[2] < 0.45 else skin
+            if y >= 1 and is_skin(f[y - 1, x]):
+                f[y - 1, x, :3] = brow_colour(skin)
+    return sheet
 
 
 def mix(c, d, t):
