@@ -616,13 +616,11 @@ def shade_map(src, dst):
 
 def crown_colours(race):
     """The colours of the hair on top of the head (crown to brow, every frame): what every style has,
-    unlike a long style's shadowy back. Only shades a hair dye reaches (appearance.json `hairLayer`):
-    a moved style's palest tips took the skin showing through the crown, and stayed pink when dyed."""
+    unlike a long style's shadowy back."""
     rows = []
     for (row, col), head in race.heads.items():
         hair = frame(race.hair, row, col)
-        rows += [hair[y, x, :3] for y in range(head.top, head.brow) for x in range(F)
-                 if opaque(hair[y, x]) and dyeable(hair[y, x])]
+        rows += [hair[y, x, :3] for y in range(head.top, head.brow) for x in range(F) if opaque(hair[y, x])]
     return np.array(rows)
 
 
@@ -637,11 +635,18 @@ def dyeable(p):
 def recolour_to(layer, source, target):
     """Paints a moved hairstyle in the target sheet's own hair colours: each pixel takes the target's
     colour at the rank of brightness it has on the source, crown matched to crown, so the shading
-    stays and one head has one hair colour."""
-    to = shade_map(crown_colours(source), crown_colours(target))
+    stays and one head has one hair colour. A shade no hair dye reaches (the skin showing through the
+    target's crown, which the palest tips took, so they stayed pink when dyed) gives way to the
+    nearest in brightness that one does; the near-black outline stays, as it's dark whatever the dye."""
+    crown = crown_colours(target)
+    to = shade_map(crown_colours(source), crown)
+    reachable = np.array([c for c in crown if dyeable(c)])
     out = layer.copy()
     for y, x in zip(*np.nonzero(layer[:, :, 3] > 0.5)):
-        out[y, x, :3] = to(layer[y, x, :3])
+        c = to(layer[y, x, :3])
+        if not dyeable(c) and hsv(c)[2] >= HAIR_LAYER["minValue"]:
+            c = reachable[np.argmin(np.abs(reachable @ LUMA - c @ LUMA))]
+        out[y, x, :3] = c
     return out
 
 
