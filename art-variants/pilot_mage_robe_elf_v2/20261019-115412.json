@@ -1,0 +1,21 @@
+{
+  "request": {
+    "prompt": "cute chibi elf adventurer kid with long pointy ears, a young child with a smooth bare face showing, pale skin, big eyes, no beard, no moustache, no mask, wearing a long flowing royal blue wizard robe down to the feet with gold trim, a blue hood pulled up under a tall pointed blue wizard hat, the hair hidden, brown boots",
+    "prompt_style": "rd_animation__four_angle_walking",
+    "width": 48,
+    "height": 48,
+    "return_spritesheet": true,
+    "num_images": 1
+  },
+  "result": {
+    "created_at": 1792410851,
+    "credit_cost": 10,
+    "balance_cost": 0.07,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 41.081,
+    "request_id": "e93225b4-02e8-448b-974d-6498caff2dbb",
+    "outputs_retained_until": 1792497227
+  }
+}

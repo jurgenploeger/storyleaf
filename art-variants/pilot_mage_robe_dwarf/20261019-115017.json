@@ -1,0 +1,21 @@
+{
+  "request": {
+    "prompt": "cute chibi dwarf adventurer kid, very short and chubby with round rosy cheeks, clean-shaven with no beard, wearing a long flowing royal blue wizard robe down to the feet with gold trim and a gold sash, a blue hood pulled up under a tall pointed blue wizard hat with a gold band, all the hair hidden, brown boots",
+    "prompt_style": "rd_animation__four_angle_walking",
+    "width": 48,
+    "height": 48,
+    "return_spritesheet": true,
+    "num_images": 1
+  },
+  "result": {
+    "created_at": 1792410615,
+    "credit_cost": 10,
+    "balance_cost": 0.07,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 41.641,
+    "request_id": "dd4ae0ea-a39d-4b16-bde0-faabfbbbd8b1",
+    "outputs_retained_until": 1792496968
+  }
+}
