@@ -1766,6 +1766,32 @@ struct RulesTests {
         #expect(engine.outcome == .victory || engine.outcome == .fled)
     }
 
+    /// A monster with a healing skill mends itself when badly hurt, but only once a fight and by no
+    /// more than a fifth of its HP (playtesting 2026-10-19: some should heal, fights stay fair).
+    @Test func monstersMendThemselvesOnceAndModestly() throws {
+        let content = Content.shared
+        let wisp = try #require(content.monster("wisp"))
+        #expect(wisp.skills.contains("recovery"))
+        let heroStats = Stats(hp: 5000, mp: 20, attack: 30, defense: 400, magic: 10, speed: 20)
+        let hero = Combatant(id: 0, side: .party, source: .hero, name: "Hero", art: "player_walk", level: 40, element: .neutral,
+                             stats: heroStats, hp: 5000, mp: 20, skills: [], captureRate: 0)
+        let stats = wisp.stats(at: 40)
+        let low = stats.hp / 10
+        let foe = Combatant(id: 10, side: .enemies, source: .wild("wisp"), name: "Wisp", art: wisp.art, level: 40, element: wisp.element,
+                            stats: stats, hp: low, mp: stats.mp, skills: wisp.skills, captureRate: 0)
+        let engine = BattleEngine(party: [hero], enemies: [foe], content: content, seed: 11)
+        var heals: [Int] = []
+        for _ in 0..<16 where engine.outcome == .ongoing {
+            for event in engine.resolveRound(heroAction: .defend) {
+                if case .skill(let actor, let skill, _, let hits) = event, actor == 10, skill.kind == .heal {
+                    heals += hits.map(\.amount)
+                }
+            }
+        }
+        #expect(heals.count == 1)
+        #expect(heals.allSatisfy { $0 > 0 && $0 <= Int(Double(stats.hp) * BattleEngine.monsterHealCap) })
+    }
+
     @Test func companionsFollowOrders() {
         let content = Content.shared
         let jelly = content.monster("jelly")!

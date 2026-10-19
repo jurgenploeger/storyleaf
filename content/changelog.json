@@ -2,11 +2,11 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
-      "version": "0.7.44",
+      "version": "0.7.45",
       "date": "2026-10-19",
       "title": "Into the deep",
       "notes": [
-        "The Glimmerdeep goes two levels deeper, down ladders to its heart, where the Prism Drake sleeps, and Pip can draw you a map of every level. New crystal bats and golems live down there, and comet hares and lantern sprites on Starfall Isle.",
+        "The Glimmerdeep goes two levels deeper, down ladders to its heart, where the Prism Drake sleeps, and Pip can draw you a map of every level. New monsters live down there and on Starfall Isle, and a few can mend themselves once a fight.",
         "Every cave has a map of its own: tap the minimap to see what you've explored.",
         "Quests are numbered and marked with a gold star, and the Quests page can search, sort and filter them.",
         "Tidier Character and Companions screens, no more bulging foreheads seen from the side, bearded dwarves show their mouths, and recoloured monsters and characters take their new colour all over.",

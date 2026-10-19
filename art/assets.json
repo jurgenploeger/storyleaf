@@ -10554,21 +10554,12 @@
     {
       "id": "boss_fallen_star",
       "kind": "monster",
-      "derive": {
-        "from": "boss_great_wisp",
-        "recolor": [
-          {
-            "hue": [
-              0,
-              70
-            ],
-            "minSaturation": 0.1,
-            "to": 205,
-            "spread": 0.6,
-            "saturation": 0.45,
-            "value": 1.15
-          }
-        ]
+      "request": {
+        "prompt": "a fallen star spirit, a big plump glowing five-pointed star with five clear points, pale gold and white with a soft glow, a sad sweet face, little sparkles around it and a short trail of stardust, floating, boss monster, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 64,
+        "height": 64,
+        "remove_bg": true
       }
     },
     {

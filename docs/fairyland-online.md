@@ -727,6 +727,11 @@ No advanced classes.
   - Monsters and companions: Boost (ATK +20%; golden hamsters, wood hogs, blaze bulls, earth lions) and Berserk
     (ATK +30% but DEF −25%; werewolves, fire bears, black kongs), FO's pet skills. They cast them on
     themselves now and then; friends cast theirs on whoever they'd help most.
+  - Monsters that heal: FO's light pets healed and pets learned Heal (see Pets). A few of ours know Recovery
+    (wisps, lotus sprites, pegasi, star moths, temple jellies and three light bosses: the Great Wisp, the
+    Moon Rabbit Queen and the Fallen Star). Below 35% HP they cast it on themselves half the time, once a
+    fight, and a monster's heal (a companion's too) gives back at most a fifth of the HP it goes to
+    (`BattleEngine.selfHeal`, `monsterHealCap`): uncapped, a level-40 wisp healed itself to full.
   - Curse: lowers ATK and MAG by 20% (up to 36% as the skill grows), so hits and heals both weaken. FO's
     Curse lowers attack and its hit rate; we have no hit rate.
   - No Lethal Poison, Fear or cures yet. Every status ends with the battle.

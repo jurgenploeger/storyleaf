@@ -86,6 +86,8 @@ struct Combatant: Identifiable {
     var sealStones = 0
     /// Sealed: who threw the stone that held it (you, or a friend it goes home with).
     var capturedBy: Int?
+    /// Healing skills it has cast this fight (a monster mends itself only once, `BattleEngine.selfHeal`).
+    var healsCast = 0
 
     /// How spells change a stat now: ×1.25 raised by a quarter, ×0.8 cursed by a fifth.
     func factor(_ stat: BattleStat) -> Double {
@@ -262,6 +264,11 @@ final class BattleEngine {
     /// Below this share of its HP a monster's odds of being sealed climb fast (Fairyland's capsules
     /// only worked down here), and one left on its own may bolt.
     static let captureThreshold = 0.2
+
+    /// Monsters and companions with a healing skill mend themselves below this share of their HP,
+    /// once a fight (`selfHeal`); a monster's healing gives back at most `monsterHealCap` of the HP.
+    static let selfHealBelow = 0.35
+    static let monsterHealCap = 0.2
 
     /// `enemies` is the first wave; `waves` are the ones still to come (a boss fight's).
     init(party: [Combatant], enemies: [Combatant], content: Content, captureBonus: Double = 1,
@@ -461,7 +468,10 @@ final class BattleEngine {
                 perform(.attack(target: targetID), by: actor, events: &events)
                 return
             }
-            mutate(actor.id) { $0.mp -= GameSession.mpCost(of: skill, level: level) }
+            mutate(actor.id) {
+                $0.mp -= GameSession.mpCost(of: skill, level: level)
+                if skill.kind == .heal { $0.healsCast += 1 }
+            }
             // A mastered skill hits 80% harder than a fresh one, a little more each step.
             let boost = Self.skillBoost(level)
             let chosen = targets(for: skill, actor: actor, preferring: targetID)
@@ -469,7 +479,14 @@ final class BattleEngine {
                 switch skill.kind {
                 case .physical: return physicalHit(from: actor, to: target, power: skill.power * boost)
                 case .magic: return magicHit(from: actor, to: target, skill: skill, boost: boost)
-                case .heal: return Hit(target: target.id, amount: Int(Double(healAmount(actor, skill)) * boost), effectiveness: 1, critical: false)
+                case .heal:
+                    var amount = Int(Double(healAmount(actor, skill)) * boost)
+                    // A monster's mending (wild or a companion's) is held to a share of the HP it
+                    // goes to, so it never undoes a fight or makes a companion a healer.
+                    if actor.speciesID != nil || actor.petID != nil {
+                        amount = min(amount, Int(Double(target.stats.hp) * Self.monsterHealCap))
+                    }
+                    return Hit(target: target.id, amount: amount, effectiveness: 1, critical: false)
                 // Revive: back on their feet with a share of their HP (more at higher levels).
                 case .revive: return Hit(target: target.id, amount: max(1, Int(Double(target.stats.hp) * skill.power * boost)), effectiveness: 1, critical: false)
                 case .buff, .curse, .field: return Hit(target: target.id, amount: 0, effectiveness: 1, critical: false)
@@ -565,6 +582,7 @@ final class BattleEngine {
     private func companionAction(for pet: Combatant) -> BattleAction {
         // The monster you're sealing is left to you; the others are fair game.
         guard let weakest = alive(on: .enemies).filter({ $0.id != sealTarget }).min(by: { $0.hp < $1.hp }) else { return .defend }
+        if let heal = selfHeal(for: pet) { return heal }
         if let buff = selfBuff(for: pet) { return buff }
         let attacks = usableSkills(of: pet).filter { $0.kind.isHostile && !reaches(sealTarget, with: $0, by: pet) }
         if let skill = attacks.randomElement(using: &rng), Double.random(in: 0..<1, using: &rng) < 0.35 {
@@ -576,6 +594,7 @@ final class BattleEngine {
     private func monsterAction(for monster: Combatant) -> BattleAction {
         guard let target = alive(on: .party).randomElement(using: &rng) else { return .defend }
         if Double.random(in: 0..<1, using: &rng) < fleeChance(of: monster) { return .flee }
+        if let heal = selfHeal(for: monster) { return heal }
         if let buff = selfBuff(for: monster) { return buff }
         if let skill = usableSkills(of: monster).filter(\.kind.isHostile).randomElement(using: &rng),
            Double.random(in: 0..<1, using: &rng) < 0.3 {
@@ -591,6 +610,16 @@ final class BattleEngine {
             skill.kind == .buff && Self.statChanges(of: skill, level: 1).contains { $0.amount > 0 && fighter.raised[$0.stat] == nil }
         }
         guard let skill = buffs.randomElement(using: &rng), Double.random(in: 0..<1, using: &rng) < 0.3 else { return nil }
+        return .skill(skill.id, target: fighter.id)
+    }
+
+    /// Monsters and companions that know a healing skill mend themselves when badly hurt (Fairyland
+    /// Online's light pets healed): below `selfHealBelow` of their HP, half the time, and only once
+    /// a fight, so a fight still ends. It gets back no more than `monsterHealCap` of its HP.
+    private func selfHeal(for fighter: Combatant) -> BattleAction? {
+        guard fighter.hpFraction < Self.selfHealBelow, fighter.healsCast == 0 else { return nil }
+        let heals = usableSkills(of: fighter).filter { $0.kind == .heal }
+        guard let skill = heals.max(by: { $0.power < $1.power }), Double.random(in: 0..<1, using: &rng) < 0.5 else { return nil }
         return .skill(skill.id, target: fighter.id)
     }
 
