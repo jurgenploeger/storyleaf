@@ -662,6 +662,9 @@ def main(out):
             # armour's own sheet, which is drawn as it is.
             if race["id"] in item.get("sheets", {}):
                 image = Image.open(root / "art" / "sprites" / f"{item['sheets'][race['id']]}.png").convert("RGBA")
+                if item.get("tint"):
+                    tinted = pp.recolor(np.asarray(image).astype(float) / 255, item["tint"])
+                    image = Image.fromarray((np.clip(tinted, 0, 1) * 255).round().astype(np.uint8), "RGBA")
                 for c, row in enumerate((2, 1, 0, 3)):
                     frame = image.crop((0, row * 48, 48, row * 48 + 48)).resize((48 * zoom, 48 * zoom), Image.NEAREST)
                     sheet.paste(frame, ((k * 4 + c) * 48 * zoom, r * 48 * zoom), frame)

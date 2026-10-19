@@ -258,7 +258,12 @@
       ],
       "level": 14,
       "description": "Clinks when you walk.",
-      "wear": "mail"
+      "wear": "mail",
+      "sheets": {
+        "human": "armor_chain_mail_human",
+        "elf": "armor_chain_mail_elf",
+        "dwarf": "armor_chain_mail_dwarf"
+      }
     },
     {
       "id": "silk_robe",
@@ -290,7 +295,25 @@
       "level": 14,
       "description": "Woven with starlight.",
       "wear": "robe",
-      "accent": "#F2C230"
+      "accent": "#F2C230",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 268,
+          "spread": 1,
+          "saturation": 0.83,
+          "value": 1.22
+        }
+      ]
     },
     {
       "id": "ranger_cloak",
@@ -642,7 +665,25 @@
       "description": "Embroidered with glowing runes.",
       "wear": "robe",
       "pattern": "runes",
-      "accent": "#F2C230"
+      "accent": "#F2C230",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 232,
+          "spread": 1,
+          "saturation": 1.0,
+          "value": 1.0
+        }
+      ]
     },
     {
       "id": "tamer_jacket",
@@ -3624,7 +3665,24 @@
       ],
       "level": 14,
       "description": "Every link dipped in wisp-light. Rare spoils from the Great Wisp.",
-      "wear": "mail"
+      "wear": "mail",
+      "sheets": {
+        "human": "armor_chain_mail_human",
+        "elf": "armor_chain_mail_elf",
+        "dwarf": "armor_chain_mail_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            150,
+            260
+          ],
+          "minSaturation": 0.03,
+          "to": 42,
+          "saturation": 6,
+          "value": 1.15
+        }
+      ]
     },
     {
       "id": "dawn_silk_robe",
@@ -3656,7 +3714,25 @@
       "level": 14,
       "description": "The colour of the sky just before sunrise. Left behind by the Great Wisp.",
       "wear": "robe",
-      "accent": "#F2C230"
+      "accent": "#F2C230",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 22,
+          "spread": 1,
+          "saturation": 0.78,
+          "value": 1.28
+        }
+      ]
     },
     {
       "id": "moonlight_mage_robe",
@@ -3689,7 +3765,25 @@
       "description": "Woven from moonbeams. The Moon Rabbit Queen's rarest gift.",
       "wear": "robe",
       "pattern": "runes",
-      "accent": "#F2C230"
+      "accent": "#F2C230",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 272,
+          "spread": 1,
+          "saturation": 0.44,
+          "value": 1.33
+        }
+      ]
     },
     {
       "id": "bunny_tamer_jacket",
@@ -3828,7 +3922,12 @@
           "value": 0.8
         }
       ],
-      "accent": "#F2C230"
+      "accent": "#F2C230",
+      "sheets": {
+        "human": "armor_chain_mail_human",
+        "elf": "armor_chain_mail_elf",
+        "dwarf": "armor_chain_mail_dwarf"
+      }
     },
     {
       "id": "briar_rose_robe",
@@ -3857,7 +3956,25 @@
           "value": 1.05
         }
       ],
-      "accent": "#7FD07F"
+      "accent": "#7FD07F",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 340,
+          "spread": 1,
+          "saturation": 0.78,
+          "value": 1.17
+        }
+      ]
     },
     {
       "id": "woodcutters_coat",
@@ -3973,7 +4090,25 @@
           "value": 1.25
         }
       ],
-      "accent": "#9AD8FF"
+      "accent": "#9AD8FF",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 48,
+          "spread": 1,
+          "saturation": 0.39,
+          "value": 1.39
+        }
+      ]
     },
     {
       "id": "wavecrest_scale_mail",
@@ -5188,7 +5323,25 @@
           "value": 0.8
         }
       ],
-      "accent": "#FFE680"
+      "accent": "#FFE680",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 238,
+          "spread": 1,
+          "saturation": 0.83,
+          "value": 0.89
+        }
+      ]
     },
     {
       "id": "starpetal_gauntlets",
@@ -6424,7 +6577,25 @@
           "value": 1.4
         }
       ],
-      "accent": "#F2C230"
+      "accent": "#F2C230",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 45,
+          "spread": 1,
+          "saturation": 0.22,
+          "value": 1.56
+        }
+      ]
     },
     {
       "id": "goldleaf_gauntlets",
@@ -6599,7 +6770,25 @@
       ],
       "accent": "#F2C230",
       "color": "#B8733A",
-      "tier": "copper"
+      "tier": "copper",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 27,
+          "spread": 1,
+          "saturation": 0.88,
+          "value": 1.1
+        }
+      ]
     },
     {
       "id": "copper_hide",
@@ -6809,7 +6998,25 @@
       ],
       "accent": "#F2C230",
       "color": "#C4CCD8",
-      "tier": "silver"
+      "tier": "silver",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 216,
+          "spread": 1,
+          "saturation": 0.12,
+          "value": 1.21
+        }
+      ]
     },
     {
       "id": "silver_hide",
@@ -7019,7 +7226,25 @@
       ],
       "accent": "#F2C230",
       "color": "#3A3846",
-      "tier": "onyx"
+      "tier": "onyx",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 249,
+          "spread": 1,
+          "saturation": 0.26,
+          "value": 0.73
+        }
+      ]
     },
     {
       "id": "onyx_hide",
@@ -7231,7 +7456,25 @@
       ],
       "accent": "#F2C230",
       "color": "#3555C8",
-      "tier": "sapphire"
+      "tier": "sapphire",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 227,
+          "spread": 1,
+          "saturation": 0.94,
+          "value": 1.16
+        }
+      ]
     },
     {
       "id": "sapphire_hide",
@@ -7443,7 +7686,25 @@
       ],
       "accent": "#F2C230",
       "color": "#2E9A58",
-      "tier": "jade"
+      "tier": "jade",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 143,
+          "spread": 1,
+          "saturation": 0.9,
+          "value": 1.0
+        }
+      ]
     },
     {
       "id": "jade_hide",
@@ -7655,7 +7916,25 @@
       ],
       "accent": "#F2C230",
       "color": "#3AB8D0",
-      "tier": "aquamarine"
+      "tier": "aquamarine",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 190,
+          "spread": 1,
+          "saturation": 0.92,
+          "value": 1.18
+        }
+      ]
     },
     {
       "id": "aquamarine_hide",
@@ -7867,7 +8146,25 @@
       ],
       "accent": "#F2C230",
       "color": "#C02838",
-      "tier": "ruby"
+      "tier": "ruby",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 354,
+          "spread": 1,
+          "saturation": 1.01,
+          "value": 1.12
+        }
+      ]
     },
     {
       "id": "ruby_hide",
@@ -8079,7 +8376,25 @@
       ],
       "accent": "#F2C230",
       "color": "#8A48C8",
-      "tier": "amethyst"
+      "tier": "amethyst",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 271,
+          "spread": 1,
+          "saturation": 0.82,
+          "value": 1.16
+        }
+      ]
     },
     {
       "id": "amethyst_hide",
@@ -8291,7 +8606,25 @@
       ],
       "accent": "#E8F0FF",
       "color": "#E0A830",
-      "tier": "topaz"
+      "tier": "topaz",
+      "sheets": {
+        "human": "armor_mage_robe_human",
+        "elf": "armor_mage_robe_elf",
+        "dwarf": "armor_mage_robe_dwarf"
+      },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 41,
+          "spread": 1,
+          "saturation": 1.0,
+          "value": 1.23
+        }
+      ]
     },
     {
       "id": "topaz_hide",
