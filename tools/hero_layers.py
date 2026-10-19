@@ -76,6 +76,8 @@ EARED = {"elf"}
 NAPE = 0.2
 # Brightness, for matching shades between two heads of hair.
 LUMA = np.array([0.299, 0.587, 0.114])
+# The window a hair dye recolours on the hair and locks layers.
+HAIR_LAYER = json.load(open(ROOT / "content" / "appearance.json"))["hairLayer"]
 
 
 def hsv(p):
@@ -614,12 +616,22 @@ def shade_map(src, dst):
 
 def crown_colours(race):
     """The colours of the hair on top of the head (crown to brow, every frame): what every style has,
-    unlike a long style's shadowy back."""
+    unlike a long style's shadowy back. Only shades a hair dye reaches (appearance.json `hairLayer`):
+    a moved style's palest tips took the skin showing through the crown, and stayed pink when dyed."""
     rows = []
     for (row, col), head in race.heads.items():
         hair = frame(race.hair, row, col)
-        rows += [hair[y, x, :3] for y in range(head.top, head.brow) for x in range(F) if opaque(hair[y, x])]
+        rows += [hair[y, x, :3] for y in range(head.top, head.brow) for x in range(F)
+                 if opaque(hair[y, x]) and dyeable(hair[y, x])]
     return np.array(rows)
+
+
+def dyeable(p):
+    """In appearance.json's `hairLayer` window, so every hair colour reaches it."""
+    h, s, v = hsv(p)
+    low, high = HAIR_LAYER["hue"]
+    hue = low <= h * 360 <= high if low <= high else (h * 360 >= low or h * 360 <= high)
+    return hue and s >= HAIR_LAYER["minSaturation"] and v >= HAIR_LAYER["minValue"]
 
 
 def recolour_to(layer, source, target):

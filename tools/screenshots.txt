@@ -205,6 +205,11 @@ hair_dwarf_female | newgame,race=dwarf,gender=female,hair=white                |
 look_male_ponytail | titlepage=create,gender=male,style=ponytail  | 6
 look_female_elf_swept | titlepage=create,race=elf,gender=female,style=swept,hair=black | 6
 look_female_dwarf | titlepage=create,race=dwarf,gender=female,hair=blue | 6
+# Recolours with nothing of the original left (0.7.41): a black-haired girl's ponytail and a dwarf girl's
+# braids to their palest strands, and Golden Plate gold on a dwarf.
+colours_ponytail | newgame,gender=female,hair=black,weather=clear,hour=12 | 8
+colours_braids   | newgame,race=dwarf,gender=female,hair=black,weather=clear,hour=12 | 8
+colours_plate_dwarf | newgame,race=dwarf,level=40,equip=golden_plate,weather=clear,hour=12 | 8
 elf_crop     | newgame,race=elf,style=crop,hair=brown                          | 8
 item_info    | newgame,level=12,npc=shop,info=iron_axe                           | 8
 item_info_fighter | newgame,level=40,class=fighter,equip=iron_axe,npc=rainbow_shop,info=steel_sword | 8
