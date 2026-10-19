@@ -2935,6 +2935,35 @@ def render(item_id):
     return canvas
 
 
+HELD = 24   # a held weapon's size: half a 48-pixel walk frame, one pixel to one of the sprite's
+
+
+def held(item_id):
+    """A weapon as the hero holds it (art/sprites/held_<id>.png, GearArt.weapon): its drawing shrunk
+    to HELD pixels before the outline goes on, each pixel the colour that covers most of it (a thin
+    blade wins over the empty air beside it), then outlined afresh. Shrunk in the game instead, from
+    32 to the 23 pixels it's held at, every third row and column dropped and it looked ragged."""
+    canvas = Canvas()
+    DRAWINGS[item_id](canvas)
+    small = Canvas(HELD)
+    k = SIZE / HELD
+    for y in range(HELD):
+        for x in range(HELD):
+            cover = {}
+            for sy in range(int(y * k), min(SIZE, int(math.ceil((y + 1) * k)))):
+                for sx in range(int(x * k), min(SIZE, int(math.ceil((x + 1) * k)))):
+                    share = (min(sx + 1, (x + 1) * k) - max(sx, x * k)) * (min(sy + 1, (y + 1) * k) - max(sy, y * k))
+                    c = canvas.px[sy][sx]
+                    cover[c] = cover.get(c, 0) + share
+            air = cover.pop(None, 0)
+            if cover:
+                colour, most = max(cover.items(), key=lambda kv: kv[1])
+                if sum(cover.values()) >= air * 0.6:
+                    small.px[y][x] = colour
+    small.outline()
+    return small
+
+
 def main(argv):
     sheet_path = None
     if "--sheet" in argv:
@@ -2942,9 +2971,13 @@ def main(argv):
         sheet_path = argv[index + 1]
         argv = argv[:index] + argv[index + 2:]
     ids = argv or sorted(DRAWINGS)
+    weapons = {item["id"] for item in json.loads((ROOT / "content" / "items.json").read_text())["items"]
+               if item["type"] == "weapon"}
     for item_id in ids:
         (SPRITES / f"item_{item_id}.png").write_bytes(render(item_id).png())
-    print(f"wrote {len(ids)} item sprites to art/sprites/")
+        if item_id in weapons:
+            (SPRITES / f"held_{item_id}.png").write_bytes(held(item_id).png())
+    print(f"wrote {len(ids)} item sprites to art/sprites/ (and held_<id>.png for the weapons)")
     if sheet_path:
         columns, scale, pad = 6, 4, 4
         rows = math.ceil(len(ids) / columns)

@@ -53,7 +53,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   pale tips stay ginger. Derive them with `layers` instead (body, locks, hair from `tools/hero_layers.py`, the hair's
   rules widened to appearance.json `hairLayer`), as every quest giver is; `check_content.py` insists.
 - `Fairyland/`: Swift code (World = maps and walking, Battle = combat, UI = SwiftUI HUD and menus).
-- `tools/item_art.py`: draws every item's 32×32 sprite in code (free); rerun it after editing a drawing.
+- `tools/item_art.py`: draws every item's 32×32 sprite in code (free); rerun it after editing a drawing. A weapon also
+  gets `held_<id>.png`, its drawing shrunk to 24 pixels before the outline (the colour covering most of each pixel),
+  held at half a walk frame, one of its pixels to one of the sprite's (`GearArt.weapon`): shrunk in the game, it was ragged.
 - `tools/store_slides.py`: App Store slides from the landscape `store_land_*` screenshot scenes: captions in the
   logo's style (`tools/store_slides.json`, font in `tools/fonts/`), cropped clear of the Dynamic Island the
   simulator draws in, exported at 2622×1206 and 2868×1320 with no alpha.
@@ -86,8 +88,15 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   his own mop as `hair_dwarf_npc`, a mouth drawn into his beard by `tools/character_art.py mouth`). The bald head is painted only inside the sprite as drawn (`_scalp`), so a
   body wearing its own hair matches its sheet: a skull painted past a side-view face stuck out like a brow ridge.
   Rerun after changing a race's sheet, and look at `--preview` before committing. Gloves, boots and necklaces are painted on by GearOverlay (`tools/gear_preview.py --trinkets`),
-  and so are the festive seasons' hats, fitted to each frame's head as drawn, hair and all: a brim round its widest
-  rows over the eyes, the cap over the hair above (`GearOverlay.hat`, `--hats`).
+  and the festive seasons' hats, masks and scarves and the status capes go on from pieces `tools/wear_art.py` cut out.
+- `tools/wear_art.py`: worn gear from Retro Diffusion sheets in `art-variants/` (picked by hand, its `ARMOUR` and
+  `WEAR`), fixed in code: the robe's and chain mail's walk sheets (`armor_<item>_<race>`, items.json `sheets`, every
+  robe's blue turned to one hue so each tier's `tint` lands alike), and the pieces cut out of a hero wearing them
+  (`wear_<hat>`, `wear_cape`), moved to fixed anchors. The game fits them to each frame as drawn (GearOverlay; mirror in
+  `tools/gear_preview.py --hats`, `--capes`): a hat widened to the head, its band on the head's widest row over the
+  eyes, the hair above it cleared; a mask's eye holes on the eyes as drawn (armour sheets have faces of their own); a
+  scarf or cape hung from the shoulders, the cape stretched rows and columns to the body. Rerun after picking a sheet.
+  Generating sheets costs money (`rd.py`): a prompt with "wizard" in it drew a beard every time.
 - `tools/rd.py`: Retro Diffusion client. `rd.py edit` inpaints a mask of an existing sheet (pilot 2026-10-19: inpainting
   of walk sheets is a dead end: faces, about 10 px wide, come out muddy, and armour or a robe painted onto a hero comes
   out too bulky, with side and back views that don't match the pose), its results only in
