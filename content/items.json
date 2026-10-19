@@ -3344,6 +3344,16 @@
       "tint": [
         {
           "hue": [
+            140,
+            170
+          ],
+          "minSaturation": 0.05,
+          "to": 44,
+          "saturation": 4.16,
+          "value": 1.05
+        },
+        {
+          "hue": [
             170,
             250
           ],
@@ -3912,6 +3922,16 @@
         }
       ],
       "tint": [
+        {
+          "hue": [
+            140,
+            170
+          ],
+          "minSaturation": 0.05,
+          "to": 26,
+          "saturation": 3.52,
+          "value": 0.85
+        },
         {
           "hue": [
             170,

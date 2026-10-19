@@ -1232,7 +1232,7 @@
               10,
               58
             ],
-            "minSaturation": 0.4,
+            "minSaturation": 0.3,
             "to": 319.4,
             "spread": 1.0
           }
@@ -3007,7 +3007,7 @@
               0,
               75
             ],
-            "minSaturation": 0.2,
+            "minSaturation": 0.12,
             "to": 347.8,
             "spread": 1.0,
             "saturation": 1.05,
@@ -3210,7 +3210,7 @@
           {
             "hue": [
               220,
-              310
+              320
             ],
             "minSaturation": 0.25,
             "minValue": 0.3,
@@ -3310,7 +3310,7 @@
               0,
               75
             ],
-            "minSaturation": 0.2,
+            "minSaturation": 0.1,
             "to": 348.1,
             "spread": 1.0,
             "saturation": 0.85
@@ -3603,7 +3603,7 @@
         "recolor": [
           {
             "hue": [
-              90,
+              80,
               190
             ],
             "minSaturation": 0.2,
@@ -3646,7 +3646,7 @@
               0,
               75
             ],
-            "minSaturation": 0.2,
+            "minSaturation": 0.12,
             "to": 353.8,
             "spread": 1.0,
             "saturation": 1.05
@@ -7393,7 +7393,7 @@
               0,
               75
             ],
-            "minSaturation": 0.25,
+            "minSaturation": 0.1,
             "to": 323.4,
             "spread": 1.0,
             "saturation": 0.8,
@@ -7438,6 +7438,15 @@
             "to": 24,
             "saturation": 5,
             "value": 1.0
+          },
+          {
+            "hue": [
+              150,
+              250
+            ],
+            "minSaturation": 0.25,
+            "to": 24,
+            "saturation": 1.2
           }
         ]
       }
@@ -7448,6 +7457,16 @@
       "derive": {
         "from": "monster_floating_stone",
         "recolor": [
+          {
+            "hue": [
+              140,
+              200
+            ],
+            "minSaturation": 0.1,
+            "to": 35,
+            "saturation": 0.35,
+            "value": 0.8
+          },
           {
             "hue": [
               0,
@@ -7493,7 +7512,7 @@
               300,
               60
             ],
-            "minSaturation": 0.25,
+            "minSaturation": 0.1,
             "to": 147.9,
             "spread": -0.54,
             "saturation": 0.9
@@ -10464,7 +10483,7 @@
               0,
               75
             ],
-            "minSaturation": 0.2,
+            "minSaturation": 0.12,
             "to": 262,
             "spread": 1.0,
             "saturation": 0.85
@@ -10483,7 +10502,7 @@
               0,
               75
             ],
-            "minSaturation": 0.2,
+            "minSaturation": 0.12,
             "to": 318,
             "spread": 0.7,
             "saturation": 0.55,
@@ -10543,7 +10562,7 @@
               0,
               70
             ],
-            "minSaturation": 0.2,
+            "minSaturation": 0.1,
             "to": 205,
             "spread": 0.6,
             "saturation": 0.45,
@@ -10563,7 +10582,7 @@
               0,
               75
             ],
-            "minSaturation": 0.25,
+            "minSaturation": 0.1,
             "to": 175,
             "spread": 1.0,
             "saturation": 0.8,
@@ -16247,7 +16266,7 @@
               150,
               200
             ],
-            "minSaturation": 0.3,
+            "minSaturation": 0.12,
             "to": 320,
             "saturation": 1.1,
             "value": 1.2
