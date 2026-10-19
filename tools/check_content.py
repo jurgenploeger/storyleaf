@@ -644,17 +644,26 @@ HATS = {"crown", "santa", "ears", "mask"}
 for item in items.values():
     if item["type"] == "head":
         check(item.get("hat") in HATS, f"item {item['id']} → hat must be one of {sorted(HATS)}: how it's drawn on the head")
+        check((ROOT / "art" / "sprites" / f"wear_{item.get('hat')}.png").exists(),
+              f"item {item['id']} → art/sprites/wear_{item.get('hat')}.png is missing (tools/wear_art.py cuts it out)")
         check(isinstance(item.get("color"), str) and HEX.fullmatch(item["color"]) is not None,
               f"item {item['id']} → color must be #RRGGBB: the hat's colour on the hero")
         check(item.get("price") == 0, f"item {item['id']} → price 0 (only the festive seasons give hats)")
     else:
         check("hat" not in item, f"item {item['id']} → only a hat (type head) has a hat")
 
-WEARS = {"armor": {"vest", "mail", "plate", "robe", "cloak"}}
+# A festive scarf is a necklace that wears `scarf` (GearOverlay.scarf, art/sprites/wear_scarf.png).
+WEARS = {"armor": {"vest", "mail", "plate", "robe", "cloak"}, "necklace": {"scarf"}}
 for item in items.values():
+    if item["type"] == "weapon":
+        check((ROOT / "art" / "sprites" / f"held_{item['id']}.png").exists(),
+              f"item {item['id']} → art/sprites/held_{item['id']}.png is missing (the weapon held: tools/item_art.py {item['id']})")
     if "wear" in item:
         check(item["wear"] in WEARS.get(item["type"], set()),
               f"item {item['id']} → wear {item['wear']!r} doesn't fit a {item['type']} ({sorted(WEARS.get(item['type'], []))})")
+    if item.get("wear") == "scarf":
+        check(item.get("price") == 0 and (ROOT / "art" / "sprites" / "wear_scarf.png").exists(),
+              f"item {item['id']} → a festive scarf: price 0 (only the seasons give one) and art/sprites/wear_scarf.png")
     for race_id, sheet in item.get("sheets", {}).items():
         check(item["type"] == "armor" and race_id in {r["id"] for r in classes["races"]},
               f"item {item['id']} → sheets: {race_id!r} isn't a race (or the item isn't armour)")
@@ -1076,7 +1085,9 @@ for season in seasons:
         check(month_day(season.get("from")) is not None and month_day(season.get("to")) is not None,
               f"{where} → from and to must be \"MM-DD\" days (or easter: [first, last])")
     for hat in season.get("hats", []):
-        check(items.get(hat, {}).get("type") == "head", f"{where} → hat {hat} must be an item of type head")
+        festive = items.get(hat, {})
+        check(festive.get("type") == "head" or (festive.get("type") == "necklace" and festive.get("wear") == "scarf"),
+              f"{where} → hat {hat} must be an item of type head (or a necklace that wears a scarf)")
     for treat in season.get("treats", []):
         item = items.get(treat, {})
         check(item.get("type") == "consumable" and ((item.get("heal") or 0) > 0 or (item.get("mp") or 0) > 0),
@@ -1094,7 +1105,7 @@ if all(month_day(s.get("from")) or "easter" in s for s in seasons):
             on = [s["id"] for s in seasons if ("easter" in s or (month_day(s.get("from")) and month_day(s.get("to")))) and in_season(s, day)]
             check(len(on) <= 1, f"rewards seasons → {', '.join(on)} both on {day}")
             day += datetime.timedelta(days=1)
-hats = {item_id for item_id, item in items.items() if item["type"] == "head"}
+hats = {item_id for item_id, item in items.items() if item["type"] == "head" or item.get("wear") == "scarf"}
 check(hats == hats_given, f"rewards seasons → every hat is a season's (hats no season gives: {sorted(hats - hats_given)})")
 handed = elsewhere | set((rewards.get("chests") or {}).get("items", [])) | {i for gift in rewards.get("dailyGifts", []) for i in gift.get("items") or []}
 for item_id in sorted(hats_given | treats_given):

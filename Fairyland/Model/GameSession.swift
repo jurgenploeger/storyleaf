@@ -370,13 +370,16 @@ final class GameSession {
     private static func registerArt(_ id: String, race: RaceDef, look: Look, armor: ItemDef?, worn: [ItemDef] = [],
                                     cape: ItemDef? = nil, key: String) {
         let necklace = worn.first { $0.type == .necklace }
+        // A festive scarf is worn as a necklace, drawn round the neck instead of a pendant.
+        let scarf = necklace?.wear == "scarf" ? necklace : nil
+        let pendant = scarf == nil ? necklace : nil
         let hat = worn.first { $0.type == .head }
         var gear = GearLook(wear: armor?.wear, accent: armor?.accent, pattern: armor?.pattern,
                             cape: cape?.color, capeTrim: cape?.accent,
                             gloves: worn.first { $0.type == .gloves }?.color, boots: worn.first { $0.type == .boots }?.color,
-                            necklace: necklace?.color, chain: necklace?.accent,
+                            necklace: pendant?.color, chain: pendant?.accent,
                             hat: hat?.hat, hatColor: hat?.color, hatTrim: hat?.accent,
-                            body: "body_\(Self.body(race: race, look: look))")
+                            scarf: scarf?.color, body: "body_\(Self.body(race: race, look: look))")
         var rules = Self.rules(for: look, armor: armor)
         if let armor, armor.sheets?[race.id] != nil {
             // The armour's own sheet is already drawn and coloured: only the skin tone applies, plus a
@@ -813,8 +816,10 @@ final class GameSession {
     /// gloves, boots and necklace they have on (`trinkets(for:)`) and in a festive season, the hat
     /// they wear for it (`hat(for:)`).
     static func registerAdventurer(_ adventurer: Adventurer) -> String {
-        registerPerson(race: adventurer.raceID, look: adventurer.look, armor: Self.armor(for: adventurer),
-                       worn: Self.trinkets(for: adventurer) + [Self.hat(for: adventurer)].compactMap { $0 })
+        // A festive scarf is a necklace: worn in place of theirs.
+        let festive = Self.hat(for: adventurer)
+        return registerPerson(race: adventurer.raceID, look: adventurer.look, armor: Self.armor(for: adventurer),
+                              worn: Self.trinkets(for: adventurer).filter { $0.type != festive?.type } + [festive].compactMap { $0 })
     }
 
     /// Someone of a race and look (a villager in plain clothes without `armor`), drawn from the same
@@ -872,7 +877,7 @@ final class GameSession {
             guard draw % 3 != 0 else { return nil }
             let wearable = Content.shared.items.filter {
                 $0.type == slot && ($0.level ?? 1) <= adventurer.level && ($0.classes?.contains(adventurer.classID) ?? true)
-                    && !Content.shared.isTreasure($0.id)
+                    && !Content.shared.isTreasure($0.id) && !Content.shared.isFestive($0.id)
             }
             guard let best = wearable.map({ $0.level ?? 1 }).max() else { return nil }
             let choices = wearable.filter { ($0.level ?? 1) == best }
@@ -880,8 +885,8 @@ final class GameSession {
         }
     }
 
-    /// The hat an adventurer wears in a festive season (rewards.json `seasons`): one of its hats for
-    /// half of them, the same one all season.
+    /// The hat an adventurer wears in a festive season (rewards.json `seasons`): one of its hats (or
+    /// scarves) for half of them, the same one all season.
     static func hat(for adventurer: Adventurer, on date: Date = GameSession.today) -> ItemDef? {
         guard let festive = season(on: date)?.season, !festive.hats.isEmpty else { return nil }
         let seed = Self.seed(adventurer.id) / 13
@@ -1470,7 +1475,7 @@ final class GameSession {
         let gear = content.items.filter { ItemType.equipmentSlots.contains($0.type) && !kept.contains($0.id) }
         let top = min(level, gear.compactMap(\.level).max() ?? level)
         let accessories = content.items.filter {
-            $0.type.isTrinket && !kept.contains($0.id) && ($0.level ?? 1) <= top
+            $0.type.isTrinket && !kept.contains($0.id) && ($0.level ?? 1) <= top && !content.isFestive($0.id)
         }
         if !accessories.isEmpty, Double.random(in: 0..<1) < Self.accessoryShare {
             let weights = accessories.map { Double($0.level ?? 1) + 10 }

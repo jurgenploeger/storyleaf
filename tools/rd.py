@@ -11,6 +11,12 @@ Every image (and the request that made it) is also kept in art-variants/<id>/.
     python3 tools/rd.py generate                    # every missing sprite
     python3 tools/rd.py generate tree --force --variants 4
     python3 tools/rd.py use tree art-variants/tree/20260929-120000_2.png
+    python3 tools/rd.py edit dwarf_walk --input art/sprites/dwarf_walk.png \
+        --mask art-variants/_masks/dwarf_walk_face.png --prompt "…" --variants 2 [--dry-run]
+
+`edit` runs an edit tool (inpainting by default) on an existing sprite: only the mask's opaque
+pixels are redrawn, the rest is copied back exactly, so new art keeps the old poses, faces and
+proportions. Its results land in art-variants/<name>/ only; promote one with `use`.
 
 Needs RETRO_DIFFUSION_API_KEY in the environment or in .env (see .env.example).
 Standard library only — no pip install needed.
@@ -40,6 +46,9 @@ VARIANTS = ROOT / "art-variants"
 LEDGER = ART / "spend-log.jsonl"   # one line per paid generation, read by the budget dashboard
 POLL_SECONDS = 2
 TASK_TIMEOUT_SECONDS = 600
+# Where Retro Diffusion stores edit results (inpainting), linked from each request's record: a
+# network allowlist needs this host (the tasks' own links are on a CloudFront CDN instead).
+OUTPUT_HOST = "retrodiffusionstack-retrodiffusionapioutputstorere-rg4v98h7gwoa.s3.amazonaws.com"
 
 
 class APIError(Exception):
@@ -270,6 +279,107 @@ def cmd_generate(args: argparse.Namespace) -> None:
         sys.exit(f"{failed} asset(s) failed.")
 
 
+def cmd_edit(args: argparse.Namespace) -> None:
+    """An edit tool (inpainting) on an existing sheet, `--variants` times with different seeds."""
+    key = api_key()
+    source = Path(args.input).read_bytes()
+    if png_size(source) is None:
+        sys.exit(f"{args.input} is not a PNG")
+    body = {"input_image": base64.b64encode(source).decode(), "prompt": args.prompt}
+    if args.mask:
+        mask = Path(args.mask).read_bytes()
+        if png_size(mask) != png_size(source):
+            sys.exit(f"{args.mask} must be the same size as {args.input}")
+        body["mask_image"] = base64.b64encode(mask).decode()
+        # Outside the mask every pixel comes back exactly as it was.
+        body["soft_inpaint"] = False
+    estimate = call("POST", f"/edit/tools/{args.tool}/estimate", key, body)
+    cost = float(estimate.get("balance_cost", 0))
+    print(f"→ {args.name}  {args.tool} on {args.input}  “{args.prompt}”")
+    if args.dry_run:
+        print(f"  would cost ${cost:.2f} × {args.variants} = ${cost * args.variants:.2f}")
+        return
+    # Edit results come back as links to Amazon S3: if this machine can't reach it, stop before paying.
+    try:
+        urllib.request.urlopen(f"https://{OUTPUT_HOST}", timeout=20)
+    except urllib.error.HTTPError:
+        pass
+    except urllib.error.URLError as error:
+        sys.exit(f"Can't reach {OUTPUT_HOST}, where edit results are stored ({error.reason}); nothing was spent.")
+    folder = VARIANTS / args.name
+    folder.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    for index in range(args.variants):
+        payload = {**body, "seed": (args.seed or 1000) + index}
+        # The same custom_id on a resubmit returns the first task instead of charging again.
+        accepted = call("POST", f"/edit/tools/{args.tool}/tasks", key, {**payload, "custom_id": str(uuid.uuid4())})
+        task_id = accepted.get("task_id")
+        deadline = time.monotonic() + TASK_TIMEOUT_SECONDS
+        task: dict = {}
+        while task_id and time.monotonic() < deadline:
+            task = call("GET", f"/edit/tasks/{task_id}", key)
+            if task.get("status") not in ("pending", "running", "accepted", "queued"):
+                break
+            time.sleep(POLL_SECONDS)
+        result = task.get("result") or {}
+        if task.get("status") != "succeeded":
+            print(f"  ✗ variant {index}: {task.get('status')} {task.get('error')}")
+            continue
+        if result.get("base64_images"):
+            image = base64.b64decode(result["base64_images"][0])
+        else:
+            # The task's own link is on a CDN some networks block; the request's record links the
+            # same image on OUTPUT_HOST.
+            record = call("GET", f"/inferences/requests/{task_id}", key)
+            links = [o["url"] for o in record.get("outputs", []) if o.get("available")] + result.get("output_urls", [])
+            image = b""
+            for link in links:
+                try:
+                    with urllib.request.urlopen(link, timeout=60) as response:
+                        image = response.read()
+                    break
+                except urllib.error.URLError:
+                    continue
+            if not image:
+                print(f"  ✗ variant {index}: made but not downloaded; `rd.py fetch {args.name}` gets it later")
+                continue
+        out = folder / f"{stamp}_{index}.png"
+        out.write_bytes(image)
+        meta = {"tool": args.tool, "input": args.input, "mask": args.mask, "prompt": args.prompt, "seed": payload["seed"],
+                "result": {k: v for k, v in result.items() if k != "base64_images"}}
+        (folder / f"{stamp}_{index}.json").write_text(json.dumps(meta, indent=2))
+        entry = {"date": datetime.now().isoformat(timespec="seconds"), "asset": args.name, "style": f"edit:{args.tool}",
+                 "size": "x".join(map(str, png_size(source) or ())), "images": 1,
+                 "cost": result.get("balance_cost", cost), "balance": result.get("remaining_balance"), "prompt": args.prompt}
+        with LEDGER.open("a") as ledger:
+            ledger.write(json.dumps(entry) + "\n")
+        print(f"  ✓ {out.relative_to(ROOT)}  cost {entry['cost']}  balance left {entry['balance']}")
+
+
+def cmd_fetch(args: argparse.Namespace) -> None:
+    """Downloads the last day's edit results that never arrived (Retro Diffusion keeps them 24 hours
+    and re-signs their links): each request's first output, into art-variants/<name>/."""
+    key = api_key()
+    folder = VARIANTS / args.name
+    folder.mkdir(parents=True, exist_ok=True)
+    listing = call("GET", f"/inferences/requests?limit={args.limit}", key)
+    for item in listing.get("items", []):
+        if item.get("operation") != "edit_tool" or item.get("status") != "succeeded":
+            continue
+        request = item.get("request", {})
+        if args.prompt and args.prompt not in request.get("prompt", ""):
+            continue
+        out = folder / f"{item['request_id']}.png"
+        if out.exists():
+            continue
+        for output in item.get("outputs", []):
+            if output.get("available"):
+                with urllib.request.urlopen(output["url"], timeout=60) as response:
+                    out.write_bytes(response.read())
+                print(f"  ✓ {out.relative_to(ROOT)}  seed {request.get('seed')}  “{request.get('prompt')}”")
+                break
+
+
 def cmd_use(args: argparse.Namespace) -> None:
     select(load_manifest(), [args.id])
     source = Path(args.file)
@@ -294,6 +404,23 @@ def main() -> None:
     generate.add_argument("--dry-run", action="store_true", help="only report the cost (free)")
     generate.add_argument("--variants", type=int, metavar="N", help="generate N options to pick from")
     generate.set_defaults(run=cmd_generate)
+
+    edit = commands.add_parser("edit", help="run an edit tool (inpainting) on an existing sprite")
+    edit.add_argument("name", help="where the results go: art-variants/<name>/")
+    edit.add_argument("--input", required=True, help="the PNG to edit")
+    edit.add_argument("--mask", help="same size; opaque pixels are redrawn, transparent ones kept")
+    edit.add_argument("--prompt", required=True)
+    edit.add_argument("--tool", default="inpainting")
+    edit.add_argument("--variants", type=int, default=1, metavar="N")
+    edit.add_argument("--seed", type=int)
+    edit.add_argument("--dry-run", action="store_true", help="only report the cost (free)")
+    edit.set_defaults(run=cmd_edit)
+
+    fetch = commands.add_parser("fetch", help="download the last day's edit results that never arrived")
+    fetch.add_argument("name", help="art-variants/<name>/")
+    fetch.add_argument("--prompt", help="only requests whose prompt contains this")
+    fetch.add_argument("--limit", type=int, default=20)
+    fetch.set_defaults(run=cmd_fetch)
 
     use = commands.add_parser("use", help="promote a variant to the game sprite")
     use.add_argument("id")

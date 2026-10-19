@@ -10,15 +10,17 @@ enum GearArt {
     /// A weapon sprite for `item`, sized for a character `height` points tall.
     static func weapon(_ item: ItemDef, height: CGFloat) -> SKSpriteNode? {
         guard item.type == .weapon else { return nil }
-        if let art = item.art, let held = held(art) {
+        if let hold = heldArt(item), let held = held(hold.art) {
             // The item's own art (drawn diagonally, grip bottom-left), so every weapon looks like itself.
-            let size = CGSize(width: height * 0.48, height: height * 0.48)
+            let size = CGSize(width: height * hold.scale, height: height * hold.scale)
             let node = SKSpriteNode(texture: held.texture, size: size)
             node.anchorPoint = held.grip
             node.name = "weapon"
             if let hex = item.glow, let color = UIColor(hex: hex), let at = item.glowAt, at.count == 2 {
-                // glowAt is in the art's pixels, rows top-down; the node's origin is the grip.
-                let spot = CGPoint(x: at[0] / held.pixels.width - held.grip.x, y: 1 - at[1] / held.pixels.height - held.grip.y)
+                // glowAt is in the item art's pixels (the held sprite is it, smaller), rows top-down;
+                // the node's origin is the grip.
+                let pixels = item.art.flatMap { Self.held($0)?.pixels } ?? held.pixels
+                let spot = CGPoint(x: at[0] / pixels.width - held.grip.x, y: 1 - at[1] / pixels.height - held.grip.y)
                 node.addChild(glow(color, at: CGPoint(x: spot.x * size.width, y: spot.y * size.height), height: height))
             }
             return node
@@ -34,10 +36,19 @@ enum GearArt {
     /// unit point (y up, like an anchor) and its size as a share of the character's height.
     static func heldImage(_ item: ItemDef) -> (image: UIImage, grip: CGPoint, scale: CGFloat)? {
         guard item.type == .weapon else { return nil }
-        if let art = item.art, let held = held(art), let image = ArtLibrary.shared.artImage(art) {
-            return (image, held.grip, 0.48)
+        if let hold = heldArt(item), let held = held(hold.art), let image = ArtLibrary.shared.artImage(hold.art) {
+            return (image, held.grip, hold.scale)
         }
         return (UIImage(cgImage: texture(for: item.icon ?? "sword").cgImage()), CGPoint(x: 0.2, y: 0.2), 0.42)
+    }
+
+    /// The art a weapon is held as and its size as a share of the character's height: its own held
+    /// sprite (art/sprites/held_<id>.png, 24 pixels, drawn by tools/item_art.py) at half a 48-pixel
+    /// walk frame, one of its pixels to one of the sprite's; else its 32-pixel item art, shrunk.
+    private static func heldArt(_ item: ItemDef) -> (art: String, scale: CGFloat)? {
+        let own = "held_\(item.id)"
+        if let image = ArtLibrary.shared.artImage(own) { return (own, image.size.width / 48) }
+        return item.art.map { ($0, 0.48) }
     }
 
     /// A magic weapon's light: a small soft glow at the tip that slowly breathes, and now and then
@@ -103,8 +114,10 @@ enum GearArt {
         guard let grip = best else { return nil }
         let texture = SKTexture(cgImage: image)
         texture.filteringMode = .nearest
-        // Hold it a little up the handle, not by the very tip.
-        let anchor = CGPoint(x: (Double(grip.x) + 3) / Double(width), y: (Double(height - grip.y) + 2) / Double(height))
+        // Hold it a little up the handle, not by the very tip (as far up on a held sprite as on the
+        // 32-pixel item art it's drawn from).
+        let up = Double(width) / 32
+        let anchor = CGPoint(x: (Double(grip.x) + 3 * up) / Double(width), y: (Double(height - grip.y) + 2 * up) / Double(height))
         let artSize = CGSize(width: width, height: height)
         heldCache[art] = (texture, anchor, artSize)
         return (texture, anchor, artSize)

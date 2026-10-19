@@ -1,0 +1,21 @@
+{
+  "request": {
+    "prompt": "cute chibi elf child adventurer with long pointy ears, a smooth round young face with rosy cheeks, wearing a long blue hooded robe down to the feet with gold trim and a tall pointed blue hat over the hood, brown boots",
+    "prompt_style": "rd_animation__four_angle_walking",
+    "width": 48,
+    "height": 48,
+    "return_spritesheet": true,
+    "num_images": 1
+  },
+  "result": {
+    "created_at": 1792410922,
+    "credit_cost": 10,
+    "balance_cost": 0.07,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 40.941,
+    "request_id": "7343827d-f785-4177-a751-acde76d77630",
+    "outputs_retained_until": 1792497304
+  }
+}

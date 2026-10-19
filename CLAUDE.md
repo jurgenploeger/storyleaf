@@ -9,6 +9,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `docs/fairyland-online.md`: how the original game (and Tales of Mysteria, its 2026 relaunch) worked, with
   sources, and where we differ. Read it before inventing a system; add facts you verify, with their source.
 - `docs/continuous-world.md`: the plan for one continuous world (no borders, chunks streamed round you), in steps.
+- `docs/sprite-acceptance.md`: what generated and fitted character art must pass (every body, direction and
+  armour), how to check it, and what the Retro Diffusion wearables taught us. Read it before making or fitting any.
 - `docs/launch-audit.md`: the pre-launch audit (2026-10-06): App Store checklist, open bugs and balance issues
   ranked, and gamification ideas. Tick items off or remove them as they're done.
 - Brand guidelines: the Figma file `521ECWenGbx2IP3rLgtIWo`, pages Cover to 09 Voice & Tone (logo, colour, type, icons,
@@ -53,7 +55,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   pale tips stay ginger. Derive them with `layers` instead (body, locks, hair from `tools/hero_layers.py`, the hair's
   rules widened to appearance.json `hairLayer`), as every quest giver is; `check_content.py` insists.
 - `Fairyland/`: Swift code (World = maps and walking, Battle = combat, UI = SwiftUI HUD and menus).
-- `tools/item_art.py`: draws every item's 32×32 sprite in code (free); rerun it after editing a drawing.
+- `tools/item_art.py`: draws every item's 32×32 sprite in code (free); rerun it after editing a drawing. A weapon also
+  gets `held_<id>.png`, its drawing shrunk to 24 pixels before the outline (the colour covering most of each pixel),
+  held at half a walk frame, one of its pixels to one of the sprite's (`GearArt.weapon`): shrunk in the game, it was ragged.
 - `tools/store_slides.py`: App Store slides from the landscape `store_land_*` screenshot scenes: captions in the
   logo's style (`tools/store_slides.json`, font in `tools/fonts/`), cropped clear of the Dynamic Island the
   simulator draws in, exported at 2622×1206 and 2868×1320 with no alpha.
@@ -83,10 +87,24 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   dyes every shade of the locks and hair (appearance.json `hairLayer`), never the body. Armour with a walk sheet
   of its own goes over `nape_<style>_<body>` (the hair from a fifth of the way down the head), so long hair
   shows below the helmet. `TOWNSFOLK` sheets no hero wears are split too (`dwarf_npc`: the old bearded dwarf,
-  his own mop as `hair_dwarf_npc`). Rerun after changing a race's sheet, and look at `--preview` before
-  committing. Gloves, boots and necklaces are painted on by GearOverlay (`tools/gear_preview.py --trinkets`),
-  and so are the festive seasons' hats, measured on each frame's head (`GearOverlay.hat`, `--hats`).
-- `tools/rd.py`: Retro Diffusion client. `tools/icons.py`: vendors Iconaut icons (MIT), plus our own drawings in
+  his own mop as `hair_dwarf_npc`, a mouth drawn into his beard by `tools/character_art.py mouth`). The bald head is painted only inside the sprite as drawn (`_scalp`), so a
+  body wearing its own hair matches its sheet: a skull painted past a side-view face stuck out like a brow ridge.
+  Rerun after changing a race's sheet, and look at `--preview` before committing. Gloves, boots and necklaces are painted on by GearOverlay (`tools/gear_preview.py --trinkets`),
+  and the festive seasons' hats, masks and scarves and the status capes go on from pieces `tools/wear_art.py` cut out.
+- `tools/wear_art.py`: worn gear from Retro Diffusion sheets in `art-variants/` (picked by hand, its `ARMOUR` and
+  `WEAR`; sheets older than these notes in `art-variants/legacy/`), fixed in code: every armour walk sheet
+  (`armor_<item>_<race>`, items.json `sheets`) with its main material brought to one colour on every race
+  (`MATERIAL`), so it and each tier's `tint` look alike on all; and the pieces cut out of a hero wearing them
+  (`wear_<hat>`, `wear_cape`), moved to fixed anchors. The game fits them to each frame as drawn (GearOverlay; mirror in
+  `tools/gear_preview.py`, `--wear out.png <ids>` shows items on every body under every armour): a hat widened to the
+  head, its band on the head's widest row over the eyes, the hair above it cleared; a mask on the eyes as drawn, no
+  taller than the face, from the side as far forward as it reaches; a scarf under the chin as drawn; a cape hung from
+  the shoulders, stretched to the body. Rerun after picking a sheet; `docs/sprite-acceptance.md` says what to check.
+- `tools/rd.py`: Retro Diffusion client. `rd.py edit` inpaints a mask of an existing sheet (pilot 2026-10-19: inpainting
+  of walk sheets is a dead end: faces, about 10 px wide, come out muddy, and armour or a robe painted onto a hero comes
+  out too bulky, with side and back views that don't match the pose), its results only in
+  `art-variants/<name>/` (`rd.py fetch` gets any that didn't download). `tools/character_art.py` makes the masks (face,
+  body, helmet) from `hero_layers.py`'s heads, into `art-variants/_masks/`, outside `art/` so they never ship. `tools/icons.py`: vendors Iconaut icons (MIT), plus our own drawings in
   `art/icons/` where Iconaut has no shape that works (fire's three-tongued flame).
   `tools/check_content.py`: validates the game data.
 - `tools/deslab.py`: cuts the raised slab of ground some generated buildings came with (`inn`, `magic_tower`) out

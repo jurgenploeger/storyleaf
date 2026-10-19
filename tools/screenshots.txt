@@ -199,12 +199,20 @@ festive_party  | newgame,gender=female,level=40,map=rainbow_city,date=01-01,equi
 festive_christmas | newgame,race=dwarf,level=60,map=meadowbrook,date=12-24,equip=santa_hat+copper_hide,weather=snow,hour=12 | 8
 festive_easter | newgame,race=elf,gender=female,level=20,map=meadowbrook,date=2027-03-28,equip=bunny_ears,weather=clear,hour=12 | 8
 festive_char   | newgame,race=elf,gender=male,level=60,class=fighter,date=01-01,equip=sapphire_plate+yellow_party_hat+sapphire_gauntlets+sapphire_boots,menu=character | 8
+# Worn gear drawn by Retro Diffusion (0.7.43, playtesting 2026-10-19: "The blue robe and chain mail look bad. Also hats,
+# weapons and capes look bad"): a robe and chain mail with walk sheets of their own, a cape, a scarf and a crown cut
+# out of reference sheets and fitted to each body (tools/wear_art.py).
+wear_robe_scarf | newgame,race=elf,gender=female,level=60,class=mage,date=12-24,equip=sapphire_robe+red_christmas_scarf+santa_hat+storyleaf_cape,menu=character | 8
+wear_chain_crown | newgame,race=dwarf,level=30,class=fighter,date=01-01,equip=gilded_chain_mail+red_party_hat+monster_book_cape,weather=clear,hour=12 | 8
+wear_mask_human | newgame,level=30,class=fighter,date=10-31,equip=chain_mail+blue_halloween_mask,menu=character | 8
 hair_blue    | newgame,hair=blue                                              | 8
 hair_elf_male | newgame,race=elf,gender=male,hair=black,menu=character        | 8
 hair_dwarf_female | newgame,race=dwarf,gender=female,hair=white                | 8
 look_male_ponytail | titlepage=create,gender=male,style=ponytail  | 6
 look_female_elf_swept | titlepage=create,race=elf,gender=female,style=swept,hair=black | 6
 look_female_dwarf | titlepage=create,race=dwarf,gender=female,hair=blue | 6
+# Heads keep the shape they're drawn with (0.7.43): no skull sticking out past the face. The dwarf boy.
+look_male_dwarf | titlepage=create,race=dwarf,gender=male,hair=black | 6
 # Recolours with nothing of the original left (0.7.41): a black-haired girl's ponytail and a dwarf girl's
 # braids to their palest strands, and Golden Plate gold on a dwarf.
 colours_ponytail | newgame,gender=female,hair=black,weather=clear,hour=12 | 8

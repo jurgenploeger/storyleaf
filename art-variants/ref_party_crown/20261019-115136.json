@@ -1,0 +1,21 @@
+{
+  "request": {
+    "prompt": "cute chibi adventurer kid with short black hair, wearing a red paper party crown with three tall points on the head, plain green tunic, brown belt and boots",
+    "prompt_style": "rd_animation__four_angle_walking",
+    "width": 48,
+    "height": 48,
+    "return_spritesheet": true,
+    "num_images": 1
+  },
+  "result": {
+    "created_at": 1792410695,
+    "credit_cost": 10,
+    "balance_cost": 0.07,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 41.431,
+    "request_id": "bedfc9ec-f054-494a-9c36-3079eac94733",
+    "outputs_retained_until": 1792497065
+  }
+}

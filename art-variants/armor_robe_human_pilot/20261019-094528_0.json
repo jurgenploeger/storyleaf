@@ -1,0 +1,25 @@
+{
+  "tool": "inpainting",
+  "input": "art/sprites/player_walk.png",
+  "mask": "art/masks/player_walk_body.png",
+  "prompt": "chibi pixel art hero in a long blue mage robe with wide sleeves, a golden sash belt and a hem down to the ankles, same robe in every frame",
+  "seed": 1000,
+  "result": {
+    "tool_id": "inpainting",
+    "inference_id": "inf_DYZdnvEVe0JgaQmVv2mwW6oXjkmlB14y",
+    "balance_cost": 0.18,
+    "credit_cost": 20,
+    "charged": true,
+    "remaining_balance": 42.31099999999991,
+    "output_urls": [
+      "https://da8ztllw6by0f.cloudfront.net/75b6f307367550d7619fd65519e48341.png"
+    ],
+    "output_width": 192,
+    "output_height": 192,
+    "toolId": "inpainting",
+    "outputImageUrl": "https://da8ztllw6by0f.cloudfront.net/75b6f307367550d7619fd65519e48341.png",
+    "inferenceId": "inf_DYZdnvEVe0JgaQmVv2mwW6oXjkmlB14y",
+    "balanceCost": 0.18,
+    "creditCost": 20
+  }
+}

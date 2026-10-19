@@ -414,17 +414,236 @@ def half_up(v):
     return int(math.floor(v + 0.5))
 
 
-def hat(body, out, kind, colour, trim=None):
-    """A festive hat on the head (GearOverlay.hat), measured on the plain body: the top of its scalp
-    and its width a little below, every frame. `kind`: crown, a paper party crown with three points
-    (RuneScape's party hats); santa, a red cap with a white fur brim and pom, its tip flopped back;
-    ears, a bunny's, tall, pink inside (`trim`) from the front; mask, the face in the mask's colour
-    (`colour`, shaded as the skin was) with hollow eyes and a toothy grin, from the front and the side."""
-    col = hexc(colour)
-    acc = hexc(trim) if trim else np.array([1.0, 1.0, 1.0])
-    white, grey = np.array([0.98, 0.98, 1.0]), np.array([0.80, 0.82, 0.88])
-    hollow = np.array([0.08, 0.05, 0.08])
+# Where tools/wear_art.py puts each piece in its frame (GearOverlay's constants of the same names).
+HAT_BRIM, ANCHOR_X, ANCHOR_Y = 40, 24, 20
+SHOULDER_Y, CAPE_DROP, CAPE_SPAN = 24, 20, 14
+CAPE_FLOOR = 0.05   # a cape's shadows take its colour down to here
+CHIN_Y = 20         # where a scarf's wearer's chin is
+
+
+def piece_sheet(kind):
+    """A worn piece's sheet as tools/wear_art.py cut it out (art/sprites/wear_<kind>.png)."""
+    import pathlib
+    from PIL import Image
+    sprites = pathlib.Path(__file__).resolve().parent.parent / "art" / "sprites"
+    return np.asarray(Image.open(sprites / f"wear_{kind}.png").convert("RGBA")).astype(float) / 255
+
+
+def lengthened(t, by, start):
+    """Pixel-art stretch down (GearOverlay's Piece.lengthened): `by` rows repeated (or dropped)
+    through the middle of the piece's rows from `start` down, the rows above staying put."""
+    rows = [y for y in range(start, FRAME) if (t[y, :, 3] > 0.5).any()]
+    if by == 0 or not rows:
+        return t
+    body = [t[y] for y in range(start, max(rows) + 1)]
+    for k in range(abs(by)):
+        m = max(0, min(len(body) - 1, len(body) // 2 + (k % 3 - 1)))
+        if by > 0:
+            body.insert(m, body[m])
+        elif len(body) > 1:
+            body.pop(m)
+    out = t.copy()
+    out[start:] = 0
+    for i, row in enumerate(body):
+        if start + i < FRAME:
+            out[start + i] = row
+    return out
+
+
+def figure(frame):
+    """A figure's top, feet, shoulders (0.38 of the way down: where the tunic starts on every race's
+    sheet) and its outline's left and right there (GearOverlay.figure); None if it's too small."""
+    a = frame[..., 3] > 0.5
+    rows = np.nonzero(a.any(1))[0]
+    if len(rows) == 0 or rows[-1] - rows[0] <= 8:
+        return None
+    top, feet = rows[0], rows[-1]
+    shoulder = top + half_up((feet - top) * 0.38)
+    xs = np.nonzero(a[shoulder])[0]
+    if len(xs) == 0:
+        return None
+    return top, feet, shoulder, xs.min(), xs.max()
+
+
+def lit(t, floor=0.25):
+    """A piece's coloured pixels: not its white, its outline or its holes (darker than `floor`; a
+    cape's deepest shadow is its colour too, its outline neutral)."""
+    out = np.zeros(t.shape[:2], bool)
+    for y, x in zip(*np.nonzero(t[..., 3] > 0.5)):
+        _, s_, v_ = hsv(tuple(t[y, x, :3]))
+        out[y, x] = s_ > 0.2 and v_ > floor
+    return out
+
+
+def widen(t, by, keep_top=0):
+    """Pixel-art stretch (GearOverlay.widen): repeat (or drop) `by` columns through the middle of the
+    piece's rows from `keep_top` down, spread a little either side, so a pom over it keeps its shape."""
+    if by == 0:
+        return t
+    cols = [x for x in range(FRAME) if (t[keep_top:, x, 3] > 0.5).any()]
+    if not cols:
+        return t
+    l, r = min(cols), max(cols)
+    out = t.copy()
+    out[keep_top:] = 0
+    body = t[keep_top:, l:r + 1]
+    for k in range(abs(by)):
+        m = max(0, min(body.shape[1] - 1, body.shape[1] // 2 + (k % 3 - 1)))
+        if by > 0:
+            body = np.concatenate([body[:, :m + 1], body[:, m:]], 1)
+        elif body.shape[1] > 1:
+            body = np.concatenate([body[:, :m], body[:, m + 1:]], 1)
+    x0 = half_up((l + r) / 2 - (body.shape[1] - 1) / 2)
+    for i in range(body.shape[1]):
+        if 0 <= x0 + i < FRAME:
+            out[keep_top:, x0 + i] = body[:, i]
+    return out
+
+
+def pinched(t, by):
+    """Narrower by `by` columns, dropped next to its edges in turn, left then right (GearOverlay's
+    Piece.pinched): what's between them, a mask's eye holes, stays put."""
+    out = t.copy()
+    for k in range(by):
+        cols = [x for x in range(FRAME) if (out[:, x, 3] > 0.5).any()]
+        if len(cols) < 8:
+            break
+        l, r = min(cols), max(cols)
+        if k % 2 == 0:
+            out[:, l + 1:l + 3] = out[:, l:l + 2].copy()
+            out[:, l] = 0
+        else:
+            out[:, r - 2:r] = out[:, r - 1:r + 1].copy()
+            out[:, r] = 0
+    return out
+
+
+def bbox(t):
+    ys, xs = np.nonzero(t[..., 3] > 0.5)
+    return (ys.min(), ys.max(), xs.min(), xs.max()) if len(ys) else None
+
+
+def painted(t, colour, trim=None, floor=0.25):
+    """A piece in the hat's colours: its coloured pixels (not its white fur, its outline or its eye
+    holes) in `trim` if it has one (a bunny's pink band), else `colour`, as light or dark as they were
+    against their middle shade."""
+    out = t.copy()
+    tone = hexc(trim) if trim else hexc(colour)
+    shades = [(y, x, hsv(tuple(t[y, x, :3]))[2]) for y, x in zip(*np.nonzero(lit(t, floor)))]
+    if not shades:
+        return out
+    middle = sorted(v for _, _, v in shades)[len(shades) // 2]
+    for y, x, v in shades:
+        out[y, x, :3] = np.clip(tone * (v / middle), 0, 1)
+        out[y, x, 3] = 1
+    return out
+
+
+def face(f, cells, top, chin):
+    """The face on frame `f` as drawn (GearOverlay.face), its head found on the plain body (`cells`,
+    `top`, `chin` from `head`): the eyes' whites with a pupil or lash beside or over them and the
+    face's skin near (a glint in a beard or on a helmet has none; a cream white, as some armour sheets
+    draw, only if there's no pure one), the highest pair; and the rows from them up and down that show
+    skin or white. As (eye top, the middle of each eye, the face's top row, its bottom row, whether a
+    pixel is face, the columns searched), or None from behind."""
+    drawn = f[..., 3] > 0.5
+    xs_all = [x for _, x in cells]
+    whites, near = [], []
+    for most, least in ((0.06, 0.92), (0.25, 0.85)):
+        for y in range(max(0, top + 2), min(FRAME, chin + 3)):
+            for x in range(max(0, min(xs_all) - 1), min(FRAME, max(xs_all) + 3)):
+                if not drawn[y, x]:
+                    continue
+                _, s_, v_ = hsv(tuple(f[y, x, :3]))
+                if s_ >= most or v_ <= least:
+                    continue
+                dark = lambda yy, xx: 0 <= yy < FRAME and 0 <= xx < FRAME and drawn[yy, xx] and hsv(tuple(f[yy, xx, :3]))[2] < 0.35
+                if not (dark(y, x - 1) or dark(y, x + 1) or dark(y - 1, x)):
+                    continue
+                whites.append((y, x))
+                if any(0 <= xx < FRAME and drawn[yy, xx] and is_skin(f[yy, xx])
+                       for yy in (y, y + 1) if yy < FRAME for xx in (x - 2, x - 1, x + 1, x + 2)):
+                    near.append((y, x))
+        if near:
+            break
+    eyes = near or whites
+    if not eyes:
+        return None
+    eye = min(y for y, _ in eyes)
+    xs = sorted({x for y, x in eyes if y <= eye + 1})
+    groups = [[xs[0]]]
+    for x in xs[1:]:
+        (groups[-1].append(x) if x - groups[-1][-1] <= 2 else groups.append([x]))
+    mids = [sum(g) / len(g) for g in groups]
+    span = range(max(0, min(xs_all) - 2), min(FRAME, max(xs_all) + 3))
+
+    def facial(y, x):
+        if not drawn[y, x]:
+            return False
+        _, s_, v_ = hsv(tuple(f[y, x, :3]))
+        return is_skin(f[y, x]) or (s_ < most and v_ > least)
+
+    def shows(y):
+        return 0 <= y < FRAME and any(facial(y, x) for x in span)
+    low = eye
+    while low - eye < 6 and shows(low + 1):
+        low += 1
+    high = eye
+    while eye - high < 8 and shows(high - 1):
+        high -= 1
+    return eye, mids, high, low, facial, span
+
+
+def scarf(body, out, colour):
+    """A festive scarf (a necklace that wears `scarf`; GearOverlay.scarf) round the neck, over
+    everything: the piece Retro Diffusion drew (art/sprites/wear_scarf.png), what's under its wearer's
+    chin, in its colour, put under the chin as drawn (armour with a sheet of its own draws its head
+    higher or lower than the plain body; from behind, the chin found from the front), across the middle
+    of the body at the shoulders."""
+    sheet = piece_sheet("scarf")
+
+    def chin_of(row, c):
+        """The bottom of the face as drawn in that frame: from behind, the front's; with no face to
+        find, the plain body's chin."""
+        oy, ox = DIRS.index('down' if DIRS[row] == 'up' else DIRS[row]) * FRAME, c * FRAME
+        found = head(body[oy:oy + FRAME, ox:ox + FRAME])
+        if found is None:
+            return None
+        seen = face(out[oy:oy + FRAME, ox:ox + FRAME], found[2], found[0], found[1])
+        return seen[3] if seen else found[1]
+    chins = {(row, c): chin_of(row, c) for row in range(len(DIRS)) for c in range(body.shape[1] // FRAME)}
     for row, facing in enumerate(DIRS):
+        piece = painted(sheet[row * FRAME:(row + 1) * FRAME], colour)
+        if bbox(piece) is None:
+            continue
+        for c in range(body.shape[1] // FRAME):
+            oy, ox = row * FRAME, c * FRAME
+            f = out[oy:oy + FRAME, ox:ox + FRAME]
+            fig = figure(body[oy:oy + FRAME, ox:ox + FRAME])
+            if fig is None or chins[(row, c)] is None:
+                continue
+            for y, x in zip(*np.nonzero(piece[..., 3] > 0.5)):
+                ty, tx = y + chins[(row, c)] - CHIN_Y, x + (fig[3] + fig[4]) // 2 - ANCHOR_X
+                if 0 <= ty < FRAME and 0 <= tx < FRAME:
+                    f[ty, tx, :3] = piece[y, x, :3]
+                    f[ty, tx, 3] = 1
+    return out
+
+
+def hat(body, out, kind, colour, trim=None):
+    """A festive hat on the head (GearOverlay.hat), every frame: a piece Retro Diffusion drew on a
+    hero (art/sprites/wear_<kind>.png, cut out by tools/wear_art.py), fitted to the head as drawn, hair
+    and all, measured on the plain body (the scalp, the eyes) and on `out` before the hat goes on.
+    crown (a party crown), santa and ears (a bunny's, its band in `trim`) go round the head: their band
+    on the head's widest row over the eyes, as wide as the scalp and a little more, over all the hair
+    above it. A mask (none from behind) goes over the face, its eye holes on the
+    eyes, found on the face as drawn (armour with a sheet of its own has a face of its own), no wider
+    or taller than the face, a little over a beard, and from the side as far forward as it reaches."""
+    sheet = piece_sheet(kind)
+    for row, facing in enumerate(DIRS):
+        piece = painted(sheet[row * FRAME:(row + 1) * FRAME], colour, trim)
+        if bbox(piece) is None:
+            continue
         for c in range(body.shape[1] // FRAME):
             oy, ox = row * FRAME, c * FRAME
             f = out[oy:oy + FRAME, ox:ox + FRAME]
@@ -435,122 +654,146 @@ def hat(body, out, kind, colour, trim=None):
             span = [x for y, x in cells if y == top + 3] or [x for _, x in cells]
             left, right = min(span), max(span)
             cx = (left + right) // 2
-            back = {'right': -1, 'left': 1, 'down': 1, 'up': -1}[facing]
+            drawn = f[..., 3] > 0.5     # the head as drawn, hair and all, before the hat goes on
 
-            def put(x, y, cc):
-                if 0 <= x < FRAME and 0 <= y < FRAME:
-                    f[y, x, :3] = cc
-                    f[y, x, 3] = 1
+            def stamp(t, dy, dx):
+                for y, x in zip(*np.nonzero(t[..., 3] > 0.5)):
+                    if 0 <= y + dy < FRAME and 0 <= x + dx < FRAME:
+                        f[y + dy, x + dx, :3] = t[y, x, :3]
+                        f[y + dy, x + dx, 3] = 1
 
-            def stamp(parts):
-                """Each part (cells, colour for a cell, its outline) filled, in order, outlined where
-                the hat meets the outside."""
-                whole = set().union(*(cells for cells, _, _ in parts))
-                for cells, fill, line in parts:
-                    for x, y in cells:
-                        edge = any((x + dx, y + dy) not in whole for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
-                        put(x, y, line if edge else fill(x, y))
-
-            if kind == 'crown':
-                # A band round the head at the scalp's top, three points up from it.
-                l, r = left - 1, right + 1
-                peaks = [l + 2, (l + r) // 2, r - 2]
-                shape = set()
-                for x in range(l, r + 1):
-                    rise = max(0, 4 - 2 * min(abs(x - p) for p in peaks))
-                    for y in range(top - 1 - rise, top + 2):
-                        shape.add((x, y))
-                light = mix(col, (1, 1, 1), 0.4)
-                stamp([(shape, lambda x, y: shade(col, 0.75) if y == top + 1 else light if y == top - 1 else col, shade(col, 0.42))])
-            elif kind == 'santa':
-                # A white fur brim; the cap over the scalp, narrowing and flopping over to the back.
-                l, r = left - 1, right + 1
-                brim = {(x, y) for x in range(l, r + 1) for y in (top - 1, top, top + 1)}
-                half = (r - l) / 2
-                cap = set()
-                for k in range(2, 9):
-                    w = half * (1 - (k - 1) / 8.5)
-                    mid = (l + r) / 2 + back * ((k - 1) ** 2) / 10
-                    for x in range(half_up(mid - w), half_up(mid + w) + 1):
-                        cap.add((x, top - k))
-                tip = (half_up((l + r) / 2 + back * 5.3), top - 8)
-                pom = {(tip[0] + dx, tip[1] + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if abs(dx) + abs(dy) < 2}
-                dark = shade(col, 0.72)
-                stamp([(cap, lambda x, y: dark if (x - (l + r) / 2) * back > half * 0.4 else col, shade(col, 0.42)),
-                       (brim, lambda x, y: grey if y == top + 1 else white, grey * 0.62),
-                       (pom, lambda x, y: white, grey * 0.62)])
-            elif kind == 'ears':
-                # Two tall ears from the head, leaning out a little; pink inside, seen from the front.
-                spots = {'down': (cx - 4, cx + 2), 'up': (cx - 4, cx + 2), 'right': (cx - 3, cx), 'left': (cx - 1, cx + 2)}[facing]
-                parts = []
-                for n, x0 in enumerate(spots):
-                    lean = -1 if n == 0 else 1
-                    shape, inner = set(), set()
-                    for k in range(0, 11):
-                        y = top + 1 - k
-                        dx = lean * (k // 5)
-                        width = 2 if k >= 9 else 3
-                        for x in range(x0 + dx, x0 + dx + width + 1):
-                            shape.add((x, y))
-                        if facing == 'down' and 2 <= k <= 8:
-                            inner.add((x0 + dx + 1 + n, y))
-                    parts.append((shape, lambda x, y, inner=inner: acc if (x, y) in inner else col, shade(col, 0.55)))
-                stamp(parts)
-            elif kind == 'mask':
-                if facing == 'up':
+            if kind == 'mask':
+                seen = face(f, cells, top, chin)
+                if seen is None:
                     continue
-                face = {(x, y) for y, x in cells if y < chin}
-                for x, y in face:
-                    hh, s, v = hsv(tuple(f[y, x, :3]))
-                    if (hh <= 40 / 360 or hh >= 342 / 360) and 0.12 < s < 0.65 and v > 0.55:
-                        f[y, x, :3] = np.clip(col * (0.3 + v * 0.8), 0, 1)
-                # The eyes (what wasn't skin on the face) as hollows, a row deeper; a grin at the chin.
-                eyes = [(x, y) for y in range(top, chin) for x in range(FRAME)
-                        if (x, y) not in face and any((x + dx, y) in face for dx in (-1, 1)) and any((x, y + dy) in face for dy in (-1, 1))]
-                for x, y in eyes:
-                    put(x, y, hollow)
-                    if (x, y - 1) in face:
-                        put(x, y - 1, hollow)
-                mouth = chin - 1
-                row_ = sorted(x for x, y in face if y == mouth)
-                if row_:
-                    if facing == 'down':
-                        teeth = range(cx - 2, cx + 3)
-                    elif facing == 'right':
-                        teeth = range(row_[-1] - 3, row_[-1])
-                    else:
-                        teeth = range(row_[0] + 1, row_[0] + 4)
-                    for x in teeth:
-                        if (x, mouth) in face:
-                            put(x, mouth, hollow if abs(x - cx) % 2 else mix(col, (1, 1, 1), 0.7))
+                oy_, mids, high, low, facial, span = seen
+                ox_ = (mids[0] + mids[-1]) / 2 if facing == 'down' else max(mids) if facing == 'right' else min(mids)
+                dx = half_up(ox_) - ANCHOR_X
+                # The mask stops two rows under the chin (over the top of a dwarf's beard) and starts no
+                # more than a row over the face (on the hair).
+                t = piece
+                if facing == 'down':
+                    # No wider than the face (its outermost skin or eye pixels from just over the eyes
+                    # to the chin) and its outline: on a narrow face it spilled onto the hair.
+                    rows = [[x for x in span if facial(y, x)] for y in range(oy_ - 1, low + 1)]
+                    wide = max((max(r) - min(r) + 1 for r in rows if r), default=0)
+                    _, _, tl, tr = bbox(t)
+                    if wide:
+                        t = pinched(t, max(0, min(4, (tr - tl + 1) - (wide + 2))))
+                t0, t1, _, _ = bbox(t)
+                below = max(0, min(3, t1 - (low - oy_ + ANCHOR_Y + 2)))
+                t = lengthened(t, -below, ANCHOR_Y + 2)
+                above = max(0, min(3, (high - oy_ + ANCHOR_Y - 1) - t0))
+                t = lengthened(t[::-1], -above, FRAME - ANCHOR_Y + 1)[::-1]
+                dy = oy_ - ANCHOR_Y
+                if facing in ('right', 'left'):
+                    # From the side, as far forward as the face reaches on any of its rows (forehead,
+                    # nose, chin; not the hair above, whose ginger passes for skin), the outline past
+                    # it: no skin peeking out in front of it. Within three pixels of the front eye on
+                    # the front eye hole.
+                    sign = 1 if facing == 'right' else -1
+                    need = 0
+                    for y in range(high, low + 1):
+                        mask_row = [x for x in range(FRAME) if t[y - dy, x, 3] > 0.5] if 0 <= y - dy < FRAME else []
+                        if not mask_row:
+                            continue
+                        face_row = [x for x in span if facial(y, x)]
+                        if face_row:
+                            reach = (max(face_row) + 1 - (max(mask_row) + dx)) if sign > 0 else ((min(mask_row) + dx) - (min(face_row) - 1))
+                            need = max(need, reach)
+                    dx += sign * min(3, need)
+                stamp(t, dy, dx)
+                continue
+
+            def around(y):
+                """The head as drawn on row `y`: the run through its middle, hair and all, never
+                narrower than the scalp and its outline."""
+                if not 0 <= y < FRAME:
+                    return left - 1, right + 1
+                near = [x for x in range(max(0, cx - 3), min(FRAME, cx + 4)) if drawn[y, x]]
+                if not near:
+                    return left - 1, right + 1
+                l = r = min(near, key=lambda x: abs(x - cx))
+                while l - 1 >= max(0, left - 6) and drawn[y, l - 1]:
+                    l -= 1
+                while r + 1 < min(FRAME, right + 7) and drawn[y, r + 1]:
+                    r += 1
+                return min(l, left - 1), max(r, right + 1)
+
+            # The eyes: gaps in the face's skin (none from behind). The band sits on the widest row of
+            # the head as drawn, hair and all, at least two rows over them: worn round the head, not
+            # perched on top of it. Never lower than three fifths of the way from the scalp's top to
+            # the eyes: a cowl or a helmet round the face is wide all the way down.
+            skin = {(y, x) for y, x in cells}
+            eyes = [y for y, x in cells if y > top + 2 and (y, x + 1) not in skin
+                    and ((y, x + 2) in skin or (y, x + 3) in skin)]
+            eye = min(eyes) if eyes else top + max(4, (chin - top) // 2)
+            deep = min(eye - 2, top + max(2, (eye - top) * 3 // 5))
+            crown_top = min((y for y in range(FRAME) if drawn[y, max(0, left):right + 1].any()), default=top)
+            widths = {y: around(y)[1] - around(y)[0] for y in range(crown_top, deep + 1)}
+            brim = max(widths, key=lambda y: (widths[y], y)) if widths else top + 1
+            # As wide as the scalp and its outline and a little more, within three pixels of as drawn;
+            # a pom (the rows narrower than half the piece) keeps its shape.
+            t0, t1, tl, tr = bbox(piece)
+            keep = next(y for y in range(t0, t1 + 1) if (piece[y, :, 3] > 0.5).sum() >= max(1, (tr - tl + 1) // 2))
+            band = int((piece[HAT_BRIM, :, 3] > 0.5).sum())
+            t = widen(piece, max(-3, min(3, (right - left + 5) - band)), keep)
+            t0, t1, tl, tr = bbox(t)
+            dy, dx = brim + 1 - HAT_BRIM, (left + right + 1) // 2 - (tl + tr + 1) // 2
+            # It sits on the head: the hair above the band it doesn't cover goes (spiky hair stuck up
+            # between a crown's points or a bunny's ears).
+            for y in range(0, brim - 1):
+                for x in range(max(0, left - 1), min(FRAME, right + 2)):
+                    ty, tx = y - dy, x - dx
+                    if drawn[y, x] and not (0 <= ty < FRAME and 0 <= tx < FRAME and t[ty, tx, 3] > 0.5):
+                        f[y, x] = 0
+            stamp(t, dy, dx)
     return out
 
 
+def is_skin(p):
+    hh, s, v = hsv(tuple(p[:3]))
+    return (hh <= 40 / 360 or hh >= 342 / 360) and 0.12 < s < 0.65 and v > 0.55
+
+
 def cape(base, out, colour, trim):
-    """A status cape over whatever is worn (GearOverlay.drape): from behind, hung from the shoulders
-    (0.38 of the way from the top of the head to the feet) nearly to the feet, widening, its trim
-    along the hem and a diamond emblem, the hair falling over its top; from the front and the side,
-    past the body's outline, a clasp at the collar."""
-    col, acc = hexc(colour), hexc(trim)
-    dark, light = shade(col, 0.62), mix(col, (1, 1, 1), 0.3)
+    """A status cape over whatever is worn (GearOverlay.drape): the cape Retro Diffusion drew
+    (art/sprites/wear_cape.png, cut out by tools/wear_art.py) in its colour, stretched to the body
+    (its shoulders 0.38 of the way from the top of the head to the feet, as wide as it is there, and
+    as long down to the feet), its trim along the hem. From behind it hangs over the body, the hair
+    falling over its top, a diamond emblem on the back; from the front and the side it shows past the
+    body's outline, a clasp at the collar."""
+    acc = hexc(trim)
     outline = np.array([0.16, 0.12, 0.18])
+    sheet = piece_sheet("cape")
     for row, facing in enumerate(DIRS):
+        frame = sheet[row * FRAME:(row + 1) * FRAME]
+        coloured = lit(frame, CAPE_FLOOR)
+        piece = painted(frame, colour, floor=CAPE_FLOOR)
+        # Its trim: the lowest coloured pixel of each column, and the outline under it.
+        for x in range(FRAME):
+            ys = np.nonzero(coloured[:, x])[0]
+            if len(ys):
+                piece[ys.max(), x, :3] = acc
+                if ys.max() + 1 < FRAME and piece[ys.max() + 1, x, 3] < 0.5:
+                    piece[ys.max() + 1, x, :3] = outline
+                    piece[ys.max() + 1, x, 3] = 1
+        if bbox(piece) is None:
+            continue
         for c in range(base.shape[1] // FRAME):
             oy, ox = row * FRAME, c * FRAME
             f = out[oy:oy + FRAME, ox:ox + FRAME]
             b = base[oy:oy + FRAME, ox:ox + FRAME]
             a = b[..., 3] > 0.5
-            rows = np.nonzero(a.any(1))[0]
-            if len(rows) == 0 or rows[-1] - rows[0] <= 8:
+            fig = figure(b)
+            if fig is None:
                 continue
-            top, feet = rows[0], rows[-1]
-            shoulder = top + int(round((feet - top) * 0.38))
-            hem = feet - 3
-            xs = np.nonzero(a[shoulder])[0]
-            if hem <= shoulder + 2 or len(xs) == 0:
-                continue
-            left, right = xs.min(), xs.max()
+            top, feet, shoulder, left, right = fig
             cx = (left + right) // 2
+            # From the front and the side a little wider than the body, so it shows past its outline.
+            flare = {'up': 0, 'down': 4}.get(facing, 2)
+            t = widen(lengthened(piece, (feet - shoulder) - CAPE_DROP, SHOULDER_Y), (right - left + 1) - CAPE_SPAN + flare)
+            dy, dx = shoulder - SHOULDER_Y, cx - ANCHOR_X
 
             def put(x, y, cc, only_empty=False):
                 if 0 <= x < FRAME and 0 <= y < FRAME and (not only_empty or not a[y, x]):
@@ -563,35 +806,19 @@ def cape(base, out, colour, trim):
                 hh, ss, vv = hsv(tuple(b[y, x, :3]))
                 return 10 <= hh * 360 <= 65 and ss > 0.4 and vv > 0.6
 
-            if facing == 'up':
-                for y in range(shoulder, hem + 1):
-                    widen = (y - shoulder) // 4
-                    lo, hi = left + 1 - widen, right - 1 + widen
-                    for x in range(lo, hi + 1):
-                        if lo < hi and not hair(x, y):
-                            put(x, y, outline if x in (lo, hi) or y == hem else acc if y == hem - 1
-                                else light if x == lo + 1 else dark if x == hi - 1 else col)
-                emblem = shoulder + 6
-                for dy in range(-2, 3):
-                    for dx in range(abs(dy) - 2, 3 - abs(dy)):
-                        if not hair(cx + dx, emblem + dy):
-                            put(cx + dx, emblem + dy, acc if abs(dx) + abs(dy) < 2 else shade(acc, 0.7))
-                continue
-            for y in range(shoulder + 1, hem + 1):
-                xs = np.nonzero(a[y])[0]
-                if len(xs) == 0:
-                    continue
-                l, r = xs.min(), xs.max()
-                flare = 1 + (y - shoulder) // 4
-                if facing == 'down':
-                    spots = [(l - flare, True), (r + flare, True)] + [s for k in range(1, flare) for s in ((l - k, False), (r + k, False))]
-                elif facing == 'right':
-                    spots = [(l - flare - 1, True)] + [(l - k, False) for k in range(1, flare + 1)]
+            for y, x in zip(*np.nonzero(t[..., 3] > 0.5)):
+                if facing == 'up':
+                    if not hair(x + dx, y + dy):
+                        put(x + dx, y + dy, t[y, x, :3])
                 else:
-                    spots = [(r + flare + 1, True)] + [(r + k, False) for k in range(1, flare + 1)]
-                for x, outer in spots:
-                    put(x, y, outline if outer else acc if y == hem else col, only_empty=True)
-            if facing == 'down':
+                    put(x + dx, y + dy, t[y, x, :3], only_empty=True)
+            if facing == 'up':
+                emblem = shoulder + 6
+                for ey in range(-2, 3):
+                    for ex in range(abs(ey) - 2, 3 - abs(ey)):
+                        if not hair(cx + ex, emblem + ey):
+                            put(cx + ex, emblem + ey, acc if abs(ex) + abs(ey) < 2 else shade(acc, 0.7))
+            elif facing == 'down':
                 put(cx, shoulder, acc); put(cx - 1, shoulder, acc); put(cx, shoulder + 1, shade(acc, 0.7))
     return out
 
@@ -614,6 +841,9 @@ def main(out):
             # armour's own sheet, which is drawn as it is.
             if race["id"] in item.get("sheets", {}):
                 image = Image.open(root / "art" / "sprites" / f"{item['sheets'][race['id']]}.png").convert("RGBA")
+                if item.get("tint"):
+                    tinted = pp.recolor(np.asarray(image).astype(float) / 255, item["tint"])
+                    image = Image.fromarray((np.clip(tinted, 0, 1) * 255).round().astype(np.uint8), "RGBA")
                 for c, row in enumerate((2, 1, 0, 3)):
                     frame = image.crop((0, row * 48, 48, row * 48 + 48)).resize((48 * zoom, 48 * zoom), Image.NEAREST)
                     sheet.paste(frame, ((k * 4 + c) * 48 * zoom, r * 48 * zoom), frame)
@@ -708,13 +938,48 @@ def dressed(race, body, style, armour=None, worn=()):
             out = apply(base, out, armour.get("wear"), armour.get("accent"), pattern=armour.get("pattern"))
         skeleton = f"body_{body}"
     pieces = {item["type"]: item for item in worn}
+    # A festive scarf is worn as a necklace, drawn round the neck instead of a pendant.
+    wrap = pieces.pop("necklace") if pieces.get("necklace", {}).get("wear") == "scarf" else None
     necklace = pieces.get("necklace", {})
     plain = np.asarray(load(skeleton)).astype(float) / 255
     out = trinkets(plain, out, gloves=pieces.get("gloves", {}).get("color"),
                    boots=pieces.get("boots", {}).get("color"), necklace=necklace.get("color"), chain=necklace.get("accent"))
+    if "cape" in pieces:
+        out = cape(base, out, pieces["cape"]["color"], pieces["cape"]["accent"])
+    if wrap:
+        out = scarf(plain, out, wrap["color"])
     if "head" in pieces:
         out = hat(plain, out, pieces["head"]["hat"], pieces["head"]["color"], pieces["head"].get("accent"))
     return out
+
+
+BODIES = [("human", "human", "spiky"), ("human", "human_female", "ponytail"), ("elf", "elf", "long"),
+          ("elf", "elf_male", "swept"), ("dwarf", "dwarf", "crop"), ("dwarf", "dwarf_female", "braids")]
+# One armour of every cut, and every walk sheet of its own: what a wearable must fit over.
+OUTFITS = [None, "leather_vest", "copper_hide", "chain_mail", "mage_robe", "ranger_cloak", "snow_cloak",
+           "iron_plate", "dragon_mail"]
+
+
+def wear_sheet(out, worn_ids):
+    """The wearables `worn_ids` (a hat, a cape, ...) on every body (each race, each gender) under every
+    armour cut and sheet (OUTFITS, a row each), facing down, right, up and left, drawn in the game's
+    order: what docs/sprite-acceptance.md asks to look at before a wearable ships."""
+    import json
+    import pathlib
+    from PIL import Image
+    root = pathlib.Path(__file__).resolve().parent.parent
+    items = {i["id"]: i for i in json.load(open(root / "content" / "items.json"))["items"]}
+    zoom = 2
+    sheet = Image.new("RGB", (len(BODIES) * 4 * 48 * zoom + (len(BODIES) - 1) * 8, len(OUTFITS) * 48 * zoom), (80, 130, 80))
+    for r, outfit in enumerate(OUTFITS):
+        for k, (race, body, style) in enumerate(BODIES):
+            img = dressed(race, body, style, items.get(outfit), [items[i] for i in worn_ids])
+            image = Image.fromarray((np.clip(img, 0, 1) * 255).round().astype(np.uint8), "RGBA")
+            for c, row in enumerate((2, 1, 0, 3)):   # down, right, up, left
+                frame = image.crop((0, row * 48, 48, row * 48 + 48)).resize((48 * zoom, 48 * zoom), Image.NEAREST)
+                sheet.paste(frame, ((k * 4 + c) * 48 * zoom + k * 8, r * 48 * zoom), frame)
+    sheet.save(out)
+    print(f"wrote {out}: {', '.join(worn_ids)} over {', '.join(o or 'nothing' for o in OUTFITS)}")
 
 
 def trinket_sheet(out):
@@ -777,5 +1042,7 @@ if __name__ == "__main__":
         trinket_sheet(sys.argv[2])
     elif len(sys.argv) > 2 and sys.argv[1] == "--hats":
         hat_sheet(sys.argv[2])
+    elif len(sys.argv) > 3 and sys.argv[1] == "--wear":
+        wear_sheet(sys.argv[2], sys.argv[3].split("+"))
     else:
         main(sys.argv[1] if len(sys.argv) > 1 else "gear-preview.png")

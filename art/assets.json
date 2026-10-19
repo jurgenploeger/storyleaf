@@ -17051,6 +17051,28 @@
       }
     },
     {
+      "id": "item_red_christmas_scarf",
+      "kind": "item",
+      "request": {
+        "prompt": "a knitted red and white striped Christmas scarf, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_green_christmas_scarf",
+      "kind": "item",
+      "request": {
+        "prompt": "a knitted green and white striped Christmas scarf, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
       "id": "item_bunny_ears",
       "kind": "item",
       "request": {
