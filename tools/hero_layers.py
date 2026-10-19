@@ -22,9 +22,7 @@ body is recoloured like the whole sheet used to be (skin, hair, outfit); the loc
 hold nothing but hair, so the hair colour reaches every shade of them (appearance.json
 `hairLayer`). A style moved onto another head is lined up with its skull and brow, kept off its
 face, opened where an elf's ears poke through, and painted in that sheet's own hair colours, so
-one head has one hair colour before any dye. The dwarves' heavy brows are softened on the body
-layer once it's split (SOFT_BROWS), never on the sheet, so the split reads the sheet as drawn.
-Rerun after changing a walk sheet:
+one head has one hair colour before any dye. Rerun after changing a walk sheet:
 
     python3 tools/hero_layers.py            # writes the PNGs
     python3 tools/hero_layers.py --preview /tmp/layers.png
@@ -55,15 +53,6 @@ STYLES = {
     "braids": ("dwarf", "dwarf_female_walk"), "bob": ("human", "human_other_walk"),
     "shoulder": ("elf", "elf_other_walk"), "messy": ("dwarf", "dwarf_other_walk"),
 }
-# Sheets drawn with heavy brows (a near-black line on the eyes; playtesting 2026-10-19: "a forehead
-# sticking out ... too barbaric"), softened on the body layer only (soften_brows): the split reads
-# the sheet as drawn, so no hair moves between layers.
-SOFT_BROWS = {"dwarf_walk", "dwarf_female_walk", "dwarf_npc_walk"}
-# The softened brow: the skin's own hue, darker and greyer (value, saturation), so no hair rule takes
-# it for hair (hairish wants saturation 0.3 and up) and the skin tone recolours it with the face.
-# The lash left over a pupil is near-black.
-BROW_SHADE = (0.55, 0.28)
-LASH = np.array([0x2A, 0x22, 0x20]) / 255
 # Walk sheets no hero wears but townsfolk do (art/assets.json `derive` with `layers`), as (race,
 # sheet): split the same way, their own hair kept as hair_<body> (an old dwarf's bushy mop; his
 # beard is his locks).
@@ -362,11 +351,6 @@ class Race:
         self._steady(found)
         for (row, col), (take, beard) in found.items():
             self._cut(row, col, take, beard)
-        if sheet_id in SOFT_BROWS:
-            # Only where the body still shows the sheet as drawn (not a scalp painted in).
-            soft = soften_brows(self)
-            keep = (np.abs(soft - self.sheet).max(2) > 1e-6) & (np.abs(self.body - self.sheet).max(2) < 1e-6)
-            self.body[keep] = soft[keep]
 
     def _bearded(self, down, top):
         brow = top + self.drop
@@ -485,7 +469,7 @@ class Race:
         if self.tuft != 4:
             # A bun's hair tie and highlights don't count as hair: clear whatever is left above the skull.
             body[:max(0, int(head.cy - head.ry) - 1)] = 0
-        self._scalp(body, head)
+        self._scalp(body, head, mask(f, opaque))
         self._patch(body, head, take, row, col)
         self._tidy(body, take)
         if self.beard:
@@ -498,8 +482,11 @@ class Race:
             locks = flood(f, core, lockish, beard, diagonal=True)
             frame(self.locks, row, col)[locks] = f[locks]
 
-    def _scalp(self, body, head):
-        """Draws the bare skull round the face, shaded, with an outline, and joins the ears to it."""
+    def _scalp(self, body, head, drawn):
+        """Draws the bare skull round the face, shaded, with an outline, and joins the ears to it,
+        inside the sprite as drawn (`drawn`): the skull is rounder than a face seen from the side or
+        a cheek seen from the front, and painted past them it stuck out like a heavy brow ridge or a
+        lump of an ear (playtesting 2026-10-19)."""
         light, shade = mix(self.skin, (1, 1, 1), 0.25), self.skin * 0.82
         painted = np.zeros((F, F), bool)
 
@@ -511,7 +498,7 @@ class Race:
 
         for y in range(F):
             for x in range(F):
-                if head.inside(x, y) and not (y >= head.brow and opaque(body[y, x])):
+                if drawn[y, x] and head.inside(x, y) and not (y >= head.brow and opaque(body[y, x])):
                     paint(x, y)               # above the face, or round it where hair used to be
         # Ears (skin left beside the skull): bridge each one back to the head.
         for y in range(head.brow - 4, head.brow + 3):
@@ -520,7 +507,7 @@ class Race:
                     step = 1 if x < head.cx else -1
                     xx = x + step
                     while 0 <= xx < F and not painted[y, xx] and not head.inside(xx, y) and abs(xx - x) < 6:
-                        if not opaque(body[y, xx]) or dark(body[y, xx]):
+                        if drawn[y, xx] and (not opaque(body[y, xx]) or dark(body[y, xx])):
                             paint(xx, y)
                         xx += step
         # Specks left floating where the hair was (an ear tip's outline): gone.
@@ -529,7 +516,7 @@ class Race:
                 if opaque(body[y, x]) and not painted[y, x] and y < head.brow and not any(
                         opaque(body[q]) for q in neighbours8(y, x)):
                     body[y, x, 3] = 0
-        outline(body, painted)
+        outline(body, painted, drawn)
 
     def _patch(self, body, head, taken, row, col):
         """Fills what the hair used to hide below the head (a long-haired back, the shoulders) with
@@ -570,55 +557,22 @@ class Race:
                 body[piece] = 0
 
 
-def brow_colour(skin):
-    h, s, v = colorsys.rgb_to_hsv(*skin)
-    return np.array(colorsys.hsv_to_rgb(h, BROW_SHADE[1], v * BROW_SHADE[0]))
-
-
-def soften_brows(race):
-    """A copy of the race's sheet with the brows lifted off the eyes (SOFT_BROWS): the near-black
-    line on the eyes (dark pixels right above an eye's white, and those joined to them along the
-    row) is skin again, a thin lash stays over each pupil, and a soft brow in a darker shade of the
-    skin sits a row above, every frame but the back views. The hair's own shadow stays as it is."""
-    sheet = race.sheet.copy()
-
-    def line_pixel(f, y, x):
-        return 0 <= y < F and lo - 1 <= x <= hi + 1 and dark(f[y, x]) and not lockish(f[y, x])
-
-    for (row, col), head in race.heads.items():
-        if head.facing == "up":
-            continue
-        f = frame(sheet, row, col)
-        lo, hi = head.face if head.face else (int(head.cx - head.half), int(head.cx + head.half))
-        rows = range(head.brow, min(F - 1, head.brow + 8))
-        whites = [(y, x) for y in rows for x in range(max(0, lo - 1), min(F, hi + 2))
-                  if opaque(f[y, x]) and hsv(f[y, x])[1] < 0.12 and hsv(f[y, x])[2] > 0.9]
-        skins = [f[y, x, :3] for y in rows for x in range(max(0, lo), min(F, hi + 1)) if is_skin(f[y, x])]
-        if not whites or not skins:
-            continue
-        skin = np.median(skins, axis=0)
-        line = {(y - 1, x) for y, x in whites if line_pixel(f, y - 1, x)}
-        grown = True
-        while grown:
-            more = {(y, x + d) for y, x in line for d in (-1, 1) if line_pixel(f, y, x + d)} - line
-            line |= more
-            grown = bool(more)
-        for y, x in sorted(line):
-            below = f[y + 1, x]
-            f[y, x, :3] = LASH if opaque(below) and hsv(below)[2] < 0.45 else skin
-            if y >= 1 and is_skin(f[y - 1, x]):
-                f[y - 1, x, :3] = brow_colour(skin)
-    return sheet
-
-
 def mix(c, d, t):
     return np.clip(np.array(c[:3]) * (1 - t) + np.array(d[:3]) * t, 0, 1)
 
 
-def outline(img, painted):
+def outline(img, painted, inside=None):
+    """A dark line round what was painted: on the pixels just outside it, or, given `inside` (the
+    sprite as drawn), on its own edge where it meets the outside, so it never grows past the drawing."""
+    if inside is not None:
+        edge = [(y, x) for y in range(F) for x in range(F) if painted[y, x] and any(
+            not (0 <= q[0] < F and 0 <= q[1] < F) or not inside[q]
+            for q in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)))]
+        for y, x in edge:
+            img[y, x, :3] = OUTLINE
     for y in range(F):
         for x in range(F):
-            if painted[y, x] or opaque(img[y, x]):
+            if painted[y, x] or opaque(img[y, x]) or (inside is not None and not inside[y, x]):
                 continue
             if any(painted[q] for q in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1))
                    if 0 <= q[0] < F and 0 <= q[1] < F):
