@@ -119,7 +119,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   and `merge`. Text in content fields listed in `content/i18n/fields.json` needs the same. Untranslated text shows in
   English; `check_content.py` rejects lost placeholders.
 - **Versions:** `MARKETING_VERSION` in `project.yml` and the top entry of `content/changelog.json` move together
-  (the checker enforces it). Add a changelog entry when shipping a user-visible change. 1.0.0 = App Store launch.
+  (the checker enforces it). What's new sums up big updates, not every patch: one entry per update with at most
+  five short lines (the checker enforces it). A small user-visible change moves the top entry's `version` and
+  `date` along and folds into its lines; start a new entry only for a big update. 1.0.0 = App Store launch.
 - **Screenshots and tests:** pushes to `claude/**` branches run `.github/workflows/screenshots.yml` (macOS
   runner): it builds for the simulator, runs the unit tests (a job of its own, its own check) and
   shoots the scenes in `tools/screenshots.txt` (FAIRYLAND_DEBUG flags); a scene that crashes the app prints
