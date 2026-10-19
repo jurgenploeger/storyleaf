@@ -44,6 +44,7 @@ import SpriteKit
 ///   race=<id>      play this race (content/classes.json); with titlepage=create, the new hero's race
 ///   style=<id>     wear this hairstyle (content/appearance.json `styles`)
 ///   hair=<id>      dye the hair this colour (content/appearance.json `hair`)
+///   skin=<id>      this skin tone (content/appearance.json `skin`)
 ///   gender=<id>    male | female | other (picks the race's matching sheet)
 ///   battle[=n]     start in a random battle on the current map (n: exactly that many monsters)
 ///   win            with battle, duel or boss: the foes fall at once and the victory plays out
@@ -604,6 +605,11 @@ enum DebugLaunch {
         if let hair = flags["hair"] {
             var look = session.data.hero.look ?? .standard
             look.hair = hair
+            session.data.hero.look = look
+        }
+        if let skin = flags["skin"] {
+            var look = session.data.hero.look ?? .standard
+            look.skin = skin
             session.data.hero.look = look
         }
         session.applyLook()

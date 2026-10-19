@@ -21,9 +21,10 @@ character art, so none of this has to be found again. Add what you learn, with t
 
 ## Acceptance criteria
 
-Every criterion holds on **all six bodies** (human, elf and dwarf, each gender), **all four directions** and
+Every criterion holds on **all six bodies** (human, elf and dwarf, each gender), **all four directions**,
 **every armour cut and sheet** (`gear_preview.OUTFITS`: none, vest, hide, chain mail, robe, ranger cloak,
-snow cloak, plate, dragon mail). A fix that's right on one body and wrong on another isn't done.
+snow cloak, plate, dragon mail) and **every skin tone** (fair, rosy, tan, brown, deep). A fix that's right on
+one body and wrong on another isn't done.
 
 ### Walk sheets (heroes, armour with a sheet of its own)
 
@@ -148,6 +149,10 @@ python3 tools/check_content.py
   0.25) only if no pure one is found. The highest pair is the eyes.
 - The skin test (hue under 40° or over 342°, saturation 0.12 to 0.65, value over 0.55) also passes ginger and
   red hair. Keep it to the face's own rows: from the eyes up and down, the rows that show skin.
+- It knows only the sheets' own fair skin: on a brown or deep skin tone it finds no face at all. Find faces on
+  the sprite before any recolouring (GearOverlay's `base`, the game's `original`), which has the same pixels
+  in the same places; draw on the recoloured one. A mask slid off a deep-skinned hero's face (2026-10-19)
+  because the preview, which then had no skin tones, never showed it.
 - Pixel-art stretching repeats or drops whole rows or columns through the middle, spread a little, never
   scales. Keep a pom or a crown's points out of the stretch.
 - Recolour a piece by the shade of each pixel against the piece's median, so every colour variant keeps the
