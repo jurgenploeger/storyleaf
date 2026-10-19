@@ -54,6 +54,8 @@ enum GearOverlay {
            let colour = color(hex: gear.hatColor) {
             pieces = directions.indices.map { Self.painted(sheet, row: $0, size: frame, colour: color(hex: gear.hatTrim) ?? colour) }
         }
+        // The frame a hat finds the face on from behind (a scarf's chin): the one facing you.
+        let frontRow = directions.firstIndex(of: "down")
         var capes: [Piece] = []
         if let capePiece, let sheet = Bitmap(capePiece), sheet.width == frame, sheet.height >= frame * directions.count,
            let colour = color(hex: gear.cape) {
@@ -70,7 +72,7 @@ enum GearOverlay {
                 }
                 if gear.hat != nil, row < pieces.count {
                     hat(&out, body: body, origin: (column * frame, row * frame), size: frame, facing: facing,
-                        kind: gear.hat ?? "", piece: pieces[row])
+                        kind: gear.hat ?? "", piece: pieces[row], front: (column * frame, (frontRow ?? row) * frame))
                 }
             }
         }
@@ -134,16 +136,16 @@ enum GearOverlay {
         }
     }
 
-    /// Row `row` of the cape's sheet in a cape's colours (`painted`), its trim on the lowest coloured
-    /// pixel of each column with an outline under it.
+    /// Row `row` of the cape's sheet in a cape's colours (`painted`, its deepest shadows too), its trim
+    /// on the lowest coloured pixel of each column with an outline under it.
     nonisolated private static func cape(_ sheet: Bitmap, row: Int, size: Int, colour: RGB, trim: RGB) -> Piece {
-        var piece = painted(sheet, row: row, size: size, colour: colour)
+        var piece = painted(sheet, row: row, size: size, colour: colour, floor: capeFloor)
         let outline = RGB(0.16, 0.12, 0.18)
         for x in 0..<size {
             let coloured = (0..<size).filter { y in
                 guard sheet.alpha(x, row * size + y) > 0.5 else { return false }
                 let (_, s, v) = hsv(sheet.rgb(x, row * size + y))
-                return s > 0.2 && v > 0.25
+                return s > 0.2 && v > capeFloor
             }
             guard let hem = coloured.max() else { continue }
             piece.pixels[hem * size + x] = trim
@@ -557,6 +559,11 @@ enum GearOverlay {
     /// middle of the figure there on `anchorX`; a cape stretched to `capeDrop` rows from the shoulders to
     /// the feet and `capeSpan` pixels across the shoulders.
     nonisolated private static let shoulderY = 24, capeDrop = 20, capeSpan = 14
+    /// A cape's shadows take its colour down to this value (tools/wear_art.py outlines it in a neutral
+    /// dark that stays).
+    nonisolated private static let capeFloor = 0.05
+    /// Where tools/wear_art.py puts a scarf's wearer's chin (the face's bottom row, `face`).
+    nonisolated private static let chinY = 20
 
     /// One frame of a worn piece: each pixel's colour, nil where it's clear.
     nonisolated private struct Piece {
@@ -599,6 +606,13 @@ enum GearOverlay {
             return out
         }
 
+        /// Upside down, to stretch or shrink its rows from the bottom up (`lengthened` on it).
+        func flipped() -> Piece {
+            var out = self
+            for y in 0..<size { for x in 0..<size { out.pixels[y * size + x] = pixels[(size - 1 - y) * size + x] } }
+            return out
+        }
+
         /// Pixel-art stretch down: `by` rows repeated (or dropped) through the middle of its rows from
         /// `start` down, the rows above staying where they are. tools/gear_preview.py `lengthened`.
         func lengthened(by: Int, start: Int) -> Piece {
@@ -619,9 +633,10 @@ enum GearOverlay {
     }
 
     /// Row `row` of a piece's sheet in the hat's colours: its coloured pixels (not its white fur, its
-    /// outline or its eye holes) in `colour` (a hat's trim if it has one: a bunny's pink band), as
-    /// light or dark as they were against their middle shade. tools/gear_preview.py `painted`.
-    nonisolated private static func painted(_ sheet: Bitmap, row: Int, size: Int, colour: RGB) -> Piece {
+    /// outline or its eye holes: darker than `floor`) in `colour` (a hat's trim if it has one: a
+    /// bunny's pink band), as light or dark as they were against their middle shade.
+    /// tools/gear_preview.py `painted`.
+    nonisolated private static func painted(_ sheet: Bitmap, row: Int, size: Int, colour: RGB, floor: Double = 0.25) -> Piece {
         var piece = Piece(size: size, pixels: Array(repeating: nil, count: size * size))
         var lit: [(i: Int, v: Double)] = []
         for y in 0..<size {
@@ -629,7 +644,7 @@ enum GearOverlay {
                 let c = sheet.rgb(x, row * size + y)
                 piece.pixels[y * size + x] = c
                 let (_, s, v) = hsv(c)
-                if s > 0.2, v > 0.25 { lit.append((y * size + x, v)) }
+                if s > 0.2, v > floor { lit.append((y * size + x, v)) }
             }
         }
         guard !lit.isEmpty else { return piece }
@@ -638,21 +653,105 @@ enum GearOverlay {
         return piece
     }
 
+    /// The face on a frame as drawn (tools/gear_preview.py `face`).
+    nonisolated private struct Face {
+        /// The eyes' top row and the middle of each eye, left to right.
+        let eyeTop: Int
+        let middles: [Double]
+        /// The face's top and bottom rows: from the eyes up and down, the rows that show it.
+        let high: Int, low: Int
+        /// The columns searched, and the frame's size.
+        let span: Range<Int>
+        let size: Int
+        /// How pale an eye's white is: saturation under `most`, value over `least`.
+        let most: Double, least: Double
+
+        /// Whether the pixel at `x`, `y` is face: skin, or an eye's white.
+        func shows(_ image: Bitmap, origin: (x: Int, y: Int), _ x: Int, _ y: Int) -> Bool {
+            guard x >= 0, y >= 0, x < size, y < size, image.alpha(origin.x + x, origin.y + y) > 0.5 else { return false }
+            let (h, s, v) = GearOverlay.hsv(image.rgb(origin.x + x, origin.y + y))
+            return ((h <= 40 || h >= 342) && s > 0.12 && s < 0.65 && v > 0.55) || (s < most && v > least)
+        }
+    }
+
+    /// The face on a frame as drawn, its head found on the plain body (`found`): the eyes' whites with
+    /// a pupil or lash beside or over them and the face's skin near (a glint in a beard or on a helmet
+    /// has none; a cream white, as some armour sheets draw, only if there's no pure one), the highest
+    /// pair; and the rows from them up and down that show skin or white. Nil from behind.
+    /// tools/gear_preview.py `face`.
+    nonisolated private static func face(_ out: Bitmap, origin: (x: Int, y: Int), size: Int,
+                                         found: (top: Int, chin: Int, cells: [HatCell])) -> Face? {
+        func isDrawn(_ x: Int, _ y: Int) -> Bool {
+            x >= 0 && y >= 0 && x < size && y < size && out.alpha(origin.x + x, origin.y + y) > 0.5
+        }
+        func dark(_ x: Int, _ y: Int) -> Bool { isDrawn(x, y) && hsv(out.rgb(origin.x + x, origin.y + y)).2 < 0.35 }
+        func isSkin(_ x: Int, _ y: Int) -> Bool {
+            guard isDrawn(x, y) else { return false }
+            let (h, s, v) = hsv(out.rgb(origin.x + x, origin.y + y))
+            return (h <= 40 || h >= 342) && s > 0.12 && s < 0.65 && v > 0.55
+        }
+        let xs = found.cells.map(\.x)
+        guard let leftmost = xs.min(), let rightmost = xs.max() else { return nil }
+        var whites: [HatCell] = [], near: [HatCell] = []
+        var most = 0.06, least = 0.92
+        for (m, l) in [(0.06, 0.92), (0.25, 0.85)] {
+            (most, least) = (m, l)
+            for y in stride(from: max(0, found.top + 2), to: min(size, found.chin + 3), by: 1) {
+                for x in max(0, leftmost - 1)..<min(size, rightmost + 3) where isDrawn(x, y) {
+                    let (_, s, v) = hsv(out.rgb(origin.x + x, origin.y + y))
+                    guard s < most, v > least, dark(x - 1, y) || dark(x + 1, y) || dark(x, y - 1) else { continue }
+                    whites.append(HatCell(x: x, y: y))
+                    if [y, y + 1].contains(where: { yy in [x - 2, x - 1, x + 1, x + 2].contains { isSkin($0, yy) } }) {
+                        near.append(HatCell(x: x, y: y))
+                    }
+                }
+            }
+            if !near.isEmpty { break }
+        }
+        let eyes = near.isEmpty ? whites : near
+        guard let eyeTop = eyes.map(\.y).min() else { return nil }
+        let columns = Set(eyes.filter { $0.y <= eyeTop + 1 }.map(\.x)).sorted()
+        var groups: [[Int]] = []
+        for x in columns {
+            if let previous = groups.last?.last, x - previous <= 2 { groups[groups.count - 1].append(x) } else { groups.append([x]) }
+        }
+        let span = max(0, leftmost - 2)..<min(size, rightmost + 3)
+        let pale = (most, least)
+        func shows(_ y: Int) -> Bool {
+            y >= 0 && y < size && span.contains { x in
+                guard isDrawn(x, y) else { return false }
+                let (_, s, v) = hsv(out.rgb(origin.x + x, origin.y + y))
+                return isSkin(x, y) || (s < pale.0 && v > pale.1)
+            }
+        }
+        var low = eyeTop, high = eyeTop
+        while low - eyeTop < 6, shows(low + 1) { low += 1 }
+        while eyeTop - high < 8, shows(high - 1) { high -= 1 }
+        return Face(eyeTop: eyeTop, middles: groups.map { Double($0.reduce(0, +)) / Double($0.count) },
+                    high: high, low: low, span: span, size: size, most: most, least: least)
+    }
+
     /// A festive hat (`GearLook.hat`) on the head, frame by frame: a piece Retro Diffusion drew on a
     /// hero (art/sprites/wear_<kind>.png, cut out by tools/wear_art.py), fitted to the head as drawn,
     /// hair and all, measured on the plain body (the scalp, the eyes) and on what's drawn before the
     /// hat goes on. A crown (a party crown), a Santa hat or a bunny's ears go round the head: their band
     /// on the widest row of the head as drawn over the eyes, as wide as the scalp and a little more, over
     /// all the hair above it. A mask (none from behind) goes over the face, its eye holes on the eyes,
-    /// found on the face as drawn: armour with a sheet of its own has a face of its own. A scarf goes
-    /// round the neck, hung from the shoulders as a cape is. tools/gear_preview.py `hat`.
+    /// found on the face as drawn (armour with a sheet of its own has a face of its own), no taller
+    /// than the face and from the side as far forward as it reaches. A scarf goes round the neck,
+    /// under the chin as drawn. tools/gear_preview.py `hat`.
     nonisolated private static func hat(_ out: inout Bitmap, body: Bitmap, origin: (x: Int, y: Int), size: Int,
-                                        facing: String, kind: String, piece: Piece) {
+                                        facing: String, kind: String, piece: Piece, front: (x: Int, y: Int)) {
         guard piece.box != nil else { return }
         if kind == "scarf" {
-            // Round the neck, over everything: hung from the shoulders, as a cape is.
-            guard let figure = Self.figure(body, origin: origin, size: size) else { return }
-            let dy = figure.shoulder - shoulderY, dx = (figure.left + figure.right) / 2 - anchorX
+            // Round the neck, over everything: under the chin as drawn (armour with a sheet of its own
+            // draws its head higher or lower than the plain body; from behind, the front's chin, no
+            // face there to find), across the middle of the body at the shoulders.
+            let at = facing == "up" ? front : origin
+            guard let figure = Self.figure(body, origin: origin, size: size),
+                  let found = Self.head(body, origin: at, size: size) else { return }
+            let chin = Self.face(out, origin: at, size: size, found: found)?.low ?? found.chin
+            let dy = chin - chinY, dx = (figure.left + figure.right) / 2 - anchorX
             for y in 0..<size {
                 for x in 0..<size {
                     guard let c = piece[x: x, y: y], y + dy >= 0, x + dx >= 0, y + dy < size, x + dx < size else { continue }
@@ -682,42 +781,41 @@ enum GearOverlay {
             }
         }
         if kind == "mask" {
-            // The eyes as drawn: whites with a pupil or lash beside or over them and the face's skin
-            // near (a glint in a beard or on a helmet has none), the highest pair.
-            func dark(_ x: Int, _ y: Int) -> Bool { isDrawn(x, y) && hsv(out.rgb(origin.x + x, origin.y + y)).2 < 0.35 }
-            func isSkin(_ x: Int, _ y: Int) -> Bool {
-                guard isDrawn(x, y) else { return false }
-                let (h, s, v) = hsv(out.rgb(origin.x + x, origin.y + y))
-                return (h <= 40 || h >= 342) && s > 0.12 && s < 0.65 && v > 0.55
-            }
-            let xs = found.cells.map(\.x)
-            guard let low = xs.min(), let high = xs.max() else { return }
-            var whites: [HatCell] = [], near: [HatCell] = []
-            for y in stride(from: max(0, top + 2), to: min(size, chin + 3), by: 1) {
-                for x in max(0, low - 1)..<min(size, high + 3) where isDrawn(x, y) {
-                    let (_, s, v) = hsv(out.rgb(origin.x + x, origin.y + y))
-                    guard s < 0.06, v > 0.92, dark(x - 1, y) || dark(x + 1, y) || dark(x, y - 1) else { continue }
-                    whites.append(HatCell(x: x, y: y))
-                    if [y, y + 1].contains(where: { yy in [x - 2, x - 1, x + 1, x + 2].contains { isSkin($0, yy) } }) {
-                        near.append(HatCell(x: x, y: y))
-                    }
-                }
-            }
-            let eyes = near.isEmpty ? whites : near
-            guard let eyeTop = eyes.map(\.y).min() else { return }
-            let columns = Set(eyes.filter { $0.y <= eyeTop + 1 }.map(\.x)).sorted()
-            var groups: [[Int]] = []
-            for x in columns {
-                if let previous = groups.last?.last, x - previous <= 2 { groups[groups.count - 1].append(x) } else { groups.append([x]) }
-            }
-            let middles = groups.map { Double($0.reduce(0, +)) / Double($0.count) }
-            guard let first = middles.first, let last = middles.last else { return }
+            guard let seen = Self.face(out, origin: origin, size: size, found: found),
+                  let first = seen.middles.first, let last = seen.middles.last else { return }
+            let eyeTop = seen.eyeTop, low = seen.low, high = seen.high, span = seen.span
+            func facial(_ x: Int, _ y: Int) -> Bool { seen.shows(out, origin: origin, x, y) }
             let anchor = switch facing {
-            case "right": middles.max() ?? last
-            case "left": middles.min() ?? first
+            case "right": seen.middles.max() ?? last
+            case "left": seen.middles.min() ?? first
             default: (first + last) / 2
             }
-            stamp(piece, dy: eyeTop - anchorY, dx: Int((anchor + 0.5).rounded(.down)) - anchorX)
+            var dx = Int((anchor + 0.5).rounded(.down)) - anchorX
+            // The mask stops a row under the chin (a dwarf's beard shows below it) and starts no more
+            // than a row over the face (on the hair).
+            guard let box = piece.box else { return }
+            let below = max(0, min(3, box.bottom - (low - eyeTop + anchorY + 1)))
+            let above = max(0, min(3, (high - eyeTop + anchorY - 1) - box.top))
+            let fitted = piece.lengthened(by: -below, start: anchorY + 2)
+                .flipped().lengthened(by: -above, start: size - anchorY + 1).flipped()
+            let dy = eyeTop - anchorY
+            if facing == "right" || facing == "left" {
+                // From the side, as far forward as the face reaches on any of its rows (forehead,
+                // nose, chin; not the hair above, whose ginger passes for skin), the outline past
+                // it: no skin peeking out in front of it. Within three pixels of the front eye on
+                // the front eye hole.
+                let sign = facing == "right" ? 1 : -1
+                var need = 0
+                for y in high...low where y - dy >= 0 && y - dy < size {
+                    let maskRow = (0..<size).filter { fitted[x: $0, y: y - dy] != nil }
+                    let faceRow = span.filter { facial($0, y) }
+                    guard let maskLeft = maskRow.min(), let maskRight = maskRow.max(),
+                          let faceLeft = faceRow.min(), let faceRight = faceRow.max() else { continue }
+                    need = max(need, sign > 0 ? faceRight + 1 - (maskRight + dx) : (maskLeft + dx) - (faceLeft - 1))
+                }
+                dx += sign * min(3, need)
+            }
+            stamp(fitted, dy: dy, dx: dx)
             return
         }
         /// The head as drawn on row `y`: the run through its middle, hair and all, never narrower than

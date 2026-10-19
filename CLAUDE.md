@@ -9,6 +9,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `docs/fairyland-online.md`: how the original game (and Tales of Mysteria, its 2026 relaunch) worked, with
   sources, and where we differ. Read it before inventing a system; add facts you verify, with their source.
 - `docs/continuous-world.md`: the plan for one continuous world (no borders, chunks streamed round you), in steps.
+- `docs/sprite-acceptance.md`: what generated and fitted character art must pass (every body, direction and
+  armour), how to check it, and what the Retro Diffusion wearables taught us. Read it before making or fitting any.
 - `docs/launch-audit.md`: the pre-launch audit (2026-10-06): App Store checklist, open bugs and balance issues
   ranked, and gamification ideas. Tick items off or remove them as they're done.
 - Brand guidelines: the Figma file `521ECWenGbx2IP3rLgtIWo`, pages Cover to 09 Voice & Tone (logo, colour, type, icons,
@@ -90,13 +92,14 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   Rerun after changing a race's sheet, and look at `--preview` before committing. Gloves, boots and necklaces are painted on by GearOverlay (`tools/gear_preview.py --trinkets`),
   and the festive seasons' hats, masks and scarves and the status capes go on from pieces `tools/wear_art.py` cut out.
 - `tools/wear_art.py`: worn gear from Retro Diffusion sheets in `art-variants/` (picked by hand, its `ARMOUR` and
-  `WEAR`), fixed in code: the robe's and chain mail's walk sheets (`armor_<item>_<race>`, items.json `sheets`, every
-  robe's blue turned to one hue so each tier's `tint` lands alike), and the pieces cut out of a hero wearing them
+  `WEAR`; sheets older than these notes in `art-variants/legacy/`), fixed in code: every armour walk sheet
+  (`armor_<item>_<race>`, items.json `sheets`) with its main material brought to one colour on every race
+  (`MATERIAL`), so it and each tier's `tint` look alike on all; and the pieces cut out of a hero wearing them
   (`wear_<hat>`, `wear_cape`), moved to fixed anchors. The game fits them to each frame as drawn (GearOverlay; mirror in
-  `tools/gear_preview.py --hats`, `--capes`): a hat widened to the head, its band on the head's widest row over the
-  eyes, the hair above it cleared; a mask's eye holes on the eyes as drawn (armour sheets have faces of their own); a
-  scarf or cape hung from the shoulders, the cape stretched rows and columns to the body. Rerun after picking a sheet.
-  Generating sheets costs money (`rd.py`): a prompt with "wizard" in it drew a beard every time.
+  `tools/gear_preview.py`, `--wear out.png <ids>` shows items on every body under every armour): a hat widened to the
+  head, its band on the head's widest row over the eyes, the hair above it cleared; a mask on the eyes as drawn, no
+  taller than the face, from the side as far forward as it reaches; a scarf under the chin as drawn; a cape hung from
+  the shoulders, stretched to the body. Rerun after picking a sheet; `docs/sprite-acceptance.md` says what to check.
 - `tools/rd.py`: Retro Diffusion client. `rd.py edit` inpaints a mask of an existing sheet (pilot 2026-10-19: inpainting
   of walk sheets is a dead end: faces, about 10 px wide, come out muddy, and armour or a robe painted onto a hero comes
   out too bulky, with side and back views that don't match the pose), its results only in

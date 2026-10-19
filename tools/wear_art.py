@@ -5,9 +5,9 @@
     python3 tools/wear_art.py --sheet out.png  # also a contact sheet to look at
 
 Armour that wears a whole walk sheet of its own (items.json `sheets`, like Iron Plate's) is a sheet
-Retro Diffusion drew per race, copied from the variant picked below: the robe's blue brought to one
-royal blue on every race (Retro Diffusion drew the human's a little teal), so a tier's `tint` lands
-on the same colour everywhere.
+Retro Diffusion drew per race, copied from the variant picked below, its main material brought to
+one colour on every race (MATERIAL), so it looks the same on all of them and a tier's `tint` lands on
+the same colour everywhere.
 
     art/sprites/armor_mage_robe_<race>.png    the blue hooded robe and pointed hood
     art/sprites/armor_chain_mail_<race>.png   chain mail with its coif over the hair
@@ -21,10 +21,12 @@ up, right, down, left; 48 × 192), and moved so the game can fit them to any hea
     art/sprites/wear_mask.png    the Halloween mask: its eye holes' top row on ANCHOR_Y, centred on
                                  ANCHOR_X between them (from the side, its front eye hole there);
                                  none from behind
-    art/sprites/wear_scarf.png   the Christmas scarf: its wearer's shoulders (0.38 of the way down
-                                 from the top of the head to the feet) on SHOULDER_Y, the middle of
-                                 the figure there on ANCHOR_X
-    art/sprites/wear_cape.png    a status cape, the same, stretched to CAPE_DROP rows from the
+    art/sprites/wear_scarf.png   the Christmas scarf: its wearer's chin (the face's bottom row, as
+                                 gear_preview.face finds it; from behind, the front's) on CHIN_Y, the
+                                 middle of the figure at the shoulders (0.38 of the way down from the
+                                 top of the head to the feet) on ANCHOR_X
+    art/sprites/wear_cape.png    a status cape: its wearer's shoulders on SHOULDER_Y, the middle of
+                                 the figure there on ANCHOR_X, stretched to CAPE_DROP rows from the
                                  shoulders to the feet and CAPE_SPAN pixels across the shoulders, so
                                  the game stretches it to any body (GearOverlay.drape)
 
@@ -39,7 +41,7 @@ from PIL import Image
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from palette_preview import recolor, rgb2hsv  # noqa: E402  (the game's RecolorRule, in Python)
+from palette_preview import hsv2rgb, rgb2hsv  # noqa: E402
 
 VARIANTS = ROOT / "art-variants"
 SPRITES = ROOT / "art" / "sprites"
@@ -54,11 +56,23 @@ ARMOUR = {
     "armor_chain_mail_human": "pilot_chain_mail_human/20261019-113735_0.png",
     "armor_chain_mail_elf": "pilot_chain_mail_elf/20261019-115042_0.png",
     "armor_chain_mail_dwarf": "pilot_chain_mail_dwarf/20261019-115104_0.png",
+} | {f"armor_{kind}_{race}": f"legacy/armor_{kind}_{race}.png"   # drawn before these notes were kept
+     for kind in ("iron_plate", "dragon_mail", "snow_cloak", "ranger_cloak") for race in RACES}
+# Each armour's main material brought to one colour on every race (Retro Diffusion draws each race's
+# sheet a shade apart: the dwarf's robe much brighter, its plate greener and darker): the pixels in
+# `hue` (degrees, saturation from `min` to `max`) turned to the target hue, their saturation and value
+# bent (a power, so black and white stay put and the shading keeps its shape) until their middles are
+# the target's (None: as drawn). Only these pixels change: skin, hair, leather and trim keep each
+# sheet's own. Steel is greyish (`max`), so a tunic in navy doesn't count as mail; the snow cloak
+# keeps each sheet's whiteness, as the dwarf's is mostly white fur.
+MATERIAL = {
+    "mage_robe": dict(hue=(170, 260), min=0.2, to=(222, 0.80, 0.50)),
+    "chain_mail": dict(hue=(100, 280), min=0.0, max=0.4, to=(210, 0.20, 0.40)),
+    "iron_plate": dict(hue=(140, 260), min=0.03, to=(205, 0.28, 0.45)),
+    "dragon_mail": dict(hue=(330, 20), min=0.3, to=(2, 0.85, 0.85)),
+    "snow_cloak": dict(hue=(150, 260), min=0.03, to=(202, None, None)),
+    "ranger_cloak": dict(hue=(60, 170), min=0.15, to=(110, 0.56, 0.33)),
 }
-# The robes' blue, whatever shade Retro Diffusion drew, turned so its middle lands on one hue, every
-# shade turned alike so the hue-shifted shading stays.
-ROBE_BLUES = [170, 260]
-ROBE_BLUE = 222
 
 F = 48
 HAT_BRIM, ANCHOR_X, ANCHOR_Y = 40, 24, 20
@@ -77,6 +91,7 @@ WEAR = {
 # Every hero's eyes are six pixels apart from the front, the reference mask's holes five.
 MASK_WIDEN = 1
 SHOULDER_Y, CAPE_DROP, CAPE_SPAN = 24, 20, 14
+CHIN_Y = 20   # where the wearer's chin goes for a scarf
 
 
 def load(path):
@@ -87,19 +102,32 @@ def save(img, name):
     Image.fromarray((np.clip(img, 0, 1) * 255).round().astype(np.uint8), "RGBA").save(SPRITES / f"{name}.png")
 
 
-def blue(img):
-    """The middle hue of the robe's blue pixels."""
-    h, s, _ = rgb2hsv(img[..., :3])
-    robe = (img[..., 3] > 0) & (s >= 0.2) & (h >= ROBE_BLUES[0]) & (h <= ROBE_BLUES[1])
-    return float(np.median(h[robe]))
+def material(img, hue, min, to, max=1.0):
+    """`img` with its main material (MATERIAL) brought to the colour `to` (hue, saturation, value).
+    Repeated till it settles: turning the hue moves a few pixels in or out of the material's range."""
+    lo, hi = hue
+    out = img.copy()
+    for _ in range(6):
+        h, s, v = rgb2hsv(out[..., :3])
+        m = (out[..., 3] > 0) & (s >= min) & (s <= max) & (v > 0.12) & (((h >= lo) & (h <= hi)) if lo <= hi else ((h >= lo) | (h <= hi)))
+        if not m.any():
+            break
+        mean = np.degrees(np.angle(np.exp(1j * np.radians(h[m])).mean()))
+        middle = mean + np.median((h[m] - mean + 180) % 360 - 180)   # the median, round the circle
+        turn = (to[0] - middle + 180) % 360 - 180
+        def bend(x, target):
+            return x if target is None else np.clip(x, 1e-4, 1) ** (np.log(target) / np.log(np.clip(np.median(x), 1e-4, 0.9999)))
+        if abs(turn) < 1 and all(t is None or abs(np.median(x) - t) < 0.01 for x, t in ((s[m], to[1]), (v[m], to[2]))):
+            break
+        out[..., :3][m] = hsv2rgb((h[m] + turn) % 360, bend(s[m], to[1]), bend(v[m], to[2]))
+    return out
 
 
 def armour():
     made = {}
     for name, source in ARMOUR.items():
         img = load(VARIANTS / source)
-        if name.startswith("armor_mage_robe"):
-            img = recolor(img, [{"hue": ROBE_BLUES, "minSaturation": 0.2, "shift": ROBE_BLUE - blue(img)}])
+        img = material(img, **MATERIAL[name[len("armor_"):name.rindex("_")]])
         save(img, name)
         made[name] = img
         print(f"art/sprites/{name}.png  from art-variants/{source}")
@@ -162,6 +190,8 @@ def piece(frame, kind):
         for y in range(max(0, ys.min() - 1), min(F, ys.max() + 2)):
             run = rows[min(ys.max(), max(ys.min(), y))]
             keep[y, max(0, min(run) - 1):min(F, max(run) + 2)] = a[y, max(0, min(run) - 1):min(F, max(run) + 2)]
+    elif kind == "cape":
+        return closed(frame, best)
     else:
         for y, x in best:
             for dy in (-1, 0, 1):
@@ -171,6 +201,46 @@ def piece(frame, kind):
                         keep[q] = True
     out = np.zeros_like(frame)
     out[keep] = frame[keep]
+    return out
+
+
+OUTLINE = (0.10, 0.09, 0.11)   # neutral, so painting a cape in its colour leaves it be
+
+
+def grown(m):
+    """`m` and every pixel next to it (8 ways)."""
+    out = m.copy()
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            out |= np.roll(np.roll(m, dy, 0), dx, 1)
+    return out
+
+
+def closed(frame, cells):
+    """A cape as its own pixels only (not the wearer's clothes beside it), its gaps closed (where the
+    reference's arm crossed it: grown a pixel and shrunk back, and any hole it encloses filled, each
+    new pixel the colour of the nearest of its own) and outlined afresh."""
+    own = np.zeros((F, F), bool)
+    for y, x in cells:
+        own[y, x] = True
+    shut = ~grown(~grown(own))
+    outside = np.zeros((F, F), bool)   # the clear pixels reachable from the frame's edge
+    stack = [(y, x) for y in range(F) for x in (0, F - 1)] + [(y, x) for x in range(F) for y in (0, F - 1)]
+    while stack:
+        y, x = stack.pop()
+        if 0 <= y < F and 0 <= x < F and not outside[y, x] and not shut[y, x]:
+            outside[y, x] = True
+            stack += [(y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)]
+    shut = ~outside
+    out = np.zeros_like(frame)
+    out[own] = frame[own]
+    near = list(zip(*np.nonzero(own)))
+    for y, x in zip(*np.nonzero(shut & ~own)):
+        ny, nx = min(near, key=lambda q: (q[0] - y) ** 2 + (q[1] - x) ** 2)
+        out[y, x] = frame[ny, nx]
+    edge = ~shut & (np.roll(shut, 1, 0) | np.roll(shut, -1, 0) | np.roll(shut, 1, 1) | np.roll(shut, -1, 1))
+    out[edge, :3] = OUTLINE
+    out[edge, 3] = 1
     return out
 
 
@@ -254,6 +324,24 @@ def figure(frame):
     return top, feet, shoulder, xs.min(), xs.max()
 
 
+def wearer_chins(sheet):
+    """The bottom row of the face of the hero wearing a reference, each way they face (as the game
+    finds it, gear_preview.face); from behind, the front's."""
+    import gear_preview as gp
+    chins = {}
+    for row in range(4):
+        frame = sheet[row * F:(row + 1) * F, :F].copy()
+        worn = piece(frame, "scarf")
+        if worn is not None:
+            frame[worn[..., 3] > 0.5] = 0   # its white stripes would pass for the face
+        found = gp.head(frame)
+        seen = gp.face(frame, found[2], found[0], found[1]) if found else None
+        if seen:
+            chins[row] = seen[3]
+    chins[0] = chins[2]
+    return chins
+
+
 def moved(t, dy, dx):
     out = np.zeros_like(t)
     ys, xs = np.nonzero(t[..., 3] > 0.5)
@@ -268,17 +356,24 @@ def wear():
     for kind, (source, _) in WEAR.items():
         sheet = load(VARIANTS / source)
         frames = []
+        if kind == "scarf":
+            chins = wearer_chins(sheet)
         for row, facing in enumerate(("up", "right", "down", "left")):
             t = piece(sheet[row * F:(row + 1) * F, :F], kind)
             if t is None or (kind == "mask" and facing == "up"):
                 frames.append(np.zeros((F, F, 4)))
                 continue
             t0, t1, tl, tr = bbox(t)
-            if kind in ("cape", "scarf"):
+            if kind == "scarf":
+                # Retro Diffusion drew it as a muffler up over the mouth: only what's under the chin
+                # (the wrap round the neck and the ends) is kept, so it never covers a face.
+                t[:chins[row] + 1] = 0
+                _, _, _, left, right = figure(sheet[row * F:(row + 1) * F, :F])
+                t = moved(t, CHIN_Y - chins[row], ANCHOR_X - (left + right) // 2)
+            elif kind == "cape":
                 _, feet, shoulder, left, right = figure(sheet[row * F:(row + 1) * F, :F])
                 t = moved(t, SHOULDER_Y - shoulder, ANCHOR_X - (left + right) // 2)
-                if kind == "cape":
-                    t = widen(lengthened(t, CAPE_DROP - (feet - shoulder), SHOULDER_Y), CAPE_SPAN - (right - left + 1))
+                t = widen(lengthened(t, CAPE_DROP - (feet - shoulder), SHOULDER_Y), CAPE_SPAN - (right - left + 1))
             elif kind == "mask":
                 if facing == "down":
                     t = widen(t, MASK_WIDEN)
