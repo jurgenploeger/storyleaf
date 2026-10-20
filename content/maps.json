@@ -6,7 +6,7 @@
       "id": "meadowbrook",
       "name": "Meadowbrook",
       "crowd": {
-        "adventurers": 12,
+        "adventurers": 20,
         "villagers": 10,
         "villagerLines": [
           "Mind the jellies past the gate.",
@@ -1220,7 +1220,7 @@
       "id": "sunny_meadow",
       "name": "Sunny Meadow",
       "crowd": {
-        "adventurers": 5
+        "adventurers": 12
       },
       "locals": [
         {
@@ -1914,7 +1914,7 @@
       "name": "Pineapple Shore",
       "climate": "hot",
       "crowd": {
-        "adventurers": 4
+        "adventurers": 10
       },
       "locals": [
         {
@@ -2377,7 +2377,7 @@
       "id": "twilight_woods",
       "name": "Twilight Woods",
       "crowd": {
-        "adventurers": 5
+        "adventurers": 12
       },
       "locals": [
         {
@@ -2926,7 +2926,7 @@
       "height": 158,
       "music": "forest",
       "crowd": {
-        "adventurers": 5
+        "adventurers": 12
       },
       "locals": [
         {
@@ -3629,7 +3629,7 @@
       "music": "rainbow",
       "fence": true,
       "crowd": {
-        "adventurers": 14,
+        "adventurers": 22,
         "villagers": 10,
         "villagerLines": [
           "The fountain sparkles at night, you know."
@@ -4722,7 +4722,7 @@
       "height": 121,
       "music": "snow",
       "crowd": {
-        "adventurers": 3
+        "adventurers": 8
       },
       "locals": [
         {
@@ -5338,7 +5338,7 @@
       "height": 138,
       "music": "swamp",
       "crowd": {
-        "adventurers": 3
+        "adventurers": 8
       },
       "locals": [
         {
@@ -5823,7 +5823,7 @@
       "music": "fear",
       "battleMusic": "battle_dark",
       "crowd": {
-        "adventurers": 4
+        "adventurers": 10
       },
       "locals": [
         {
@@ -6312,7 +6312,7 @@
       "music": "cave",
       "battleMusic": "battle_dark",
       "crowd": {
-        "adventurers": 2
+        "adventurers": 4
       },
       "locals": [
         {
@@ -6637,7 +6637,7 @@
       "music": "goldburg",
       "fence": true,
       "crowd": {
-        "adventurers": 12,
+        "adventurers": 20,
         "villagers": 8,
         "traders": 16
       },
@@ -7499,7 +7499,7 @@
       "height": 133,
       "music": "desert",
       "crowd": {
-        "adventurers": 3
+        "adventurers": 8
       },
       "locals": [
         {
@@ -8040,7 +8040,7 @@
       "music": "crystal",
       "battleMusic": "battle_dark",
       "crowd": {
-        "adventurers": 3
+        "adventurers": 8
       },
       "locals": [
         {
@@ -8549,7 +8549,7 @@
       "music": "moonglow",
       "battleMusic": "battle_dark",
       "crowd": {
-        "adventurers": 3
+        "adventurers": 8
       },
       "locals": [
         {
@@ -9072,7 +9072,7 @@
       "id": "northern_grassland",
       "name": "Windswept Downs",
       "crowd": {
-        "adventurers": 5
+        "adventurers": 12
       },
       "locals": [
         {
@@ -9697,7 +9697,7 @@
       "height": 60,
       "music": "cave",
       "crowd": {
-        "adventurers": 2
+        "adventurers": 4
       },
       "locals": [
         {
@@ -9985,7 +9985,7 @@
       "id": "candy_mountain",
       "name": "Gumdrop Peaks",
       "crowd": {
-        "adventurers": 5
+        "adventurers": 12
       },
       "locals": [
         {
@@ -10671,7 +10671,7 @@
       "id": "wolf_lair",
       "name": "Big Bad Wolf's Lair",
       "crowd": {
-        "adventurers": 5
+        "adventurers": 12
       },
       "locals": [
         {
@@ -11189,7 +11189,7 @@
       "music": "town",
       "fence": true,
       "crowd": {
-        "adventurers": 14,
+        "adventurers": 22,
         "villagers": 14,
         "villagerLines": [
           "The fountain sparkles at night, you know."
@@ -12004,7 +12004,7 @@
       "id": "swan_lake",
       "name": "Swan Lake",
       "crowd": {
-        "adventurers": 5
+        "adventurers": 12
       },
       "locals": [
         {
@@ -12649,7 +12649,7 @@
       "height": 96,
       "music": "woods",
       "crowd": {
-        "adventurers": 3
+        "adventurers": 8
       },
       "locals": [
         {
@@ -13105,7 +13105,7 @@
       "height": 84,
       "music": "cave",
       "crowd": {
-        "adventurers": 4
+        "adventurers": 10
       },
       "locals": [
         {
@@ -13609,7 +13609,7 @@
       "name": "Ingothold Lake",
       "climate": "hot",
       "crowd": {
-        "adventurers": 4
+        "adventurers": 10
       },
       "locals": [
         {
@@ -14038,7 +14038,7 @@
       "id": "sleepy_town",
       "name": "Dozywick",
       "crowd": {
-        "adventurers": 5
+        "adventurers": 12
       },
       "locals": [
         {
@@ -14577,7 +14577,7 @@
       "height": 94,
       "music": "desert",
       "crowd": {
-        "adventurers": 3
+        "adventurers": 8
       },
       "locals": [
         {
@@ -15069,7 +15069,7 @@
       "name": "Sneezle Sands",
       "climate": "hot",
       "crowd": {
-        "adventurers": 4
+        "adventurers": 10
       },
       "locals": [
         {
@@ -15552,7 +15552,7 @@
       "height": 98,
       "music": "snow",
       "crowd": {
-        "adventurers": 3
+        "adventurers": 8
       },
       "locals": [
         {
@@ -16064,7 +16064,7 @@
       "height": 103,
       "music": "cave",
       "crowd": {
-        "adventurers": 3
+        "adventurers": 8
       },
       "locals": [
         {
@@ -16478,7 +16478,7 @@
       "height": 60,
       "music": "cave",
       "crowd": {
-        "adventurers": 2
+        "adventurers": 4
       },
       "locals": [
         {
@@ -16786,7 +16786,7 @@
       "height": 88,
       "music": "woods",
       "crowd": {
-        "adventurers": 5
+        "adventurers": 12
       },
       "locals": [
         {
@@ -17458,7 +17458,7 @@
       "id": "starfall_isle",
       "name": "Starfall Isle",
       "crowd": {
-        "adventurers": 3
+        "adventurers": 8
       },
       "locals": [
         {
@@ -18053,7 +18053,7 @@
       "height": 60,
       "music": "cave",
       "crowd": {
-        "adventurers": 2
+        "adventurers": 4
       },
       "locals": [
         {
@@ -18502,12 +18502,12 @@
       "npcs": [
         {
           "id": "glimmerdeep_depths_stairs",
-          "name": "Stairs up",
+          "name": "Rope up",
           "role": "stairs",
-          "art": "stone_stairs",
+          "art": "cave_rope",
           "x": -20,
           "y": -12,
-          "greeting": "Worn steps lead back up to the Glimmerdeep.",
+          "greeting": "A knotted rope hangs from a hole in the roof, back up to the Glimmerdeep.",
           "to": "glimmerdeep"
         },
         {
@@ -18535,8 +18535,8 @@
         "rate": 0.07,
         "graceSteps": 6,
         "levels": [
-          155,
-          165
+          160,
+          172
         ],
         "groupSize": [
           3,
@@ -18788,12 +18788,12 @@
       "npcs": [
         {
           "id": "glimmerdeep_heart_stairs",
-          "name": "Stairs up",
+          "name": "Rope up",
           "role": "stairs",
-          "art": "stone_stairs",
+          "art": "cave_rope",
           "x": -16,
           "y": -10,
-          "greeting": "Worn steps lead back up to the Glimmerdeep Depths.",
+          "greeting": "A knotted rope hangs from a hole in the roof, back up to the Glimmerdeep Depths.",
           "to": "glimmerdeep_depths"
         },
         {
@@ -18805,7 +18805,7 @@
           "y": 8,
           "greeting": "Light ripples across a coil of crystal scales. Something vast lifts its head, and every crystal in the cave flares at once.",
           "monster": "prism_drake",
-          "level": 160,
+          "level": 180,
           "victory": {
             "title": "The Glimmerdeep Shines",
             "story": [
@@ -18819,8 +18819,8 @@
         "rate": 0.065,
         "graceSteps": 6,
         "levels": [
-          156,
-          166
+          168,
+          180
         ],
         "groupSize": [
           3,

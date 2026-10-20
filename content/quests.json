@@ -1675,7 +1675,7 @@
       "id": "the_prism_drake",
       "title": "The Prism Drake",
       "giver": "mother_lumen",
-      "minLevel": 158,
+      "minLevel": 172,
       "requires": [
         "glimmerstone_lanterns"
       ],

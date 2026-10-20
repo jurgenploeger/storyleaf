@@ -170,11 +170,16 @@ final class Crowd {
         while left > 0 {
             defer { slot += 1 }
             left -= 1
-            guard let home = map.strollTarget(near: map.center, radius: spread, using: &rng) else { continue }
+            // In a town, every other one out in its countryside, roaming as widely as in the wild
+            // (playtesting 2026-10-20: the land round a city stood empty).
+            let outside = town && slot % 2 == 1
+            let reach = outside ? 14 : roam
+            guard let home = map.strollTarget(near: map.center, radius: outside ? max(map.columns, map.rows) / 2 : spread,
+                                              using: &rng) else { continue }
             let profile = slot < visitors.count
                 ? visitors[slot]
                 : Self.profile(named: adventurerNames.popLast() ?? L("Traveller"), levels: levels, danger: def.danger == true, climate: def.climate)
-            addAdventurer(profile, home: home, roam: roam, world: world)
+            addAdventurer(profile, home: home, roam: reach, world: world)
             // Now and then a few travel together, as you do with your party: friends about the
             // leader's level, counted among the map's adventurers. Never troublemakers.
             guard slot >= visitors.count, !profile.hostile, left > 0, var ahead = members.last,
@@ -184,7 +189,7 @@ final class Crowd {
             for place in 1..<max(1, min(size, left + 1)) {
                 left -= 1
                 addAdventurer(Self.profile(named: adventurerNames.popLast() ?? L("Traveller"), levels: near, danger: false, climate: def.climate),
-                              home: home, roam: roam, world: world)
+                              home: home, roam: reach, world: world)
                 guard let member = members.last else { break }
                 member.ahead = ahead
                 member.place = place
@@ -229,8 +234,12 @@ final class Crowd {
         walker.setWeapon(GameSession.weapon(for: profile))
         walker.setTitle(GameSession.botTitle(level: profile.level, id: profile.id))
         walker.walkSpeed = .random(in: 72...92)
+        // Their own level where a line has one ("Just hit level {level}"), and no such boast at level 1.
+        let lines = Content.shared.crowd.adventurerLines
+            .filter { profile.level > 1 || !$0.contains("{level}") }
+            .map { $0.replacingOccurrences(of: "{level}", with: String(profile.level)) }
         add(Member(name: profile.name, kind: .adventurer, walker: walker, pet: Self.pet(profile.petSpecies), home: home, roam: roam,
-                   lines: Content.shared.crowd.adventurerLines, profile: profile, trades: trades), to: world)
+                   lines: lines, profile: profile, trades: trades), to: world)
     }
 
     /// A monster trotting along behind someone (a monsters.json species), if they have one.
