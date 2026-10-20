@@ -8906,6 +8906,17 @@
       }
     },
     {
+      "id": "cave_rope",
+      "kind": "prop",
+      "request": {
+        "prompt": "knotted hemp rope hanging from a cave roof, its end coiled on the floor",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 72,
+        "remove_bg": true
+      }
+    },
+    {
       "id": "tile_crystal_rock",
       "kind": "tile",
       "request": {
