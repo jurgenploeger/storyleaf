@@ -1807,7 +1807,7 @@
       "name": "Fire Bear",
       "art": "monster_fire_bear",
       "element": "fire",
-      "lore": "A bear with fur like embers that roams the snowy forest, melting a path wherever it walks.",
+      "lore": "A bear with fur like embers that roams the rocky mountainsides, warming the stones wherever it walks.",
       "base": {
         "hp": 133,
         "mp": 28,
@@ -1839,7 +1839,7 @@
       "name": "Starry Fire Bear",
       "art": "monster_fire_bear_starry",
       "element": "fire",
-      "lore": "A Fire Bear whose fur sparkles with tiny stars. It glows warmly in the snow.",
+      "lore": "A Fire Bear whose fur sparkles with tiny stars. It glows warmly among the rocks.",
       "base": {
         "hp": 173,
         "mp": 36,

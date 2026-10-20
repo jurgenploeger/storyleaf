@@ -529,12 +529,12 @@
     },
     {
       "id": "melting_friends",
-      "title": "Melting Friends",
+      "title": "Bear Hugs",
       "giver": "mister_frost",
-      "description": "The Fire Bears keep hugging my snowman friends, and you can guess how that ends. Defeat 3 Fire Bears before we all turn into puddles!",
+      "description": "The Frost Bears keep hugging my snowman friends, and a Frost Bear hug squeezes a snowman flat. Defeat 3 Frost Bears before there's nobody left but snowdrifts!",
       "objective": {
         "type": "defeat",
-        "target": "fire_bear",
+        "target": "frost_bear",
         "count": 3
       },
       "reward": {
@@ -3080,11 +3080,11 @@
       "id": "hearth_bears",
       "title": "Bears at the Woodpile",
       "giver": "foreman_barrowby",
-      "description": "The Fire Bears come down for our firewood and set it alight before we've even carried it in. Send eight of them back up the mountain, and the seven hearths can burn on proper wood.",
+      "description": "The Frost Bears come down to our woodpile and breathe frost all over it, and not one log will catch. Send eight of them back up the mountain, and the seven hearths can burn on dry wood.",
       "minLevel": 75,
       "objective": {
         "type": "defeat",
-        "target": "fire_bear",
+        "target": "frost_bear",
         "count": 8
       },
       "reward": {
