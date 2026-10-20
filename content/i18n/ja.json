@@ -943,7 +943,7 @@
     "Anyone seen a Sakura Bunny?": "だれかサクラウサギ見た？",
     "LF party for Twilight Woods!": "たそがれの森 PT募集！",
     "Selling potions, cheap!": "ポーション安く売るよ！",
-    "Just hit level 5 :D": "いまLv5になった :D",
+    "Just hit level {level} :D": "いまLv{level}になった :D",
     "The jellies here are so bouncy": "ここのゼリー、ぷるんぷるんだね",
     "brb, feeding my pet": "ペットにごはんあげてくる、ちょい離席",
     "Which guild are you joining?": "どのギルドに入るの？",
