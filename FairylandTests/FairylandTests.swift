@@ -645,8 +645,10 @@ struct ContentTests {
                     #expect(outside, "map \(def.id): no footpath from the trail at \(cell(foot)) to the roads")
                 }
                 // You can walk up a hill anywhere, its steepest sides too (nothing grows on it yet); a
-                // mountain only by its trail (playtesting 2026-10-20), so some of it you can't.
-                if hill.hasMountain {
+                // mountain with a trail of its own only by it (playtesting 2026-10-20), so some of it
+                // you can't. One whose trail didn't fit is open all over, as a hill is.
+                let mountain = hill.lobes.firstIndex { $0.front != nil }
+                if let mountain, hill.trails.contains(where: { $0.lobe == mountain }) {
                     #expect(hill.cells.contains { !map.isWalkable($0) }, "map \(def.id): a mountain you can walk up anywhere")
                 } else {
                     #expect(hill.cells.allSatisfy { map.isWalkable($0) }, "map \(def.id): part of a hill you can't walk on")

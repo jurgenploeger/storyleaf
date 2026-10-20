@@ -2214,7 +2214,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
         // "with tall mountains, only the roads can be walked to go up/down. With hills it's fine
         // the way it is"): from a little way up its foot to its top, only on the trail and a cell
         // either side. Its foothills, and its top once you're up, you walk anywhere as on a hill.
-        if let mountain {
+        // Only with a trail of its own up it: one whose trail didn't fit stays open all over, as a
+        // hill is, or its top (and a chest or a boss set up there) could never be reached.
+        if let mountain, trails.contains(where: { $0.lobe == mountain }) {
             let byTrails = Set(onTrails.flatMap { cell in (-1...1).flatMap { dr in (-1...1).map { dc in GridPoint(col: cell.col + dc, row: cell.row + dr) } } })
             for cell in hill.cells where !byTrails.contains(cell) {
                 let rise = hill.rise(of: mountain, Double(cell.col) + 0.5, Double(cell.row) + 0.5)
