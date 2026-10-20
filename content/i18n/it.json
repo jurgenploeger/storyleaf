@@ -521,6 +521,7 @@
     "Ready": "Pronte",
     "In progress": "In corso",
     "Completed": "Completate",
+    "Completed {count} of {total} quests": "Completate {count} missioni su {total}",
     "This land": "Questa terra",
     "Active": "In corso",
     "No active quests. Elder Oak in Meadowbrook always needs help.": "Nessuna missione in corso. L'Anziano Oak a Ruscelprato ha sempre bisogno di aiuto.",

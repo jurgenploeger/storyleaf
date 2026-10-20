@@ -521,6 +521,7 @@
     "Ready": "報告可",
     "In progress": "進行中",
     "Completed": "完了",
+    "Completed {count} of {total} quests": "完了したクエスト {count}/{total}",
     "This land": "この土地",
     "Active": "進行中",
     "No active quests. Elder Oak in Meadowbrook always needs help.": "進行中のクエストはありません。メドウブルックのカシの長老は、いつも手助けをもとめています。",
