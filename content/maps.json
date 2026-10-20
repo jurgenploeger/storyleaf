@@ -18502,12 +18502,12 @@
       "npcs": [
         {
           "id": "glimmerdeep_depths_stairs",
-          "name": "Stairs up",
+          "name": "Rope up",
           "role": "stairs",
-          "art": "stone_stairs",
+          "art": "cave_rope",
           "x": -20,
           "y": -12,
-          "greeting": "Worn steps lead back up to the Glimmerdeep.",
+          "greeting": "A knotted rope hangs from a hole in the roof, back up to the Glimmerdeep.",
           "to": "glimmerdeep"
         },
         {
@@ -18788,12 +18788,12 @@
       "npcs": [
         {
           "id": "glimmerdeep_heart_stairs",
-          "name": "Stairs up",
+          "name": "Rope up",
           "role": "stairs",
-          "art": "stone_stairs",
+          "art": "cave_rope",
           "x": -16,
           "y": -10,
-          "greeting": "Worn steps lead back up to the Glimmerdeep Depths.",
+          "greeting": "A knotted rope hangs from a hole in the roof, back up to the Glimmerdeep Depths.",
           "to": "glimmerdeep_depths"
         },
         {

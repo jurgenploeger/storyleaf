@@ -383,8 +383,9 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   with the drake in the deepest cave level"): the Glimmerdeep goes two levels down (maps.json `depth` 1 and
   2: the Glimmerdeep Depths, 155 to 165, with a treasure chest of a Heart Seal, and the Heart of the
   Glimmerdeep, 156 to 166, where the Prism Drake sleeps now, still level 160 for its quest). Each level is
-  reached only by a ladder down into a pit in the floor and left only by stone stairs back up, as
-  RuneScape's dungeons are by their ladders (NPCs with role `stairs` and `to`, tapped or Talked to like a
+  reached only by a ladder down into a pit in the floor and left only by a knotted rope back up through a
+  hole in the roof (`cave_rope`, since 0.7.51; playtesting 2026-10-20: "instead of a staircase to go up in
+  the caves, it should be a rope going up"; stone stairs before), as RuneScape's dungeons are by their ladders (NPCs with role `stairs` and `to`, tapped or Talked to like a
   chest; you come out in front of the stairs that lead back, `WorldMap.stairsArrival`), and each is smaller
   and darker than the one over it. The minimap marks the ladders and stairs with a grey arrow down or up.
   Whether FO's caves had floors under them isn't in any source reachable from a cloud session.

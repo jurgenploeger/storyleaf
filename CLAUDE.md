@@ -64,7 +64,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `tools/skill_art.py`: the same for every skill's icon (`art/sprites/skill_<id>.png`).
 - `tools/prop_art.py`: the same for the few props a generated sprite got wrong (`candy_cane`, whose hook came out
   as a two-sided arch) or none was made for (the harbors' `ship`, built in 3D and projected as the game's view is;
-  `cave_ladder`, the way down to a cave's deeper level, `depth` and NPC role `stairs` in maps.json).
+  `cave_ladder`, the way down to a cave's deeper level, and `cave_rope`, the way back up, `depth` and NPC role
+  `stairs` in maps.json).
   Rerun it after editing a drawing; `--sheet out.png` previews them.
 - `tools/crystal_art.py`: the Glimmerdeep's crystal scenery from the caves' own rock (its walls, floor, spires and
   geodes): each pixel's brightness laid on a ramp of crystal colours, as a `derive` can't tint the grey tiles.

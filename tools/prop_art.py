@@ -347,6 +347,65 @@ def draw_cave_ladder():
     return c
 
 
+def draw_cave_rope():
+    """The way back up from a cave's deeper level (playtesting 2026-10-20: "instead of a staircase to
+    go up in the caves, it should be a rope going up"): a knotted hemp rope hanging from a hole in
+    the roof, swaying a little, its end coiled on the floor in a dim pool of light from above. It
+    fades out toward the top, up into the dark. Lit from the top left."""
+    c = Canvas(32, 72)
+    hemp = [hexc("5c3d1e"), hexc("9c6f3c"), hexc("d4ac6c")]
+    # The pool of light the hole lets down, under everything.
+    cx, cy, rx, ry = 16.0, 64.0, 14.0, 6.0
+    for y in range(c.height):
+        for x in range(c.width):
+            r = math.hypot((x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry)
+            if r <= 1.0:
+                c.px[y][x] = hexc("bcd8ff", int(70 * (1 - r) ** 0.7))
+    light = {(x, y) for y in range(c.height) for x in range(c.width) if c.px[y][x] is not None}
+
+    def put(x, y, color):
+        if 0 <= x < c.width and 0 <= y < c.height:
+            c.px[y][x] = color
+
+    # The coil on the floor: loops of rope, open in the middle, the lower ones first, each lit
+    # along its far (upper) edge.
+    for lift, (lx, ly) in ((0.0, (10.5, 4.6)), (2.5, (8.5, 3.6))):
+        for t in frange(0, 2 * math.pi, 0.01):
+            tone = 2 if math.sin(t) < -0.4 else 0 if math.sin(t) > 0.5 else 1
+            put(int(cx + 0.5 + math.cos(t) * lx), int(cy - lift + math.sin(t) * ly), hemp[tone])
+    # The hanging rope, three pixels wide, its twist showing as a stripe every four rows.
+    top, bottom = 0, int(cy) - 3
+    for y in range(top, bottom + 1):
+        x = int(round(cx - 1 + 1.3 * math.sin(y / 11.0)))
+        twist = (y % 4) < 2
+        put(x, y, hemp[2] if twist else hemp[1])
+        put(x + 1, y, hemp[1] if twist else hemp[2])
+        put(x + 2, y, hemp[0])
+        # A knot every twelve rows, a hand-hold to climb by.
+        if y > 14 and (bottom - y) % 12 == 4:
+            put(x - 1, y, hemp[1])
+            put(x + 3, y, hemp[0])
+            put(x, y - 1, hemp[2])
+            put(x + 1, y - 1, hemp[2])
+            put(x + 2, y - 1, hemp[1])
+    # Outline the rope and coil, not the pool of light.
+    pool = {p: c.px[p[1]][p[0]] for p in light if c.px[p[1]][p[0]] is not None and c.px[p[1]][p[0]][3] < 255}
+    for x, y in pool:
+        c.px[y][x] = None
+    c.outline()
+    for (x, y), color in pool.items():
+        if c.px[y][x] is None:
+            c.px[y][x] = color
+    # Up into the dark: the top third fades away.
+    fade = 26
+    for y in range(fade):
+        for x in range(c.width):
+            if c.px[y][x] is not None:
+                r, g, b, a = c.px[y][x]
+                c.px[y][x] = (r, g, b, int(a * (y / fade) ** 1.5))
+    return c
+
+
 def frange(start, stop, step):
     """From `start` to `stop` (inclusive) in steps of `step`."""
     count = int(round((stop - start) / step))
@@ -379,6 +438,7 @@ def in_star(x, y, radius):
 DRAWINGS = {
     "candy_cane": draw_candy_cane,
     "cave_ladder": draw_cave_ladder,
+    "cave_rope": draw_cave_rope,
     "ship": draw_ship,
 }
 
@@ -405,7 +465,9 @@ def main(argv):
                 for x in range(art.width * scale):
                     color = art.px[y // scale][x // scale]
                     if color:
-                        pixels[pad + y][ox + x] = color
+                        # Blended over the ground, as the game draws it (a faded pixel isn't white).
+                        under, a = pixels[pad + y][ox + x], color[3] / 255
+                        pixels[pad + y][ox + x] = tuple(int(color[i] * a + under[i] * (1 - a)) for i in range(3)) + (255,)
             ox += art.width * scale + pad
         raw = b"".join(b"\x00" + b"".join(bytes(p) for p in row) for row in pixels)
         pathlib.Path(sheet_path).write_bytes(encode_png(width, height, raw))
