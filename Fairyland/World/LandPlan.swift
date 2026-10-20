@@ -492,6 +492,7 @@ final class LandPlanner {
         for placement in def.theme.props {
             let groupSize = max(1, placement.cluster ?? 1)
             let spread = max(1, placement.spread ?? Int(Double(groupSize).squareRoot().rounded()) + 1)
+            let gap = pathGap(placement)
             var placed = 0
             var attempts = 0
             while placed < placement.count, attempts < placement.count * 3 {
@@ -511,7 +512,8 @@ final class LandPlanner {
                         row: middle.row + Int.random(in: -spread...spread, using: &rng)
                     )
                     guard map.isFreeForScenery(cell, insideFence: placement.within != nil, blocking: placement.blocking),
-                          map.foreign[cell] == nil, !isCoast(cell), !placement.blocking || roomOnIsland(cell) else { continue }
+                          map.foreign[cell] == nil, !isCoast(cell), !placement.blocking || roomOnIsland(cell),
+                          gap == 0 || !nearPath(cell, within: gap) else { continue }
                     var scale: CGFloat = 1
                     if let range = placement.size, range.count == 2, range[0] <= range[1] {
                         scale = CGFloat(Double.random(in: range[0]...range[1], using: &rng))
@@ -522,6 +524,26 @@ final class LandPlanner {
                 placed += inGroup
             }
         }
+    }
+
+    /// How many cells a prop in the way keeps off the paths: as far as it spreads past its own cell
+    /// at its biggest (playtesting 2026-10-20: big snowy trees beside a forest path closed it in).
+    /// None for an ordinary tree; a cell for the big ones.
+    private func pathGap(_ placement: MapDef.PropPlacement) -> Int {
+        guard placement.blocking else { return 0 }
+        let width = art.sprite(placement.art).size.width * CGFloat(placement.size?.last ?? 1)
+        return max(0, Int(((width / WorldMap.tileSize - 1) / 2).rounded()))
+    }
+
+    /// Whether a road or path of the land's own runs within `reach` cells of `cell`.
+    private func nearPath(_ cell: GridPoint, within reach: Int) -> Bool {
+        for dr in -reach...reach {
+            for dc in -reach...reach {
+                let other = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                if map.owns(other), map.ground[other.row][other.col] == .path { return true }
+            }
+        }
+        return false
     }
 
     /// Past the lines the land meets the lands beside it along (`Seam`), where their ground has come
