@@ -2214,11 +2214,13 @@ nonisolated final class WorldMap: @unchecked Sendable {
         // "with tall mountains, only the roads can be walked to go up/down. With hills it's fine
         // the way it is"): from a little way up its foot to its top, only on the trail and a cell
         // either side. Its foothills, and its top once you're up, you walk anywhere as on a hill.
-        if let mountain {
+        // Only with a trail of its own up it: one whose trail didn't fit stays open all over, as a
+        // hill is, or its top (and a chest or a boss set up there) could never be reached.
+        if let mountain, trails.contains(where: { $0.lobe == mountain }) {
             let byTrails = Set(onTrails.flatMap { cell in (-1...1).flatMap { dr in (-1...1).map { dc in GridPoint(col: cell.col + dc, row: cell.row + dr) } } })
             for cell in hill.cells where !byTrails.contains(cell) {
                 let rise = hill.rise(of: mountain, Double(cell.col) + 0.5, Double(cell.row) + 0.5)
-                if rise > Self.mountainFoot, rise < 1 { blocked.insert(cell) }
+                if rise > Self.mountainFoot, rise < Self.mountainCrest { blocked.insert(cell) }
             }
             // Nothing left you can't get to: its top with no trail up, or a pocket of its side.
             var reached = Set(ring.subtracting(hill.cells))
@@ -2235,8 +2237,12 @@ nonisolated final class WorldMap: @unchecked Sendable {
         return true
     }
 
-    /// How far up a mountain's side (`Hill.rise`) its slopes stop being walkable off its trail.
+    /// How far up a mountain's side (`Hill.rise`) its slopes stop being walkable off its trail, and
+    /// where its top begins and you can walk about again: from 0.6 up, under where it stands four
+    /// fifths of its height (0.71), as high as what's set up on a summit stands (`NPCDef.summit`;
+    /// at 1 a chest on the Shiverdell's summit stood on its blocked shoulder).
     private static let mountainFoot = 0.15
+    private static let mountainCrest = 0.6
 
     /// The cells along a trail, one after another with no diagonal steps, so you can walk it.
     private static func cells(along trail: [CGPoint]) -> [GridPoint] {
