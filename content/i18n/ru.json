@@ -943,7 +943,7 @@
     "Anyone seen a Sakura Bunny?": "Кто-нибудь видел Кролика-сакуру?",
     "LF party for Twilight Woods!": "ищу пати в Сумеречный лес!",
     "Selling potions, cheap!": "Продаю зелья, дёшево!",
-    "Just hit level 5 :D": "Только что апнул 5 лвл :D",
+    "Just hit level {level} :D": "Только что апнул {level} лвл :D",
     "The jellies here are so bouncy": "Желешки тут такие прыгучие",
     "brb, feeding my pet": "отойду, кормлю пета",
     "Which guild are you joining?": "В какую гильдию идёшь?",

@@ -943,7 +943,7 @@
     "Anyone seen a Sakura Bunny?": "Qualcuno ha visto un Coniglietto Sakura?",
     "LF party for Twilight Woods!": "cerco gruppo per il Bosco del Crepuscolo!",
     "Selling potions, cheap!": "Vendo pozioni, a poco!",
-    "Just hit level 5 :D": "Appena arrivato al livello 5 :D",
+    "Just hit level {level} :D": "Appena arrivato al livello {level} :D",
     "The jellies here are so bouncy": "Le gelatine qui rimbalzano un sacco",
     "brb, feeding my pet": "brb, do da mangiare al mio cucciolo",
     "Which guild are you joining?": "In che gilda entri?",

@@ -943,7 +943,7 @@
     "Anyone seen a Sakura Bunny?": "벚꽃토끼 본 사람?",
     "LF party for Twilight Woods!": "황혼의 숲 파티 구해요!",
     "Selling potions, cheap!": "포션 싸게 팝니다!",
-    "Just hit level 5 :D": "방금 5렙 찍었다 :D",
+    "Just hit level {level} :D": "방금 {level}렙 찍었다 :D",
     "The jellies here are so bouncy": "여기 젤리들 진짜 탱글탱글하다",
     "brb, feeding my pet": "잠수 ㄱ, 펫 밥 주고 옴",
     "Which guild are you joining?": "님들 어느 길드 감?",

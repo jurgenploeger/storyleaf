@@ -381,8 +381,12 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
 - Cave depths (ours, since 0.7.38; playtesting 2026-10-18: "In caves, you should be able to go deeper in
   a cave, so a deeper level, similar to runescape", then "Only the new land should have 2 deeper cave levels
   with the drake in the deepest cave level"): the Glimmerdeep goes two levels down (maps.json `depth` 1 and
-  2: the Glimmerdeep Depths, 155 to 165, with a treasure chest of a Heart Seal, and the Heart of the
-  Glimmerdeep, 156 to 166, where the Prism Drake sleeps now, still level 160 for its quest). Each level is
+  2: the Glimmerdeep Depths, 160 to 172, with a treasure chest of a Heart Seal, and the Heart of the
+  Glimmerdeep, 168 to 180, where the Prism Drake sleeps now, level 180, its quest from 172). Each level down
+  is a step stronger than the one over it, so going deeper pays (playtesting 2026-10-20: "make sure the
+  monsters go progressively stronger in the caves, so it's worth it to go deeper to fight stronger monsters
+  for more xp"): a fight's EXP grows with its monsters' level, about 30% more a monster at the bottom
+  than at the top (150 to 162), and the drake is the strongest thing in the cave. Each level is
   reached only by a ladder down into a pit in the floor and left only by a knotted rope back up through a
   hole in the roof (`cave_rope`, since 0.7.51; playtesting 2026-10-20: "instead of a staircase to go up in
   the caves, it should be a rope going up"; stone stairs before), as RuneScape's dungeons are by their ladders (NPCs with role `stairs` and `to`, tapped or Talked to like a
