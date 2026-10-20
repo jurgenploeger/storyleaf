@@ -110,7 +110,8 @@ enum BorderArt {
 
         if gate == nil, isRocky(here, neighbour.def) {
             // A tumble of boulders along the line, the same stones from either side: each picked by
-            // where its piece of border lies on the continent.
+            // where its piece of border lies on the continent. One on every piece, no gaps
+            // (playtesting 2026-10-20: a gap you can't walk through looked like a way over).
             let kinds = ["boulder", "small_boulder"].compactMap { id -> (texture: SKTexture, size: CGSize)? in
                 guard let image = art.gradedTile(id, palette: palette) else { return nil }
                 let texture = SKTexture(cgImage: image)
@@ -121,12 +122,11 @@ enum BorderArt {
             for segment in segments {
                 let world = segment.grid(0.5)
                 var random = SeededRandom(text: "border \(Int(world.x * 2) + origin.col * 2),\(Int(world.y * 2) + origin.row * 2)")
-                guard Double.random(in: 0..<1, using: &random) < 0.85 else { continue }
                 let kind = kinds[Int.random(in: 0..<kinds.count, using: &random)]
-                let scale = CGFloat.random(in: 0.75...1.05, using: &random)
+                let scale = CGFloat.random(in: 0.9...1.1, using: &random)
                 let node = SKSpriteNode(texture: kind.texture, size: kind.size * scale)
                 node.anchorPoint = CGPoint(x: 0.5, y: 0.15)
-                node.position = screen(segment.grid(0.5 + CGFloat.random(in: -0.3...0.3, using: &random)))
+                node.position = screen(segment.grid(0.5 + CGFloat.random(in: -0.15...0.15, using: &random)))
                 put(node)
             }
             return placed
