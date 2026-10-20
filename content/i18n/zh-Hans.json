@@ -521,6 +521,7 @@
     "Ready": "可交付",
     "In progress": "进行中",
     "Completed": "已完成",
+    "Completed {count} of {total} quests": "已完成{count}/{total}个任务",
     "This land": "本地",
     "Active": "进行中",
     "No active quests. Elder Oak in Meadowbrook always needs help.": "没有进行中的任务。溪草村的橡树长老总是需要帮忙。",

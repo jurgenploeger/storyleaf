@@ -521,6 +521,7 @@
     "Ready": "Prontas",
     "In progress": "Em andamento",
     "Completed": "Concluídas",
+    "Completed {count} of {total} quests": "{count} de {total} missões concluídas",
     "This land": "Esta terra",
     "Active": "Ativas",
     "No active quests. Elder Oak in Meadowbrook always needs help.": "Nenhuma missão ativa. O Ancião Carvalho, em Riacho do Prado, sempre precisa de ajuda.",

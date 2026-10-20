@@ -521,6 +521,7 @@
     "Ready": "Готовы",
     "In progress": "В процессе",
     "Completed": "Выполненные",
+    "Completed {count} of {total} quests": "Выполнено заданий: {count} из {total}",
     "This land": "Эта земля",
     "Active": "Активные",
     "No active quests. Elder Oak in Meadowbrook always needs help.": "Активных заданий нет. Старейшине Оуку в Лугоручье всегда нужна помощь.",

@@ -1330,6 +1330,10 @@ private struct QuestsTab: View {
         }
         let completed: [QuestDef] = shelf == .all || shelf == .done ? arrange(session.completedQuests, numbers: numbers) : []
         VStack(alignment: .leading, spacing: 8) {
+            // How far through the game's quests you are, as the Monster Book counts its monsters.
+            Text(L("Completed {count} of {total} quests", ["count": session.completedQuests.count, "total": session.content.quests.count]))
+                .font(HUDStyle.font(12))
+                .foregroundStyle(HUDStyle.gold)
             HStack(spacing: 8) {
                 ItemSearchField(text: $search)
                 QuestSortMenu(sort: $sort)

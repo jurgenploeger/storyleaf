@@ -521,6 +521,7 @@
     "Ready": "Prêtes",
     "In progress": "En cours",
     "Completed": "Terminées",
+    "Completed {count} of {total} quests": "{count} quêtes terminées sur {total}",
     "This land": "Cette terre",
     "Active": "En cours",
     "No active quests. Elder Oak in Meadowbrook always needs help.": "Aucune quête en cours. L'Ancien Chêne à Ruisseau-des-Prés a toujours besoin d'aide.",
