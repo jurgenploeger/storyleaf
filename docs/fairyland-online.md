@@ -387,8 +387,9 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   monsters go progressively stronger in the caves, so it's worth it to go deeper to fight stronger monsters
   for more xp"): a fight's EXP grows with its monsters' level, about 30% more a monster at the bottom
   than at the top (150 to 162), and the drake is the strongest thing in the cave. Each level is
-  reached only by a ladder down into a pit in the floor and left only by stone stairs back up, as
-  RuneScape's dungeons are by their ladders (NPCs with role `stairs` and `to`, tapped or Talked to like a
+  reached only by a ladder down into a pit in the floor and left only by a knotted rope back up through a
+  hole in the roof (`cave_rope`, since 0.7.51; playtesting 2026-10-20: "instead of a staircase to go up in
+  the caves, it should be a rope going up"; stone stairs before), as RuneScape's dungeons are by their ladders (NPCs with role `stairs` and `to`, tapped or Talked to like a
   chest; you come out in front of the stairs that lead back, `WorldMap.stairsArrival`), and each is smaller
   and darker than the one over it. The minimap marks the ladders and stairs with a grey arrow down or up.
   Whether FO's caves had floors under them isn't in any source reachable from a cloud session.
