@@ -521,6 +521,7 @@
     "Ready": "Bereit",
     "In progress": "Laufend",
     "Completed": "Erledigt",
+    "Completed {count} of {total} quests": "{count} von {total} Quests erledigt",
     "This land": "Dieses Land",
     "Active": "Aktiv",
     "No active quests. Elder Oak in Meadowbrook always needs help.": "Keine aktiven Quests. Ältester Oak in Wiesenbach braucht immer Hilfe.",

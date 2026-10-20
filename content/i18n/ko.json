@@ -521,6 +521,7 @@
     "Ready": "보고 가능",
     "In progress": "진행 중",
     "Completed": "완료",
+    "Completed {count} of {total} quests": "퀘스트 {total}개 중 {count}개 완료",
     "This land": "이 땅",
     "Active": "진행 중",
     "No active quests. Elder Oak in Meadowbrook always needs help.": "진행 중인 퀘스트가 없어요. 메도브룩의 참나무 장로는 언제나 도움이 필요해요.",
