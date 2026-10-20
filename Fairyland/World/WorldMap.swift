@@ -1936,8 +1936,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// Ranges of grassy hills out in the fields (`theme.hills`, `Hill`): summits one after another
     /// along a wandering line, melted together, off the roads and water and clear of buildings,
     /// people, the arrivals and each other. Mountains first, each the tallest and widest summit of
-    /// its range. You can walk up them anywhere, and trails wind up round their sides from the side
-    /// facing you, the easy way up; scenery grows on them like anywhere else.
+    /// its range. You can walk up the hills anywhere and a mountain only by its trail; trails wind up
+    /// round their sides from the side facing you, the easy way up; scenery grows on them like
+    /// anywhere else.
     private func raiseHills(_ hills: MapDef.Hills, _ rng: inout SeededRandom) {
         let sizes = hills.size ?? [3, 6]
         let smallest = Double(max(2, sizes.first ?? 3)), biggest = Double(max(sizes.first ?? 3, sizes.last ?? 6))
@@ -2209,8 +2210,33 @@ nonisolated final class WorldMap: @unchecked Sendable {
             }
         }
         self.trailCells.formUnion(onTrails)
+        // A mountain's slopes are too steep to climb but by its trail (playtesting 2026-10-20:
+        // "with tall mountains, only the roads can be walked to go up/down. With hills it's fine
+        // the way it is"): from a little way up its foot to its top, only on the trail and a cell
+        // either side. Its foothills, and its top once you're up, you walk anywhere as on a hill.
+        if let mountain {
+            let byTrails = Set(onTrails.flatMap { cell in (-1...1).flatMap { dr in (-1...1).map { dc in GridPoint(col: cell.col + dc, row: cell.row + dr) } } })
+            for cell in hill.cells where !byTrails.contains(cell) {
+                let rise = hill.rise(of: mountain, Double(cell.col) + 0.5, Double(cell.row) + 0.5)
+                if rise > Self.mountainFoot, rise < 1 { blocked.insert(cell) }
+            }
+            // Nothing left you can't get to: its top with no trail up, or a pocket of its side.
+            var reached = Set(ring.subtracting(hill.cells))
+            var queue = Array(reached)
+            while let cell = queue.popLast() {
+                for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                    let next = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                    guard hill.cells.contains(next), !blocked.contains(next), reached.insert(next).inserted else { continue }
+                    queue.append(next)
+                }
+            }
+            for cell in hill.cells where !reached.contains(cell) { blocked.insert(cell) }
+        }
         return true
     }
+
+    /// How far up a mountain's side (`Hill.rise`) its slopes stop being walkable off its trail.
+    private static let mountainFoot = 0.15
 
     /// The cells along a trail, one after another with no diagonal steps, so you can walk it.
     private static func cells(along trail: [CGPoint]) -> [GridPoint] {

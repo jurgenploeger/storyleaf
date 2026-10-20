@@ -4,8 +4,9 @@ import Foundation
 nonisolated extension WorldMap {
     /// Raised ground out in the fields (`theme.hills`): a range of summits melted into one another,
     /// each rising smoothly from its foot to a rounded top of its own height, so a long ridge of hills
-    /// or a mountain among its foothills. You can walk up it anywhere; its trails, the easy way up,
-    /// wind up round its sides from the side that faces you and onto the tops.
+    /// or a mountain among its foothills. You can walk up a hill anywhere, a mountain only by its trail
+    /// (`WorldMap.shapeHill`); its trails, the easy way up, wind up round its sides from the side that
+    /// faces you and onto the tops.
     /// Points here are in cells (grid space divided by `WorldMap.tileSize`).
     nonisolated struct Hill {
         /// One of its summits: an ellipse (its middle, and its reach along and across, turned by
