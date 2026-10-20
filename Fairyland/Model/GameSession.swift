@@ -1787,18 +1787,11 @@ final class GameSession {
         checkTitles()
     }
 
-    /// What handing in `quest` would pay now: its own gold and EXP, or more once you've outgrown it,
-    /// so going back for an old quest is still worth it (`quests` in content/rewards.json, a bit more
-    /// than a bounty pays). A quest that pays no gold or no EXP still pays none.
+    /// What handing in `quest` pays: its own gold and EXP, whatever your level (playtesting
+    /// 2026-10-20: "the xp you can win from a quest should be fixed [...] not based on my current
+    /// level"; from 0.3.63 an outgrown quest paid for your level instead).
     func questPay(_ quest: QuestDef) -> (gold: Int, exp: Int) {
-        let rules = content.rewards.quests
-        let level = data.hero.level
-        func atLeast(_ own: Int?, _ least: Int) -> Int {
-            guard let own, own > 0 else { return 0 }
-            return max(own, least)
-        }
-        return (atLeast(quest.reward.gold, rules.goldPerLevel * level),
-                atLeast(quest.reward.exp, Int((Double(Self.expToNext(level: level)) * rules.exp).rounded())))
+        (quest.reward.gold ?? 0, quest.reward.exp ?? 0)
     }
 
     /// What a finished quest paid: as noted when it was handed in, else (before 0.3.63) its own reward.
@@ -1811,7 +1804,6 @@ final class GameSession {
     @discardableResult
     func turnInQuest(_ id: String) -> [String] {
         guard let quest = content.quest(id), status(of: quest) == .ready else { return [] }
-        // Priced at the level you hand it in, before its EXP lifts you.
         let pay = questPay(quest)
         // What it asked you to bring is handed over.
         if quest.objective.type == .bring, let item = quest.objective.target {

@@ -1720,20 +1720,16 @@ struct RulesTests {
         #expect(session.activeQuests.first?.id == "jelly_trouble")
     }
 
-    @Test func questRewardsGrowWithYourLevel() {
+    @Test func questRewardsAreFixed() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         session.data.quests["hope_of_meadowbrook"] = QuestProgress(state: .completed, count: 3)
         let quest = Content.shared.quest("jelly_trouble")!
-        // At the level it's meant for, a quest pays its own reward.
+        // A quest pays its own reward, at the level it's meant for and long after.
         #expect(session.questPay(quest).gold == quest.reward.gold)
         #expect(session.questPay(quest).exp == quest.reward.exp)
-        // Outgrown, it pays for your level: a bit more than a bounty.
         session.data.hero.level = 44
-        let rules = Content.shared.rewards
         let pay = session.questPay(quest)
-        #expect(pay.gold == rules.quests.goldPerLevel * 44)
-        #expect(pay.gold > rules.bounties.goldPerLevel * 44)
-        #expect(Double(pay.exp) > Double(GameSession.expToNext(level: 44)) * rules.bounties.exp)
+        #expect(pay.gold == quest.reward.gold && pay.exp == quest.reward.exp)
         // A quest that pays no EXP still pays none.
         #expect(session.questPay(Content.shared.quest("choose_path")!).exp == 0)
         session.acceptQuest(quest.id)

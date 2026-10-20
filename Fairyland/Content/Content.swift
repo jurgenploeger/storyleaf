@@ -1011,14 +1011,6 @@ nonisolated struct RewardsDef: Decodable, Sendable {
         /// Once all the day's bounties are claimed.
         let bonus: Bonus
     }
-    /// The least a quest pays when you hand it in, for your level then (a bit more than a bounty),
-    /// so one you've outgrown is still worth doing. Its own reward when that's more.
-    nonisolated struct Quests: Decodable, Sendable {
-        /// A share of the EXP your level needs.
-        let exp: Double
-        /// Gold: this many times your level.
-        let goldPerLevel: Int
-    }
     nonisolated struct Milestone: Decodable, Sendable {
         /// Kinds of monster met; nil: every one.
         let count: Int?
@@ -1088,7 +1080,6 @@ nonisolated struct RewardsDef: Decodable, Sendable {
     }
     let dailyGifts: [Gift]
     let bounties: Bounties
-    let quests: Quests
     let bookMilestones: [Milestone]
     let cards: Cards
     let seals: Seals
