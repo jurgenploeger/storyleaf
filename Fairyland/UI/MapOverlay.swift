@@ -1,13 +1,21 @@
 import SwiftUI
 
 /// Tapping the minimap: the world map, with where you are. In a cave, the cave's own map instead,
-/// as far as you've explored it, with a way to the world map.
+/// as far as you've explored it, with a way to the world map, and its other levels a tap away.
 struct MapOverlay: View {
     let session: GameSession
     /// The cave you're in, if you're in one (`GameCoordinator.caveMap`).
     var cave: CaveMap.Picture? = nil
+    /// The cave's levels it can show, the top first (`GameCoordinator.caveLevels`): with more than
+    /// one, a chip for each over the map.
+    var levels: [MapDef] = []
+    /// Another level's map (`GameCoordinator.caveMap(of:)`).
+    var loadLevel: @MainActor (MapDef) async -> CaveMap.Picture? = { _ in nil }
     let onClose: () -> Void
     @State private var showsWorld = false
+    /// The level shown when it isn't the one you're on, and its map once it's drawn.
+    @State private var level: MapDef?
+    @State private var levelPicture: CaveMap.Picture?
 
     var body: some View {
         ZStack {
@@ -19,9 +27,14 @@ struct MapOverlay: View {
             // out to its frame (no frame of its own inside it).
             VStack(spacing: 0) {
                 if let cave, !showsWorld {
-                    FLTitleBar(title: session.mapName, icon: .map, onClose: onClose)
-                    CaveMap(picture: cave, cell: session.mapCell, marks: session.minimapMarks) {
-                        showsWorld = true
+                    FLTitleBar(title: level?.name ?? session.mapName, icon: .map, onClose: onClose)
+                    if levels.count > 1 { levelChips }
+                    if level != nil {
+                        CaveMap(picture: levelPicture, cell: nil, marks: []) { showsWorld = true }
+                    } else {
+                        CaveMap(picture: cave, cell: session.mapCell, marks: session.minimapMarks) {
+                            showsWorld = true
+                        }
                     }
                 } else {
                     FLTitleBar(title: L("World map"), icon: .map, onClose: onClose)
@@ -33,6 +46,34 @@ struct MapOverlay: View {
             .frame(maxWidth: 720)
             .gameWindow()
             .padding(14)
+        }
+    }
+
+    /// One chip a level, gold for the one shown.
+    private var levelChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(levels) { option in
+                    FilterChip(title: option.name, on: option.id == (level?.id ?? session.data.mapID)) { show(option) }
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+        }
+        .background(Color(red: 0.03, green: 0.05, blue: 0.1))
+    }
+
+    private func show(_ option: MapDef) {
+        guard option.id != (level?.id ?? session.data.mapID) else { return }
+        levelPicture = nil
+        guard option.id != session.data.mapID else {
+            level = nil
+            return
+        }
+        level = option
+        Task {
+            let picture = await loadLevel(option)
+            if level?.id == option.id { levelPicture = picture }
         }
     }
 }
@@ -49,37 +90,47 @@ struct CaveMap: View {
         let rows: Int
     }
 
-    let picture: Picture
-    let cell: GridPoint
+    /// Nil while it's drawn (another level's, laid out the first time it's shown).
+    let picture: Picture?
+    /// Where you are: nil on another level.
+    let cell: GridPoint?
     let marks: [GameSession.MinimapMark]
     let showWorld: () -> Void
 
     var body: some View {
         VStack(spacing: 10) {
             GeometryReader { space in
-                // Turned 45 degrees and squashed by half, the cave spans (columns + rows) / sqrt(2)
-                // cells across and half that down: as big as fits.
-                let half = CGFloat(0.5).squareRoot()
-                let span = CGFloat(picture.columns + picture.rows) * half
-                let zoom = max(1, min(space.size.width / span, space.size.height / (span * 0.5)))
-                ZStack {
-                    Image(uiImage: picture.image)
-                        .interpolation(.none)
-                        .resizable()
-                        .frame(width: CGFloat(picture.columns) * zoom, height: CGFloat(picture.rows) * zoom)
-                        .rotationEffect(.degrees(-45))
-                        .scaleEffect(x: 1, y: 0.5)
-                    ForEach(Array(marks.enumerated()), id: \.offset) { _, mark in
-                        MinimapIcon(kind: mark.kind)
-                            .offset(offset(of: mark.cell, zoom: zoom))
+                if let picture {
+                    // Turned 45 degrees and squashed by half, the cave spans (columns + rows) / sqrt(2)
+                    // cells across and half that down: as big as fits.
+                    let half = CGFloat(0.5).squareRoot()
+                    let span = CGFloat(picture.columns + picture.rows) * half
+                    let zoom = max(1, min(space.size.width / span, space.size.height / (span * 0.5)))
+                    ZStack {
+                        Image(uiImage: picture.image)
+                            .interpolation(.none)
+                            .resizable()
+                            .frame(width: CGFloat(picture.columns) * zoom, height: CGFloat(picture.rows) * zoom)
+                            .rotationEffect(.degrees(-45))
+                            .scaleEffect(x: 1, y: 0.5)
+                        ForEach(Array(marks.enumerated()), id: \.offset) { _, mark in
+                            MinimapIcon(kind: mark.kind)
+                                .offset(offset(of: mark.cell, in: picture, zoom: zoom))
+                        }
+                        if let cell {
+                            Circle()
+                                .fill(HUDStyle.gold)
+                                .frame(width: 10, height: 10)
+                                .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
+                                .offset(offset(of: cell, in: picture, zoom: zoom))
+                        }
                     }
-                    Circle()
-                        .fill(HUDStyle.gold)
-                        .frame(width: 10, height: 10)
-                        .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
-                        .offset(offset(of: cell, zoom: zoom))
+                    .frame(width: space.size.width, height: space.size.height)
+                } else {
+                    ProgressView()
+                        .tint(HUDStyle.cream)
+                        .frame(width: space.size.width, height: space.size.height)
                 }
-                .frame(width: space.size.width, height: space.size.height)
             }
             .frame(minHeight: 260)
             .background(Color(red: 0.03, green: 0.05, blue: 0.1))
@@ -91,7 +142,7 @@ struct CaveMap: View {
     }
 
     /// Where a cell lies from the middle of the turned map, as the minimap places its dots.
-    private func offset(of other: GridPoint, zoom: CGFloat) -> CGSize {
+    private func offset(of other: GridPoint, in picture: Picture, zoom: CGFloat) -> CGSize {
         let x = (CGFloat(other.col) + 0.5 - CGFloat(picture.columns) / 2) * zoom
         let y = (CGFloat(picture.rows) / 2 - CGFloat(other.row) - 0.5) * zoom
         let half = CGFloat(0.5).squareRoot()

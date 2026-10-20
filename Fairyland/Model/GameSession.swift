@@ -1600,6 +1600,11 @@ final class GameSession {
         Self.latestFirst(content.quests.filter { data.quests[$0.id]?.state == .active }) { data.quests[$0.id]?.taken }
     }
 
+    /// Whether a map's minimap shows only what you've seen: a dark map you don't have the whole map of.
+    func isFogged(_ map: MapDef) -> Bool {
+        map.ambience?.darkness != nil && !isCharted(map)
+    }
+
     /// Whether you have a dark map's whole map (`MapDef.chart`): its quest is done.
     func isCharted(_ map: MapDef) -> Bool {
         map.chart.map { data.quests[$0]?.state == .completed } ?? false

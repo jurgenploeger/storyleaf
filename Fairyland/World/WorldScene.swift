@@ -1673,12 +1673,11 @@ final class WorldScene: SKScene {
         }
     }
 
-    /// Whether the minimap shows only what you've seen: a dark map you don't have the whole map of.
-    /// From the map, not the lantern: the HUD asks for the minimap as soon as the scene exists, before
-    /// `build` lights the lantern, and a minimap drawn whole then stayed whole (back in a cave where you
-    /// arrive somewhere you've been, nothing new is seen to redraw it), so the cave's own map, drawn
-    /// fogged, looked as if what you'd explored was gone.
-    private var isFogged: Bool { def.ambience?.darkness != nil && !session.isCharted(def) }
+    /// Whether the minimap shows only what you've seen (`GameSession.isFogged`). From the map, not
+    /// the lantern: the HUD asks for the minimap as soon as the scene exists, before `build` lights
+    /// the lantern, and a minimap drawn whole then stayed whole (back in a cave where you arrive
+    /// somewhere you've been, nothing new is seen to redraw it).
+    private var isFogged: Bool { session.isFogged(def) }
 
     /// Whether you've seen a cell (on a dark map, as the minimap shows it; everywhere elsewhere).
     private func seenCells() -> (GridPoint) -> Bool {
