@@ -3400,6 +3400,9 @@ struct RewardTests {
         }
 
         let session = GameSession.newGame(name: "Test", raceID: "human")
+        // A new game's first gift is tomorrow's (`giftDay` is today): run on 2026-10-20 itself, the
+        // first gift below was taken already.
+        session.data.giftDay = nil
         let halloween = try #require(GameSession.season(on: day(2026, 10, 20))?.season)
         let first = try #require(session.collectDailyGift(on: day(2026, 10, 20)))
         #expect(first.greeting == halloween.greeting)
