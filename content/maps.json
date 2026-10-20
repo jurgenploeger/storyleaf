@@ -4794,7 +4794,7 @@
           "lines": [
             "Off to the mine, back from the mine. That's the whole song.",
             "Blanche makes us wash before supper. All seven of us. It takes a while.",
-            "The Fire Bears like our woodpile. They like it on fire.",
+            "The Frost Bears like our woodpile. They like it frozen solid.",
             "Mister Frost up on the hill sends his regards. And a lot of snow."
           ]
         },
@@ -5206,14 +5206,13 @@
           8
         ],
         "monsters": {
-          "fire_bear": 3,
-          "pegasus": 2,
+                    "pegasus": 2,
           "phantom": 3,
           "snowman": 3,
-          "frost_bear": 2,
-          "starry_fire_bear": 1,
+          "frost_bear": 5,
           "rosy_pegasus": 1,
           "shadow_snowman": 1,
+          "frosted_phantom": 1,
           "frost_puff": 1
         }
       },
@@ -8410,6 +8409,7 @@
           7
         ],
         "monsters": {
+          "fire_bear": 3,
           "floating_stone": 3,
           "golden_cloud": 3,
           "gem_crawler": 2,
