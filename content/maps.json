@@ -18535,8 +18535,8 @@
         "rate": 0.07,
         "graceSteps": 6,
         "levels": [
-          155,
-          165
+          160,
+          172
         ],
         "groupSize": [
           3,
@@ -18805,7 +18805,7 @@
           "y": 8,
           "greeting": "Light ripples across a coil of crystal scales. Something vast lifts its head, and every crystal in the cave flares at once.",
           "monster": "prism_drake",
-          "level": 160,
+          "level": 180,
           "victory": {
             "title": "The Glimmerdeep Shines",
             "story": [
@@ -18819,8 +18819,8 @@
         "rate": 0.065,
         "graceSteps": 6,
         "levels": [
-          156,
-          166
+          168,
+          180
         ],
         "groupSize": [
           3,
