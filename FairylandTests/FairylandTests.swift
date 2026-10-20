@@ -3802,6 +3802,58 @@ struct LandPlanTests {
         }
     }
 
+    /// A cave remembers what you've seen in it (playtesting 2026-10-20: "every time I enter the cave
+    /// or a level of that cave, the map resets and shows nothing"): each visit is a scene of its own,
+    /// and its minimap shows what the visits before saw, down a level and back again.
+    @Test func cavesRememberWhatYouveSeen() async throws {
+        let top = try #require(content.map("glimmerdeep"))
+        let below = try #require(content.map("glimmerdeep_depths"))
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        func seen(_ id: String) -> Int { (session.explored(id) ?? Data()).reduce(0) { $0 + $1.nonzeroBitCount } }
+        /// The minimap's cells not painted the fog's dark blue.
+        func shown(_ image: UIImage) -> Int {
+            guard let source = image.cgImage,
+                  let context = CGContext(data: nil, width: source.width, height: source.height, bitsPerComponent: 8,
+                                          bytesPerRow: source.width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
+                  let data = context.data else { return -1 }
+            context.draw(source, in: CGRect(x: 0, y: 0, width: source.width, height: source.height))
+            let pixels = data.bindMemory(to: UInt8.self, capacity: source.width * source.height * 4)
+            return (0..<(source.width * source.height)).filter { pixels[$0 * 4] != 13 || pixels[$0 * 4 + 1] != 31 || pixels[$0 * 4 + 2] != 56 }.count
+        }
+        func visit(_ def: MapDef) async -> WorldScene {
+            session.playerPosition = nil
+            let scene = WorldScene(map: def, session: session, input: InputState(), entry: nil)
+            await scene.build { _ in }
+            return scene
+        }
+
+        let first = await visit(top)
+        let atFirst = seen(top.id)
+        #expect(atFirst > 0, "nothing seen on arriving in \(top.id)")
+        let firstShown = shown(first.minimapImage(explored: session.exploredVersion))
+        #expect(firstShown > 0 && firstShown < top.width * top.height, "first visit's minimap shows \(firstShown) cells")
+
+        _ = await visit(below)
+        #expect(seen(below.id) > 0, "nothing seen on arriving in \(below.id)")
+        #expect(seen(top.id) == atFirst, "\(top.id) forgot what was seen while in \(below.id)")
+
+        // Back up: before it's built (as the HUD first asks) and after.
+        session.playerPosition = nil
+        let again = WorldScene(map: top, session: session, input: InputState(), entry: nil)
+        let early = shown(again.minimapImage(explored: session.exploredVersion))
+        #expect(early >= firstShown, "back in \(top.id), before it's built, the minimap shows \(early) cells, first time \(firstShown)")
+        await again.build { _ in }
+        #expect(seen(top.id) >= atFirst, "\(top.id): \(seen(top.id)) cells seen after coming back, \(atFirst) before")
+        let late = shown(again.minimapImage(explored: session.exploredVersion))
+        #expect(late >= firstShown, "back in \(top.id), the minimap shows \(late) cells, first time \(firstShown)")
+
+        // And through a save: what's seen goes into it and comes back out.
+        session.save()
+        let reloaded = try JSONDecoder().decode(SaveData.self, from: JSONEncoder().encode(session.data))
+        #expect(reloaded.explored?[top.id] == session.explored(top.id), "\(top.id)'s sightings didn't survive a save")
+    }
+
     /// Building the scene takes no cell the plan didn't: where you can walk is settled once the plan's
     /// run, so the continent's store can have it without drawing the land.
     @Test func theSceneTakesNoCellItsPlanDidnt() async throws {
