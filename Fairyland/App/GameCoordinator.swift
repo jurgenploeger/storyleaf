@@ -1,5 +1,6 @@
 import Observation
 import SpriteKit
+import UIKit
 
 enum MenuTab: String, CaseIterable, Identifiable {
     case character = "Character"
@@ -172,6 +173,34 @@ final class GameCoordinator {
         return CaveMap.Picture(image: world.minimapImage(explored: session.exploredVersion),
                                columns: world.def.width, rows: world.def.height)
     }
+
+    /// The levels of the cave you're in that its map window can show, the top first (playtesting
+    /// 2026-10-20: "there should be navigation to see all three levels"): every one once you have
+    /// its map, else those you've been down to. Empty out on the continent.
+    var caveLevels: [MapDef] {
+        guard caveMap != nil else { return [] }
+        return Content.shared.caveLevels(of: world.def).filter { $0.id == world.def.id || session.isCharted($0) || session.hasVisited($0.id) }
+    }
+
+    /// Another level of the cave's map, for the map window: laid out the first time it's asked for,
+    /// dark where you haven't been unless you have its map.
+    func caveMap(of level: MapDef) async -> CaveMap.Picture? {
+        if level.id == world.def.id { return caveMap }
+        let whole: UIImage
+        if let drawn = levelPictures[level.id] {
+            whole = drawn
+        } else {
+            let grid = await Self.layOut(level)
+            whole = UIImage(cgImage: WorldScene.overview(of: grid, art: ArtLibrary.shared))
+            levelPictures[level.id] = whole
+        }
+        let image = session.isFogged(level)
+            ? WorldScene.fog(whole, seen: session.explored(level.id), columns: level.width, rows: level.height) : whole
+        return CaveMap.Picture(image: image, columns: level.width, rows: level.height)
+    }
+
+    /// The other cave levels' minimaps, whole, once laid out (`caveMap(of:)`).
+    @ObservationIgnored private var levelPictures: [String: UIImage] = [:]
 
     /// The continent as one place (`ContinentScene`, docs/continuous-world.md): every land on it, with
     /// no border between them. Made once, the first time you're on it, and kept while you're in a

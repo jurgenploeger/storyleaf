@@ -1428,6 +1428,20 @@ final class Content {
         return (stairs.to.flatMap { self.map($0) }?.depth ?? 0) > here
     }
 
+    /// Every level of the cave a map is a level of, joined by their stairs, the top first: the
+    /// Glimmerdeep, its Depths and its Heart. Just the map, for a cave with no levels under it.
+    func caveLevels(of def: MapDef) -> [MapDef] {
+        var levels = [def]
+        var index = 0
+        while index < levels.count {
+            for stairs in levels[index].npcs ?? [] where stairs.role == .stairs {
+                if let to = stairs.to.flatMap({ self.map($0) }), !levels.contains(where: { $0.id == to.id }) { levels.append(to) }
+            }
+            index += 1
+        }
+        return levels.sorted { ($0.depth ?? 0) < ($1.depth ?? 0) }
+    }
+
     /// The map a character lives on.
     func home(ofNPC id: String) -> MapDef? {
         maps.first { $0.npcs?.contains { $0.id == id } == true }
