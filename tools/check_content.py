@@ -993,10 +993,6 @@ for kind, span in kinds.items():
 check(bounty_rules.get("exp", 0) > 0 and bounty_rules.get("goldPerLevel", -1) >= 0, "rewards bounties → exp above 0 and goldPerLevel at least 0")
 check(bounty_rules.get("bonus", {}).get("exp", 0) > 0, "rewards bounties bonus → exp above 0")
 check_items(bounty_rules.get("bonus", {}).get("items"), "rewards bounties bonus")
-# A quest pays at least a bit more than a bounty, for your level.
-quest_rules = rewards.get("quests", {})
-check(quest_rules.get("exp", 0) >= bounty_rules.get("exp", 1), "rewards quests → exp at least a bounty's")
-check(quest_rules.get("goldPerLevel", -1) >= bounty_rules.get("goldPerLevel", 0), "rewards quests → goldPerLevel at least a bounty's")
 milestones = rewards.get("bookMilestones", [])
 counts = [m.get("count", len(monsters)) for m in milestones]
 check(counts == sorted(set(counts)), "rewards bookMilestones → counts rising, each once (the one without a count is every monster)")

@@ -869,8 +869,11 @@ Duels are with computer-run adventurers in 9 danger zones; a beaten adventurer d
 (the goods they'd sell you that day). The red-named troublemakers only pick a fight with a side about as
 strong as theirs or weaker: their level plus their companion's at least nine tenths of yours, your companion's
 and your party's (`GameSession.dares`; our decision, 2026-10-11, at the playtester's request). Bosses never
-start a fight: you talk to them. Quests pay at least a bit more than a daily bounty for your level when
-you hand them in (`quests` in content/rewards.json; our decision, 2026-10-06, at the playtester's request).
+start a fight: you talk to them. A quest pays its own fixed reward, whatever your level (since 0.7.56,
+playtesting 2026-10-20: "the xp you can win from a quest should be fixed [...] not based on my current
+level"; from 2026-10-06, also at the playtester's request, it paid at least a bit more than a daily bounty
+for your level, `quests` in content/rewards.json, gone now). Its fights are fixed too: its monsters at their
+land's levels, its boss at its own.
 A quest giver with nothing for you says why (a level to reach, someone else's quest first, or all done) and
 points to the quest open to you that suits your level best, or the next to open (`GameSession.questGiverNote`,
 since 0.4.0, at the playtester's request, 2026-10-11: a level-103 hero was told to come back stronger). The
