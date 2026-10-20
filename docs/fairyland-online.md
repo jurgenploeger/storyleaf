@@ -114,7 +114,10 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   where the slope is steeper than the sun is high, in the hill's own shadow. Since 0.4.5 you can walk up them anywhere, straight up the
   side too (asked for in playtesting 2026-10-11; 0.4.1 to 0.4.4 kept the steep sides blocked but for the
   trail); a trail cut into the slope (a shadow above, a lip below) is the easy way up, kept clear a cell
-  either side. Since 0.4.5 it winds up round the side as a path would (asked for in playtesting 2026-10-11:
+  either side. Since 0.7.54 a tall mountain is the exception (playtesting 2026-10-20: "with tall mountains,
+  only the roads can be walked to go up/down. With hills it's fine the way it is"): from a little way up its
+  foot (`WorldMap.mountainFoot`) to its top, only its trail and a cell either side are walkable; its
+  foothills, and its top once you're up, you walk anywhere. Since 0.4.5 it winds up round the side as a path would (asked for in playtesting 2026-10-11:
   not necessarily zig-zag, more like RuneScape's): from its foot on the side facing you, round one way,
   climbing evenly and far enough round that halfway up it climbs about 5 points a cell, bending gently in
   and out; a curve up a low hill, a sweep half round a mountain, and a single hairpin where it would go
