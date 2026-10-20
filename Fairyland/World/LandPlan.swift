@@ -221,7 +221,21 @@ final class LandPlanner {
             }
             map.occupy(home, blocking: false)
             let walk = local.walk.flatMap { map.spot(of: $0) }
+            for spot in [home] + (walk.map { [$0] } ?? []) { keepInSight(spot) }
             plan.locals.append(Crowd.Local(def: local, index: index, home: home, walk: walk))
+        }
+    }
+
+    /// Keeps scenery off the ground round where someone stands, a cell behind and beside them and
+    /// three in front (lower on screen), where a tree would stand over them: a big tree is about three
+    /// cells tall on screen (playtesting 2026-10-20: two of the Seven Hearths' dwarfs stood hidden
+    /// behind trees).
+    private func keepInSight(_ spot: GridPoint) {
+        for dr in -3...1 {
+            for dc in -3...1 where dc + dr >= -5 {
+                let cell = GridPoint(col: spot.col + dc, row: spot.row + dr)
+                if map.contains(cell) { map.occupy(cell, blocking: false) }
+            }
         }
     }
 
