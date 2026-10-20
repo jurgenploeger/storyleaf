@@ -943,7 +943,7 @@
     "Anyone seen a Sakura Bunny?": "有人见过樱花兔吗？",
     "LF party for Twilight Woods!": "暮光树林求组！",
     "Selling potions, cheap!": "卖药水，便宜！",
-    "Just hit level 5 :D": "刚到5级 :D",
+    "Just hit level {level} :D": "刚到{level}级 :D",
     "The jellies here are so bouncy": "这里的果冻好有弹性",
     "brb, feeding my pet": "马上回来，去喂个宠物",
     "Which guild are you joining?": "你打算加入哪个公会？",
