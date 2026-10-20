@@ -1673,9 +1673,16 @@ final class WorldScene: SKScene {
         }
     }
 
+    /// Whether the minimap shows only what you've seen: a dark map you don't have the whole map of.
+    /// From the map, not the lantern: the HUD asks for the minimap as soon as the scene exists, before
+    /// `build` lights the lantern, and a minimap drawn whole then stayed whole (back in a cave where you
+    /// arrive somewhere you've been, nothing new is seen to redraw it), so the cave's own map, drawn
+    /// fogged, looked as if what you'd explored was gone.
+    private var isFogged: Bool { def.ambience?.darkness != nil && !session.isCharted(def) }
+
     /// Whether you've seen a cell (on a dark map, as the minimap shows it; everywhere elsewhere).
     private func seenCells() -> (GridPoint) -> Bool {
-        guard lantern != nil, !session.isCharted(def) else { return { _ in true } }
+        guard isFogged else { return { _ in true } }
         let seen = session.explored(def.id) ?? Data()
         return { cell in
             let index = cell.row * self.map.columns + cell.col
@@ -1688,7 +1695,7 @@ final class WorldScene: SKScene {
     /// map from the mini map, unless you completed a quest that gives you [...] a map"); `version`
     /// is the session's count of new sightings (`exploredVersion`), so it's redrawn as you explore.
     func minimapImage(explored version: Int) -> UIImage {
-        guard lantern != nil, !session.isCharted(def) else { return minimap }
+        guard isFogged else { return minimap }
         if let fogged, fogged.version == version { return fogged.image }
         let image = Self.fog(minimap, seen: session.explored(def.id), columns: map.columns, rows: map.rows)
         fogged = (version, image)
