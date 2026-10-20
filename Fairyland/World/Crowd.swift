@@ -234,8 +234,12 @@ final class Crowd {
         walker.setWeapon(GameSession.weapon(for: profile))
         walker.setTitle(GameSession.botTitle(level: profile.level, id: profile.id))
         walker.walkSpeed = .random(in: 72...92)
+        // Their own level where a line has one ("Just hit level {level}"), and no such boast at level 1.
+        let lines = Content.shared.crowd.adventurerLines
+            .filter { profile.level > 1 || !$0.contains("{level}") }
+            .map { $0.replacingOccurrences(of: "{level}", with: String(profile.level)) }
         add(Member(name: profile.name, kind: .adventurer, walker: walker, pet: Self.pet(profile.petSpecies), home: home, roam: roam,
-                   lines: Content.shared.crowd.adventurerLines, profile: profile, trades: trades), to: world)
+                   lines: lines, profile: profile, trades: trades), to: world)
     }
 
     /// A monster trotting along behind someone (a monsters.json species), if they have one.
