@@ -583,7 +583,7 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
 - This reverses 2026-10-04's rule that each gender sheet's hair stayed with that sheet.
 - Since 0.7.60 a barber in every town (NPC role `barber`, playtesting 2026-10-21: "You should be able to
   change your hair style and color somewhere in the game, at a barber in a town") changes the hairstyle and
-  hair colour for their `price` (100 gold); gender, skin and outfit stay as the hero was made. Our own idea:
+  hair colour for their `price` (1000 gold); gender, skin and outfit stay as the hero was made. Our own idea:
   nothing in the sources says Fairyland Online had one.
 
 ## Attributes
