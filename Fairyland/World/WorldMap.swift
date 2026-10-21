@@ -1881,7 +1881,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
     }
 
     /// A raised stone terrace: its edges are walls (railings along the back), with stairs in
-    /// the middle of the front and one side. The walls block; the top is walkable.
+    /// the middle of the front and one side. The walls block; the top is walkable and paved all
+    /// over, a street under it too: one left there showed on the top, running up and over the
+    /// walls with no stairs (playtesting 2026-10-21, Meadowbrook).
     private func raiseTerrace(_ terrace: MapDef.Terrace) {
         let origin = offset(terrace.x, terrace.y)
         let stairs = [GridPoint(col: origin.col + terrace.width / 2, row: origin.row),
@@ -1893,7 +1895,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 let onEdge = col == origin.col || row == origin.row || col == origin.col + terrace.width - 1 || row == origin.row + terrace.height - 1
                 if onEdge, !stairs.contains(cell) {
                     occupy(cell, blocking: true)
-                } else if ground[row][col] == .ground {
+                    // The rim is the top's grassy edge, a road under it as well.
+                    if ground[row][col] == .path { ground[row][col] = .ground }
+                } else if ground[row][col] == .ground || ground[row][col] == .path {
                     ground[row][col] = .accent   // the terrace top is paved
                 }
             }

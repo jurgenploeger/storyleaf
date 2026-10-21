@@ -668,6 +668,15 @@ struct ContentTests {
         for def in content.maps where def.town?.terraces?.isEmpty == false {
             let map = Layouts.of(def)
             #expect(map.plateaus.contains { $0.height == WorldMap.terraceHeight }, "map \(def.id): terraces lie flat")
+            // No street shows up on a terrace's top, running over its walls (playtesting
+            // 2026-10-21, Meadowbrook): the top is paved, the rim grass.
+            for terrace in map.terraces {
+                for col in terrace.origin.col..<(terrace.origin.col + terrace.width) {
+                    for row in terrace.origin.row..<(terrace.origin.row + terrace.height) where map.contains(GridPoint(col: col, row: row)) {
+                        #expect(map.ground[row][col] != .path, "map \(def.id): a road on its terrace at \(col), \(row)")
+                    }
+                }
+            }
         }
     }
 
