@@ -654,6 +654,8 @@ for item in items.values():
 
 # A festive scarf is a necklace that wears `scarf` (GearOverlay.scarf, art/sprites/wear_scarf.png).
 WEARS = {"armor": {"vest", "mail", "plate", "robe", "cloak"}, "necklace": {"scarf"}}
+# The sheets bareHead armour wears: their head is cut off (tools/wear_art.py BARE_HEADED).
+bare_sheets = {sheet for i in items.values() if i.get("bareHead") for sheet in i.get("sheets", {}).values()}
 for item in items.values():
     if item["type"] == "weapon":
         check((ROOT / "art" / "sprites" / f"held_{item['id']}.png").exists(),
@@ -668,6 +670,18 @@ for item in items.values():
         check(item["type"] == "armor" and race_id in {r["id"] for r in classes["races"]},
               f"item {item['id']} → sheets: {race_id!r} isn't a race (or the item isn't armour)")
         check((ROOT / "art" / "sprites" / f"{sheet}.png").exists(), f"item {item['id']} → art/sprites/{sheet}.png is missing")
+    if item.get("bareHead") or any(sheet in bare_sheets for sheet in item.get("sheets", {}).values()):
+        check(item.get("bareHead") is True and all(sheet in bare_sheets for sheet in item.get("sheets", {}).values()),
+              f"item {item['id']} → wears a sheet with its head cut off along with a bareHead item: both need bareHead, "
+              "or the hero walks about with no head")
+    if item.get("bareHead"):
+        # Its sheets have their head cut off (tools/wear_art.py BARE_HEADED): every body needs its
+        # own head to draw over them.
+        check(item["type"] == "armor" and "sheets" in item,
+              f"item {item['id']} → bareHead is for armour with sheets of its own")
+        for body in (p.stem[len("body_"):] for p in (ROOT / "art" / "sprites").glob("body_*.png") if not p.stem.endswith("_npc")):
+            check((ROOT / "art" / "sprites" / f"head_{body}.png").exists(),
+                  f"item {item['id']} → art/sprites/head_{body}.png is missing (tools/wear_art.py)")
     for rule in item.get("tint", []):
         check("sheets" in item and isinstance(rule.get("hue"), list) and len(rule["hue"]) == 2,
               f"item {item['id']} → tint rules need a hue: [from, to] (and the item needs sheets)")

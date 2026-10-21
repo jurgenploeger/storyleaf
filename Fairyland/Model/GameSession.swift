@@ -312,6 +312,13 @@ final class GameSession {
         let body = Self.body(race: race, look: look)
         let hair = hairLayerRules(for: look, armor: armor)
         if let sheet = armor?.sheets?[race.id] {
+            // A sheet that leaves the head bare: the hero's own head (in their skin tone), beard and
+            // hair over it, a festive hat on the hair as without armour.
+            if armor?.bareHead == true {
+                let skin = Content.shared.appearance.skin.first { $0.id == look.skin }?.recolor ?? []
+                return [ArtLayer(id: sheet), ArtLayer(id: "head_\(body)", recolor: skin), ArtLayer(id: "locks_\(body)", recolor: hair),
+                        ArtLayer(id: "hair_\(style)_\(body)", recolor: hair)]
+            }
             return [ArtLayer(id: "nape_\(style)_\(body)", recolor: hair), ArtLayer(id: sheet)]
         }
         // A festive hat sits on the hair, in place of a helmet or hood.

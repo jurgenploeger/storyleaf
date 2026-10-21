@@ -123,11 +123,71 @@ def material(img, hue, min, to, max=1.0):
     return out
 
 
+# Armour whose walk sheet leaves the head bare, the hero's own head, beard and hair drawn over it
+# (`head_<body>`, GameSession.layers; items.json `bareHead`): the hat slot is what goes on the head
+# (playtesting 2026-10-21: "the chain mail shouldn't have a hat. We have a specific hat slot").
+BARE_HEADED = {"chain_mail"}
+# Heroes' bodies (tools/hero_layers.py), each race's: its own and its other gender's.
+BODIES = {race: [race] + [f"{race}_{g}" for g in ("male", "female") if (SPRITES / f"body_{race}_{g}.png").exists()]
+          for race in RACES}
+
+
+def neck(frame):
+    """The row a figure's head ends on: its narrowest row from 6 to 19 below its top (the lowest
+    of them if two are as narrow), between the head and the shoulders."""
+    a = frame[..., 3] > 0.5
+    top = np.nonzero(a.any(1))[0].min()
+    widths = {y: int(a[y].sum()) for y in range(top + 6, min(top + 20, F))}
+    return min(widths, key=lambda y: (widths[y], -y))
+
+
+def tunic(frame):
+    """A bare body's own tunic (green on every race's sheet, appearance.json recolours it), which a
+    head layer leaves out: in a side view an arm or a shoulder reaches up past the neck."""
+    h, s, v = rgb2hsv(frame[..., :3])
+    return (frame[..., 3] > 0.5) & (h >= 70) & (h <= 170) & (s > 0.25)
+
+
+def heads():
+    """`head_<body>`: each body's bald head down to its neck, for armour that leaves it bare."""
+    for bodies in BODIES.values():
+        for body in bodies:
+            sheet = load(SPRITES / f"body_{body}.png")
+            out = np.zeros_like(sheet)
+            for row in range(sheet.shape[0] // F):
+                for col in range(sheet.shape[1] // F):
+                    f = sheet[row * F:(row + 1) * F, col * F:(col + 1) * F]
+                    if not (f[..., 3] > 0.5).any():
+                        continue
+                    keep = np.zeros((F, F), bool)
+                    keep[:neck(f) + 1] = True
+                    keep &= ~tunic(f)
+                    out[row * F:(row + 1) * F, col * F:(col + 1) * F][keep] = f[keep]
+            save(out, f"head_{body}")
+            print(f"art/sprites/head_{body}.png  from body_{body}.png")
+
+
+def bared(img, race):
+    """An armour sheet with its head cut off: everything above the highest neck of the race's
+    bodies, so whichever body wears it, its head (`head_<body>`, down to its own neck) meets it."""
+    out = img.copy()
+    bodies = [load(SPRITES / f"body_{body}.png") for body in BODIES[race]]
+    for row in range(img.shape[0] // F):
+        for col in range(img.shape[1] // F):
+            frames = [b[row * F:(row + 1) * F, col * F:(col + 1) * F] for b in bodies]
+            cut = min(neck(f) for f in frames if (f[..., 3] > 0.5).any())
+            out[row * F:row * F + cut + 1, col * F:(col + 1) * F] = 0
+    return out
+
+
 def armour():
     made = {}
     for name, source in ARMOUR.items():
         img = load(VARIANTS / source)
-        img = material(img, **MATERIAL[name[len("armor_"):name.rindex("_")]])
+        kind = name[len("armor_"):name.rindex("_")]
+        img = material(img, **MATERIAL[kind])
+        if kind in BARE_HEADED:
+            img = bared(img, name[name.rindex("_") + 1:])
         save(img, name)
         made[name] = img
         print(f"art/sprites/{name}.png  from art-variants/{source}")
@@ -429,6 +489,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--sheet", help="also write a contact sheet here")
     args = parser.parse_args()
+    heads()
     made = armour() | wear()
     if args.sheet:
         contact(made, args.sheet)

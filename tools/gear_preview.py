@@ -1004,7 +1004,16 @@ def dressed(race, body, style, armour=None, worn=(), skin=None):
             img.alpha_composite(Image.fromarray((np.clip(layer, 0, 1) * 255).round().astype(np.uint8), "RGBA"))
         return array(img)
     sheet = (armour or {}).get("sheets", {}).get(race)
-    if sheet:
+    if sheet and armour.get("bareHead"):
+        # A sheet with its head cut off (tools/wear_art.py BARE_HEADED): the hero's own head, beard
+        # and hair over it, the skin tone on the head, the armour's tint on the sheet.
+        worn_sheet, head, locks, hair = (array(load(n)) for n in (sheet, f"head_{body}", f"locks_{body}", f"hair_{style}_{body}"))
+        base = stacked([worn_sheet, head, locks, hair])
+        sheet_rules = tone + (armour.get("tint") or [])
+        out = stacked([pp.recolor(worn_sheet, sheet_rules) if sheet_rules else worn_sheet,
+                       pp.recolor(head, tone) if tone else head, locks, hair])
+        skeleton = f"body_{race}"
+    elif sheet:
         nape, worn_sheet = array(load(f"nape_{style}_{body}")), array(load(sheet))
         base = stacked([nape, worn_sheet])
         rules = tone + (armour.get("tint") or [])

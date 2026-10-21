@@ -321,6 +321,9 @@ nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
     let sheets: [String: String]?
     /// A rare colour variant's recolour of those sheets.
     let tint: [RecolorRule]?
+    /// Its sheets leave the head bare (tools/wear_art.py BARE_HEADED): the hero's own head, beard and
+    /// hair are drawn over them, as the hat slot is what goes on the head.
+    let bareHead: Bool?
     /// Trim colour on the sprite (buttons, clasps, hems), or a necklace's chain, "#RRGGBB".
     let accent: String?
     /// A cape's colour, or how gloves, boots and a necklace look worn (a necklace's chain is its
