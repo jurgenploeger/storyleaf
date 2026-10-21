@@ -3405,15 +3405,14 @@
         "recolor": [
           {
             "hue": [
-              180,
+              0,
               359
             ],
             "minSaturation": 0.03,
             "maxSaturation": 0.3,
-            "to": 273.7,
-            "spread": 0.23,
-            "saturation": 3.0,
-            "value": 1.05
+            "to": 275,
+            "saturation": 4.0,
+            "value": 1.25
           }
         ]
       }
@@ -3961,21 +3960,20 @@
               0,
               60
             ],
-            "minSaturation": 0.25,
+            "minSaturation": 0.31,
             "to": 46.8,
             "spread": 1.0
           },
           {
             "hue": [
-              180,
+              0,
               359
             ],
             "minSaturation": 0.03,
             "maxSaturation": 0.3,
-            "to": 28.7,
-            "spread": 0.23,
-            "saturation": 2.5,
-            "value": 1.05
+            "to": 28,
+            "saturation": 4.2,
+            "value": 1.55
           }
         ]
       }
