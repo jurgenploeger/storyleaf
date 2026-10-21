@@ -12,13 +12,20 @@ final class WorldOverview {
 
     /// Each land's picture, by id.
     private(set) var images: [String: CGImage] = [:]
+    /// Where each land's people stand, by land and NPC id, in its own cells (`WorldMap.spot(of:)`):
+    /// the world map's badges (`WorldAtlas`), kept with its picture.
+    private(set) var spots: [String: [String: GridPoint]] = [:]
     @ObservationIgnored private var making = false
     /// Pictures handed in while the HUD's being drawn (a minimap made for it), shown a moment later.
     @ObservationIgnored private var pending: [String: CGImage] = [:]
 
     /// A land's picture, drawn already (its minimap). It may come in while SwiftUI's drawing the
     /// HUD, so it's added once that's done.
-    func remember(_ id: String, _ image: CGImage) {
+    func remember(_ id: String, _ image: CGImage, spots people: [String: GridPoint]) {
+        if spots[id] == nil {
+            spots[id] = people
+            saveSpots(id, people)
+        }
         guard images[id] == nil, pending[id] == nil else { return }
         save(id, image)
         pending[id] = image
@@ -47,7 +54,10 @@ final class WorldOverview {
         let content = Content.shared
         let missing = content.maps.filter { content.world[$0.id] != nil && images[$0.id] == nil && pending[$0.id] == nil }
         for def in missing {
-            if let image = load(def.id) { images[def.id] = image }
+            if let image = load(def.id), let people = loadSpots(def.id) {
+                images[def.id] = image
+                spots[def.id] = people
+            }
         }
         guard !making else { return }
         let jobs = missing.filter { images[$0.id] == nil }
@@ -63,10 +73,15 @@ final class WorldOverview {
                 guard images[def.id] == nil, pending[def.id] == nil else { continue }
                 let around = Continent.neighbourhood(of: def)
                 let map = await Task.detached(priority: .utility) { await MapLayouts.shared.lay(def, caves: caves, around: around) }.value
-                remember(def.id, WorldScene.overview(of: map, art: ArtLibrary.shared))
+                remember(def.id, WorldScene.overview(of: map, art: ArtLibrary.shared), spots: Self.spots(of: map))
             }
             making = false
         }
+    }
+
+    /// Where a laid-out land's people stand (`WorldMap.spot(of:)`), by NPC id.
+    nonisolated static func spots(of map: WorldMap) -> [String: GridPoint] {
+        Dictionary((map.def.npcs ?? []).map { ($0.id, map.spot(of: $0)) }, uniquingKeysWith: { first, _ in first })
     }
 
     // MARK: On disk
@@ -95,10 +110,23 @@ final class WorldOverview {
         try? data.write(to: url, options: .atomic)
     }
 
+    /// A land's people's spots, kept next to its picture as [id: [column, row]].
+    private func loadSpots(_ id: String) -> [String: GridPoint]? {
+        guard let url = folder?.appendingPathComponent(id + ".spots.json"), let data = try? Data(contentsOf: url),
+              let cells = try? JSONDecoder().decode([String: [Int]].self, from: data) else { return nil }
+        return cells.compactMapValues { $0.count == 2 ? GridPoint(col: $0[0], row: $0[1]) : nil }
+    }
+
+    private func saveSpots(_ id: String, _ people: [String: GridPoint]) {
+        guard let url = folder?.appendingPathComponent(id + ".spots.json"),
+              let data = try? JSONEncoder().encode(people.mapValues { [$0.col, $0.row] }) else { return }
+        try? data.write(to: url, options: .atomic)
+    }
+
     /// How the lands are drawn on it: one more each time that changes (each land its own shape now,
-    /// clear where a land next door's is, `Region`), so the pictures kept are drawn afresh even in
-    /// the same build.
-    private static let look = 4
+    /// clear where a land next door's is, `Region`; its people's spots kept with it since 5), so the
+    /// pictures kept are drawn afresh even in the same build.
+    private static let look = 5
 
     /// This build of the game and its maps: the version, the build, how they're drawn (`look`) and
     /// a hash of the maps and the continent (FNV-1a).

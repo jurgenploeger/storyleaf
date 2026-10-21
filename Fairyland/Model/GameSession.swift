@@ -1768,6 +1768,29 @@ final class GameSession {
         }
     }
 
+    /// What someone shows as on the minimap and the world map (`MinimapIcon`): a quest giver as their
+    /// mark says ("!" news, "?" done), the healer, the shop, the smith, the weaver (or her news), the
+    /// barber, a guild, a boss, stairs, and a chest still to open; nil for an opened chest.
+    func minimapKind(for npc: NPCDef) -> MinimapMark.Kind? {
+        switch npc.role {
+        case .healer: return .healer
+        case .shop: return .shop
+        case .smith: return .smith
+        case .weaver: return notice(for: npc.id) == nil ? .weaver : .questNew
+        case .barber: return .barber
+        case .guild: return .guild
+        case .boss: return .boss
+        case .stairs: return Content.shared.leadsDown(npc) ? .stairsDown : .stairsUp
+        case .chest: return isOpened(npc.id) ? nil : .chest
+        case .quests:
+            switch notice(for: npc.id) {
+            case .ready?: return .questReady
+            case nil: return .quest
+            default: return .questNew
+            }
+        }
+    }
+
     func isDefeated(_ boss: NPCDef) -> Bool {
         data.defeatedBosses?.contains(boss.id) == true
     }

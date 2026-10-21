@@ -5,8 +5,9 @@ import SwiftUI
 /// so north points up-left and east up-right, the way you walk on screen. A compass in the corner
 /// says so. Drag to look round, pinch (or the buttons) to zoom; it opens on where you are. Places you
 /// haven't been to are faded and named "???"; a quest's shut gate shows its lock; caves show where
-/// they open. A dark land shows only where you've been, as its minimap does. Tap a place to read
-/// about it. A quest closes a road one way only (the way back is always open, so you can't get stuck).
+/// they open. A dark land shows only where you've been, as its minimap does. Zoomed in, a land you've
+/// been to shows who's where with the minimap's badges (the healer, the shop, a quest's "!" and so
+/// on). Tap a place to read about it. A quest closes a road one way only (the way back is always open, so you can't get stuck).
 struct WorldAtlas: View {
     let session: GameSession
     @State private var selected: String?
@@ -224,18 +225,51 @@ struct WorldAtlas: View {
     // MARK: Marks
 
     /// What's marked over the map: each land's name, the caves where they open, a quest's shut
-    /// gate, and you.
+    /// gate, who's where in the lands you've been to (`badge`), and you.
     private struct Mark: Identifiable {
-        enum Kind { case land, cave, lock, here }
+        enum Kind { case land, cave, lock, here, badge }
         let id: String
         let kind: Kind
         /// The place it's about (a land or a cave).
         let place: String
         let cell: GridPoint
+        /// A badge's icon, as on the minimap.
+        var badge: GameSession.MinimapMark.Kind? = nil
+    }
+
+    /// How far in the map must be zoomed (points a cell) for the badges to show: out where whole
+    /// lands fit, they'd pile up on each other.
+    private static let badgeScale: CGFloat = 0.6
+
+    /// The badges of the lands you've been to (playtesting 2026-10-21: "On the world map, there
+    /// should be the badges of what is where"), at their people's spots (`WorldOverview.spots`).
+    /// Where two would overlap at this zoom, the one that matters more stays: a quest to hand in or
+    /// news first, a boss, then the town's services.
+    private var badges: [Mark] {
+        guard scale >= Self.badgeScale else { return [] }
+        let order: [GameSession.MinimapMark.Kind] = [.questReady, .questNew, .boss, .healer, .shop, .smith, .weaver,
+                                                     .barber, .guild, .quest, .chest]
+        var found: [Mark] = []
+        for land in lands where session.hasVisited(land.def.id) {
+            guard let spots = overview.spots[land.def.id] else { continue }
+            for npc in land.def.npcs ?? [] {
+                guard let kind = session.minimapKind(for: npc), order.contains(kind), let spot = spots[npc.id] else { continue }
+                found.append(Mark(id: "badge \(land.def.id) \(npc.id)", kind: .badge, place: land.def.id,
+                                  cell: GridPoint(col: land.origin.col + spot.col, row: land.origin.row + spot.row), badge: kind))
+            }
+        }
+        found.sort { (order.firstIndex(of: $0.badge ?? .chest) ?? 0) < (order.firstIndex(of: $1.badge ?? .chest) ?? 0) }
+        var kept: [(mark: Mark, at: CGPoint)] = []
+        for mark in found {
+            let at = point(of: mark.cell, pan: .zero)
+            if kept.allSatisfy({ $0.at.distance(to: at) >= 12 }) { kept.append((mark, at)) }
+        }
+        return kept.map(\.mark)
     }
 
     private var marks: [Mark] {
-        var marks: [Mark] = []
+        // The badges first, under the names, caves and you.
+        var marks: [Mark] = badges
         let content = Content.shared
         for land in lands {
             let def = land.def
@@ -305,6 +339,11 @@ struct WorldAtlas: View {
             }
             .allowsHitTesting(false)
             .accessibilityLabel(L("Where you are"))
+        case .badge:
+            if let kind = mark.badge {
+                MinimapIcon(kind: kind)
+                    .allowsHitTesting(false)
+            }
         case .lock:
             IconImage(.lock, size: 10)
                 .foregroundStyle(HUDStyle.ink)

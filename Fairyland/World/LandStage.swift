@@ -144,13 +144,13 @@ final class LandStage {
 
     /// A frame of its life (`player` and `camera` in the continent's points, the screen at
     /// `scale`): its people stroll and its animals mind you as you come near, and its pieces near the
-    /// camera are in the scene.
-    func update(dt: TimeInterval, player: CGPoint, camera: CGPoint, scale: CGFloat, screen: CGSize) {
+    /// camera are in the scene. Its birds cross the sky only while you're in it (`isHere`).
+    func update(dt: TimeInterval, player: CGPoint, camera: CGPoint, scale: CGFloat, screen: CGSize, isHere: Bool = true) {
         let you = local(player), eye = local(camera)
         crowd?.update(dt: dt, player: you)
         let visible = CGRect(x: eye.x - screen.width / 2 * scale, y: eye.y - screen.height / 2 * scale,
                              width: screen.width * scale, height: screen.height * scale)
-        critters?.update(dt: dt, player: you, visible: visible) { [map] in map.isWalkable(map.rawCell(at: $0)) }
+        critters?.update(dt: dt, player: you, visible: visible, flocks: isHere) { [map] in map.isWalkable(map.rawCell(at: $0)) }
         show(around: camera, scale: scale, screen: screen)
     }
 
@@ -206,26 +206,7 @@ final class LandStage {
     func minimapMarks() -> [GameSession.MinimapMark] {
         npcs.compactMap { npc -> GameSession.MinimapMark? in
             guard !npc.node.isHidden else { return nil }
-            let kind: GameSession.MinimapMark.Kind
-            switch npc.def.role {
-            case .healer: kind = .healer
-            case .shop: kind = .shop
-            case .smith: kind = .smith
-            case .weaver: kind = session.notice(for: npc.def.id) == nil ? .weaver : .questNew
-            case .barber: kind = .barber
-            case .guild: kind = .guild
-            case .boss: kind = .boss
-            case .stairs: kind = Content.shared.leadsDown(npc.def) ? .stairsDown : .stairsUp
-            case .chest:
-                guard !session.isOpened(npc.def.id) else { return nil }
-                kind = .chest
-            case .quests:
-                switch session.notice(for: npc.def.id) {
-                case .ready?: kind = .questReady
-                case nil: kind = .quest
-                default: kind = .questNew
-                }
-            }
+            guard let kind = session.minimapKind(for: npc.def) else { return nil }
             return GameSession.MinimapMark(cell: map.cell(at: npc.node.position), kind: kind)
         }
     }

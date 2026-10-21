@@ -50,7 +50,7 @@ final class ContinentScene: SKScene {
         /// remembered for the world map and the lands round it (`WorldOverview`).
         lazy var overview: CGImage = {
             let image = WorldScene.overview(of: self.map, art: ArtLibrary.shared)
-            WorldOverview.shared.remember(self.def.id, image)
+            WorldOverview.shared.remember(self.def.id, image, spots: WorldOverview.spots(of: self.map))
             return image
         }()
 
@@ -482,7 +482,8 @@ final class ContinentScene: SKScene {
         player.settle()
         cam.position = player.position + CGVector(dx: 0, dy: player.lift)
         for id in nearLands {
-            lands[id]?.stage.update(dt: dt, player: player.position, camera: cam.position, scale: cam.xScale, screen: size)
+            lands[id]?.stage.update(dt: dt, player: player.position, camera: cam.position, scale: cam.xScale, screen: size,
+                                    isHere: id == here?.id)
         }
         updateAir(dt)
         if currentTime - lookedAround > 0.25 {

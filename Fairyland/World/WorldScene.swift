@@ -1650,26 +1650,7 @@ final class WorldScene: SKScene {
         return npcs.compactMap { npc -> GameSession.MinimapMark? in
             let cell = map.cell(at: npc.node.position)
             guard !npc.node.isHidden, seen(cell) else { return nil }
-            let kind: GameSession.MinimapMark.Kind
-            switch npc.def.role {
-            case .healer: kind = .healer
-            case .shop: kind = .shop
-            case .smith: kind = .smith
-            case .weaver: kind = session.notice(for: npc.def.id) == nil ? .weaver : .questNew
-            case .barber: kind = .barber
-            case .guild: kind = .guild
-            case .boss: kind = .boss
-            case .stairs: kind = Content.shared.leadsDown(npc.def) ? .stairsDown : .stairsUp
-            case .chest:
-                guard !session.isOpened(npc.def.id) else { return nil }
-                kind = .chest
-            case .quests:
-                switch session.notice(for: npc.def.id) {
-                case .ready?: kind = .questReady
-                case nil: kind = .quest
-                default: kind = .questNew
-                }
-            }
+            guard let kind = session.minimapKind(for: npc.def) else { return nil }
             return GameSession.MinimapMark(cell: cell, kind: kind)
         }
     }
@@ -1794,7 +1775,7 @@ final class WorldScene: SKScene {
     /// One pixel per tile, for the HUD minimap (and the world map, `WorldOverview`).
     private(set) lazy var minimap: UIImage = {
         let image = Self.overview(of: map, art: art)
-        if Continent.origin(of: def) != nil { WorldOverview.shared.remember(def.id, image) }
+        if Continent.origin(of: def) != nil { WorldOverview.shared.remember(def.id, image, spots: WorldOverview.spots(of: map)) }
         return UIImage(cgImage: image)
     }()
 

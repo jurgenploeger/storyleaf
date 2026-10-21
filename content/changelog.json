@@ -2,13 +2,14 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
-      "version": "0.7.60",
+      "version": "0.7.62",
       "date": "2026-10-21",
       "title": "Hats of their own",
       "notes": [
         "Every helmet, hood, coif and wizard's hat is a hat of its own now, worn in the Hat slot: one for each armour, in its colour, sold, dropped and given wherever the armour is.",
         "An armour and its hat together are worth what the armour was, and the hats for the armour you already have are waiting in your bag.",
-        "A barber in every town gives you a new hairstyle and hair colour, for 1000 gold."
+        "A barber in every town gives you a new hairstyle and hair colour, for 1000 gold.",
+        "The world map shows who's where in the lands you've been to, and bats keep to their own lands."
       ]
     },
     {
