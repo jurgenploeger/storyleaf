@@ -111,7 +111,10 @@ final class Critters {
     }
 
     /// Critters hop about, and away from `player`; now and then a flock sets off across `visible`.
-    func update(dt: TimeInterval, player: CGPoint, visible: CGRect, canStand: (CGPoint) -> Bool) {
+    /// `flocks`: whether its birds cross the sky: only the land you're in sends them over, or a
+    /// cave's bats flew over the desert next to it (playtesting 2026-10-21: "There are bats flying in
+    /// genie desert and other maps, which is weird").
+    func update(dt: TimeInterval, player: CGPoint, visible: CGRect, flocks: Bool = true, canStand: (CGPoint) -> Bool) {
         for critter in critters {
             if critter.away > 0 {
                 critter.away -= dt
@@ -151,7 +154,7 @@ final class Critters {
                 hop(critter, along: direction, running: false, canStand: canStand)
             }
         }
-        guard birds != nil else { return }
+        guard birds != nil, flocks else { return }
         untilFlock -= dt
         if untilFlock <= 0 {
             untilFlock = .random(in: 16...34)

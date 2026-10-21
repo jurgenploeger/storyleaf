@@ -515,6 +515,8 @@ quests_many  | newgame,level=127,taken=great_wisp+the_hundred_toy_shelf+monkey_a
 quests_finder | newgame,level=127,done=hope_of_meadowbrook+jelly_trouble+new_friend+wish_upon_a_star+choose_path+pineapple_harvest,taken=great_wisp+the_hundred_toy_shelf+monkey_and_crab,menu=quests | 8
 # The first world map lays every land out in the background (later ones read them back from disk).
 worldmap     | newgame,worldmap                                    | 180
+# Who's where, in every land you've been to (playtesting 2026-10-21: the world map's badges).
+worldmap_badges | newgame,level=60,visited=all,worldmap               | 180
 monster_book | newgame,book                                        | 8
 bounties     | newgame,level=12,map=northern_grassland,bounties=1,menu=quests,sub=daily | 8
 quests_dot   | newgame,level=12,map=northern_grassland,bounties=1,menu=quests | 8
