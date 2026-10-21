@@ -41,6 +41,18 @@ continent_lake | newgame,map=goldburg_lake,weather=clear,hour=12 | 8
 # gone under its scenery at night, its coast with no bank or foam, and Frog Swamp past Sunny
 # Meadow's south-east still its flat colour.
 continent_rocky_night | newgame,map=crystal_mountain,at=9_1,weather=clear,hour=23 | 8
+# Each companion a level-160 adventurer walks in the snowy north, at dusk in Snow White Forest (playtesting
+# 2026-10-21: a see-through blue block went about with a party there, a companion's size).
+pet_dusk_frost_bear | newgame,level=163,map=snow_white_forest,pet=frost_bear,weather=clear,hour=18 | 6
+pet_dusk_snowman | newgame,level=163,map=snow_white_forest,pet=snowman,weather=clear,hour=18 | 6
+pet_dusk_shadow_snowman | newgame,level=163,map=snow_white_forest,pet=shadow_snowman,weather=clear,hour=18 | 6
+pet_dusk_temple_jelly | newgame,level=163,map=snow_white_forest,pet=temple_jelly,weather=clear,hour=18 | 6
+pet_dusk_frosted_phantom | newgame,level=163,map=snow_white_forest,pet=frosted_phantom,weather=clear,hour=18 | 6
+pet_dusk_frosted_earth_lion | newgame,level=163,map=snow_white_forest,pet=frosted_earth_lion,weather=clear,hour=18 | 6
+pet_dusk_frost_puff | newgame,level=163,map=snow_white_forest,pet=frost_puff,weather=clear,hour=18 | 6
+pet_dusk_gem_crawler | newgame,level=163,map=snow_white_forest,pet=gem_crawler,weather=clear,hour=18 | 6
+pet_dusk_crimson_gem_crawler | newgame,level=163,map=snow_white_forest,pet=crimson_gem_crawler,weather=clear,hour=18 | 6
+pet_dusk_azure_golden_cloud | newgame,level=163,map=snow_white_forest,pet=azure_golden_cloud,weather=clear,hour=18 | 6
 continent_rocky | newgame,map=crystal_mountain,at=9_1,weather=clear,hour=12 | 8
 continent_rocky_coast | newgame,map=crystal_mountain,at=-31_-75,weather=clear,hour=12 | 8
 continent_swamp_edge | newgame,map=sunny_meadow,at=18_-56,weather=clear,hour=12 | 8

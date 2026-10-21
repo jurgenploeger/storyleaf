@@ -134,6 +134,10 @@ enum GearOverlay {
                 }
             }
         }
+        if facing != "up" {
+            lining(&out, base: base, origin: origin, size: size, fitted: fitted, dx: dx, dy: dy, shoulder: shoulder,
+                   colour: color(hex: gear.cape) ?? RGB(0.5, 0.5, 0.5), trim: trim, front: facing == "down")
+        }
         if facing == "up" {
             let emblem = shoulder + 6
             for ey in -2...2 {
@@ -146,6 +150,74 @@ enum GearOverlay {
             put(cx - 1, shoulder, trim)
             put(cx, shoulder + 1, trim.scaled(0.7))
         }
+    }
+
+    /// How far past its edge a cape's lining reaches to meet the body (from the side).
+    nonisolated private static let capeReach = 4
+
+    /// A cape's inside, seen from the front or the side wherever the body doesn't cover it: on each
+    /// row below the shoulders, every gap within the cape's own span (between its panels, between an
+    /// arm swung out and the body), and a gap of up to `capeReach` pixels between its edge and the body
+    /// (from the side, where the back leans away from it). Dark in the cape's colour; along its bottom
+    /// two rows, its trim and outline, so the hem runs on unbroken (playtesting 2026-10-21: "the cloaks
+    /// still have a gap depending on what they wear or their arm position"). From the side only what
+    /// shows of it counts: the part hidden behind the body reaches under the legs, and nothing hangs
+    /// between them there. Last, any clear pixel it has closed in (one the bare figure didn't), as
+    /// between an arm and the back above where it shows, is its inside too. tools/gear_preview.py `lining`.
+    nonisolated private static func lining(_ out: inout Bitmap, base: Bitmap, origin: (x: Int, y: Int), size: Int,
+                                           fitted: Piece, dx: Int, dy: Int, shoulder: Int, colour: RGB, trim: RGB,
+                                           front: Bool) {
+        func body(_ x: Int, _ y: Int) -> Bool {
+            x >= 0 && y >= 0 && x < size && y < size && base.alpha(origin.x + x, origin.y + y) > 0.5
+        }
+        var rows: [Int: [Int]] = [:]
+        for y in 0..<size {
+            for x in 0..<size where fitted[x: x, y: y] != nil && (front || !body(x + dx, y + dy)) {
+                rows[y + dy, default: []].append(x + dx)
+            }
+        }
+        guard let bottom = rows.keys.max() else { return }
+        let inside = colour.scaled(0.45), outline = RGB(0.16, 0.12, 0.18)
+        func tone(_ y: Int) -> RGB { y == bottom ? outline : y == bottom - 1 ? trim : inside }
+        for (y, xs) in rows where y > shoulder && y >= 0 && y < size {
+            guard let lo = xs.min(), let hi = xs.max() else { continue }
+            var fill = Array(lo...hi)
+            for (start, step) in [(lo - 1, -1), (hi + 1, 1)] {
+                var gap: [Int] = []
+                var x = start
+                while gap.count < capeReach, x >= 0, x < size, !body(x, y) {
+                    gap.append(x)
+                    x += step
+                }
+                if body(x, y) { fill += gap }
+            }
+            let own = Set(xs)
+            for x in fill where x >= 0 && x < size && !body(x, y) && !own.contains(x) {
+                out.set(origin.x + x, origin.y + y, tone(y))
+            }
+        }
+        let before = enclosed(size) { !body($0, $1) }
+        let after = enclosed(size) { out.alpha(origin.x + $0, origin.y + $1) < 0.5 }
+        for (index, closed) in after.enumerated() where closed && !before[index] {
+            out.set(origin.x + index % size, origin.y + index / size, tone(index / size))
+        }
+    }
+
+    /// Which pixels of a `size`-square frame are `clear` but can't be reached from its edge through
+    /// clear pixels (4 ways), row by row. tools/gear_preview.py `enclosed`.
+    nonisolated private static func enclosed(_ size: Int, _ clear: (Int, Int) -> Bool) -> [Bool] {
+        var open = [Bool](repeating: false, count: size * size)
+        for y in 0..<size { for x in 0..<size { open[y * size + x] = clear(x, y) } }
+        var reached = [Bool](repeating: false, count: size * size)
+        var stack: [(Int, Int)] = []
+        for i in 0..<size { stack += [(i, 0), (i, size - 1), (0, i), (size - 1, i)] }
+        while let point = stack.popLast() {
+            let (x, y) = point
+            guard x >= 0, y >= 0, x < size, y < size, open[y * size + x], !reached[y * size + x] else { continue }
+            reached[y * size + x] = true
+            stack += [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+        }
+        return (0..<(size * size)).map { open[$0] && !reached[$0] }
     }
 
     /// Row `row` of the cape's sheet in a cape's colours (`painted`, its deepest shadows too), its trim

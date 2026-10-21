@@ -70,6 +70,13 @@ one body and wrong on another isn't done.
 - It's worn in the necklace slot (a necklace with `wear: scarf`), so it goes with any hat, helmet or hood.
   Festive items never drop from monsters or turn up on other adventurers out of season (`Content.isFestive`).
 
+### Armour that leaves the head bare
+
+- Chain mail (`BARE_HEADED` in tools/wear_art.py, items.json `bareHead`) has no coif: the hat slot is what
+  goes on the head (playtesting 2026-10-21). Its sheets are cut at the neck and the hero's own head
+  (`head_<body>`), beard and hairstyle drawn over them: check every body, direction and frame for leftover
+  mail round the face and for a gap at the neck, with and without a festive hat.
+
 ### Capes
 
 - No holes: only the cape's own pixels, its gaps closed, a fresh outline round it.
@@ -77,6 +84,11 @@ one body and wrong on another isn't done.
 - Its trim along the hem, its emblem on the back, its clasp at the collar from the front.
 - From behind it hangs over the body, under the hair; from the front and side it shows past the outline.
 - Stretched to each body's height and shoulders.
+- No gap between it and the body in any frame (playtesting 2026-10-21): every walk frame, every
+  direction, every body under every armour. From the front it's one cloth behind the body, its lining
+  showing between an arm swung out and the body; from the side it meets the back, and nothing hangs
+  between the legs. Check with an enclosed-hole count over `gear_preview.py --wear` (no clear pixel
+  the cape closes in that the bare figure didn't), not just by eye.
 
 ### Portraits
 
