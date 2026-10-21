@@ -87,8 +87,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   in magenta that GearOverlay paints in the armour's colours). The game stacks them (`GameSession.layers`) and
   dyes every shade of the locks and hair (appearance.json `hairLayer`), never the body. Armour with a walk sheet
   of its own goes over `nape_<style>_<body>` (the hair from a fifth of the way down the head), so long hair
-  shows below the helmet; one that leaves the head bare (items.json `bareHead`, wear_art.py `BARE_HEADED`: chain
-  mail, as the hat slot is what goes on the head) is cut off at the neck, the hero's `head_<body>`, locks and hair over it. `TOWNSFOLK` sheets no hero wears are split too (`dwarf_npc`: the old bearded dwarf,
+  shows below the helmet; one that leaves the head bare (items.json `bareHead`, wear_art.py `BARE_HEADED`: every
+  armour sheet, as the hat slot is what goes on the head) is cut off at the neck, the hero's `head_<body>`, locks and hair over it, and what's cut off is its hat
+  (`hat_<kind>_<race>`, a hat item of its own: items.json `headgear`, the armour's `headpiece`). `TOWNSFOLK` sheets no hero wears are split too (`dwarf_npc`: the old bearded dwarf,
   his own mop as `hair_dwarf_npc`, a mouth drawn into his beard by `tools/character_art.py mouth`). The bald head is painted only inside the sprite as drawn (`_scalp`), so a
   body wearing its own hair matches its sheet: a skull painted past a side-view face stuck out like a brow ridge.
   Rerun after changing a race's sheet, and look at `--preview` before committing. Gloves, boots and necklaces are painted on by GearOverlay (`tools/gear_preview.py --trinkets`),

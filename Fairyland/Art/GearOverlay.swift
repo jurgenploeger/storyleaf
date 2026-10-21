@@ -27,12 +27,19 @@ nonisolated struct GearLook: Sendable, Hashable {
     /// A festive scarf round the neck (a necklace that wears `scarf`), in its colour, "#RRGGBB", in place
     /// of a necklace.
     var scarf: String? = nil
+    /// A hood worn as a hat (one that goes with a hide cloak, items.json `headgear` hood): its colour
+    /// and trim, "#RRGGBB", and whether it's lined with fur round its opening (`pattern` fur).
+    var hood: String? = nil
+    var hoodTrim: String? = nil
+    var hoodFur = false
     /// The plain body (art/sprites `body_*`, tools/hero_layers.py) the hands, chin and boots are found
     /// on: the hero's own, or their race's under armour with a walk sheet of its own, which is drawn
     /// on the same poses.
     var body: String? = nil
 
-    var isPlain: Bool { wear == nil && cape == nil && gloves == nil && boots == nil && necklace == nil && hat == nil && scarf == nil }
+    var isPlain: Bool {
+        wear == nil && cape == nil && gloves == nil && boots == nil && necklace == nil && hat == nil && scarf == nil && hood == nil
+    }
 }
 
 /// Draws worn gear onto a walk sheet, frame by frame. It finds the outfit (the green tunic) on the
@@ -73,6 +80,7 @@ enum GearOverlay {
         for (row, facing) in directions.enumerated() {
             for column in 0..<(base.width / frame) {
                 dress(&out, base: base, origin: (column * frame, row * frame), size: frame, facing: facing, gear: gear, accent: accent)
+                if gear.hood != nil { hood(&out, base: base, origin: (column * frame, row * frame), size: frame, gear: gear) }
                 trinkets(&out, body: body, origin: (column * frame, row * frame), size: frame, facing: facing, gear: gear)
                 if gear.cape != nil, row < capes.count {
                     drape(&out, base: base, origin: (column * frame, row * frame), size: frame, facing: facing,
@@ -989,6 +997,40 @@ enum GearOverlay {
             }
         }
         stamp(fitted, dy: dy, dx: dx)
+    }
+
+    /// A hood worn as a hat (GearLook.hood): art/sprites/hood_* comes in magenta, soft magenta takes the
+    /// hood's colour, keeping its shade, and full magenta its trim, as a hide cloak's own did; lined
+    /// with white fur round its opening, next to the face, if its cloak was. Over whatever the armour
+    /// painted it (`dress`). tools/gear_preview.py `hood`.
+    nonisolated private static func hood(_ out: inout Bitmap, base: Bitmap, origin: (x: Int, y: Int), size: Int, gear: GearLook) {
+        guard let mid = color(hex: gear.hood) else { return }
+        let accent = color(hex: gear.hoodTrim) ?? RGB(0.91, 0.85, 0.69)
+        let dark = mid.scaled(0.55), light = mid.mixed(with: RGB(1, 1, 1), 0.35)
+        func opaque(_ x: Int, _ y: Int) -> Bool {
+            x >= 0 && y >= 0 && x < size && y < size && base.alpha(origin.x + x, origin.y + y) > 0.5
+        }
+        func isMark(_ x: Int, _ y: Int) -> Bool {
+            guard opaque(x, y) else { return false }
+            let (h, s, _) = hsv(base.rgb(origin.x + x, origin.y + y))
+            return abs(h - 300) < 12 && s > 0.3
+        }
+        /// The face's skin, which the fur lines.
+        func bare(_ x: Int, _ y: Int) -> Bool {
+            guard opaque(x, y) else { return false }
+            let (h, s, v) = hsv(base.rgb(origin.x + x, origin.y + y))
+            return (h <= 40 || h >= 342) && s > 0.12 && s < 0.65 && v > 0.55
+        }
+        for y in 0..<size {
+            for x in 0..<size where isMark(x, y) {
+                if gear.hoodFur, bare(x + 1, y) || bare(x - 1, y) || bare(x, y + 1) || bare(x, y - 1) {
+                    out.set(origin.x + x, origin.y + y, fur(x, y))
+                    continue
+                }
+                let (_, s, v) = hsv(base.rgb(origin.x + x, origin.y + y))
+                out.set(origin.x + x, origin.y + y, s > 0.85 ? accent : v > 0.82 ? light : v < 0.55 ? dark : mid)
+            }
+        }
     }
 
     /// Snowy fur: white with grey flecks.

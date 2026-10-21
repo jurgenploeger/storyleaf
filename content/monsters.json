@@ -2541,7 +2541,15 @@
           "chance": 0.15
         },
         {
+          "item": "crimson_ranger_hood",
+          "chance": 0.15
+        },
+        {
           "item": "golden_plate",
+          "chance": 0.15
+        },
+        {
+          "item": "golden_helm",
           "chance": 0.15
         },
         {
@@ -2595,7 +2603,15 @@
           "chance": 0.15
         },
         {
+          "item": "golden_dragon_helm",
+          "chance": 0.15
+        },
+        {
           "item": "azure_dragon_mail",
+          "chance": 0.15
+        },
+        {
+          "item": "azure_dragon_helm",
           "chance": 0.15
         },
         {
@@ -2649,7 +2665,15 @@
           "chance": 0.15
         },
         {
+          "item": "rose_snow_hood",
+          "chance": 0.15
+        },
+        {
           "item": "shadow_snow_cloak",
+          "chance": 0.15
+        },
+        {
+          "item": "shadow_snow_hood",
           "chance": 0.15
         },
         {
@@ -3495,7 +3519,15 @@
           "chance": 0.15
         },
         {
+          "item": "gilded_chain_coif",
+          "chance": 0.15
+        },
+        {
           "item": "dawn_silk_robe",
+          "chance": 0.15
+        },
+        {
+          "item": "dawn_silk_hat",
           "chance": 0.15
         },
         {
@@ -3548,6 +3580,10 @@
       "drops": [
         {
           "item": "moonlight_mage_robe",
+          "chance": 0.15
+        },
+        {
+          "item": "moonlight_mage_hat",
           "chance": 0.15
         },
         {

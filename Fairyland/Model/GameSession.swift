@@ -302,39 +302,39 @@ final class GameSession {
     }
 
     /// The hero as paper-doll layers (art/sprites, made by tools/hero_layers.py): the bald body, the
-    /// locks it keeps (a beard), then the hairstyle, or a helmet or hood instead (so no hair pokes
-    /// through). Locks and hair take the hair colour on every shade; the body only skin and outfit.
-    /// Armour with its own walk sheet for the race (items.json `sheets`) replaces the lot, over the
-    /// hero's hair from a fifth of the way down the head (`nape_*`): long hair, a ponytail or braids
-    /// show below the helmet or hood in the hero's colour, so a woman in plate doesn't look like the man.
-    static func layers(race: RaceDef, look: Look, armor: ItemDef? = nil, hatted: Bool = false) -> [ArtLayer] {
+    /// locks it keeps (a beard), then the hairstyle. Locks and hair take the hair colour on every
+    /// shade; the body only skin and outfit. Armour with its own walk sheet for the race (items.json
+    /// `sheets`) takes the body's place, its head cut off (`bareHead`) and the hero's own over it.
+    /// On the head, `hat`: a festive one sits on the hair (GearOverlay.hat). One that goes with an
+    /// armour (`headgear`) takes the hair's place: an armour sheet's helmet, hood or coif
+    /// (`hat_<kind>_<race>`, in the skin tone and its tint) over the hair from a fifth of the way down
+    /// the head (`nape_*`), so long hair, a ponytail or braids show below it, the beard on top; or a
+    /// hide cloak's hood (`hood_*`, painted in its colour by GearOverlay.hood).
+    static func layers(race: RaceDef, look: Look, armor: ItemDef? = nil, hat: ItemDef? = nil) -> [ArtLayer] {
         let style = Self.style(for: look, race: race)
         let body = Self.body(race: race, look: look)
         let hair = hairLayerRules(for: look, armor: armor)
+        let skin = Content.shared.appearance.skin.first { $0.id == look.skin }?.recolor ?? []
+        let locks = ArtLayer(id: "locks_\(body)", recolor: hair)
+        // What's on the head, and the hair still showing below it.
+        var under: [ArtLayer] = []
+        var top = [locks, ArtLayer(id: "hair_\(style)_\(body)", recolor: hair)]
+        if let kind = hat?.headgear {
+            if kind == "hood" {
+                top = [locks, ArtLayer(id: "hood_\(body)", recolor: [])]
+            } else {
+                under = [ArtLayer(id: "nape_\(style)_\(body)", recolor: hair)]
+                top = [ArtLayer(id: "hat_\(kind)_\(race.id)", recolor: skin + (hat?.tint ?? [])), locks]
+            }
+        }
         if let sheet = armor?.sheets?[race.id] {
-            // A sheet that leaves the head bare: the hero's own head (in their skin tone), beard and
-            // hair over it, a festive hat on the hair as without armour.
+            // Its head is cut off: the hero's own over it, in their skin tone.
             if armor?.bareHead == true {
-                let skin = Content.shared.appearance.skin.first { $0.id == look.skin }?.recolor ?? []
-                return [ArtLayer(id: sheet), ArtLayer(id: "head_\(body)", recolor: skin), ArtLayer(id: "locks_\(body)", recolor: hair),
-                        ArtLayer(id: "hair_\(style)_\(body)", recolor: hair)]
+                return under + [ArtLayer(id: sheet), ArtLayer(id: "head_\(body)", recolor: skin)] + top
             }
             return [ArtLayer(id: "nape_\(style)_\(body)", recolor: hair), ArtLayer(id: sheet)]
         }
-        // A festive hat sits on the hair, in place of a helmet or hood.
-        let headgear: String? = hatted ? nil : Self.headgear(for: armor)
-        let bald = ArtLayer(id: "body_\(body)", recolor: bodyRules(for: look, armor: armor))
-        return [bald, ArtLayer(id: "locks_\(body)", recolor: hair),
-                headgear.map { ArtLayer(id: "\($0)_\(body)") } ?? ArtLayer(id: "hair_\(style)_\(body)", recolor: hair)]
-    }
-
-    /// The helmet or hood (tools/hero_layers.py) armour of a cut puts on the head in place of the hair.
-    private static func headgear(for armor: ItemDef?) -> String? {
-        switch armor?.wear ?? "" {
-        case "plate": "helmet"
-        case "cloak": "hood"
-        default: nil
-        }
+        return under + [ArtLayer(id: "body_\(body)", recolor: bodyRules(for: look, armor: armor))] + top
     }
 
     /// Which of the paper-doll bodies a hero wears: each gender's walk sheet has its own set, and the
@@ -381,12 +381,16 @@ final class GameSession {
         let scarf = necklace?.wear == "scarf" ? necklace : nil
         let pendant = scarf == nil ? necklace : nil
         let hat = worn.first { $0.type == .head }
+        // A festive hat is fitted to the head; a hood that goes with a hide cloak is painted in its colour.
+        let festive = hat?.headgear == nil ? hat : nil
+        let hood = hat?.headgear == "hood" ? hat : nil
         var gear = GearLook(wear: armor?.wear, accent: armor?.accent, pattern: armor?.pattern,
                             cape: cape?.color, capeTrim: cape?.accent,
                             gloves: worn.first { $0.type == .gloves }?.color, boots: worn.first { $0.type == .boots }?.color,
                             necklace: pendant?.color, chain: pendant?.accent,
-                            hat: hat?.hat, hatColor: hat?.color, hatTrim: hat?.accent,
-                            scarf: scarf?.color, body: "body_\(Self.body(race: race, look: look))")
+                            hat: festive?.hat, hatColor: festive?.color, hatTrim: festive?.accent,
+                            scarf: scarf?.color, hood: hood?.color, hoodTrim: hood?.accent, hoodFur: hood?.pattern == "fur",
+                            body: "body_\(Self.body(race: race, look: look))")
         var rules = Self.rules(for: look, armor: armor)
         if let armor, armor.sheets?[race.id] != nil {
             // The armour's own sheet is already drawn and coloured: only the skin tone applies, plus a
@@ -398,7 +402,7 @@ final class GameSession {
             rules = (Content.shared.appearance.skin.first { $0.id == look.skin }?.recolor ?? []) + (armor.tint ?? [])
         }
         ArtLibrary.shared.register(id, from: race.sheet(for: look.gender), recolor: rules, key: key,
-                                   gear: gear, layers: Self.layers(race: race, look: look, armor: armor, hatted: hat != nil))
+                                   gear: gear, layers: Self.layers(race: race, look: look, armor: armor, hat: hat))
     }
 
     /// A companion looks like its species; colourful ones are rarer variants you catch.
@@ -449,6 +453,28 @@ final class GameSession {
         restoreHero()
         post(L("Rebirth is gone from Storyleaf: you're back at level {level}, where your rebirth began.", ["level": data.hero.level]), .reward)
         checkTitles(quietly: true)
+        save()
+    }
+
+    /// Since 0.7.59 an armour's helmet, hood or coif is a hat of its own (items.json `headpiece`),
+    /// worth a quarter of what the armour was (playtesting 2026-10-21: "any armor that shows a hat
+    /// should have that as a hat item"). A save from before gets the hat of every such armour it has,
+    /// and the one it wears goes on its head if nothing's there, so no one loses a thing.
+    func handOutArmourHatsIfNeeded() {
+        guard data.armourHatsGiven != true else { return }
+        data.armourHatsGiven = true
+        var given = 0
+        for (id, count) in data.inventory where count > 0 {
+            guard let hat = content.item(id)?.headpiece else { continue }
+            addItem(hat, count)
+            given += count
+        }
+        if let hat = data.hero.equipment[.armor].flatMap(content.item)?.headpiece {
+            if data.hero.equipment[.head] == nil { data.hero.equipment[.head] = hat } else { addItem(hat) }
+            given += 1
+            applyLook()
+        }
+        if given > 0 { post(L("Helmets and hoods are hats of their own now: yours are in your bag, or on your head."), .reward) }
         save()
     }
 
@@ -825,8 +851,11 @@ final class GameSession {
     static func registerAdventurer(_ adventurer: Adventurer) -> String {
         // A festive scarf is a necklace: worn in place of theirs.
         let festive = Self.hat(for: adventurer)
-        return registerPerson(race: adventurer.raceID, look: adventurer.look, armor: Self.armor(for: adventurer),
-                              worn: Self.trinkets(for: adventurer).filter { $0.type != festive?.type } + [festive].compactMap { $0 })
+        let armor = Self.armor(for: adventurer)
+        // The hat that goes with their armour, unless a festive one is on their head.
+        let headpiece = festive?.type == .head ? nil : armor?.headpiece.flatMap(Content.shared.item)
+        return registerPerson(race: adventurer.raceID, look: adventurer.look, armor: armor,
+                              worn: Self.trinkets(for: adventurer).filter { $0.type != festive?.type } + [festive, headpiece].compactMap { $0 })
     }
 
     /// Someone of a race and look (a villager in plain clothes without `armor`), drawn from the same
@@ -1471,7 +1500,7 @@ final class GameSession {
 
     /// The piece of equipment a beaten monster of `level` drops. One time in three
     /// (`accessoryShare`) a trinket: any up to its level, the stronger ones more often.
-    /// Otherwise a weapon or armour from the twelve levels up to its own (the top six from a rare
+    /// Otherwise a weapon, an armour or the hat that goes with one, from the twelve levels up to its own (the top six from a rare
     /// monster or a boss), the higher ones more often, and three times in four something your
     /// class can use. Bosses' own rare drops aren't in it, nor are quest treasures; those stay theirs.
     func equipmentDrop(level: Int, best: Bool = false) -> ItemDef? {
@@ -1494,7 +1523,7 @@ final class GameSession {
             return accessories.last
         }
         let pool = content.items.filter {
-            ($0.type == .weapon || $0.type == .armor) && !kept.contains($0.id)
+            ($0.type == .weapon || $0.type == .armor || ($0.type == .head && $0.headgear != nil)) && !kept.contains($0.id)
                 && ($0.level ?? 1) <= top && ($0.level ?? 1) > top - span
         }
         let yours = pool.filter { $0.classes?.contains(data.hero.classID) ?? true }

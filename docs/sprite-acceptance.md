@@ -70,12 +70,15 @@ one body and wrong on another isn't done.
 - It's worn in the necklace slot (a necklace with `wear: scarf`), so it goes with any hat, helmet or hood.
   Festive items never drop from monsters or turn up on other adventurers out of season (`Content.isFestive`).
 
-### Armour that leaves the head bare
+### Armour that leaves the head bare, and its hat
 
-- Chain mail (`BARE_HEADED` in tools/wear_art.py, items.json `bareHead`) has no coif: the hat slot is what
-  goes on the head (playtesting 2026-10-21). Its sheets are cut at the neck and the hero's own head
-  (`head_<body>`), beard and hairstyle drawn over them: check every body, direction and frame for leftover
-  mail round the face and for a gap at the neck, with and without a festive hat.
+- No armour draws on the head (playtesting 2026-10-21: "any armor that shows a hat should have that as a
+  hat item"): every armour sheet (`BARE_HEADED` in tools/wear_art.py, items.json `bareHead`) is cut at the
+  neck, the hero's own head (`head_<body>`), beard and hairstyle drawn over it, and what's cut off is its
+  hat (`hat_<kind>_<race>`, a hat item with `headgear`); a hide cloak's hood is its hat too (`hood_<body>`,
+  painted in the hat's colour). Check every body, direction and frame: no leftover helmet or hood round
+  the face, no gap at the neck; armour and its hat together look as the armour did; a hat over other
+  armour, and with none, sits on the head and lets long hair show below it.
 
 ### Capes
 

@@ -146,6 +146,8 @@ nonisolated struct SaveData: Codable, Sendable {
     var levelsRescaled: Bool?
     /// Skill levels were doubled when mastering went from 5 steps to 10 (see `rescaleSkillLevelsIfNeeded`).
     var skillLevelsDoubled: Bool?
+    /// The hats that went with armour were handed out once (see `handOutArmourHatsIfNeeded`).
+    var armourHatsGiven: Bool?
     /// Your order of the battle buttons (see `GameSession.battleButtons`).
     var battleButtons: [String]?
     /// Trades already made with adventurers (`GameSession.TradeOffer.id`), so each offer is done once.
