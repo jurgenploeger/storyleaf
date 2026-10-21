@@ -766,6 +766,65 @@ def is_skin(p):
     return (hh <= 40 / 360 or hh >= 342 / 360) and 0.12 < s < 0.65 and v > 0.55
 
 
+CAPE_REACH = 4   # how far past its edge a cape's lining reaches to meet the body (from the side)
+
+
+def lining(t, dx, dy, shoulder, a, f, put, colour, trim, outline, front):
+    """A cape's inside, seen from the front or the side wherever the body doesn't cover it: on each
+    row below the shoulders, every gap within the cape's own span (between its panels, between an arm
+    swung out and the body), and a gap of up to CAPE_REACH pixels between its edge and the body (from
+    the side, where the back leans away from it). Dark in the cape's colour; along its bottom two
+    rows, its trim and outline, so the hem runs on unbroken (playtesting 2026-10-21: "the cloaks still
+    have a gap depending on what they wear or their arm position"). From the side only what shows
+    of it counts: the part hidden behind the body reaches under the legs, and nothing hangs between
+    them there. Last, any clear pixel it has closed in (one the bare figure didn't), as between an
+    arm and the back above where it shows, is its inside too. GearOverlay.lining."""
+    def body(x, y):
+        return 0 <= x < FRAME and 0 <= y < FRAME and a[y, x]
+
+    rows = {}
+    for y, x in zip(*np.nonzero(t[..., 3] > 0.5)):
+        if front or not body(x + dx, y + dy):
+            rows.setdefault(y + dy, []).append(x + dx)
+    if not rows:
+        return
+    bottom = max(rows)
+    inside = shade(colour, 0.45)
+
+    for y, xs in rows.items():
+        if y <= shoulder or not 0 <= y < FRAME:
+            continue
+        tone = outline if y == bottom else trim if y == bottom - 1 else inside
+        lo, hi = min(xs), max(xs)
+        fill = [x for x in range(lo, hi + 1)]
+        for start, step in ((lo - 1, -1), (hi + 1, 1)):
+            gap = []
+            x = start
+            while len(gap) < CAPE_REACH and 0 <= x < FRAME and not body(x, y):
+                gap.append(x)
+                x += step
+            if body(x, y):
+                fill += gap
+        for x in fill:
+            if 0 <= x < FRAME and not body(x, y) and x not in xs:
+                put(x, y, tone, only_empty=True)
+    before, after = enclosed(~a), enclosed(f[..., 3] < 0.5)
+    for y, x in zip(*np.nonzero(after & ~before)):
+        put(x, y, outline if y == bottom else trim if y == bottom - 1 else inside)
+
+
+def enclosed(clear):
+    """The pixels of `clear` that can't be reached from the frame's edge through it (4 ways)."""
+    reached = np.zeros_like(clear)
+    stack = [(y, x) for y in range(FRAME) for x in (0, FRAME - 1)] + [(y, x) for x in range(FRAME) for y in (0, FRAME - 1)]
+    while stack:
+        y, x = stack.pop()
+        if 0 <= y < FRAME and 0 <= x < FRAME and clear[y, x] and not reached[y, x]:
+            reached[y, x] = True
+            stack += [(y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)]
+    return clear & ~reached
+
+
 def cape(base, out, colour, trim):
     """A status cape over whatever is worn (GearOverlay.drape): the cape Retro Diffusion drew
     (art/sprites/wear_cape.png, cut out by tools/wear_art.py) in its colour, stretched to the body
@@ -822,6 +881,8 @@ def cape(base, out, colour, trim):
                         put(x + dx, y + dy, t[y, x, :3])
                 else:
                     put(x + dx, y + dy, t[y, x, :3], only_empty=True)
+            if facing != 'up':
+                lining(t, dx, dy, shoulder, a, f, put, hexc(colour), acc, outline, facing == 'down')
             if facing == 'up':
                 emblem = shoulder + 6
                 for ey in range(-2, 3):
