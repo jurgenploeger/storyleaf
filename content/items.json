@@ -3908,6 +3908,18 @@
       },
       "level": 56,
       "description": "Cut from the Marionette King's stage curtains. Light on the shoulders, and no strings attached.",
+      "tint": [
+        {
+          "hue": [
+            150,
+            260
+          ],
+          "minSaturation": 0.03,
+          "to": 302,
+          "saturation": 3.5,
+          "value": 1.2
+        }
+      ],
       "wear": "mail",
       "pattern": "runes",
       "recolor": [
