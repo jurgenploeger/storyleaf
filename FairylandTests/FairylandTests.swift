@@ -3000,18 +3000,52 @@ struct RulesTests {
         #expect((GameSession.armor(for: bot("fighter", 45))?.level ?? 1) >= 14)
     }
 
-    /// A woman in armour with a walk sheet of its own still has her hair: the armour goes over her
-    /// hairstyle from a fifth of the way down the head (`nape_*`), dyed her colour.
+    /// Armour with a walk sheet of its own leaves the head bare (playtesting 2026-10-21: "any armor
+    /// that shows a hat should have that as a hat item"): a woman in plate keeps her own head and
+    /// hair. Its helm, a hat of its own, goes over her hairstyle from a fifth of the way down the head
+    /// (`nape_*`), dyed her colour, so a ponytail still shows below it.
     @Test func armourSheetsKeepTheHerosHair() throws {
         let content = Content.shared
         let plate = try #require(content.item("iron_plate"))
+        let helm = try #require(plate.headpiece.flatMap(content.item))
         let race = content.race("human")
         let look = Look(hair: "blue", outfit: "green", skin: "fair", gender: "female")
-        let layers = GameSession.layers(race: race, look: look, armor: plate)
         let sheet = try #require(plate.sheets?["human"])
-        #expect(layers.map(\.id) == ["nape_\(GameSession.style(for: look, race: race))_human_female", sheet])
-        #expect(layers.first?.recolor?.isEmpty == false)
-        for layer in layers { #expect(ArtLibrary.shared.artImage(layer.id) != nil, "art/sprites/\(layer.id).png is missing") }
+        let style = GameSession.style(for: look, race: race)
+        let bare = GameSession.layers(race: race, look: look, armor: plate)
+        #expect(bare.map(\.id) == [sheet, "head_human_female", "locks_human_female", "hair_\(style)_human_female"])
+        let helmed = GameSession.layers(race: race, look: look, armor: plate, hat: helm)
+        #expect(helmed.map(\.id) == ["nape_\(style)_human_female", sheet, "head_human_female", "hat_iron_plate_human", "locks_human_female"])
+        #expect(helmed.first?.recolor?.isEmpty == false)
+        for layer in bare + helmed { #expect(ArtLibrary.shared.artImage(layer.id) != nil, "art/sprites/\(layer.id).png is missing") }
+        // Every armour that drew something on the head has a hat for it, whose art is there for every race.
+        for armour in content.items where armour.type == .armor && (armour.sheets != nil || armour.wear == "cloak") {
+            let hat = try #require(armour.headpiece.flatMap(content.item), "\(armour.id) has no hat")
+            #expect(hat.type == .head && hat.level == armour.level && hat.classes == armour.classes)
+            #expect(armour.sheets == nil || armour.bareHead == true, "\(armour.id) still draws its own head")
+            for race in content.races {
+                let layers = GameSession.layers(race: race, look: .standard, armor: armour, hat: hat)
+                for layer in layers { #expect(ArtLibrary.shared.artImage(layer.id) != nil, "art/sprites/\(layer.id).png is missing") }
+            }
+        }
+    }
+
+    /// A save from before hats went with armour (0.7.59) gets the hat of every such armour it has, the
+    /// worn one on its head if nothing's there, worth what it lost: once.
+    @Test func olderSavesGetTheirArmoursHats() throws {
+        let content = Content.shared
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.armourHatsGiven = nil
+        session.data.hero.equipment[.armor] = "iron_plate"
+        session.data.hero.equipment[.head] = nil
+        session.data.inventory["ruby_robe"] = 2
+        session.handOutArmourHatsIfNeeded()
+        #expect(session.data.hero.equipment[.head] == "iron_helm")
+        #expect(session.count(of: "ruby_hat") == 2)
+        let plate = try #require(content.item("iron_plate")), helm = try #require(content.item("iron_helm"))
+        #expect((plate.stats?.defense ?? 0) + (helm.stats?.defense ?? 0) == 20)
+        session.handOutArmourHatsIfNeeded()
+        #expect(session.count(of: "ruby_hat") == 2)
     }
 
     /// A festive hat sits on the hair, in place of a helmet or hood; and in a festive season, about
@@ -3019,11 +3053,14 @@ struct RulesTests {
     @Test func festiveHatsSitOnTheHair() throws {
         let content = Content.shared
         let hide = try #require(content.item("copper_hide"))
+        let hood = try #require(hide.headpiece.flatMap(content.item))
         let race = content.race("human")
-        #expect(GameSession.layers(race: race, look: .standard, armor: hide).map(\.id).contains("hood_human"))
-        let hatted = GameSession.layers(race: race, look: .standard, armor: hide, hatted: true).map(\.id)
+        #expect(!GameSession.layers(race: race, look: .standard, armor: hide).map(\.id).contains("hood_human"))
+        #expect(GameSession.layers(race: race, look: .standard, armor: hide, hat: hood).map(\.id).contains("hood_human"))
+        let partyHat = try #require(content.items.first { $0.hat == "crown" })
+        let hatted = GameSession.layers(race: race, look: .standard, armor: hide, hat: partyHat).map(\.id)
         #expect(!hatted.contains("hood_human") && hatted.contains { $0.hasPrefix("hair_") })
-        for hat in content.items where hat.type == .head {
+        for hat in content.items where hat.type == .head && hat.headgear == nil {
             #expect(["crown", "santa", "ears", "mask"].contains(hat.hat ?? ""), "\(hat.id) has no way to be drawn")
             #expect(hat.color != nil && hat.price == 0)
         }

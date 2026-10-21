@@ -296,8 +296,9 @@ for item in items.values():
         tiers.setdefault(item["tier"], []).append(item)
 for tier, set_ in tiers.items():
     kinds = sorted((i["type"], tuple(i.get("classes", []))) for i in set_)
-    check(kinds == sorted([("armor", ("fighter",)), ("armor", ("mage",)), ("armor", ("tamer",)), ("boots", ()), ("gloves", ())]),
-          f"armour tier {tier} → needs a fighter's, a mage's and a tamer's armour, gauntlets and boots (has {kinds})")
+    check(kinds == sorted([("armor", ("fighter",)), ("armor", ("mage",)), ("armor", ("tamer",)), ("boots", ()), ("gloves", ()),
+                           ("head", ("fighter",)), ("head", ("mage",)), ("head", ("tamer",))]),
+          f"armour tier {tier} → needs a fighter's, a mage's and a tamer's armour and hat, gauntlets and boots (has {kinds})")
     check(len({i.get("level") for i in set_}) == 1 and len({i.get("color") for i in set_}) == 1,
           f"armour tier {tier} → every piece the same level and colour")
 colours = [set_[0].get("color") for set_ in tiers.values()]
@@ -324,6 +325,19 @@ for item, given_by in givers.items():
 # Chest treasures (Content.chestHolding): gear a chest holds that no shop sells. Like a quest's,
 # only that chest has it: no other chest, no quest, no monster's drop and no smith.
 quest_rewards = {item for quest in quests.values() for item in quest["reward"].get("items", [])}
+# An armour's hat (`headpiece`) is had wherever the armour is: in the same shops, from the same
+# monsters at the same chance, from the same quests.
+for armour in (i for i in items.values() if "headpiece" in i):
+    hat = armour["headpiece"]
+    for npc in npcs.values():
+        stock = npc.get("stock", [])
+        check((armour["id"] in stock) == (hat in stock), f"npc {npc['id']} → sells {armour['id']} and {hat} together")
+    for monster in monsters.values():
+        chances = {d["item"]: d.get("chance") for d in monster.get("drops") or []}
+        check(chances.get(armour["id"]) == chances.get(hat), f"monster {monster['id']} → drops {armour['id']} and {hat} alike")
+    for quest in quests.values():
+        given = quest["reward"].get("items", [])
+        check((armour["id"] in given) == (hat in given), f"quest {quest['id']} → gives {armour['id']} and {hat} together")
 holders = {}
 # The lands where a road or trail crosses one of the continent's rivers (a bridge, for the "bridge"
 # landmark below).
@@ -641,8 +655,33 @@ for item in items.values():
 # Festive hats (type head) are drawn on the hero's head (GearOverlay.hat) as their `hat` in their
 # `color` (bunny ears pink inside, their `accent`); no one buys or sells one (the seasons give them).
 HATS = {"crown", "santa", "ears", "mask"}
+# The hats that go with an armour (items.json `headgear`: what that armour drew on the head before it
+# went to the hat slot, playtesting 2026-10-21): the cut-off head of its sheets (art/sprites/
+# hat_<kind>_<race>.png, tools/wear_art.py BARE_HEADED) or a hide cloak's hood (hood_<body>.png, in the
+# hat's `color`). Each armour names its own (`headpiece`), of its level, classes, tier and colour
+# variant, given wherever the armour is, and the two together are worth what the armour was.
+HEADGEAR = {f"{kind}" for kind in ("chain_mail", "iron_plate", "dragon_mail", "mage_robe", "ranger_cloak", "snow_cloak")}
+races_ids = [r["id"] for r in classes["races"]]
 for item in items.values():
-    if item["type"] == "head":
+    if item["type"] == "head" and "headgear" in item:
+        kind = item["headgear"]
+        check(kind in HEADGEAR | {"hood"}, f"item {item['id']} → headgear must be one of {sorted(HEADGEAR | {'hood'})}")
+        if kind in HEADGEAR:
+            for race_id in races_ids:
+                check((ROOT / "art" / "sprites" / f"hat_{kind}_{race_id}.png").exists(),
+                      f"item {item['id']} → art/sprites/hat_{kind}_{race_id}.png is missing (tools/wear_art.py)")
+        check(isinstance(item.get("color"), str) and HEX.fullmatch(item["color"]) is not None,
+              f"item {item['id']} → color must be #RRGGBB: its icon's colour (and a hood's on the hero)")
+        check("hat" not in item, f"item {item['id']} → a hat that goes with an armour has headgear, not a festive hat")
+        owners = [a for a in items.values() if a.get("headpiece") == item["id"]]
+        check(len(owners) == 1, f"item {item['id']} → exactly one armour names it as its headpiece (has {len(owners)})")
+        for armour in owners:
+            check(all(item.get(k) == armour.get(k) for k in ("level", "classes", "tier", "tint")),
+                  f"item {item['id']} → the same level, classes, tier and tint as {armour['id']}")
+            wears = (list(armour.get("sheets", {}).values()) or [""])[0]
+            check(wears.startswith(f"armor_{kind}_") if kind in HEADGEAR else (not armour.get("sheets") and armour.get("wear") == "cloak"),
+                  f"item {item['id']} → its headgear {kind!r} isn't what {armour['id']} wears")
+    elif item["type"] == "head":
         check(item.get("hat") in HATS, f"item {item['id']} → hat must be one of {sorted(HATS)}: how it's drawn on the head")
         check((ROOT / "art" / "sprites" / f"wear_{item.get('hat')}.png").exists(),
               f"item {item['id']} → art/sprites/wear_{item.get('hat')}.png is missing (tools/wear_art.py cuts it out)")
@@ -651,6 +690,16 @@ for item in items.values():
         check(item.get("price") == 0, f"item {item['id']} → price 0 (only the festive seasons give hats)")
     else:
         check("hat" not in item, f"item {item['id']} → only a hat (type head) has a hat")
+    if "headpiece" in item:
+        hat = items.get(item["headpiece"], {})
+        check(item["type"] == "armor" and hat.get("type") == "head" and "headgear" in hat,
+              f"item {item['id']} → headpiece {item['headpiece']!r} must be a hat with headgear")
+        check(not item.get("sheets") or item.get("bareHead") is True,
+              f"item {item['id']} → its sheets' head is its hat now: bareHead")
+for item in items.values():
+    # Any armour that still draws something on the head needs a hat for it instead.
+    if item["type"] == "armor" and (item.get("sheets") or item.get("wear") in ("plate", "cloak")):
+        check("headpiece" in item, f"item {item['id']} → it draws a helmet or hood: that's a hat item of its own (headpiece)")
 
 # A festive scarf is a necklace that wears `scarf` (GearOverlay.scarf, art/sprites/wear_scarf.png).
 WEARS = {"armor": {"vest", "mail", "plate", "robe", "cloak"}, "necklace": {"scarf"}}
@@ -683,11 +732,12 @@ for item in items.values():
             check((ROOT / "art" / "sprites" / f"head_{body}.png").exists(),
                   f"item {item['id']} → art/sprites/head_{body}.png is missing (tools/wear_art.py)")
     for rule in item.get("tint", []):
-        check("sheets" in item and isinstance(rule.get("hue"), list) and len(rule["hue"]) == 2,
-              f"item {item['id']} → tint rules need a hue: [from, to] (and the item needs sheets)")
+        check(("sheets" in item or item.get("headgear") not in (None, "hood")) and isinstance(rule.get("hue"), list) and len(rule["hue"]) == 2,
+              f"item {item['id']} → tint rules need a hue: [from, to] (and the item needs sheets, or a hat their head)")
     if "pattern" in item:
-        check(item["type"] == "armor" and item["pattern"] in {"engraved", "scales", "fur", "runes", "pockets"},
-              f"item {item['id']} → pattern {item['pattern']!r} must be engraved | scales | fur | runes | pockets, on armour")
+        check((item["type"] == "armor" and item["pattern"] in {"engraved", "scales", "fur", "runes", "pockets"})
+              or (item.get("headgear") == "hood" and item["pattern"] == "fur"),
+              f"item {item['id']} → pattern {item['pattern']!r} must be engraved | scales | fur | runes | pockets, on armour (or fur on a hood)")
     if "glow" in item:
         check(item["type"] == "weapon" and re.fullmatch(r"#[0-9A-Fa-f]{6}", str(item["glow"])) is not None,
               f"item {item['id']} → glow must be a #RRGGBB colour on a weapon")
@@ -1115,7 +1165,7 @@ if all(month_day(s.get("from")) or "easter" in s for s in seasons):
             on = [s["id"] for s in seasons if ("easter" in s or (month_day(s.get("from")) and month_day(s.get("to")))) and in_season(s, day)]
             check(len(on) <= 1, f"rewards seasons → {', '.join(on)} both on {day}")
             day += datetime.timedelta(days=1)
-hats = {item_id for item_id, item in items.items() if item["type"] == "head" or item.get("wear") == "scarf"}
+hats = {item_id for item_id, item in items.items() if (item["type"] == "head" and "headgear" not in item) or item.get("wear") == "scarf"}
 check(hats == hats_given, f"rewards seasons → every hat is a season's (hats no season gives: {sorted(hats - hats_given)})")
 handed = elsewhere | set((rewards.get("chests") or {}).get("items", [])) | {i for gift in rewards.get("dailyGifts", []) for i in gift.get("items") or []}
 for item_id in sorted(hats_given | treats_given):

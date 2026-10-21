@@ -125,8 +125,11 @@ def material(img, hue, min, to, max=1.0):
 
 # Armour whose walk sheet leaves the head bare, the hero's own head, beard and hair drawn over it
 # (`head_<body>`, GameSession.layers; items.json `bareHead`): the hat slot is what goes on the head
-# (playtesting 2026-10-21: "the chain mail shouldn't have a hat. We have a specific hat slot").
-BARE_HEADED = {"chain_mail"}
+# (playtesting 2026-10-21: "the chain mail shouldn't have a hat. We have a specific hat slot", and
+# "any armor that shows a hat should have that as a hat item"). What's cut off is that hat:
+# `hat_<kind>_<race>`, the sheet's head down to the neck (helmet, hood or coif, and the face in it),
+# worn by the matching hat item (items.json `headgear`).
+BARE_HEADED = {"chain_mail", "iron_plate", "dragon_mail", "mage_robe", "ranger_cloak", "snow_cloak"}
 # Heroes' bodies (tools/hero_layers.py), each race's: its own and its other gender's.
 BODIES = {race: [race] + [f"{race}_{g}" for g in ("male", "female") if (SPRITES / f"body_{race}_{g}.png").exists()]
           for race in RACES}
@@ -168,16 +171,19 @@ def heads():
 
 
 def bared(img, race):
-    """An armour sheet with its head cut off: everything above the highest neck of the race's
-    bodies, so whichever body wears it, its head (`head_<body>`, down to its own neck) meets it."""
+    """An armour sheet with its head cut off, and what's cut off (its hat): everything above the
+    highest neck of the race's bodies, so whichever body wears it, its head (`head_<body>`, down to
+    its own neck) meets it."""
     out = img.copy()
+    hat = np.zeros_like(img)
     bodies = [load(SPRITES / f"body_{body}.png") for body in BODIES[race]]
     for row in range(img.shape[0] // F):
         for col in range(img.shape[1] // F):
             frames = [b[row * F:(row + 1) * F, col * F:(col + 1) * F] for b in bodies]
             cut = min(neck(f) for f in frames if (f[..., 3] > 0.5).any())
+            hat[row * F:row * F + cut + 1, col * F:(col + 1) * F] = img[row * F:row * F + cut + 1, col * F:(col + 1) * F]
             out[row * F:row * F + cut + 1, col * F:(col + 1) * F] = 0
-    return out
+    return out, hat
 
 
 def armour():
@@ -187,7 +193,9 @@ def armour():
         kind = name[len("armor_"):name.rindex("_")]
         img = material(img, **MATERIAL[kind])
         if kind in BARE_HEADED:
-            img = bared(img, name[name.rindex("_") + 1:])
+            img, hat = bared(img, name[name.rindex("_") + 1:])
+            save(hat, "hat_" + name[len("armor_"):])
+            print(f"art/sprites/hat_{name[len('armor_'):]}.png  its hat")
         save(img, name)
         made[name] = img
         print(f"art/sprites/{name}.png  from art-variants/{source}")

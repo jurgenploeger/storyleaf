@@ -975,6 +975,34 @@ def capes(out):
     print(f"wrote {out}: {', '.join(i['id'] for i in capes_)}")
 
 
+def hood(base, out, colour, trim=None, lined=False):
+    """A hood worn as a hat (GearOverlay.hood): the magenta of hood_* in its colour, keeping its shade,
+    full magenta its trim, lined with white fur round its opening next to the face if `lined`."""
+    mid = hexc(colour)
+    acc = hexc(trim) if trim else np.array([0.91, 0.85, 0.69])
+    dark, light = shade(mid, 0.55), mix(mid, (1, 1, 1), 0.35)
+    out = out.copy()
+    for oy in range(0, base.shape[0], FRAME):
+        for ox in range(0, base.shape[1], FRAME):
+            b = base[oy:oy + FRAME, ox:ox + FRAME]
+
+            def bare(yy, xx):
+                if not (0 <= yy < FRAME and 0 <= xx < FRAME) or b[yy, xx, 3] < 0.5:
+                    return False
+                hh, ss, vv = hsv(tuple(b[yy, xx, :3]))
+                return (hh <= 40 / 360 or hh >= 342 / 360) and 0.12 < ss < 0.65 and vv > 0.55
+            for y in range(FRAME):
+                for x in range(FRAME):
+                    if not is_mark(b[y, x]):
+                        continue
+                    if lined and any(bare(y + dy, x + dx) for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                        out[oy + y, ox + x, :3] = fur(x, y)
+                        continue
+                    _, s, v = hsv(tuple(b[y, x, :3]))
+                    out[oy + y, ox + x, :3] = acc if s > 0.85 else (light if v > 0.82 else (dark if v < 0.55 else mid))
+    return out
+
+
 def dressed(race, body, style, armour=None, worn=(), skin=None):
     """A hero as the game draws them (GameSession.layers and registerArt): paper-doll layers, or an
     armour's own sheet over the hair from a fifth of the way down the head (nape_*); then the cut,
@@ -1004,14 +1032,27 @@ def dressed(race, body, style, armour=None, worn=(), skin=None):
             img.alpha_composite(Image.fromarray((np.clip(layer, 0, 1) * 255).round().astype(np.uint8), "RGBA"))
         return array(img)
     sheet = (armour or {}).get("sheets", {}).get(race)
+    # On the head (GameSession.layers): a festive hat sits on the hair (`hat`, below); one that goes
+    # with an armour (`headgear`) takes the hair's place: a sheet's cut-off head over the hair below
+    # it (nape_*), the beard on top, or a hide cloak's hood, painted in its colour (`hood`).
+    headwear = next((item for item in worn if item["type"] == "head" and item.get("headgear")), None)
+    kind = (headwear or {}).get("headgear")
+    under, top, top_rules = [], [f"locks_{body}", f"hair_{style}_{body}"], [None, None]
+    if kind == "hood":
+        top = [f"locks_{body}", f"hood_{body}"]
+    elif kind:
+        under = [f"nape_{style}_{body}"]
+        top, top_rules = [f"hat_{kind}_{race}", f"locks_{body}"], [tone + (headwear.get("tint") or []), None]
+    under, top = [array(load(n)) for n in under], [array(load(n)) for n in top]
+    top_out = [pp.recolor(t, r) if r else t for t, r in zip(top, top_rules)]
     if sheet and armour.get("bareHead"):
-        # A sheet with its head cut off (tools/wear_art.py BARE_HEADED): the hero's own head, beard
-        # and hair over it, the skin tone on the head, the armour's tint on the sheet.
-        worn_sheet, head, locks, hair = (array(load(n)) for n in (sheet, f"head_{body}", f"locks_{body}", f"hair_{style}_{body}"))
-        base = stacked([worn_sheet, head, locks, hair])
+        # A sheet with its head cut off (tools/wear_art.py BARE_HEADED): the hero's own head under
+        # what's on it, the skin tone on the head, the armour's tint on the sheet.
+        worn_sheet, head = array(load(sheet)), array(load(f"head_{body}"))
+        base = stacked(under + [worn_sheet, head] + top)
         sheet_rules = tone + (armour.get("tint") or [])
-        out = stacked([pp.recolor(worn_sheet, sheet_rules) if sheet_rules else worn_sheet,
-                       pp.recolor(head, tone) if tone else head, locks, hair])
+        out = stacked(under + [pp.recolor(worn_sheet, sheet_rules) if sheet_rules else worn_sheet,
+                               pp.recolor(head, tone) if tone else head] + top_out)
         skeleton = f"body_{race}"
     elif sheet:
         nape, worn_sheet = array(load(f"nape_{style}_{body}")), array(load(sheet))
@@ -1020,19 +1061,17 @@ def dressed(race, body, style, armour=None, worn=(), skin=None):
         out = stacked([nape, pp.recolor(worn_sheet, rules)]) if rules else base.copy()
         skeleton = f"body_{race}"
     else:
-        # A festive hat sits on the hair, in place of a helmet or hood.
-        hatted = any(item["type"] == "head" for item in worn)
-        head = None if hatted else {"plate": "helmet", "cloak": "hood"}.get((armour or {}).get("wear"))
-        layers = [array(load(name)) for name in (f"body_{body}", f"locks_{body}", f"{head}_{body}" if head else f"hair_{style}_{body}")]
-        base = stacked(layers)
-        # The skin tone and the armour's colours on the body only (GameSession.bodyRules), and the
-        # armour's on a helmet or hood too.
+        bald = array(load(f"body_{body}"))
+        base = stacked(under + [bald] + top)
+        # The skin tone and the armour's colours on the body only (GameSession.bodyRules).
         rules = tone + ((armour or {}).get("recolor") or [])
-        top = pp.recolor(layers[2], armour["recolor"]) if head and armour and armour.get("recolor") else layers[2]
-        out = stacked([pp.recolor(layers[0], rules) if rules else layers[0], layers[1], top])
+        out = stacked(under + [pp.recolor(bald, rules) if rules else bald] + top_out)
         if armour:
             out = apply(base, out, armour.get("wear"), armour.get("accent"), pattern=armour.get("pattern"))
         skeleton = f"body_{body}"
+    if kind == "hood":
+        out = hood(base, out, headwear["color"], headwear.get("accent"), headwear.get("pattern") == "fur")
+    worn = [item for item in worn if item is not headwear]
     pieces = {item["type"]: item for item in worn}
     # A festive scarf is worn as a necklace, drawn round the neck instead of a pendant.
     wrap = pieces.pop("necklace") if pieces.get("necklace", {}).get("wear") == "scarf" else None

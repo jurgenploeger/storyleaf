@@ -251,7 +251,8 @@ nonisolated enum ItemType: String, Decodable, Sendable {
     /// `material`: wood, metal, gems and hides that monsters drop, for the blacksmith.
     /// `accessory`: rings, charms and bands; `gloves`, `necklace` and `boots` have slots of their own.
     /// `cape`: a status cape, the weaver's prize for a milestone (rewards.json `prizes`), worn on the back.
-    /// `head`: a festive hat, from a season (rewards.json `seasons`), worn on the head (`ItemDef.hat`).
+    /// `head`: a hat, worn on the head: a festive one from a season (rewards.json `seasons`, drawn as
+    /// `ItemDef.hat`), or one that goes with an armour (`ItemDef.headgear`).
     case consumable, weapon, armor, head, gloves, necklace, boots, accessory, material, cape
 
     /// Every slot the hero wears something in, in the order lists show them.
@@ -324,6 +325,14 @@ nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
     /// Its sheets leave the head bare (tools/wear_art.py BARE_HEADED): the hero's own head, beard and
     /// hair are drawn over them, as the hat slot is what goes on the head.
     let bareHead: Bool?
+    /// The hat that goes with this armour (what it drew on the head before that went to the hat
+    /// slot): an item id.
+    let headpiece: String?
+    /// A hat that goes with an armour: what it is on the head. A kind of armour sheet (iron_plate,
+    /// dragon_mail, mage_robe, ranger_cloak, snow_cloak, chain_mail), its cut-off head
+    /// (art/sprites/hat_<kind>_<race>.png, tools/wear_art.py) recoloured by `tint`; or `hood`, a hide
+    /// cloak's (art/sprites/hood_<body>.png) in `color` and `accent`, lined with fur for `pattern` fur.
+    let headgear: String?
     /// Trim colour on the sprite (buttons, clasps, hems), or a necklace's chain, "#RRGGBB".
     let accent: String?
     /// A cape's colour, or how gloves, boots and a necklace look worn (a necklace's chain is its

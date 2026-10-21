@@ -2558,9 +2558,63 @@ def tier_piece(c, item):
         cloak(c, cloth, trim[1], fur=[hexc("c8b890"), hexc("f4ecd8")], hood=True)
 
 
+def hat_piece(c, item):
+    """A hat that goes with an armour (items.json `headgear`, what the armour drew on the head before
+    it went to the hat slot), in its `color` with its trim: a helm (horned for dragon mail), a
+    pointed wizard's hat, a hood (lined with fur for a hide or snow cloak's) or a mail coif."""
+    cloth = ramp(item["color"])
+    dark, mid, light = cloth
+    trim = SILVER if item.get("accent", "").upper() in ("#E8F0FF", "#9AD8FF", "#C0C8D8", "#E8F6FF") else GOLD
+    kind = item["headgear"]
+    if kind in ("iron_plate", "dragon_mail"):
+        if kind == "dragon_mail":   # horns sweeping up from the sides
+            c.poly([(7, 14), (2, 4), (5, 4), (10, 12)], trim[1])
+            c.poly([(25, 14), (30, 4), (27, 4), (22, 12)], trim[1])
+        c.ellipse(16, 15, 10, 10, mid)
+        c.rect(6, 15, 26, 26, mid)
+        c.shade(lambda x, y, col: col == mid and x > 20, dark)
+        c.shade(lambda x, y, col: col == mid and x < 11 and y < 16, light)
+        c.rect(9, 17, 23, 19, OUTLINE)            # the eye slit
+        c.line(16, 20, 16, 26, dark)              # the nose guard's edge
+        c.line(16, 5, 16, 16, trim[1])            # the crest
+        c.rect(6, 25, 26, 26, trim[1])
+    elif kind == "mage_robe":
+        c.ellipse(16, 25, 14, 4, mid)             # the brim
+        c.poly([(9, 24), (23, 24), (19, 10), (24, 3), (15, 8)], mid)
+        c.shade(lambda x, y, col: col == mid and x > 18 and y < 24, dark)
+        c.shade(lambda x, y, col: col == mid and x < 13 and y < 24, light)
+        c.rect(9, 21, 23, 23, trim[1])            # the band
+        star_shape(c, 15, 16, 2.6, trim[2], inner=0.5)
+    elif kind == "chain_mail":
+        c.ellipse(16, 14, 11, 11, mid)
+        c.rect(5, 14, 27, 28, mid)
+        for y in range(4, 29):
+            for x in range(4, 28):
+                if c.get(x, y) == mid and (x + y) % 2 == 0:
+                    c.set(x, y, light if x < 16 else dark)
+        c.ellipse(16, 17, 6, 7, OUTLINE)          # the face opening
+        c.ellipse(16, 18, 5, 6, hexc("f0c8a0"))
+    else:   # a hood
+        c.ellipse(16, 15, 12, 12, mid)
+        c.poly([(4, 16), (28, 16), (30, 29), (2, 29)], mid)
+        c.shade(lambda x, y, col: col == mid and x > 20, dark)
+        c.shade(lambda x, y, col: col == mid and x < 11 and y < 18, light)
+        c.ellipse(16, 18, 7, 8, OUTLINE)          # the opening, in shadow
+        if kind == "hood" or kind == "snow_cloak":
+            c.ring(16, 18, 9, 7, hexc("f4ecd8"))
+            for x in range(8, 25, 3):
+                c.set(x, 26, hexc("c8b890"))
+
+
+# Every hat that goes with an armour.
+for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
+    if _item.get("headgear"):
+        globals()["draw_" + _item["id"]] = (lambda item: lambda c: hat_piece(c, item))(_item)
+
+
 # The armour tiers, every piece in its tier's colour.
 for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
-    if _item.get("tier"):
+    if _item.get("tier") and not _item.get("headgear"):
         globals()["draw_" + _item["id"]] = (lambda item: lambda c: tier_piece(c, item))(_item)
 
 

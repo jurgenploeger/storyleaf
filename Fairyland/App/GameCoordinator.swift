@@ -93,6 +93,7 @@ final class GameCoordinator {
         session.rescaleLevelsIfNeeded()
         session.rescaleSkillLevelsIfNeeded()
         session.retireRebirthsIfNeeded()
+        session.handOutArmourHatsIfNeeded()
         session.handOutMissingStarterGifts()
         session.claimBookMilestones()
         session.refreshBounties()

@@ -267,7 +267,10 @@ final class Crowd {
         let style = options.styles.randomElement(using: &draw)?.id
         let look = Look(hair: def.hair ?? hair ?? Look.standard.hair, outfit: def.outfit ?? outfit ?? Look.standard.outfit,
                         skin: def.skin ?? skin ?? Look.standard.skin, gender: def.gender ?? gender, style: def.style ?? style)
-        let art = GameSession.registerPerson(race: def.race ?? race ?? "human", look: look, armor: def.wear.flatMap(content.item))
+        // In the hat that goes with their armour too, as they looked when it was part of it.
+        let armor = def.wear.flatMap(content.item)
+        let art = GameSession.registerPerson(race: def.race ?? race ?? "human", look: look, armor: armor,
+                                             worn: [armor?.headpiece.flatMap(content.item)].compactMap { $0 })
         let walker = Self.person(def.name, art: art, color: .white)
         walker.setWeapon(def.hold.flatMap(content.item))
         walker.walkSpeed = .random(in: 44...56, using: &draw)

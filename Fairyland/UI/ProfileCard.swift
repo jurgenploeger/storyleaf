@@ -199,7 +199,8 @@ struct ProfileCard: View {
             facts.badge = .bot
             facts.title = GameSession.botTitle(level: person.level, id: person.id)
             // What they hold and wear, as on the map and in battle.
-            facts.gear = [GameSession.weapon(for: person), GameSession.armor(for: person)].compactMap { $0 }
+            let armor = GameSession.armor(for: person)
+            facts.gear = [GameSession.weapon(for: person), armor, armor?.headpiece.flatMap(Content.shared.item)].compactMap { $0 }
             if let place = session.whereabouts(of: person) {
                 facts.note = L("Waiting for you at {place}", ["place": place])
                 facts.noteColor = HUDStyle.orange

@@ -1,5 +1,5 @@
 {
-  "_about": "Items. `art` is the item's sprite (art/sprites/item_<id>.png, drawn by tools/item_art.py); `icon` is a GameIcon name (Fairyland/UI/GameIcon.swift) used when there's no art; weapons are drawn in the hero's hand from their art (or icon). Armour `sheets` (per race) swaps in a whole walk sheet while it's worn (Retro Diffusion art in art/sprites; only the skin colour applies), recoloured by `tint` for the rare colour variants bosses drop. `bareHead` (true) marks sheets with their head cut off (tools/wear_art.py BARE_HEADED): the hero's own head, beard and hair are drawn over them, as the hat slot is what goes on the head. Armour `pattern` adds finer detail to the sprite (engraved | scales | fur | runes | pockets). Armour `recolor` changes the outfit colours while worn and `wear` its cut on the hero's sprite (vest | mail | plate | robe | cloak), drawn by Fairyland/Art/GearOverlay.swift. `accent` (#RRGGBB) is the trim colour on the sprite, or a necklace's chain. `color` (#RRGGBB) is how gloves, boots and a necklace look worn (on the hands, the feet and under the chin), or a cape's colour. `tier` puts armour in a RuneScape-style tier: one level and one colour for a whole set (a fighter's plate, a mage's robe, a tamer's hide cloak, gauntlets and boots), so the colour tells the level; tools/item_art.py draws their icons from `color`. `glow` (#RRGGBB) gives a magic weapon a soft light at `glowAt` ([x, y] in its 32×32 art): a halo in the icon (tools/item_art.py) and a gentle pulse while held. type: consumable | weapon | armor | head (festive hats) | gloves | necklace | boots | accessory (rings, charms and bands) | material | cape. A hat's `hat` is which piece it is on the hero's head (art/sprites/wear_<hat>.png, cut out of Retro Diffusion art by tools/wear_art.py and fitted by GearOverlay.hat): crown (a party crown), santa, ears (a bunny's, its band in `accent`) or mask, in its `color`. A necklace with `wear` scarf is a festive scarf instead (art/sprites/wear_scarf.png in its `color`, under the chin); only the festive seasons give them (content/rewards.json `seasons`). `classes` limits who can equip it (omit = everyone); `level` is the level needed. Materials (type material; `material` is wood | metal | gem | hide) drop from monsters of at least their `level`; a quest's pieces are `material: quest` (none for sale, never dropped but by the quests that want them, content/quests.json `drops`). `recipe` is what a blacksmith needs to forge the item; one with `make` (carve | join) is made by hand from the bag instead, for a quest that asks you to bring it. Companion toys (`toy`, Fairyland Online's Pet Toys) are consumables given to a companion from the bag: they raise its `stats` for good, up to ten toys a companion (GameSession.giveToy). Seal Stones (`capture`) are thrown in battle to befriend a monster and used up whether they hold or not: `sealPower` is how many times likelier than a plain one a stone is to hold (1 unless set), and a `sure` one (the Wishing Seal) never fails (BattleEngine.captureStatus).",
+  "_about": "Items. `art` is the item's sprite (art/sprites/item_<id>.png, drawn by tools/item_art.py); `icon` is a GameIcon name (Fairyland/UI/GameIcon.swift) used when there's no art; weapons are drawn in the hero's hand from their art (or icon). Armour `sheets` (per race) swaps in a whole walk sheet while it's worn (Retro Diffusion art in art/sprites; only the skin colour applies), recoloured by `tint` for the rare colour variants bosses drop. `bareHead` (true) marks sheets with their head cut off (tools/wear_art.py BARE_HEADED): the hero's own head, beard and hair are drawn over them, as the hat slot is what goes on the head. What an armour drew on the head (a helmet, hood, coif or wizard's hat) is a hat of its own, the armour's `headpiece`: type head with `headgear` (the kind of sheet whose cut-off head it is, art/sprites/hat_<kind>_<race>.png, recoloured by its `tint`; or `hood`, a hide cloak's hood, art/sprites/hood_<body>.png, painted in its `color` and `accent`, lined with fur for `pattern` fur), of the armour's level, classes and tier, a quarter of its stats and price, and had wherever the armour is (tools/check_content.py checks). Armour `pattern` adds finer detail to the sprite (engraved | scales | fur | runes | pockets). Armour `recolor` changes the outfit colours while worn and `wear` its cut on the hero's sprite (vest | mail | plate | robe | cloak), drawn by Fairyland/Art/GearOverlay.swift. `accent` (#RRGGBB) is the trim colour on the sprite, or a necklace's chain. `color` (#RRGGBB) is how gloves, boots and a necklace look worn (on the hands, the feet and under the chin), or a cape's colour. `tier` puts armour in a RuneScape-style tier: one level and one colour for a whole set (a fighter's plate, a mage's robe, a tamer's hide cloak, gauntlets and boots), so the colour tells the level; tools/item_art.py draws their icons from `color`. `glow` (#RRGGBB) gives a magic weapon a soft light at `glowAt` ([x, y] in its 32×32 art): a halo in the icon (tools/item_art.py) and a gentle pulse while held. type: consumable | weapon | armor | head (hats: festive ones with `hat`, an armour's with `headgear`) | gloves | necklace | boots | accessory (rings, charms and bands) | material | cape. A hat's `hat` is which piece it is on the hero's head (art/sprites/wear_<hat>.png, cut out of Retro Diffusion art by tools/wear_art.py and fitted by GearOverlay.hat): crown (a party crown), santa, ears (a bunny's, its band in `accent`) or mask, in its `color`. A necklace with `wear` scarf is a festive scarf instead (art/sprites/wear_scarf.png in its `color`, under the chin); only the festive seasons give them (content/rewards.json `seasons`). `classes` limits who can equip it (omit = everyone); `level` is the level needed. Materials (type material; `material` is wood | metal | gem | hide) drop from monsters of at least their `level`; a quest's pieces are `material: quest` (none for sale, never dropped but by the quests that want them, content/quests.json `drops`). `recipe` is what a blacksmith needs to forge the item; one with `make` (carve | join) is made by hand from the bag instead, for a quest that asks you to bring it. Companion toys (`toy`, Fairyland Online's Pet Toys) are consumables given to a companion from the bag: they raise its `stats` for good, up to ten toys a companion (GameSession.giveToy). Seal Stones (`capture`) are thrown in battle to befriend a monster and used up whether they hold or not: `sealPower` is how many times likelier than a plain one a stone is to hold (1 unless set), and a `sure` one (the Wishing Seal) never fails (BattleEngine.captureStatus).",
   "items": [
     {
       "id": "potion",
@@ -250,9 +250,9 @@
       "art": "item_chain_mail",
       "name": "Chain Mail",
       "type": "armor",
-      "price": 220,
+      "price": 165,
       "stats": {
-        "defense": 12
+        "defense": 9
       },
       "classes": [
         "fighter"
@@ -264,7 +264,26 @@
         "human": "armor_chain_mail_human",
         "elf": "armor_chain_mail_elf",
         "dwarf": "armor_chain_mail_dwarf"
-      }
+      },
+      "headpiece": "chain_coif"
+    },
+    {
+      "id": "chain_coif",
+      "icon": "shield",
+      "art": "item_chain_coif",
+      "name": "Chain Coif",
+      "type": "head",
+      "headgear": "chain_mail",
+      "price": 55,
+      "stats": {
+        "defense": 3
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 14,
+      "description": "A mail coif, to wear with the armour of the same name.",
+      "color": "#80929A"
     },
     {
       "id": "silk_robe",
@@ -284,11 +303,11 @@
       "art": "item_silk_robe",
       "name": "Silk Robe",
       "type": "armor",
-      "price": 180,
+      "price": 135,
       "stats": {
-        "defense": 5,
-        "magic": 4,
-        "mp": 10
+        "defense": 4,
+        "magic": 3,
+        "mp": 8
       },
       "classes": [
         "mage"
@@ -302,6 +321,42 @@
         "elf": "armor_mage_robe_elf",
         "dwarf": "armor_mage_robe_dwarf"
       },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 268,
+          "spread": 1,
+          "saturation": 0.83,
+          "value": 1.22
+        }
+      ],
+      "bareHead": true,
+      "headpiece": "silk_hat"
+    },
+    {
+      "id": "silk_hat",
+      "icon": "shield",
+      "art": "item_silk_hat",
+      "name": "Silk Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 45,
+      "stats": {
+        "defense": 1,
+        "magic": 1,
+        "mp": 2
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 14,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#8D4EF6",
+      "accent": "#F2C230",
       "tint": [
         {
           "hue": [
@@ -334,10 +389,10 @@
       "art": "item_ranger_cloak",
       "name": "Ranger Cloak",
       "type": "armor",
-      "price": 170,
+      "price": 130,
       "stats": {
-        "defense": 8,
-        "speed": 2
+        "defense": 6,
+        "speed": 1
       },
       "classes": [
         "tamer"
@@ -350,6 +405,28 @@
         "elf": "armor_ranger_cloak_elf",
         "dwarf": "armor_ranger_cloak_dwarf"
       },
+      "accent": "#C9A040",
+      "bareHead": true,
+      "headpiece": "ranger_hood"
+    },
+    {
+      "id": "ranger_hood",
+      "icon": "shield",
+      "art": "item_ranger_hood",
+      "name": "Ranger Hood",
+      "type": "head",
+      "headgear": "ranger_cloak",
+      "price": 40,
+      "stats": {
+        "defense": 2,
+        "speed": 1
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 14,
+      "description": "A hood, to wear with the cloak of the same name.",
+      "color": "#2D5425",
       "accent": "#C9A040"
     },
     {
@@ -604,10 +681,10 @@
       "art": "item_iron_plate",
       "name": "Iron Plate",
       "type": "armor",
-      "price": 450,
+      "price": 340,
       "stats": {
-        "defense": 20,
-        "hp": 30
+        "defense": 15,
+        "hp": 22
       },
       "classes": [
         "fighter"
@@ -633,6 +710,28 @@
         "dwarf": "armor_iron_plate_dwarf"
       },
       "pattern": "engraved",
+      "accent": "#E8C04A",
+      "bareHead": true,
+      "headpiece": "iron_helm"
+    },
+    {
+      "id": "iron_helm",
+      "icon": "shield",
+      "art": "item_iron_helm",
+      "name": "Iron Helm",
+      "type": "head",
+      "headgear": "iron_plate",
+      "price": 110,
+      "stats": {
+        "defense": 5,
+        "hp": 8
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 38,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#9AB9C6",
       "accent": "#E8C04A"
     },
     {
@@ -641,11 +740,11 @@
       "art": "item_mage_robe",
       "name": "Mage Robe",
       "type": "armor",
-      "price": 450,
+      "price": 340,
       "stats": {
-        "defense": 9,
-        "magic": 8,
-        "mp": 20
+        "defense": 7,
+        "magic": 6,
+        "mp": 15
       },
       "classes": [
         "mage"
@@ -672,6 +771,42 @@
         "elf": "armor_mage_robe_elf",
         "dwarf": "armor_mage_robe_dwarf"
       },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 232,
+          "spread": 1,
+          "saturation": 1.0,
+          "value": 1.0
+        }
+      ],
+      "bareHead": true,
+      "headpiece": "mage_hat"
+    },
+    {
+      "id": "mage_hat",
+      "icon": "shield",
+      "art": "item_mage_hat",
+      "name": "Mage Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 110,
+      "stats": {
+        "defense": 2,
+        "magic": 2,
+        "mp": 5
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 38,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#244ACA",
+      "accent": "#F2C230",
       "tint": [
         {
           "hue": [
@@ -724,10 +859,10 @@
       "art": "item_dragon_mail",
       "name": "Dragon Mail",
       "type": "armor",
-      "price": 1400,
+      "price": 1050,
       "stats": {
-        "defense": 28,
-        "hp": 50
+        "defense": 21,
+        "hp": 38
       },
       "level": 65,
       "recolor": [
@@ -750,6 +885,25 @@
         "dwarf": "armor_dragon_mail_dwarf"
       },
       "pattern": "scales",
+      "accent": "#F2C230",
+      "bareHead": true,
+      "headpiece": "dragon_helm"
+    },
+    {
+      "id": "dragon_helm",
+      "icon": "shield",
+      "art": "item_dragon_helm",
+      "name": "Dragon Helm",
+      "type": "head",
+      "headgear": "dragon_mail",
+      "price": 350,
+      "stats": {
+        "defense": 7,
+        "hp": 12
+      },
+      "level": 65,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#E93220",
       "accent": "#F2C230"
     },
     {
@@ -758,10 +912,10 @@
       "art": "item_snow_cloak",
       "name": "Snow Cloak",
       "type": "armor",
-      "price": 1500,
+      "price": 1125,
       "stats": {
-        "defense": 30,
-        "magic": 10
+        "defense": 22,
+        "magic": 8
       },
       "level": 78,
       "recolor": [
@@ -784,6 +938,25 @@
         "dwarf": "armor_snow_cloak_dwarf"
       },
       "pattern": "fur",
+      "accent": "#9AD8FF",
+      "bareHead": true,
+      "headpiece": "snow_hood"
+    },
+    {
+      "id": "snow_hood",
+      "icon": "shield",
+      "art": "item_snow_hood",
+      "name": "Snow Hood",
+      "type": "head",
+      "headgear": "snow_cloak",
+      "price": 375,
+      "stats": {
+        "defense": 8,
+        "magic": 2
+      },
+      "level": 78,
+      "description": "A hood, to wear with the cloak of the same name.",
+      "color": "#A6DEF8",
       "accent": "#9AD8FF"
     },
     {
@@ -3319,10 +3492,10 @@
       "art": "item_crimson_ranger_cloak",
       "name": "Crimson Ranger Cloak",
       "type": "armor",
-      "price": 255,
+      "price": 190,
       "stats": {
-        "defense": 8,
-        "speed": 2
+        "defense": 6,
+        "speed": 1
       },
       "classes": [
         "tamer"
@@ -3345,6 +3518,38 @@
           "minSaturation": 0.2,
           "to": 358
         }
+      ],
+      "bareHead": true,
+      "headpiece": "crimson_ranger_hood"
+    },
+    {
+      "id": "crimson_ranger_hood",
+      "icon": "shield",
+      "art": "item_crimson_ranger_hood",
+      "name": "Crimson Ranger Hood",
+      "type": "head",
+      "headgear": "ranger_cloak",
+      "price": 65,
+      "stats": {
+        "defense": 2,
+        "speed": 1
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 14,
+      "description": "A hood, to wear with the cloak of the same name.",
+      "color": "#542527",
+      "accent": "#C9A040",
+      "tint": [
+        {
+          "hue": [
+            70,
+            170
+          ],
+          "minSaturation": 0.2,
+          "to": 358
+        }
       ]
     },
     {
@@ -3353,10 +3558,10 @@
       "art": "item_golden_plate",
       "name": "Golden Plate",
       "type": "armor",
-      "price": 675,
+      "price": 505,
       "stats": {
-        "defense": 20,
-        "hp": 30
+        "defense": 15,
+        "hp": 22
       },
       "classes": [
         "fighter"
@@ -3404,6 +3609,50 @@
           "saturation": 2.6,
           "value": 1.05
         }
+      ],
+      "bareHead": true,
+      "headpiece": "golden_helm"
+    },
+    {
+      "id": "golden_helm",
+      "icon": "shield",
+      "art": "item_golden_helm",
+      "name": "Golden Helm",
+      "type": "head",
+      "headgear": "iron_plate",
+      "price": 170,
+      "stats": {
+        "defense": 5,
+        "hp": 8
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 38,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#D0B058",
+      "accent": "#E8C04A",
+      "tint": [
+        {
+          "hue": [
+            140,
+            170
+          ],
+          "minSaturation": 0.05,
+          "to": 44,
+          "saturation": 4.16,
+          "value": 1.05
+        },
+        {
+          "hue": [
+            170,
+            250
+          ],
+          "minSaturation": 0.05,
+          "to": 44,
+          "saturation": 2.6,
+          "value": 1.05
+        }
       ]
     },
     {
@@ -3412,10 +3661,10 @@
       "art": "item_golden_dragon_mail",
       "name": "Golden Dragon Mail",
       "type": "armor",
-      "price": 2100,
+      "price": 1575,
       "stats": {
-        "defense": 28,
-        "hp": 50
+        "defense": 21,
+        "hp": 38
       },
       "level": 65,
       "recolor": [
@@ -3449,6 +3698,36 @@
           "to": 44,
           "value": 1.1
         }
+      ],
+      "bareHead": true,
+      "headpiece": "golden_dragon_helm"
+    },
+    {
+      "id": "golden_dragon_helm",
+      "icon": "shield",
+      "art": "item_golden_dragon_helm",
+      "name": "Golden Dragon Helm",
+      "type": "head",
+      "headgear": "dragon_mail",
+      "price": 525,
+      "stats": {
+        "defense": 7,
+        "hp": 12
+      },
+      "level": 65,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#EFBB23",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            335,
+            20
+          ],
+          "minSaturation": 0.55,
+          "to": 44,
+          "value": 1.1
+        }
       ]
     },
     {
@@ -3457,10 +3736,10 @@
       "art": "item_azure_dragon_mail",
       "name": "Azure Dragon Mail",
       "type": "armor",
-      "price": 2100,
+      "price": 1575,
       "stats": {
-        "defense": 28,
-        "hp": 50
+        "defense": 21,
+        "hp": 38
       },
       "level": 65,
       "recolor": [
@@ -3493,6 +3772,35 @@
           "minSaturation": 0.55,
           "to": 212
         }
+      ],
+      "bareHead": true,
+      "headpiece": "azure_dragon_helm"
+    },
+    {
+      "id": "azure_dragon_helm",
+      "icon": "shield",
+      "art": "item_azure_dragon_helm",
+      "name": "Azure Dragon Helm",
+      "type": "head",
+      "headgear": "dragon_mail",
+      "price": 525,
+      "stats": {
+        "defense": 7,
+        "hp": 12
+      },
+      "level": 65,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#207FC2",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            335,
+            20
+          ],
+          "minSaturation": 0.55,
+          "to": 212
+        }
       ]
     },
     {
@@ -3501,10 +3809,10 @@
       "art": "item_rose_snow_cloak",
       "name": "Rose Snow Cloak",
       "type": "armor",
-      "price": 2250,
+      "price": 1690,
       "stats": {
-        "defense": 30,
-        "magic": 10
+        "defense": 22,
+        "magic": 8
       },
       "level": 78,
       "recolor": [
@@ -3537,6 +3845,35 @@
           "minSaturation": 0.1,
           "to": 335
         }
+      ],
+      "bareHead": true,
+      "headpiece": "rose_snow_hood"
+    },
+    {
+      "id": "rose_snow_hood",
+      "icon": "shield",
+      "art": "item_rose_snow_hood",
+      "name": "Rose Snow Hood",
+      "type": "head",
+      "headgear": "snow_cloak",
+      "price": 560,
+      "stats": {
+        "defense": 8,
+        "magic": 2
+      },
+      "level": 78,
+      "description": "A hood, to wear with the cloak of the same name.",
+      "color": "#F8A6C8",
+      "accent": "#9AD8FF",
+      "tint": [
+        {
+          "hue": [
+            180,
+            250
+          ],
+          "minSaturation": 0.1,
+          "to": 335
+        }
       ]
     },
     {
@@ -3545,10 +3882,10 @@
       "art": "item_shadow_snow_cloak",
       "name": "Shadow Snow Cloak",
       "type": "armor",
-      "price": 2250,
+      "price": 1690,
       "stats": {
-        "defense": 30,
-        "magic": 10
+        "defense": 22,
+        "magic": 8
       },
       "level": 78,
       "recolor": [
@@ -3571,6 +3908,37 @@
         "dwarf": "armor_snow_cloak_dwarf"
       },
       "pattern": "fur",
+      "accent": "#9AD8FF",
+      "tint": [
+        {
+          "hue": [
+            180,
+            250
+          ],
+          "minSaturation": 0.1,
+          "to": 250,
+          "saturation": 0.5,
+          "value": 0.45
+        }
+      ],
+      "bareHead": true,
+      "headpiece": "shadow_snow_hood"
+    },
+    {
+      "id": "shadow_snow_hood",
+      "icon": "shield",
+      "art": "item_shadow_snow_hood",
+      "name": "Shadow Snow Hood",
+      "type": "head",
+      "headgear": "snow_cloak",
+      "price": 560,
+      "stats": {
+        "defense": 8,
+        "magic": 2
+      },
+      "level": 78,
+      "description": "A hood, to wear with the cloak of the same name.",
+      "color": "#605D70",
       "accent": "#9AD8FF",
       "tint": [
         {
@@ -3658,9 +4026,9 @@
       "art": "item_gilded_chain_mail",
       "name": "Gilded Chain Mail",
       "type": "armor",
-      "price": 330,
+      "price": 250,
       "stats": {
-        "defense": 12
+        "defense": 9
       },
       "classes": [
         "fighter"
@@ -3673,6 +4041,37 @@
         "elf": "armor_chain_mail_elf",
         "dwarf": "armor_chain_mail_dwarf"
       },
+      "tint": [
+        {
+          "hue": [
+            150,
+            260
+          ],
+          "minSaturation": 0.03,
+          "to": 45,
+          "saturation": 5,
+          "value": 1.45
+        }
+      ],
+      "headpiece": "gilded_chain_coif"
+    },
+    {
+      "id": "gilded_chain_coif",
+      "icon": "shield",
+      "art": "item_gilded_chain_coif",
+      "name": "Gilded Chain Coif",
+      "type": "head",
+      "headgear": "chain_mail",
+      "price": 80,
+      "stats": {
+        "defense": 3
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 14,
+      "description": "A mail coif, to wear with the armour of the same name.",
+      "color": "#DFB023",
       "tint": [
         {
           "hue": [
@@ -3704,11 +4103,11 @@
       "art": "item_dawn_silk_robe",
       "name": "Dawn Silk Robe",
       "type": "armor",
-      "price": 270,
+      "price": 200,
       "stats": {
-        "defense": 5,
-        "magic": 4,
-        "mp": 10
+        "defense": 4,
+        "magic": 3,
+        "mp": 8
       },
       "classes": [
         "mage"
@@ -3734,6 +4133,42 @@
           "saturation": 0.78,
           "value": 1.28
         }
+      ],
+      "bareHead": true,
+      "headpiece": "dawn_silk_hat"
+    },
+    {
+      "id": "dawn_silk_hat",
+      "icon": "shield",
+      "art": "item_dawn_silk_hat",
+      "name": "Dawn Silk Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 70,
+      "stats": {
+        "defense": 1,
+        "magic": 1,
+        "mp": 2
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 14,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#FF885C",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 22,
+          "spread": 1,
+          "saturation": 0.78,
+          "value": 1.28
+        }
       ]
     },
     {
@@ -3742,11 +4177,11 @@
       "art": "item_moonlight_mage_robe",
       "name": "Moonlight Mage Robe",
       "type": "armor",
-      "price": 675,
+      "price": 505,
       "stats": {
-        "defense": 9,
-        "magic": 8,
-        "mp": 20
+        "defense": 7,
+        "magic": 6,
+        "mp": 15
       },
       "classes": [
         "mage"
@@ -3773,6 +4208,42 @@
         "elf": "armor_mage_robe_elf",
         "dwarf": "armor_mage_robe_dwarf"
       },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 272,
+          "spread": 1,
+          "saturation": 0.44,
+          "value": 1.33
+        }
+      ],
+      "bareHead": true,
+      "headpiece": "moonlight_mage_hat"
+    },
+    {
+      "id": "moonlight_mage_hat",
+      "icon": "shield",
+      "art": "item_moonlight_mage_hat",
+      "name": "Moonlight Mage Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 170,
+      "stats": {
+        "defense": 2,
+        "magic": 2,
+        "mp": 5
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 38,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#CBA3FF",
+      "accent": "#F2C230",
       "tint": [
         {
           "hue": [
@@ -3855,11 +4326,11 @@
       "art": "item_howlmaster_mantle",
       "name": "Howlmaster's Mantle",
       "type": "armor",
-      "price": 900,
+      "price": 675,
       "stats": {
-        "defense": 15,
-        "hp": 30,
-        "speed": 3
+        "defense": 11,
+        "hp": 22,
+        "speed": 2
       },
       "level": 32,
       "description": "The Howlmaster's silver-grey pelt. Wolves still lower their heads to it.",
@@ -3894,7 +4365,39 @@
           "value": 0.95
         }
       ],
-      "accent": "#C0C8D8"
+      "accent": "#C0C8D8",
+      "bareHead": true,
+      "headpiece": "howlmaster_hood"
+    },
+    {
+      "id": "howlmaster_hood",
+      "icon": "shield",
+      "art": "item_howlmaster_hood",
+      "name": "Howlmaster's Hood",
+      "type": "head",
+      "headgear": "ranger_cloak",
+      "price": 225,
+      "stats": {
+        "defense": 4,
+        "hp": 8,
+        "speed": 1
+      },
+      "level": 32,
+      "description": "A hood, to wear with the cloak of the same name.",
+      "color": "#454850",
+      "accent": "#C0C8D8",
+      "tint": [
+        {
+          "hue": [
+            70,
+            170
+          ],
+          "minSaturation": 0.2,
+          "to": 220,
+          "saturation": 0.25,
+          "value": 0.95
+        }
+      ]
     },
     {
       "id": "puppeteers_coat",
@@ -3903,11 +4406,11 @@
       "art": "item_puppeteers_coat",
       "name": "Puppeteer's Coat",
       "type": "armor",
-      "price": 2300,
+      "price": 1725,
       "stats": {
-        "defense": 24,
-        "hp": 50,
-        "speed": 4
+        "defense": 18,
+        "hp": 38,
+        "speed": 3
       },
       "level": 56,
       "description": "Cut from the Marionette King's stage curtains. Light on the shoulders, and no strings attached.",
@@ -3942,7 +4445,38 @@
         "human": "armor_chain_mail_human",
         "elf": "armor_chain_mail_elf",
         "dwarf": "armor_chain_mail_dwarf"
-      }
+      },
+      "headpiece": "puppeteers_cowl"
+    },
+    {
+      "id": "puppeteers_cowl",
+      "icon": "shield",
+      "art": "item_puppeteers_cowl",
+      "name": "Puppeteer's Cowl",
+      "type": "head",
+      "headgear": "chain_mail",
+      "price": 575,
+      "stats": {
+        "defense": 6,
+        "hp": 12,
+        "speed": 1
+      },
+      "level": 56,
+      "description": "A mail coif, to wear with the armour of the same name.",
+      "color": "#B94CB5",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            150,
+            260
+          ],
+          "minSaturation": 0.03,
+          "to": 302,
+          "saturation": 3.5,
+          "value": 1.2
+        }
+      ]
     },
     {
       "id": "briar_rose_robe",
@@ -3950,11 +4484,11 @@
       "art": "item_briar_rose_robe",
       "name": "Briar Rose Robe",
       "type": "armor",
-      "price": 3300,
+      "price": 2475,
       "stats": {
-        "defense": 24,
-        "magic": 12,
-        "mp": 18
+        "defense": 18,
+        "magic": 9,
+        "mp": 14
       },
       "level": 72,
       "description": "Woven with the roses that grew round the sleeping castle. It still smells of summer.",
@@ -3977,6 +4511,39 @@
         "elf": "armor_mage_robe_elf",
         "dwarf": "armor_mage_robe_dwarf"
       },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 340,
+          "spread": 1,
+          "saturation": 0.78,
+          "value": 1.17
+        }
+      ],
+      "bareHead": true,
+      "headpiece": "briar_rose_hat"
+    },
+    {
+      "id": "briar_rose_hat",
+      "icon": "shield",
+      "art": "item_briar_rose_hat",
+      "name": "Briar Rose Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 825,
+      "stats": {
+        "defense": 6,
+        "magic": 3,
+        "mp": 4
+      },
+      "level": 72,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#EC5595",
+      "accent": "#7FD07F",
       "tint": [
         {
           "hue": [
@@ -4026,11 +4593,11 @@
       "art": "item_oxhide_mail",
       "name": "Oxhide Mail",
       "type": "armor",
-      "price": 6000,
+      "price": 4500,
       "stats": {
-        "defense": 38,
-        "hp": 100,
-        "attack": 4
+        "defense": 28,
+        "hp": 75,
+        "attack": 3
       },
       "level": 100,
       "description": "Four oxen's worth of courage, hammered into plates. Stand together and no lion can touch you.",
@@ -4075,7 +4642,49 @@
           "value": 0.85
         }
       ],
-      "accent": "#E8C04A"
+      "accent": "#E8C04A",
+      "bareHead": true,
+      "headpiece": "oxhide_helm"
+    },
+    {
+      "id": "oxhide_helm",
+      "icon": "shield",
+      "art": "item_oxhide_helm",
+      "name": "Oxhide Helm",
+      "type": "head",
+      "headgear": "iron_plate",
+      "price": 1500,
+      "stats": {
+        "defense": 10,
+        "hp": 25,
+        "attack": 1
+      },
+      "level": 100,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#A87A56",
+      "accent": "#E8C04A",
+      "tint": [
+        {
+          "hue": [
+            140,
+            170
+          ],
+          "minSaturation": 0.05,
+          "to": 26,
+          "saturation": 3.52,
+          "value": 0.85
+        },
+        {
+          "hue": [
+            170,
+            250
+          ],
+          "minSaturation": 0.05,
+          "to": 26,
+          "saturation": 2.2,
+          "value": 0.85
+        }
+      ]
     },
     {
       "id": "lioras_veil",
@@ -4083,11 +4692,11 @@
       "art": "item_lioras_veil",
       "name": "Liora's Veil",
       "type": "armor",
-      "price": 7200,
+      "price": 5400,
       "stats": {
-        "defense": 32,
-        "magic": 18,
-        "mp": 24
+        "defense": 24,
+        "magic": 14,
+        "mp": 18
       },
       "level": 110,
       "description": "A goddess's veil from the deepest vault of her ruins. The runes on its hem still glow.",
@@ -4123,6 +4732,39 @@
           "saturation": 0.39,
           "value": 1.39
         }
+      ],
+      "bareHead": true,
+      "headpiece": "lioras_hat"
+    },
+    {
+      "id": "lioras_hat",
+      "icon": "shield",
+      "art": "item_lioras_hat",
+      "name": "Liora's Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 1800,
+      "stats": {
+        "defense": 8,
+        "magic": 4,
+        "mp": 6
+      },
+      "level": 110,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#FFE7AD",
+      "accent": "#9AD8FF",
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 48,
+          "spread": 1,
+          "saturation": 0.39,
+          "value": 1.39
+        }
       ]
     },
     {
@@ -4131,11 +4773,11 @@
       "art": "item_wavecrest_scale_mail",
       "name": "Wavecrest Scale Mail",
       "type": "armor",
-      "price": 12500,
+      "price": 9375,
       "stats": {
-        "defense": 48,
-        "hp": 130,
-        "speed": 5
+        "defense": 36,
+        "hp": 98,
+        "speed": 4
       },
       "level": 155,
       "description": "Scales the Wavecrest Dragon shed, cool and shimmering like the sea at dawn.",
@@ -4169,7 +4811,38 @@
           "value": 1.05
         }
       ],
-      "accent": "#E8F6FF"
+      "accent": "#E8F6FF",
+      "bareHead": true,
+      "headpiece": "wavecrest_scale_helm"
+    },
+    {
+      "id": "wavecrest_scale_helm",
+      "icon": "shield",
+      "art": "item_wavecrest_scale_helm",
+      "name": "Wavecrest Scale Helm",
+      "type": "head",
+      "headgear": "dragon_mail",
+      "price": 3125,
+      "stats": {
+        "defense": 12,
+        "hp": 32,
+        "speed": 1
+      },
+      "level": 155,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#22D7C9",
+      "accent": "#E8F6FF",
+      "tint": [
+        {
+          "hue": [
+            335,
+            20
+          ],
+          "minSaturation": 0.55,
+          "to": 184,
+          "value": 1.05
+        }
+      ]
     },
     {
       "id": "emerald_dragon_mail",
@@ -4177,12 +4850,12 @@
       "art": "item_emerald_dragon_mail",
       "name": "Emerald Dragon Mail",
       "type": "armor",
-      "price": 18000,
+      "price": 13500,
       "stats": {
-        "defense": 56,
-        "hp": 160,
-        "attack": 8,
-        "magic": 8
+        "defense": 42,
+        "hp": 120,
+        "attack": 6,
+        "magic": 6
       },
       "level": 190,
       "description": "Forged from the Emerald Dragon's scales at the end of the road. There is none finer.",
@@ -4215,7 +4888,38 @@
           "to": 140
         }
       ],
-      "accent": "#F2C230"
+      "accent": "#F2C230",
+      "bareHead": true,
+      "headpiece": "emerald_dragon_helm"
+    },
+    {
+      "id": "emerald_dragon_helm",
+      "icon": "shield",
+      "art": "item_emerald_dragon_helm",
+      "name": "Emerald Dragon Helm",
+      "type": "head",
+      "headgear": "dragon_mail",
+      "price": 4500,
+      "stats": {
+        "defense": 14,
+        "hp": 40,
+        "attack": 2,
+        "magic": 2
+      },
+      "level": 190,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#20D95E",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            335,
+            20
+          ],
+          "minSaturation": 0.55,
+          "to": 140
+        }
+      ]
     },
     {
       "id": "bunny_hop_boots",
@@ -5315,12 +6019,12 @@
       "art": "item_starweave_robe",
       "name": "Starweave Robe",
       "type": "armor",
-      "price": 11600,
+      "price": 8700,
       "stats": {
-        "defense": 42,
-        "magic": 16,
-        "mp": 28,
-        "hp": 50
+        "defense": 32,
+        "magic": 12,
+        "mp": 21,
+        "hp": 38
       },
       "level": 140,
       "description": "Woven in Glimmerbough from moonflower silk. At night, tiny stars drift across it.",
@@ -5344,6 +6048,40 @@
         "elf": "armor_mage_robe_elf",
         "dwarf": "armor_mage_robe_dwarf"
       },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 238,
+          "spread": 1,
+          "saturation": 0.83,
+          "value": 0.89
+        }
+      ],
+      "bareHead": true,
+      "headpiece": "starweave_hat"
+    },
+    {
+      "id": "starweave_hat",
+      "icon": "shield",
+      "art": "item_starweave_hat",
+      "name": "Starweave Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 2900,
+      "stats": {
+        "defense": 10,
+        "magic": 4,
+        "mp": 7,
+        "hp": 12
+      },
+      "level": 140,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#3949B4",
+      "accent": "#FFE680",
       "tint": [
         {
           "hue": [
@@ -6440,11 +7178,11 @@
       "art": "item_prismscale_mail",
       "name": "Prismscale Mail",
       "type": "armor",
-      "price": 14800,
+      "price": 11100,
       "stats": {
-        "defense": 50,
-        "hp": 120,
-        "magic": 10
+        "defense": 38,
+        "hp": 90,
+        "magic": 8
       },
       "level": 158,
       "recolor": [
@@ -6479,6 +7217,38 @@
           "saturation": 0.45,
           "value": 1.2
         }
+      ],
+      "bareHead": true,
+      "headpiece": "prismscale_helm"
+    },
+    {
+      "id": "prismscale_helm",
+      "icon": "shield",
+      "art": "item_prismscale_helm",
+      "name": "Prismscale Helm",
+      "type": "head",
+      "headgear": "dragon_mail",
+      "price": 3700,
+      "stats": {
+        "defense": 12,
+        "hp": 30,
+        "magic": 2
+      },
+      "level": 158,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#99DDE3",
+      "accent": "#C9A0FF",
+      "tint": [
+        {
+          "hue": [
+            335,
+            20
+          ],
+          "minSaturation": 0.55,
+          "to": 200,
+          "saturation": 0.45,
+          "value": 1.2
+        }
       ]
     },
     {
@@ -6487,12 +7257,12 @@
       "art": "item_goldleaf_plate",
       "name": "Goldleaf Plate",
       "type": "armor",
-      "price": 24000,
+      "price": 18000,
       "stats": {
-        "defense": 62,
-        "hp": 180,
-        "attack": 10,
-        "magic": 6
+        "defense": 46,
+        "hp": 135,
+        "attack": 8,
+        "magic": 4
       },
       "level": 200,
       "description": "Ivory plate edged with gold leaf from Meadowbrook's oldest oak. Only a hero at the very top can wear it.",
@@ -6561,7 +7331,74 @@
           "value": 1.4
         }
       ],
-      "accent": "#F2C230"
+      "accent": "#F2C230",
+      "bareHead": true,
+      "headpiece": "goldleaf_helm"
+    },
+    {
+      "id": "goldleaf_helm",
+      "icon": "shield",
+      "art": "item_goldleaf_helm",
+      "name": "Goldleaf Helm",
+      "type": "head",
+      "headgear": "iron_plate",
+      "price": 6000,
+      "stats": {
+        "defense": 16,
+        "hp": 45,
+        "attack": 2,
+        "magic": 2
+      },
+      "level": 200,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#BE9434",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxSaturation": 0.25,
+          "maxValue": 0.7,
+          "to": 42,
+          "saturation": 4.5,
+          "value": 1.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 42,
+          "saturation": 2.6,
+          "value": 1.2
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxSaturation": 0.25,
+          "to": 45,
+          "saturation": 1.5,
+          "value": 1.45
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 45,
+          "saturation": 0.7,
+          "value": 1.4
+        }
+      ]
     },
     {
       "id": "goldleaf_robe",
@@ -6569,12 +7406,12 @@
       "art": "item_goldleaf_robe",
       "name": "Goldleaf Robe",
       "type": "armor",
-      "price": 24000,
+      "price": 18000,
       "stats": {
-        "defense": 50,
-        "magic": 26,
-        "mp": 44,
-        "hp": 70
+        "defense": 38,
+        "magic": 20,
+        "mp": 33,
+        "hp": 52
       },
       "level": 200,
       "description": "White silk stitched with gold leaf from Meadowbrook's oldest oak, for a mage at the top of the world.",
@@ -6598,6 +7435,40 @@
         "elf": "armor_mage_robe_elf",
         "dwarf": "armor_mage_robe_dwarf"
       },
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 45,
+          "spread": 1,
+          "saturation": 0.22,
+          "value": 1.56
+        }
+      ],
+      "bareHead": true,
+      "headpiece": "goldleaf_hat"
+    },
+    {
+      "id": "goldleaf_hat",
+      "icon": "shield",
+      "art": "item_goldleaf_hat",
+      "name": "Goldleaf Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 6000,
+      "stats": {
+        "defense": 12,
+        "magic": 6,
+        "mp": 11,
+        "hp": 18
+      },
+      "level": 200,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#FFEFD1",
+      "accent": "#F2C230",
       "tint": [
         {
           "hue": [
@@ -6650,10 +7521,10 @@
       "art": "item_copper_plate",
       "name": "Copper Plate",
       "type": "armor",
-      "price": 150,
+      "price": 110,
       "stats": {
-        "defense": 12,
-        "hp": 8
+        "defense": 9,
+        "hp": 6
       },
       "classes": [
         "fighter"
@@ -6750,6 +7621,98 @@
       ],
       "accent": "#F2C230",
       "color": "#B8733A",
+      "tier": "copper",
+      "bareHead": true,
+      "headpiece": "copper_helm"
+    },
+    {
+      "id": "copper_helm",
+      "icon": "shield",
+      "art": "item_copper_helm",
+      "name": "Copper Helm",
+      "type": "head",
+      "headgear": "iron_plate",
+      "price": 40,
+      "stats": {
+        "defense": 3,
+        "hp": 2
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 10,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#B8733A",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 27,
+          "saturation": 4.14,
+          "value": 0.9,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 27,
+          "saturation": 2.82,
+          "value": 0.99,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 27,
+          "saturation": 2.56,
+          "value": 0.9,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 27,
+          "saturation": 1.75,
+          "value": 0.99,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 27,
+          "saturation": 1.43,
+          "value": 0.9
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 27,
+          "saturation": 0.98,
+          "value": 0.99
+        }
+      ],
       "tier": "copper"
     },
     {
@@ -6758,11 +7721,11 @@
       "art": "item_copper_robe",
       "name": "Copper Robe",
       "type": "armor",
-      "price": 150,
+      "price": 110,
       "stats": {
-        "defense": 5,
-        "magic": 3,
-        "mp": 10
+        "defense": 4,
+        "magic": 2,
+        "mp": 8
       },
       "classes": [
         "mage"
@@ -6803,7 +7766,44 @@
           "saturation": 0.88,
           "value": 1.1
         }
-      ]
+      ],
+      "bareHead": true,
+      "headpiece": "copper_hat"
+    },
+    {
+      "id": "copper_hat",
+      "icon": "shield",
+      "art": "item_copper_hat",
+      "name": "Copper Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 40,
+      "stats": {
+        "defense": 1,
+        "magic": 1,
+        "mp": 2
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 10,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#B8733A",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 27,
+          "spread": 1,
+          "saturation": 0.88,
+          "value": 1.1
+        }
+      ],
+      "tier": "copper"
     },
     {
       "id": "copper_hide",
@@ -6811,11 +7811,11 @@
       "art": "item_copper_hide",
       "name": "Copper Hide Cloak",
       "type": "armor",
-      "price": 150,
+      "price": 110,
       "stats": {
-        "defense": 7,
-        "speed": 2,
-        "hp": 4
+        "defense": 5,
+        "speed": 1,
+        "hp": 3
       },
       "classes": [
         "tamer"
@@ -6838,6 +7838,30 @@
       ],
       "accent": "#E8D8B0",
       "color": "#B8733A",
+      "tier": "copper",
+      "headpiece": "copper_hide_hood"
+    },
+    {
+      "id": "copper_hide_hood",
+      "icon": "shield",
+      "art": "item_copper_hide_hood",
+      "name": "Copper Hide Hood",
+      "type": "head",
+      "headgear": "hood",
+      "price": 40,
+      "stats": {
+        "defense": 2,
+        "speed": 1,
+        "hp": 1
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 10,
+      "description": "A hood, to wear with the cloak of the same name.",
+      "color": "#B8733A",
+      "accent": "#E8D8B0",
+      "pattern": "fur",
       "tier": "copper"
     },
     {
@@ -6878,10 +7902,10 @@
       "art": "item_silver_plate",
       "name": "Silver Plate",
       "type": "armor",
-      "price": 490,
+      "price": 370,
       "stats": {
-        "defense": 16,
-        "hp": 20
+        "defense": 12,
+        "hp": 15
       },
       "classes": [
         "fighter"
@@ -6978,6 +8002,98 @@
       ],
       "accent": "#F2C230",
       "color": "#C4CCD8",
+      "tier": "silver",
+      "bareHead": true,
+      "headpiece": "silver_helm"
+    },
+    {
+      "id": "silver_helm",
+      "icon": "shield",
+      "art": "item_silver_helm",
+      "name": "Silver Helm",
+      "type": "head",
+      "headgear": "iron_plate",
+      "price": 120,
+      "stats": {
+        "defense": 4,
+        "hp": 5
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 25,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#C4CCD8",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 216,
+          "saturation": 0.73,
+          "value": 0.97,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 216,
+          "saturation": 0.49,
+          "value": 1.07,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 216,
+          "saturation": 0.45,
+          "value": 0.97,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 216,
+          "saturation": 0.31,
+          "value": 1.07,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 216,
+          "saturation": 0.25,
+          "value": 0.97
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 216,
+          "saturation": 0.17,
+          "value": 1.07
+        }
+      ],
       "tier": "silver"
     },
     {
@@ -6986,11 +8102,11 @@
       "art": "item_silver_robe",
       "name": "Silver Robe",
       "type": "armor",
-      "price": 490,
+      "price": 370,
       "stats": {
-        "defense": 8,
-        "magic": 5,
-        "mp": 12
+        "defense": 6,
+        "magic": 4,
+        "mp": 9
       },
       "classes": [
         "mage"
@@ -7031,7 +8147,44 @@
           "saturation": 0.12,
           "value": 1.21
         }
-      ]
+      ],
+      "bareHead": true,
+      "headpiece": "silver_hat"
+    },
+    {
+      "id": "silver_hat",
+      "icon": "shield",
+      "art": "item_silver_hat",
+      "name": "Silver Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 120,
+      "stats": {
+        "defense": 2,
+        "magic": 1,
+        "mp": 3
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 25,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#C4CCD8",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 216,
+          "spread": 1,
+          "saturation": 0.12,
+          "value": 1.21
+        }
+      ],
+      "tier": "silver"
     },
     {
       "id": "silver_hide",
@@ -7039,11 +8192,11 @@
       "art": "item_silver_hide",
       "name": "Silver Hide Cloak",
       "type": "armor",
-      "price": 490,
+      "price": 370,
       "stats": {
-        "defense": 10,
-        "speed": 2,
-        "hp": 9
+        "defense": 8,
+        "speed": 1,
+        "hp": 7
       },
       "classes": [
         "tamer"
@@ -7066,6 +8219,30 @@
       ],
       "accent": "#E8D8B0",
       "color": "#C4CCD8",
+      "tier": "silver",
+      "headpiece": "silver_hide_hood"
+    },
+    {
+      "id": "silver_hide_hood",
+      "icon": "shield",
+      "art": "item_silver_hide_hood",
+      "name": "Silver Hide Hood",
+      "type": "head",
+      "headgear": "hood",
+      "price": 120,
+      "stats": {
+        "defense": 2,
+        "speed": 1,
+        "hp": 2
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 25,
+      "description": "A hood, to wear with the cloak of the same name.",
+      "color": "#C4CCD8",
+      "accent": "#E8D8B0",
+      "pattern": "fur",
       "tier": "silver"
     },
     {
@@ -7106,10 +8283,10 @@
       "art": "item_onyx_plate",
       "name": "Onyx Plate",
       "type": "armor",
-      "price": 1150,
+      "price": 860,
       "stats": {
-        "defense": 20,
-        "hp": 36
+        "defense": 15,
+        "hp": 27
       },
       "classes": [
         "fighter"
@@ -7206,6 +8383,98 @@
       ],
       "accent": "#F2C230",
       "color": "#3A3846",
+      "tier": "onyx",
+      "bareHead": true,
+      "headpiece": "onyx_helm"
+    },
+    {
+      "id": "onyx_helm",
+      "icon": "shield",
+      "art": "item_onyx_helm",
+      "name": "Onyx Helm",
+      "type": "head",
+      "headgear": "iron_plate",
+      "price": 290,
+      "stats": {
+        "defense": 5,
+        "hp": 9
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 45,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#3A3846",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 249,
+          "saturation": 1.21,
+          "value": 0.67,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 249,
+          "saturation": 0.83,
+          "value": 0.74,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 249,
+          "saturation": 0.75,
+          "value": 0.67,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 249,
+          "saturation": 0.51,
+          "value": 0.74,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 249,
+          "saturation": 0.42,
+          "value": 0.67
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 249,
+          "saturation": 0.29,
+          "value": 0.74
+        }
+      ],
       "tier": "onyx"
     },
     {
@@ -7214,11 +8483,11 @@
       "art": "item_onyx_robe",
       "name": "Onyx Robe",
       "type": "armor",
-      "price": 1150,
+      "price": 860,
       "stats": {
-        "defense": 13,
-        "magic": 7,
-        "mp": 15
+        "defense": 10,
+        "magic": 5,
+        "mp": 11
       },
       "classes": [
         "mage"
@@ -7259,7 +8528,44 @@
           "saturation": 0.26,
           "value": 0.73
         }
-      ]
+      ],
+      "bareHead": true,
+      "headpiece": "onyx_hat"
+    },
+    {
+      "id": "onyx_hat",
+      "icon": "shield",
+      "art": "item_onyx_hat",
+      "name": "Onyx Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 290,
+      "stats": {
+        "defense": 3,
+        "magic": 2,
+        "mp": 4
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 45,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#3A3846",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 249,
+          "spread": 1,
+          "saturation": 0.26,
+          "value": 0.73
+        }
+      ],
+      "tier": "onyx"
     },
     {
       "id": "onyx_hide",
@@ -7267,11 +8573,11 @@
       "art": "item_onyx_hide",
       "name": "Onyx Hide Cloak",
       "type": "armor",
-      "price": 1150,
+      "price": 860,
       "stats": {
-        "defense": 14,
-        "speed": 3,
-        "hp": 16
+        "defense": 10,
+        "speed": 2,
+        "hp": 12
       },
       "classes": [
         "tamer"
@@ -7294,6 +8600,30 @@
       ],
       "accent": "#E8D8B0",
       "color": "#3A3846",
+      "tier": "onyx",
+      "headpiece": "onyx_hide_hood"
+    },
+    {
+      "id": "onyx_hide_hood",
+      "icon": "shield",
+      "art": "item_onyx_hide_hood",
+      "name": "Onyx Hide Hood",
+      "type": "head",
+      "headgear": "hood",
+      "price": 290,
+      "stats": {
+        "defense": 4,
+        "speed": 1,
+        "hp": 4
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 45,
+      "description": "A hood, to wear with the cloak of the same name.",
+      "color": "#3A3846",
+      "accent": "#E8D8B0",
+      "pattern": "fur",
       "tier": "onyx"
     },
     {
@@ -7336,10 +8666,10 @@
       "art": "item_sapphire_plate",
       "name": "Sapphire Plate",
       "type": "armor",
-      "price": 1800,
+      "price": 1350,
       "stats": {
-        "defense": 24,
-        "hp": 48
+        "defense": 18,
+        "hp": 36
       },
       "classes": [
         "fighter"
@@ -7436,6 +8766,98 @@
       ],
       "accent": "#F2C230",
       "color": "#3555C8",
+      "tier": "sapphire",
+      "bareHead": true,
+      "headpiece": "sapphire_helm"
+    },
+    {
+      "id": "sapphire_helm",
+      "icon": "shield",
+      "art": "item_sapphire_helm",
+      "name": "Sapphire Helm",
+      "type": "head",
+      "headgear": "iron_plate",
+      "price": 450,
+      "stats": {
+        "defense": 6,
+        "hp": 12
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 60,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#3555C8",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 227,
+          "saturation": 4.45,
+          "value": 0.93,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 227,
+          "saturation": 3.03,
+          "value": 1.03,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 227,
+          "saturation": 2.75,
+          "value": 0.93,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 227,
+          "saturation": 1.87,
+          "value": 1.03,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 227,
+          "saturation": 1.54,
+          "value": 0.93
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 227,
+          "saturation": 1.05,
+          "value": 1.03
+        }
+      ],
       "tier": "sapphire"
     },
     {
@@ -7444,11 +8866,11 @@
       "art": "item_sapphire_robe",
       "name": "Sapphire Robe",
       "type": "armor",
-      "price": 1800,
+      "price": 1350,
       "stats": {
-        "defense": 16,
-        "magic": 9,
-        "mp": 18
+        "defense": 12,
+        "magic": 7,
+        "mp": 14
       },
       "classes": [
         "mage"
@@ -7489,7 +8911,44 @@
           "saturation": 0.94,
           "value": 1.16
         }
-      ]
+      ],
+      "bareHead": true,
+      "headpiece": "sapphire_hat"
+    },
+    {
+      "id": "sapphire_hat",
+      "icon": "shield",
+      "art": "item_sapphire_hat",
+      "name": "Sapphire Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 450,
+      "stats": {
+        "defense": 4,
+        "magic": 2,
+        "mp": 4
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 60,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#3555C8",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 227,
+          "spread": 1,
+          "saturation": 0.94,
+          "value": 1.16
+        }
+      ],
+      "tier": "sapphire"
     },
     {
       "id": "sapphire_hide",
@@ -7497,11 +8956,11 @@
       "art": "item_sapphire_hide",
       "name": "Sapphire Hide Cloak",
       "type": "armor",
-      "price": 1800,
+      "price": 1350,
       "stats": {
-        "defense": 18,
-        "speed": 4,
-        "hp": 21
+        "defense": 14,
+        "speed": 3,
+        "hp": 16
       },
       "classes": [
         "tamer"
@@ -7524,6 +8983,30 @@
       ],
       "accent": "#E8D8B0",
       "color": "#3555C8",
+      "tier": "sapphire",
+      "headpiece": "sapphire_hide_hood"
+    },
+    {
+      "id": "sapphire_hide_hood",
+      "icon": "shield",
+      "art": "item_sapphire_hide_hood",
+      "name": "Sapphire Hide Hood",
+      "type": "head",
+      "headgear": "hood",
+      "price": 450,
+      "stats": {
+        "defense": 4,
+        "speed": 1,
+        "hp": 5
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 60,
+      "description": "A hood, to wear with the cloak of the same name.",
+      "color": "#3555C8",
+      "accent": "#E8D8B0",
+      "pattern": "fur",
       "tier": "sapphire"
     },
     {
@@ -7566,10 +9049,10 @@
       "art": "item_jade_plate",
       "name": "Jade Plate",
       "type": "armor",
-      "price": 2880,
+      "price": 2160,
       "stats": {
-        "defense": 28,
-        "hp": 64
+        "defense": 21,
+        "hp": 48
       },
       "classes": [
         "fighter"
@@ -7666,6 +9149,98 @@
       ],
       "accent": "#F2C230",
       "color": "#2E9A58",
+      "tier": "jade",
+      "bareHead": true,
+      "headpiece": "jade_helm"
+    },
+    {
+      "id": "jade_helm",
+      "icon": "shield",
+      "art": "item_jade_helm",
+      "name": "Jade Helm",
+      "type": "head",
+      "headgear": "iron_plate",
+      "price": 720,
+      "stats": {
+        "defense": 7,
+        "hp": 16
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 80,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#2E9A58",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 143,
+          "saturation": 4.24,
+          "value": 0.84,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 143,
+          "saturation": 2.89,
+          "value": 0.93,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 143,
+          "saturation": 2.62,
+          "value": 0.84,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 143,
+          "saturation": 1.79,
+          "value": 0.93,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 143,
+          "saturation": 1.47,
+          "value": 0.84
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 143,
+          "saturation": 1.0,
+          "value": 0.93
+        }
+      ],
       "tier": "jade"
     },
     {
@@ -7674,11 +9249,11 @@
       "art": "item_jade_robe",
       "name": "Jade Robe",
       "type": "armor",
-      "price": 2880,
+      "price": 2160,
       "stats": {
-        "defense": 21,
-        "magic": 11,
-        "mp": 21
+        "defense": 16,
+        "magic": 8,
+        "mp": 16
       },
       "classes": [
         "mage"
@@ -7719,7 +9294,44 @@
           "saturation": 0.9,
           "value": 1.0
         }
-      ]
+      ],
+      "bareHead": true,
+      "headpiece": "jade_hat"
+    },
+    {
+      "id": "jade_hat",
+      "icon": "shield",
+      "art": "item_jade_hat",
+      "name": "Jade Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 720,
+      "stats": {
+        "defense": 5,
+        "magic": 3,
+        "mp": 5
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 80,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#2E9A58",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 143,
+          "spread": 1,
+          "saturation": 0.9,
+          "value": 1.0
+        }
+      ],
+      "tier": "jade"
     },
     {
       "id": "jade_hide",
@@ -7727,11 +9339,11 @@
       "art": "item_jade_hide",
       "name": "Jade Hide Cloak",
       "type": "armor",
-      "price": 2880,
+      "price": 2160,
       "stats": {
-        "defense": 22,
-        "speed": 5,
-        "hp": 28
+        "defense": 16,
+        "speed": 4,
+        "hp": 21
       },
       "classes": [
         "tamer"
@@ -7754,6 +9366,30 @@
       ],
       "accent": "#E8D8B0",
       "color": "#2E9A58",
+      "tier": "jade",
+      "headpiece": "jade_hide_hood"
+    },
+    {
+      "id": "jade_hide_hood",
+      "icon": "shield",
+      "art": "item_jade_hide_hood",
+      "name": "Jade Hide Hood",
+      "type": "head",
+      "headgear": "hood",
+      "price": 720,
+      "stats": {
+        "defense": 6,
+        "speed": 1,
+        "hp": 7
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 80,
+      "description": "A hood, to wear with the cloak of the same name.",
+      "color": "#2E9A58",
+      "accent": "#E8D8B0",
+      "pattern": "fur",
       "tier": "jade"
     },
     {
@@ -7796,10 +9432,10 @@
       "art": "item_aquamarine_plate",
       "name": "Aquamarine Plate",
       "type": "armor",
-      "price": 4200,
+      "price": 3150,
       "stats": {
-        "defense": 33,
-        "hp": 80
+        "defense": 25,
+        "hp": 60
       },
       "classes": [
         "fighter"
@@ -7896,6 +9532,98 @@
       ],
       "accent": "#F2C230",
       "color": "#3AB8D0",
+      "tier": "aquamarine",
+      "bareHead": true,
+      "headpiece": "aquamarine_helm"
+    },
+    {
+      "id": "aquamarine_helm",
+      "icon": "shield",
+      "art": "item_aquamarine_helm",
+      "name": "Aquamarine Helm",
+      "type": "head",
+      "headgear": "iron_plate",
+      "price": 1050,
+      "stats": {
+        "defense": 8,
+        "hp": 20
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 100,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#3AB8D0",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 190,
+          "saturation": 4.36,
+          "value": 0.95,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 190,
+          "saturation": 2.97,
+          "value": 1.05,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 190,
+          "saturation": 2.7,
+          "value": 0.95,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 190,
+          "saturation": 1.84,
+          "value": 1.05,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 190,
+          "saturation": 1.51,
+          "value": 0.95
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 190,
+          "saturation": 1.03,
+          "value": 1.05
+        }
+      ],
       "tier": "aquamarine"
     },
     {
@@ -7904,11 +9632,11 @@
       "art": "item_aquamarine_robe",
       "name": "Aquamarine Robe",
       "type": "armor",
-      "price": 4200,
+      "price": 3150,
       "stats": {
-        "defense": 25,
-        "magic": 13,
-        "mp": 24
+        "defense": 19,
+        "magic": 10,
+        "mp": 18
       },
       "classes": [
         "mage"
@@ -7949,7 +9677,44 @@
           "saturation": 0.92,
           "value": 1.18
         }
-      ]
+      ],
+      "bareHead": true,
+      "headpiece": "aquamarine_hat"
+    },
+    {
+      "id": "aquamarine_hat",
+      "icon": "shield",
+      "art": "item_aquamarine_hat",
+      "name": "Aquamarine Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 1050,
+      "stats": {
+        "defense": 6,
+        "magic": 3,
+        "mp": 6
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 100,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#3AB8D0",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 190,
+          "spread": 1,
+          "saturation": 0.92,
+          "value": 1.18
+        }
+      ],
+      "tier": "aquamarine"
     },
     {
       "id": "aquamarine_hide",
@@ -7957,11 +9722,11 @@
       "art": "item_aquamarine_hide",
       "name": "Aquamarine Hide Cloak",
       "type": "armor",
-      "price": 4200,
+      "price": 3150,
       "stats": {
-        "defense": 26,
-        "speed": 6,
-        "hp": 35
+        "defense": 20,
+        "speed": 4,
+        "hp": 26
       },
       "classes": [
         "tamer"
@@ -7984,6 +9749,30 @@
       ],
       "accent": "#E8D8B0",
       "color": "#3AB8D0",
+      "tier": "aquamarine",
+      "headpiece": "aquamarine_hide_hood"
+    },
+    {
+      "id": "aquamarine_hide_hood",
+      "icon": "shield",
+      "art": "item_aquamarine_hide_hood",
+      "name": "Aquamarine Hide Hood",
+      "type": "head",
+      "headgear": "hood",
+      "price": 1050,
+      "stats": {
+        "defense": 6,
+        "speed": 2,
+        "hp": 9
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 100,
+      "description": "A hood, to wear with the cloak of the same name.",
+      "color": "#3AB8D0",
+      "accent": "#E8D8B0",
+      "pattern": "fur",
       "tier": "aquamarine"
     },
     {
@@ -8026,10 +9815,10 @@
       "art": "item_ruby_plate",
       "name": "Ruby Plate",
       "type": "armor",
-      "price": 6190,
+      "price": 4640,
       "stats": {
-        "defense": 39,
-        "hp": 100
+        "defense": 29,
+        "hp": 75
       },
       "classes": [
         "fighter"
@@ -8126,6 +9915,98 @@
       ],
       "accent": "#F2C230",
       "color": "#C02838",
+      "tier": "ruby",
+      "bareHead": true,
+      "headpiece": "ruby_helm"
+    },
+    {
+      "id": "ruby_helm",
+      "icon": "shield",
+      "art": "item_ruby_helm",
+      "name": "Ruby Helm",
+      "type": "head",
+      "headgear": "iron_plate",
+      "price": 1550,
+      "stats": {
+        "defense": 10,
+        "hp": 25
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 125,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#C02838",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 354,
+          "saturation": 4.79,
+          "value": 0.92,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 354,
+          "saturation": 3.27,
+          "value": 1.01,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 354,
+          "saturation": 2.96,
+          "value": 0.92,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 354,
+          "saturation": 2.02,
+          "value": 1.01,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 354,
+          "saturation": 1.65,
+          "value": 0.92
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 354,
+          "saturation": 1.13,
+          "value": 1.01
+        }
+      ],
       "tier": "ruby"
     },
     {
@@ -8134,11 +10015,11 @@
       "art": "item_ruby_robe",
       "name": "Ruby Robe",
       "type": "armor",
-      "price": 6190,
+      "price": 4640,
       "stats": {
-        "defense": 30,
-        "magic": 16,
-        "mp": 28
+        "defense": 22,
+        "magic": 12,
+        "mp": 21
       },
       "classes": [
         "mage"
@@ -8179,7 +10060,44 @@
           "saturation": 1.01,
           "value": 1.12
         }
-      ]
+      ],
+      "bareHead": true,
+      "headpiece": "ruby_hat"
+    },
+    {
+      "id": "ruby_hat",
+      "icon": "shield",
+      "art": "item_ruby_hat",
+      "name": "Ruby Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 1550,
+      "stats": {
+        "defense": 8,
+        "magic": 4,
+        "mp": 7
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 125,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#C02838",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 354,
+          "spread": 1,
+          "saturation": 1.01,
+          "value": 1.12
+        }
+      ],
+      "tier": "ruby"
     },
     {
       "id": "ruby_hide",
@@ -8187,11 +10105,11 @@
       "art": "item_ruby_hide",
       "name": "Ruby Hide Cloak",
       "type": "armor",
-      "price": 6190,
+      "price": 4640,
       "stats": {
-        "defense": 31,
-        "speed": 7,
-        "hp": 44
+        "defense": 23,
+        "speed": 5,
+        "hp": 33
       },
       "classes": [
         "tamer"
@@ -8214,6 +10132,30 @@
       ],
       "accent": "#E8D8B0",
       "color": "#C02838",
+      "tier": "ruby",
+      "headpiece": "ruby_hide_hood"
+    },
+    {
+      "id": "ruby_hide_hood",
+      "icon": "shield",
+      "art": "item_ruby_hide_hood",
+      "name": "Ruby Hide Hood",
+      "type": "head",
+      "headgear": "hood",
+      "price": 1550,
+      "stats": {
+        "defense": 8,
+        "speed": 2,
+        "hp": 11
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 125,
+      "description": "A hood, to wear with the cloak of the same name.",
+      "color": "#C02838",
+      "accent": "#E8D8B0",
+      "pattern": "fur",
       "tier": "ruby"
     },
     {
@@ -8256,10 +10198,10 @@
       "art": "item_amethyst_plate",
       "name": "Amethyst Plate",
       "type": "armor",
-      "price": 8550,
+      "price": 6410,
       "stats": {
-        "defense": 44,
-        "hp": 120
+        "defense": 33,
+        "hp": 90
       },
       "classes": [
         "fighter"
@@ -8356,6 +10298,98 @@
       ],
       "accent": "#F2C230",
       "color": "#8A48C8",
+      "tier": "amethyst",
+      "bareHead": true,
+      "headpiece": "amethyst_helm"
+    },
+    {
+      "id": "amethyst_helm",
+      "icon": "shield",
+      "art": "item_amethyst_helm",
+      "name": "Amethyst Helm",
+      "type": "head",
+      "headgear": "iron_plate",
+      "price": 2140,
+      "stats": {
+        "defense": 11,
+        "hp": 30
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 150,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#8A48C8",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 271,
+          "saturation": 3.87,
+          "value": 0.93,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 271,
+          "saturation": 2.64,
+          "value": 1.03,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 271,
+          "saturation": 2.39,
+          "value": 0.93,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 271,
+          "saturation": 1.63,
+          "value": 1.03,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 271,
+          "saturation": 1.34,
+          "value": 0.93
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 271,
+          "saturation": 0.91,
+          "value": 1.03
+        }
+      ],
       "tier": "amethyst"
     },
     {
@@ -8364,11 +10398,11 @@
       "art": "item_amethyst_robe",
       "name": "Amethyst Robe",
       "type": "armor",
-      "price": 8550,
+      "price": 6410,
       "stats": {
-        "defense": 36,
-        "magic": 18,
-        "mp": 32
+        "defense": 27,
+        "magic": 14,
+        "mp": 24
       },
       "classes": [
         "mage"
@@ -8409,7 +10443,44 @@
           "saturation": 0.82,
           "value": 1.16
         }
-      ]
+      ],
+      "bareHead": true,
+      "headpiece": "amethyst_hat"
+    },
+    {
+      "id": "amethyst_hat",
+      "icon": "shield",
+      "art": "item_amethyst_hat",
+      "name": "Amethyst Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 2140,
+      "stats": {
+        "defense": 9,
+        "magic": 4,
+        "mp": 8
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 150,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#8A48C8",
+      "accent": "#F2C230",
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 271,
+          "spread": 1,
+          "saturation": 0.82,
+          "value": 1.16
+        }
+      ],
+      "tier": "amethyst"
     },
     {
       "id": "amethyst_hide",
@@ -8417,11 +10488,11 @@
       "art": "item_amethyst_hide",
       "name": "Amethyst Hide Cloak",
       "type": "armor",
-      "price": 8550,
+      "price": 6410,
       "stats": {
-        "defense": 36,
-        "speed": 8,
-        "hp": 52
+        "defense": 27,
+        "speed": 6,
+        "hp": 39
       },
       "classes": [
         "tamer"
@@ -8444,6 +10515,30 @@
       ],
       "accent": "#E8D8B0",
       "color": "#8A48C8",
+      "tier": "amethyst",
+      "headpiece": "amethyst_hide_hood"
+    },
+    {
+      "id": "amethyst_hide_hood",
+      "icon": "shield",
+      "art": "item_amethyst_hide_hood",
+      "name": "Amethyst Hide Hood",
+      "type": "head",
+      "headgear": "hood",
+      "price": 2140,
+      "stats": {
+        "defense": 9,
+        "speed": 2,
+        "hp": 13
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 150,
+      "description": "A hood, to wear with the cloak of the same name.",
+      "color": "#8A48C8",
+      "accent": "#E8D8B0",
+      "pattern": "fur",
       "tier": "amethyst"
     },
     {
@@ -8486,10 +10581,10 @@
       "art": "item_topaz_plate",
       "name": "Topaz Plate",
       "type": "armor",
-      "price": 11290,
+      "price": 8470,
       "stats": {
-        "defense": 50,
-        "hp": 140
+        "defense": 38,
+        "hp": 105
       },
       "classes": [
         "fighter"
@@ -8586,6 +10681,98 @@
       ],
       "accent": "#E8F0FF",
       "color": "#E0A830",
+      "tier": "topaz",
+      "bareHead": true,
+      "headpiece": "topaz_helm"
+    },
+    {
+      "id": "topaz_helm",
+      "icon": "shield",
+      "art": "item_topaz_helm",
+      "name": "Topaz Helm",
+      "type": "head",
+      "headgear": "iron_plate",
+      "price": 2820,
+      "stats": {
+        "defense": 12,
+        "hp": 35
+      },
+      "classes": [
+        "fighter"
+      ],
+      "level": 175,
+      "description": "A helm, to wear with the armour of the same name.",
+      "color": "#E0A830",
+      "accent": "#E8F0FF",
+      "tint": [
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 41,
+          "saturation": 4.75,
+          "value": 0.98,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 41,
+          "saturation": 3.24,
+          "value": 1.08,
+          "maxSaturation": 0.15
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 41,
+          "saturation": 2.94,
+          "value": 0.98,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 41,
+          "saturation": 2.0,
+          "value": 1.08,
+          "maxSaturation": 0.25
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "maxValue": 0.7,
+          "to": 41,
+          "saturation": 1.64,
+          "value": 0.98
+        },
+        {
+          "hue": [
+            140,
+            260
+          ],
+          "minSaturation": 0.05,
+          "to": 41,
+          "saturation": 1.12,
+          "value": 1.08
+        }
+      ],
       "tier": "topaz"
     },
     {
@@ -8594,11 +10781,11 @@
       "art": "item_topaz_robe",
       "name": "Topaz Robe",
       "type": "armor",
-      "price": 11290,
+      "price": 8470,
       "stats": {
-        "defense": 42,
-        "magic": 21,
-        "mp": 36
+        "defense": 32,
+        "magic": 16,
+        "mp": 27
       },
       "classes": [
         "mage"
@@ -8639,7 +10826,44 @@
           "saturation": 1.0,
           "value": 1.23
         }
-      ]
+      ],
+      "bareHead": true,
+      "headpiece": "topaz_hat"
+    },
+    {
+      "id": "topaz_hat",
+      "icon": "shield",
+      "art": "item_topaz_hat",
+      "name": "Topaz Hat",
+      "type": "head",
+      "headgear": "mage_robe",
+      "price": 2820,
+      "stats": {
+        "defense": 10,
+        "magic": 5,
+        "mp": 9
+      },
+      "classes": [
+        "mage"
+      ],
+      "level": 175,
+      "description": "A wizard's hat, to wear with the robe of the same name.",
+      "color": "#E0A830",
+      "accent": "#E8F0FF",
+      "tint": [
+        {
+          "hue": [
+            190,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 41,
+          "spread": 1,
+          "saturation": 1.0,
+          "value": 1.23
+        }
+      ],
+      "tier": "topaz"
     },
     {
       "id": "topaz_hide",
@@ -8647,11 +10871,11 @@
       "art": "item_topaz_hide",
       "name": "Topaz Hide Cloak",
       "type": "armor",
-      "price": 11290,
+      "price": 8470,
       "stats": {
-        "defense": 42,
-        "speed": 10,
-        "hp": 61
+        "defense": 32,
+        "speed": 8,
+        "hp": 46
       },
       "classes": [
         "tamer"
@@ -8674,6 +10898,30 @@
       ],
       "accent": "#E8D8B0",
       "color": "#E0A830",
+      "tier": "topaz",
+      "headpiece": "topaz_hide_hood"
+    },
+    {
+      "id": "topaz_hide_hood",
+      "icon": "shield",
+      "art": "item_topaz_hide_hood",
+      "name": "Topaz Hide Hood",
+      "type": "head",
+      "headgear": "hood",
+      "price": 2820,
+      "stats": {
+        "defense": 10,
+        "speed": 2,
+        "hp": 15
+      },
+      "classes": [
+        "tamer"
+      ],
+      "level": 175,
+      "description": "A hood, to wear with the cloak of the same name.",
+      "color": "#E0A830",
+      "accent": "#E8D8B0",
+      "pattern": "fur",
       "tier": "topaz"
     },
     {

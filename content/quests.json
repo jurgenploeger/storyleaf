@@ -620,7 +620,8 @@
         "gold": 1469,
         "exp": 4608,
         "items": [
-          "howlmaster_mantle"
+          "howlmaster_mantle",
+          "howlmaster_hood"
         ]
       },
       "minLevel": 32,
@@ -723,7 +724,8 @@
         "gold": 3819,
         "exp": 12772,
         "items": [
-          "puppeteers_coat"
+          "puppeteers_coat",
+          "puppeteers_cowl"
         ]
       },
       "minLevel": 56,
@@ -766,6 +768,7 @@
         "exp": 49375,
         "items": [
           "lioras_veil",
+          "lioras_hat",
           "hi_potion",
           "hi_potion"
         ]
@@ -790,6 +793,7 @@
         "exp": 18848,
         "items": [
           "briar_rose_robe",
+          "briar_rose_hat",
           "hi_potion",
           "hi_potion",
           "hi_ether"
@@ -879,7 +883,8 @@
         "gold": 25160,
         "exp": 90100,
         "items": [
-          "wavecrest_scale_mail"
+          "wavecrest_scale_mail",
+          "wavecrest_scale_helm"
         ]
       },
       "minLevel": 155,
@@ -944,6 +949,7 @@
         "exp": 124000,
         "items": [
           "emerald_dragon_mail",
+          "emerald_dragon_helm",
           "emerald_heart_ring"
         ]
       },
@@ -1062,7 +1068,9 @@
         "exp": 346500,
         "items": [
           "goldleaf_plate",
-          "goldleaf_robe"
+          "goldleaf_helm",
+          "goldleaf_robe",
+          "goldleaf_hat"
         ]
       }
     },
@@ -1215,6 +1223,7 @@
         "exp": 10500,
         "items": [
           "oxhide_mail",
+          "oxhide_helm",
           "hi_potion",
           "hi_potion"
         ]
@@ -1525,6 +1534,7 @@
         "exp": 64000,
         "items": [
           "starweave_robe",
+          "starweave_hat",
           "hi_potion",
           "hi_potion"
         ]
@@ -1690,6 +1700,7 @@
         "exp": 151390,
         "items": [
           "prismscale_mail",
+          "prismscale_helm",
           "star_seal"
         ]
       }
