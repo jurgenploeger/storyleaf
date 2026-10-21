@@ -903,7 +903,7 @@
           "art": "npc_barber",
           "x": 2,
           "y": -6,
-          "price": 100,
+          "price": 1000,
           "greeting": "A trim, a curl or a whole new colour? Sit yourself down and I'll have you looking like a hero in no time."
         },
         {
@@ -4631,7 +4631,7 @@
           "art": "npc_barber",
           "x": 3,
           "y": 4,
-          "price": 100,
+          "price": 1000,
           "greeting": "Every colour of the rainbow, right here in Prismhaven! Which one will your hair be today?"
         },
         {
@@ -7202,7 +7202,7 @@
           "art": "npc_barber",
           "x": -6,
           "y": -3,
-          "price": 100,
+          "price": 1000,
           "greeting": "Even a dwarf needs a good cut now and then. I'll leave your beard be, unless you want it dyed to match."
         },
         {
@@ -11990,7 +11990,7 @@
           "art": "npc_barber",
           "x": -3,
           "y": -4,
-          "price": 100,
+          "price": 1000,
           "greeting": "The wind off the hills tousles everyone's hair. Let me set yours just the way you like it."
         },
         {

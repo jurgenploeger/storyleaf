@@ -3035,14 +3035,14 @@ struct RulesTests {
     @Test func barbersChangeOnlyTheHair() throws {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         let before = session.data.hero.look ?? .standard
-        session.data.gold = 150
-        #expect(session.restyle(Look(hair: "blue", outfit: "red", skin: "deep", style: "bob"), price: 100))
+        session.data.gold = 1500
+        #expect(session.restyle(Look(hair: "blue", outfit: "red", skin: "deep", style: "bob"), price: 1000))
         let after = try #require(session.data.hero.look)
         #expect(after.hair == "blue" && after.style == "bob")
         #expect(after.outfit == before.outfit && after.skin == before.skin && after.gender == before.gender)
-        #expect(session.data.gold == 50)
-        #expect(!session.restyle(Look(hair: "ginger", outfit: "green", skin: "fair", style: "spiky"), price: 100))
-        #expect(session.data.hero.look?.hair == "blue" && session.data.gold == 50)
+        #expect(session.data.gold == 500)
+        #expect(!session.restyle(Look(hair: "ginger", outfit: "green", skin: "fair", style: "spiky"), price: 1000))
+        #expect(session.data.hero.look?.hair == "blue" && session.data.gold == 500)
         for town in Content.shared.maps where town.town != nil {
             #expect((town.npcs ?? []).contains { $0.role == .barber && ($0.price ?? -1) >= 0 }, "\(town.id) has no barber")
         }

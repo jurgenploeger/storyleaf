@@ -74,7 +74,7 @@ struct NPCDialogView: View {
                         case .boss: BossPanel(session: session, boss: npc, onFight: onFight)
                         case .smith: SmithPanel(session: session, reply: $reply, info: $info)
                         case .weaver: CapePanel(session: session, reply: $reply, info: $info)
-                        case .barber: BarberPanel(session: session, price: npc.price ?? 100, reply: $reply)
+                        case .barber: BarberPanel(session: session, price: npc.price ?? 1000, reply: $reply)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
