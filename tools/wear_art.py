@@ -272,6 +272,22 @@ def widen(t, by, keep_top=0):
     return out
 
 
+def mirrored_fuller_side(t):
+    """A cape from the front, the same either side of its wearer: the side of ANCHOR_X with more of
+    it, mirrored onto the other. Its reference held an arm across one side, so that panel stopped
+    short of the shoulder, its hem a row off the other's (playtesting 2026-10-21: "off-pixel,
+    showing a gap"). The middle is behind the body."""
+    xs = np.arange(F)
+    left = (t[:, xs < ANCHOR_X, 3] > 0.5).sum()
+    right = (t[:, xs > ANCHOR_X, 3] > 0.5).sum()
+    out = t.copy()
+    for x in range(F):
+        source = 2 * ANCHOR_X - x
+        if (x < ANCHOR_X) == (right >= left) and 0 <= source < F:
+            out[:, x] = t[:, source]
+    return out
+
+
 def holes(t):
     """The mask's eye holes: dark pixels with the mask on both sides and above, as (their top row,
     [the middle column of each])."""
@@ -374,6 +390,8 @@ def wear():
                 _, feet, shoulder, left, right = figure(sheet[row * F:(row + 1) * F, :F])
                 t = moved(t, SHOULDER_Y - shoulder, ANCHOR_X - (left + right) // 2)
                 t = widen(lengthened(t, CAPE_DROP - (feet - shoulder), SHOULDER_Y), CAPE_SPAN - (right - left + 1))
+                if facing == "down":
+                    t = mirrored_fuller_side(t)
             elif kind == "mask":
                 if facing == "down":
                     t = widen(t, MASK_WIDEN)

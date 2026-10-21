@@ -644,8 +644,15 @@ struct ContentTests {
                     }
                     #expect(outside, "map \(def.id): no footpath from the trail at \(cell(foot)) to the roads")
                 }
-                // You can walk up it anywhere, its steepest sides too (nothing grows on it yet).
-                #expect(hill.cells.allSatisfy { map.isWalkable($0) }, "map \(def.id): part of a hill you can't walk on")
+                // You can walk up a hill anywhere, its steepest sides too (nothing grows on it yet); a
+                // mountain with a trail of its own only by it (playtesting 2026-10-20), so some of it
+                // you can't. One whose trail didn't fit is open all over, as a hill is.
+                let mountain = hill.lobes.firstIndex { $0.front != nil }
+                if let mountain, hill.trails.contains(where: { $0.lobe == mountain }) {
+                    #expect(hill.cells.contains { !map.isWalkable($0) }, "map \(def.id): a mountain you can walk up anywhere")
+                } else {
+                    #expect(hill.cells.allSatisfy { map.isWalkable($0) }, "map \(def.id): part of a hill you can't walk on")
+                }
                 // Never so steep that ground facing away from you would lean out of sight: going up
                 // the map and right at once (up the screen), it never drops faster than the view.
                 for cell in hill.cells {
@@ -668,6 +675,15 @@ struct ContentTests {
         for def in content.maps where def.town?.terraces?.isEmpty == false {
             let map = Layouts.of(def)
             #expect(map.plateaus.contains { $0.height == WorldMap.terraceHeight }, "map \(def.id): terraces lie flat")
+            // No street shows up on a terrace's top, running over its walls (playtesting
+            // 2026-10-21, Meadowbrook): the top is paved, the rim grass.
+            for terrace in map.terraces {
+                for col in terrace.origin.col..<(terrace.origin.col + terrace.width) {
+                    for row in terrace.origin.row..<(terrace.origin.row + terrace.height) where map.contains(GridPoint(col: col, row: row)) {
+                        #expect(map.ground[row][col] != .path, "map \(def.id): a road on its terrace at \(col), \(row)")
+                    }
+                }
+            }
         }
     }
 
