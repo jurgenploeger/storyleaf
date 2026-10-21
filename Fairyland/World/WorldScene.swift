@@ -1656,6 +1656,7 @@ final class WorldScene: SKScene {
             case .shop: kind = .shop
             case .smith: kind = .smith
             case .weaver: kind = session.notice(for: npc.def.id) == nil ? .weaver : .questNew
+            case .barber: kind = .barber
             case .guild: kind = .guild
             case .boss: kind = .boss
             case .stairs: kind = Content.shared.leadsDown(npc.def) ? .stairsDown : .stairsUp

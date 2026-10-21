@@ -74,6 +74,7 @@ struct NPCDialogView: View {
                         case .boss: BossPanel(session: session, boss: npc, onFight: onFight)
                         case .smith: SmithPanel(session: session, reply: $reply, info: $info)
                         case .weaver: CapePanel(session: session, reply: $reply, info: $info)
+                        case .barber: BarberPanel(session: session, price: npc.price ?? 100, reply: $reply)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -200,6 +201,54 @@ private struct CapePanel: View {
                 .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
             } else {
                 Text(verbatim: "\(progress.have)/\(progress.need)").font(HUDStyle.mono(10)).foregroundStyle(HUDStyle.dim)
+            }
+        }
+    }
+}
+
+/// A barber (playtesting 2026-10-21: "You should be able to change your hair style and color
+/// somewhere in the game, at a barber in a town"): the hairstyles and hair colours you made your hero
+/// with, tried on the turning preview first (bare-headed, so a helmet doesn't hide the cut), and the
+/// fee (`NPCDef.price`) once you like it. Only the hair changes; the rest of the look stays.
+private struct BarberPanel: View {
+    let session: GameSession
+    let price: Int
+    @Binding var reply: String?
+    @State private var look: Look
+
+    init(session: GameSession, price: Int, reply: Binding<String?>) {
+        self.session = session
+        self.price = price
+        _reply = reply
+        _look = State(initialValue: session.data.hero.look ?? .standard)
+    }
+
+    var body: some View {
+        let race = session.heroRace
+        let current = session.data.hero.look ?? .standard
+        let changed = look.hair != current.hair || GameSession.style(for: look, race: race) != GameSession.style(for: current, race: race)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                TurntablePreview(look: look, race: race, size: 92)
+                VStack(alignment: .leading, spacing: 8) {
+                    StylePicker(look: $look, race: race)
+                    SwatchPicker(title: L("Hair"), presets: session.content.appearance.hair, selection: $look.hair)
+                }
+            }
+            HStack {
+                Label(L("{gold} gold", ["gold": session.data.gold]), icon: .coins)
+                    .font(HUDStyle.font(12))
+                    .foregroundStyle(HUDStyle.gold)
+                Spacer()
+                Button {
+                    reply = session.restyle(look, price: price)
+                        ? L("There! It suits you.")
+                        : L("That'll be {gold} gold, when you have it.", ["gold": price])
+                } label: {
+                    Label(L("New look for {gold} gold", ["gold": price]), icon: .palette)
+                }
+                .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
+                .disabled(!changed)
             }
         }
     }

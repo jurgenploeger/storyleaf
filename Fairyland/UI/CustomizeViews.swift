@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Name, gender, hairstyle, and hair, outfit and skin colours, with a turning live preview. Only
-/// when a hero is made: after that they keep their looks. Every look is open from the start.
+/// Name, gender, hairstyle, and hair, outfit and skin colours, with a turning live preview, when a
+/// hero is made. After that a barber in any town changes the hair (`BarberPanel`); the rest stays.
+/// Every look is open from the start.
 struct LookEditor: View {
     @Binding var name: String
     @Binding var look: Look
@@ -56,9 +57,10 @@ struct LookEditor: View {
 }
 
 /// The hero slowly turning on the spot, so you see the look from every side.
-private struct TurntablePreview: View {
+struct TurntablePreview: View {
     let look: Look
     let race: RaceDef
+    var size: CGFloat = 164
     private let order: [Direction] = [.down, .right, .up, .left]
 
     var body: some View {
@@ -69,10 +71,10 @@ private struct TurntablePreview: View {
                 .interpolation(.none)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 164, height: 164)
+                .frame(width: size, height: size)
                 .background(Circle().fill(.white.opacity(0.08)))
                 .overlay(alignment: .bottom) {
-                    Ellipse().fill(.black.opacity(0.2)).frame(width: 60, height: 12).offset(y: -8)
+                    Ellipse().fill(.black.opacity(0.2)).frame(width: size * 0.37, height: size * 0.07).offset(y: -size * 0.05)
                 }
         }
         .accessibilityLabel(L("Preview of your hero"))
@@ -103,7 +105,7 @@ private struct GenderPicker: View {
 
 /// Hairstyles, each shown on your hero as they look right now: the walk sheet's own hair first (a
 /// gender's ponytail or braids), then every other, the other gender's included.
-private struct StylePicker: View {
+struct StylePicker: View {
     @Binding var look: Look
     let race: RaceDef
 

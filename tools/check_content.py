@@ -499,7 +499,7 @@ for map_def in maps.values():
         check(art_id in art, f"map {map_def['id']} → unknown art {art_id}")
     for npc in map_def.get("npcs", []):
         check(npc["art"] in art, f"npc {npc['id']} → unknown art {npc['art']}")
-        check(npc["role"] in ("healer", "shop", "quests", "guild", "chest", "boss", "smith", "weaver", "stairs"), f"npc {npc['id']} → unknown role {npc['role']}")
+        check(npc["role"] in ("healer", "shop", "quests", "guild", "chest", "boss", "smith", "weaver", "stairs", "barber"), f"npc {npc['id']} → unknown role {npc['role']}")
         # A cave's stairs (`NPCRole.stairs`): one level down or up, to another level of the same cave,
         # and stairs there that lead back (you come out in front of them, `WorldMap.stairsArrival`).
         if npc["role"] == "stairs" or "to" in npc:
@@ -1172,6 +1172,15 @@ for item_id in sorted(hats_given | treats_given):
     check(item_id not in handed and "recipe" not in items.get(item_id, {}),
           f"item {item_id} → only its season gives it (no shop, quest, chest, smith or drop)")
 
+# A barber in every town (playtesting 2026-10-21): a new hairstyle and hair colour for their `price` in gold.
+for town in (m for m in load("content/maps.json")["maps"] if m.get("town")):
+    barbers = [n for n in town.get("npcs", []) if n["role"] == "barber"]
+    check(len(barbers) == 1, f"map {town['id']} → a town needs one barber (has {len(barbers)})")
+for npc in npcs.values():
+    if npc["role"] == "barber":
+        check(isinstance(npc.get("price"), int) and npc["price"] >= 0, f"npc {npc['id']} → a barber needs a price in gold")
+    else:
+        check("price" not in npc, f"npc {npc['id']} → only a barber has a price")
 weavers = [npc for npc in npcs.values() if npc["role"] == "weaver"]
 check(len(weavers) == (1 if prizes else 0), f"rewards prizes → one weaver to weave them (found {len(weavers)})")
 

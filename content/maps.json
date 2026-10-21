@@ -897,6 +897,16 @@
           "greeting": "Tired, dear? Rest here and your whole party will feel brand new."
         },
         {
+          "id": "barber",
+          "name": "Barber Wick",
+          "role": "barber",
+          "art": "npc_barber",
+          "x": 2,
+          "y": -6,
+          "price": 100,
+          "greeting": "A trim, a curl or a whole new colour? Sit yourself down and I'll have you looking like a hero in no time."
+        },
+        {
           "id": "shop",
           "name": "Trader Bo",
           "role": "shop",
@@ -4615,6 +4625,16 @@
           "greeting": "Welcome to Prismhaven! Rest a while, adventurer."
         },
         {
+          "id": "rainbow_barber",
+          "name": "Barber Juno",
+          "role": "barber",
+          "art": "npc_barber",
+          "x": 3,
+          "y": 4,
+          "price": 100,
+          "greeting": "Every colour of the rainbow, right here in Prismhaven! Which one will your hair be today?"
+        },
+        {
           "id": "rainbow_shop",
           "name": "Prismhaven Market",
           "role": "shop",
@@ -7174,6 +7194,16 @@
           "x": -6,
           "y": 3,
           "greeting": "Hammer-bruised? Sit down, I'll patch you up."
+        },
+        {
+          "id": "goldburg_barber",
+          "name": "Barber Thorne",
+          "role": "barber",
+          "art": "npc_barber",
+          "x": -6,
+          "y": -3,
+          "price": 100,
+          "greeting": "Even a dwarf needs a good cut now and then. I'll leave your beard be, unless you want it dyed to match."
         },
         {
           "id": "goldburg_shop",
@@ -11952,6 +11982,16 @@
           "x": -6,
           "y": 3,
           "greeting": "Welcome to Larkspur. Let me see those scrapes."
+        },
+        {
+          "id": "bluebird_barber",
+          "name": "Barber Fen",
+          "role": "barber",
+          "art": "npc_barber",
+          "x": -3,
+          "y": -4,
+          "price": 100,
+          "greeting": "The wind off the hills tousles everyone's hair. Let me set yours just the way you like it."
         },
         {
           "id": "bluebird_shop",
