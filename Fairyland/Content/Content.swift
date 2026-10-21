@@ -428,7 +428,8 @@ nonisolated enum NPCRole: String, Decodable, Sendable {
     /// `weaver`: weaves the status capes (rewards.json `prizes`) for those who've earned them.
     /// `stairs`: in a cave, the way down to the level under it, or back up (`NPCDef.to`), like
     /// RuneScape's ladders: tap them and you're there, by the stairs that lead back.
-    case healer, shop, quests, guild, chest, boss, smith, weaver, stairs
+    /// `barber`: a new hairstyle and hair colour, for a fee (`NPCDef.price`), in every town.
+    case healer, shop, quests, guild, chest, boss, smith, weaver, stairs, barber
 
     /// A thing rather than a person (a chest, stairs): it stands still, never looks round, and
     /// does what it does straight from the map, with no conversation.
@@ -452,6 +453,8 @@ nonisolated struct NPCDef: Decodable, Identifiable, Sendable {
     let greeting: String
     let stock: [String]?
     let classId: String?
+    /// A barber's fee in gold, for a new hairstyle or hair colour.
+    let price: Int?
     /// Chests: the item inside, and the quest that unlocks them.
     let gives: String?
     let quest: String?

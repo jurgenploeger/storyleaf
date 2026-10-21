@@ -17,6 +17,7 @@ settings_zh_hant | newgame,lang=zh-Hant,menu=settings | 8
 settings     | newgame,menu=settings,weather=clear | 8
 battle_ru    | newgame,lang=ru,map=sunny_meadow,battle | 15
 npc_ko       | newgame,lang=ko,npc=elder         | 8
+barber       | newgame,npc=barber,gold=2000      | 8
 quests_fr    | newgame,lang=fr,menu=quests       | 8
 meadowbrook  | newgame                           | 8
 sunny_meadow | newgame,map=sunny_meadow          | 15

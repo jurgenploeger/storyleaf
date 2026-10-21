@@ -80,7 +80,7 @@ final class GameSession {
     /// for you, or one to hand in), the healer, the shop, the smith, the weaver, a guild, a chest
     /// still to open, a boss still to beat, and a cave's stairs down or up.
     struct MinimapMark: Hashable {
-        enum Kind { case quest, questNew, questReady, healer, shop, smith, weaver, guild, chest, boss, stairsDown, stairsUp }
+        enum Kind { case quest, questNew, questReady, healer, shop, smith, weaver, barber, guild, chest, boss, stairsDown, stairsUp }
         let cell: GridPoint
         let kind: Kind
     }
@@ -454,6 +454,20 @@ final class GameSession {
         post(L("Rebirth is gone from Storyleaf: you're back at level {level}, where your rebirth began.", ["level": data.hero.level]), .reward)
         checkTitles(quietly: true)
         save()
+    }
+
+    /// A new hairstyle and hair colour at a barber (`NPCRole.barber`), for `price` gold: only the
+    /// hair changes, the rest of the look stays as the hero was made. False if the gold isn't there.
+    func restyle(_ look: Look, price: Int) -> Bool {
+        guard data.gold >= price else { return false }
+        var restyled = data.hero.look ?? .standard
+        restyled.hair = look.hair
+        restyled.style = look.style
+        data.gold -= price
+        data.hero.look = restyled
+        applyLook()
+        save()
+        return true
     }
 
     /// Since 0.7.59 an armour's helmet, hood or coif is a hat of its own (items.json `headpiece`),
