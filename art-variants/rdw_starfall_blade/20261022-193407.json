@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "starfall blade, a fantasy sword, forged in starlight. it leaves a trail of sparks, game item, lying diagonally, handle at the bottom left, tip pointing to the top right",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792697647,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 22.091,
+    "request_id": "cba7b25e-4242-4fa1-9091-1f1c2de94d97",
+    "outputs_retained_until": 1792784008
+  }
+}

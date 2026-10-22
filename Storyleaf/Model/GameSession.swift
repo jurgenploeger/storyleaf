@@ -385,7 +385,7 @@ final class GameSession {
         let festive = hat?.headgear == nil ? hat : nil
         let hood = hat?.headgear == "hood" ? hat : nil
         var gear = GearLook(wear: armor?.wear, accent: armor?.accent, pattern: armor?.pattern,
-                            cape: cape?.color, capeTrim: cape?.accent,
+                            cape: cape?.color, capeTrim: cape?.accent, cloak: armor?.wear == "cloak" ? armor?.color : nil,
                             gloves: worn.first { $0.type == .gloves }?.color, boots: worn.first { $0.type == .boots }?.color,
                             necklace: pendant?.color, chain: pendant?.accent,
                             hat: festive?.hat, hatColor: festive?.color, hatTrim: festive?.accent,
@@ -398,6 +398,7 @@ final class GameSession {
             gear.wear = nil
             gear.accent = nil
             gear.pattern = nil
+            gear.cloak = nil
             gear.body = "body_\(race.id)"
             rules = (Content.shared.appearance.skin.first { $0.id == look.skin }?.recolor ?? []) + (armor.tint ?? [])
         }

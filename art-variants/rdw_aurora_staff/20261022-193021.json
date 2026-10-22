@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "aurora staff, a magic staff, holds the northern lights, game item, lying diagonally, handle at the bottom left, tip pointing to the top right",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792697420,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 22.991,
+    "request_id": "b38362f7-fb84-4acc-b07c-e51bcee76616",
+    "outputs_retained_until": 1792783779
+  }
+}

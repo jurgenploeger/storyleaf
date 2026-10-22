@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "overlord axe, a double-bladed battle axe, grey-teal alloy axe head, iron handle, a gold gem, game item, lying diagonally, handle at the bottom left, tip pointing to the top right",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792695737,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 28.931,
+    "request_id": "f25031a7-cce5-44c7-97dd-58ef3cb70d4c",
+    "outputs_retained_until": 1792782083
+  }
+}

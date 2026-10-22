@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "a thunder god battle axe, big golden double-bladed axe head, dark blue handle with a blue gem, game item, lying diagonally, handle at the bottom left, tip pointing to the top right",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792691920,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 35.771,
+    "request_id": "1475c648-c5e2-47a8-9a2c-bf7458451900",
+    "outputs_retained_until": 1792778227
+  }
+}

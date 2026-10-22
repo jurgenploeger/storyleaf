@@ -10,6 +10,22 @@ enum GearArt {
     /// A weapon sprite for `item`, sized for a character `height` points tall.
     static func weapon(_ item: ItemDef, height: CGFloat) -> SKSpriteNode? {
         guard item.type == .weapon else { return nil }
+        let name = "held_\(item.id)"
+        if let side = posed(name + "_side") {
+            // Drawn for holding (tools/item_art.py held_pair), the grip in the middle; `pose` swaps in
+            // the front one facing you or away (held up nearly upright, a whip hanging).
+            let node = SKSpriteNode(texture: side.texture, size: sized(side.pixels, height: height))
+            node.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+            node.name = "weapon"
+            node.userData = NSMutableDictionary(dictionary: ["held": name])
+            if let hex = item.glow, let color = UIColor(hex: hex) {
+                let light = glow(color, at: .zero, height: height)
+                light.name = "glow"
+                light.position = CGPoint(x: side.tip.x / 48 * height, y: side.tip.y / 48 * height)
+                node.addChild(light)
+            }
+            return node
+        }
         if let hold = heldArt(item), let held = held(hold.art) {
             // The item's own art (drawn diagonally, grip bottom-left), so every weapon looks like itself.
             let size = CGSize(width: height * hold.scale, height: height * hold.scale)
@@ -34,21 +50,24 @@ enum GearArt {
 
     /// The same weapon as a picture for SwiftUI (the Character tab's hero): the image, its grip as a
     /// unit point (y up, like an anchor) and its size as a share of the character's height.
-    static func heldImage(_ item: ItemDef) -> (image: UIImage, grip: CGPoint, scale: CGFloat)? {
+    static func heldImage(_ item: ItemDef, facing: Direction = .right) -> (image: UIImage, grip: CGPoint, scale: CGFloat)? {
         guard item.type == .weapon else { return nil }
+        let name = "held_\(item.id)"
+        for art in [name + (upright(facing) ? "_front" : "_side"), name + "_side"] {
+            if let held = posed(art), let image = ArtLibrary.shared.artImage(art) {
+                return (image, CGPoint(x: 0.5, y: 0.5), held.pixels.width / 48)
+            }
+        }
         if let hold = heldArt(item), let held = held(hold.art), let image = ArtLibrary.shared.artImage(hold.art) {
             return (image, held.grip, hold.scale)
         }
         return (UIImage(cgImage: texture(for: item.icon ?? "sword").cgImage()), CGPoint(x: 0.2, y: 0.2), 0.42)
     }
 
-    /// The art a weapon is held as and its size as a share of the character's height: its own held
-    /// sprite (art/sprites/held_<id>.png, 24 pixels, drawn by tools/item_art.py) at half a 48-pixel
-    /// walk frame, one of its pixels to one of the sprite's; else its 32-pixel item art, shrunk.
+    /// The art a weapon without held sprites of its own (`posed`) is held as, and its size as a share
+    /// of the character's height: its 32-pixel item art, shrunk.
     private static func heldArt(_ item: ItemDef) -> (art: String, scale: CGFloat)? {
-        let own = "held_\(item.id)"
-        if let image = ArtLibrary.shared.artImage(own) { return (own, image.size.width / 48) }
-        return item.art.map { ($0, 0.48) }
+        item.art.map { ($0, 0.48) }
     }
 
     /// A magic weapon's light: a small soft glow at the tip that slowly breathes, and now and then
@@ -80,6 +99,57 @@ enum GearArt {
         ])
         spark.run(.repeatForever(drift))
         return group
+    }
+
+    /// Facing you or away, a weapon is held up nearly upright (`_front`), else as drawn (`_side`).
+    private static func upright(_ facing: Direction) -> Bool {
+        facing == .up || facing == .down
+    }
+
+    /// A held sprite's size for a character `height` points tall: one of its pixels to one of the
+    /// 48-pixel walk frame's.
+    private static func sized(_ pixels: CGSize, height: CGFloat) -> CGSize {
+        CGSize(width: pixels.width / 48 * height, height: pixels.height / 48 * height)
+    }
+
+    private static var posedCache: [String: (texture: SKTexture, pixels: CGSize, tip: CGPoint)?] = [:]
+
+    /// A weapon drawn for holding (art/sprites/held_<id>_side.png and _front.png, tools/item_art.py
+    /// held_pair), its grip in the middle: its texture, its size in pixels, and its tip (the solid
+    /// pixel farthest from the grip, where a magic weapon glows) in pixels from the middle, y up.
+    private static func posed(_ art: String) -> (texture: SKTexture, pixels: CGSize, tip: CGPoint)? {
+        if let cached = posedCache[art] { return cached }
+        guard let image = ArtLibrary.shared.artImage(art)?.cgImage else {
+            posedCache.updateValue(nil, forKey: art)
+            return nil
+        }
+        let width = image.width, height = image.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let drawn: Bool = pixels.withUnsafeMutableBytes { buffer in
+            guard let context = CGContext(data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+                                          space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        // Rows run top to bottom.
+        var tip = CGPoint.zero
+        if drawn {
+            var farthest = -1.0
+            for y in 0..<height {
+                for x in 0..<width where pixels[(y * width + x) * 4 + 3] > 200 {
+                    let dx = Double(x) + 0.5 - Double(width) / 2, dy = Double(height) / 2 - (Double(y) + 0.5)
+                    if dx * dx + dy * dy > farthest {
+                        farthest = dx * dx + dy * dy
+                        tip = CGPoint(x: dx, y: dy)
+                    }
+                }
+            }
+        }
+        let texture = SKTexture(cgImage: image)
+        texture.filteringMode = .nearest
+        let found = (texture: texture, pixels: CGSize(width: width, height: height), tip: tip)
+        posedCache[art] = found
+        return found
     }
 
     private static var heldCache: [String: (texture: SKTexture, grip: CGPoint, pixels: CGSize)] = [:]
@@ -124,14 +194,27 @@ enum GearArt {
     }
 
     /// Holds the weapon in the hand for the way the character faces (`hand(in:facing:)`), in the
-    /// frame the sprite shows: just behind the body, so the hand closes over the grip and the rest
-    /// of the weapon shows past it, rather than hanging beside it. Pointing up and away from the
-    /// body, mirrored facing away or left. `frame`: a frame other than the one showing (the walk's
-    /// next, `Walker`).
+    /// frame the sprite shows: in front of the body or behind it, as the hand holding it is nearer
+    /// you or farther.
+    /// Pointing up and away from the body walking left or right; facing you or away its `_front`
+    /// sprite, held up nearly upright (a whip hanging); mirrored facing away or left. `frame`: a frame
+    /// other than the one showing (the walk's next, `Walker`).
     static func pose(_ weapon: SKSpriteNode, facing: Direction, height: CGFloat, frame: SKTexture? = nil) {
+        if let name = weapon.userData?["held"] as? String,
+           let held = posed(name + (upright(facing) ? "_front" : "_side")) ?? posed(name + "_side") {
+            // At the side facing you or away, as drawn walking left or right.
+            weapon.xScale = 1
+            weapon.texture = held.texture
+            weapon.size = sized(held.pixels, height: height)
+            weapon.childNode(withName: "glow")?.position = CGPoint(x: held.tip.x / 48 * height, y: held.tip.y / 48 * height)
+        }
         weapon.position = grip(on: weapon.parent as? SKSpriteNode, frame: frame, facing: facing, height: height)
+        let held = weapon.userData?["held"] != nil
+        // In one hand, the same one every way (on your right facing you): in front of the body where
+        // that hand is nearer you (facing you, walking right), behind it where it's farther (facing
+        // away, walking left), mirrored on the far side.
         weapon.xScale = facing == .up || facing == .left ? -1 : 1
-        weapon.zPosition = -1
+        weapon.zPosition = held && (facing == .down || facing == .right) ? 1 : -1
     }
 
     /// Where a weapon's grip goes on `body` (a walking sprite) showing `frame` (else its own): its
@@ -157,8 +240,8 @@ enum GearArt {
     /// from the top).
     private static func hand(top: CGFloat, bottom: CGFloat, facing: Direction) -> CGPoint {
         let (across, down): (CGFloat, CGFloat) = switch facing {
-        case .down: (3, 0.58)
-        case .up: (-9, 0.55)
+        case .down: (5, 0.6)   // the hand at the body's side, where a held sprite's grip goes
+        case .up: (-8, 0.57)   // the same hand from behind
         case .right: (3, 0.56)
         case .left: (-4, 0.56)
         }

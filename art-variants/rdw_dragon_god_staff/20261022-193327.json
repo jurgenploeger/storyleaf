@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "wyrmking staff, a magic staff, the staff of the wyrmking himself, game item, lying diagonally, handle at the bottom left, tip pointing to the top right",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792697605,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 22.271,
+    "request_id": "e90673b2-d046-4451-a8cf-f6b917e4ec3f",
+    "outputs_retained_until": 1792783947
+  }
+}

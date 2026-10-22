@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "alloy shortsword, a fantasy sword with a broad grey-teal alloy blade, a grey-teal alloy crossguard and a brown leather grip, game item, lying diagonally, handle at the bottom left, tip pointing to the top right",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792694861,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 32.711,
+    "request_id": "1643cdfe-4fa0-49fc-9eca-e509191fb54d",
+    "outputs_retained_until": 1792781228
+  }
+}

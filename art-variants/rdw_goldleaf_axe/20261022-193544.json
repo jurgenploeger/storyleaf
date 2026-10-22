@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "goldleaf axe, a fantasy axe, an ivory crescent on a handle of heart-oak. it cuts as clean as the first frost, game item, lying diagonally, handle at the bottom left, tip pointing to the top right",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792697742,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 21.551,
+    "request_id": "54b0a5e4-69aa-42b3-81ca-6d694cc3a251",
+    "outputs_retained_until": 1792784115
+  }
+}

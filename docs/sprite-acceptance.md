@@ -86,7 +86,16 @@ one body and wrong on another isn't done.
 - Its shadows take the cape's colour: no patch of the reference's red left on a blue cape.
 - Its trim along the hem, its emblem on the back, its clasp at the collar from the front.
 - From behind it hangs over the body, under the hair; from the front and side it shows past the outline.
-- Stretched to each body's height and shoulders.
+- Stretched to each body's height and shoulders, resized evenly (`spread`: its repeated rows and columns spread
+  across it, its edges and hem kept), so it's the same shape on every body. Stretched through its middle
+  (2026-10-22) it turned boxy on the bodies it grew most on, the line down its back a solid block.
+- Its width and middle are the same in every frame of a walk (the widest the body gets, round its middle across
+  the frames), and its shoulders are measured on the plain bald body. Measured frame by frame (until 2026-10-22),
+  an arm swung out at the shoulders moved and narrowed it, so from the front one panel slid behind the body and a
+  gap showed where the arm had been; measured with the hair, tall hair lifted its top and the clasp onto the face.
+- A hide cloak (an armour with `wear` cloak and no sheet of its own) is the same cape, in its colour, its fur
+  colour along the hem, no emblem (`GearLook.cloak`). Drawn as a plain trapezoid of its own (until 2026-10-22)
+  it looked blocky beside the capes.
 - No gap between it and the body in any frame (playtesting 2026-10-21): every walk frame, every
   direction, every body under every armour. From the front it's one cloth behind the body, its lining
   showing between an arm swung out and the body; from the side it meets the back, and nothing hangs
@@ -102,9 +111,17 @@ one body and wrong on another isn't done.
 ### Held weapons and item icons
 
 - Item icons are 32 × 32, drawn in `tools/item_art.py`, outlined.
-- A weapon is held from its own 24 × 24 sprite (`held_<id>.png`), one of its pixels to one of the hero's,
-  shrunk offline before its outline. Never scale pixel art by a fraction in the game: at 0.72 nearest-neighbour
-  dropped every third row and column and every weapon looked ragged.
+- A weapon is held from its own sprites (`held_<id>_side.png`, `held_<id>_front.png`), its grip in the middle
+  of a 64-pixel canvas, one of its pixels to one of the hero's, shrunk and turned offline before its outline.
+  Never scale or turn pixel art by a fraction in the game: at 0.72 nearest-neighbour dropped every third row and
+  column and every weapon looked ragged.
+- It's in one hand, the same one every way (on your right facing you), so it follows basic physics: in front
+  of the body (and the face) where that hand is nearer you, facing you and walking right; behind it where it's
+  farther, facing away and walking left. Walking left or right it points up and away; facing you or away it's
+  held up nearly upright. Learned 2026-10-22: held sideways from the front, as on the side, looked wrong; moved
+  off to the side to keep the face clear, it looked stood behind the hero, not held.
+- A whip's lash hangs down from a short handle and trails on the ground by the feet (2026-10-22: held up like a
+  sword, a whip read as a stick). Its icon keeps the coil.
 
 ## How to check
 
@@ -113,6 +130,7 @@ python3 tools/wear_art.py --sheet out.png           # the armour sheets and piec
 python3 tools/gear_preview.py --wear out.png <ids>  # items (joined by +) on every body under every armour
 python3 tools/gear_preview.py --hats out.png        # every festive hat
 python3 tools/gear_preview.py --capes out.png       # every status cape
+python3 tools/gear_preview.py --weapons out.png <ids> [held sprite]  # weapons in hand on every body
 python3 tools/gear_preview.py out.png               # every armour on every race
 python3 tools/check_content.py
 ```
@@ -142,6 +160,20 @@ python3 tools/check_content.py
   mail darker and bluer). Always normalise, never trust it to match.
 - It draws more than asked: the scarf came as a muffler up over the mouth, the cape partly hidden behind the
   wearer's arm. Cut to what the game needs.
+- Weapons (pilot 2026-10-22, 8 weapons, $1.44): `rd_plus__topdown_item` at 64 × 64 costs what 32 does
+  ($0.06 an image), and "lying diagonally, handle at the bottom left, tip pointing to the top right" gives
+  the pose the game holds (GearArt.held) in most variants. `tools/weapon_art.py` shrinks a picked one to the
+  icon and the held sprite at the drawn weapons' size. Swords, axes and staffs came out well; a plain
+  hatchet came out a hammer, and no whip coiled (a stick, or a scaled blade). Held at 24 pixels most of
+  RD's shading is gone, and a thin blade loses its crossguard: the gain is mostly on the 32-pixel icon.
+  Placement needs nothing new: the held sprite goes on the hand measured on each frame, so it fits every
+  body, direction, armour and cape alike (`gear_preview.py --weapons`).
+- Weapons (2026-10-22, the rest: 76 weapons, 3 variants each, $13.68): 78 of the 107 weapons are drawn by
+  Retro Diffusion now (`weapon_art.PICKED`). About one variant in four came out upright or upside down, turned
+  to the diagonal (`turn`); a plain hatchet still came out a hammer in two of three. Three whose look RD
+  missed (the Crystal Wand's cyan crystal, the Ghost Staff's ghost, the Wyrmking Staff's red and gold) came
+  right with a sharper prompt naming each part and its colour ($0.54): 81 in all. Only the whips are drawn in
+  code (none coiled, and held they hang, `hanging_whip`). A detail as small as a ghost's eyes is lost held.
 - Inpainting walk sheets (`rd.py edit`) is a dead end: faces come out muddy at about 10 px wide, armour too
   bulky, and side and back views don't match the pose.
 - A sheet is per race, not per gender: both genders wear the same armour sheet, over the hero's own hair from

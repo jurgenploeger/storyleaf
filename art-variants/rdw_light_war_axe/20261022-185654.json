@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "light war axe, a double-bladed battle axe, copper axe head, reddish wood handle, game item, lying diagonally, handle at the bottom left, tip pointing to the top right",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792695413,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 30.371,
+    "request_id": "5a67510d-7bea-4b56-a672-cdb5c7f9dc27",
+    "outputs_retained_until": 1792781779
+  }
+}

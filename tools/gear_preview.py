@@ -7,6 +7,7 @@ the same paper-doll layers the game stacks (tools/hero_layers.py), to tune it wi
     python3 tools/gear_preview.py --capes /tmp/capes.png   # every status cape, over some armours
     python3 tools/gear_preview.py --trinkets /tmp/t.png    # gloves, boots and necklaces on every body
     python3 tools/gear_preview.py --hats /tmp/h.png        # every festive hat on every body
+    python3 tools/gear_preview.py --weapons /tmp/w.png steel_sword+oak_staff [dir]   # weapons in hand on every body
 
 Needs pillow + numpy.
 """
@@ -255,41 +256,7 @@ def apply(base, recolored, wear=None, accent=None, pattern=None):
                     put(x, hem_bottom, dark)
                     put(x, hem_bottom - 1, acc)
             elif wear == 'cloak':
-                top, bot = y0, yb - 3
-                cx = (x0 + x1) // 2
-                if facing == 'up':
-                    # From behind: the cape covers the back, widening toward the hem.
-                    for y in range(top, bot + 1):
-                        w = (y - top) // 3
-                        for x in range(x0 - w, x1 + w + 1):
-                            edge = x in (x0 - w, x1 + w) or y == bot
-                            c = outline if edge else (light if x == cx - 2 else mid)
-                            if pattern == 'fur' and not edge and y >= bot - 2:
-                                c = fur(x, y)
-                            put(x, y, c)
-                else:
-                    # From the front or side: the cape shows just outside the body's outline.
-                    for y in range(top + 1, bot + 1):
-                        filled = np.nonzero(a[y])[0]
-                        if len(filled) == 0:
-                            continue
-                        left, right = filled.min(), filled.max()
-                        flare = (y - top) // 5
-                        if facing == 'down':
-                            spots = [(left - 1 - flare, True), (right + 1 + flare, True)]
-                            spots += [(left - flare, False)] if flare else []
-                            spots += [(right + flare, False)] if flare else []
-                        elif facing == 'right':
-                            spots = [(left - 1 - flare, True)] + [(left - k, False) for k in range(0, flare + 1)]
-                        else:
-                            spots = [(right + 1 + flare, True)] + [(right + k, False) for k in range(0, flare + 1)]
-                        for x, outer in spots:
-                            c = outline if outer else mid
-                            if pattern == 'fur' and not outer and y >= bot - 2:
-                                c = fur(x, y)
-                            put(x, y, c, only_empty=True)
-                    if facing == 'down':
-                        put(cx, top, acc); put(cx - 1, top, acc); put(cx, top + 1, shade(acc, 0.7))
+                pass   # hung from the shoulders like a status cape, in `dressed` (`cape`, GearLook.cloak)
             # A helmet or hood (hero_layers.py) comes in magenta: soft magenta takes the armour's
             # colour, keeping its shade, and full magenta the trim.
             for y in range(FRAME):
@@ -453,6 +420,46 @@ def lengthened(t, by, start):
     for i, row in enumerate(body):
         if start + i < FRAME:
             out[start + i] = row
+    return out
+
+
+def spread(n, by):
+    """Which of `n` rows or columns each of `n + by` comes from, the repeated (or dropped) ones spread
+    evenly, the first and last kept (GearOverlay.spread): a cape resized so, not through its middle,
+    keeps its outline on every body (playtesting 2026-10-22: stretched through the middle it turned
+    boxy, its back's middle line a block)."""
+    m = n + by
+    if m <= 1 or n <= 1:
+        return [0] * max(m, 0)
+    return [int(i * (n - 1) / (m - 1) + 0.5) for i in range(m)]
+
+
+def scaled_down(t, by, start):
+    """`lengthened`, the rows from `start` down resized evenly (`spread`), for a cape."""
+    rows = [y for y in range(start, FRAME) if (t[y, :, 3] > 0.5).any()]
+    if by == 0 or not rows:
+        return t
+    body = [t[y] for y in range(start, max(rows) + 1)]
+    out = t.copy()
+    out[start:] = 0
+    for i, k in enumerate(spread(len(body), by)):
+        if start + i < FRAME:
+            out[start + i] = body[k]
+    return out
+
+
+def scaled_across(t, by):
+    """`widen`, its columns resized evenly (`spread`), centred where they were, for a cape."""
+    cols = [x for x in range(FRAME) if (t[:, x, 3] > 0.5).any()]
+    if by == 0 or not cols:
+        return t
+    l, r = min(cols), max(cols)
+    picks = spread(r - l + 1, by)
+    out = np.zeros_like(t)
+    x0 = half_up((l + r) / 2 - (len(picks) - 1) / 2)
+    for i, k in enumerate(picks):
+        if 0 <= x0 + i < FRAME:
+            out[:, x0 + i] = t[:, l + k]
     return out
 
 
@@ -623,6 +630,8 @@ def scarf(body, out, colour, base=None):
         piece = painted(sheet[row * FRAME:(row + 1) * FRAME], colour)
         if bbox(piece) is None:
             continue
+        if facing == 'down':
+            piece = symmetric(piece)
         for c in range(body.shape[1] // FRAME):
             oy, ox = row * FRAME, c * FRAME
             f = out[oy:oy + FRAME, ox:ox + FRAME]
@@ -825,13 +834,30 @@ def enclosed(clear):
     return clear & ~reached
 
 
-def cape(base, out, colour, trim):
+def symmetric(t):
+    """A piece the same on both sides of ANCHOR_X, each side taking what the other has where it has
+    nothing (GearOverlay's Piece.symmetric): from the front, Retro Diffusion drew one panel of the cape
+    shorter, hidden by its wearer's arm, and a gap showed where the hero's arm had been as it swung
+    (playtesting 2026-10-22)."""
+    out = t.copy()
+    for x in range(FRAME):
+        m = 2 * ANCHOR_X - x
+        if 0 <= m < FRAME:
+            take = (out[:, x, 3] <= 0.5) & (t[:, m, 3] > 0.5)
+            out[take, x] = t[take, m]
+    return out
+
+
+def cape(base, out, colour, trim, emblem=True, skeleton=None):
     """A status cape over whatever is worn (GearOverlay.drape): the cape Retro Diffusion drew
     (art/sprites/wear_cape.png, cut out by tools/wear_art.py) in its colour, stretched to the body
     (its shoulders 0.38 of the way from the top of the head to the feet, as wide as it is there, and
     as long down to the feet), its trim along the hem. From behind it hangs over the body, the hair
     falling over its top, a diamond emblem on the back; from the front and the side it shows past the
-    body's outline, a clasp at the collar."""
+    body's outline, a clasp at the collar. Resized evenly (`spread`), so it's the same shape on every
+    body. A hide cloak hangs the same way, in its colour, its fur along the hem, no emblem. The body is
+    measured on `skeleton` (the plain bald body, GearLook.body) where there is one, so tall hair doesn't
+    lift the shoulders (and the clasp onto the face). From the front its two panels match (`symmetric`)."""
     acc = hexc(trim)
     outline = np.array([0.16, 0.12, 0.18])
     sheet = piece_sheet("cape")
@@ -849,19 +875,25 @@ def cape(base, out, colour, trim):
                     piece[ys.max() + 1, x, 3] = 1
         if bbox(piece) is None:
             continue
+        measured = skeleton if skeleton is not None else base
+        figs = [figure(measured[row * FRAME:(row + 1) * FRAME, c * FRAME:(c + 1) * FRAME]) for c in range(base.shape[1] // FRAME)]
+        if any(fig is None for fig in figs):
+            continue
+        # As wide as the body gets across the walk this way, round its middle across them: measured
+        # frame by frame, an arm swung out at the shoulders moved and narrowed the cape, and a gap
+        # showed where the arm had been (playtesting 2026-10-22).
+        span = (min(fig[3] for fig in figs), max(fig[4] for fig in figs))
         for c in range(base.shape[1] // FRAME):
             oy, ox = row * FRAME, c * FRAME
             f = out[oy:oy + FRAME, ox:ox + FRAME]
             b = base[oy:oy + FRAME, ox:ox + FRAME]
             a = b[..., 3] > 0.5
-            fig = figure(b)
-            if fig is None:
-                continue
-            top, feet, shoulder, left, right = fig
+            top, feet, shoulder, _, _ = figs[c]
+            left, right = span
             cx = (left + right) // 2
             # From the front and the side a little wider than the body, so it shows past its outline.
             flare = {'up': 0, 'down': 4}.get(facing, 2)
-            t = widen(lengthened(piece, (feet - shoulder) - CAPE_DROP, SHOULDER_Y), (right - left + 1) - CAPE_SPAN + flare)
+            t = scaled_across(scaled_down(piece, (feet - shoulder) - CAPE_DROP, SHOULDER_Y), (right - left + 1) - CAPE_SPAN + flare)
             dy, dx = shoulder - SHOULDER_Y, cx - ANCHOR_X
 
             def put(x, y, cc, only_empty=False):
@@ -883,12 +915,12 @@ def cape(base, out, colour, trim):
                     put(x + dx, y + dy, t[y, x, :3], only_empty=True)
             if facing != 'up':
                 lining(t, dx, dy, shoulder, a, f, put, hexc(colour), acc, outline, facing == 'down')
-            if facing == 'up':
-                emblem = shoulder + 6
+            if facing == 'up' and emblem:
+                emblem_y = shoulder + 6
                 for ey in range(-2, 3):
                     for ex in range(abs(ey) - 2, 3 - abs(ey)):
-                        if not hair(cx + ex, emblem + ey):
-                            put(cx + ex, emblem + ey, acc if abs(ex) + abs(ey) < 2 else shade(acc, 0.7))
+                        if not hair(cx + ex, emblem_y + ey):
+                            put(cx + ex, emblem_y + ey, acc if abs(ex) + abs(ey) < 2 else shade(acc, 0.7))
             elif facing == 'down':
                 put(cx, shoulder, acc); put(cx - 1, shoulder, acc); put(cx, shoulder + 1, shade(acc, 0.7))
     return out
@@ -1079,8 +1111,11 @@ def dressed(race, body, style, armour=None, worn=(), skin=None):
     plain = np.asarray(load(skeleton)).astype(float) / 255
     out = trinkets(plain, out, gloves=pieces.get("gloves", {}).get("color"),
                    boots=pieces.get("boots", {}).get("color"), necklace=necklace.get("color"), chain=necklace.get("accent"))
+    if not sheet and (armour or {}).get("wear") == "cloak":
+        # A hide cloak: the cape in its colour, its fur along the hem (GearLook.cloak).
+        out = cape(base, out, armour["color"], armour.get("accent") or "#F2C740", emblem=False, skeleton=plain)
     if "cape" in pieces:
-        out = cape(base, out, pieces["cape"]["color"], pieces["cape"]["accent"])
+        out = cape(base, out, pieces["cape"]["color"], pieces["cape"]["accent"], skeleton=plain)
     if wrap:
         out = scarf(plain, out, wrap["color"], base)
     if "head" in pieces:
@@ -1172,9 +1207,73 @@ def hat_sheet(out, hats=None):
     print(f"wrote {out}: {', '.join(i['id'] for i in worn)}")
 
 
+HAND = {"down": (5, 0.6), "up": (-8, 0.57), "right": (3, 0.56), "left": (-4, 0.56)}   # GearArt.hand
+
+
+def holding(frame, weapon, facing):
+    """A 48-pixel walk frame with `weapon` in hand, as GearArt.pose places it: the held sprite for
+    the way it faces (art/sprites/held_<id>_side.png, or _front.png facing you or away; its grip in
+    its middle) on the hand, beside the body and part way down the figure as drawn in this frame,
+    in front of the body where the hand is nearer you (facing you, walking right), else behind it,
+    mirrored facing away or left."""
+    from PIL import Image
+    rows = np.where((frame[..., 3] > 127 / 255).any(axis=1))[0]
+    top, bottom = (rows[0], rows[-1] + 1) if len(rows) else (0.27 * FRAME, 0.94 * FRAME)
+    across, down = HAND[facing]
+    hx, hy = FRAME / 2 + across, top + down * (bottom - top)
+    if facing in ("up", "left"):   # the far side: mirrored
+        weapon = weapon[:, ::-1]
+    h, w = weapon.shape[:2]
+    canvas = Image.new("RGBA", (FRAME * 2, FRAME * 2), (0, 0, 0, 0))   # room for a blade past the frame
+    pad = FRAME // 2
+    held = Image.fromarray((weapon * 255).round().astype(np.uint8), "RGBA")
+    spot = (int(round(pad + hx - w / 2)), int(round(pad + hy - h / 2)))
+    body = Image.fromarray((np.clip(frame, 0, 1) * 255).round().astype(np.uint8), "RGBA")
+    # In one hand, the same one every way: in front of the body where that hand is nearer you (facing
+    # you, walking right), behind it where it's farther.
+    layers = [(held, spot), (body, (pad, pad))]
+    if facing in ("down", "right"):
+        layers.reverse()
+    for layer, at in layers:
+        canvas.alpha_composite(layer, at)
+    return canvas
+
+
+def weapon_sheet(out, weapon_ids, folder=None):
+    """Each weapon in `weapon_ids` (a row each) held by every body (each race, each gender) facing
+    down, right, up and left, through every armour cut and sheet and with a cape now and then, in
+    every skin tone in turn: GearArt.pose's placement, to check weapon art before it ships.
+    `folder`: where its held_<id>_side/_front.png are, if not art/sprites (a candidate)."""
+    import json
+    import pathlib
+    from PIL import Image
+    root = pathlib.Path(__file__).resolve().parent.parent
+    folder = pathlib.Path(folder) if folder else root / "art" / "sprites"
+    items = {i["id"]: i for i in json.load(open(root / "content" / "items.json"))["items"]}
+    capes = [i for i in items.values() if i["type"] == "cape"]
+    zoom, size = 2, FRAME * 2
+    sheet = Image.new("RGB", (len(BODIES) * 4 * size * zoom + (len(BODIES) - 1) * 8, len(weapon_ids) * size * zoom), (80, 130, 80))
+    for r, wid in enumerate(weapon_ids):
+        held = {view: np.asarray(Image.open(folder / f"held_{wid}_{view}.png").convert("RGBA")).astype(float) / 255
+                for view in ("side", "front")}
+        for k, (race, body, style) in enumerate(BODIES):
+            outfit = items.get(OUTFITS[(r + k) % len(OUTFITS)])
+            worn = [capes[(r + k) % len(capes)]] if (r + k) % 3 == 0 else []
+            img = dressed(race, body, style, outfit, worn, skin=SKINS[(r + k) % len(SKINS)])
+            for c, (row, facing) in enumerate(((2, "down"), (1, "right"), (0, "up"), (3, "left"))):
+                weapon = held["front" if facing in ("up", "down") else "side"]
+                shown = holding(img[row * FRAME:(row + 1) * FRAME, :FRAME], weapon, facing)
+                shown = shown.resize((size * zoom, size * zoom), Image.NEAREST)
+                sheet.paste(shown, ((k * 4 + c) * size * zoom + k * 8, r * size * zoom), shown)
+    sheet.save(out)
+    print(f"wrote {out}: {', '.join(weapon_ids)} on every body")
+
+
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) > 2 and sys.argv[1] == "--capes":
+    if len(sys.argv) > 3 and sys.argv[1] == "--weapons":
+        weapon_sheet(sys.argv[2], sys.argv[3].split("+"), sys.argv[4] if len(sys.argv) > 4 else None)
+    elif len(sys.argv) > 2 and sys.argv[1] == "--capes":
         capes(sys.argv[2])
     elif len(sys.argv) > 2 and sys.argv[1] == "--trinkets":
         trinket_sheet(sys.argv[2])

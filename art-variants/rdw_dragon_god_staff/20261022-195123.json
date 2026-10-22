@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "wyrmking staff, a legendary magic staff with a dark crimson red shaft wrapped in gold bands, topped with a glowing orange fire orb held in four curved golden dragon claws, game item, lying diagonally, handle at the bottom left, tip pointing to the top right",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792698682,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 20.831,
+    "request_id": "bc6f0d09-5145-4a8d-be10-ef6812865145",
+    "outputs_retained_until": 1792785050
+  }
+}

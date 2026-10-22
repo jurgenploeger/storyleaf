@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "silver sword, a fantasy sword with a silver blade, a silver crossguard and a navy blue grip, game item, lying diagonally, handle at the bottom left, tip pointing to the top right",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792694612,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 33.791,
+    "request_id": "6de9f91c-513e-4fc0-b0f1-8a83de0244df",
+    "outputs_retained_until": 1792780974
+  }
+}
