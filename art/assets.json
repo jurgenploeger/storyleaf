@@ -9681,19 +9681,12 @@
     {
       "id": "item_golden_ball_charm",
       "kind": "item",
-      "derive": {
-        "from": "item_ruby_ring",
-        "recolor": [
-          {
-            "hue": [
-              340,
-              10
-            ],
-            "minSaturation": 0.2,
-            "to": 50,
-            "value": 1.25
-          }
-        ]
+      "request": {
+        "prompt": "small shining golden ball charm with a band and a ruby, on a small loop, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
     {
@@ -9718,20 +9711,12 @@
     {
       "id": "item_dragon_tooth_charm",
       "kind": "item",
-      "derive": {
-        "from": "item_star_charm",
-        "recolor": [
-          {
-            "hue": [
-              20,
-              60
-            ],
-            "minSaturation": 0.2,
-            "to": 38,
-            "saturation": 0.25,
-            "value": 1.25
-          }
-        ]
+      "request": {
+        "prompt": "curved ivory dragon fang charm capped in gold with a ruby, on a small loop, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
     {
@@ -9765,21 +9750,12 @@
     {
       "id": "item_persimmon_charm",
       "kind": "item",
-      "derive": {
-        "from": "item_star_charm",
-        "recolor": [
-          {
-            "hue": [
-              20,
-              60
-            ],
-            "minSaturation": 0.2,
-            "to": 22,
-            "spread": 0.4,
-            "saturation": 1.2,
-            "value": 1.05
-          }
-        ]
+      "request": {
+        "prompt": "small orange persimmon charm with a green four-leaf cap, on a small loop, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
     {
@@ -9802,21 +9778,12 @@
     {
       "id": "item_gumdrop_star_charm",
       "kind": "item",
-      "derive": {
-        "from": "item_star_charm",
-        "recolor": [
-          {
-            "hue": [
-              15,
-              60
-            ],
-            "minSaturation": 0.2,
-            "to": 330,
-            "spread": 0.4,
-            "saturation": 0.9,
-            "value": 1.1
-          }
-        ]
+      "request": {
+        "prompt": "plump pink star shaped gumdrop charm rolled in sugar, on a small loop, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
     {
