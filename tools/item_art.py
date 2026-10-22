@@ -676,6 +676,24 @@ def draw_persimmon_charm(c):
     c.set(27, 12, WHITE); c.set(4, 25, WHITE)
 
 
+def draw_gumdrop_star_charm(c):
+    """A star-shaped gumdrop hanging from a loop like the other charms: plump pink jelly, its points
+    soft and round, rolled in sugar that glitters, lit from the top left."""
+    jelly = [hexc("c0306e"), hexc("ff7ab0"), hexc("ffd0e4")]                  # as CANDY, for the drop
+    c.ring(16, 3.5, 2.8, 1.5, GOLD[1])                                        # the loop
+    c.rect(15, 6, 17, 9, GOLD[0])                                             # the bail
+    star_shape(c, 16, 19.5, 11.5, jelly[1], inner=0.6)                        # plump points
+    for k in range(5):                                                        # rounded tips
+        a = -math.pi / 2 + k * 2 * math.pi / 5
+        c.disc(16 + 8.6 * math.cos(a), 19.5 + 8.6 * math.sin(a), 2.6, jelly[1])
+    c.shade(lambda x, y, col: col == jelly[1] and (x - 16) + (y - 19.5) > 4, jelly[0])
+    c.ellipse(13, 15.5, 3.5, 2.2, jelly[2]); c.set(12, 15, WHITE)             # the jelly's shine
+    for (x, y) in ((19, 14), (21, 19), (10, 21), (14, 24), (18, 23), (23, 24), (16, 18), (8, 17)):
+        if c.get(x, y) in jelly:                                              # sugar crystals
+            c.set(x, y, WHITE)
+    c.set(26, 9, WHITE); c.set(5, 11, WHITE)
+
+
 def draw_power_band(c):
     band = [hexc("8a1a2a"), hexc("d83a4a"), hexc("ff8a8a")]
     c.ring(16, 16, 11, 6.5, band[1], ry_scale=0.62)
@@ -2865,6 +2883,7 @@ PROMPTS = {  # for a later Retro Diffusion upgrade (python3 tools/rd.py generate
     "ruby_ring": "gold ring with a red ruby",
     "novice_ring": "simple copper ring with a small blue stone",
     "star_charm": "gold star charm hanging from a small loop",
+    "gumdrop_star_charm": "plump pink star shaped gumdrop charm rolled in sugar, on a small loop",
     "persimmon_charm": "small orange persimmon charm with a green four-leaf cap, on a small loop",
     "golden_ball_charm": "small shining golden ball charm with a band and a ruby, on a small loop",
     "dragon_tooth_charm": "curved ivory dragon fang charm capped in gold with a ruby, on a small loop",

@@ -9767,21 +9767,12 @@
     {
       "id": "item_gumdrop_star_charm",
       "kind": "item",
-      "derive": {
-        "from": "item_star_charm",
-        "recolor": [
-          {
-            "hue": [
-              15,
-              60
-            ],
-            "minSaturation": 0.2,
-            "to": 330,
-            "spread": 0.4,
-            "saturation": 0.9,
-            "value": 1.1
-          }
-        ]
+      "request": {
+        "prompt": "plump pink star shaped gumdrop charm rolled in sugar, on a small loop, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
     {
