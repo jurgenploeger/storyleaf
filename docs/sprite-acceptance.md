@@ -86,7 +86,9 @@ one body and wrong on another isn't done.
 - Its shadows take the cape's colour: no patch of the reference's red left on a blue cape.
 - Its trim along the hem, its emblem on the back, its clasp at the collar from the front.
 - From behind it hangs over the body, under the hair; from the front and side it shows past the outline.
-- Stretched to each body's height and shoulders.
+- Stretched to each body's height and shoulders, resized evenly (`spread`: its repeated rows and columns spread
+  across it, its edges and hem kept), so it's the same shape on every body. Stretched through its middle
+  (2026-10-22) it turned boxy on the bodies it grew most on, the line down its back a solid block.
 - No gap between it and the body in any frame (playtesting 2026-10-21): every walk frame, every
   direction, every body under every armour. From the front it's one cloth behind the body, its lining
   showing between an arm swung out and the body; from the side it meets the back, and nothing hangs

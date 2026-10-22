@@ -457,6 +457,46 @@ def lengthened(t, by, start):
     return out
 
 
+def spread(n, by):
+    """Which of `n` rows or columns each of `n + by` comes from, the repeated (or dropped) ones spread
+    evenly, the first and last kept (GearOverlay.spread): a cape resized so, not through its middle,
+    keeps its outline on every body (playtesting 2026-10-22: stretched through the middle it turned
+    boxy, its back's middle line a block)."""
+    m = n + by
+    if m <= 1 or n <= 1:
+        return [0] * max(m, 0)
+    return [int(i * (n - 1) / (m - 1) + 0.5) for i in range(m)]
+
+
+def scaled_down(t, by, start):
+    """`lengthened`, the rows from `start` down resized evenly (`spread`), for a cape."""
+    rows = [y for y in range(start, FRAME) if (t[y, :, 3] > 0.5).any()]
+    if by == 0 or not rows:
+        return t
+    body = [t[y] for y in range(start, max(rows) + 1)]
+    out = t.copy()
+    out[start:] = 0
+    for i, k in enumerate(spread(len(body), by)):
+        if start + i < FRAME:
+            out[start + i] = body[k]
+    return out
+
+
+def scaled_across(t, by):
+    """`widen`, its columns resized evenly (`spread`), centred where they were, for a cape."""
+    cols = [x for x in range(FRAME) if (t[:, x, 3] > 0.5).any()]
+    if by == 0 or not cols:
+        return t
+    l, r = min(cols), max(cols)
+    picks = spread(r - l + 1, by)
+    out = np.zeros_like(t)
+    x0 = half_up((l + r) / 2 - (len(picks) - 1) / 2)
+    for i, k in enumerate(picks):
+        if 0 <= x0 + i < FRAME:
+            out[:, x0 + i] = t[:, l + k]
+    return out
+
+
 def figure(frame):
     """A figure's top, feet, shoulders (0.38 of the way down: where the tunic starts on every race's
     sheet) and its outline's left and right there (GearOverlay.figure); None if it's too small."""
@@ -832,7 +872,8 @@ def cape(base, out, colour, trim):
     (its shoulders 0.38 of the way from the top of the head to the feet, as wide as it is there, and
     as long down to the feet), its trim along the hem. From behind it hangs over the body, the hair
     falling over its top, a diamond emblem on the back; from the front and the side it shows past the
-    body's outline, a clasp at the collar."""
+    body's outline, a clasp at the collar. Resized evenly (`spread`), so it's the same shape on every
+    body."""
     acc = hexc(trim)
     outline = np.array([0.16, 0.12, 0.18])
     sheet = piece_sheet("cape")
@@ -862,7 +903,7 @@ def cape(base, out, colour, trim):
             cx = (left + right) // 2
             # From the front and the side a little wider than the body, so it shows past its outline.
             flare = {'up': 0, 'down': 4}.get(facing, 2)
-            t = widen(lengthened(piece, (feet - shoulder) - CAPE_DROP, SHOULDER_Y), (right - left + 1) - CAPE_SPAN + flare)
+            t = scaled_across(scaled_down(piece, (feet - shoulder) - CAPE_DROP, SHOULDER_Y), (right - left + 1) - CAPE_SPAN + flare)
             dy, dx = shoulder - SHOULDER_Y, cx - ANCHOR_X
 
             def put(x, y, cc, only_empty=False):
