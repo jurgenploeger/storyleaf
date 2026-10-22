@@ -616,12 +616,82 @@ def draw_novice_ring(c):
 
 
 def draw_star_charm(c):
-    c.line(5, 3, 16, 12, GOLD[0])
-    c.line(27, 3, 16, 12, GOLD[0])
-    c.disc(16, 12, 1.5, GOLD[1])
-    star_shape(c, 16, 21, 9, GOLD[1])
-    star_shape(c, 15, 20, 4.5, GOLD[2])
-    c.set(27, 25, WHITE); c.set(6, 18, WHITE)
+    """A gold star on a little loop, as the other charms hang: no chain, so it isn't a necklace."""
+    c.ring(16, 5, 3, 1.6, GOLD[1])                                            # the loop
+    c.rect(15, 8, 17, 10, GOLD[0])                                            # the bail
+    star_shape(c, 16, 20, 11, GOLD[1])
+    c.shade(lambda x, y, col: col == GOLD[1] and x > 17 and y > 19, GOLD[0])
+    star_shape(c, 15, 19, 5, GOLD[2])
+    c.set(27, 8, WHITE); c.set(5, 12, WHITE)
+
+
+def draw_dragon_tooth_charm(c):
+    """A dragon's fang curving to a point, capped in gold and hung from a little loop like the other
+    charms: ivory, lit down its outer curve, a chip in its edge from the morning after."""
+    c.ring(16, 3.5, 2.8, 1.5, GOLD[1])                                        # the loop
+    c.rect(15, 6, 17, 7, GOLD[0])                                             # the bail
+    fang = [(10, 11), (22, 11), (24, 16), (23, 21), (19, 26), (11, 30), (14, 24), (12, 18)]
+    c.poly(fang, IVORY[1])
+    c.shade(lambda x, y, col: col == IVORY[1] and x > 19 - (y - 11) * 0.35, IVORY[0])
+    c.line(13, 13, 14, 23, IVORY[2]); c.line(15, 12, 15, 18, IVORY[2])         # the light down its curve
+    c.set(23, 18, None); c.set(22, 19, None)                                  # the chip
+    c.rect(9, 8, 23, 11, GOLD[1])                                             # the gold cap
+    c.rect(9, 8, 23, 8, GOLD[2]); c.rect(9, 11, 23, 11, GOLD[0])
+    c.disc(16, 9.5, 1.2, RED[1])                                              # a ruby set in it
+    c.set(27, 24, WHITE); c.set(5, 15, WHITE)
+
+
+def draw_golden_ball_charm(c):
+    """The princess's golden ball, small enough to hang from a loop like the other charms: a shining
+    gold sphere with a band round its middle and a ruby set in it."""
+    c.ring(16, 3.5, 2.8, 1.5, GOLD[1])                                        # the loop
+    c.rect(15, 6, 17, 8, GOLD[0])                                             # the bail
+    c.disc(16, 19, 10, GOLD[1])
+    light_top_left(c, GOLD, 16, 19, 10)
+    for x in range(7, 26):                                                    # its band, curving round
+        y = 19 + (x - 16) ** 2 / 28
+        c.set(x, y, GOLD[0]); c.set(x, y + 1, GOLD[2] if x < 16 else GOLD[1])
+    c.disc(16, 20.5, 2.6, GOLD[0]); c.disc(16, 20.5, 1.8, RED[1])            # a ruby set in it
+    c.set(15, 20, RED[2])
+    c.disc(12, 14, 2, WHITE)                                                  # the shine
+    c.set(5, 12, WHITE); c.set(27, 9, WHITE)
+
+
+def draw_persimmon_charm(c):
+    """A little persimmon hanging from a loop like the other charms: squat and orange, a little
+    square at the shoulders, its four-leaf cap and stem on top, lit from the top left."""
+    c.ring(16, 3.5, 2.8, 1.5, GOLD[1])                                        # the loop
+    c.rect(15, 6, 17, 9, GOLD[0])                                             # the bail, down to the stem
+    c.ellipse(16, 20, 11, 8.5, ORANGE[1])                                     # the fruit
+    c.ellipse(16, 17, 9.5, 6, ORANGE[1])                                      # its square shoulders
+    light_top_left(c, ORANGE, 16, 19, 10)
+    c.line(16, 14, 16, 27, ORANGE[0])                                         # the faint crease down it
+    c.shade(lambda x, y, col: col == ORANGE[0] and x == 16 and y < 19, ORANGE[1])
+    leaf = [hexc("3a6a24"), hexc("5e9a36"), hexc("9ccc66")]
+    for (dx, dy) in ((-5, 1), (5, 1), (-2, 3), (2, 3)):                       # the cap's four leaves
+        c.ellipse(16 + dx, 12 + dy, 3.2, 1.6, leaf[1])
+    c.ellipse(13, 12.5, 2, 1, leaf[2])
+    c.disc(16, 12, 1.6, leaf[0])                                              # the stem
+    c.disc(11, 18, 1.5, ORANGE[2]); c.set(10, 17, WHITE)                      # the shine
+    c.set(27, 12, WHITE); c.set(4, 25, WHITE)
+
+
+def draw_gumdrop_star_charm(c):
+    """A star-shaped gumdrop hanging from a loop like the other charms: plump pink jelly, its points
+    soft and round, rolled in sugar that glitters, lit from the top left."""
+    jelly = [hexc("c0306e"), hexc("ff7ab0"), hexc("ffd0e4")]                  # as CANDY, for the drop
+    c.ring(16, 3.5, 2.8, 1.5, GOLD[1])                                        # the loop
+    c.rect(15, 6, 17, 9, GOLD[0])                                             # the bail
+    star_shape(c, 16, 19.5, 11.5, jelly[1], inner=0.6)                        # plump points
+    for k in range(5):                                                        # rounded tips
+        a = -math.pi / 2 + k * 2 * math.pi / 5
+        c.disc(16 + 8.6 * math.cos(a), 19.5 + 8.6 * math.sin(a), 2.6, jelly[1])
+    c.shade(lambda x, y, col: col == jelly[1] and (x - 16) + (y - 19.5) > 4, jelly[0])
+    c.ellipse(13, 15.5, 3.5, 2.2, jelly[2]); c.set(12, 15, WHITE)             # the jelly's shine
+    for (x, y) in ((19, 14), (21, 19), (10, 21), (14, 24), (18, 23), (23, 24), (16, 18), (8, 17)):
+        if c.get(x, y) in jelly:                                              # sugar crystals
+            c.set(x, y, WHITE)
+    c.set(26, 9, WHITE); c.set(5, 11, WHITE)
 
 
 def draw_power_band(c):
@@ -2812,7 +2882,11 @@ PROMPTS = {  # for a later Retro Diffusion upgrade (python3 tools/rd.py generate
     "lucky_clover": "four-leaf lucky clover",
     "ruby_ring": "gold ring with a red ruby",
     "novice_ring": "simple copper ring with a small blue stone",
-    "star_charm": "gold star charm on a necklace",
+    "star_charm": "gold star charm hanging from a small loop",
+    "gumdrop_star_charm": "plump pink star shaped gumdrop charm rolled in sugar, on a small loop",
+    "persimmon_charm": "small orange persimmon charm with a green four-leaf cap, on a small loop",
+    "golden_ball_charm": "small shining golden ball charm with a band and a ruby, on a small loop",
+    "dragon_tooth_charm": "curved ivory dragon fang charm capped in gold with a ruby, on a small loop",
     "power_band": "red wristband with steel studs",
     "speed_boots": "blue winged speed boots",
     "leather_gloves": "brown leather gloves",
