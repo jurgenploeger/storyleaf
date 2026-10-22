@@ -2810,6 +2810,48 @@ struct RulesTests {
         #expect(!session.travelDestinations.contains(towns[0]))
     }
 
+    @Test func errandsAreCarriedToSomeoneElseAndBack() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let content = Content.shared
+        let quest = try #require(content.quests.first { $0.objective.type == .deliver && $0.objective.returns != nil })
+        let target = try #require(quest.objective.target)
+        let parcel = try #require(quest.objective.item)
+        let back = try #require(quest.objective.returns)
+        session.data.hero.level = 200
+        for required in quest.requires ?? [] { session.data.quests[required] = QuestProgress(state: .completed, count: 1) }
+        session.acceptQuest(quest.id)
+        // Handed the parcel, with someone else waiting for it.
+        #expect(session.count(of: parcel) == 1)
+        #expect(session.errands(for: target).map(\.id) == [quest.id])
+        #expect(session.notice(for: target) == .ready)
+        #expect(session.status(of: quest) == .active(progress: 0, goal: 1))
+        // Given to them: their thing to take back, and the quest ready to hand in.
+        #expect(session.deliver(quest.id) != nil)
+        #expect(session.count(of: parcel) == 0)
+        #expect(session.count(of: back) == 1)
+        #expect(session.errands(for: target).isEmpty)
+        #expect(session.deliver(quest.id) == nil)
+        #expect(session.status(of: quest) == .ready)
+        session.turnInQuest(quest.id)
+        #expect(session.count(of: back) == 0)
+        #expect(session.status(of: quest) == .completed)
+    }
+
+    @Test func questsSayHowHardTheyAre() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let content = Content.shared
+        let elite = try #require(content.quests.first { $0.difficulty == 4 })
+        #expect(session.difficulty(of: elite) == .elite)
+        let boss = try #require(content.quests.first { quest in
+            quest.difficulty == nil && quest.objective.type == .defeat && quest.objective.target.flatMap(content.monster)?.boss == true
+        })
+        #expect(session.difficulty(of: boss) == .hard)
+        let errand = try #require(content.quests.first { $0.objective.type == .deliver && $0.difficulty == nil })
+        #expect(session.difficulty(of: errand) == .easy)
+        // Every rank is used somewhere.
+        #expect(Set(content.quests.map(session.difficulty(of:))) == Set(QuestDifficulty.allCases))
+    }
+
     @Test func waystonesWakeByTheirQuestAndJoinTheTravelList() throws {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         let content = Content.shared
