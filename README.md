@@ -1,7 +1,7 @@
 # Storyleaf
 
 A cozy 2.5D pixel-art RPG for iPhone (portrait and landscape), inspired by Fairyland Online (2007).
-In the code (the Xcode project, targets and folders) it's still called Fairyland; players see Storyleaf.
+The bundle ID (`com.jurgenploeger.fairyland`) and the save files keep the game's first name, Fairyland; everything else is Storyleaf.
 Built with SwiftUI + SpriteKit. Art is generated with [Retro Diffusion](https://www.retrodiffusion.ai).
 
 ## What's in the game
@@ -40,7 +40,7 @@ Built with SwiftUI + SpriteKit. Art is generated with [Retro Diffusion](https://
 Needs Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
 
 ```bash
-make open        # generates Fairyland.xcodeproj and opens it in Xcode
+make open        # generates Storyleaf.xcodeproj and opens it in Xcode
 ```
 
 Pick a simulator or your iPhone in the Xcode toolbar and press ⌘R (or run `make sim`).
@@ -83,7 +83,7 @@ Anything not generated yet shows as built-in placeholder pixel art.
 `python3 tools/rd.py generate <id> --force --variants 4` gives you options, and `python3 tools/rd.py use <id> <file>` picks one.
 Every generation is kept in `art-variants/<id>/`.
 
-The app icon and title logo come from the Figma file and live in `Fairyland/Resources/Assets.xcassets`.
+The app icon and title logo come from the Figma file and live in `Storyleaf/Resources/Assets.xcassets`.
 
 ## Screenshots without a Mac
 
@@ -94,7 +94,7 @@ artifact). On a private repo, macOS runner minutes count 10× against the Action
 
 ## Debug shortcuts
 
-Set `FAIRYLAND_DEBUG` in the scheme's environment variables (comma-separated):
+Set `STORYLEAF_DEBUG` in the scheme's environment variables (comma-separated):
 `newgame`, `level=5`, `map=sunny_meadow`, `battle`, `menu=companions`, `npc=elder`, `landscape`.
 
 ## Project layout
@@ -104,14 +104,14 @@ project.yml            XcodeGen spec (source of truth for the Xcode project)
 content/               game data (JSON)
 art/                   sprite manifest + generated PNGs
 tools/rd.py            Retro Diffusion client (Python standard library only)
-Fairyland/App/         app, coordinator, SpriteKit host, debug launch
-Fairyland/Model/       save data, session rules (levels, quests, items), calendar
-Fairyland/World/       isometric maps, walking, NPCs, ambience
-Fairyland/Battle/      battle engine, controller, scene, skill effects
-Fairyland/Audio/       storybook synth (additive instruments, drums, reverb) + music player
-Fairyland/Art/         sprite loading and placeholder art
-Fairyland/UI/          SwiftUI HUD, menus, dialogs, battle UI
-FairylandTests/        rules and content tests
+Storyleaf/App/         app, coordinator, SpriteKit host, debug launch
+Storyleaf/Model/       save data, session rules (levels, quests, items), calendar
+Storyleaf/World/       isometric maps, walking, NPCs, ambience
+Storyleaf/Battle/      battle engine, controller, scene, skill effects
+Storyleaf/Audio/       storybook synth (additive instruments, drums, reverb) + music player
+Storyleaf/Art/         sprite loading and placeholder art
+Storyleaf/UI/          SwiftUI HUD, menus, dialogs, battle UI
+StoryleafTests/        rules and content tests
 ```
 
 ## Working from your phone (no Mac needed)

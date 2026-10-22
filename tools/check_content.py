@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Checks content/*.json and art/assets.json for broken references, without Xcode.
 
-The Swift tests (FairylandTests) check the same things, but they need a Mac. This runs
+The Swift tests (StoryleafTests) check the same things, but they need a Mac. This runs
 anywhere with Python 3 — handy from a cloud session or a phone — so a push that Xcode Cloud
 will build doesn't fail on a typo in the game data.
 
@@ -37,7 +37,7 @@ def check(condition: bool, message: str) -> None:
 
 classes = load("content/classes.json")
 skills = {s["id"]: s for s in load("content/skills.json")["skills"]}
-# The stats spells raise and lower in battle (BattleStat in Fairyland/Battle/BattleEngine.swift).
+# The stats spells raise and lower in battle (BattleStat in Storyleaf/Battle/BattleEngine.swift).
 BATTLE_STATS = {"attack", "defense", "magic", "speed"}
 monsters = {m["id"]: m for m in load("content/monsters.json")["monsters"]}
 items = {i["id"]: i for i in load("content/items.json")["items"]}
@@ -53,7 +53,7 @@ npcs = {n["id"]: n for m in maps.values() for n in m.get("npcs", [])}
 
 # Icons are the GameIcon cases: what tools/icons.py put in the asset catalog (Iconaut's and our own).
 icon_names = {path.name.removeprefix("icon-").removesuffix(".imageset")
-              for path in (ROOT / "Fairyland/Resources/Assets.xcassets/Icons").glob("icon-*.imageset")
+              for path in (ROOT / "Storyleaf/Resources/Assets.xcassets/Icons").glob("icon-*.imageset")
               if not path.name.endswith("-16.imageset")}
 
 for cls in classes["classes"]:
@@ -150,7 +150,7 @@ for skill in skills.values():
         check(not {"raises", "lowers", "rounds"} & set(skill), f"{where} → only buffs have raises, lowers or rounds")
 
 # Every skill used in battle looks like no other (a playtest rule): its own `animation`, one the
-# scene knows (BattleScene.castSkill and SkillEffects in Fairyland/Battle).
+# scene knows (BattleScene.castSkill and SkillEffects in Storyleaf/Battle).
 ANIMATIONS = {
     "slash", "smash", "whirlwind", "fire", "embers", "stone", "mud", "boulder", "leaves", "vine", "water", "bubbles", "frost",
     "wild", "roar", "needles", "web", "bounce", "bite", "shadow_bite", "venom_bite", "gold_spin", "gust", "flash",
@@ -803,7 +803,7 @@ for map_def in maps.values():
             check(isinstance(palette[key], (int, float)) and 0 <= palette[key] <= 1, f"{where} → {key} must be between 0 and 1")
     check_rules(palette.get("recolor", []), where)
 
-# The kinds `Critters.make` (Fairyland/World/Critters.swift) knows how to draw.
+# The kinds `Critters.make` (Storyleaf/World/Critters.swift) knows how to draw.
 CRITTER_KINDS = {"bunny", "frog", "crab", "songbird", "chick", "squirrel", "lizard", "mouse",
                  "crow", "spider", "rat", "scorpion", "wisp"}
 ambience_keys = {"particles", "butterflies", "critters", "birds", "clouds", "tint", "tintAlpha", "vignette", "lightPatches", "sunbeams", "sun", "haze", "hazeAlpha", "focus", "darkness", "weather"}
@@ -1229,12 +1229,12 @@ for element, gain in gains.items():
 
 # Every sound the game plays (SoundEffects.Sound's raw values) has its file in sound/, made by
 # tools/make_sounds.py: a missing one would just stay silent. And every file there is one of them.
-sound_enum = (ROOT / "Fairyland/Audio/SoundEffects.swift").read_text().split("enum Sound: String, CaseIterable {", 1)[-1].split("func ", 1)[0]
+sound_enum = (ROOT / "Storyleaf/Audio/SoundEffects.swift").read_text().split("enum Sound: String, CaseIterable {", 1)[-1].split("func ", 1)[0]
 sounds = [raw.strip().strip('"') or name.strip()
           for line in sound_enum.splitlines() if line.strip().startswith("case ")
           for name, _, raw in (part.partition("=") for part in line.strip()[5:].split(","))]
 sound_files = {path.stem for path in (ROOT / "sound").glob("*.wav")}
-check(bool(sounds), "SoundEffects.Sound → no cases found in Fairyland/Audio/SoundEffects.swift")
+check(bool(sounds), "SoundEffects.Sound → no cases found in Storyleaf/Audio/SoundEffects.swift")
 for sound in sounds:
     check(sound in sound_files, f"sound {sound} → no sound/{sound}.wav (python3 tools/make_sounds.py {sound})")
 for stray in sorted(sound_files - set(sounds)):

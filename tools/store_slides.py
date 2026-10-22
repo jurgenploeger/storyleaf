@@ -23,7 +23,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent
 FONT = TOOLS / "fonts" / "LilitaOne-Regular.ttf"
-LOGO = ROOT / "Fairyland" / "Resources" / "Assets.xcassets" / "Logo.imageset" / "Logo.png"
+LOGO = ROOT / "Storyleaf" / "Resources" / "Assets.xcassets" / "Logo.imageset" / "Logo.png"
 
 # The base size the layout is measured in, and the sizes exported.
 BASE = (2622, 1206)

@@ -14,7 +14,7 @@ character art, so none of this has to be found again. Add what you learn, with t
    colour per family (`MATERIAL`); it cuts worn pieces out of reference sheets and moves them to fixed anchors
    (`art/sprites/wear_*.png`). `tools/item_art.py` draws items and the held weapons; `tools/hero_layers.py`
    splits hero sheets into paper-doll layers.
-4. **Fit in the game:** `Fairyland/Art/GearOverlay.swift` fits each piece to each frame as drawn.
+4. **Fit in the game:** `Storyleaf/Art/GearOverlay.swift` fits each piece to each frame as drawn.
    `tools/gear_preview.py` is the same algorithm in Python, line for line: change both together, as the
    cloud sessions can't build the app and the preview is the only way to see a change before CI.
 5. **Check** with the grids below, `python3 tools/check_content.py`, then the CI screenshots.

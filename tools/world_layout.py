@@ -158,7 +158,7 @@ def is_town(land):
     return land.get("fence") is True
 
 
-# MARK: Noise (the same hash as Fairyland/World/Coast.swift's)
+# MARK: Noise (the same hash as Storyleaf/World/Coast.swift's)
 
 MASK64 = (1 << 64) - 1
 

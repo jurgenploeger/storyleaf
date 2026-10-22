@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Art for the few battle marks that aren't light, drawn in code like tools/item_art.py (free):
 writes art/sprites/fx_<name>.png. The elemental spells themselves are drawn in light and colour
-(Fairyland/Battle/ElementEffects.swift); these are poison's bubbles (AilmentEffects.swift) and the
+(Storyleaf/Battle/ElementEffects.swift); these are poison's bubbles (AilmentEffects.swift) and the
 marks by a fighter's HP bar: poison (a purple drop), lowered stats (a crimson arrow down, a curse's)
 and raised ones (a blue arrow up, a buff's). The bubble is pixel art; the marks are smooth and glossy,
 drawn at 3x and shown at a third of their size.
