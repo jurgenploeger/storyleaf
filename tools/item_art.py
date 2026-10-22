@@ -625,6 +625,22 @@ def draw_star_charm(c):
     c.set(27, 8, WHITE); c.set(5, 12, WHITE)
 
 
+def draw_dragon_tooth_charm(c):
+    """A dragon's fang curving to a point, capped in gold and hung from a little loop like the other
+    charms: ivory, lit down its outer curve, a chip in its edge from the morning after."""
+    c.ring(16, 3.5, 2.8, 1.5, GOLD[1])                                        # the loop
+    c.rect(15, 6, 17, 7, GOLD[0])                                             # the bail
+    fang = [(10, 11), (22, 11), (24, 16), (23, 21), (19, 26), (11, 30), (14, 24), (12, 18)]
+    c.poly(fang, IVORY[1])
+    c.shade(lambda x, y, col: col == IVORY[1] and x > 19 - (y - 11) * 0.35, IVORY[0])
+    c.line(13, 13, 14, 23, IVORY[2]); c.line(15, 12, 15, 18, IVORY[2])         # the light down its curve
+    c.set(23, 18, None); c.set(22, 19, None)                                  # the chip
+    c.rect(9, 8, 23, 11, GOLD[1])                                             # the gold cap
+    c.rect(9, 8, 23, 8, GOLD[2]); c.rect(9, 11, 23, 11, GOLD[0])
+    c.disc(16, 9.5, 1.2, RED[1])                                              # a ruby set in it
+    c.set(27, 24, WHITE); c.set(5, 15, WHITE)
+
+
 def draw_power_band(c):
     band = [hexc("8a1a2a"), hexc("d83a4a"), hexc("ff8a8a")]
     c.ring(16, 16, 11, 6.5, band[1], ry_scale=0.62)
@@ -2813,7 +2829,8 @@ PROMPTS = {  # for a later Retro Diffusion upgrade (python3 tools/rd.py generate
     "lucky_clover": "four-leaf lucky clover",
     "ruby_ring": "gold ring with a red ruby",
     "novice_ring": "simple copper ring with a small blue stone",
-    "star_charm": "gold star charm on a necklace",
+    "star_charm": "gold star charm hanging from a small loop",
+    "dragon_tooth_charm": "curved ivory dragon fang charm capped in gold with a ruby, on a small loop",
     "power_band": "red wristband with steel studs",
     "speed_boots": "blue winged speed boots",
     "leather_gloves": "brown leather gloves",

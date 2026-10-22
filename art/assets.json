@@ -9707,20 +9707,12 @@
     {
       "id": "item_dragon_tooth_charm",
       "kind": "item",
-      "derive": {
-        "from": "item_star_charm",
-        "recolor": [
-          {
-            "hue": [
-              20,
-              60
-            ],
-            "minSaturation": 0.2,
-            "to": 38,
-            "saturation": 0.25,
-            "value": 1.25
-          }
-        ]
+      "request": {
+        "prompt": "curved ivory dragon fang charm capped in gold with a ruby, on a small loop, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
     {
