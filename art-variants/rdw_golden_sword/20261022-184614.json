@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "golden sword, a fantasy sword with a gold blade, a gold crossguard, a red grip and a red gem in the hilt, game item, lying diagonally, handle at the bottom left, tip pointing to the top right",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792694772,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 33.251,
+    "request_id": "ff42483b-964c-486a-93ec-150077166288",
+    "outputs_retained_until": 1792781082
+  }
+}

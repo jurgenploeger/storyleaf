@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "serpent sword, a fantasy sword with a wavy steel blade, a green crossguard, a green grip and an emerald gem in the hilt, game item, lying diagonally, handle at the bottom left, tip pointing to the top right",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792694826,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 32.891,
+    "request_id": "6b8978b7-6138-4e06-a48f-206ddfa0d0aa",
+    "outputs_retained_until": 1792781207
+  }
+}

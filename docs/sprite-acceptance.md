@@ -168,6 +168,11 @@ python3 tools/check_content.py
   RD's shading is gone, and a thin blade loses its crossguard: the gain is mostly on the 32-pixel icon.
   Placement needs nothing new: the held sprite goes on the hand measured on each frame, so it fits every
   body, direction, armour and cape alike (`gear_preview.py --weapons`).
+- Weapons (2026-10-22, the rest: 76 weapons, 3 variants each, $13.68): 78 of the 107 weapons are drawn by
+  Retro Diffusion now (`weapon_art.PICKED`). About one variant in four came out upright or upside down, turned
+  to the diagonal (`turn`); a plain hatchet still came out a hammer in two of three. Kept as drawn in code:
+  the whips (none coiled, and held they hang, `hanging_whip`) and three whose look RD missed (the Crystal
+  Wand's cyan crystal, the Ghost Staff's ghost, the Wyrmking Staff's red and gold).
 - Inpainting walk sheets (`rd.py edit`) is a dead end: faces come out muddy at about 10 px wide, armour too
   bulky, and side and back views don't match the pose.
 - A sheet is per race, not per gender: both genders wear the same armour sheet, over the hero's own hair from
