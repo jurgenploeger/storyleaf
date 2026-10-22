@@ -3237,6 +3237,9 @@ def main(argv):
     ids = argv or sorted(DRAWINGS)
     weapons = {item["id"] for item in json.loads((ROOT / "content" / "items.json").read_text())["items"]
                if item["type"] == "weapon"}
+    # Weapons drawn by Retro Diffusion instead (tools/weapon_art.py PICKED) are made there.
+    from weapon_art import PICKED
+    ids = [i for i in ids if i not in PICKED]
     for item_id in ids:
         (SPRITES / f"item_{item_id}.png").write_bytes(render(item_id).png())
         if item_id in weapons:

@@ -113,6 +113,7 @@ python3 tools/wear_art.py --sheet out.png           # the armour sheets and piec
 python3 tools/gear_preview.py --wear out.png <ids>  # items (joined by +) on every body under every armour
 python3 tools/gear_preview.py --hats out.png        # every festive hat
 python3 tools/gear_preview.py --capes out.png       # every status cape
+python3 tools/gear_preview.py --weapons out.png <ids> [held sprite]  # weapons in hand on every body
 python3 tools/gear_preview.py out.png               # every armour on every race
 python3 tools/check_content.py
 ```
@@ -142,6 +143,14 @@ python3 tools/check_content.py
   mail darker and bluer). Always normalise, never trust it to match.
 - It draws more than asked: the scarf came as a muffler up over the mouth, the cape partly hidden behind the
   wearer's arm. Cut to what the game needs.
+- Weapons (pilot 2026-10-22, 8 weapons, $1.44): `rd_plus__topdown_item` at 64 × 64 costs what 32 does
+  ($0.06 an image), and "lying diagonally, handle at the bottom left, tip pointing to the top right" gives
+  the pose the game holds (GearArt.held) in most variants. `tools/weapon_art.py` shrinks a picked one to the
+  icon and the held sprite at the drawn weapons' size. Swords, axes and staffs came out well; a plain
+  hatchet came out a hammer, and no whip coiled (a stick, or a scaled blade). Held at 24 pixels most of
+  RD's shading is gone, and a thin blade loses its crossguard: the gain is mostly on the 32-pixel icon.
+  Placement needs nothing new: the held sprite goes on the hand measured on each frame, so it fits every
+  body, direction, armour and cape alike (`gear_preview.py --weapons`).
 - Inpainting walk sheets (`rd.py edit`) is a dead end: faces come out muddy at about 10 px wide, armour too
   bulky, and side and back views don't match the pose.
 - A sheet is per race, not per gender: both genders wear the same armour sheet, over the hero's own hair from

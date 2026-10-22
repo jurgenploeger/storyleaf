@@ -7,6 +7,7 @@ the same paper-doll layers the game stacks (tools/hero_layers.py), to tune it wi
     python3 tools/gear_preview.py --capes /tmp/capes.png   # every status cape, over some armours
     python3 tools/gear_preview.py --trinkets /tmp/t.png    # gloves, boots and necklaces on every body
     python3 tools/gear_preview.py --hats /tmp/h.png        # every festive hat on every body
+    python3 tools/gear_preview.py --weapons /tmp/w.png steel_sword+oak_staff   # weapons in hand on every body
 
 Needs pillow + numpy.
 """
@@ -1172,9 +1173,80 @@ def hat_sheet(out, hats=None):
     print(f"wrote {out}: {', '.join(i['id'] for i in worn)}")
 
 
+def held_grip(weapon):
+    """Where the hand closes on a held weapon sprite (GearArt.held): the solid pixel nearest the
+    bottom-left corner with two solid neighbours, then a little up the handle. In the sprite's
+    pixels, from its top-left."""
+    h, w = weapon.shape[:2]
+
+    def solid(x, y):
+        return 0 <= x < w and 0 <= y < h and weapon[y, x, 3] > 200 / 255
+    best = None
+    for y in range(h):
+        for x in range(w):
+            if solid(x, y) and sum(solid(x + dx, y + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))) >= 2:
+                if best is None or x + (h - y) < best[0] + (h - best[1]):
+                    best = (x, y)
+    up = w / 32
+    return best[0] + 3 * up, best[1] - 2 * up
+
+
+HAND = {"down": (3, 0.58), "up": (-9, 0.55), "right": (3, 0.56), "left": (-4, 0.56)}   # GearArt.hand
+
+
+def holding(frame, weapon, facing):
+    """A 48-pixel walk frame with `weapon` (a held_<id> sprite) in hand, as GearArt.pose places it:
+    its grip on the hand (beside the body, part way down the figure as drawn in this frame), behind
+    the body, mirrored facing up or left."""
+    from PIL import Image
+    rows = np.where((frame[..., 3] > 127 / 255).any(axis=1))[0]
+    top, bottom = (rows[0], rows[-1] + 1) if len(rows) else (0.27 * FRAME, 0.94 * FRAME)
+    across, down = HAND[facing]
+    hx, hy = FRAME / 2 + across, top + down * (bottom - top)
+    gx, gy = held_grip(weapon)
+    if facing in ("up", "left"):
+        weapon, gx = weapon[:, ::-1], weapon.shape[1] - gx
+    canvas = Image.new("RGBA", (FRAME * 2, FRAME * 2), (0, 0, 0, 0))   # room for a blade past the frame
+    pad = FRAME // 2
+    canvas.alpha_composite(Image.fromarray((weapon * 255).round().astype(np.uint8), "RGBA"),
+                           (int(round(pad + hx - gx)), int(round(pad + hy - gy))))
+    canvas.alpha_composite(Image.fromarray((np.clip(frame, 0, 1) * 255).round().astype(np.uint8), "RGBA"), (pad, pad))
+    return canvas
+
+
+def weapon_sheet(out, weapon_ids, sprite=None):
+    """Each weapon in `weapon_ids` (a row each) held by every body (each race, each gender) facing
+    down, right, up and left, through every armour cut and sheet and with a cape now and then, in
+    every skin tone in turn: GearArt.pose's placement, to check new weapon art before it ships.
+    `sprite`: a sprite file to hold instead of art/sprites/held_<id>.png (a candidate)."""
+    import json
+    import pathlib
+    from PIL import Image
+    root = pathlib.Path(__file__).resolve().parent.parent
+    items = {i["id"]: i for i in json.load(open(root / "content" / "items.json"))["items"]}
+    capes = [i for i in items.values() if i["type"] == "cape"]
+    zoom, size = 2, FRAME * 2
+    sheet = Image.new("RGB", (len(BODIES) * 4 * size * zoom + (len(BODIES) - 1) * 8, len(weapon_ids) * size * zoom), (80, 130, 80))
+    for r, wid in enumerate(weapon_ids):
+        path = sprite or root / "art" / "sprites" / f"held_{wid}.png"
+        weapon = np.asarray(Image.open(path).convert("RGBA")).astype(float) / 255
+        for k, (race, body, style) in enumerate(BODIES):
+            outfit = items.get(OUTFITS[(r + k) % len(OUTFITS)])
+            worn = [capes[(r + k) % len(capes)]] if (r + k) % 3 == 0 else []
+            img = dressed(race, body, style, outfit, worn, skin=SKINS[(r + k) % len(SKINS)])
+            for c, (row, facing) in enumerate(((2, "down"), (1, "right"), (0, "up"), (3, "left"))):
+                held = holding(img[row * FRAME:(row + 1) * FRAME, :FRAME], weapon, facing)
+                held = held.resize((size * zoom, size * zoom), Image.NEAREST)
+                sheet.paste(held, ((k * 4 + c) * size * zoom + k * 8, r * size * zoom), held)
+    sheet.save(out)
+    print(f"wrote {out}: {', '.join(weapon_ids)} on every body")
+
+
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) > 2 and sys.argv[1] == "--capes":
+    if len(sys.argv) > 3 and sys.argv[1] == "--weapons":
+        weapon_sheet(sys.argv[2], sys.argv[3].split("+"), sys.argv[4] if len(sys.argv) > 4 else None)
+    elif len(sys.argv) > 2 and sys.argv[1] == "--capes":
         capes(sys.argv[2])
     elif len(sys.argv) > 2 and sys.argv[1] == "--trinkets":
         trinket_sheet(sys.argv[2])

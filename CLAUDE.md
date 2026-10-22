@@ -64,6 +64,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `tools/store_slides.py`: App Store slides from the landscape `store_land_*` screenshot scenes: captions in the
   logo's style (`tools/store_slides.json`, font in `tools/fonts/`), cropped clear of the Dynamic Island the
   simulator draws in, exported at 2622×1206 and 2868×1320 with no alpha.
+- `tools/weapon_art.py`: weapons from Retro Diffusion: a picked 64-pixel drawing (`PICKED`, from `art-variants/`)
+  shrunk to the icon and the held sprite at the drawn weapons' size, outlined afresh; `item_art.py` leaves those
+  alone. `tools/gear_preview.py --weapons out.png <ids>` shows weapons in hand on every body, direction and armour.
 - `tools/skill_art.py`: the same for every skill's icon (`art/sprites/skill_<id>.png`).
 - `tools/prop_art.py`: the same for the few props a generated sprite got wrong (`candy_cane`, whose hook came out
   as a two-sided arch) or none was made for (the harbors' `ship`, built in 3D and projected as the game's view is;
