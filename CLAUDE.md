@@ -59,8 +59,11 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   rules widened to appearance.json `hairLayer`), as every quest giver is; `check_content.py` insists.
 - `Storyleaf/`: Swift code (World = maps and walking, Battle = combat, UI = SwiftUI HUD and menus).
 - `tools/item_art.py`: draws every item's 32×32 sprite in code (free); rerun it after editing a drawing. A weapon also
-  gets `held_<id>.png`, its drawing shrunk to 24 pixels before the outline (the colour covering most of each pixel),
-  held at half a walk frame, one of its pixels to one of the sprite's (`GearArt.weapon`): shrunk in the game, it was ragged.
+  gets `held_<id>_side.png` and `_front.png` (`held_pair`), its grip in the middle of a 64-pixel canvas, one of its
+  pixels to one of the hero's (`GearArt.posed`): its drawing about 24 pixels across walking left or right, turned
+  nearly upright and leaning out past the head facing you or away (held sideways from the front, it looked wrong),
+  in front of the body facing you; a whip's lash hanging down to the feet (`hanging_whip`; held up like a sword it
+  read as a stick). Shrunk and turned offline, each pixel the colour covering most of it: in the game it was ragged.
 - `tools/store_slides.py`: App Store slides from the landscape `store_land_*` screenshot scenes: captions in the
   logo's style (`tools/store_slides.json`, font in `tools/fonts/`), cropped clear of the Dynamic Island the
   simulator draws in, exported at 2622×1206 and 2868×1320 with no alpha.

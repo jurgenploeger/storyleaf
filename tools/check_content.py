@@ -733,8 +733,9 @@ WEARS = {"armor": {"vest", "mail", "plate", "robe", "cloak"}, "necklace": {"scar
 bare_sheets = {sheet for i in items.values() if i.get("bareHead") for sheet in i.get("sheets", {}).values()}
 for item in items.values():
     if item["type"] == "weapon":
-        check((ROOT / "art" / "sprites" / f"held_{item['id']}.png").exists(),
-              f"item {item['id']} → art/sprites/held_{item['id']}.png is missing (the weapon held: tools/item_art.py {item['id']})")
+        for view in ("side", "front"):
+            check((ROOT / "art" / "sprites" / f"held_{item['id']}_{view}.png").exists(),
+                  f"item {item['id']} → art/sprites/held_{item['id']}_{view}.png is missing (the weapon held: tools/item_art.py {item['id']})")
     if "wear" in item:
         check(item["wear"] in WEARS.get(item["type"], set()),
               f"item {item['id']} → wear {item['wear']!r} doesn't fit a {item['type']} ({sorted(WEARS.get(item['type'], []))})")

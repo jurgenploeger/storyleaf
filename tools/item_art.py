@@ -3199,33 +3199,134 @@ def render(item_id):
     return canvas
 
 
-HELD = 24   # a held weapon's size: half a 48-pixel walk frame, one pixel to one of the sprite's
+HELD = 24   # a held weapon's span on the side: half a 48-pixel walk frame, one pixel to one of the sprite's
+POSED = 64  # held_<id>_side and _front: a canvas with the grip in its middle (GearArt.posed)
+GRIP_UP = (2.25, -1.5)   # the hand closes this far up the handle from its end, in the hero's pixels
+FRONT_TURN = 22          # degrees the side view turns to face you: nearly upright, leaning out past the head
 
 
-def held(item_id):
-    """A weapon as the hero holds it (art/sprites/held_<id>.png, GearArt.weapon): its drawing shrunk
-    to HELD pixels before the outline goes on, each pixel the colour that covers most of it (a thin
-    blade wins over the empty air beside it), then outlined afresh. Shrunk in the game instead, from
-    32 to the 23 pixels it's held at, every third row and column dropped and it looked ragged."""
+def grip_of(c):
+    """Where the hand closes on a weapon drawn diagonally, grip bottom-left: the solid pixel nearest
+    the bottom-left corner (with two solid neighbours, so no lone sparkle), in its own pixels."""
+    best = None
+    for y in range(c.size):
+        for x in range(c.size):
+            if c.px[y][x] and sum(c.get(x + dx, y + dy) is not None for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))) >= 2:
+                if best is None or x + (c.size - y) < best[0] + (c.size - best[1]):
+                    best = (x, y)
+    return best[0] + 0.5, best[1] + 0.5
+
+
+def posed(c, k, angle=0):
+    """A weapon drawn diagonally (grip bottom-left, `c`, not outlined yet) as the hero holds it: `k`
+    of its pixels to one of the hero's, turned `angle` degrees anticlockwise (FRONT_TURN, for facing
+    you or away), its grip in the middle of a POSED canvas, then outlined. Turned at eight times the
+    size and sampled back, each pixel the colour that covers most of it (a thin blade wins over the
+    air beside it): shrunk or turned in the game instead, every third row and column dropped and it
+    looked ragged."""
+    from PIL import Image
+    up = 8
+    img = Image.new("RGBA", (c.size, c.size))
+    for y in range(c.size):
+        for x in range(c.size):
+            if c.px[y][x]:
+                img.putpixel((x, y), c.px[y][x])
+    img = img.resize((c.size * up, c.size * up), Image.NEAREST)
+    gx, gy = grip_of(c)
+    gx, gy = (gx + GRIP_UP[0] * k) * up, (gy + GRIP_UP[1] * k) * up
+    w, h = img.size
+    turned = img.rotate(angle, resample=Image.NEAREST, expand=True) if angle else img
+    if angle:
+        # The grip turned with it (anticlockwise on screen, rows down), about the middle, then moved
+        # by what the turn added round the edges.
+        t = math.radians(angle)
+        cx, cy = w / 2, h / 2
+        gx, gy = (cx + (gx - cx) * math.cos(t) + (gy - cy) * math.sin(t) + (turned.width - w) / 2,
+                  cy - (gx - cx) * math.sin(t) + (gy - cy) * math.cos(t) + (turned.height - h) / 2)
+    px = turned.load()
+    tw, th = turned.size
+    out = Canvas(POSED)
+    step = k * up            # the turned drawing's pixels to one of the hero's
+    samples = 6
+    for oy in range(POSED):
+        for ox in range(POSED):
+            cover, air = {}, 0
+            for sy in range(samples):
+                for sx in range(samples):
+                    ux = int(gx + (ox + (sx + 0.5) / samples - POSED / 2) * step)
+                    uy = int(gy + (oy + (sy + 0.5) / samples - POSED / 2) * step)
+                    colour = px[ux, uy] if 0 <= ux < tw and 0 <= uy < th else (0, 0, 0, 0)
+                    if colour[3] < 128:
+                        air += 1
+                    else:
+                        cover[colour] = cover.get(colour, 0) + 1
+            if cover and sum(cover.values()) >= air * 0.6:
+                out.px[oy][ox] = max(cover.items(), key=lambda kv: kv[1])[0]
+    out.outline()
+    return out
+
+
+def hanging_whip(leather, grip, front, tip=None, gem=None, studs=None, tassel=None):
+    """A whip as the hero holds it: a short handle up in the hand and the lash hanging down from it to
+    about the ankles (the coil is only the icon's), in its own colours. `front`: facing you or away,
+    the lash straight down beside the leg; else facing the way you walk, curving forward and down.
+    The grip in the middle of a POSED canvas, like every held weapon."""
+    c = Canvas(POSED)
+    m = POSED / 2
+    handle = ((m - 1, m + 2), (m + 2, m - 4)) if front else ((m - 1.5, m + 1.5), (m + 3, m - 3.5))
+    (hx, hy), (tx, ty) = handle
+    # Out of the handle's tip and straight down with a lazy S, never back up over the hand.
+    lash = ([(tx, ty), (tx + 2, ty + 3), (tx + 3, ty + 10), (tx, m + 12)] if front
+            else [(tx, ty), (tx + 4, ty + 2), (tx + 6, ty + 10), (tx + 2, m + 12)])
+    points = []
+    for i in range(41):
+        t = i / 40
+        x = sum(p[0] * w for p, w in zip(lash, ((1 - t) ** 3, 3 * t * (1 - t) ** 2, 3 * t * t * (1 - t), t ** 3)))
+        y = sum(p[1] * w for p, w in zip(lash, ((1 - t) ** 3, 3 * t * (1 - t) ** 2, 3 * t * t * (1 - t), t ** 3)))
+        points.append((x, y))
+    # Its end trailing along the ground by the feet, so it reads as a lash, not a cane.
+    ex, ey = points[-1]
+    for i in range(1, 13):
+        t = i / 12
+        points.append((ex + t * 6, ey + 1 - (1 - t) ** 2))
+    for i, (x, y) in enumerate(points):        # braided: light and dark in turn, thinner to the tip
+        c.disc(x, y, 1.0 if i < 14 else 0.5, leather[2] if i % 6 < 2 else leather[1])
+        if studs and i % 9 == 4:
+            c.set(x, y, studs)
+    c.shade(lambda x, y, col: col == leather[1] and c.get(x - 1, y) is None, leather[0])
+    if tip:
+        c.set(points[-1][0], points[-1][1], tip)
+    c.line(hx, hy, tx, ty, grip[1], width=2.2)
+    c.line(hx, hy, tx, ty, grip[0])
+    c.disc(tx, ty, 1.0, GOLD[1])                # the band where the lash meets the handle
+    if gem:
+        c.disc(hx - 0.5, hy + 0.5, 1.0, gem[1])
+    if tassel:
+        c.disc(hx - 0.5, hy + 1.5, 1.3, tassel)
+    c.outline()
+    return c
+
+
+# The whips, held hanging (hanging_whip): their colours as their icons have them.
+HANGING = {_id: _args for _id, _level, _name, _args, _desc in WHIPS}
+HANGING["tamer_whip"] = dict(leather=LEATHER, grip=WOOD)
+HANGING["beast_whip"] = dict(leather=[hexc("7a1a1a"), hexc("b8302a"), hexc("e8604a")],
+                             grip=[hexc("3a2a1a"), hexc("5a4028"), hexc("7a5a38")], tassel=hexc("f6c33b"))
+HANGING["starfall_whip"] = dict(leather=MOTH, grip=NIGHT, tip=STARLIGHT[1], gem=GOLD, studs=WHITE)
+HANGING["goldleaf_whip"] = dict(leather=LEAFGOLD, grip=HEARTOAK, tip=hexc("b8d040"), gem=GREEN, studs=WHITE)
+
+
+def held_pair(item_id):
+    """The weapon `item_id` as the hero holds it (art/sprites/held_<id>_side.png and _front.png,
+    GearArt.posed): its drawing, HELD pixels across on the side; facing you or away nearly upright,
+    leaning out past the head (held sideways from the front, it looked wrong); a whip hanging."""
+    if item_id in HANGING:
+        args = {k: v for k, v in HANGING[item_id].items() if k != "turns"}
+        return hanging_whip(front=False, **args), hanging_whip(front=True, **args)
     canvas = Canvas()
     DRAWINGS[item_id](canvas)
-    small = Canvas(HELD)
     k = SIZE / HELD
-    for y in range(HELD):
-        for x in range(HELD):
-            cover = {}
-            for sy in range(int(y * k), min(SIZE, int(math.ceil((y + 1) * k)))):
-                for sx in range(int(x * k), min(SIZE, int(math.ceil((x + 1) * k)))):
-                    share = (min(sx + 1, (x + 1) * k) - max(sx, x * k)) * (min(sy + 1, (y + 1) * k) - max(sy, y * k))
-                    c = canvas.px[sy][sx]
-                    cover[c] = cover.get(c, 0) + share
-            air = cover.pop(None, 0)
-            if cover:
-                colour, most = max(cover.items(), key=lambda kv: kv[1])
-                if sum(cover.values()) >= air * 0.6:
-                    small.px[y][x] = colour
-    small.outline()
-    return small
+    return posed(canvas, k), posed(canvas, k, FRONT_TURN)
 
 
 def main(argv):
@@ -3243,8 +3344,10 @@ def main(argv):
     for item_id in ids:
         (SPRITES / f"item_{item_id}.png").write_bytes(render(item_id).png())
         if item_id in weapons:
-            (SPRITES / f"held_{item_id}.png").write_bytes(held(item_id).png())
-    print(f"wrote {len(ids)} item sprites to art/sprites/ (and held_<id>.png for the weapons)")
+            side, front = held_pair(item_id)
+            (SPRITES / f"held_{item_id}_side.png").write_bytes(side.png())
+            (SPRITES / f"held_{item_id}_front.png").write_bytes(front.png())
+    print(f"wrote {len(ids)} item sprites to art/sprites/ (and held_<id>_side/_front.png for the weapons)")
     if sheet_path:
         columns, scale, pad = 6, 4, 4
         rows = math.ceil(len(ids) / columns)

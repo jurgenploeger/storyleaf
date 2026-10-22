@@ -102,9 +102,16 @@ one body and wrong on another isn't done.
 ### Held weapons and item icons
 
 - Item icons are 32 × 32, drawn in `tools/item_art.py`, outlined.
-- A weapon is held from its own 24 × 24 sprite (`held_<id>.png`), one of its pixels to one of the hero's,
-  shrunk offline before its outline. Never scale pixel art by a fraction in the game: at 0.72 nearest-neighbour
-  dropped every third row and column and every weapon looked ragged.
+- A weapon is held from its own sprites (`held_<id>_side.png`, `held_<id>_front.png`), its grip in the middle
+  of a 64-pixel canvas, one of its pixels to one of the hero's, shrunk and turned offline before its outline.
+  Never scale or turn pixel art by a fraction in the game: at 0.72 nearest-neighbour dropped every third row and
+  column and every weapon looked ragged.
+- Walking left or right it points up and away from the body, behind it, the hand over its grip.
+- Facing you it stands nearly upright at the side, in front of the body, leaning out past the head (2026-10-22:
+  held sideways from the front, as on the side, looked wrong). Facing away it's the same, behind the body. No
+  blade or axe head over the face, on any body.
+- A whip's lash hangs down from a short handle and trails on the ground by the feet (2026-10-22: held up like a
+  sword, a whip read as a stick). Its icon keeps the coil.
 
 ## How to check
 

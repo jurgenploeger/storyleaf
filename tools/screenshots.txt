@@ -661,3 +661,6 @@ homes_candy_mountain | newgame,map=candy_mountain,at=5_-14,weather=clear,hour=12
 homes_smiling_forest | newgame,map=smiling_forest,at=5_2,weather=clear,hour=12 | 8
 homes_crystal_mountain | newgame,map=crystal_mountain,at=-8_6,weather=clear,hour=12 | 8
 homes_secret_plain | newgame,map=secret_plain,at=-27_1,weather=clear,hour=12 | 8
+# Weapons in hand (2026-10-22): upright at the side facing you, a whip's lash hanging down.
+held_whip    | newgame,level=20,class=tamer,equip=leather_vest+cowhide_whip,weather=clear,hour=12 | 8
+character_whip | newgame,level=20,class=tamer,equip=cowhide_whip,menu=character | 8

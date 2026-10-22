@@ -3,8 +3,8 @@
 two sprites, by the same rules as tools/item_art.py's drawn weapons:
 
 - art/sprites/item_<id>.png, 32 × 32: the icon in bags, shops and the Character tab;
-- art/sprites/held_<id>.png, 24 × 24: the weapon in hand (GearArt.weapon), one of its pixels to one
-  of the hero's.
+- art/sprites/held_<id>_side.png and _front.png: the weapon in hand walking left or right, and nearly
+  upright facing you or away (GearArt.posed, item_art.posed), one of its pixels to one of the hero's.
 
 Both are shrunk from the RD drawing with its own outline taken off, each pixel the colour that
 covers most of it (a thin blade wins over the air beside it), then outlined afresh in the items'
@@ -16,7 +16,7 @@ it's shrunk. A magic weapon's glow (items.json `glow`) goes round its tip, found
     python3 tools/weapon_art.py                       # every weapon in PICKED
     python3 tools/weapon_art.py --out DIR bronze_sword=art-variants/rdw_bronze_sword/x_1.png
                                                        # a candidate, written to DIR instead
-Check in hand with `python3 tools/gear_preview.py --weapons out.png <id> [held sprite]`.
+Check in hand with `python3 tools/gear_preview.py --weapons out.png <id> [folder]`.
 """
 
 import json
@@ -97,10 +97,13 @@ def tip(c):
 
 
 def make(item_id, path, turn=0, out=None):
-    """Writes item_<id>.png and held_<id>.png (to art/sprites/, or `out`); returns the glow spot."""
+    """Writes item_<id>.png and held_<id>_side/_front.png (to art/sprites/, or `out`); returns the glow
+    spot."""
     items = {i["id"]: i for i in json.loads((ROOT / "content" / "items.json").read_text())["items"]}
     src = load(path, turn)
-    icon, held = shrink(src, ia.SIZE, ICON_INNER), shrink(src, ia.HELD, HELD_INNER)
+    icon = shrink(src, ia.SIZE, ICON_INNER)
+    k = src.size / HELD_INNER        # its pixels to one of the hero's: as long held as a drawn one
+    side, front = ia.posed(src, k), ia.posed(src, k, ia.FRONT_TURN)
     spot = None
     if items[item_id].get("glow"):
         spot = tip(icon)
@@ -108,7 +111,8 @@ def make(item_id, path, turn=0, out=None):
     folder = pathlib.Path(out) if out else ia.SPRITES
     folder.mkdir(parents=True, exist_ok=True)
     (folder / f"item_{item_id}.png").write_bytes(icon.png())
-    (folder / f"held_{item_id}.png").write_bytes(held.png())
+    (folder / f"held_{item_id}_side.png").write_bytes(side.png())
+    (folder / f"held_{item_id}_front.png").write_bytes(front.png())
     return spot
 
 
