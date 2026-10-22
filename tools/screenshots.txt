@@ -664,3 +664,6 @@ homes_secret_plain | newgame,map=secret_plain,at=-27_1,weather=clear,hour=12 | 8
 # Weapons in hand (2026-10-22): upright at the side facing you, a whip's lash hanging down.
 held_whip    | newgame,level=20,class=tamer,equip=leather_vest+cowhide_whip,weather=clear,hour=12 | 8
 character_whip | newgame,level=20,class=tamer,equip=cowhide_whip,menu=character | 8
+# Capes the same shape on every body (2026-10-22): from behind, on the bodies the old stretch made boxy.
+cape_dwarf_girl | newgame,race=dwarf,gender=female,level=30,equip=sunny_meadow_cape,facing=up,weather=clear,hour=12 | 8
+cape_elf_girl   | newgame,race=elf,gender=female,level=30,equip=mage_robe+sunny_meadow_cape,facing=up,weather=clear,hour=12 | 8
