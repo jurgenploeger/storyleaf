@@ -106,13 +106,11 @@ one body and wrong on another isn't done.
   of a 64-pixel canvas, one of its pixels to one of the hero's, shrunk and turned offline before its outline.
   Never scale or turn pixel art by a fraction in the game: at 0.72 nearest-neighbour dropped every third row and
   column and every weapon looked ragged.
-- Walking left or right it points up and away from the body, behind it, the hand over its grip.
-- Facing you it's held up nearly upright in the hand at the body's side, in front of it, and the head (down to
-  the neck, `GearArt.neck`) is drawn again over it (`GearArt.overHead`), so the blade or axe head passes behind
-  the head and shows above the shoulder. Facing away it's the same, behind the body. No blade or axe head over
-  the face, on any body. Learned 2026-10-22: held sideways from the front, as on the side, looked wrong;
-  upright at the hand, the hand at chest height beside the face, a crossguard or axe head lay over the face;
-  moved off to the side to clear it, the weapon looked stood behind the hero; lowered, it wasn't held up.
+- It's in one hand, the same one every way (on your right facing you), so it follows basic physics: in front
+  of the body (and the face) where that hand is nearer you, facing you and walking right; behind it where it's
+  farther, facing away and walking left. Walking left or right it points up and away; facing you or away it's
+  held up nearly upright. Learned 2026-10-22: held sideways from the front, as on the side, looked wrong; moved
+  off to the side to keep the face clear, it looked stood behind the hero, not held.
 - A whip's lash hangs down from a short handle and trails on the ground by the feet (2026-10-22: held up like a
   sword, a whip read as a stick). Its icon keeps the coil.
 

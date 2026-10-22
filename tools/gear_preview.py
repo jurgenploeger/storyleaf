@@ -1173,22 +1173,21 @@ def hat_sheet(out, hats=None):
     print(f"wrote {out}: {', '.join(i['id'] for i in worn)}")
 
 
-NECK = 0.45   # GearArt.neck: the head drawn over a weapon held up in front, down this far
-HAND = {"down": (5, 0.6), "up": (5, 0.57), "right": (3, 0.56), "left": (-4, 0.56)}   # GearArt.hand
+HAND = {"down": (5, 0.6), "up": (-8, 0.57), "right": (3, 0.56), "left": (-4, 0.56)}   # GearArt.hand
 
 
 def holding(frame, weapon, facing):
     """A 48-pixel walk frame with `weapon` in hand, as GearArt.pose places it: the held sprite for
     the way it faces (art/sprites/held_<id>_side.png, or _front.png facing you or away; its grip in
     its middle) on the hand, beside the body and part way down the figure as drawn in this frame,
-    held up in front of the body facing you, the head drawn over it, and behind it otherwise,
-    mirrored facing left."""
+    in front of the body where the hand is nearer you (facing you, walking right), else behind it,
+    mirrored facing away or left."""
     from PIL import Image
     rows = np.where((frame[..., 3] > 127 / 255).any(axis=1))[0]
     top, bottom = (rows[0], rows[-1] + 1) if len(rows) else (0.27 * FRAME, 0.94 * FRAME)
     across, down = HAND[facing]
     hx, hy = FRAME / 2 + across, top + down * (bottom - top)
-    if facing == "left":   # facing away it leans out past the head, as facing you
+    if facing in ("up", "left"):   # the far side: mirrored
         weapon = weapon[:, ::-1]
     h, w = weapon.shape[:2]
     canvas = Image.new("RGBA", (FRAME * 2, FRAME * 2), (0, 0, 0, 0))   # room for a blade past the frame
@@ -1196,14 +1195,11 @@ def holding(frame, weapon, facing):
     held = Image.fromarray((weapon * 255).round().astype(np.uint8), "RGBA")
     spot = (int(round(pad + hx - w / 2)), int(round(pad + hy - h / 2)))
     body = Image.fromarray((np.clip(frame, 0, 1) * 255).round().astype(np.uint8), "RGBA")
-    # Facing you it's held up in front, the head drawn again over it down to the neck (GearArt.overHead),
-    # so the blade passes behind the head; else behind the body, the hand over its grip.
+    # In one hand, the same one every way: in front of the body where that hand is nearer you (facing
+    # you, walking right), behind it where it's farther.
     layers = [(held, spot), (body, (pad, pad))]
-    if facing == "down":
-        head = frame.copy()
-        head[int(top + NECK * (bottom - top)):] = 0
-        layers = [(body, (pad, pad)), (held, spot),
-                  (Image.fromarray((np.clip(head, 0, 1) * 255).round().astype(np.uint8), "RGBA"), (pad, pad))]
+    if facing in ("down", "right"):
+        layers.reverse()
     for layer, at in layers:
         canvas.alpha_composite(layer, at)
     return canvas

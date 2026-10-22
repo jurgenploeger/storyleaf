@@ -3202,11 +3202,9 @@ def render(item_id):
 HELD = 24   # a held weapon's span on the side: half a 48-pixel walk frame, one pixel to one of the sprite's
 POSED = 64  # held_<id>_side and _front: a canvas with the grip in its middle (GearArt.posed)
 GRIP_UP = (2.25, -1.5)   # the hand closes this far up the handle from its end, in the hero's pixels
-# Facing you or away (held_<id>_front): degrees the side view turns, to held up nearly upright, leaning a
-# little out from the body. Facing you the game draws the head again over it (GearArt.overHead), so the
-# blade passes behind the head: held up at the hand without that, a crossguard or an axe head lay over
-# the face; off to the side to clear it, it looked stood behind the hero; lowered, it wasn't held up
-# (playtesting 2026-10-22).
+# Facing you or away (held_<id>_front): degrees the side view turns, to held up nearly upright in the hand,
+# leaning a little out from the body; facing you in front of the body and face, as a weapon held up is
+# (playtesting 2026-10-22: sideways looked wrong, off to the side it looked stood behind the hero).
 FRONT_TURN = 30
 
 

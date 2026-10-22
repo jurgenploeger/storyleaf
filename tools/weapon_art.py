@@ -34,7 +34,13 @@ VARIANTS = ROOT / "art-variants"
 ICON_INNER, HELD_INNER = 27, 20   # as big as the drawn weapons (tools/item_art.py), outline aside
 
 # item id → (the picked RD drawing under art-variants/, degrees to turn it anticlockwise).
-PICKED = {}
+PICKED = {
+    "bronze_sword": ("rdw_bronze_sword/20261022-175549_2.png", 0),
+    "dragon_god_sword": ("rdw_dragon_god_sword/20261022-175616_1.png", 0),
+    "thunder_god_axe": ("rdw_thunder_god_axe/20261022-175843_1.png", 0),
+    "oak_staff": ("rdw_oak_staff/20261022-175925_0.png", 0),
+    "starfall_staff": ("rdw_starfall_staff/20261022-180009_1.png", 0),
+}
 
 
 def load(path, turn=0):

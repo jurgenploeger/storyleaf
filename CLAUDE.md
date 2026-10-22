@@ -61,10 +61,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `tools/item_art.py`: draws every item's 32×32 sprite in code (free); rerun it after editing a drawing. A weapon also
   gets `held_<id>_side.png` and `_front.png` (`held_pair`), its grip in the middle of a 64-pixel canvas, one of its
   pixels to one of the hero's (`GearArt.posed`): its drawing about 24 pixels across walking left or right; facing
-  you or away held up nearly upright in the hand (`FRONT_TURN`), facing you in front of the body with the head drawn
-  again over it (`GearArt.overHead`), so the blade passes behind the head (held sideways from the front it looked
-  wrong, upright at the hand without that it covered the face, off to the side it looked stood behind); a whip's lash
-  hanging down to the feet (`hanging_whip`; held up like a sword it
+  you or away held up nearly upright in the hand (`FRONT_TURN`). Always in the same hand: in front of the body where
+  it's nearer you (facing you, walking right), behind it where it's farther (held sideways from the front it looked
+  wrong, off to the side it looked stood behind); a whip's lash hanging down to the feet (`hanging_whip`; held up like a sword it
   read as a stick). Shrunk and turned offline, each pixel the colour covering most of it: in the game it was ragged.
 - `tools/store_slides.py`: App Store slides from the landscape `store_land_*` screenshot scenes: captions in the
   logo's style (`tools/store_slides.json`, font in `tools/fonts/`), cropped clear of the Dynamic Island the
