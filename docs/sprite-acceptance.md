@@ -89,6 +89,9 @@ one body and wrong on another isn't done.
 - Stretched to each body's height and shoulders, resized evenly (`spread`: its repeated rows and columns spread
   across it, its edges and hem kept), so it's the same shape on every body. Stretched through its middle
   (2026-10-22) it turned boxy on the bodies it grew most on, the line down its back a solid block.
+- A hide cloak (an armour with `wear` cloak and no sheet of its own) is the same cape, in its colour, its fur
+  colour along the hem, no emblem (`GearLook.cloak`). Drawn as a plain trapezoid of its own (until 2026-10-22)
+  it looked blocky beside the capes.
 - No gap between it and the body in any frame (playtesting 2026-10-21): every walk frame, every
   direction, every body under every armour. From the front it's one cloth behind the body, its lining
   showing between an arm swung out and the body; from the side it meets the back, and nothing hangs

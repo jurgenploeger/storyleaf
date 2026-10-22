@@ -13,6 +13,9 @@ nonisolated struct GearLook: Sendable, Hashable {
     /// A status cape on the back (items.json type cape): its colour and its trim, "#RRGGBB".
     var cape: String? = nil
     var capeTrim: String? = nil
+    /// A hide cloak's colour (an armour with `wear` cloak and no walk sheet of its own), "#RRGGBB":
+    /// it hangs as a status cape does (`drape`), its fur (`accent`) along the hem.
+    var cloak: String? = nil
     /// Gloves, boots and a necklace, each in its colour (items.json `color`; a necklace's chain is
     /// its `accent`), "#RRGGBB".
     var gloves: String? = nil
@@ -38,7 +41,7 @@ nonisolated struct GearLook: Sendable, Hashable {
     var body: String? = nil
 
     var isPlain: Bool {
-        wear == nil && cape == nil && gloves == nil && boots == nil && necklace == nil && hat == nil && scarf == nil && hood == nil
+        wear == nil && cape == nil && cloak == nil && gloves == nil && boots == nil && necklace == nil && hat == nil && scarf == nil && hood == nil
     }
 }
 
@@ -72,19 +75,30 @@ enum GearOverlay {
         // The frame a scarf finds the chin on from behind: the one facing you.
         let frontRow = directions.firstIndex(of: "down")
         var capes: [Piece] = []
+        let capeTrim = color(hex: gear.capeTrim) ?? RGB(0.95, 0.78, 0.25)
         if let capePiece, let sheet = Bitmap(capePiece), sheet.width == frame, sheet.height >= frame * directions.count,
            let colour = color(hex: gear.cape) {
-            let trim = color(hex: gear.capeTrim) ?? RGB(0.95, 0.78, 0.25)
-            capes = directions.indices.map { Self.cape(sheet, row: $0, size: frame, colour: colour, trim: trim) }
+            capes = directions.indices.map { Self.cape(sheet, row: $0, size: frame, colour: colour, trim: capeTrim) }
+        }
+        // A hide cloak is the same cape in its own colour, its fur along the hem (playtesting
+        // 2026-10-22: drawn as a plain trapezoid of its own, it looked blocky beside the capes).
+        var cloaks: [Piece] = []
+        if let capePiece, let sheet = Bitmap(capePiece), sheet.width == frame, sheet.height >= frame * directions.count,
+           let colour = color(hex: gear.cloak) {
+            cloaks = directions.indices.map { Self.cape(sheet, row: $0, size: frame, colour: colour, trim: accent) }
         }
         for (row, facing) in directions.enumerated() {
             for column in 0..<(base.width / frame) {
                 dress(&out, base: base, origin: (column * frame, row * frame), size: frame, facing: facing, gear: gear, accent: accent)
                 if gear.hood != nil { hood(&out, base: base, origin: (column * frame, row * frame), size: frame, gear: gear) }
                 trinkets(&out, body: body, origin: (column * frame, row * frame), size: frame, facing: facing, gear: gear)
-                if gear.cape != nil, row < capes.count {
+                if let colour = color(hex: gear.cloak), row < cloaks.count {
                     drape(&out, base: base, origin: (column * frame, row * frame), size: frame, facing: facing,
-                          gear: gear, piece: capes[row])
+                          piece: cloaks[row], colour: colour, trim: accent, emblem: false)
+                }
+                if let colour = color(hex: gear.cape), row < capes.count {
+                    drape(&out, base: base, origin: (column * frame, row * frame), size: frame, facing: facing,
+                          piece: capes[row], colour: colour, trim: capeTrim, emblem: true)
                 }
                 if gear.scarf != nil, row < scarves.count {
                     scarf(&out, body: body, base: base, origin: (column * frame, row * frame), size: frame, facing: facing,
@@ -109,10 +123,10 @@ enum GearOverlay {
     /// hangs over the body, the hair falling over its top, its emblem (a diamond) on the back; from
     /// the front and the side it shows past the body's outline, a clasp at the collar. Resized evenly
     /// (`Piece.spread`), so it's the same shape on every body. tools/gear_preview.py `cape`.
+    /// A hide cloak hangs the same way, in its colour, with no emblem (`emblem` false).
     nonisolated private static func drape(_ out: inout Bitmap, base: Bitmap, origin: (x: Int, y: Int), size: Int,
-                                          facing: String, gear: GearLook, piece: Piece) {
+                                          facing: String, piece: Piece, colour: RGB, trim: RGB, emblem: Bool) {
         guard piece.box != nil, let figure = Self.figure(base, origin: origin, size: size) else { return }
-        let trim = color(hex: gear.capeTrim) ?? RGB(0.95, 0.78, 0.25)
         func opaque(_ x: Int, _ y: Int) -> Bool {
             x >= 0 && y >= 0 && x < size && y < size && base.alpha(origin.x + x, origin.y + y) > 0.5
         }
@@ -145,9 +159,9 @@ enum GearOverlay {
         }
         if facing != "up" {
             lining(&out, base: base, origin: origin, size: size, fitted: fitted, dx: dx, dy: dy, shoulder: shoulder,
-                   colour: color(hex: gear.cape) ?? RGB(0.5, 0.5, 0.5), trim: trim, front: facing == "down")
+                   colour: colour, trim: trim, front: facing == "down")
         }
-        if facing == "up" {
+        if facing == "up", emblem {
             let emblem = shoulder + 6
             for ey in -2...2 {
                 for ex in (abs(ey) - 2)...(2 - abs(ey)) where !hair(cx + ex, emblem + ey) {
@@ -351,48 +365,8 @@ enum GearOverlay {
                 put(x, hemBottom - 1, accent)
             }
         case "cloak":
-            let top = y0, hem = feet - 3
-            guard hem > top else { break }
-            if facing == "up" {
-                // From behind: the cape covers the back, widening toward the hem.
-                for y in top...hem {
-                    let w = (y - top) / 3
-                    for x in (x0 - w)...(x1 + w) {
-                        let edge = x == x0 - w || x == x1 + w || y == hem
-                        let furred = gear.pattern == "fur" && !edge && y >= hem - 2
-                        put(x, y, furred ? fur(x, y) : edge ? outline : (x == cx - 2 ? light : mid))
-                    }
-                }
-            } else {
-                // From the front or side: the cape shows just outside the body's outline.
-                for y in (top + 1)...hem {
-                    guard let left = (0..<size).first(where: { opaque($0, y) }),
-                          let right = (0..<size).last(where: { opaque($0, y) }) else { continue }
-                    let flare = (y - top) / 5
-                    // (x, whether it's the cape's outer edge)
-                    var spots: [(Int, Bool)] = []
-                    switch facing {
-                    case "down":
-                        spots = [(left - 1 - flare, true), (right + 1 + flare, true)]
-                        if flare > 0 { spots += [(left - flare, false), (right + flare, false)] }
-                    case "right":
-                        spots = [(left - 1 - flare, true)]
-                        for k in 0...flare { spots.append((left - k, false)) }
-                    default:
-                        spots = [(right + 1 + flare, true)]
-                        for k in 0...flare { spots.append((right + k, false)) }
-                    }
-                    for (x, outer) in spots {
-                        let furred = gear.pattern == "fur" && !outer && y >= hem - 2
-                        put(x, y, furred ? fur(x, y) : outer ? outline : mid, onlyEmpty: true)
-                    }
-                }
-                if facing == "down" {
-                    put(cx, top, accent)
-                    put(cx - 1, top, accent)
-                    put(cx, top + 1, accent.scaled(0.7))
-                }
-            }
+            // Hung from the shoulders like a status cape, in `apply` (`GearLook.cloak`, `drape`).
+            break
         default:
             break
         }

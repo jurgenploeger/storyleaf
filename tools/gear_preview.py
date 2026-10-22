@@ -256,41 +256,7 @@ def apply(base, recolored, wear=None, accent=None, pattern=None):
                     put(x, hem_bottom, dark)
                     put(x, hem_bottom - 1, acc)
             elif wear == 'cloak':
-                top, bot = y0, yb - 3
-                cx = (x0 + x1) // 2
-                if facing == 'up':
-                    # From behind: the cape covers the back, widening toward the hem.
-                    for y in range(top, bot + 1):
-                        w = (y - top) // 3
-                        for x in range(x0 - w, x1 + w + 1):
-                            edge = x in (x0 - w, x1 + w) or y == bot
-                            c = outline if edge else (light if x == cx - 2 else mid)
-                            if pattern == 'fur' and not edge and y >= bot - 2:
-                                c = fur(x, y)
-                            put(x, y, c)
-                else:
-                    # From the front or side: the cape shows just outside the body's outline.
-                    for y in range(top + 1, bot + 1):
-                        filled = np.nonzero(a[y])[0]
-                        if len(filled) == 0:
-                            continue
-                        left, right = filled.min(), filled.max()
-                        flare = (y - top) // 5
-                        if facing == 'down':
-                            spots = [(left - 1 - flare, True), (right + 1 + flare, True)]
-                            spots += [(left - flare, False)] if flare else []
-                            spots += [(right + flare, False)] if flare else []
-                        elif facing == 'right':
-                            spots = [(left - 1 - flare, True)] + [(left - k, False) for k in range(0, flare + 1)]
-                        else:
-                            spots = [(right + 1 + flare, True)] + [(right + k, False) for k in range(0, flare + 1)]
-                        for x, outer in spots:
-                            c = outline if outer else mid
-                            if pattern == 'fur' and not outer and y >= bot - 2:
-                                c = fur(x, y)
-                            put(x, y, c, only_empty=True)
-                    if facing == 'down':
-                        put(cx, top, acc); put(cx - 1, top, acc); put(cx, top + 1, shade(acc, 0.7))
+                pass   # hung from the shoulders like a status cape, in `dressed` (`cape`, GearLook.cloak)
             # A helmet or hood (hero_layers.py) comes in magenta: soft magenta takes the armour's
             # colour, keeping its shade, and full magenta the trim.
             for y in range(FRAME):
@@ -866,14 +832,14 @@ def enclosed(clear):
     return clear & ~reached
 
 
-def cape(base, out, colour, trim):
+def cape(base, out, colour, trim, emblem=True):
     """A status cape over whatever is worn (GearOverlay.drape): the cape Retro Diffusion drew
     (art/sprites/wear_cape.png, cut out by tools/wear_art.py) in its colour, stretched to the body
     (its shoulders 0.38 of the way from the top of the head to the feet, as wide as it is there, and
     as long down to the feet), its trim along the hem. From behind it hangs over the body, the hair
     falling over its top, a diamond emblem on the back; from the front and the side it shows past the
     body's outline, a clasp at the collar. Resized evenly (`spread`), so it's the same shape on every
-    body."""
+    body. A hide cloak hangs the same way, in its colour, its fur along the hem, no emblem."""
     acc = hexc(trim)
     outline = np.array([0.16, 0.12, 0.18])
     sheet = piece_sheet("cape")
@@ -925,12 +891,12 @@ def cape(base, out, colour, trim):
                     put(x + dx, y + dy, t[y, x, :3], only_empty=True)
             if facing != 'up':
                 lining(t, dx, dy, shoulder, a, f, put, hexc(colour), acc, outline, facing == 'down')
-            if facing == 'up':
-                emblem = shoulder + 6
+            if facing == 'up' and emblem:
+                emblem_y = shoulder + 6
                 for ey in range(-2, 3):
                     for ex in range(abs(ey) - 2, 3 - abs(ey)):
-                        if not hair(cx + ex, emblem + ey):
-                            put(cx + ex, emblem + ey, acc if abs(ex) + abs(ey) < 2 else shade(acc, 0.7))
+                        if not hair(cx + ex, emblem_y + ey):
+                            put(cx + ex, emblem_y + ey, acc if abs(ex) + abs(ey) < 2 else shade(acc, 0.7))
             elif facing == 'down':
                 put(cx, shoulder, acc); put(cx - 1, shoulder, acc); put(cx, shoulder + 1, shade(acc, 0.7))
     return out
@@ -1121,6 +1087,9 @@ def dressed(race, body, style, armour=None, worn=(), skin=None):
     plain = np.asarray(load(skeleton)).astype(float) / 255
     out = trinkets(plain, out, gloves=pieces.get("gloves", {}).get("color"),
                    boots=pieces.get("boots", {}).get("color"), necklace=necklace.get("color"), chain=necklace.get("accent"))
+    if not sheet and (armour or {}).get("wear") == "cloak":
+        # A hide cloak: the cape in its colour, its fur along the hem (GearLook.cloak).
+        out = cape(base, out, armour["color"], armour.get("accent") or "#F2C740", emblem=False)
     if "cape" in pieces:
         out = cape(base, out, pieces["cape"]["color"], pieces["cape"]["accent"])
     if wrap:
