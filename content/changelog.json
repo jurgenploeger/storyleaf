@@ -2,13 +2,14 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
-      "version": "0.7.64",
+      "version": "0.7.65",
       "date": "2026-10-22",
       "title": "Waystones and favours",
       "notes": [
         "Seven waystones out in the wild wake when you finish their quests: touch one to travel free to any town you've been to or waystone you've woken, and Homeward Feathers and Bridge of Light reach them too.",
         "Some quests are favours now: carry something to someone in another land, and bring back what they send.",
-        "Elite quests ask more of you for bigger rewards, and every quest shows how hard it is, from Easy to Elite."
+        "Elite quests ask more of you for bigger rewards, and every quest shows how hard it is, from Easy to Elite.",
+        "Every land builds its own homes now: adobe houses and tents in the desert, beach huts by the sea, snowy cabins and an igloo in the north, stilt huts in the swamps and crooked cottages where it's spooky."
       ]
     },
     {

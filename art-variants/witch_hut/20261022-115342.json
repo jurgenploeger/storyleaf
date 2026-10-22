@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "creepy witch's hut with a twisted chimney, a cauldron by the door and hanging bones",
+    "prompt_style": "rd_tile__tile_object",
+    "width": 96,
+    "height": 96,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792670021,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_fast",
+    "remaining_credits": 0,
+    "remaining_balance": 37.931,
+    "request_id": "abfd8644-cc81-4ba2-97e8-47b57772a9c4",
+    "outputs_retained_until": 1792756387
+  }
+}

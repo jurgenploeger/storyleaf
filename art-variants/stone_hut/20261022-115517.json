@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "sturdy mountain hut of grey fieldstone with a slate roof and a lantern by the door",
+    "prompt_style": "rd_tile__tile_object",
+    "width": 96,
+    "height": 96,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792670116,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_fast",
+    "remaining_credits": 0,
+    "remaining_balance": 37.571,
+    "request_id": "5b68fe45-7b44-4c95-9db3-615c59373682",
+    "outputs_retained_until": 1792756471
+  }
+}

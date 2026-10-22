@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "tiny fairytale dwarves' cottage with a steep snowy roof, seven little windows and a carved wooden door",
+    "prompt_style": "rd_tile__tile_object",
+    "width": 96,
+    "height": 96,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792669692,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_fast",
+    "remaining_credits": 0,
+    "remaining_balance": 38.831,
+    "request_id": "ba0eccbc-6b05-428b-a83c-14dafb6a2f1f",
+    "outputs_retained_until": 1792756059
+  }
+}

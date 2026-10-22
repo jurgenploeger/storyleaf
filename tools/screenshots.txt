@@ -644,3 +644,20 @@ hud_gold_k        | newgame,gold=45678,weather=clear,hour=12                  | 
 hud_gold_m        | newgame,level=125,gold=1457603,weather=clear,hour=22      | 8
 # Settings with footsteps switched off (the darker switch). `quiet` leaves them off, so this runs last.
 settings_quiet | newgame,menu=settings,weather=clear,quiet | 8
+# Each land's own homes (Retro Diffusion, 2026-10-22): standing just in front of one, at noon.
+homes_genie_desert | newgame,map=genie_desert,at=-9_19,weather=clear,hour=12 | 8
+homes_goldburg | newgame,map=goldburg,at=-26_20,weather=clear,hour=12 | 8
+homes_snow_white_forest | newgame,map=snow_white_forest,at=15_-2,weather=clear,hour=12 | 8
+homes_rosen_lake | newgame,map=rosen_lake,at=5_-7,weather=clear,hour=12 | 8
+homes_frog_swamp | newgame,map=frog_swamp,at=-14_-18,weather=clear,hour=12 | 8
+homes_lotus_land | newgame,map=lotus_land,at=-28_17,weather=clear,hour=12 | 8
+homes_valley_of_fear | newgame,map=valley_of_fear,at=-19_-11,weather=clear,hour=12 | 8
+homes_puppet_hill | newgame,map=puppet_hill,at=4_2,weather=clear,hour=12 | 8
+homes_hachoo_island | newgame,map=hachoo_island,at=-11_-6,weather=clear,hour=12 | 8
+homes_moonglow | newgame,map=moonglow,at=-12_-6,weather=clear,hour=12 | 8
+homes_water_temple | newgame,map=water_temple,at=-22_4,weather=clear,hour=12 | 8
+homes_sleepy_town | newgame,map=sleepy_town,at=4_8,weather=clear,hour=12 | 8
+homes_candy_mountain | newgame,map=candy_mountain,at=5_-14,weather=clear,hour=12 | 8
+homes_smiling_forest | newgame,map=smiling_forest,at=5_2,weather=clear,hour=12 | 8
+homes_crystal_mountain | newgame,map=crystal_mountain,at=-8_6,weather=clear,hour=12 | 8
+homes_secret_plain | newgame,map=secret_plain,at=-27_1,weather=clear,hour=12 | 8
