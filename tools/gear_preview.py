@@ -630,6 +630,8 @@ def scarf(body, out, colour, base=None):
         piece = painted(sheet[row * FRAME:(row + 1) * FRAME], colour)
         if bbox(piece) is None:
             continue
+        if facing == 'down':
+            piece = symmetric(piece)
         for c in range(body.shape[1] // FRAME):
             oy, ox = row * FRAME, c * FRAME
             f = out[oy:oy + FRAME, ox:ox + FRAME]
@@ -832,14 +834,30 @@ def enclosed(clear):
     return clear & ~reached
 
 
-def cape(base, out, colour, trim, emblem=True):
+def symmetric(t):
+    """A piece the same on both sides of ANCHOR_X, each side taking what the other has where it has
+    nothing (GearOverlay's Piece.symmetric): from the front, Retro Diffusion drew one panel of the cape
+    shorter, hidden by its wearer's arm, and a gap showed where the hero's arm had been as it swung
+    (playtesting 2026-10-22)."""
+    out = t.copy()
+    for x in range(FRAME):
+        m = 2 * ANCHOR_X - x
+        if 0 <= m < FRAME:
+            take = (out[:, x, 3] <= 0.5) & (t[:, m, 3] > 0.5)
+            out[take, x] = t[take, m]
+    return out
+
+
+def cape(base, out, colour, trim, emblem=True, skeleton=None):
     """A status cape over whatever is worn (GearOverlay.drape): the cape Retro Diffusion drew
     (art/sprites/wear_cape.png, cut out by tools/wear_art.py) in its colour, stretched to the body
     (its shoulders 0.38 of the way from the top of the head to the feet, as wide as it is there, and
     as long down to the feet), its trim along the hem. From behind it hangs over the body, the hair
     falling over its top, a diamond emblem on the back; from the front and the side it shows past the
     body's outline, a clasp at the collar. Resized evenly (`spread`), so it's the same shape on every
-    body. A hide cloak hangs the same way, in its colour, its fur along the hem, no emblem."""
+    body. A hide cloak hangs the same way, in its colour, its fur along the hem, no emblem. The body is
+    measured on `skeleton` (the plain bald body, GearLook.body) where there is one, so tall hair doesn't
+    lift the shoulders (and the clasp onto the face). From the front its two panels match (`symmetric`)."""
     acc = hexc(trim)
     outline = np.array([0.16, 0.12, 0.18])
     sheet = piece_sheet("cape")
@@ -857,15 +875,21 @@ def cape(base, out, colour, trim, emblem=True):
                     piece[ys.max() + 1, x, 3] = 1
         if bbox(piece) is None:
             continue
+        measured = skeleton if skeleton is not None else base
+        figs = [figure(measured[row * FRAME:(row + 1) * FRAME, c * FRAME:(c + 1) * FRAME]) for c in range(base.shape[1] // FRAME)]
+        if any(fig is None for fig in figs):
+            continue
+        # As wide as the body gets across the walk this way, round its middle across them: measured
+        # frame by frame, an arm swung out at the shoulders moved and narrowed the cape, and a gap
+        # showed where the arm had been (playtesting 2026-10-22).
+        span = (min(fig[3] for fig in figs), max(fig[4] for fig in figs))
         for c in range(base.shape[1] // FRAME):
             oy, ox = row * FRAME, c * FRAME
             f = out[oy:oy + FRAME, ox:ox + FRAME]
             b = base[oy:oy + FRAME, ox:ox + FRAME]
             a = b[..., 3] > 0.5
-            fig = figure(b)
-            if fig is None:
-                continue
-            top, feet, shoulder, left, right = fig
+            top, feet, shoulder, _, _ = figs[c]
+            left, right = span
             cx = (left + right) // 2
             # From the front and the side a little wider than the body, so it shows past its outline.
             flare = {'up': 0, 'down': 4}.get(facing, 2)
@@ -1089,9 +1113,9 @@ def dressed(race, body, style, armour=None, worn=(), skin=None):
                    boots=pieces.get("boots", {}).get("color"), necklace=necklace.get("color"), chain=necklace.get("accent"))
     if not sheet and (armour or {}).get("wear") == "cloak":
         # A hide cloak: the cape in its colour, its fur along the hem (GearLook.cloak).
-        out = cape(base, out, armour["color"], armour.get("accent") or "#F2C740", emblem=False)
+        out = cape(base, out, armour["color"], armour.get("accent") or "#F2C740", emblem=False, skeleton=plain)
     if "cape" in pieces:
-        out = cape(base, out, pieces["cape"]["color"], pieces["cape"]["accent"])
+        out = cape(base, out, pieces["cape"]["color"], pieces["cape"]["accent"], skeleton=plain)
     if wrap:
         out = scarf(plain, out, wrap["color"], base)
     if "head" in pieces:

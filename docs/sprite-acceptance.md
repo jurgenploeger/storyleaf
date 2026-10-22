@@ -89,6 +89,10 @@ one body and wrong on another isn't done.
 - Stretched to each body's height and shoulders, resized evenly (`spread`: its repeated rows and columns spread
   across it, its edges and hem kept), so it's the same shape on every body. Stretched through its middle
   (2026-10-22) it turned boxy on the bodies it grew most on, the line down its back a solid block.
+- Its width and middle are the same in every frame of a walk (the widest the body gets, round its middle across
+  the frames), and its shoulders are measured on the plain bald body. Measured frame by frame (until 2026-10-22),
+  an arm swung out at the shoulders moved and narrowed it, so from the front one panel slid behind the body and a
+  gap showed where the arm had been; measured with the hair, tall hair lifted its top and the clasp onto the face.
 - A hide cloak (an armour with `wear` cloak and no sheet of its own) is the same cape, in its colour, its fur
   colour along the hem, no emblem (`GearLook.cloak`). Drawn as a plain trapezoid of its own (until 2026-10-22)
   it looked blocky beside the capes.

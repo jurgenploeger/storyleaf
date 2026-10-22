@@ -88,17 +88,21 @@ enum GearOverlay {
             cloaks = directions.indices.map { Self.cape(sheet, row: $0, size: frame, colour: colour, trim: accent) }
         }
         for (row, facing) in directions.enumerated() {
+            // A cape's span, as wide as the body gets across the walk this way and round its middle
+            // across them, measured on the plain body (`drape`).
+            let figures = (0..<(base.width / frame)).compactMap { Self.figure(body, origin: ($0 * frame, row * frame), size: frame) }
+            let span = figures.isEmpty ? nil : (left: figures.map { $0.left }.min() ?? 0, right: figures.map { $0.right }.max() ?? 0)
             for column in 0..<(base.width / frame) {
                 dress(&out, base: base, origin: (column * frame, row * frame), size: frame, facing: facing, gear: gear, accent: accent)
                 if gear.hood != nil { hood(&out, base: base, origin: (column * frame, row * frame), size: frame, gear: gear) }
                 trinkets(&out, body: body, origin: (column * frame, row * frame), size: frame, facing: facing, gear: gear)
                 if let colour = color(hex: gear.cloak), row < cloaks.count {
-                    drape(&out, base: base, origin: (column * frame, row * frame), size: frame, facing: facing,
-                          piece: cloaks[row], colour: colour, trim: accent, emblem: false)
+                    drape(&out, base: base, body: body, span: span, origin: (column * frame, row * frame), size: frame,
+                          facing: facing, piece: cloaks[row], colour: colour, trim: accent, emblem: false)
                 }
                 if let colour = color(hex: gear.cape), row < capes.count {
-                    drape(&out, base: base, origin: (column * frame, row * frame), size: frame, facing: facing,
-                          piece: capes[row], colour: colour, trim: capeTrim, emblem: true)
+                    drape(&out, base: base, body: body, span: span, origin: (column * frame, row * frame), size: frame,
+                          facing: facing, piece: capes[row], colour: colour, trim: capeTrim, emblem: true)
                 }
                 if gear.scarf != nil, row < scarves.count {
                     scarf(&out, body: body, base: base, origin: (column * frame, row * frame), size: frame, facing: facing,
@@ -123,10 +127,17 @@ enum GearOverlay {
     /// hangs over the body, the hair falling over its top, its emblem (a diamond) on the back; from
     /// the front and the side it shows past the body's outline, a clasp at the collar. Resized evenly
     /// (`Piece.spread`), so it's the same shape on every body. tools/gear_preview.py `cape`.
-    /// A hide cloak hangs the same way, in its colour, with no emblem (`emblem` false).
-    nonisolated private static func drape(_ out: inout Bitmap, base: Bitmap, origin: (x: Int, y: Int), size: Int,
-                                          facing: String, piece: Piece, colour: RGB, trim: RGB, emblem: Bool) {
-        guard piece.box != nil, let figure = Self.figure(base, origin: origin, size: size) else { return }
+    /// A hide cloak hangs the same way, in its colour, with no emblem (`emblem` false). The body is
+    /// measured on `body` (the plain bald body, GearLook.body), so tall hair doesn't lift the shoulders
+    /// and the clasp onto the face; its width and middle are `span`, the same for every frame of the
+    /// walk this way: measured frame by frame, an arm swung out at the shoulders moved and narrowed the
+    /// cape, and a gap showed where the arm had been (playtesting 2026-10-22).
+    nonisolated private static func drape(_ out: inout Bitmap, base: Bitmap, body: Bitmap, span: (left: Int, right: Int)?,
+                                          origin: (x: Int, y: Int), size: Int, facing: String, piece: Piece,
+                                          colour: RGB, trim: RGB, emblem: Bool) {
+        guard piece.box != nil, let measured = Self.figure(body, origin: origin, size: size) else { return }
+        let figure = (feet: measured.feet, shoulder: measured.shoulder,
+                      left: span?.left ?? measured.left, right: span?.right ?? measured.right)
         func opaque(_ x: Int, _ y: Int) -> Bool {
             x >= 0 && y >= 0 && x < size && y < size && base.alpha(origin.x + x, origin.y + y) > 0.5
         }
