@@ -641,6 +641,22 @@ def draw_dragon_tooth_charm(c):
     c.set(27, 24, WHITE); c.set(5, 15, WHITE)
 
 
+def draw_golden_ball_charm(c):
+    """The princess's golden ball, small enough to hang from a loop like the other charms: a shining
+    gold sphere with a band round its middle and a ruby set in it."""
+    c.ring(16, 3.5, 2.8, 1.5, GOLD[1])                                        # the loop
+    c.rect(15, 6, 17, 8, GOLD[0])                                             # the bail
+    c.disc(16, 19, 10, GOLD[1])
+    light_top_left(c, GOLD, 16, 19, 10)
+    for x in range(7, 26):                                                    # its band, curving round
+        y = 19 + (x - 16) ** 2 / 28
+        c.set(x, y, GOLD[0]); c.set(x, y + 1, GOLD[2] if x < 16 else GOLD[1])
+    c.disc(16, 20.5, 2.6, GOLD[0]); c.disc(16, 20.5, 1.8, RED[1])            # a ruby set in it
+    c.set(15, 20, RED[2])
+    c.disc(12, 14, 2, WHITE)                                                  # the shine
+    c.set(5, 12, WHITE); c.set(27, 9, WHITE)
+
+
 def draw_power_band(c):
     band = [hexc("8a1a2a"), hexc("d83a4a"), hexc("ff8a8a")]
     c.ring(16, 16, 11, 6.5, band[1], ry_scale=0.62)
@@ -2830,6 +2846,7 @@ PROMPTS = {  # for a later Retro Diffusion upgrade (python3 tools/rd.py generate
     "ruby_ring": "gold ring with a red ruby",
     "novice_ring": "simple copper ring with a small blue stone",
     "star_charm": "gold star charm hanging from a small loop",
+    "golden_ball_charm": "small shining golden ball charm with a band and a ruby, on a small loop",
     "dragon_tooth_charm": "curved ivory dragon fang charm capped in gold with a ruby, on a small loop",
     "power_band": "red wristband with steel studs",
     "speed_boots": "blue winged speed boots",

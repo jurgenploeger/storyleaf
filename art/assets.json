@@ -9670,19 +9670,12 @@
     {
       "id": "item_golden_ball_charm",
       "kind": "item",
-      "derive": {
-        "from": "item_ruby_ring",
-        "recolor": [
-          {
-            "hue": [
-              340,
-              10
-            ],
-            "minSaturation": 0.2,
-            "to": 50,
-            "value": 1.25
-          }
-        ]
+      "request": {
+        "prompt": "small shining golden ball charm with a band and a ruby, on a small loop, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
     {
