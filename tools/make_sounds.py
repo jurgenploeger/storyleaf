@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Synthesizes the game's sound effects into sound/*.wav (needs numpy and scipy).
 
-The effects sit with the storybook soundtrack (Fairyland/Audio/SongSynth.swift: harp, piano, strings and
+The effects sit with the storybook soundtrack (Storyleaf/Audio/SongSynth.swift: harp, piano, strings and
 flute in a hall), so they come from the same world: struck bells, chimes, glass, wood and metal (modal
 synthesis: many damped, inharmonic partials in slightly detuned pairs that beat, and a mallet), plucked
 harp strings (Karplus-Strong), soft layered impacts (a sub thump with a falling pitch, a noise body and a
@@ -18,7 +18,7 @@ no licences to track. Tweak a recipe below and rerun:
     python3 tools/make_sounds.py --report     # a table of the files: length, peak, RMS, loudness, size
 
 A recipe's name is its file name: the game plays sound/<name>.wav by the raw values of SoundEffects.Sound
-(Fairyland/Audio/SoundEffects.swift). Its @sound(...) sets how loud it is: the loudest 400 ms in LUFS
+(Storyleaf/Audio/SoundEffects.swift). Its @sound(...) sets how loud it is: the loudest 400 ms in LUFS
 (BS.1770 K-weighting), so each sits at its own level against the music whatever it's made of.
 """
 

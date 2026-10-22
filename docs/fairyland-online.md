@@ -15,7 +15,8 @@ environment couldn't open the pages themselves, so a session that can should re-
 ## Names
 
 **Us** (since 0.3.50): the game is called **Storyleaf** for players (the App Store name, the logo and
-every in-game line); the code, project and repo keep "Fairyland". The goddess Liora binds the world's tales
+every in-game line), and since 2026-10-22 in the code, project and repo too (only the bundle ID and the save files keep
+"Fairyland"). The goddess Liora binds the world's tales
 into one book, and its pages are the land. Names taken from FO were replaced with our own, and this file
 keeps the FO names when it describes the original:
 

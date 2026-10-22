@@ -3,7 +3,7 @@
 # (and a video of the scenes with record=N).
 # macOS only (needs Xcode). Used by .github/workflows/screenshots.yml; also works locally:
 #
-#   tools/screenshots.sh <simulator-udid> <path/to/Fairyland.app> <out-dir> [scenes-file] [only-these,names]
+#   tools/screenshots.sh <simulator-udid> <path/to/Storyleaf.app> <out-dir> [scenes-file] [only-these,names]
 set -euo pipefail
 
 SIM="$1"; APP="$2"; OUT="$3"; SCENES="${4:-tools/screenshots.txt}"; ONLY="${5:-}"
@@ -25,7 +25,7 @@ grep -vE '^\s*(#|$)' "$SCENES" | while IFS='|' read -r name flags wait; do
   # Right after a reinstall the simulator sometimes doesn't know the app yet ("unknown to
   # FrontBoard"), so give the launch a few tries.
   for attempt in 1 2 3 4; do
-    if SIMCTL_CHILD_FAIRYLAND_DEBUG="$flags" xcrun simctl launch "$SIM" "$BUNDLE" >/dev/null; then break; fi
+    if SIMCTL_CHILD_STORYLEAF_DEBUG="$flags" xcrun simctl launch "$SIM" "$BUNDLE" >/dev/null; then break; fi
     if [ "$attempt" = 4 ]; then echo "✗ couldn't launch for $name" >&2; exit 1; fi
     echo "  launch failed, retrying ($attempt)…"
     sleep 3
@@ -76,7 +76,7 @@ grep -vE '^\s*(#|$)' "$SCENES" | while IFS='|' read -r name flags wait; do
   # The simulator stays in portrait, so a landscape-locked app comes out sideways; turn it upright.
   if [[ ",$flags," == *",landscape,"* ]]; then sips -r 270 "$OUT/$name.png" >/dev/null; fi
   # A crash shows as the home screen; say so, with why and where (the crashed thread's frames).
-  find ~/Library/Logs/DiagnosticReports -name 'Fairyland*.ips' -newer "$OUT/.scene-start" 2>/dev/null | while read -r report; do
+  find ~/Library/Logs/DiagnosticReports -name 'Storyleaf*.ips' -newer "$OUT/.scene-start" 2>/dev/null | while read -r report; do
     echo "::error::$name: the app crashed ($(basename "$report"))"
     python3 - "$report" <<'PY' || head -c 6000 "$report"
 import json, sys
@@ -100,7 +100,7 @@ for number, other in enumerate(body.get("threads") or []):
         continue
     ours = [f for f in other.get("frames") or []
             if f.get("imageIndex") is not None and f["imageIndex"] < len(images)
-            and "Fairyland" in images[f["imageIndex"]].get("name", "")]
+            and "Storyleaf" in images[f["imageIndex"]].get("name", "")]
     if ours:
         print(f"  thread {number} ({other.get('queue') or other.get('name') or '?'}):")
         for frame in ours[:12]:

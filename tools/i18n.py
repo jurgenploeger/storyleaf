@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Translations: content/i18n/<code>.json maps each English string to its translation.
 
-The English strings are every `L("…")` in Fairyland/**/*.swift and the text fields of content/*.json
+The English strings are every `L("…")` in Storyleaf/**/*.swift and the text fields of content/*.json
 that content/i18n/fields.json names. A string with no translation shows in English.
 
   python3 tools/i18n.py extract            list every English string (JSON: text → where it's used)
@@ -50,7 +50,7 @@ def unescape(literal):
 def swift_strings():
     """(text, where) for every L("…") in the app's code, and problems found on the way."""
     found, problems = [], []
-    for path in sorted(glob.glob(str(ROOT / "Fairyland" / "**" / "*.swift"), recursive=True)):
+    for path in sorted(glob.glob(str(ROOT / "Storyleaf" / "**" / "*.swift"), recursive=True)):
         rel = Path(path).relative_to(ROOT)
         for number, line in enumerate(Path(path).read_text().splitlines(), 1):
             if line.lstrip().startswith("//") or "func L(" in line:

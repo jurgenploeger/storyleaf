@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The UI's own pixel-art icons, drawn in code like the items: writes art/sprites/ui_<icon>.png (32×32).
 
-Each is named after the `GameIcon` it stands in for (Fairyland/UI/GameIcon.swift): `IconImage` shows the
+Each is named after the `GameIcon` it stands in for (Storyleaf/UI/GameIcon.swift): `IconImage` shows the
 pixel art at button sizes (the battle buttons, the HUD's buttons, the menu's tabs) and keeps the vector
 icon for small inline glyphs. Same look as tools/item_art.py: flat colours with a light and a dark shade
 and the game's dark outline. Edit a drawing and rerun:

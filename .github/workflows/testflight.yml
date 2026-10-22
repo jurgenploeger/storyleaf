@@ -13,7 +13,7 @@ name: TestFlight
 on:
   push:
     branches: [main]
-    paths: ["Fairyland/**", "content/**", "art/**", "sound/**", "project.yml", "Config/**", ".github/workflows/testflight.yml"]
+    paths: ["Storyleaf/**", "content/**", "art/**", "sound/**", "project.yml", "Config/**", ".github/workflows/testflight.yml"]
   workflow_dispatch:
 
 concurrency:
@@ -90,20 +90,20 @@ jobs:
           # upload reached TestFlight as Xcode's default 1.0 (1)).
           VERSION=$(sed -nE 's/^ *MARKETING_VERSION: *"?([0-9.]+)"?.*/\1/p' project.yml | head -1)
           test -n "$VERSION" || { echo "::error::No MARKETING_VERSION in project.yml"; exit 1; }
-          xcodebuild -project Fairyland.xcodeproj -scheme Fairyland -configuration Release \
-            -destination 'generic/platform=iOS' -archivePath build/Fairyland.xcarchive \
+          xcodebuild -project Storyleaf.xcodeproj -scheme Storyleaf -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/Storyleaf.xcarchive \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8" \
             -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
             archive > build/archive.log 2>&1 || { tools/ci_errors.sh build/archive.log; exit 1; }
           # Check what actually went into the app before uploading it.
-          test -f build/Fairyland.xcarchive/Products/Applications/Fairyland.app/PrivacyInfo.xcprivacy \
+          test -f build/Storyleaf.xcarchive/Products/Applications/Storyleaf.app/PrivacyInfo.xcprivacy \
             || { echo "::error::PrivacyInfo.xcprivacy isn't in the app (App Store Connect refuses builds without it)"; exit 1; }
-          PLIST=build/Fairyland.xcarchive/Products/Applications/Fairyland.app/Info.plist
+          PLIST=build/Storyleaf.xcarchive/Products/Applications/Storyleaf.app/Info.plist
           BUILT=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$PLIST")
           BUILT_NUMBER=$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$PLIST")
-          echo "::notice::Archived Fairyland $BUILT ($BUILT_NUMBER)"
+          echo "::notice::Archived Storyleaf $BUILT ($BUILT_NUMBER)"
           if [ "$BUILT" != "$VERSION" ] || [ "$BUILT_NUMBER" != "$BUILD_NUMBER" ]; then
             echo "::error::The app says $BUILT ($BUILT_NUMBER) but should be $VERSION ($BUILD_NUMBER)"
             exit 1
@@ -129,7 +129,7 @@ jobs:
           </dict>
           </plist>
           EOF
-          xcodebuild -exportArchive -archivePath build/Fairyland.xcarchive \
+          xcodebuild -exportArchive -archivePath build/Storyleaf.xcarchive \
             -exportOptionsPlist build/ExportOptions.plist -exportPath build/export \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8" \
@@ -146,7 +146,7 @@ jobs:
 
       - name: Summary
         run: |
-          echo "Uploaded Fairyland $VERSION (${{ github.run_number }}.${{ github.run_attempt }}) at \`${GITHUB_SHA::7}\`." >> "$GITHUB_STEP_SUMMARY"
+          echo "Uploaded Storyleaf $VERSION (${{ github.run_number }}.${{ github.run_attempt }}) at \`${GITHUB_SHA::7}\`." >> "$GITHUB_STEP_SUMMARY"
           echo "It shows up in TestFlight after Apple finishes processing (usually 5 to 30 minutes)." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove the API key

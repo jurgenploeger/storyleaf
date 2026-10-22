@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Vendors the game's UI icons from Iconaut (MIT, https://github.com/iconaut-design/icons).
 
-Each icon lands in Fairyland/Resources/Assets.xcassets/Icons/ as a template SVG, twice:
+Each icon lands in Storyleaf/Resources/Assets.xcassets/Icons/ as a template SVG, twice:
 `icon-<name>` is Iconaut's 24px drawing and `icon-<name>-16` its simplified 16px one, so
-small icons stay crisp. The Swift side is `GameIcon` in Fairyland/UI/GameIcon.swift; keep
+small icons stay crisp. The Swift side is `GameIcon` in Storyleaf/UI/GameIcon.swift; keep
 the names here and there in sync. A few are our own drawings instead (`OWN`, from
 art/icons/<name>-24.svg and -16.svg), where Iconaut has no shape that works.
 
@@ -18,7 +18,7 @@ import shutil
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-OUT = ROOT / "Fairyland/Resources/Assets.xcassets/Icons"
+OUT = ROOT / "Storyleaf/Resources/Assets.xcassets/Icons"
 LICENSE_OUT = ROOT / "third_party/iconaut/LICENSE"
 COMMIT = "178077725739aa39b321527e4c704d460bb2383f"
 RAW = f"https://raw.githubusercontent.com/iconaut-design/icons/{COMMIT}"
