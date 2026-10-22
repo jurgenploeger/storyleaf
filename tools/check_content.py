@@ -231,8 +231,22 @@ wanted = set()
 for quest in quests.values():
     check(quest["giver"] in npcs, f"quest {quest['id']} → unknown giver {quest['giver']}")
     objective = quest["objective"]
-    check(objective["type"] in ("defeat", "capture", "reachLevel", "chooseClass", "collect", "hatch", "cards", "bring"),
+    check(objective["type"] in ("defeat", "capture", "reachLevel", "chooseClass", "collect", "hatch", "cards", "bring", "deliver"),
           f"quest {quest['id']} → unknown objective type {objective['type']}")
+    check(quest.get("difficulty", 1) in (1, 2, 3, 4), f"quest {quest['id']} → difficulty 1 (easy) to 4 (elite)")
+    if objective["type"] == "deliver":
+        # A favour for someone else (`GameSession.deliver`): something handed to you when you
+        # accept, taken to someone you can talk to, and maybe something of theirs brought back.
+        where = f"quest {quest['id']}"
+        target = npcs.get(objective.get("target"))
+        check(target is not None and target["role"] not in ("chest", "stairs", "waystone", "boss"),
+              f"{where} → deliver to whom? {objective.get('target')} isn't someone you can talk to")
+        check(objective.get("target") != quest["giver"], f"{where} → a favour is for someone other than the one who asks")
+        check(objective.get("item") in items and objective.get("item") in quest.get("starterItems", []),
+              f"{where} → what it takes ({objective.get('item')}) is handed over when you accept (starterItems)")
+        check("returns" not in objective or objective["returns"] in items, f"{where} → unknown item {objective.get('returns')}")
+        check("count" not in objective, f"{where} → a favour is done once (no count)")
+        wanted |= {objective.get("item"), objective.get("returns")} - {None}
     if objective["type"] == "bring":
         # Something in the bag, handed over: there has to be a way to get it.
         target = objective.get("target")
@@ -252,15 +266,6 @@ for quest in quests.values():
             check(any(species in (m.get("encounters") or {}).get("monsters", {}) for m in maps_file["maps"]),
                   f"{where} → {species} isn't met on any map")
         check(bool(drop.get("from")), f"{where} → dropped by whom?")
-for npc in npcs.values():
-    if npc["role"] == "chest" and npc.get("quest"):
-        check(npc["quest"] in quests, f"chest {npc['id']} → unknown quest {npc['quest']}")
-        if npc.get("gives") in items and items[npc["gives"]].get("material") == "quest":
-            wanted.add(npc["gives"])
-for item in items.values():
-    if item.get("material") == "quest":
-        check(item["id"] in wanted, f"item {item['id']} → a quest's piece no quest asks for")
-        check(item.get("price", 0) == 0, f"item {item['id']} → a quest's piece isn't for sale (price 0)")
     if objective["type"] == "defeat" and objective.get("target"):
         check(objective["target"] in monsters, f"quest {quest['id']} → unknown monster {objective['target']}")
     if objective["type"] == "cards":
@@ -273,6 +278,15 @@ for item in items.values():
         check(item in items, f"quest {quest['id']} → unknown item {item}")
     for required in quest.get("requires", []):
         check(required in quests, f"quest {quest['id']} → unknown quest {required}")
+for npc in npcs.values():
+    if npc["role"] == "chest" and npc.get("quest"):
+        check(npc["quest"] in quests, f"chest {npc['id']} → unknown quest {npc['quest']}")
+        if npc.get("gives") in items and items[npc["gives"]].get("material") == "quest":
+            wanted.add(npc["gives"])
+for item in items.values():
+    if item.get("material") == "quest":
+        check(item["id"] in wanted, f"item {item['id']} → a quest's piece no quest asks for")
+        check(item.get("price", 0) == 0, f"item {item['id']} → a quest's piece isn't for sale (price 0)")
 
 # The top level (GameSession.levelCap) is as high as anyone climbs: there's no rebirth, so it has gear
 # of its own to show for it, a piece for every slot but the cape (capes are the weaver's) and a weapon

@@ -16321,6 +16321,116 @@
       }
     },
     {
+      "id": "item_sealed_letter",
+      "kind": "item",
+      "request": {
+        "prompt": "cream envelope sealed with green wax, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_mayors_reply",
+      "kind": "item",
+      "request": {
+        "prompt": "rolled letter tied with a red ribbon and a gold seal, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_honey_jar",
+      "kind": "item",
+      "request": {
+        "prompt": "glass jar of golden honey with a red cloth lid tied with string, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_lantern_oil",
+      "kind": "item",
+      "request": {
+        "prompt": "small round glass flask of glowing amber lantern oil with a cork, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_everlasting_wick",
+      "kind": "item",
+      "request": {
+        "prompt": "short white candle on a brass dish with a blue flame, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_well_water",
+      "kind": "item",
+      "request": {
+        "prompt": "small round glass flask of clear blue water with a cork, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_herbal_tonic",
+      "kind": "item",
+      "request": {
+        "prompt": "squat glass bottle of green tonic with a sprig of herb, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_coffee_sack",
+      "kind": "item",
+      "request": {
+        "prompt": "little burlap sack of roasted coffee beans tied at the neck, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_dwarf_kettle",
+      "kind": "item",
+      "request": {
+        "prompt": "round hammered copper kettle with a gold acorn knob, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "item_ice_rose",
+      "kind": "item",
+      "request": {
+        "prompt": "rose carved from clear blue ice on a long stem, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
+      }
+    },
+    {
       "id": "item_prismscale_mail",
       "kind": "item",
       "derive": {

@@ -914,6 +914,24 @@ Earth Lions and from a Mint Shadow Ape; pieced together, 126). Its ship stays mo
 `requires`), saying which quest it waits on as you step up to it; the ship back never does. Two early ones
 show the same: Wool for the Lambs (Mother Sheep, 5 Tufts of Wool from the golden hamsters, 5) and A Flute
 for Shelly (Old Shelly, a Piece of Driftwood from the wood crabs carved with 2 White Poplar, 10).
+Since 0.7.64 a quest can be a favour for someone else (playtesting 2026-10-22: "Some quests should also
+tie to other characters, that you have to do them a favor and give another character something and then
+have to come back"), ours, after RuneScape's errands (Romeo & Juliet has you carry Juliet's message to
+Romeo): a `deliver` quest hands you its `item` when you accept (`starterItems`); its `target`, anyone
+you can talk to in any land, has a button for it in their window (`ErrandPanel`) and a "?" over them
+till you hand it over, says its `text`, and may give you `returns` to take back, which the giver takes
+when you report back (`GameSession.deliver`). Six: Miller Rosie's letter to Mayor Poppy and her reply
+(14), Barnaby's honey for Tilly (14), Fenwick's lantern oil for Mabbott's Everlasting Wick (30), Samira's
+well water for Mungo's camel tonic (58), Bastian's coffee for the dwarfs' kettle (76) and Sigrun's ice
+rose for Blanche (136). The same day added six elite quests, long hunts or rare monsters for about twice
+a land's usual pay (The Werewolf Pack, 20 Werewolves, 27; The Amber Werewolf, 46; Violet in the Dunes,
+72; No More Nightmares, 30 Dream Phantoms, 86; The Lion in the Frost, 155; Shadow Apes on the Road, 25
+Mint Shadow Apes, 196), and a difficulty on every quest, shown as a pill with pips in the Quests list and
+by its giver, and a "Hardest" sort (`QuestDifficulty`, RuneScape's Novice to Grandmaster in four:
+Easy, Normal, Hard, Elite). A quest says its own (`difficulty`, 1 to 4; the elite ones do); otherwise
+`GameSession.difficulty(of:)` works it out: a boss or 12 or more monsters is Hard, 8 or more, something
+made by hand, a scarce drop or 5 or more things to bring is Normal, and the rest (an errand, a level, a
+class, a handful of monsters) Easy.
 Quest treasures (ours, since 0.4.2, asked for in playtesting 2026-10-11: quests should give rare items and
 armour you don't get from fights; no source we could reach says what FO's quests paid in gear): 33 pieces of
 armour, boots, gloves, necklaces and rings, each from one story quest between levels 14 and 190 and themed on

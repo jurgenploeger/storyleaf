@@ -357,8 +357,10 @@ nonisolated struct QuestDef: Decodable, Identifiable, Sendable {
     nonisolated enum ObjectiveType: String, Decodable, Sendable {
         /// `cards`: kinds of monster card in the Monster Book, `count` of them. `bring`: `count` of
         /// the item `target` in the bag, handed over when the quest's done (from monsters, `drops`,
-        /// a chest, a shop, or made by hand, `ItemDef.make`).
-        case defeat, capture, reachLevel, chooseClass, collect, hatch, cards, bring
+        /// a chest, a shop, or made by hand, `ItemDef.make`). `deliver`: a favour for someone else,
+        /// the NPC `target`: take them `item` (handed to you when you accept, `starterItems`), and if
+        /// they give you `returns` for the one who asked, bring it back.
+        case defeat, capture, reachLevel, chooseClass, collect, hatch, cards, bring, deliver
     }
 
     /// An item a quest's monsters drop while it wants them (`bring`): beaten wild monsters of the
@@ -386,6 +388,10 @@ nonisolated struct QuestDef: Decodable, Identifiable, Sendable {
         let type: ObjectiveType
         let target: String?
         let count: Int?
+        /// `deliver`: what you take to `target`, what they give you to bring back, and what they say.
+        let item: String?
+        let returns: String?
+        let text: String?
     }
 
     nonisolated struct Reward: Decodable, Sendable {
@@ -407,6 +413,26 @@ nonisolated struct QuestDef: Decodable, Identifiable, Sendable {
     let starterItems: [String]?
     /// What its monsters drop while it's on (`Drop`).
     let drops: [Drop]?
+    /// How hard it is, 1 to 4 (`QuestDifficulty`), when it's harder than its objective makes it
+    /// look; unset, `GameSession.difficulty(of:)` works it out.
+    let difficulty: Int?
+}
+
+/// How hard a quest is, shown on it in the Quests list and by whoever gives it (playtesting
+/// 2026-10-22: "add a difficulty indicator to the quests"), like RuneScape's quest difficulty.
+nonisolated enum QuestDifficulty: Int, CaseIterable, Comparable, Sendable {
+    case easy = 1, normal, hard, elite
+
+    static func < (a: QuestDifficulty, b: QuestDifficulty) -> Bool { a.rawValue < b.rawValue }
+
+    var title: String {
+        switch self {
+        case .easy: L("Easy")
+        case .normal: L("Normal")
+        case .hard: L("Hard")
+        case .elite: L("Elite")
+        }
+    }
 }
 
 nonisolated enum Edge: String, Codable, Sendable {

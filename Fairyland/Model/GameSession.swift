@@ -1604,7 +1604,27 @@ final class GameSession {
     }
 
     func goal(of quest: QuestDef) -> Int {
-        quest.objective.type == .chooseClass ? 1 : (quest.objective.count ?? 1)
+        quest.objective.type == .chooseClass || quest.objective.type == .deliver ? 1 : (quest.objective.count ?? 1)
+    }
+
+    /// How hard a quest is: as it says (`QuestDef.difficulty`), else by what it asks. Fights with a
+    /// boss and long hunts are hard; a handful of monsters, an errand or a level to reach is easy.
+    func difficulty(of quest: QuestDef) -> QuestDifficulty {
+        if let set = quest.difficulty.flatMap(QuestDifficulty.init(rawValue:)) { return set }
+        let count = quest.objective.count ?? 1
+        switch quest.objective.type {
+        case .defeat, .capture:
+            if quest.objective.target.flatMap(content.monster)?.boss == true { return .hard }
+            return count >= 12 ? .hard : count >= 8 ? .normal : .easy
+        case .bring:
+            let made = quest.objective.target.flatMap(content.item)?.make != nil
+            let scarce = (quest.drops ?? []).contains { $0.chance < 0.35 }
+            return made || scarce || count >= 5 ? .normal : .easy
+        case .cards:
+            return count >= 50 ? .hard : count >= 20 ? .normal : .easy
+        case .collect, .hatch, .reachLevel, .chooseClass, .deliver:
+            return .easy
+        }
     }
 
     func status(of quest: QuestDef) -> QuestStatus {
@@ -1617,6 +1637,7 @@ final class GameSession {
             case .chooseClass: data.hero.classID == "novice" ? 0 : 1
             case .cards: cardCount
             case .bring: min(goal, quest.objective.target.map { count(of: $0) } ?? 0)
+            case .deliver: min(goal, progress.count)
             }
             return current >= goal ? .ready : .active(progress: current, goal: goal)
         }
@@ -1689,7 +1710,39 @@ final class GameSession {
         return dated.sorted { $0.date > $1.date }.map(\.quest) + quests.filter { date($0) == nil }
     }
 
+    /// The favours you're doing that end with `npcID` (`deliver` quests you're on): something to
+    /// hand them, not handed over yet.
+    func errands(for npcID: String) -> [QuestDef] {
+        content.quests.filter { quest in
+            quest.objective.type == .deliver && quest.objective.target == npcID
+                && data.quests[quest.id]?.state == .active && data.quests[quest.id]?.count == 0
+        }
+    }
+
+    /// Hands over what a `deliver` quest takes to its `target` (if it's still in the bag), takes
+    /// what they give back for the one who asked, and returns what they say. Nil if it isn't
+    /// waiting on them.
+    @discardableResult
+    func deliver(_ id: String) -> String? {
+        guard let quest = content.quest(id), let target = quest.objective.target, errands(for: target).contains(where: { $0.id == id })
+        else { return nil }
+        if let item = quest.objective.item { removeItem(item) }
+        data.quests[id]?.count = 1
+        SoundEffects.shared.play(.questAccept)
+        let who = content.npc(target)?.name ?? target
+        let giver = content.npc(quest.giver)?.name ?? quest.giver
+        if let back = quest.objective.returns, let item = content.item(back) {
+            addItem(back)
+            post(L("{name} gave you {item}. Take it back to {giver}.", ["name": who, "item": item.name, "giver": giver]), .quest)
+        } else {
+            post(L("Delivered to {name}. Go back to {giver}.", ["name": who, "giver": giver]), .quest)
+        }
+        return quest.objective.text ?? L("For me? How kind! Tell {giver} thank you.", ["giver": giver])
+    }
+
     func notice(for giver: String) -> QuestNotice? {
+        // Someone waiting on a favour you're carrying to them.
+        if !errands(for: giver).isEmpty { return .ready }
         if let npc = content.npc(giver), npc.role == .chest {
             return canOpen(npc) ? .available : nil
         }
@@ -1785,6 +1838,7 @@ final class GameSession {
     /// mark says ("!" news, "?" done), the healer, the shop, the smith, the weaver (or her news), the
     /// barber, a guild, a boss, stairs, a waystone, and a chest still to open; nil for an opened chest.
     func minimapKind(for npc: NPCDef) -> MinimapMark.Kind? {
+        if !errands(for: npc.id).isEmpty { return .questReady }
         switch npc.role {
         case .healer: return .healer
         case .shop: return .shop
@@ -1896,6 +1950,8 @@ final class GameSession {
         if quest.objective.type == .bring, let item = quest.objective.target {
             for _ in 0..<goal(of: quest) { removeItem(item) }
         }
+        // What the one you did the favour for sent back.
+        if quest.objective.type == .deliver, let item = quest.objective.returns { removeItem(item) }
         data.quests[id]?.state = .completed
         data.quests[id]?.finished = Date()
         data.quests[id]?.paidGold = pay.gold
