@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "spooky crooked fairytale cottage leaning sideways with a patched purple roof and glowing green windows",
+    "prompt_style": "rd_tile__tile_object",
+    "width": 96,
+    "height": 96,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792669986,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_fast",
+    "remaining_credits": 0,
+    "remaining_balance": 38.111,
+    "request_id": "ab1ecb6f-c823-42a5-b48e-db5ea5e30dec",
+    "outputs_retained_until": 1792756305
+  }
+}

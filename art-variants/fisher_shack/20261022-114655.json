@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "small wooden fisherman's shack with a fishing net and a rowing oar leaning on it, blue door",
+    "prompt_style": "rd_tile__tile_object",
+    "width": 96,
+    "height": 96,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792669614,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_fast",
+    "remaining_credits": 0,
+    "remaining_balance": 39.191,
+    "request_id": "36bb5575-20ec-46d6-aea5-05638364b023",
+    "outputs_retained_until": 1792755958
+  }
+}

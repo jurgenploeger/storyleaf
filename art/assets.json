@@ -2035,6 +2035,222 @@
       }
     },
     {
+      "id": "adobe_house",
+      "kind": "building",
+      "request": {
+        "prompt": "fairytale desert house of sandstone adobe with a small round dome, a blue arched door and a striped cloth awning",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "desert_tent",
+      "kind": "building",
+      "request": {
+        "prompt": "colorful striped nomad tent with tassels and a rug at its open flap, arabian nights",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "beach_hut",
+      "kind": "building",
+      "request": {
+        "prompt": "cute thatched beach hut on short wooden stilts with a palm leaf roof and a little porch",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "fisher_shack",
+      "kind": "building",
+      "request": {
+        "prompt": "small wooden fisherman's shack with a fishing net and a rowing oar leaning on it, blue door",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "snow_cabin",
+      "kind": "building",
+      "request": {
+        "prompt": "cozy log cabin with a thick snow-covered roof, icicles, a smoking chimney and warm yellow windows",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "dwarf_cottage",
+      "kind": "building",
+      "request": {
+        "prompt": "tiny fairytale dwarves' cottage with a steep snowy roof, seven little windows and a carved wooden door",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "igloo",
+      "kind": "building",
+      "request": {
+        "prompt": "round snow igloo made of ice blocks with a little arched entrance tunnel",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "swamp_stilt_hut",
+      "kind": "building",
+      "request": {
+        "prompt": "wooden swamp hut on tall stilts with a reed thatched roof, a rope ladder and a hanging lantern",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "lily_cottage",
+      "kind": "building",
+      "request": {
+        "prompt": "whimsical cottage shaped like a pink water lily bud with a round green door, thumbelina",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "crooked_house",
+      "kind": "building",
+      "request": {
+        "prompt": "spooky crooked fairytale cottage leaning sideways with a patched purple roof and glowing green windows",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "witch_hut",
+      "kind": "building",
+      "request": {
+        "prompt": "creepy witch's hut with a twisted chimney, a cauldron by the door and hanging bones",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "puppet_theater",
+      "kind": "building",
+      "request": {
+        "prompt": "small wooden puppet theater booth with red velvet curtains and a painted star sign",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "stone_hut",
+      "kind": "building",
+      "request": {
+        "prompt": "sturdy mountain hut of grey fieldstone with a slate roof and a lantern by the door",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "moon_pagoda",
+      "kind": "building",
+      "request": {
+        "prompt": "small two-tiered pagoda house with a curved blue roof, paper lanterns and a round moon window",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "water_shrine",
+      "kind": "building",
+      "request": {
+        "prompt": "small white marble water shrine with blue tiled roof, pillars and a little waterfall basin",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "candy_cottage",
+      "kind": "building",
+      "request": {
+        "prompt": "fairytale candy cottage with a gingerbread roof dripping white icing, candy cane posts and a chocolate door",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "forest_lodge",
+      "kind": "building",
+      "request": {
+        "prompt": "cozy forest log lodge with a mossy green roof, mushrooms by the steps and a carved deer sign",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "sleepy_cottage",
+      "kind": "building",
+      "request": {
+        "prompt": "sleepy little cottage with a droopy nightcap shaped blue roof, a crescent moon sign and dim window",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 96,
+        "height": 96,
+        "remove_bg": true
+      }
+    },
+    {
+      "id": "sleepy_cottage_lilac",
+      "kind": "building",
+      "derive": {
+        "from": "sleepy_cottage",
+        "recolor": [
+          {
+            "hue": [
+              195,
+              250
+            ],
+            "minSaturation": 0.2,
+            "to": 285,
+            "spread": 1.0
+          }
+        ]
+      }
+    },
+    {
       "id": "house_green",
       "kind": "building",
       "derive": {

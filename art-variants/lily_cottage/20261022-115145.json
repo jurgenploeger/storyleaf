@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "whimsical cottage shaped like a pink water lily bud with a round green door, thumbelina",
+    "prompt_style": "rd_tile__tile_object",
+    "width": 96,
+    "height": 96,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792669903,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_fast",
+    "remaining_credits": 0,
+    "remaining_balance": 38.291,
+    "request_id": "46bee393-2d8f-47cd-8660-903103157815",
+    "outputs_retained_until": 1792756265
+  }
+}

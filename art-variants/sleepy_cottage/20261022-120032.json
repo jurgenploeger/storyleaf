@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "sleepy little cottage with a droopy nightcap shaped blue roof, a crescent moon sign and dim window",
+    "prompt_style": "rd_tile__tile_object",
+    "width": 96,
+    "height": 96,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792670428,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_fast",
+    "remaining_credits": 0,
+    "remaining_balance": 36.671,
+    "request_id": "55b88420-e387-4317-b0df-681e82782ce1",
+    "outputs_retained_until": 1792756755
+  }
+}

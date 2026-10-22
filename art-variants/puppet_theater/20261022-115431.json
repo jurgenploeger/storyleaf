@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "small wooden puppet theater booth with red velvet curtains and a painted star sign",
+    "prompt_style": "rd_tile__tile_object",
+    "width": 96,
+    "height": 96,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792670069,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_fast",
+    "remaining_credits": 0,
+    "remaining_balance": 37.751,
+    "request_id": "098be142-353c-49a4-8720-d63c5eb10d6a",
+    "outputs_retained_until": 1792756422
+  }
+}
