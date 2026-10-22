@@ -2846,6 +2846,132 @@ for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
         globals()["draw_" + _item["id"]] = (lambda colour: lambda c: christmas_scarf(c, ramp(colour)))(_item["color"])
 
 
+# ---------------------------------------------------------------- errands (`deliver` quests)
+# What one character asks you to take to another, and what that one sends back.
+
+GLASS = [hexc("6a8aa8"), hexc("b8d4ea"), hexc("eef8ff")]
+
+
+def bottle(c, liquid, cork=LEATHER, wide=False):
+    """A round glass flask, a cork in its neck, `liquid` filling it two thirds, lit at the top left."""
+    rx = 9 if wide else 8
+    c.rect(13, 5, 19, 11, GLASS[1])                                            # the neck
+    c.rect(13, 3, 19, 6, cork[1]); c.rect(13, 3, 14, 6, cork[2])               # the cork
+    c.ellipse(16, 20, rx, 9, GLASS[1])                                         # the flask
+    c.shade(lambda x, y, col: col == GLASS[1] and y >= 18 and ((x - 16) / rx) ** 2 + ((y - 20) / 9) ** 2 <= 0.92, liquid[1])
+    c.shade(lambda x, y, col: col == liquid[1] and (x - 16) + (y - 20) > 6, liquid[0])
+    c.line(16 - rx + 3, 15, 16 - rx + 4, 21, GLASS[2])                         # the glint
+    c.set(16 - rx + 5, 14, WHITE)
+
+
+def draw_sealed_letter(c):
+    """An envelope sealed with green wax."""
+    c.rect(4, 9, 27, 25, CLOTH[2])
+    c.shade(lambda x, y, col: col == CLOTH[2] and y > 22, CLOTH[1])
+    c.line(4, 9, 16, 18, CLOTH[0]); c.line(27, 9, 16, 18, CLOTH[0])              # the flap
+    c.line(4, 25, 13, 17, CLOTH[1]); c.line(27, 25, 19, 17, CLOTH[1])
+    c.disc(16, 18, 3.2, GREEN[0]); c.disc(16, 18, 2.2, GREEN[1]); c.set(15, 17, GREEN[2])
+
+
+def draw_mayors_reply(c):
+    """A rolled letter tied with a red ribbon, the city's gold seal hanging from it."""
+    c.rect(5, 10, 26, 20, CLOTH[2])                                           # the roll, lying across
+    c.shade(lambda x, y, col: col == CLOTH[2] and y > 17, CLOTH[1])
+    c.ellipse(5, 15, 2.5, 5, CLOTH[1]); c.ellipse(26, 15, 2.5, 5, CLOTH[0])    # its ends
+    c.ellipse(26, 15, 1.2, 3, CLOTH[2])
+    c.rect(14, 9, 17, 21, RED[1]); c.rect(14, 9, 14, 21, RED[2])               # the ribbon
+    c.line(15, 21, 12, 27, RED[1], width=2); c.line(16, 21, 19, 27, RED[0], width=2)
+    c.disc(16, 22, 3.6, GOLD[1]); light_top_left(c, GOLD, 16, 22, 3.6)         # the seal
+    star_shape(c, 16, 22, 2, GOLD[0])
+
+
+def draw_honey_jar(c):
+    """A fat jar of golden honey, its cloth lid tied down with string."""
+    c.ellipse(16, 20, 11, 9, GLASS[1])
+    c.rect(9, 11, 23, 14, GLASS[1])                                            # the shoulders, to the lid
+    c.shade(lambda x, y, col: col == GLASS[1] and y > 14, HONEY[1])
+    c.shade(lambda x, y, col: col == HONEY[1] and x > 19, HONEY[0])
+    c.line(9, 14, 9, 24, HONEY[2]); c.set(10, 13, WHITE)
+    c.poly([(6, 9), (26, 9), (28, 13), (4, 13)], RED[1])                       # the cloth lid
+    for x in range(6, 27, 3):
+        c.set(x, 11, WHITE)
+    c.line(6, 13, 26, 13, STRAW[0])                                            # the string
+    c.line(25, 13, 28, 17, STRAW[0])
+
+
+def draw_lantern_oil(c):
+    """A flask of lantern oil, amber and glowing a little."""
+    bottle(c, AMBER)
+    c.disc(18, 23, 1.4, HONEY[2])
+
+
+def draw_everlasting_wick(c):
+    """A short white candle on a brass dish, its blue flame never burning it down."""
+    c.ellipse(16, 27, 11, 3, GOLD[1]); c.ellipse(16, 26, 9, 2, GOLD[2])          # the dish
+    c.ring(26, 25, 3, 1.6, GOLD[0])                                            # its handle
+    c.rect(12, 13, 20, 26, IVORY[1]); c.rect(12, 13, 13, 26, IVORY[2])         # the candle
+    c.rect(19, 13, 20, 26, IVORY[0])
+    c.line(14, 13, 14, 17, IVORY[2])                                           # a drip of wax
+    c.line(16, 12, 16, 10, OUTLINE)                                            # the wick
+    c.ellipse(16, 7, 2.6, 4.2, BLUE[1]); c.ellipse(16, 8, 1.4, 2.4, BLUE[2])     # the flame
+    c.set(16, 9, WHITE)
+
+
+def draw_well_water(c):
+    """A flask of the desert well's clear water, cool to the touch."""
+    bottle(c, BLUE)
+    c.set(20, 22, BLUE[2]); c.set(13, 24, BLUE[2])
+
+
+def draw_herbal_tonic(c):
+    """A squat bottle of green tonic, a sprig of swamp herb tied to its neck."""
+    bottle(c, GREEN, wide=True)
+    c.line(19, 9, 25, 4, MOSS[0])                                              # the sprig
+    for (x, y) in ((21, 6), (23, 5), (24, 7)):
+        c.ellipse(x, y, 1.6, 1, MOSS[2])
+
+
+def draw_coffee_sack(c):
+    """A little burlap sack of roasted coffee, tied at the neck, a few beans spilled."""
+    c.poly([(9, 10), (23, 10), (27, 27), (5, 27)], TAN[1])
+    c.shade(lambda x, y, col: col == TAN[1] and x > 19, TAN[0])
+    c.shade(lambda x, y, col: col == TAN[1] and x < 10, TAN[2])
+    for y in range(13, 27, 3):                                                 # the weave
+        for x in range(8 + (y // 3) % 2, 25, 4):
+            if c.get(x, y) == TAN[1]:
+                c.set(x, y, TAN[0])
+    c.poly([(10, 4), (22, 4), (20, 10), (12, 10)], TAN[1])                     # gathered at the neck
+    c.line(10, 9, 22, 9, STRAW[0], width=2)                                   # the tie
+    for (x, y) in ((24, 28), (28, 27), (27, 29)):                              # spilled beans
+        c.ellipse(x, y, 1.6, 1.1, COFFEE[1]); c.set(x, y, COFFEE[0])
+
+
+def draw_dwarf_kettle(c):
+    """A round copper kettle, hammered by the dwarfs, its lid knob a little gold acorn."""
+    c.ellipse(15, 19, 10, 8, COPPER[1])
+    light_top_left(c, COPPER, 15, 19, 9)
+    for (x, y) in ((11, 20), (17, 23), (20, 17), (13, 15)):                     # hammer marks
+        c.set(x, y, COPPER[0])
+    c.line(24, 19, 29, 13, COPPER[1], width=2)                                # the spout
+    c.ring(15, 12, 8, 6.2, COPPER[0], ry_scale=0.9)                           # the handle
+    c.shade(lambda x, y, col: col == COPPER[0] and y > 11 and abs(x - 15) < 6 and y < 14, COPPER[1])
+    c.ellipse(15, 12, 5, 1.6, COPPER[2])                                       # the lid
+    c.disc(15, 10, 1.4, GOLD[1])
+    c.rect(7, 26, 23, 27, COPPER[0])                                           # its base
+
+
+def draw_ice_rose(c):
+    """A rose carved out of clear ice, on a long stem, cold light in its petals."""
+    c.line(16, 18, 17, 29, ICE[0], width=2)                                    # the stem
+    c.ellipse(21, 23, 3, 1.4, ICE[1]); c.ellipse(12, 25, 3, 1.4, ICE[1])        # its leaves
+    c.poly([(5, 5), (9, 18), (23, 18), (27, 5), (20, 10), (16, 2), (12, 10)], ICE[1])   # the cup of petals
+    c.shade(lambda x, y, col: col == ICE[1] and x > 19, ICE[0])
+    c.ellipse(16, 9, 4.6, 3.6, ICE[2])                                          # the bud curled inside
+    c.line(13, 9, 18, 12, ICE[0])
+    c.poly([(6, 7), (9, 18), (13, 15)], ICE[2])                                # a petal turned to the light
+    c.set(8, 8, WHITE); c.set(17, 6, WHITE)
+
+
 DRAWINGS = {name[5:]: fn for name, fn in globals().items() if name.startswith("draw_")}
 # Not drawn here: the Potion is a Retro Diffusion sprite (rd_pro__fantasy) and the Hi-Potion,
 # Ether and Hi-Ether are palette swaps of it (`derive` in art/assets.json).
@@ -2926,6 +3052,16 @@ PROMPTS = {  # for a later Retro Diffusion upgrade (python3 tools/rd.py generate
     "starlight_dust": "a little heap of glittering violet and gold star dust",
     "starfall_shard": "a pale blue crystal shard with a star of light inside",
     "star_lantern": "a small glass lantern with glowing star dust inside",
+    "sealed_letter": "cream envelope sealed with green wax",
+    "mayors_reply": "rolled letter tied with a red ribbon and a gold seal",
+    "honey_jar": "glass jar of golden honey with a red cloth lid tied with string",
+    "lantern_oil": "small round glass flask of glowing amber lantern oil with a cork",
+    "everlasting_wick": "short white candle on a brass dish with a blue flame",
+    "well_water": "small round glass flask of clear blue water with a cork",
+    "herbal_tonic": "squat glass bottle of green tonic with a sprig of herb",
+    "coffee_sack": "little burlap sack of roasted coffee beans tied at the neck",
+    "dwarf_kettle": "round hammered copper kettle with a gold acorn knob",
+    "ice_rose": "rose carved from clear blue ice on a long stem",
     "glimmerwing_boots": "violet boots with little moth wings at the heels",
     "starweave_robe": "deep blue robe with gold trim and tiny stars on it",
     "starpetal_gauntlets": "silver gauntlets set with pale blue crystal petals",

@@ -357,8 +357,10 @@ nonisolated struct QuestDef: Decodable, Identifiable, Sendable {
     nonisolated enum ObjectiveType: String, Decodable, Sendable {
         /// `cards`: kinds of monster card in the Monster Book, `count` of them. `bring`: `count` of
         /// the item `target` in the bag, handed over when the quest's done (from monsters, `drops`,
-        /// a chest, a shop, or made by hand, `ItemDef.make`).
-        case defeat, capture, reachLevel, chooseClass, collect, hatch, cards, bring
+        /// a chest, a shop, or made by hand, `ItemDef.make`). `deliver`: a favour for someone else,
+        /// the NPC `target`: take them `item` (handed to you when you accept, `starterItems`), and if
+        /// they give you `returns` for the one who asked, bring it back.
+        case defeat, capture, reachLevel, chooseClass, collect, hatch, cards, bring, deliver
     }
 
     /// An item a quest's monsters drop while it wants them (`bring`): beaten wild monsters of the
@@ -386,6 +388,10 @@ nonisolated struct QuestDef: Decodable, Identifiable, Sendable {
         let type: ObjectiveType
         let target: String?
         let count: Int?
+        /// `deliver`: what you take to `target`, what they give you to bring back, and what they say.
+        let item: String?
+        let returns: String?
+        let text: String?
     }
 
     nonisolated struct Reward: Decodable, Sendable {
@@ -407,6 +413,26 @@ nonisolated struct QuestDef: Decodable, Identifiable, Sendable {
     let starterItems: [String]?
     /// What its monsters drop while it's on (`Drop`).
     let drops: [Drop]?
+    /// How hard it is, 1 to 4 (`QuestDifficulty`), when it's harder than its objective makes it
+    /// look; unset, `GameSession.difficulty(of:)` works it out.
+    let difficulty: Int?
+}
+
+/// How hard a quest is, shown on it in the Quests list and by whoever gives it (playtesting
+/// 2026-10-22: "add a difficulty indicator to the quests"), like RuneScape's quest difficulty.
+nonisolated enum QuestDifficulty: Int, CaseIterable, Comparable, Sendable {
+    case easy = 1, normal, hard, elite
+
+    static func < (a: QuestDifficulty, b: QuestDifficulty) -> Bool { a.rawValue < b.rawValue }
+
+    var title: String {
+        switch self {
+        case .easy: L("Easy")
+        case .normal: L("Normal")
+        case .hard: L("Hard")
+        case .elite: L("Elite")
+        }
+    }
 }
 
 nonisolated enum Edge: String, Codable, Sendable {
@@ -429,11 +455,14 @@ nonisolated enum NPCRole: String, Decodable, Sendable {
     /// `stairs`: in a cave, the way down to the level under it, or back up (`NPCDef.to`), like
     /// RuneScape's ladders: tap them and you're there, by the stairs that lead back.
     /// `barber`: a new hairstyle and hair colour, for a fee (`NPCDef.price`), in every town.
-    case healer, shop, quests, guild, chest, boss, smith, weaver, stairs, barber
+    /// `waystone`: out in a wild land, asleep till its quest (`NPCDef.quest`) is done; then it's
+    /// somewhere Bridge of Light and Homeward Feathers can take you, and touching it takes you to
+    /// any town or waystone you can go to, free.
+    case healer, shop, quests, guild, chest, boss, smith, weaver, stairs, barber, waystone
 
-    /// A thing rather than a person (a chest, stairs): it stands still, never looks round, and
-    /// does what it does straight from the map, with no conversation.
-    var isObject: Bool { self == .chest || self == .stairs }
+    /// A thing rather than a person (a chest, stairs, a waystone): it stands still, never looks
+    /// round, and does what it does straight from the map, with no conversation.
+    var isObject: Bool { self == .chest || self == .stairs || self == .waystone }
 }
 
 nonisolated struct NPCDef: Decodable, Identifiable, Sendable {
@@ -455,7 +484,7 @@ nonisolated struct NPCDef: Decodable, Identifiable, Sendable {
     let classId: String?
     /// A barber's fee in gold, for a new hairstyle or hair colour.
     let price: Int?
-    /// Chests: the item inside, and the quest that unlocks them.
+    /// Chests: the item inside, and the quest that unlocks them. Waystones: the quest that wakes them.
     let gives: String?
     let quest: String?
     /// Stairs: the cave level they lead to (`MapDef.depth`), where stairs lead back.

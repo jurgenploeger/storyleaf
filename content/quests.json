@@ -824,6 +824,29 @@
       ]
     },
     {
+      "id": "no_more_nightmares",
+      "title": "No More Nightmares",
+      "giver": "thomas",
+      "description": "Every night more Dream Phantoms come, and every night the town dreams worse. A few won't do it. Beat 30, and maybe Dozywick will have one good night's sleep.",
+      "minLevel": 86,
+      "difficulty": 4,
+      "objective": {
+        "type": "defeat",
+        "target": "dream_phantom",
+        "count": 30
+      },
+      "reward": {
+        "gold": 3400,
+        "exp": 32000,
+        "items": [
+          "hi_potion",
+          "hi_potion",
+          "hi_ether",
+          "hi_ether"
+        ]
+      }
+    },
+    {
       "id": "ore_of_hachoo",
       "title": "Ore of Sneezle Sands",
       "giver": "hamini",
@@ -957,6 +980,31 @@
       "requires": [
         "silver_demon"
       ]
+    },
+    {
+      "id": "shadow_apes_on_the_road",
+      "title": "Shadow Apes on the Road",
+      "giver": "emerald_guard",
+      "description": "The Mint Shadow Apes have taken the last stretch of the Emerald Road, and they throw anyone who comes near into the poppies. Only the strongest get through. Beat 25 of them.",
+      "minLevel": 196,
+      "difficulty": 4,
+      "objective": {
+        "type": "defeat",
+        "target": "mint_black_kong",
+        "count": 25
+      },
+      "reward": {
+        "gold": 7500,
+        "exp": 420000,
+        "items": [
+          "hi_potion",
+          "hi_potion",
+          "hi_potion",
+          "hi_ether",
+          "hi_ether",
+          "homeward_feather"
+        ]
+      }
     },
     {
       "id": "grumpy_oak",
@@ -1749,6 +1797,29 @@
       }
     },
     {
+      "id": "honey_for_tilly",
+      "title": "Honey for Tilly",
+      "giver": "beekeeper_barnaby",
+      "description": "Tilly the Toymaker in Prismhaven glues her toys together with honey, if you can believe it. She's run out. Take her this jar, slowly, and come and tell me she got it.",
+      "minLevel": 14,
+      "objective": {
+        "type": "deliver",
+        "target": "toymaker",
+        "item": "honey_jar",
+        "text": "Honey! Barnaby's honey! Now my wooden bees will stick to their flowers again. Tell him thank you, with a hug from me."
+      },
+      "starterItems": [
+        "honey_jar"
+      ],
+      "reward": {
+        "gold": 240,
+        "exp": 400,
+        "items": [
+          "ether"
+        ]
+      }
+    },
+    {
       "id": "cloverdale_seeds",
       "title": "Seeds for Spring",
       "giver": "miller_rosie",
@@ -1779,6 +1850,31 @@
           "chance": 0.6
         }
       ]
+    },
+    {
+      "id": "a_letter_for_the_mayor",
+      "title": "A Letter for the Mayor",
+      "giver": "miller_rosie",
+      "description": "Could you take this letter to Mayor Poppy in Prismhaven? Don't peek! It's about the flour for the city's festival cakes. She'll want to write back, so bring me her answer.",
+      "minLevel": 14,
+      "objective": {
+        "type": "deliver",
+        "target": "mayor",
+        "item": "sealed_letter",
+        "returns": "mayors_reply",
+        "text": "A letter from Rosie! Oh, the festival cakes. Of course, as much flour as she can spare. Here, take her my reply, and mind the ribbon."
+      },
+      "starterItems": [
+        "sealed_letter"
+      ],
+      "reward": {
+        "gold": 260,
+        "exp": 420,
+        "items": [
+          "potion",
+          "potion"
+        ]
+      }
     },
     {
       "id": "thistledown_socks",
@@ -2049,6 +2145,28 @@
       }
     },
     {
+      "id": "the_werewolf_pack",
+      "title": "The Werewolf Pack",
+      "giver": "charcoal_hettie",
+      "description": "A whole pack of Werewolves has moved into the woods, and they howl at my kiln all night. This is no job for a beginner. Beat 20 of them, and the woods might sleep again.",
+      "minLevel": 27,
+      "difficulty": 4,
+      "objective": {
+        "type": "defeat",
+        "target": "werewolf",
+        "count": 20
+      },
+      "reward": {
+        "gold": 1300,
+        "exp": 3600,
+        "items": [
+          "hi_potion",
+          "hi_potion",
+          "homeward_feather"
+        ]
+      }
+    },
+    {
       "id": "dusk_market",
       "title": "The Night Market",
       "giver": "lampwright_fenwick",
@@ -2069,6 +2187,46 @@
         "items": [
           "owl_eye_amulet",
           "hi_ether"
+        ]
+      }
+    },
+    {
+      "id": "dusk_waystone",
+      "title": "Wake the Dusk Waystone",
+      "giver": "lampwright_fenwick",
+      "description": "There's an old waystone past my workshop. Awake, it'll carry you to any town you've been to, and to any other waystone that's awake. But the Dark Beetles have crawled all over it and smothered its glow. Clear away 8 of them and it'll wake.",
+      "minLevel": 22,
+      "objective": {
+        "type": "defeat",
+        "target": "dark_beetle",
+        "count": 8
+      },
+      "reward": {
+        "gold": 380,
+        "exp": 900
+      }
+    },
+    {
+      "id": "oil_for_the_candles",
+      "title": "Oil for the Candles",
+      "giver": "lampwright_fenwick",
+      "description": "Chandler Mabbott in Shiverdell makes a candle that never burns down, and I make the oil that glows. We trade. Take him this flask, through the woods and the valley, and bring back what he gives you.",
+      "minLevel": 30,
+      "objective": {
+        "type": "deliver",
+        "target": "chandler_mabbott",
+        "item": "lantern_oil",
+        "returns": "everlasting_wick",
+        "text": "Fenwick's glowing oil! Here, an Everlasting Wick for him in return. The Wisps can huff and puff all they like at this one."
+      },
+      "starterItems": [
+        "lantern_oil"
+      ],
+      "reward": {
+        "gold": 520,
+        "exp": 1500,
+        "items": [
+          "hi_potion"
         ]
       }
     },
@@ -2522,6 +2680,28 @@
       ]
     },
     {
+      "id": "the_amber_werewolf",
+      "title": "The Amber Werewolf",
+      "giver": "chandler_mabbott",
+      "description": "There's a rare Werewolf in Shiverdell with fur like amber, and it eats my candles, wax and all. You'll be lucky to see one. Beat 6 of them and I'll believe in luck.",
+      "minLevel": 46,
+      "difficulty": 4,
+      "objective": {
+        "type": "defeat",
+        "target": "amber_werewolf",
+        "count": 6
+      },
+      "reward": {
+        "gold": 1700,
+        "exp": 8000,
+        "items": [
+          "hi_potion",
+          "hi_ether",
+          "homeward_feather"
+        ]
+      }
+    },
+    {
       "id": "candle_bell",
       "title": "The Silent Bell",
       "giver": "bellringer_prue",
@@ -2553,6 +2733,22 @@
           "chance": 0.35
         }
       ]
+    },
+    {
+      "id": "shiverdell_waystone",
+      "title": "The Waystone in the Mist",
+      "giver": "bellringer_prue",
+      "description": "The waystone by my bell went dark the night the Wisps came. They drink its light, the greedy things. Chase off 8 Wisps and I'll ring it awake. Then it'll take you anywhere you've been, and back here again.",
+      "minLevel": 38,
+      "objective": {
+        "type": "defeat",
+        "target": "wisp",
+        "count": 8
+      },
+      "reward": {
+        "gold": 560,
+        "exp": 2300
+      }
     },
     {
       "id": "ratcatch_rats",
@@ -2784,6 +2980,47 @@
       }
     },
     {
+      "id": "desert_waystone",
+      "title": "Sand in the Waystone",
+      "giver": "wellkeeper_samira",
+      "description": "The waystone near my well used to hum. Now it's quiet: the Light Snakes coil round it to soak up its warmth. Drive away 8 of them and it'll sing again, and carry travellers across the sand in a single step.",
+      "minLevel": 62,
+      "objective": {
+        "type": "defeat",
+        "target": "light_snake",
+        "count": 8
+      },
+      "reward": {
+        "gold": 920,
+        "exp": 6300
+      }
+    },
+    {
+      "id": "a_cure_for_the_camels",
+      "title": "A Cure for the Camels",
+      "giver": "wellkeeper_samira",
+      "description": "My camels won't drink, and they're always thirsty. Herbalist Mungo in the Frog Swamp knows every cure there is. Take him a flask of my well water to look at, and bring back whatever he says will help.",
+      "minLevel": 58,
+      "objective": {
+        "type": "deliver",
+        "target": "herbalist_mungo",
+        "item": "well_water",
+        "returns": "herbal_tonic",
+        "text": "Hmm. Sniff. Sand, and a little too much salt. Easy! Here's a tonic: one drop in the trough, and her camels will drink like ducks."
+      },
+      "starterItems": [
+        "well_water"
+      ],
+      "reward": {
+        "gold": 900,
+        "exp": 6000,
+        "items": [
+          "hi_potion",
+          "hi_ether"
+        ]
+      }
+    },
+    {
       "id": "mirage_quills",
       "title": "Wicks of Light",
       "giver": "lampseller_kasim",
@@ -2845,6 +3082,29 @@
           "upTo": 3
         }
       ]
+    },
+    {
+      "id": "violet_in_the_dunes",
+      "title": "Violet in the Dunes",
+      "giver": "lampseller_kasim",
+      "description": "The Violet Black Lizards are the rarest thing in the desert, rarer than a genie with manners. Their scales make the finest lamp-glass. Beat 8 of them, if you can find that many.",
+      "minLevel": 72,
+      "difficulty": 4,
+      "objective": {
+        "type": "defeat",
+        "target": "violet_black_lizard",
+        "count": 8
+      },
+      "reward": {
+        "gold": 2600,
+        "exp": 21000,
+        "items": [
+          "hi_potion",
+          "hi_potion",
+          "hi_ether",
+          "homeward_feather"
+        ]
+      }
     },
     {
       "id": "wharf_crabs",
@@ -3055,6 +3315,31 @@
       ]
     },
     {
+      "id": "coffee_for_the_dwarfs",
+      "title": "Coffee for the Dwarfs",
+      "giver": "roaster_bastian",
+      "description": "The dwarfs in the Snow White Forest work through the winter nights and they've run out of coffee. Foreman Barrowby ordered my darkest roast. Take him this sack. He said he'd send something back for my trouble.",
+      "minLevel": 76,
+      "objective": {
+        "type": "deliver",
+        "target": "foreman_barrowby",
+        "item": "coffee_sack",
+        "returns": "dwarf_kettle",
+        "text": "Coffee! Seven dwarfs thank you, and so do I. Here, a kettle we hammered out for Bastian. Tell him it boils in a blink."
+      },
+      "starterItems": [
+        "coffee_sack"
+      ],
+      "reward": {
+        "gold": 1150,
+        "exp": 9500,
+        "items": [
+          "hi_ether",
+          "hi_ether"
+        ]
+      }
+    },
+    {
       "id": "wake_dreams",
       "title": "A Lullaby for Wakewell",
       "giver": "nightowl_nettie",
@@ -3086,6 +3371,22 @@
           "chance": 0.5
         }
       ]
+    },
+    {
+      "id": "dozywick_waystone",
+      "title": "A Waystone That Won't Wake",
+      "giver": "nightowl_nettie",
+      "description": "Even our waystone has nodded off! The Poison Skeletons rattle round it all night and nobody gets a wink. Rattle 8 of them to pieces and it might open an eye. Awake, it'll take you anywhere you've been.",
+      "minLevel": 78,
+      "objective": {
+        "type": "defeat",
+        "target": "poison_skeleton",
+        "count": 8
+      },
+      "reward": {
+        "gold": 1160,
+        "exp": 10000
+      }
     },
     {
       "id": "hearth_bears",
@@ -3264,6 +3565,22 @@
           "hi_potion",
           "hi_potion"
         ]
+      }
+    },
+    {
+      "id": "steppe_waystone",
+      "title": "The Waystone in the Tall Grass",
+      "giver": "elder_kestrel",
+      "description": "My grandmother's grandmother crossed the whole world in one step, through the waystone in the tall grass. The Mint Black Widows have spun it shut. Cut through 10 of them and it'll open for you too.",
+      "minLevel": 112,
+      "objective": {
+        "type": "defeat",
+        "target": "mint_black_widow",
+        "count": 10
+      },
+      "reward": {
+        "gold": 1680,
+        "exp": 25000
       }
     },
     {
@@ -3466,6 +3783,30 @@
       ]
     },
     {
+      "id": "the_lion_in_the_frost",
+      "title": "The Lion in the Frost",
+      "giver": "soupwife_margery",
+      "description": "A lion with frost in its mane prowls round Briarmere, and it's knocked my soup pot over three times. They're rare, and they're fierce. Beat 8 of them and you'll eat for free here forever.",
+      "minLevel": 155,
+      "difficulty": 4,
+      "objective": {
+        "type": "defeat",
+        "target": "frosted_earth_lion",
+        "count": 8
+      },
+      "reward": {
+        "gold": 5400,
+        "exp": 220000,
+        "items": [
+          "hi_potion",
+          "hi_potion",
+          "hi_ether",
+          "hi_ether",
+          "homeward_feather"
+        ]
+      }
+    },
+    {
       "id": "icemoor_swan",
       "title": "Ice Lantern Night",
       "giver": "icecarver_sigrun",
@@ -3499,6 +3840,47 @@
           "upTo": 3
         }
       ]
+    },
+    {
+      "id": "briarmere_waystone",
+      "title": "The Frozen Waystone",
+      "giver": "icecarver_sigrun",
+      "description": "There's a waystone under all this ice, and the Frosted Phantoms keep it frozen. Send 10 of them packing and I'll chip it free. A waystone that's awake will take you to any town or waystone you've been to.",
+      "minLevel": 145,
+      "objective": {
+        "type": "defeat",
+        "target": "frosted_phantom",
+        "count": 10
+      },
+      "reward": {
+        "gold": 2150,
+        "exp": 70000
+      }
+    },
+    {
+      "id": "an_ice_rose_for_blanche",
+      "title": "An Ice Rose for Blanche",
+      "giver": "icecarver_sigrun",
+      "description": "Housekeeper Blanche in the Snow White Forest once fed me soup when I was lost in the snow. I carved her a rose out of ice that will never melt. Will you take it to her, and come back to tell me what she said?",
+      "minLevel": 136,
+      "objective": {
+        "type": "deliver",
+        "target": "housekeeper_blanche",
+        "item": "ice_rose",
+        "text": "An ice rose? For me? From Sigrun! Oh, tell her it's going on the mantelpiece, between the seven hearths, where everyone can see it."
+      },
+      "starterItems": [
+        "ice_rose"
+      ],
+      "reward": {
+        "gold": 2000,
+        "exp": 58000,
+        "items": [
+          "hi_potion",
+          "hi_potion",
+          "hi_ether"
+        ]
+      }
     },
     {
       "id": "pilgrim_crawlers",
@@ -3653,6 +4035,22 @@
           "hi_potion",
           "hi_potion"
         ]
+      }
+    },
+    {
+      "id": "emerald_waystone",
+      "title": "The Waystone Among the Poppies",
+      "giver": "poppyfarmer_dell",
+      "description": "There's a waystone in my poppy field, nodding off like everyone else round here. The Starry Fire Bears trample about it and scorch the poppies. Beat 10 of them and it'll wake right up, ready to take you anywhere you've been.",
+      "minLevel": 186,
+      "objective": {
+        "type": "defeat",
+        "target": "starry_fire_bear",
+        "count": 10
+      },
+      "reward": {
+        "gold": 2800,
+        "exp": 175000
       }
     },
     {

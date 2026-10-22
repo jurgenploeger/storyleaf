@@ -48,15 +48,17 @@ final class GameCoordinator {
         case trade(Adventurer)
         /// Someone's stats: tapped on the map, or their face in the top-left corner.
         case profile(Profile)
-        /// Which town to travel to (`TravelPicker`), when you've been to more than one.
+        /// Which town or waystone to travel to (`TravelPicker`), when there's more than one.
         case destinations(Travel)
     }
 
-    /// A way to a town you've been to: Bridge of Light (the skill's id) or a Homeward Feather (the
-    /// item's id). Its MP or its feather is spent once you pick where.
+    /// A way to a town you've been to or a waystone you've woken (`GameSession.travelDestinations`):
+    /// Bridge of Light (the skill's id) or a Homeward Feather (the item's id), its MP or its feather
+    /// spent once you pick where; or touching a waystone you've woken, free.
     enum Travel: Equatable {
         case bridge(String)
         case feather(String)
+        case waystone
     }
 
     let session: GameSession
@@ -320,8 +322,10 @@ final class GameCoordinator {
 
     /// Shows the loading card first, then builds the (big) map behind it. `arrival`: where to stand
     /// there instead of where its road from `entry` comes in. `byStairsFrom`: climbing from that
-    /// cave level, in front of the stairs leading back to it (`WorldMap.stairsArrival`).
-    private func go(to map: MapDef, entry: Edge?, arrival: CGPoint? = nil, byStairsFrom stairs: String? = nil) {
+    /// cave level, in front of the stairs leading back to it (`WorldMap.stairsArrival`). `waystone`:
+    /// in front of that waystone there (`WorldMap.waystoneArrival`).
+    private func go(to map: MapDef, entry: Edge?, arrival: CGPoint? = nil, byStairsFrom stairs: String? = nil,
+                    waystone: String? = nil) {
         // The map you're leaving stays on screen under the card for a moment: nothing more happens on it.
         mapScene.isInputLocked = true
         loadingMapName = map.name
@@ -339,7 +343,7 @@ final class GameCoordinator {
                 let scene = makeContinent()
                 showsContinent = true
                 input.move = .zero
-                await scene.place(on: map, entry: entry, arrival: arrival)
+                await scene.place(on: map, entry: entry, arrival: arrival, waystone: waystone)
                 await waitForContinent()
                 scene.resume()
                 finishLoading()
@@ -351,7 +355,8 @@ final class GameCoordinator {
             try? await Task.sleep(for: .milliseconds(280))
             let began = Date()
             let grid = await GameCoordinator.layOut(map)
-            let landing = arrival ?? stairs.flatMap { grid.stairsArrival(from: $0) }.map { grid.center(of: $0) }
+            let landing = arrival ?? (stairs.flatMap { grid.stairsArrival(from: $0) } ?? waystone.flatMap { grid.waystoneArrival($0) })
+                .map { grid.center(of: $0) }
             loadMap(map, grid: grid, began: began, entry: entry, arrival: landing)
         }
     }
@@ -515,10 +520,14 @@ final class GameCoordinator {
     // MARK: Menus & dialogs
 
     func open(_ overlay: Overlay) {
-        // Gift boxes and stairs aren't people: walking up and tapping opens them, or takes you down
-        // (or up), no conversation.
+        // Gift boxes, stairs and waystones aren't people: walking up and tapping opens them, takes
+        // you down (or up), or away, no conversation.
         if case .npc(let id) = overlay, let npc = Content.shared.npc(id), npc.role.isObject {
-            if npc.role == .stairs { climb(npc) } else { openChest(npc) }
+            switch npc.role {
+            case .stairs: climb(npc)
+            case .waystone: touch(npc)
+            default: openChest(npc)
+            }
             return
         }
         self.overlay = overlay
@@ -543,6 +552,16 @@ final class GameCoordinator {
         }
     }
 
+    /// A waystone (`NPCRole.waystone`): once its quest has woken it, anywhere you can travel to,
+    /// free; till then, cold.
+    private func touch(_ waystone: NPCDef) {
+        guard session.isAwake(waystone) else {
+            session.post(L("The waystone is cold and still. Someone nearby might know how to wake it."))
+            return
+        }
+        choose(.waystone)
+    }
+
     /// A field spell cast from the Character screen. Bridge of Light carries you to a town you've
     /// been to.
     private func castField(_ skill: SkillDef) {
@@ -565,15 +584,15 @@ final class GameCoordinator {
         choose(.feather(item.id))
     }
 
-    /// Where to: with one town to go to, straight there; with more, the choice (`TravelPicker`),
-    /// nothing spent until you pick one.
+    /// Where to: with one town or waystone to go to, straight there; with more, the choice
+    /// (`TravelPicker`), nothing spent until you pick one.
     private func choose(_ travel: Travel) {
-        let towns = session.travelDestinations
-        guard let only = towns.first else {
+        let places = session.travelDestinations
+        guard let only = places.first else {
             session.post(L("There's no other town you've been to yet."))
             return
         }
-        if towns.count == 1 {
+        if places.count == 1 {
             depart(travel, to: only)
             return
         }
@@ -582,15 +601,20 @@ final class GameCoordinator {
         input.move = .zero
     }
 
-    /// Off to town `mapID` (`travelDestinations`): Bridge of Light spends its MP; a Homeward
-    /// Feather is used up and whisks you away first, the window and the bag closed so you see it.
-    func depart(_ travel: Travel, to mapID: String) {
-        guard battle == nil, session.travelDestinations.contains(mapID), let map = Content.shared.map(mapID) else { return }
+    /// Off to a town or a waystone (`travelDestinations`: a town's map id or a waystone's id):
+    /// Bridge of Light spends its MP; a Homeward Feather is used up and whisks you away first, the
+    /// window and the bag closed so you see it; a waystone you're touching takes you free.
+    func depart(_ travel: Travel, to destination: String) {
+        let waystone = Content.shared.npc(destination).flatMap { $0.role == .waystone ? $0.id : nil }
+        guard battle == nil, session.travelDestinations.contains(destination),
+              let map = waystone.flatMap({ Content.shared.home(ofNPC: $0) }) ?? Content.shared.map(destination) else { return }
         switch travel {
         case .bridge(let id):
             guard let skill = Content.shared.skill(id), session.data.hero.mp >= cost(of: skill) else { return }
             session.data.hero.mp -= cost(of: skill)
-            carry(to: map, saying: L("A bridge of light carries you to {place}.", ["place": map.name]))
+            carry(to: map, waystone: waystone, saying: L("A bridge of light carries you to {place}.", ["place": map.name]))
+        case .waystone:
+            carry(to: map, waystone: waystone, saying: L("The waystone hums, and the world folds round you. You step out in {place}.", ["place": map.name]))
         case .feather(let id):
             guard session.removeItem(id) else { return }
             let line = L("The wind carries you to {place}.", ["place": map.name])
@@ -601,7 +625,7 @@ final class GameCoordinator {
             mapScene.featherAway { [weak self] in
                 guard let self else { return }
                 arrivesByFeather = true
-                carry(to: map, saying: line, sound: false)
+                carry(to: map, waystone: waystone, saying: line, sound: false)
             }
         }
     }
@@ -609,12 +633,13 @@ final class GameCoordinator {
     /// Set while a Homeward Feather is carrying you: the next map brings you down in its light.
     @ObservationIgnored private var arrivesByFeather = false
 
-    /// Off to a town's square, wherever you are: the window closes and the map changes.
-    private func carry(to map: MapDef, saying line: String, sound: Bool = true) {
+    /// Off to a town's square, or to the `waystone` on `map`, wherever you are: the window closes
+    /// and the map changes.
+    private func carry(to map: MapDef, waystone: String? = nil, saying line: String, sound: Bool = true) {
         overlay = nil
         session.post(line, .quest)
         if sound { SoundEffects.shared.play(.whoosh) }
-        go(to: map, entry: nil)
+        go(to: map, entry: nil, waystone: waystone)
     }
 
     func closeOverlay() {

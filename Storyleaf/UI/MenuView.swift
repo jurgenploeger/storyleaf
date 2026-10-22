@@ -1270,6 +1270,8 @@ private nonisolated enum QuestSort: String, CaseIterable {
     case place
     /// The most EXP first.
     case exp
+    /// The hardest first (`GameSession.difficulty(of:)`).
+    case difficulty
 
     var title: String {
         switch self {
@@ -1278,6 +1280,7 @@ private nonisolated enum QuestSort: String, CaseIterable {
         case .progress: L("Nearest done")
         case .place: L("Place")
         case .exp: L("Most EXP")
+        case .difficulty: L("Hardest")
         }
     }
 }
@@ -1395,10 +1398,12 @@ private struct QuestsTab: View {
                 let order = place($0).localizedStandardCompare(place($1))
                 return order == .orderedSame ? number($0) < number($1) : order == .orderedAscending
             }
-        case .progress, .exp:
+        case .progress, .exp, .difficulty:
             let value: (QuestDef) -> Double
             if sort == .exp {
                 value = { Double(session.questPay($0).exp) }
+            } else if sort == .difficulty {
+                value = { Double(session.difficulty(of: $0).rawValue) }
             } else {
                 value = { quest in
                     switch session.status(of: quest) {
@@ -1444,8 +1449,13 @@ struct QuestRow: View {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     QuestNumber(number: session.questNumber(quest))
                     Text(quest.title).font(HUDStyle.font(13))
+                    DifficultyBadge(difficulty: session.difficulty(of: quest))
                     Spacer()
                     switch session.status(of: quest) {
+                    case .active where quest.objective.type == .deliver:
+                        // A favour: who it's for, as there's nothing to count.
+                        Text(L("Take it to {name}", ["name": quest.objective.target.flatMap(session.content.npc)?.name ?? ""]))
+                            .foregroundStyle(HUDStyle.gold)
                     case .active(let progress, let goal): Text("\(progress)/\(goal)").foregroundStyle(HUDStyle.gold)
                     case .ready: Text(L("Done! Report back")).foregroundStyle(HUDStyle.green)
                     default: EmptyView()
@@ -1479,6 +1489,42 @@ struct QuestRow: View {
         }
         .accessibilityAddTraits(showsGiver ? .isButton : [])
         .accessibilityHint(showsGiver ? (expanded ? L("Hides the reward") : L("Shows the reward")) : "")
+    }
+}
+
+/// How hard a quest is (`QuestDifficulty`): its name in a little pill, from green for easy to red
+/// for elite, with as many pips as its rank.
+struct DifficultyBadge: View {
+    let difficulty: QuestDifficulty
+
+    var body: some View {
+        HStack(spacing: 3) {
+            HStack(spacing: 1.5) {
+                ForEach(1...4, id: \.self) { rank in
+                    Circle()
+                        .fill(rank <= difficulty.rawValue ? color : color.opacity(0.25))
+                        .frame(width: 4, height: 4)
+                }
+            }
+            Text(difficulty.title)
+        }
+        .font(HUDStyle.font(9))
+        .foregroundStyle(color)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 2)
+        .background(Capsule().fill(color.opacity(0.16)))
+        .fixedSize()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L("Difficulty: {level}", ["level": difficulty.title]))
+    }
+
+    private var color: Color {
+        switch difficulty {
+        case .easy: HUDStyle.green
+        case .normal: HUDStyle.gold
+        case .hard: HUDStyle.orange
+        case .elite: Color(red: 0.95, green: 0.36, blue: 0.4)
+        }
     }
 }
 

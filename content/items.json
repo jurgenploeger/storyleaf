@@ -7173,6 +7173,116 @@
       "description": "A lump of geode from the Glimmerdeep, glowing softly from the inside. A lantern could burn on it for a hundred years."
     },
     {
+      "id": "sealed_letter",
+      "icon": "talk",
+      "art": "item_sealed_letter",
+      "name": "Sealed Letter",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 14,
+      "description": "A letter sealed with green wax. Rosie says it's private, which means it's about cake."
+    },
+    {
+      "id": "mayors_reply",
+      "icon": "talk",
+      "art": "item_mayors_reply",
+      "name": "Mayor's Reply",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 14,
+      "description": "A rolled letter tied with a red ribbon, the city's gold seal on it."
+    },
+    {
+      "id": "honey_jar",
+      "icon": "droplet",
+      "art": "item_honey_jar",
+      "name": "Jar of Honey",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 14,
+      "description": "Barnaby's best clover honey, the lid tied down tight. The bees counted every drop."
+    },
+    {
+      "id": "lantern_oil",
+      "icon": "flame",
+      "art": "item_lantern_oil",
+      "name": "Flask of Lantern Oil",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 30,
+      "description": "Fenwick's own lantern oil. It glows a little in the dark, all by itself."
+    },
+    {
+      "id": "everlasting_wick",
+      "icon": "flame",
+      "art": "item_everlasting_wick",
+      "name": "Everlasting Wick",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 30,
+      "description": "A candle with a blue flame that never burns it down. Mabbott's finest."
+    },
+    {
+      "id": "well_water",
+      "icon": "droplet",
+      "art": "item_well_water",
+      "name": "Flask of Well Water",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 58,
+      "description": "Clear, cold water from Samira's well, for Mungo to have a look at."
+    },
+    {
+      "id": "herbal_tonic",
+      "icon": "potion",
+      "art": "item_herbal_tonic",
+      "name": "Herbal Tonic",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 58,
+      "description": "Mungo's green tonic for thirsty camels. It smells of swamp and works like magic."
+    },
+    {
+      "id": "coffee_sack",
+      "icon": "leaf",
+      "art": "item_coffee_sack",
+      "name": "Sack of Coffee",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 76,
+      "description": "Bastian's darkest roast. Enough to keep seven dwarfs awake through a whole winter."
+    },
+    {
+      "id": "dwarf_kettle",
+      "icon": "hammer",
+      "art": "item_dwarf_kettle",
+      "name": "Dwarf-Forged Kettle",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 76,
+      "description": "A round copper kettle the dwarfs hammered out for Bastian. It boils in a blink."
+    },
+    {
+      "id": "ice_rose",
+      "icon": "droplet",
+      "art": "item_ice_rose",
+      "name": "Ice Rose",
+      "type": "material",
+      "material": "quest",
+      "price": 0,
+      "level": 136,
+      "description": "A rose carved out of clear ice. It never melts, but it's cold enough to make you sneeze."
+    },
+    {
       "id": "prismscale_mail",
       "icon": "shield-plus",
       "art": "item_prismscale_mail",

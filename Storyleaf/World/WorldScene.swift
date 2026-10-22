@@ -2542,6 +2542,10 @@ final class WorldScene: SKScene {
             if npc.def.role == .chest, session.isOpened(npc.def.id) == (npc.node.alpha > 0.5) {
                 npc.node.run(.fadeAlpha(to: session.isOpened(npc.def.id) ? 0.35 : 1, duration: 0.3))
             }
+            // A waystone stands faded while it sleeps, and comes back once its quest wakes it.
+            if npc.def.role == .waystone, session.isAwake(npc.def) == (npc.node.alpha < 0.9) {
+                npc.node.run(.fadeAlpha(to: session.isAwake(npc.def) ? 1 : 0.55, duration: 0.3))
+            }
             if npc.def.role == .boss, session.isBeatenHere(npc.def) {
                 if !npc.node.isHidden {
                     SkillEffects.smoke(at: npc.node.position, in: world)

@@ -64,20 +64,24 @@ struct NPCDialogView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 ScrollView {
-                    Group {
-                        switch npc.role {
-                        case .healer: HealerPanel(session: session, reply: $reply)
-                        case .shop: ShopPanel(session: session, stock: npc.stock ?? [], reply: $reply, info: $info)
-                        case .quests: QuestGiverPanel(session: session, giver: npc.id, reply: $reply, finished: $finished)
-                        case .guild: GuildPanel(session: session, classID: npc.classId ?? "", reply: $reply)
-                        case .chest, .stairs: EmptyView()   // straight from the map (GameCoordinator.open)
-                        case .boss: BossPanel(session: session, boss: npc, onFight: onFight)
-                        case .smith: SmithPanel(session: session, reply: $reply, info: $info)
-                        case .weaver: CapePanel(session: session, reply: $reply, info: $info)
-                        case .barber: BarberPanel(session: session, price: npc.price ?? 1000, reply: $reply)
+                    VStack(alignment: .leading, spacing: 0) {
+                        // A favour you're carrying to them, whoever they are.
+                        ErrandPanel(session: session, npcID: npc.id, reply: $reply)
+                        Group {
+                            switch npc.role {
+                            case .healer: HealerPanel(session: session, reply: $reply)
+                            case .shop: ShopPanel(session: session, stock: npc.stock ?? [], reply: $reply, info: $info)
+                            case .quests: QuestGiverPanel(session: session, giver: npc.id, reply: $reply, finished: $finished)
+                            case .guild: GuildPanel(session: session, classID: npc.classId ?? "", reply: $reply)
+                            case .chest, .stairs, .waystone: EmptyView()   // straight from the map (GameCoordinator.open)
+                            case .boss: BossPanel(session: session, boss: npc, onFight: onFight)
+                            case .smith: SmithPanel(session: session, reply: $reply, info: $info)
+                            case .weaver: CapePanel(session: session, reply: $reply, info: $info)
+                            case .barber: BarberPanel(session: session, price: npc.price ?? 1000, reply: $reply)
+                            }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxHeight: min(260, max(120, maxHeight - 110)))
             }
@@ -372,6 +376,44 @@ private struct ShopPanel: View {
                 .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
             }
             .font(HUDStyle.font(12))
+        }
+    }
+}
+
+/// What you've brought someone for a `deliver` quest: a button to hand each one over. Nothing when
+/// you've nothing for them.
+private struct ErrandPanel: View {
+    let session: GameSession
+    let npcID: String
+    @Binding var reply: String?
+
+    var body: some View {
+        let errands = session.errands(for: npcID)
+        if !errands.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(errands) { quest in
+                    let item = quest.objective.item.flatMap(session.content.item)
+                    HStack(spacing: 8) {
+                        if let item { ItemIcon(item: item, size: 28) }
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(quest.title).font(HUDStyle.font(12))
+                            if let giver = session.content.npc(quest.giver) {
+                                Text(L("A favour for {name}", ["name": giver.name])).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim)
+                            }
+                        }
+                        Spacer(minLength: 4)
+                        Button(item.map { L("Give {item}", ["item": $0.name]) } ?? L("Pass it on")) {
+                            if let said = session.deliver(quest.id) {
+                                session.save()
+                                reply = said
+                            }
+                        }
+                        .buttonStyle(PixelButtonStyle(tint: HUDStyle.green, compact: true))
+                    }
+                }
+            }
+            .padding(.bottom, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
