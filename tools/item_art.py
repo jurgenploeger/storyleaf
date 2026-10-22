@@ -616,12 +616,13 @@ def draw_novice_ring(c):
 
 
 def draw_star_charm(c):
-    c.line(5, 3, 16, 12, GOLD[0])
-    c.line(27, 3, 16, 12, GOLD[0])
-    c.disc(16, 12, 1.5, GOLD[1])
-    star_shape(c, 16, 21, 9, GOLD[1])
-    star_shape(c, 15, 20, 4.5, GOLD[2])
-    c.set(27, 25, WHITE); c.set(6, 18, WHITE)
+    """A gold star on a little loop, as the other charms hang: no chain, so it isn't a necklace."""
+    c.ring(16, 5, 3, 1.6, GOLD[1])                                            # the loop
+    c.rect(15, 8, 17, 10, GOLD[0])                                            # the bail
+    star_shape(c, 16, 20, 11, GOLD[1])
+    c.shade(lambda x, y, col: col == GOLD[1] and x > 17 and y > 19, GOLD[0])
+    star_shape(c, 15, 19, 5, GOLD[2])
+    c.set(27, 8, WHITE); c.set(5, 12, WHITE)
 
 
 def draw_power_band(c):
