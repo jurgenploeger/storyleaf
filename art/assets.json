@@ -9739,21 +9739,12 @@
     {
       "id": "item_persimmon_charm",
       "kind": "item",
-      "derive": {
-        "from": "item_star_charm",
-        "recolor": [
-          {
-            "hue": [
-              20,
-              60
-            ],
-            "minSaturation": 0.2,
-            "to": 22,
-            "spread": 0.4,
-            "saturation": 1.2,
-            "value": 1.05
-          }
-        ]
+      "request": {
+        "prompt": "small orange persimmon charm with a green four-leaf cap, on a small loop, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
     {

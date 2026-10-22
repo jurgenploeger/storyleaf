@@ -657,6 +657,25 @@ def draw_golden_ball_charm(c):
     c.set(5, 12, WHITE); c.set(27, 9, WHITE)
 
 
+def draw_persimmon_charm(c):
+    """A little persimmon hanging from a loop like the other charms: squat and orange, a little
+    square at the shoulders, its four-leaf cap and stem on top, lit from the top left."""
+    c.ring(16, 3.5, 2.8, 1.5, GOLD[1])                                        # the loop
+    c.rect(15, 6, 17, 9, GOLD[0])                                             # the bail, down to the stem
+    c.ellipse(16, 20, 11, 8.5, ORANGE[1])                                     # the fruit
+    c.ellipse(16, 17, 9.5, 6, ORANGE[1])                                      # its square shoulders
+    light_top_left(c, ORANGE, 16, 19, 10)
+    c.line(16, 14, 16, 27, ORANGE[0])                                         # the faint crease down it
+    c.shade(lambda x, y, col: col == ORANGE[0] and x == 16 and y < 19, ORANGE[1])
+    leaf = [hexc("3a6a24"), hexc("5e9a36"), hexc("9ccc66")]
+    for (dx, dy) in ((-5, 1), (5, 1), (-2, 3), (2, 3)):                       # the cap's four leaves
+        c.ellipse(16 + dx, 12 + dy, 3.2, 1.6, leaf[1])
+    c.ellipse(13, 12.5, 2, 1, leaf[2])
+    c.disc(16, 12, 1.6, leaf[0])                                              # the stem
+    c.disc(11, 18, 1.5, ORANGE[2]); c.set(10, 17, WHITE)                      # the shine
+    c.set(27, 12, WHITE); c.set(4, 25, WHITE)
+
+
 def draw_power_band(c):
     band = [hexc("8a1a2a"), hexc("d83a4a"), hexc("ff8a8a")]
     c.ring(16, 16, 11, 6.5, band[1], ry_scale=0.62)
@@ -2846,6 +2865,7 @@ PROMPTS = {  # for a later Retro Diffusion upgrade (python3 tools/rd.py generate
     "ruby_ring": "gold ring with a red ruby",
     "novice_ring": "simple copper ring with a small blue stone",
     "star_charm": "gold star charm hanging from a small loop",
+    "persimmon_charm": "small orange persimmon charm with a green four-leaf cap, on a small loop",
     "golden_ball_charm": "small shining golden ball charm with a band and a ruby, on a small loop",
     "dragon_tooth_charm": "curved ivory dragon fang charm capped in gold with a ruby, on a small loop",
     "power_band": "red wristband with steel studs",
