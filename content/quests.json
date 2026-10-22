@@ -2073,6 +2073,22 @@
       }
     },
     {
+      "id": "dusk_waystone",
+      "title": "Wake the Dusk Waystone",
+      "giver": "lampwright_fenwick",
+      "description": "There's an old waystone past my workshop. Awake, it'll carry you to any town you've been to, and to any other waystone that's awake. But the Dark Beetles have crawled all over it and smothered its glow. Clear away 8 of them and it'll wake.",
+      "minLevel": 22,
+      "objective": {
+        "type": "defeat",
+        "target": "dark_beetle",
+        "count": 8
+      },
+      "reward": {
+        "gold": 380,
+        "exp": 900
+      }
+    },
+    {
       "id": "holly_apples",
       "title": "Monkeys in the Orchard",
       "giver": "orchard_moss",
@@ -2555,6 +2571,22 @@
       ]
     },
     {
+      "id": "shiverdell_waystone",
+      "title": "The Waystone in the Mist",
+      "giver": "bellringer_prue",
+      "description": "The waystone by my bell went dark the night the Wisps came. They drink its light, the greedy things. Chase off 8 Wisps and I'll ring it awake. Then it'll take you anywhere you've been, and back here again.",
+      "minLevel": 38,
+      "objective": {
+        "type": "defeat",
+        "target": "wisp",
+        "count": 8
+      },
+      "reward": {
+        "gold": 560,
+        "exp": 2300
+      }
+    },
+    {
       "id": "ratcatch_rats",
       "title": "Too Many Rats",
       "giver": "ratcatcher_bodkin",
@@ -2781,6 +2813,22 @@
           "hi_potion",
           "hi_potion"
         ]
+      }
+    },
+    {
+      "id": "desert_waystone",
+      "title": "Sand in the Waystone",
+      "giver": "wellkeeper_samira",
+      "description": "The waystone near my well used to hum. Now it's quiet: the Light Snakes coil round it to soak up its warmth. Drive away 8 of them and it'll sing again, and carry travellers across the sand in a single step.",
+      "minLevel": 62,
+      "objective": {
+        "type": "defeat",
+        "target": "light_snake",
+        "count": 8
+      },
+      "reward": {
+        "gold": 920,
+        "exp": 6300
       }
     },
     {
@@ -3088,6 +3136,22 @@
       ]
     },
     {
+      "id": "dozywick_waystone",
+      "title": "A Waystone That Won't Wake",
+      "giver": "nightowl_nettie",
+      "description": "Even our waystone has nodded off! The Poison Skeletons rattle round it all night and nobody gets a wink. Rattle 8 of them to pieces and it might open an eye. Awake, it'll take you anywhere you've been.",
+      "minLevel": 78,
+      "objective": {
+        "type": "defeat",
+        "target": "poison_skeleton",
+        "count": 8
+      },
+      "reward": {
+        "gold": 1160,
+        "exp": 10000
+      }
+    },
+    {
       "id": "hearth_bears",
       "title": "Bears at the Woodpile",
       "giver": "foreman_barrowby",
@@ -3264,6 +3328,22 @@
           "hi_potion",
           "hi_potion"
         ]
+      }
+    },
+    {
+      "id": "steppe_waystone",
+      "title": "The Waystone in the Tall Grass",
+      "giver": "elder_kestrel",
+      "description": "My grandmother's grandmother crossed the whole world in one step, through the waystone in the tall grass. The Mint Black Widows have spun it shut. Cut through 10 of them and it'll open for you too.",
+      "minLevel": 112,
+      "objective": {
+        "type": "defeat",
+        "target": "mint_black_widow",
+        "count": 10
+      },
+      "reward": {
+        "gold": 1680,
+        "exp": 25000
       }
     },
     {
@@ -3501,6 +3581,22 @@
       ]
     },
     {
+      "id": "briarmere_waystone",
+      "title": "The Frozen Waystone",
+      "giver": "icecarver_sigrun",
+      "description": "There's a waystone under all this ice, and the Frosted Phantoms keep it frozen. Send 10 of them packing and I'll chip it free. A waystone that's awake will take you to any town or waystone you've been to.",
+      "minLevel": 145,
+      "objective": {
+        "type": "defeat",
+        "target": "frosted_phantom",
+        "count": 10
+      },
+      "reward": {
+        "gold": 2150,
+        "exp": 70000
+      }
+    },
+    {
       "id": "pilgrim_crawlers",
       "title": "Thieves on the Steps",
       "giver": "shrinekeeper_ondine",
@@ -3653,6 +3749,22 @@
           "hi_potion",
           "hi_potion"
         ]
+      }
+    },
+    {
+      "id": "emerald_waystone",
+      "title": "The Waystone Among the Poppies",
+      "giver": "poppyfarmer_dell",
+      "description": "There's a waystone in my poppy field, nodding off like everyone else round here. The Starry Fire Bears trample about it and scorch the poppies. Beat 10 of them and it'll wake right up, ready to take you anywhere you've been.",
+      "minLevel": 186,
+      "objective": {
+        "type": "defeat",
+        "target": "starry_fire_bear",
+        "count": 10
+      },
+      "reward": {
+        "gold": 2800,
+        "exp": 175000
       }
     },
     {

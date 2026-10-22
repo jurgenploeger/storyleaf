@@ -429,11 +429,14 @@ nonisolated enum NPCRole: String, Decodable, Sendable {
     /// `stairs`: in a cave, the way down to the level under it, or back up (`NPCDef.to`), like
     /// RuneScape's ladders: tap them and you're there, by the stairs that lead back.
     /// `barber`: a new hairstyle and hair colour, for a fee (`NPCDef.price`), in every town.
-    case healer, shop, quests, guild, chest, boss, smith, weaver, stairs, barber
+    /// `waystone`: out in a wild land, asleep till its quest (`NPCDef.quest`) is done; then it's
+    /// somewhere Bridge of Light and Homeward Feathers can take you, and touching it takes you to
+    /// any town or waystone you can go to, free.
+    case healer, shop, quests, guild, chest, boss, smith, weaver, stairs, barber, waystone
 
-    /// A thing rather than a person (a chest, stairs): it stands still, never looks round, and
-    /// does what it does straight from the map, with no conversation.
-    var isObject: Bool { self == .chest || self == .stairs }
+    /// A thing rather than a person (a chest, stairs, a waystone): it stands still, never looks
+    /// round, and does what it does straight from the map, with no conversation.
+    var isObject: Bool { self == .chest || self == .stairs || self == .waystone }
 }
 
 nonisolated struct NPCDef: Decodable, Identifiable, Sendable {
@@ -455,7 +458,7 @@ nonisolated struct NPCDef: Decodable, Identifiable, Sendable {
     let classId: String?
     /// A barber's fee in gold, for a new hairstyle or hair colour.
     let price: Int?
-    /// Chests: the item inside, and the quest that unlocks them.
+    /// Chests: the item inside, and the quest that unlocks them. Waystones: the quest that wakes them.
     let gives: String?
     let quest: String?
     /// Stairs: the cave level they lead to (`MapDef.depth`), where stairs lead back.

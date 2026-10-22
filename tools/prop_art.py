@@ -406,6 +406,50 @@ def draw_cave_rope():
     return c
 
 
+def draw_waystone():
+    """A waystone (NPC role `waystone`): a standing stone out in the wild, rounded at the top and
+    leaning in a little, lit from the top left, its runes a glowing blue (the game fades the whole
+    stone while it sleeps), on a ring of flat stones in the grass."""
+    c = Canvas(32, 48)
+    stone = [hexc("4a4a5c"), hexc("75768a"), hexc("a4a6b8")]
+    base = [hexc("55554a"), hexc("86846f"), hexc("b4b09a")]
+    glow = [hexc("2e7fd8"), hexc("6cc4ff"), hexc("e4f6ff")]
+    # The flat stones round its foot: an ellipse, lit at the top left.
+    for y in range(c.height):
+        for x in range(c.width):
+            u, v = (x + 0.5 - 16) / 14.5, (y + 0.5 - 42) / 4.5
+            if u * u + v * v <= 1:
+                c.px[y][x] = base[2 if u + v < -0.6 else 0 if u + v > 0.6 else 1]
+    # The stone: wider at its foot than its head, the head an arc.
+    for y in range(4, 43):
+        t = (y - 4) / 38
+        half = 6.5 + 2.5 * t
+        if y < 10:
+            half *= math.sqrt(max(0.0, 1 - ((10 - y) / 6.5) ** 2))
+        middle = 16 + 0.8 * (1 - t)
+        for x in range(c.width):
+            d = (x + 0.5 - middle) / max(half, 0.1)
+            if abs(d) <= 1:
+                c.px[y][x] = stone[2 if d < -0.45 else 0 if d > 0.5 else 1]
+    # Its runes: a circle and the strokes through it, carved deep and glowing.
+    runes = [(16, 14), (16, 15), (16, 16), (16, 17), (16, 18), (16, 19), (16, 20), (16, 21), (16, 22),
+             (14, 15), (13, 16), (18, 15), (19, 16), (14, 24), (15, 25), (16, 26), (17, 25), (18, 24),
+             (13, 29), (14, 30), (15, 31), (16, 32), (17, 31), (18, 30), (19, 29), (16, 33), (16, 34), (16, 35)]
+    for (x, y) in runes:
+        c.px[y][x] = glow[1]
+    for (x, y) in ((16, 14), (16, 26), (16, 32)):
+        c.px[y][x] = glow[2]
+    for (x, y) in runes:
+        if c.get(x + 1, y + 1) in stone:
+            c.px[y + 1][x + 1] = glow[0]
+    # Moss on its shaded side, low down.
+    for (x, y) in ((21, 36), (22, 37), (21, 38), (22, 39), (20, 40), (23, 40)):
+        if c.get(x, y) in stone:
+            c.px[y][x] = hexc("4f7a3a")
+    c.outline()
+    return c
+
+
 def frange(start, stop, step):
     """From `start` to `stop` (inclusive) in steps of `step`."""
     count = int(round((stop - start) / step))
@@ -440,6 +484,7 @@ DRAWINGS = {
     "cave_ladder": draw_cave_ladder,
     "cave_rope": draw_cave_rope,
     "ship": draw_ship,
+    "waystone": draw_waystone,
 }
 
 

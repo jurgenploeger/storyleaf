@@ -70,7 +70,7 @@ struct NPCDialogView: View {
                         case .shop: ShopPanel(session: session, stock: npc.stock ?? [], reply: $reply, info: $info)
                         case .quests: QuestGiverPanel(session: session, giver: npc.id, reply: $reply, finished: $finished)
                         case .guild: GuildPanel(session: session, classID: npc.classId ?? "", reply: $reply)
-                        case .chest, .stairs: EmptyView()   // straight from the map (GameCoordinator.open)
+                        case .chest, .stairs, .waystone: EmptyView()   // straight from the map (GameCoordinator.open)
                         case .boss: BossPanel(session: session, boss: npc, onFight: onFight)
                         case .smith: SmithPanel(session: session, reply: $reply, info: $info)
                         case .weaver: CapePanel(session: session, reply: $reply, info: $info)
