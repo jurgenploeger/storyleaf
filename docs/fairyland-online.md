@@ -565,7 +565,7 @@ capsule (H). Mining spots include Ilium, Kars Mountain and Siwa Oasis (H).
   the Genie Desert (1001 Nights), poppy fields on Emerald Road (Wizard of Oz), giant ladybugs in Lotus Land
   (Thumbelina), and apples in the Snow White Forest.
 - Each land has homes of its own (ours, since 0.7.65; asked for 2026-10-22: the same cottages stood in every
-  land): adobe houses and tents in the desert lands and Ingothold (with stone huts for its miners), beach huts
+  land): adobe houses and tents in the desert lands, and Ingothold's two kinds of adobe house (with stone huts for its miners), beach huts
   and fisher shacks on the coasts, snowy cabins, an igloo and the dwarves' cottages in the north, stilt huts and
   lily cottages in the swamps, crooked houses and witch huts in the dark lands, a puppet theatre on Marionette
   Rise, a moon pagoda, a water shrine, a candy cottage, forest lodges and Dozywick's nightcap cottages

@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "two storey fairytale desert house of pale sandstone adobe with a flat roof terrace, wooden roof beams poking out of the walls, a green wooden door, hanging clay pots with plants",
+    "prompt_style": "rd_tile__tile_object",
+    "width": 96,
+    "height": 96,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792672367,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_fast",
+    "remaining_credits": 0,
+    "remaining_balance": 36.491,
+    "request_id": "adba7c6c-9898-4219-8494-3cf066ae33cd",
+    "outputs_retained_until": 1792758720
+  }
+}
