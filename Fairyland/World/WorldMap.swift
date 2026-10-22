@@ -493,6 +493,14 @@ nonisolated final class WorldMap: @unchecked Sendable {
         return nearestWalkable(to: GridPoint(col: at.col - 1, row: at.row - 1))
     }
 
+    /// Where you come out travelling to the waystone `npcID` (`NPCRole.waystone`): in front of it,
+    /// as by stairs. Nil if it isn't on this map.
+    func waystoneArrival(_ npcID: String) -> GridPoint? {
+        guard let stone = def.npcs?.first(where: { $0.id == npcID && $0.role == .waystone }) else { return nil }
+        let at = spot(of: stone)
+        return nearestWalkable(to: GridPoint(col: at.col - 1, row: at.row - 1))
+    }
+
     /// Where a local lives or walks to (`MapDef.Place`): `x` and `y` steps from its landmark (from
     /// the middle if the map hasn't one), from a summit's top or from the middle, on the nearest
     /// cell you can walk on. Nil when nowhere near is open.

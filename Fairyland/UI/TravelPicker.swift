@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// Where to, by Bridge of Light or a Homeward Feather (`GameCoordinator.Travel`): every town you've
-/// been to but the one you're in (`GameSession.travelDestinations`), your checkpoint first. A tap
-/// goes there. Nothing's spent until then: closing the window keeps your MP or your feather.
+/// Where to, by Bridge of Light, a Homeward Feather or a waystone (`GameCoordinator.Travel`): every
+/// town you've been to but the one you're in, your checkpoint first, then the waystones you've woken
+/// (`GameSession.travelDestinations`). A tap goes there. Nothing's spent until then: closing the
+/// window keeps your MP or your feather.
 struct TravelPicker: View {
     let session: GameSession
     let travel: GameCoordinator.Travel
@@ -19,7 +20,7 @@ struct TravelPicker: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 8) {
                         header
-                        ForEach(session.travelDestinations, id: \.self) { town in row(town) }
+                        ForEach(session.travelDestinations, id: \.self) { place in row(place) }
                     }
                     .padding(14)
                 }
@@ -46,6 +47,9 @@ struct TravelPicker: View {
             if let item = Content.shared.item(id) {
                 means(icon: ItemIcon(item: item, size: 36, count: session.count(of: id)), name: item.name, cost: L("One is used up."))
             }
+        case .waystone:
+            means(icon: IconImage(.sparkles, size: 22).foregroundStyle(HUDStyle.gold).frame(width: 36, height: 36),
+                  name: L("Waystone"), cost: L("Free"))
         }
     }
 
@@ -60,16 +64,24 @@ struct TravelPicker: View {
         }
     }
 
-    private func row(_ town: String) -> some View {
-        Button { onGo(town) } label: {
+    /// A town (its map's id) or a waystone (its own id), by name.
+    private func row(_ place: String) -> some View {
+        let waystone = Content.shared.npc(place)?.role == .waystone
+        let land = waystone ? Content.shared.home(ofNPC: place) : Content.shared.map(place)
+        return Button { onGo(place) } label: {
             HStack(spacing: 10) {
-                IconImage(.map, size: 18)
+                IconImage(waystone ? .sparkles : .map, size: 18)
                     .foregroundStyle(HUDStyle.gold)
                     .frame(width: 32, height: 32)
                     .background(Circle().fill(.white.opacity(0.06)))
-                Text(Content.shared.map(town)?.name ?? town).font(HUDStyle.font(13))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(land?.name ?? place).font(HUDStyle.font(13))
+                    if waystone {
+                        Text(L("Waystone")).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim)
+                    }
+                }
                 Spacer(minLength: 4)
-                if town == session.checkpoint.mapID {
+                if place == session.checkpoint.mapID {
                     Text(L("Checkpoint")).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.gold)
                 }
             }

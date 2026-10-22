@@ -2903,6 +2903,16 @@
           "greeting": "In Duskhollow it's always nearly night. Good for lanterns. Bad for reading."
         },
         {
+          "id": "twilight_woods_waystone",
+          "name": "Waystone",
+          "role": "waystone",
+          "art": "waystone",
+          "x": 15,
+          "y": 4,
+          "greeting": "An old standing stone carved with runes. Awake, they glow, and it can take you far away.",
+          "quest": "dusk_waystone"
+        },
+        {
           "id": "charcoal_hettie",
           "name": "Charcoal-Burner Hettie",
           "role": "quests",
@@ -5240,7 +5250,7 @@
           8
         ],
         "monsters": {
-                    "pegasus": 2,
+          "pegasus": 2,
           "phantom": 3,
           "snowman": 3,
           "frost_bear": 5,
@@ -6296,6 +6306,16 @@
           "x": -15,
           "y": -8,
           "greeting": "Every hour I ring the bell, so the whole valley knows it isn't alone."
+        },
+        {
+          "id": "valley_of_fear_waystone",
+          "name": "Waystone",
+          "role": "waystone",
+          "art": "waystone",
+          "x": -11,
+          "y": -5,
+          "greeting": "An old standing stone carved with runes. Awake, they glow, and it can take you far away.",
+          "quest": "shiverdell_waystone"
         }
       ],
       "decor": [
@@ -7965,6 +7985,16 @@
           "x": 5,
           "y": 22,
           "greeting": "In the desert, a well is worth more than gold. Ask anyone who's been thirsty."
+        },
+        {
+          "id": "genie_desert_waystone",
+          "name": "Waystone",
+          "role": "waystone",
+          "art": "waystone",
+          "x": 9,
+          "y": 25,
+          "greeting": "An old standing stone carved with runes. Awake, they glow, and it can take you far away.",
+          "quest": "desert_waystone"
         }
       ],
       "encounters": {
@@ -14624,6 +14654,16 @@
           "greeting": "Can't sleep? Neither can we. Welcome to Wakewell, where nobody has yawned in a year."
         },
         {
+          "id": "sleepy_town_waystone",
+          "name": "Waystone",
+          "role": "waystone",
+          "art": "waystone",
+          "x": -12,
+          "y": -12,
+          "greeting": "An old standing stone carved with runes. Awake, they glow, and it can take you far away.",
+          "quest": "dozywick_waystone"
+        },
+        {
           "id": "roaster_bastian",
           "name": "Coffee-Roaster Bastian",
           "role": "quests",
@@ -15104,6 +15144,16 @@
           "x": -28,
           "y": -4,
           "greeting": "The grass grows taller than a man here, and the stories grow taller than the grass."
+        },
+        {
+          "id": "secret_plain_waystone",
+          "name": "Waystone",
+          "role": "waystone",
+          "art": "waystone",
+          "x": -24,
+          "y": -1,
+          "greeting": "An old standing stone carved with runes. Awake, they glow, and it can take you far away.",
+          "quest": "steppe_waystone"
         }
       ],
       "buildings": [
@@ -16109,6 +16159,16 @@
           "x": 20,
           "y": -4,
           "greeting": "Ice is just water that's decided to hold still. I help it decide what shape."
+        },
+        {
+          "id": "rosen_lake_waystone",
+          "name": "Waystone",
+          "role": "waystone",
+          "art": "waystone",
+          "x": 24,
+          "y": -1,
+          "greeting": "An old standing stone carved with runes. Awake, they glow, and it can take you far away.",
+          "quest": "briarmere_waystone"
         },
         {
           "id": "soupwife_margery",
@@ -17507,6 +17567,16 @@
           "x": 6,
           "y": -13,
           "greeting": "Mind the poppies. They make you sleepy. I've been yawning since I was four."
+        },
+        {
+          "id": "emerald_road_waystone",
+          "name": "Waystone",
+          "role": "waystone",
+          "art": "waystone",
+          "x": 10,
+          "y": -10,
+          "greeting": "An old standing stone carved with runes. Awake, they glow, and it can take you far away.",
+          "quest": "emerald_waystone"
         }
       ],
       "decor": [

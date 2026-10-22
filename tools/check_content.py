@@ -499,7 +499,19 @@ for map_def in maps.values():
         check(art_id in art, f"map {map_def['id']} → unknown art {art_id}")
     for npc in map_def.get("npcs", []):
         check(npc["art"] in art, f"npc {npc['id']} → unknown art {npc['art']}")
-        check(npc["role"] in ("healer", "shop", "quests", "guild", "chest", "boss", "smith", "weaver", "stairs", "barber"), f"npc {npc['id']} → unknown role {npc['role']}")
+        check(npc["role"] in ("healer", "shop", "quests", "guild", "chest", "boss", "smith", "weaver", "stairs", "barber", "waystone"), f"npc {npc['id']} → unknown role {npc['role']}")
+        # A waystone (`NPCRole.waystone`): out in a wild land on the continent (you arrive in front of
+        # it, `WorldMap.waystoneArrival`), one to a land, woken by a quest someone in that land gives.
+        if npc["role"] == "waystone":
+            where = f"waystone {npc['id']}"
+            quest = quests.get(npc.get("quest"))
+            check(quest is not None, f"{where} → unknown quest {npc.get('quest')}")
+            check(not map_def.get("fence") and "cave" not in theme, f"{where} → waystones stand in wild lands, not towns or caves")
+            check(sum(1 for n in map_def.get("npcs", []) if n["role"] == "waystone") == 1, f"{where} → one waystone to a land")
+            check(npc["id"] not in maps, f"{where} → its id is a map's too (travel tells them apart by id)")
+            if quest is not None:
+                check(any(n["id"] == quest["giver"] for n in map_def.get("npcs", [])),
+                      f"{where} → its quest's giver {quest['giver']} lives in another land")
         # A cave's stairs (`NPCRole.stairs`): one level down or up, to another level of the same cave,
         # and stairs there that lead back (you come out in front of them, `WorldMap.stairsArrival`).
         if npc["role"] == "stairs" or "to" in npc:

@@ -80,7 +80,7 @@ final class GameSession {
     /// for you, or one to hand in), the healer, the shop, the smith, the weaver, a guild, a chest
     /// still to open, a boss still to beat, and a cave's stairs down or up.
     struct MinimapMark: Hashable {
-        enum Kind { case quest, questNew, questReady, healer, shop, smith, weaver, barber, guild, chest, boss, stairsDown, stairsUp }
+        enum Kind { case quest, questNew, questReady, healer, shop, smith, weaver, barber, guild, chest, boss, stairsDown, stairsUp, waystone }
         let cell: GridPoint
         let kind: Kind
     }
@@ -1081,12 +1081,25 @@ final class GameSession {
         post(L("Checkpoint saved at {place}.", ["place": checkpointName(point)]), .quest)
     }
 
-    /// The towns Bridge of Light and Homeward Feathers can take you to: every town you've been to
-    /// but the one you're in, your checkpoint first, then the rest in the order the world lists them.
+    /// Where Bridge of Light, Homeward Feathers and waystones can take you: every town you've been
+    /// to but the one you're in (by its map's id), your checkpoint first, then the rest in the order
+    /// the world lists them; then every waystone you've woken but one in the land you're in (by
+    /// its own id).
     var travelDestinations: [String] {
         let towns = content.maps.filter { $0.fence == true && $0.id != data.mapID && hasVisited($0.id) }.map(\.id)
         let home = checkpoint.mapID
-        return towns.filter { $0 == home } + towns.filter { $0 != home }
+        let waystones = content.maps.filter { $0.id != data.mapID }
+            .flatMap { $0.npcs ?? [] }
+            .filter { $0.role == .waystone && isAwake($0) }
+            .map(\.id)
+        return towns.filter { $0 == home } + towns.filter { $0 != home } + waystones
+    }
+
+    /// A waystone (`NPCRole.waystone`) is awake once the quest that wakes it (`NPCDef.quest`) is
+    /// done.
+    func isAwake(_ waystone: NPCDef) -> Bool {
+        guard let quest = waystone.quest else { return true }
+        return data.quests[quest]?.state == .completed
     }
 
     func checkpointName(_ point: Checkpoint) -> String {
@@ -1770,7 +1783,7 @@ final class GameSession {
 
     /// What someone shows as on the minimap and the world map (`MinimapIcon`): a quest giver as their
     /// mark says ("!" news, "?" done), the healer, the shop, the smith, the weaver (or her news), the
-    /// barber, a guild, a boss, stairs, and a chest still to open; nil for an opened chest.
+    /// barber, a guild, a boss, stairs, a waystone, and a chest still to open; nil for an opened chest.
     func minimapKind(for npc: NPCDef) -> MinimapMark.Kind? {
         switch npc.role {
         case .healer: return .healer
@@ -1782,6 +1795,7 @@ final class GameSession {
         case .boss: return .boss
         case .stairs: return Content.shared.leadsDown(npc) ? .stairsDown : .stairsUp
         case .chest: return isOpened(npc.id) ? nil : .chest
+        case .waystone: return .waystone
         case .quests:
             switch notice(for: npc.id) {
             case .ready?: return .questReady
@@ -1908,6 +1922,9 @@ final class GameSession {
                 let place = content.map(exit.to)?.name ?? exit.to
                 lines.append(exit.ship == true ? L("The ship from {from} to {map} is ready to sail!", ["from": map.name, "map": place])
                              : L("The road from {from} to {map} is open!", ["from": map.name, "map": place]))
+            }
+            for stone in map.npcs ?? [] where stone.role == .waystone && stone.quest == id {
+                lines.append(L("The waystone in {map} is awake! Touch it to travel.", ["map": map.name]))
             }
         }
         checkTitles()

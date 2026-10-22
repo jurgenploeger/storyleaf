@@ -2810,6 +2810,29 @@ struct RulesTests {
         #expect(!session.travelDestinations.contains(towns[0]))
     }
 
+    @Test func waystonesWakeByTheirQuestAndJoinTheTravelList() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let content = Content.shared
+        let stones = content.maps.flatMap { $0.npcs ?? [] }.filter { $0.role == .waystone }
+        #expect(!stones.isEmpty)
+        session.data.mapID = content.startMap
+        // Asleep till their quests are done: nowhere to go yet.
+        #expect(stones.allSatisfy { !session.isAwake($0) })
+        #expect(session.travelDestinations.isEmpty)
+        for stone in stones {
+            let quest = try #require(stone.quest)
+            session.data.quests[quest] = QuestProgress(state: .completed, count: 1)
+        }
+        // Awake, every one is somewhere to go, after the towns.
+        #expect(session.travelDestinations == stones.map(\.id))
+        // Standing in a waystone's land, that one's left out.
+        // (Any town you have been to is listed as well; this looks only at the waystones.)
+        let first = try #require(stones.first)
+        session.data.mapID = try #require(content.home(ofNPC: first.id)).id
+        let listed = session.travelDestinations.filter { id in stones.contains { $0.id == id } }
+        #expect(listed == stones.dropFirst().map(\.id))
+    }
+
     @Test func botsAreTagged() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         session.postChat("hi!", from: "Momo", kind: .adventurer)

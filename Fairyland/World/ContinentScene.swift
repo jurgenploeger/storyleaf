@@ -1233,11 +1233,11 @@ final class ContinentScene: SKScene {
     }
 
     /// Puts you somewhere on the continent at once (a new game, out of a cave, a Homeward Feather,
-    /// waking at your checkpoint): on `def`'s land at `arrival` (its own points), or just inside
-    /// where its road from `entry` comes in, or in its middle, on ground you can stand on, as a land's
+    /// waking at your checkpoint): on `def`'s land at `arrival` (its own points), in front of its
+    /// `waystone`, or just inside where its road from `entry` comes in, or in its middle, on ground you can stand on, as a land's
     /// own scene starts you (`WorldScene.init`). The chunks round there are drawn afresh; `isReady`
     /// once they are, and you're in that land.
-    func place(on def: MapDef, entry: Edge?, arrival: CGPoint?) async {
+    func place(on def: MapDef, entry: Edge?, arrival: CGPoint?, waystone: String? = nil) async {
         guard store.land(def.id) != nil else { return }
         isReady = false
         // Nothing round where you were is wanted now (`lookAround` waits): this land comes first,
@@ -1256,6 +1256,8 @@ final class ContinentScene: SKScene {
         var local = map.center(of: map.center)
         if let arrival {
             local = arrival
+        } else if let waystone, let cell = map.waystoneArrival(waystone) {
+            local = map.center(of: cell)
         } else if let entry {
             local = map.center(of: map.entryCell(from: entry))
         }
