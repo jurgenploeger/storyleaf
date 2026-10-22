@@ -147,6 +147,7 @@ final class Walker: SKNode {
     /// Shows the weapon in hand.
     func setWeapon(_ weapon: ItemDef?) {
         sprite.childNode(withName: "weapon")?.removeFromParent()
+        sprite.childNode(withName: "head")?.removeFromParent()   // drawn over a weapon held up (GearArt.overHead)
         if let weapon, let node = GearArt.weapon(weapon, height: cycle.size.height) {
             Self.lit(node)
             sprite.addChild(node)
@@ -160,9 +161,11 @@ final class Walker: SKNode {
     func relight() {
         sprite.colorBlendFactor = 0
         Self.lit(sprite)
-        if let weapon = sprite.childNode(withName: "weapon") as? SKSpriteNode {
-            weapon.colorBlendFactor = 0
-            Self.lit(weapon)
+        for name in ["weapon", "head"] {
+            if let part = sprite.childNode(withName: name) as? SKSpriteNode {
+                part.colorBlendFactor = 0
+                Self.lit(part)
+            }
         }
     }
 
@@ -181,8 +184,14 @@ final class Walker: SKNode {
         // In hand as the walk goes, frame by frame in step with it (`animate`): it bobs as the body does.
         let frames = cycle.frames(facing)
         guard frames.count > 1 else { return }
+        let facing = self.facing, height = cycle.size.height
         let steps = frames.flatMap { frame -> [SKAction] in
-            [.move(to: GearArt.grip(on: sprite, frame: frame, facing: facing, height: cycle.size.height), duration: 0), .wait(forDuration: 0.16)]
+            [.move(to: GearArt.grip(on: sprite, frame: frame, facing: facing, height: height), duration: 0),
+             // The head drawn over a weapon held up in front, from this frame too (GearArt.overHead).
+             .run { [weak weapon] in
+                 if let weapon { GearArt.overHead(weapon, facing: facing, height: height, frame: frame) }
+             },
+             .wait(forDuration: 0.16)]
         }
         weapon.run(.repeatForever(.sequence(steps)), withKey: "walk")
     }

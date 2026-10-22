@@ -13,7 +13,7 @@ enum GearArt {
         let name = "held_\(item.id)"
         if let side = posed(name + "_side") {
             // Drawn for holding (tools/item_art.py held_pair), the grip in the middle; `pose` swaps in
-            // the front one facing you or away (lowered at the side, a staff upright, a whip hanging).
+            // the front one facing you or away (held up nearly upright, a whip hanging).
             let node = SKSpriteNode(texture: side.texture, size: sized(side.pixels, height: height))
             node.anchorPoint = CGPoint(x: 0.5, y: 0.5)
             node.name = "weapon"
@@ -101,7 +101,7 @@ enum GearArt {
         return group
     }
 
-    /// Facing you or away, a weapon is held at the side (`_front`), else as drawn (`_side`).
+    /// Facing you or away, a weapon is held up nearly upright (`_front`), else as drawn (`_side`).
     private static func upright(_ facing: Direction) -> Bool {
         facing == .up || facing == .down
     }
@@ -197,7 +197,7 @@ enum GearArt {
     /// frame the sprite shows: just behind the body, so the hand closes over the grip and the rest
     /// of the weapon shows past it, rather than hanging beside it; facing you, in front at the side.
     /// Pointing up and away from the body walking left or right; facing you or away its `_front`
-    /// sprite, lowered at the side (a staff upright, a whip hanging); mirrored facing left. `frame`: a frame
+    /// sprite, held up nearly upright (a whip hanging); mirrored facing left. `frame`: a frame
     /// other than the one showing (the walk's next, `Walker`).
     static func pose(_ weapon: SKSpriteNode, facing: Direction, height: CGFloat, frame: SKTexture? = nil) {
         if let name = weapon.userData?["held"] as? String,
@@ -211,9 +211,50 @@ enum GearArt {
         weapon.position = grip(on: weapon.parent as? SKSpriteNode, frame: frame, facing: facing, height: height)
         let held = weapon.userData?["held"] != nil
         // Facing away a held sprite leans the same way out from the body as facing you; facing you
-        // it's in front, in the hand at the side (behind, the hair and shoulder hid it).
+        // it's in front, in the hand, and the head is drawn again over it (`overHead`).
         weapon.xScale = facing == .left || (facing == .up && !held) ? -1 : 1
         weapon.zPosition = facing == .down && held ? 1 : -1
+        overHead(weapon, facing: facing, height: height, frame: frame)
+    }
+
+    /// How far down its frame a figure's neck is (a share of the frame's height, from the top): the
+    /// head and hair above it are drawn again over a weapon held up in front (`overHead`).
+    static func neck(of frame: SKTexture) -> CGFloat {
+        let bounds = figure(of: frame)
+        let rows = max(1, frame.size().height)
+        // On a whole row of pixels, like tools/gear_preview.py NECK.
+        return (rows * (bounds.top + 0.45 * (bounds.bottom - bounds.top))).rounded(.down) / rows
+    }
+
+    /// Facing you, a weapon is held up in front of the body, and the hero's head (and hair, down to
+    /// the neck) is drawn again over it from the frame showing, so the blade passes behind the head
+    /// and shows above the shoulder (playtesting 2026-10-22: held off to the side it looked stood
+    /// behind the hero, held at the hand without this it covered the face). Hidden otherwise.
+    static func overHead(_ weapon: SKSpriteNode, facing: Direction, height: CGFloat, frame: SKTexture? = nil) {
+        guard let body = weapon.parent as? SKSpriteNode else { return }
+        let head = body.childNode(withName: "head") as? SKSpriteNode
+        guard facing == .down, weapon.userData?["held"] != nil, let shown = frame ?? body.texture else {
+            head?.isHidden = true
+            return
+        }
+        let node = head ?? {
+            let node = SKSpriteNode()
+            node.name = "head"
+            node.anchorPoint = CGPoint(x: 0.5, y: 0)
+            node.zPosition = 2
+            body.addChild(node)
+            return node
+        }()
+        let cut = neck(of: shown)
+        // Texture rects are in unit points from the bottom left; the frames are square.
+        let texture = SKTexture(rect: CGRect(x: 0, y: 1 - cut, width: 1, height: cut), in: shown)
+        texture.filteringMode = .nearest
+        node.texture = texture
+        node.size = CGSize(width: height, height: height * cut)
+        node.position = CGPoint(x: (0.5 - body.anchorPoint.x) * height, y: (1 - cut - body.anchorPoint.y) * height)
+        node.color = body.color
+        node.colorBlendFactor = body.colorBlendFactor
+        node.isHidden = false
     }
 
     /// Where a weapon's grip goes on `body` (a walking sprite) showing `frame` (else its own): its
@@ -239,8 +280,8 @@ enum GearArt {
     /// from the top).
     private static func hand(top: CGFloat, bottom: CGFloat, facing: Direction) -> CGPoint {
         let (across, down): (CGFloat, CGFloat) = switch facing {
-        case .down: (5, 0.58)   // the hand at the body's side, where a held sprite's grip goes
-        case .up: (5, 0.55)
+        case .down: (5, 0.6)   // the hand at the body's side, where a held sprite's grip goes
+        case .up: (5, 0.57)
         case .right: (3, 0.56)
         case .left: (-4, 0.56)
         }

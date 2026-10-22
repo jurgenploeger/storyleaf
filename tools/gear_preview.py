@@ -1173,14 +1173,16 @@ def hat_sheet(out, hats=None):
     print(f"wrote {out}: {', '.join(i['id'] for i in worn)}")
 
 
-HAND = {"down": (5, 0.58), "up": (5, 0.55), "right": (3, 0.56), "left": (-4, 0.56)}   # GearArt.hand
+NECK = 0.45   # GearArt.neck: the head drawn over a weapon held up in front, down this far
+HAND = {"down": (5, 0.6), "up": (5, 0.57), "right": (3, 0.56), "left": (-4, 0.56)}   # GearArt.hand
 
 
 def holding(frame, weapon, facing):
     """A 48-pixel walk frame with `weapon` in hand, as GearArt.pose places it: the held sprite for
     the way it faces (art/sprites/held_<id>_side.png, or _front.png facing you or away; its grip in
     its middle) on the hand, beside the body and part way down the figure as drawn in this frame,
-    in front of the body facing you and behind it otherwise, mirrored facing left."""
+    held up in front of the body facing you, the head drawn over it, and behind it otherwise,
+    mirrored facing left."""
     from PIL import Image
     rows = np.where((frame[..., 3] > 127 / 255).any(axis=1))[0]
     top, bottom = (rows[0], rows[-1] + 1) if len(rows) else (0.27 * FRAME, 0.94 * FRAME)
@@ -1194,9 +1196,15 @@ def holding(frame, weapon, facing):
     held = Image.fromarray((weapon * 255).round().astype(np.uint8), "RGBA")
     spot = (int(round(pad + hx - w / 2)), int(round(pad + hy - h / 2)))
     body = Image.fromarray((np.clip(frame, 0, 1) * 255).round().astype(np.uint8), "RGBA")
-    # Facing you it's in front, at the side (behind, the hair and shoulder hid an upright blade);
-    # else behind the body, the hand over its grip.
-    for layer, at in ((body, (pad, pad)), (held, spot)) if facing == "down" else ((held, spot), (body, (pad, pad))):
+    # Facing you it's held up in front, the head drawn again over it down to the neck (GearArt.overHead),
+    # so the blade passes behind the head; else behind the body, the hand over its grip.
+    layers = [(held, spot), (body, (pad, pad))]
+    if facing == "down":
+        head = frame.copy()
+        head[int(top + NECK * (bottom - top)):] = 0
+        layers = [(body, (pad, pad)), (held, spot),
+                  (Image.fromarray((np.clip(head, 0, 1) * 255).round().astype(np.uint8), "RGBA"), (pad, pad))]
+    for layer, at in layers:
         canvas.alpha_composite(layer, at)
     return canvas
 

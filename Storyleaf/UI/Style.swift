@@ -348,9 +348,20 @@ struct WalkingSprite: View {
                 if let weapon, let held = GearArt.heldImage(weapon, facing: facing) {
                     let hand = frames.isEmpty ? nil : GearArt.hand(in: frames[tick % frames.count], facing: facing)
                     HeldWeapon(image: held.image, grip: held.grip, scale: held.scale, facing: facing, size: size, hand: hand)
-                        // Just behind the body, the hand over its grip, or in front at the side facing
-                        // you, as on the map (GearArt.pose).
+                        // Just behind the body, the hand over its grip, or held up in front facing you,
+                        // as on the map (GearArt.pose).
                         .zIndex(facing == .down ? 1 : -1)
+                    if facing == .down, !frames.isEmpty {
+                        // The head drawn again over a weapon held up in front (GearArt.overHead).
+                        let frame = frames[tick % frames.count]
+                        Image(uiImage: UIImage(cgImage: frame.cgImage()))
+                            .interpolation(.none)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: size, height: size)
+                            .mask(alignment: .top) { Rectangle().frame(height: size * GearArt.neck(of: frame)) }
+                            .zIndex(2)
+                    }
                 }
             }
             .frame(width: size, height: size)
@@ -372,7 +383,7 @@ private struct HeldWeapon: View {
     var body: some View {
         let side = size * scale
         let mirrored = facing == .left
-        let spot = hand ?? CGPoint(x: facing == .left ? 0.42 : facing == .right ? 0.56 : 0.6, y: 0.36)
+        let spot = hand ?? CGPoint(x: facing == .left ? 0.42 : facing == .right ? 0.56 : 0.6, y: 0.4)
         let point = CGPoint(x: size * spot.x, y: size * (1 - spot.y))
         Image(uiImage: image)
             .interpolation(.none)

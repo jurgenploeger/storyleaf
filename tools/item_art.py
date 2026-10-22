@@ -3202,13 +3202,12 @@ def render(item_id):
 HELD = 24   # a held weapon's span on the side: half a 48-pixel walk frame, one pixel to one of the sprite's
 POSED = 64  # held_<id>_side and _front: a canvas with the grip in its middle (GearArt.posed)
 GRIP_UP = (2.25, -1.5)   # the hand closes this far up the handle from its end, in the hero's pixels
-# Facing you or away (held_<id>_front): degrees the side view turns. A sword or an axe is held lowered at
-# the side, pointing down past the feet; a staff or wand upright, leaning out past the head. Held upright
-# at the hand, a blade or an axe head lay over the face; held off to the side, it looked stood behind
-# the hero, not held (playtesting 2026-10-22).
-LOWERED_TURN = -112
-STAFF_TURN = 30
-STAFFS = {"wand", "diamond"}   # items.json `icon`s held upright
+# Facing you or away (held_<id>_front): degrees the side view turns, to held up nearly upright, leaning a
+# little out from the body. Facing you the game draws the head again over it (GearArt.overHead), so the
+# blade passes behind the head: held up at the hand without that, a crossguard or an axe head lay over
+# the face; off to the side to clear it, it looked stood behind the hero; lowered, it wasn't held up
+# (playtesting 2026-10-22).
+FRONT_TURN = 30
 
 
 def grip_of(c):
@@ -3225,7 +3224,7 @@ def grip_of(c):
 
 def posed(c, k, angle=0, slide=0):
     """A weapon drawn diagonally (grip bottom-left, `c`, not outlined yet) as the hero holds it: `k`
-    of its pixels to one of the hero's, turned `angle` degrees anticlockwise (`front_turn`, for facing
+    of its pixels to one of the hero's, turned `angle` degrees anticlockwise (FRONT_TURN, for facing
     you or away), its grip in the middle of a POSED canvas, then outlined. Turned at eight times the
     size and sampled back, each pixel the colour that covers most of it (a thin blade wins over the
     air beside it): shrunk or turned in the game instead, every third row and column dropped and it
@@ -3325,24 +3324,17 @@ HANGING["starfall_whip"] = dict(leather=MOTH, grip=NIGHT, tip=STARLIGHT[1], gem=
 HANGING["goldleaf_whip"] = dict(leather=LEAFGOLD, grip=HEARTOAK, tip=hexc("b8d040"), gem=GREEN, studs=WHITE)
 
 
-def front_turn(item_id):
-    """How far `item_id`'s held sprite turns to face you (LOWERED_TURN, or STAFF_TURN for a staff)."""
-    items = {i["id"]: i for i in json.loads((ROOT / "content" / "items.json").read_text())["items"]}
-    return STAFF_TURN if items[item_id].get("icon") in STAFFS else LOWERED_TURN
-
-
 def held_pair(item_id):
     """The weapon `item_id` as the hero holds it (art/sprites/held_<id>_side.png and _front.png,
-    GearArt.posed): its drawing, HELD pixels across on the side; facing you or away lowered at the
-    side, or upright for a staff (`front_turn`; held sideways from the front, it looked wrong); a whip
-    hanging."""
+    GearArt.posed): its drawing, HELD pixels across on the side; facing you or away held up nearly
+    upright (FRONT_TURN; held sideways from the front, it looked wrong); a whip hanging."""
     if item_id in HANGING:
         args = {k: v for k, v in HANGING[item_id].items() if k != "turns"}
         return hanging_whip(front=False, **args), hanging_whip(front=True, **args)
     canvas = Canvas()
     DRAWINGS[item_id](canvas)
     k = SIZE / HELD
-    return posed(canvas, k), posed(canvas, k, front_turn(item_id))
+    return posed(canvas, k), posed(canvas, k, FRONT_TURN)
 
 
 def main(argv):
