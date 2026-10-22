@@ -113,6 +113,9 @@ PICKED = {
     "goldleaf_blade": ("rdw_goldleaf_blade/20261022-193514_0.png", 0),
     "goldleaf_axe": ("rdw_goldleaf_axe/20261022-193544_1.png", 0),
     "goldleaf_staff": ("rdw_goldleaf_staff/20261022-193634_2.png", 0),
+    "crystal_wand": ("rdw_crystal_wand/20261022-194825_2.png", 0),
+    "ghost_staff": ("rdw_ghost_staff/20261022-195050_1.png", 0),
+    "dragon_god_staff": ("rdw_dragon_god_staff/20261022-195123_1.png", 0),
 }
 
 

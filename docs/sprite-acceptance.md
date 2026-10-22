@@ -170,9 +170,10 @@ python3 tools/check_content.py
   body, direction, armour and cape alike (`gear_preview.py --weapons`).
 - Weapons (2026-10-22, the rest: 76 weapons, 3 variants each, $13.68): 78 of the 107 weapons are drawn by
   Retro Diffusion now (`weapon_art.PICKED`). About one variant in four came out upright or upside down, turned
-  to the diagonal (`turn`); a plain hatchet still came out a hammer in two of three. Kept as drawn in code:
-  the whips (none coiled, and held they hang, `hanging_whip`) and three whose look RD missed (the Crystal
-  Wand's cyan crystal, the Ghost Staff's ghost, the Wyrmking Staff's red and gold).
+  to the diagonal (`turn`); a plain hatchet still came out a hammer in two of three. Three whose look RD
+  missed (the Crystal Wand's cyan crystal, the Ghost Staff's ghost, the Wyrmking Staff's red and gold) came
+  right with a sharper prompt naming each part and its colour ($0.54): 81 in all. Only the whips are drawn in
+  code (none coiled, and held they hang, `hanging_whip`). A detail as small as a ghost's eyes is lost held.
 - Inpainting walk sheets (`rd.py edit`) is a dead end: faces come out muddy at about 10 px wide, armour too
   bulky, and side and back views don't match the pose.
 - A sheet is per race, not per gender: both genders wear the same armour sheet, over the hero's own hair from
