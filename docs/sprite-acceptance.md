@@ -107,9 +107,11 @@ one body and wrong on another isn't done.
   Never scale or turn pixel art by a fraction in the game: at 0.72 nearest-neighbour dropped every third row and
   column and every weapon looked ragged.
 - Walking left or right it points up and away from the body, behind it, the hand over its grip.
-- Facing you it stands nearly upright at the side, in front of the body, leaning out past the head (2026-10-22:
-  held sideways from the front, as on the side, looked wrong). Facing away it's the same, behind the body. No
-  blade or axe head over the face, on any body.
+- Facing you it's in the hand at the body's side, in front of it: a sword or axe lowered, pointing down past
+  the feet, a staff or wand upright, its head above the shoulder. Facing away it's the same, behind the body.
+  No blade or axe head over the face, on any body. Learned 2026-10-22: held sideways from the front, as on
+  the side, looked wrong; upright at the hand, the hand at chest height beside the face, a crossguard or axe
+  head lay over the face; moved off to the side to clear it, the weapon looked stood behind the hero.
 - A whip's lash hangs down from a short handle and trails on the ground by the feet (2026-10-22: held up like a
   sword, a whip read as a stick). Its icon keeps the coil.
 

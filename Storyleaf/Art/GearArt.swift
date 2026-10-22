@@ -13,7 +13,7 @@ enum GearArt {
         let name = "held_\(item.id)"
         if let side = posed(name + "_side") {
             // Drawn for holding (tools/item_art.py held_pair), the grip in the middle; `pose` swaps in
-            // the upright one (or a whip's lash hanging down beside the leg) facing you or away.
+            // the front one facing you or away (lowered at the side, a staff upright, a whip hanging).
             let node = SKSpriteNode(texture: side.texture, size: sized(side.pixels, height: height))
             node.anchorPoint = CGPoint(x: 0.5, y: 0.5)
             node.name = "weapon"
@@ -101,7 +101,7 @@ enum GearArt {
         return group
     }
 
-    /// Facing you or away, a weapon is held upright at the side (`_front`), else as drawn (`_side`).
+    /// Facing you or away, a weapon is held at the side (`_front`), else as drawn (`_side`).
     private static func upright(_ facing: Direction) -> Bool {
         facing == .up || facing == .down
     }
@@ -196,13 +196,13 @@ enum GearArt {
     /// Holds the weapon in the hand for the way the character faces (`hand(in:facing:)`), in the
     /// frame the sprite shows: just behind the body, so the hand closes over the grip and the rest
     /// of the weapon shows past it, rather than hanging beside it; facing you, in front at the side.
-    /// Pointing up and away from the body walking left or right, nearly upright facing you or away
-    /// (its `_front` sprite), a whip's lash hanging down; mirrored facing left. `frame`: a frame
+    /// Pointing up and away from the body walking left or right; facing you or away its `_front`
+    /// sprite, lowered at the side (a staff upright, a whip hanging); mirrored facing left. `frame`: a frame
     /// other than the one showing (the walk's next, `Walker`).
     static func pose(_ weapon: SKSpriteNode, facing: Direction, height: CGFloat, frame: SKTexture? = nil) {
         if let name = weapon.userData?["held"] as? String,
            let held = posed(name + (upright(facing) ? "_front" : "_side")) ?? posed(name + "_side") {
-            // Upright at the side facing you or away, as drawn walking left or right.
+            // At the side facing you or away, as drawn walking left or right.
             weapon.xScale = 1
             weapon.texture = held.texture
             weapon.size = sized(held.pixels, height: height)
@@ -210,8 +210,8 @@ enum GearArt {
         }
         weapon.position = grip(on: weapon.parent as? SKSpriteNode, frame: frame, facing: facing, height: height)
         let held = weapon.userData?["held"] != nil
-        // Facing away a held sprite leans out past the head as it does facing you; facing you it's in
-        // front, at the side (behind, the hair and shoulder hid the blade).
+        // Facing away a held sprite leans the same way out from the body as facing you; facing you
+        // it's in front, in the hand at the side (behind, the hair and shoulder hid it).
         weapon.xScale = facing == .left || (facing == .up && !held) ? -1 : 1
         weapon.zPosition = facing == .down && held ? 1 : -1
     }
@@ -239,8 +239,8 @@ enum GearArt {
     /// from the top).
     private static func hand(top: CGFloat, bottom: CGFloat, facing: Direction) -> CGPoint {
         let (across, down): (CGFloat, CGFloat) = switch facing {
-        case .down: (10, 0.58)   // the hand on the outside, so an upright weapon clears the head
-        case .up: (10, 0.55)
+        case .down: (5, 0.58)   // the hand at the body's side, where a held sprite's grip goes
+        case .up: (5, 0.55)
         case .right: (3, 0.56)
         case .left: (-4, 0.56)
         }

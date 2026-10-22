@@ -372,7 +372,7 @@ private struct HeldWeapon: View {
     var body: some View {
         let side = size * scale
         let mirrored = facing == .left
-        let spot = hand ?? CGPoint(x: facing == .left ? 0.42 : facing == .right ? 0.56 : 0.71, y: 0.36)
+        let spot = hand ?? CGPoint(x: facing == .left ? 0.42 : facing == .right ? 0.56 : 0.6, y: 0.36)
         let point = CGPoint(x: size * spot.x, y: size * (1 - spot.y))
         Image(uiImage: image)
             .interpolation(.none)

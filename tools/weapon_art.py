@@ -3,8 +3,9 @@
 two sprites, by the same rules as tools/item_art.py's drawn weapons:
 
 - art/sprites/item_<id>.png, 32 × 32: the icon in bags, shops and the Character tab;
-- art/sprites/held_<id>_side.png and _front.png: the weapon in hand walking left or right, and nearly
-  upright facing you or away (GearArt.posed, item_art.posed), one of its pixels to one of the hero's.
+- art/sprites/held_<id>_side.png and _front.png: the weapon in hand walking left or right, and lowered
+  at the side (a staff upright) facing you or away (GearArt.posed, item_art.posed), one of its pixels
+  to one of the hero's.
 
 Both are shrunk from the RD drawing with its own outline taken off, each pixel the colour that
 covers most of it (a thin blade wins over the air beside it), then outlined afresh in the items'
@@ -103,7 +104,7 @@ def make(item_id, path, turn=0, out=None):
     src = load(path, turn)
     icon = shrink(src, ia.SIZE, ICON_INNER)
     k = src.size / HELD_INNER        # its pixels to one of the hero's: as long held as a drawn one
-    side, front = ia.posed(src, k), ia.posed(src, k, ia.FRONT_TURN)
+    side, front = ia.posed(src, k), ia.posed(src, k, ia.front_turn(item_id))
     spot = None
     if items[item_id].get("glow"):
         spot = tip(icon)

@@ -1173,7 +1173,7 @@ def hat_sheet(out, hats=None):
     print(f"wrote {out}: {', '.join(i['id'] for i in worn)}")
 
 
-HAND = {"down": (10, 0.58), "up": (10, 0.55), "right": (3, 0.56), "left": (-4, 0.56)}   # GearArt.hand
+HAND = {"down": (5, 0.58), "up": (5, 0.55), "right": (3, 0.56), "left": (-4, 0.56)}   # GearArt.hand
 
 
 def holding(frame, weapon, facing):

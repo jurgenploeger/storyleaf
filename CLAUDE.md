@@ -60,9 +60,10 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `Storyleaf/`: Swift code (World = maps and walking, Battle = combat, UI = SwiftUI HUD and menus).
 - `tools/item_art.py`: draws every item's 32×32 sprite in code (free); rerun it after editing a drawing. A weapon also
   gets `held_<id>_side.png` and `_front.png` (`held_pair`), its grip in the middle of a 64-pixel canvas, one of its
-  pixels to one of the hero's (`GearArt.posed`): its drawing about 24 pixels across walking left or right, turned
-  nearly upright and leaning out past the head facing you or away (held sideways from the front, it looked wrong),
-  in front of the body facing you; a whip's lash hanging down to the feet (`hanging_whip`; held up like a sword it
+  pixels to one of the hero's (`GearArt.posed`): its drawing about 24 pixels across walking left or right; facing
+  you or away lowered at the side in the hand, a staff upright (`front_turn`; held sideways from the front it looked
+  wrong, upright at the hand it covered the face, off to the side it looked stood behind), in front of the body
+  facing you; a whip's lash hanging down to the feet (`hanging_whip`; held up like a sword it
   read as a stick). Shrunk and turned offline, each pixel the colour covering most of it: in the game it was ragged.
 - `tools/store_slides.py`: App Store slides from the landscape `store_land_*` screenshot scenes: captions in the
   logo's style (`tools/store_slides.json`, font in `tools/fonts/`), cropped clear of the Dynamic Island the
