@@ -86,7 +86,7 @@ struct LoadingBar: View {
     /// Storyleaf's own loading bar, the same on every loading screen: the logo's leaf green,
     /// outlined like its letters, on its cream.
     static func storyleaf(progress: Double, label: String) -> LoadingBar {
-        LoadingBar(progress: progress, label: label, textColor: Brand.forest,
+        LoadingBar(progress: progress, label: label, textColor: Brand.skyText,
                    fill: [Brand.leafLight, Brand.leaf, Brand.leafDeep], track: Brand.cream, rim: Brand.forest,
                    width: 200)
     }

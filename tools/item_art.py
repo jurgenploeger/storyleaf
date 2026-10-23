@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Hand-drawn pixel art for every item, as code: writes art/sprites/item_<id>.png (32×32).
 
-Each item is drawn in flat colours with a light and a dark shade, then gets the same dark
-outline as the game's other sprites. No image libraries needed. Edit a drawing below and rerun:
+Each item is designed here in flat colours with a light and a dark shade, then finished in the game's
+pixel style by tools/pixel_kit.py (`restyle`: lit from the top left on hue-shifted ramps, textured,
+outlined afresh; docs/pixel-style.md), so it sits beside the art Retro Diffusion drew. Needs pillow
+and numpy. Edit a drawing below and rerun:
 
     python3 tools/item_art.py            # all items
     python3 tools/item_art.py potion     # just these
@@ -249,22 +251,6 @@ def ring(c, band, gem=None, gem_color=None):
         c.poly([(13, 10), (16, 10), (15, 12), (12, 12)], gem_color[2])
 
 
-def whip(c, leather, grip, tassel=None):
-    # A braided lash: the coil alternates light and dark every few steps.
-    for i in range(0, 60):
-        t = i / 60 * math.pi * 3.2
-        r = 3 + i * 0.13
-        c.disc(17 + r * math.cos(t), 14 + r * math.sin(t) * 0.8, 1.1, leather[2] if i % 6 < 2 else leather[1])
-    c.line(6, 28, 11, 21, grip[1], width=3)
-    c.line(7, 28, 12, 22, grip[0], width=1)
-    for (x, y) in ((7, 26), (9, 24)):                       # wrapped handle
-        c.line(x - 1, y - 1, x + 1, y + 1, grip[2])
-    c.rect(10, 20, 13, 22, GOLD[1])
-    c.set(10, 20, GOLD[2])
-    if tassel:
-        tassel(c)
-
-
 # ---------------------------------------------------------------- the items
 
 RED = [hexc("a8202e"), hexc("e0384a"), hexc("ff8a8a")]
@@ -481,15 +467,17 @@ def draw_star_wand(c):
 
 
 def draw_tamer_whip(c):
-    whip(c, LEATHER, WOOD)
+    whip_line(c, LEATHER, WOOD)
 
 
 def draw_beast_whip(c):
     def tassel(c):
-        c.disc(24, 25, 3, hexc("f6c33b"))                 # paw pad
-        for (x, y) in ((21, 21), (24, 20), (27, 21)):
+        c.line(5, 14, 6, 18, hexc("5a4028"))               # a paw pad on a cord from the pommel
+        c.disc(6, 22, 3, hexc("f6c33b"))
+        for (x, y) in ((3, 18.5), (6, 18), (9, 18.5)):
             c.disc(x, y, 1.2, hexc("f6c33b"))
-    whip(c, [hexc("7a1a1a"), hexc("b8302a"), hexc("e8604a")], [hexc("3a2a1a"), hexc("5a4028"), hexc("7a5a38")], tassel)
+    whip_line(c, [hexc("7a1a1a"), hexc("b8302a"), hexc("e8604a")], [hexc("3a2a1a"), hexc("5a4028"), hexc("7a5a38")],
+              tassel=tassel)
 
 
 def draw_wild_horn(c):
@@ -704,12 +692,7 @@ def draw_power_band(c):
 
 
 def draw_speed_boots(c):
-    boot = [hexc("1c4fa8"), hexc("3a86e8"), hexc("9ccaff")]
-    c.poly([(9, 6), (17, 6), (17, 21), (26, 23), (27, 28), (8, 28)], boot[1])
-    c.shade(lambda x, y, col: col == boot[1] and x > 15 and y < 21, boot[0])
-    c.shade(lambda x, y, col: col == boot[1] and x < 12, boot[2])
-    c.rect(8, 26, 27, 28, hexc("f4ead0"))
-    c.rect(9, 6, 17, 8, hexc("f4ead0"))
+    boot(c, [hexc("1c4fa8"), hexc("3a86e8"), hexc("9ccaff")], hexc("f4ead0"), hexc("f4ead0"))
     for i, (x, y) in enumerate(((5, 10), (4, 14), (5, 18))):   # the wing: three feathers
         c.ellipse(x + 2, y, 3.2, 1.6, WHITE)
         c.line(x, y + 1, x + 4, y + 1, hexc("9ccaff"))
@@ -726,24 +709,28 @@ MOON = [hexc("5f7ab8"), hexc("a8c4f0"), hexc("eef6ff")]
 
 
 def glove(c, colors, cuff, studs=None, claws=None):
-    """A glove seen from the back of the hand: four fingers, a thumb out to the left, a cuff."""
+    """A glove seen from the back of the hand: four rounded fingers of different lengths, splayed a
+    little, a thumb reaching out to the left, a palm that swells at the knuckles, a flared cuff."""
     dark, mid, light = colors
-    for i, x in enumerate((10, 14, 18, 22)):
-        c.rect(x, 5 if i in (1, 2) else 7, x + 2, 14, mid)
-    c.rect(9, 12, 24, 22, mid)
-    c.poly([(9, 13), (4, 9), (2, 12), (8, 21)], mid)
-    c.shade(lambda x, y, col: col == mid and x > 20, dark)
+    fingers = ((11.2, 8.2, 11.6, 14), (14.8, 5.6, 14.9, 14), (18.4, 5.4, 18.3, 14), (21.8, 7.8, 21.2, 14))
+    for x0, y0, x1, y1 in fingers:
+        c.line(x0, y0, x1, y1, mid, width=3.4)
+    c.poly([(9.4, 12.5), (23.4, 12.5), (24.4, 16.5), (23.8, 22.6), (9.6, 22.6), (8.6, 17)], mid)     # the palm
+    c.poly([(9.8, 14.2), (6.4, 10.6), (4.2, 10.8), (3.6, 13), (7.8, 20.6), (9.8, 20.6)], mid)          # the thumb
+    c.disc(5, 11.6, 1.8, mid)
+    c.shade(lambda x, y, col: col == mid and x > 20 + (y > 15), dark)
     c.shade(lambda x, y, col: col == mid and x < 12 and y < 17, light)
-    c.rect(8, 22, 25, 28, cuff[1])
-    c.rect(8, 22, 25, 22, cuff[2])
-    c.rect(8, 28, 25, 28, cuff[0])
+    for xa, xb in ((13.0, 13.1), (16.6, 16.6), (20.1, 19.8)):                   # the shadow between the fingers
+        c.line(xa, 9.5 if xa < 14 else 8, xb, 12.6, OUTLINE)
+    c.poly([(8.8, 21.8), (24.4, 21.8), (25.8, 27.6), (24.8, 28.6), (8.2, 28.6), (7.2, 27.6)], cuff[1])  # the cuff
+    c.line(9, 22, 24.2, 22, cuff[2])
+    c.line(8.2, 28.4, 24.8, 28.4, cuff[0])
     if studs:
-        for x in (11, 15, 19, 23):
-            c.set(x, 13, studs)
+        for x in (11.5, 15, 18.4, 21.6):
+            c.set(x, 14, studs)
     if claws:
-        for x in (11, 15, 19, 23):
-            c.set(x, 4 if x in (15, 19) else 6, claws)
-
+        for x, y in ((11.2, 6.4), (14.8, 3.8), (18.4, 3.6), (21.8, 6)):
+            c.set(x, y, claws)
 
 def pendant(c, chain, stone, shape="drop", rim=None):
     """A chain hanging in a V from the top corners to a stone: a drop, a round or a star."""
@@ -774,18 +761,24 @@ def pendant(c, chain, stone, shape="drop", rim=None):
         c.poly([(13, 20), (16, 17), (16, 22), (13, 23)], light)
 
 
+BOOT = [(9.6, 6), (17.6, 6), (17.3, 11.5), (16.9, 16.8), (17.8, 19.4), (21, 20.8), (24.6, 22), (27.2, 23.6),
+        (28.3, 25.6), (27.8, 27), (9, 27), (7.6, 25.4), (7.9, 21.4), (8.8, 16.4), (9.3, 11)]
+
+
 def boot(c, colors, cuff, sole, laces=None):
-    """A boot in profile, toe to the right: shaft, foot, a cuff at the top and a sole."""
+    """A boot in profile, toe to the right: a shaft that curves in at the ankle, a rounded heel and toe,
+    a cuff that flares a little at the top and a sole that follows the foot."""
     dark, mid, light = colors
-    c.poly([(9, 6), (17, 6), (17, 21), (26, 23), (27, 28), (8, 28)], mid)
-    c.shade(lambda x, y, col: col == mid and x > 15 and y < 21, dark)
-    c.shade(lambda x, y, col: col == mid and x < 12, light)
-    c.rect(8, 26, 27, 28, sole)
-    c.rect(9, 6, 17, 8, cuff)
+    c.poly(BOOT, mid)
+    c.disc(10, 24.4, 2.7, mid)                                              # the heel's curve
+    c.disc(25.6, 24.8, 2.4, mid)                                            # the toe's
+    c.shade(lambda x, y, col: col == mid and ((x > 15 and y < 20) or (y > 24 and x > 13)), dark)
+    c.shade(lambda x, y, col: col == mid and x < 12 and y < 25, light)
+    c.poly([(7.4, 26.2), (28.4, 26), (28.6, 27.4), (27.4, 28.8), (8.8, 28.8), (7.2, 27.8)], sole)
+    c.poly([(8.6, 4.8), (18.6, 4.8), (18.2, 8.6), (9, 8.8)], cuff)            # the cuff
     if laces:
         for y in (11, 14, 17):
             c.line(11, y, 15, y + 1, laces)
-
 
 def draw_leather_gloves(c):
     glove(c, LEATHER, CLOTH)
@@ -1196,25 +1189,43 @@ def axe_line(c, head, handle, style="axe", gem=None):
         c.set(20, 9, gem[2])
 
 
-def whip_line(c, leather, grip, turns=3.2, tip=None, gem=None, studs=None):
-    points = 60
-    for i in range(points):
-        t = i / points * math.pi * turns
-        r = 3 + i * 0.13
-        x, y = 17 + r * math.cos(t), 14 + r * math.sin(t) * 0.8
-        c.disc(x, y, 1.1, leather[1])
-        if studs and i % 9 == 4:
+def whip_line(c, leather, grip, turns=3.2, tip=None, gem=None, studs=None, tassel=None):
+    """A whip held up by its handle, the lash hanging from it (as hanging_whip, not coiled): the handle
+    up and to the right from the pommel, the lash out of its tip, over the top and down the right in a
+    loose arc, thinner to the tip, which flicks out along the bottom. The look the player picked over a
+    D and an S (2026-10-23). `turns` (the coil's turns, once) swings the arc wider or narrower."""
+    sway = 2 + (turns - 3.2) * 3
+    lash = [(12, 6), (21 + sway, 5), (24 + sway, 17), (16, 25)]
+    points = []
+    for i in range(48):
+        t = i / 47
+        w = ((1 - t) ** 3, 3 * t * (1 - t) ** 2, 3 * t * t * (1 - t), t ** 3)
+        points.append((sum(p[0] * k for p, k in zip(lash, w)), sum(p[1] * k for p, k in zip(lash, w))))
+    ex, ey = points[-1]
+    for i in range(1, 12):                       # the end, flicking out along the bottom
+        t = i / 11
+        points.append((ex - 1 + t * 10, ey + 3.5 * t - 1.5 * t * t))
+    for i, (x, y) in enumerate(points):           # braided, light and dark in turn, thinner to the tip
+        r = 1.5 if i < 16 else 1.1 if i < 40 else 0.6   # the tip trails off thin
+        c.disc(x, y, r, leather[2] if i % 6 < 2 else leather[1])
+        if studs and i % 9 == 4 and i < 45:
             c.set(x, y, studs)
-    c.shade(lambda x, y, col: col == leather[1] and x + y > 34, leather[0])
-    c.shade(lambda x, y, col: col == leather[1] and x + y < 22, leather[2])
+    c.shade(lambda x, y, col: col in (leather[1], leather[2]) and c.get(x - 1, y) is None and c.get(x, y - 1) is not None
+            and x > 20, leather[0])
     if tip:
-        c.disc(17 + 3, 14, 1.8, tip)
-    c.line(6, 28, 11, 21, grip[1], width=3)
-    c.line(7, 28, 12, 22, grip[0])
-    c.rect(10, 20, 13, 22, GOLD[1])
+        c.disc(points[-1][0], points[-1][1], 1.4, tip)
+    c.line(5, 13, 12, 6, grip[1], width=3.2)      # the handle, wrapped
+    c.line(6, 13, 12, 7, grip[0])
+    for (x, y) in ((7, 11), (9, 9)):
+        c.line(x - 1, y - 1, x + 1, y + 1, grip[2])
+    c.disc(12, 6, 1.6, GOLD[1])                  # the band where the lash meets the handle
+    c.set(11, 5, GOLD[2])
     if gem:
-        c.disc(5.5, 28.5, 1.7, gem[1])
-        c.set(5, 28, gem[2])
+        c.disc(4.5, 13.5, 1.8, gem[1])
+        c.set(4, 13, gem[2])
+    if tassel:
+        tassel(c)
+    return points[-1]
 
 
 # Metals, from the bronze of a first sword to the tungsten of the level-80 dragonslayer.
@@ -1697,7 +1708,9 @@ def draw_starfall_axe(c):
 
 def draw_starfall_whip(c):
     """A lilac lash with a star of light at its tip."""
-    whip_line(c, leather=MOTH, grip=NIGHT, turns=3.6, tip=STARLIGHT[1], gem=GOLD, studs=WHITE)
+    x, y = whip_line(c, leather=MOTH, grip=NIGHT, turns=3.6, gem=GOLD, studs=WHITE)
+    star_shape(c, x, y - 1, 3.6, STARLIGHT[1])
+    c.set(x, y - 1, WHITE)
 
 
 GEODE = [hexc("4a3e6a"), hexc("7e6ea8"), hexc("b4a6d8")]
@@ -1839,8 +1852,8 @@ def draw_goldleaf_staff(c):
 
 def draw_goldleaf_whip(c):
     """A golden lash with a leaf at its tip and a heart-oak grip."""
-    whip_line(c, leather=LEAFGOLD, grip=HEARTOAK, turns=3.6, gem=GREEN, studs=WHITE)
-    gold_leaf(c, 20, 14, 5, angle=-math.pi / 2, colors=[hexc("6a8a1e"), hexc("b8d040"), hexc("f4ffb0")])
+    x, y = whip_line(c, leather=LEAFGOLD, grip=HEARTOAK, turns=3.6, gem=GREEN, studs=WHITE)
+    gold_leaf(c, x - 1, y, 6, angle=-math.pi / 6, colors=[hexc("6a8a1e"), hexc("b8d040"), hexc("f4ffb0")])
 
 
 def ramp(colour):
@@ -1852,24 +1865,26 @@ def ramp(colour):
 
 def cape(c, cloth, trim):
     """A status cape from behind (items.json type cape, a prize for a milestone): round shoulders and a
-    collar in its trim, falling wider to a trimmed hem, its emblem on the back."""
+    collar in its trim, falling in soft folds wider to a scalloped, trimmed hem, its emblem on the back."""
     dark, mid, light = cloth
-    # Narrow at the neck, falling wide and long, its hem dipping in the middle.
-    c.poly([(12, 4), (20, 4), (23, 8), (27, 27), (21, 29), (16, 30), (11, 29), (5, 27), (9, 8)], mid)
-    c.shade(lambda x, y, col: col == mid and x >= 20 + (y - 4) // 4, dark)
-    c.shade(lambda x, y, col: col == mid and x <= 11 - (y - 4) // 4 and y > 6, light)
-    c.line(13, 10, 10, 27, dark)                     # folds
-    c.line(19, 10, 22, 27, dark)
-    c.shade(lambda x, y, col: y >= 27 - abs(x - 16) // 4 + (1 if abs(x - 16) < 6 else 0) and y >= 26, trim)   # the hem
-    c.rect(12, 3, 20, 4, trim)                       # the collar and its clasps
-    c.disc(12, 5, 1.2, trim)
-    c.disc(20, 5, 1.2, trim)
-    for dy in range(-3, 4):                          # the emblem: a diamond, lit in the middle
+    c.ellipse(16, 8.6, 9.2, 4.4, mid)                                       # round shoulders
+    c.poly([(7.4, 8.4), (24.6, 8.4), (25.8, 15), (27.4, 23.5), (27.6, 27.4), (24, 28.8), (20, 29.4),
+            (16, 29.8), (12, 29.4), (8, 28.8), (4.4, 27.4), (4.6, 23.5), (6.2, 15)], mid)
+    c.shade(lambda x, y, col: col == mid and x >= 20.5 + (y - 6) / 3.5, dark)
+    c.shade(lambda x, y, col: col == mid and x <= 11 - (y - 6) / 3.5 and y > 6, light)
+    for pts in (((13, 11), (12, 19), (10.6, 27)), ((19, 11), (20, 19), (21.4, 27))):   # folds, curving out
+        for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+            c.line(x0, y0, x1, y1, dark)
+    c.line(12, 12, 11, 22, light)
+    c.shade(lambda x, y, col: col in (mid, dark, light) and y >= 27.2 - 0.9 * math.cos((x - 16) * 0.9), trim)   # the hem
+    c.ellipse(16, 4.6, 5.2, 1.9, trim)                                      # the collar and its clasps
+    c.disc(11.4, 5.6, 1.2, trim)
+    c.disc(20.6, 5.6, 1.2, trim)
+    for dy in range(-3, 4):                                                 # the emblem: a diamond, lit in the middle
         for dx in range(-3 + abs(dy), 4 - abs(dy)):
             c.set(16 + dx, 16 + dy, trim)
     c.set(16, 16, WHITE)
     c.set(15, 15, WHITE)
-
 
 # ---------------------------------------------------------------- the villages of the early lands
 # Each land's village (0.7.23): what its quests ask you to bring, and the treasure each one ends in.
@@ -2628,52 +2643,89 @@ def tier_piece(c, item):
         cloak(c, cloth, trim[1], fur=[hexc("c8b890"), hexc("f4ecd8")], hood=True)
 
 
+def horn(c, base, tip, bend, color, width=3.2):
+    """A horn from `base` sweeping up to `tip`, curving out by `bend`, tapering to a point."""
+    for i in range(15):
+        t = i / 14
+        x = base[0] + (tip[0] - base[0]) * t + bend * math.sin(t * math.pi)
+        y = base[1] + (tip[1] - base[1]) * t
+        c.disc(x, y, width / 2 * (1 - t * 0.8), color)
+
+
 def hat_piece(c, item):
     """A hat that goes with an armour (items.json `headgear`, what the armour drew on the head before
-    it went to the hat slot), in its `color` with its trim: a helm (horned for dragon mail), a
-    pointed wizard's hat, a hood (lined with fur for a hide or snow cloak's) or a mail coif."""
+    it went to the hat slot), in its `color` with its trim: a domed helm with cheek guards (horned for
+    dragon mail), a pointed wizard's hat with its tip bent over, a hood (lined with fur for a hide or
+    snow cloak's) or a mail coif."""
     cloth = ramp(item["color"])
     dark, mid, light = cloth
     trim = SILVER if item.get("accent", "").upper() in ("#E8F0FF", "#9AD8FF", "#C0C8D8", "#E8F6FF") else GOLD
     kind = item["headgear"]
     if kind in ("iron_plate", "dragon_mail"):
-        if kind == "dragon_mail":   # horns sweeping up from the sides
-            c.poly([(7, 14), (2, 4), (5, 4), (10, 12)], trim[1])
-            c.poly([(25, 14), (30, 4), (27, 4), (22, 12)], trim[1])
-        c.ellipse(16, 15, 10, 10, mid)
-        c.rect(6, 15, 26, 26, mid)
-        c.shade(lambda x, y, col: col == mid and x > 20, dark)
-        c.shade(lambda x, y, col: col == mid and x < 11 and y < 16, light)
-        c.rect(9, 17, 23, 19, OUTLINE)            # the eye slit
-        c.line(16, 20, 16, 26, dark)              # the nose guard's edge
-        c.line(16, 5, 16, 16, trim[1])            # the crest
-        c.rect(6, 25, 26, 26, trim[1])
+        if kind == "dragon_mail":   # horns sweeping up and out from the sides
+            horn(c, (7.5, 13), (2.2, 2.6), -1.6, trim[1])
+            horn(c, (24.5, 13), (29.8, 2.6), 1.6, trim[1])
+        c.ellipse(16, 15.5, 10.6, 11.2, mid)                                 # the dome
+        c.poly([(5.4, 15), (26.6, 15), (26.2, 21.5), (24.6, 26.6), (20.2, 28.8), (16, 27.8), (11.8, 28.8),
+                (7.4, 26.6), (5.8, 21.5)], mid)                              # cheek guards, curving in
+        c.shade(lambda x, y, col: col == mid and x > 20 + (y > 18), dark)
+        c.shade(lambda x, y, col: col == mid and x < 11 and y < 17, light)
+        c.line(9, 18.4, 14.4, 19, OUTLINE, width=2)                          # the eye slits
+        c.line(17.6, 19, 23, 18.4, OUTLINE, width=2)
+        c.line(16, 16, 16, 26.6, dark, width=2)                              # the nose guard
+        c.line(15.4, 16, 15.4, 26, light)
+        c.line(16, 4.6, 16, 14.6, trim[1], width=2)                          # the crest
+        for x in (8.2, 23.8):
+            c.disc(x, 23.4, 1.1, trim[1])                                    # rivets
     elif kind == "mage_robe":
-        c.ellipse(16, 25, 14, 4, mid)             # the brim
-        c.poly([(9, 24), (23, 24), (19, 10), (24, 3), (15, 8)], mid)
-        c.shade(lambda x, y, col: col == mid and x > 18 and y < 24, dark)
-        c.shade(lambda x, y, col: col == mid and x < 13 and y < 24, light)
-        c.rect(9, 21, 23, 23, trim[1])            # the band
-        star_shape(c, 15, 16, 2.6, trim[2], inner=0.5)
+        c.ellipse(16, 25.4, 14, 3.9, mid)                                    # the brim
+        c.poly([(8.6, 24.2), (23.4, 24.2), (21.6, 17), (20, 11.5), (21.6, 7), (26.6, 3.8), (21, 4.2),
+                (16.6, 7.6), (13.4, 13), (11.2, 18.6)], mid)                 # the crown, its tip bent over
+        c.disc(26.4, 4.2, 1.4, mid)
+        c.shade(lambda x, y, col: col == mid and ((x > 18 and y < 24) or y > 26.5), dark)
+        c.shade(lambda x, y, col: col == mid and x < 14 and y < 24, light)
+        c.shade(lambda x, y, col: col in cloth and 20.6 <= y <= 23.4 and abs(x - 16) < 7.6, trim[1])   # the band
+        star_shape(c, 15.4, 15.6, 2.6, trim[2], inner=0.5)
     elif kind == "chain_mail":
-        c.ellipse(16, 14, 11, 11, mid)
-        c.rect(5, 14, 27, 28, mid)
-        for y in range(4, 29):
-            for x in range(4, 28):
+        c.ellipse(16, 14, 11, 11.4, mid)
+        c.poly([(5, 14), (27, 14), (28.4, 23.4), (29.2, 28.6), (24, 29.6), (16, 29.8), (8, 29.6), (2.8, 28.6),
+                (3.6, 23.4)], mid)                                           # falling to the shoulders
+        for y in range(3, 30):
+            for x in range(2, 30):
                 if c.get(x, y) == mid and (x + y) % 2 == 0:
                     c.set(x, y, light if x < 16 else dark)
-        c.ellipse(16, 17, 6, 7, OUTLINE)          # the face opening
-        c.ellipse(16, 18, 5, 6, hexc("f0c8a0"))
-    else:   # a hood
-        c.ellipse(16, 15, 12, 12, mid)
-        c.poly([(4, 16), (28, 16), (30, 29), (2, 29)], mid)
-        c.shade(lambda x, y, col: col == mid and x > 20, dark)
-        c.shade(lambda x, y, col: col == mid and x < 11 and y < 18, light)
-        c.ellipse(16, 18, 7, 8, OUTLINE)          # the opening, in shadow
-        if kind in ("hood", "hide_hood", "snow_cloak"):
-            c.ring(16, 18, 9, 7, hexc("f4ecd8"))
-            for x in range(8, 25, 3):
-                c.set(x, 26, hexc("c8b890"))
+        c.ellipse(16, 17, 6, 7, OUTLINE)                                     # the face opening, in shadow
+    else:   # a hood: a soft peak, falling in folds to the shoulders
+        c.poly([(15, 2.4), (20.6, 4), (24.8, 8.6), (26.6, 14.6), (27.6, 21), (29.6, 28.2), (24, 29.6),
+                (16, 29.8), (8, 29.6), (2.4, 28.2), (4.4, 21), (5.4, 14.6), (7.2, 8.6), (11, 4.2)], mid)
+        c.shade(lambda x, y, col: col == mid and x > 20.5 + (y > 16) * 1.5, dark)
+        c.shade(lambda x, y, col: col == mid and x < 10.5 and y < 19, light)
+        c.line(8.6, 22, 6.4, 28.4, dark)                                     # folds over the shoulders
+        c.line(23.4, 22, 25.6, 28.4, dark)
+        fur_lined = kind in ("hood", "hide_hood", "snow_cloak")
+        # The opening, in shadow (smaller in a fur-lined hood, the fur taking its edge).
+        c.ellipse(16, 17.6, 5.6 if fur_lined else 6.8, 6.6 if fur_lined else 8, OUTLINE)
+        if fur_lined:
+            # A fur trim round the opening, as on the matching cloak's collar (its RD icon's own three
+            # furs: cream in the light, a pale beige, a taupe in shadow), about as wide as the cloak's;
+            # a thin even ring read as a white border, a thick tufted one as overdone.
+            fur_dark, fur, fur_light = FUR
+            c.ring(16, 17.6, 8.2, 5.4, fur_light, ry_scale=1.18)
+            def place(x, y):
+                dx, dy = x + 0.5 - 16, (y + 0.5 - 17.6) / 1.18
+                return dx, dy, math.hypot(dx, dy)
+            # Cream in the light, beige turning away from it, taupe in the crease along the opening's top
+            # and lower right.
+            c.shade(lambda x, y, col: col == fur_light and place(x, y)[0] + place(x, y)[1] > 2.5, fur)
+            c.shade(lambda x, y, col: col in (fur, fur_light) and place(x, y)[2] < 6.6
+                    and (place(x, y)[1] < -2.5 or place(x, y)[0] + place(x, y)[1] > 5), fur_dark)
+            c.shade(lambda x, y, col: col == fur and place(x, y)[0] + place(x, y)[1] > 9, fur_dark)
+            # A few flecks of the next shade down, as RD's fur is never one flat cream.
+            c.shade(lambda x, y, col: col == fur_light and (x * 7 + y * 13) % 17 == 0, fur)
+
+
+# The fur on hide hoods and snow hoods, as RD drew it on the cloaks they go with.
+FUR = [hexc("998a7c"), hexc("d9ccb1"), hexc("f9f0d4")]
 
 
 # Every hat that goes with an armour.
@@ -3335,6 +3387,74 @@ def held_pair(item_id):
     return posed(canvas, k), posed(canvas, k, FRONT_TURN)
 
 
+# Items whose finish differs from the rest (pixel_kit.restyle's options): smooth paper and the like.
+RESTYLE = {f"{colour}_party_hat": {"texture": 0.015} for colour in ("red", "yellow", "green", "blue", "purple", "white")}
+
+# The main material of the crafting materials (pixel_kit.PRESETS), which brings its own detail.
+MATERIAL_PRESETS = {
+    "wood": "bamboo ebony poplar rattan red_cypress red_yew teak yew driftwood_piece starwood driftwood_flute",
+    "metal": "alloy_steel bronze_ingot copper_ingot dragon_steel gold_ingot iron_ingot platinum_ingot silver_ingot "
+             "steel_ingot titanium_alloy tungsten_alloy bell_clapper gold_nugget",
+    "crystal": "amber azurite cats_eye chalcedony diamond emerald topaz rough_gem glimmerstone starfall_shard "
+               "clear_ice sugar_crystal",
+    "stone": "raw_ore agate",
+    "fur": "lion_mane marten_fur sheepskin tuft_of_wool",
+    "leather": "cowhide deer_hide",
+    "scales": "crocodile_hide dragon_scale snake_scale",
+    "cloth": "crystal_silk sailcloth_scrap wisp_silk swan_lace_veil coffee_sack seed_pouch stray_sock",
+}
+MATERIAL_PRESET = {i: name for name, ids in MATERIAL_PRESETS.items() for i in ids.split()}
+
+
+def preset_for(item_id):
+    """The main material an item's icon is finished in (pixel_kit.PRESETS), or None: set hats by their kind
+    (plate helms, mail coifs, cloth hats and hoods), gauntlets and set boots plate, gloves and boots leather,
+    capes cloth, whips leather (scaled for a dragon's, a crocodile's or a snake's), materials by name."""
+    item = ITEMS.get(item_id, {})
+    kind, t = item.get("headgear"), item.get("type")
+    if item_id in MATERIAL_PRESET:
+        return MATERIAL_PRESET[item_id]
+    if kind:
+        return {"iron_plate": "plate", "dragon_mail": "plate", "chain_mail": "chain"}.get(kind, "cloth")
+    if t == "cape":
+        return "cloth"
+    if t == "gloves":
+        return "plate" if "gauntlet" in item_id or item.get("tier") else "leather"
+    if t == "boots":
+        return "plate" if item.get("tier") else "leather"
+    if t == "weapon" and ("whip" in item_id or "lash" in item_id):
+        return "scales" if any(k in item_id for k in ("dragon", "crocodile", "snake")) else "leather"
+    return None
+
+
+ITEMS = {i["id"]: i for i in json.loads((ROOT / "content" / "items.json").read_text())["items"]}
+
+
+def set_armour(item_id):
+    """The armour a piece belongs to, whose RD icon gives the piece its colour: a hat the armour's
+    `headpiece`, a tier's gauntlets and boots its plate."""
+    item = ITEMS.get(item_id, {})
+    for other in ITEMS.values():
+        if other["type"] == "armor" and other.get("headpiece") == item_id:
+            return other["id"]
+    if item.get("tier") and item["type"] in ("gloves", "boots"):
+        for other in ITEMS.values():
+            if other["type"] == "armor" and other.get("tier") == item["tier"] and other.get("wear") == "plate":
+                return other["id"]
+    return None
+
+
+def set_colour(item_id):
+    """The main colour of the piece's armour as RD drew it (pixel_kit.dominant_colour), or None."""
+    armour = set_armour(item_id)
+    icon = SPRITES / f"item_{armour}.png" if armour else None
+    if not icon or not icon.exists():
+        return None
+    from PIL import Image
+    from pixel_kit import dominant_colour
+    return dominant_colour(Image.open(icon))
+
+
 def main(argv):
     sheet_path = None
     if "--sheet" in argv:
@@ -3351,8 +3471,29 @@ def main(argv):
     from armour_art import plan
     armour = plan()
     ids = [i for i in ids if i not in armour]
+    # Each drawing is finished in the game's pixel style (docs/pixel-style.md): lit, ramped, textured
+    # and outlined afresh by tools/pixel_kit.py, its design kept.
+    import io
+    from PIL import Image
+    from pixel_kit import restyle
     for item_id in ids:
-        (SPRITES / f"item_{item_id}.png").write_bytes(render(item_id).png())
+        drawn = Image.open(io.BytesIO(render(item_id).png()))
+        options = {"preset": preset_for(item_id), "base": set_colour(item_id), "trim": FUR, **RESTYLE.get(item_id, {})}
+        restyle(drawn, **options).render().save(SPRITES / f"item_{item_id}.png")
+    # Items that are palette swaps of these (art/assets.json `derive`) are swapped on the flat drawing,
+    # where their hue windows were tuned, and finished the same way: swapping the finished icon misses
+    # the shades the ramps turn toward blue and yellow. Their own PNG then wins over the swap in the game.
+    import numpy as np
+    from palette_preview import recolor
+    for asset in json.loads((ROOT / "art" / "assets.json").read_text())["assets"]:
+        base = (asset.get("derive") or {}).get("from", "")
+        if not (base.startswith("item_") and base[len("item_"):] in ids) or asset["derive"].get("layers"):
+            continue
+        flat = np.asarray(Image.open(io.BytesIO(render(base[len("item_"):]).png())).convert("RGBA")).astype(float) / 255
+        swapped = recolor(flat, asset["derive"]["recolor"])
+        drawn = Image.fromarray((np.clip(swapped, 0, 1) * 255).round().astype(np.uint8), "RGBA")
+        restyle(drawn, preset=preset_for(base[len("item_"):])).render().save(SPRITES / f"{asset['id']}.png")
+    for item_id in ids:
         if item_id in weapons:
             side, front = held_pair(item_id)
             (SPRITES / f"held_{item_id}_side.png").write_bytes(side.png())

@@ -14,6 +14,11 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `docs/continuous-world.md`: the plan for one continuous world (no borders, chunks streamed round you), in steps.
 - `docs/sprite-acceptance.md`: what generated and fitted character art must pass (every body, direction and
   armour), how to check it, and what the Retro Diffusion wearables taught us. Read it before making or fitting any.
+- `docs/pixel-style.md`: Storyleaf's pixel-art look, measured, for sprites drawn in code instead of by Retro
+  Diffusion: the rules, the acceptance criteria (`tools/pixel_style.py check`, bands calibrated on every RD
+  sprite the game ships, `tools/pixel_style.json`), the review by eye, and `tools/pixel_kit.py`, a renderer
+  for the look (shapes and materials in, lit, textured, hue-shifted pixel art out). Read it before drawing
+  a sprite in code; recalibrate after RD art is added.
 - `docs/launch-audit.md`: the pre-launch audit (2026-10-06): App Store checklist, open bugs and balance issues
   ranked, and gamification ideas. Tick items off or remove them as they're done.
 - Brand guidelines: the Figma file `521ECWenGbx2IP3rLgtIWo`, pages Cover to 09 Voice & Tone (logo, colour, type, icons,
@@ -58,13 +63,23 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   pale tips stay ginger. Derive them with `layers` instead (body, locks, hair from `tools/hero_layers.py`, the hair's
   rules widened to appearance.json `hairLayer`), as every quest giver is; `check_content.py` insists.
 - `Storyleaf/`: Swift code (World = maps and walking, Battle = combat, UI = SwiftUI HUD and menus).
-- `tools/item_art.py`: draws every item's 32×32 sprite in code (free); rerun it after editing a drawing. A weapon also
+- `tools/item_art.py`: designs every item's 32×32 sprite in code (free), finished in the game's pixel style by
+  `pixel_kit.restyle` (docs/pixel-style.md; a palette swap of one, `derive`, is swapped on the design and
+  finished too); rerun it after editing a drawing. Boots, gloves, capes and set hats share helpers (`boot`,
+  `glove`, `cape`, `hat_piece`): fix the family there. A weapon also
   gets `held_<id>_side.png` and `_front.png` (`held_pair`), its grip in the middle of a 64-pixel canvas, one of its
   pixels to one of the hero's (`GearArt.posed`): its drawing about 24 pixels across walking left or right; facing
   you or away held up nearly upright in the hand (`FRONT_TURN`). Always in the same hand: in front of the body where
   it's nearer you (facing you, walking right), behind it where it's farther (held sideways from the front it looked
   wrong, off to the side it looked stood behind); a whip's lash hanging down to the feet (`hanging_whip`; held up like a sword it
   read as a stick). Shrunk and turned offline, each pixel the colour covering most of it: in the game it was ragged.
+- Dark Mode: the game follows the phone's look, or Settings → Appearance (`GameSettings.appearanceKey`, set on the
+  window by `RootView.applyAppearance`). `Color.adaptive(light:dark:)` (`Storyleaf/UI/Style.swift`) gives the
+  HUD's light surfaces (frames, title bars, plates, buttons, portraits) a dimmer twin and the glass a deeper one;
+  lettering keeps its colours. The title and loading sky turns to night (`Brand.night*`, `StoryleafSky`), and
+  text straight on it uses `Brand.skyText`. Debug flag `dark` (or `light`) forces a look for screenshots.
+- `tools/app_icon_art.py`: the app icon's dark and tinted versions (iOS 18+), made from `AppIcon.png`: the
+  leaf-book kept, its sky turned to the night `StoryleafSky` draws in Dark Mode. Rerun after changing the icon.
 - `tools/store_slides.py`: App Store slides from the landscape `store_land_*` screenshot scenes: captions in the
   logo's style (`tools/store_slides.json`, font in `tools/fonts/`), cropped clear of the Dynamic Island the
   simulator draws in, exported at 2622×1206 and 2868×1320 with no alpha.
@@ -80,6 +95,11 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   `stairs` in maps.json; `waystone`, NPC role `waystone`, a standing stone out in a wild land that a quest
   wakes, then a stop for travel like the towns: `GameSession.travelDestinations`).
   Rerun it after editing a drawing; `--sheet out.png` previews them.
+- `tools/scenery_art.py`: trees and bushes drawn in code with `pixel_kit` (docs/pixel-style.md), one species
+  each where every tree had been a recolour of RD's `tree` and every bush of its `berry_bush`: a cherry, a
+  gnarled dark tree, an autumn oak, a maple, a birch, a frosted bare tree, a willow, a jacaranda, candy trees,
+  and ten bushes (a fir sapling, a tumbleweed, a bramble...). Each writes its own PNG, which wins over the
+  asset's `derive`; its `big_` twin, derived from it, follows. `--sheet out.png` previews them.
 - `tools/crystal_art.py`: the Glimmerdeep's crystal scenery from the caves' own rock (its walls, floor, spires and
   geodes): each pixel's brightness laid on a ramp of crystal colours, as a `derive` can't tint the grey tiles.
   Rerun it after editing a ramp; `--sheet out.png` previews them.

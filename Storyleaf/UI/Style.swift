@@ -1,8 +1,20 @@
 import SpriteKit
 import SwiftUI
 
+extension Color {
+    /// A colour that follows the phone's look: `light` normally, `dark` in Dark Mode. SwiftUI
+    /// picks the one for wherever it's drawn, and switches when the phone does.
+    /// Nonisolated, with both resolved up front: UIKit may ask for the colour off the main thread.
+    nonisolated static func adaptive(light: Color, dark: Color) -> Color {
+        let light = UIColor(light), dark = UIColor(dark)
+        return Color(uiColor: UIColor { @Sendable traits in traits.userInterfaceStyle == .dark ? dark : light })
+    }
+}
+
 /// Fairyland Online's look: glossy light-blue bevelled frames, deep-blue glass windows,
-/// tan info plates, yellow outlined names and orange close buttons.
+/// tan info plates, yellow outlined names and orange close buttons. In Dark Mode the light
+/// surfaces (frames, title bars, plates, buttons) dim and the glass goes deeper, like the same
+/// windows at night; the lettering on them stays as it is.
 enum HUDStyle {
     static let cream = Color(red: 1, green: 0.97, blue: 0.88)
     static let gold = Color(red: 1, green: 0.84, blue: 0.28)
@@ -17,12 +29,37 @@ enum HUDStyle {
     /// Deep navy: window glass and dark text on light buttons.
     static let ink = Color(red: 0.06, green: 0.15, blue: 0.3)
     static let orange = Color(red: 0.98, green: 0.52, blue: 0.16)
+    /// The close button's lit top and shaded foot, either side of `orange`.
+    static let closeLight = Color(red: 1, green: 0.75, blue: 0.4)
+    static let closeDeep = Color(red: 0.75, green: 0.3, blue: 0.05)
+    /// The dark track under a bar's fill (at 85%).
+    static let barTrack = Color(red: 0.05, green: 0.1, blue: 0.2)
 
-    static let frameLight = Color(red: 0.86, green: 0.96, blue: 1)
-    static let frameMid = Color(red: 0.5, green: 0.77, blue: 0.95)
-    static let frameDark = Color(red: 0.15, green: 0.35, blue: 0.62)
-    static let plate = Color(red: 0.97, green: 0.88, blue: 0.64)
-    static let plateDark = Color(red: 0.55, green: 0.41, blue: 0.18)
+    static let frameLight = Color.adaptive(light: Color(red: 0.86, green: 0.96, blue: 1), dark: Color(red: 0.42, green: 0.56, blue: 0.72))
+    static let frameMid = Color.adaptive(light: Color(red: 0.5, green: 0.77, blue: 0.95), dark: Color(red: 0.24, green: 0.4, blue: 0.6))
+    static let frameDark = Color.adaptive(light: Color(red: 0.15, green: 0.35, blue: 0.62), dark: Color(red: 0.08, green: 0.18, blue: 0.36))
+    static let plate = Color.adaptive(light: Color(red: 0.97, green: 0.88, blue: 0.64), dark: Color(red: 0.78, green: 0.68, blue: 0.48))
+    static let plateDark = Color.adaptive(light: Color(red: 0.55, green: 0.41, blue: 0.18), dark: Color(red: 0.34, green: 0.24, blue: 0.09))
+    /// A plate's lit top edge and its shaded foot.
+    static let plateLight = Color.adaptive(light: Color(red: 1, green: 0.95, blue: 0.78), dark: Color(red: 0.86, green: 0.77, blue: 0.58))
+    static let plateShade = Color.adaptive(light: Color(red: 0.86, green: 0.72, blue: 0.44), dark: Color(red: 0.64, green: 0.52, blue: 0.32))
+
+    /// The light buttons' face (`PixelButtonStyle`, the title's round buttons) and the shine along
+    /// their top: cream and white, a softer parchment in Dark Mode so they don't glare.
+    static let buttonFace = Color.adaptive(light: cream, dark: Color(red: 0.84, green: 0.8, blue: 0.7))
+    static let buttonShine = Color.adaptive(light: .white, dark: Color(red: 0.93, green: 0.9, blue: 0.83))
+
+    /// Behind a face in a portrait circle: cream, fading to sky blue at the rim. Dimmer in Dark
+    /// Mode, still light enough for the face's dark outline.
+    static let portrait = Color.adaptive(light: Color(red: 0.98, green: 0.95, blue: 0.85), dark: Color(red: 0.76, green: 0.73, blue: 0.66))
+    static let portraitRim = Color.adaptive(light: Color(red: 0.75, green: 0.88, blue: 0.98), dark: Color(red: 0.5, green: 0.6, blue: 0.72))
+
+    /// The toolbar buttons' glossy blue, top to bottom (`FLIconButton`).
+    static let tile = [
+        Color.adaptive(light: Color(red: 0.6, green: 0.85, blue: 1), dark: Color(red: 0.3, green: 0.46, blue: 0.66)),
+        Color.adaptive(light: Color(red: 0.25, green: 0.55, blue: 0.9), dark: Color(red: 0.14, green: 0.3, blue: 0.54)),
+        Color.adaptive(light: Color(red: 0.12, green: 0.33, blue: 0.66), dark: Color(red: 0.07, green: 0.17, blue: 0.36)),
+    ]
 
     static func font(_ size: CGFloat) -> Font {
         .system(size: size, weight: .heavy, design: .rounded)
@@ -60,9 +97,10 @@ enum HUDStyle {
         ink.opacity(0.9).frame(height: 1.5)
     }
 
-    /// The deep-blue glass of the windows.
+    /// The deep-blue glass of the windows (deeper still, nearly midnight, in Dark Mode).
     static let glass = LinearGradient(
-        colors: [Color(red: 0.13, green: 0.32, blue: 0.56).opacity(0.93), Color(red: 0.05, green: 0.17, blue: 0.35).opacity(0.95)],
+        colors: [Color.adaptive(light: Color(red: 0.13, green: 0.32, blue: 0.56).opacity(0.93), dark: Color(red: 0.07, green: 0.15, blue: 0.28).opacity(0.95)),
+                 Color.adaptive(light: Color(red: 0.05, green: 0.17, blue: 0.35).opacity(0.95), dark: Color(red: 0.03, green: 0.07, blue: 0.16).opacity(0.96))],
         startPoint: .top, endPoint: .bottom
     )
 
@@ -98,7 +136,7 @@ enum HUDStyle {
     /// Tan info plate (like Fairyland Online's calendar and coordinates boxes).
     static var plateBackground: some View {
         RoundedRectangle(cornerRadius: 5)
-            .fill(LinearGradient(colors: [Color(red: 1, green: 0.95, blue: 0.78), plate, Color(red: 0.86, green: 0.72, blue: 0.44)], startPoint: .top, endPoint: .bottom))
+            .fill(LinearGradient(colors: [plateLight, plate, plateShade], startPoint: .top, endPoint: .bottom))
             .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(plateDark, lineWidth: 1.5))
     }
 }
@@ -150,7 +188,7 @@ struct GlossyBar: View {
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
-                Capsule().fill(Color(red: 0.05, green: 0.1, blue: 0.2).opacity(0.85))
+                Capsule().fill(HUDStyle.barTrack.opacity(0.85))
                 Capsule()
                     .fill(LinearGradient(colors: [color.opacity(0.75), color, color.opacity(0.8)], startPoint: .top, endPoint: .bottom))
                     .frame(width: max(height, proxy.size.width * fraction))
@@ -202,7 +240,7 @@ struct OrangeCloseButton: View {
                 .frame(width: 24, height: 24)
                 .background(
                     Circle()
-                        .fill(RadialGradient(colors: [Color(red: 1, green: 0.75, blue: 0.4), HUDStyle.orange, Color(red: 0.75, green: 0.3, blue: 0.05)], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 1, endRadius: 16))
+                        .fill(RadialGradient(colors: [HUDStyle.closeLight, HUDStyle.orange, HUDStyle.closeDeep], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 1, endRadius: 16))
                         .overlay(Circle().strokeBorder(.white.opacity(0.8), lineWidth: 1.5))
                 )
         }
@@ -264,7 +302,7 @@ struct FLIconButton: View {
             .frame(width: size, height: size)
             .background(
                 RoundedRectangle(cornerRadius: 9)
-                    .fill(LinearGradient(colors: [Color(red: 0.6, green: 0.85, blue: 1), Color(red: 0.25, green: 0.55, blue: 0.9), Color(red: 0.12, green: 0.33, blue: 0.66)], startPoint: .top, endPoint: .bottom))
+                    .fill(LinearGradient(colors: HUDStyle.tile, startPoint: .top, endPoint: .bottom))
                     .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
                     .overlay(alignment: .top) {
                         RoundedRectangle(cornerRadius: 6).fill(.white.opacity(0.35)).frame(height: size * 0.3).padding(4)
@@ -429,7 +467,7 @@ struct NameBadge: View {
 }
 
 struct PixelButtonStyle: ButtonStyle {
-    var tint: Color = HUDStyle.cream
+    var tint: Color = HUDStyle.buttonFace
     var compact = false
 
     func makeBody(configuration: Configuration) -> some View {
@@ -442,7 +480,7 @@ struct PixelButtonStyle: ButtonStyle {
                 // Only the face casts the shadow, under the button. The outline goes on after it: a
                 // shadow on both draws the outline's again inside the face, 3 pt below its top edge.
                 Capsule()
-                    .fill(LinearGradient(colors: [.white, tint, tint.opacity(0.85)], startPoint: .top, endPoint: .bottom))
+                    .fill(LinearGradient(colors: [HUDStyle.buttonShine, tint, tint.opacity(0.85)], startPoint: .top, endPoint: .bottom))
                     .shadow(color: .black.opacity(0.35), radius: 0, x: 0, y: configuration.isPressed ? 0 : 3)
                     .overlay(Capsule().strokeBorder(HUDStyle.frameDark.opacity(0.7), lineWidth: 1.5))
             )

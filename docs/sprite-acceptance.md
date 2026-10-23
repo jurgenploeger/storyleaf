@@ -4,6 +4,9 @@ What a sprite must pass before it ships, and everything learned getting the hero
 festive gear right (playtesting 2026-10-18 to 2026-10-19, PR #201). Read it before generating or fitting any
 character art, so none of this has to be found again. Add what you learn, with the date.
 
+For the look itself (ramps, light, texture, outlines) and art drawn in code without Retro Diffusion, see
+[pixel-style.md](pixel-style.md): its criteria apply to every sprite, worn or not.
+
 ## The pipeline
 
 1. **Generate** with Retro Diffusion (`tools/rd.py`, or a short script like it), into `art-variants/<name>/`,

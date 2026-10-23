@@ -2,6 +2,16 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.70",
+      "date": "2026-10-23",
+      "title": "Night skies and new item art",
+      "notes": [
+        "Dark Mode: the game follows your phone's look, or pick Light or Dark in Settings. The app icon has a night version too.",
+        "Over three hundred items are repainted to match the rest of the game's art: lit and shaded, with rounder helmets, hoods, boots and gloves.",
+        "Every land grows trees and bushes of its own: cherries, willows, birches, maples, frosted bare trees, firs and brambles, no longer one tree in different colours. Whips hang from the hand in their icons."
+      ]
+    },
+    {
       "version": "0.7.69",
       "date": "2026-10-23",
       "title": "Waystones and favours",

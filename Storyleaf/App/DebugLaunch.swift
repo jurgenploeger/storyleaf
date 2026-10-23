@@ -103,6 +103,7 @@ import SpriteKit
 ///                  the round (1 unless set)
 ///   bounties=<n>   today's bounties made at once, the first n of them done and waiting to be claimed
 ///   landscape      lock the app to landscape
+///   dark           Dark Mode, whatever the simulator or Settings say (light: Light Mode)
 ///   feather        once the map is up, a Homeward Feather's lift, held mid-rise (nothing is used up)
 ///   curtain        the loading screen (the logo over the sky and its bar), held at 41%;
 ///                  curtain=travel the card for travelling to another map (Genie Desert) instead
@@ -140,6 +141,8 @@ enum DebugLaunch {
     }
 
     static var forcesLandscape: Bool { flags["landscape"] != nil }
+    /// `dark` or `light`: the app in that look, whatever Settings say (GameSettings.appearanceChoices).
+    static var appearance: String? { flags["dark"] != nil ? "dark" : flags["light"] != nil ? "light" : nil }
     /// `curtain`: the loading screen, held at 41%, instead of the title.
     static var holdsLoadingCurtain: Bool { flags["curtain"] != nil }
     /// `curtain=travel`: the travelling card instead.

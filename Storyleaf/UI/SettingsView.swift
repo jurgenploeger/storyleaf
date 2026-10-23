@@ -20,6 +20,7 @@ struct SettingsView: View {
     @AppStorage(GameSettings.turnTimerKey) private var turnTimer = 10.0
     @AppStorage(GameSettings.battleSpeedKey) private var battleSpeed = 1.0
     @AppStorage(GameSettings.autoBattleKey) private var autoBattle = false
+    @AppStorage(GameSettings.appearanceKey) private var appearance = "system"
     @State private var music = MusicPlayer.shared
     @State private var justSaved = false
     @State private var confirmQuit = false
@@ -68,6 +69,21 @@ struct SettingsView: View {
                 }
                 .onChange(of: soundEffects) { _, on in if on { SoundEffects.shared.play(.coins) } }
                 SoundRow(title: L("Footsteps"), icon: nil, isOn: $footsteps)
+            }
+
+            // Light or Dark Mode, or whichever the phone is in.
+            section(L("Appearance"), icon: .moon) {
+                PillChoices(choices: GameSettings.appearanceChoices, selection: $appearance) { choice in
+                    switch choice {
+                    case "light": L("Light Mode")
+                    case "dark": L("Dark Mode")
+                    default: L("System")
+                    }
+                }
+                Text(L("System follows your phone's Light or Dark Mode."))
+                    .font(HUDStyle.font(10))
+                    .foregroundStyle(HUDStyle.dim)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             section(L("Feel"), icon: .tap) {
@@ -242,23 +258,38 @@ private struct TurnTimerRow: View {
                 Text(L("Time to choose"))
             }
             .accessibilityElement(children: .combine)
-            HStack(spacing: 6) {
-                ForEach(GameSettings.turnTimerChoices, id: \.self) { choice in
-                    let chosen = seconds == choice
-                    Button {
-                        seconds = choice
-                    } label: {
-                        Text(choice == 0 ? L("Off") : L("{seconds} s", ["seconds": Int(choice)]))
-                            .font(HUDStyle.font(11))
-                            .foregroundStyle(chosen ? HUDStyle.ink : HUDStyle.cream)
-                            .frame(maxWidth: .infinity, minHeight: 32)
-                            .background(Capsule().fill(chosen ? HUDStyle.gold : HUDStyle.ink.opacity(0.5)))
-                            .overlay(Capsule().strokeBorder(HUDStyle.cream.opacity(chosen ? 0 : 0.4), lineWidth: 1))
-                            .contentShape(Capsule())
-                    }
-                    .buttonStyle(PressScaleStyle())
-                    .accessibilityAddTraits(chosen ? .isSelected : [])
+            PillChoices(choices: GameSettings.turnTimerChoices, selection: $seconds) { choice in
+                choice == 0 ? L("Off") : L("{seconds} s", ["seconds": Int(choice)])
+            }
+        }
+    }
+}
+
+/// A row of pills to pick one of a few choices: the chosen one gold.
+private struct PillChoices<Value: Hashable>: View {
+    let choices: [Value]
+    @Binding var selection: Value
+    let title: (Value) -> String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(choices, id: \.self) { choice in
+                let chosen = selection == choice
+                Button {
+                    selection = choice
+                } label: {
+                    Text(title(choice))
+                        .font(HUDStyle.font(11))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .foregroundStyle(chosen ? HUDStyle.ink : HUDStyle.cream)
+                        .frame(maxWidth: .infinity, minHeight: 32)
+                        .background(Capsule().fill(chosen ? HUDStyle.gold : HUDStyle.ink.opacity(0.5)))
+                        .overlay(Capsule().strokeBorder(HUDStyle.cream.opacity(chosen ? 0 : 0.4), lineWidth: 1))
+                        .contentShape(Capsule())
                 }
+                .buttonStyle(PressScaleStyle())
+                .accessibilityAddTraits(chosen ? .isSelected : [])
             }
         }
     }

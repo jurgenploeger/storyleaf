@@ -12,9 +12,15 @@ title_news_fr | saves=3,titlepage=news,lang=fr | 6
 curtain      | curtain                           | 4
 curtain_land | curtain,landscape                 | 4
 travel_card  | curtain=travel                    | 4
+title_saves_dark | saves=3,dark                  | 6
+curtain_dark | curtain,dark                      | 4
 lang_es      | newgame,lang=es                   | 8
 settings_zh_hant | newgame,lang=zh-Hant,menu=settings | 8
 settings     | newgame,menu=settings,weather=clear | 8
+settings_dark | newgame,menu=settings,weather=clear,dark | 8
+meadowbrook_dark | newgame,dark                  | 8
+battle_dark  | newgame,map=sunny_meadow,battle,dark | 15
+npc_dark     | newgame,npc=elder,dark            | 8
 battle_ru    | newgame,lang=ru,map=sunny_meadow,battle | 15
 npc_ko       | newgame,lang=ko,npc=elder         | 8
 barber       | newgame,npc=barber,gold=2000      | 8
