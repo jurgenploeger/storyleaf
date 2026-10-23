@@ -102,7 +102,10 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   asset's `derive`; its `big_` twin, derived from it, follows. `--sheet out.png` previews them.
 - `tools/building_art.py`: town houses and shops drawn in code with `pixel_kit`, so the towns don't build only
   with RD's few buildings and their recolours: a thatched and a timber-framed cottage, a stone townhouse, a
-  round cottage, a teapot house, a garden cottage, and weapon, armour, tailor, flower, tea and book shops. Walls
+  round cottage, a teapot house, a garden cottage, and weapon, armour, tailor, flower, tea and book shops; and
+  buildings that belong to a land: a pavilion tent, a bazaar stall and an onion-domed house for the deserts, a
+  yurt for the steppe, a tree house, an acorn cottage, a bluebell house and a crystal cottage for Starfall
+  Isle's Glimmerbough (maps.json `buildings`). Walls
   and roofs are surfaces with a building material's pattern at the sprite's pixels (stone blocks, plaster,
   planks, clay tiles, thatch, slate); each is drawn in a 96-pixel frame's coordinates and scaled about its
   foot to fill it as RD's do (`fit`). Registered in art/assets.json with no `request`, placed by maps.json's

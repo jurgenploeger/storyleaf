@@ -607,6 +607,230 @@ def book_shop(b):
     return b
 
 
+# ------------------------------------------------------------------- buildings that belong to a land
+
+def shade(hexcode, k):
+    """`hexcode` k times as light (darker a touch more saturated)."""
+    import colorsys
+    r, g, b_ = (int(hexcode.lstrip("#")[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    h, sat, v = colorsys.rgb_to_hsv(r, g, b_)
+    sat = min(1, sat * (1 + (1 - k) * 0.4)) if k < 1 else sat * (1 - (k - 1) * 0.5)
+    r, g, b_ = colorsys.hsv_to_rgb(h, sat, min(1, v * k))
+    return "#%02x%02x%02x" % tuple(int(c * 255) for c in (r, g, b_))
+
+
+def canopy(b, cx, cy, rx, ry, colour, size=7.0, seed=1):
+    """Leaves in clusters on a jittered grid, as tools/scenery_art.py's crowns: lighter to the upper left,
+    in shadow to the lower right, a paler patch on each lit cluster."""
+    rng = np.random.default_rng(seed)
+    step = size * 1.1
+    spots = []
+    for j, gy in enumerate(np.arange(cy - ry, cy + ry + 0.01, step * 0.8)):
+        for gx in np.arange(cx - rx + (j % 2) * step / 2, cx + rx + 0.01, step):
+            if ((gx - cx) / rx) ** 2 + ((gy - cy) / ry) ** 2 <= 1.05:
+                spots.append((gx + rng.uniform(-0.25, 0.25) * size, gy + rng.uniform(-0.2, 0.2) * size))
+    for x, y in sorted(spots, key=lambda p: p[1]):
+        side = ((x - cx) / rx + (y - cy) / ry) / 2
+        k = 1.15 if side < -0.2 else 0.75 if side > 0.3 else 0.95
+        r = size * rng.uniform(0.85, 1.1)
+        b.ellipse(x, y, r, r * 0.82, shade(colour, k), texture=0.01)
+        if side < 0.3:
+            b.ellipse(x - r * 0.3, y - r * 0.3, r * 0.45, r * 0.36, shade(colour, k * 1.15), texture=0.0, profile="flat")
+
+
+def gores(b, apex, base_l, base_r, colours, n=8, bulge=4.0):
+    """A tent's cloth from its peak to the ground, in `n` gores of alternating colour, each bellying out."""
+    (ax, ay), (lx, ly), (rx, ry) = apex, base_l, base_r
+    for k in range(n):
+        t0, t1 = k / n, (k + 1) / n
+        x0, x1 = lx + (rx - lx) * t0, lx + (rx - lx) * t1
+        y0, y1 = ly + (ry - ly) * t0, ly + (ry - ly) * t1
+        mid = (t0 + t1) / 2
+        # A gore's hem sags between its seams; the side away from the light a step darker.
+        sag = [(x0 + (x1 - x0) * u, y0 + (y1 - y0) * u + math.sin(u * math.pi) * 1.5) for u in np.linspace(0, 1, 5)]
+        colour = colours[k % len(colours)]
+        b.surface([(ax, ay)] + sag, colour, "plaster", tone=0.08 - 0.3 * mid, texture=0.02, shades=6)
+        # the seam
+        b.stroke([(ax, ay), (x1, y1)], 0.9, shade(colours[0], 0.6))
+
+
+def pavilion_tent(b):
+    """A big striped desert pavilion: gores from a gilded peak, the flap tied open on a dark inside, a
+    rug laid out before it, guy ropes to pegs."""
+    apex, left, right = (48, 22), (12, GROUND - 2), (84, GROUND - 2)
+    for (x, y) in ((6, GROUND), (90, GROUND)):
+        b.stroke([(x, y), (apex[0] + (x - apex[0]) * 0.5, apex[1] + 22)], 0.7, "#c8b088")
+        b.ellipse(x, y, 1.2, 0.9, "#6a4a2e")
+    gores(b, apex, left, right, ["#e8a23a", "#f2e6c8"], n=9)
+    # A valance of scallops round the eave line.
+    for k in range(10):
+        x = 18 + k * 6.4
+        b.ellipse(x, 44 + abs(x - 48) * 0.36, 3.6, 2.4, "#c8423a" if k % 2 else "#2e8a8a", profile="flat")
+    # The open flap: a dark inside, its two flaps tied back.
+    b.poly([(48, 50), (58, GROUND - 1), (38, GROUND - 1)], "#3a2420", texture=0.0)
+    b.poly([(48, 50), (38, GROUND - 1), (34, GROUND - 1), (44, 56)], "#f2e6c8", texture=0.02)
+    b.poly([(48, 50), (58, GROUND - 1), (62, GROUND - 1), (52, 56)], "#e8a23a", texture=0.02)
+    b.ellipse(48, 19, 2.6, 3.4, "#f0c040", gloss=0.8)
+    b.stroke([(48, 16), (48, 10)], 0.8, "#c89a2a")
+    b.poly([(48, 10), (55, 12), (48, 14)], "#c8423a", texture=0.0)                        # a pennant
+    b.surface([(30, GROUND + 4), (66, GROUND + 4), (62, GROUND - 1), (34, GROUND - 1)], "#a8322e", "blocks", tone=0.0)
+
+
+def yurt(b):
+    """A round felt yurt for the steppe: cream walls banded in red, a low cone roof roped down, a painted
+    door, smoke from the crown."""
+    cx, r = 48, 30
+    wall = [(cx - r, 58)] + [(cx + r * math.cos(a), GROUND - 4 + 5 * math.sin(a)) for a in np.linspace(math.pi, 0, 17)] + [(cx + r, 58)]
+    b.surface(wall, "#e8dcc0", "plaster", slope=(-0.009, 0.0))
+    for y in (64, 76):                                                                      # felt bands
+        band = [(cx - r, y)] + [(cx + r * math.cos(a), y + 5 * math.sin(a)) for a in np.linspace(math.pi, 0, 17)]
+        band += [(cx + r * math.cos(a), y + 3 + 5 * math.sin(a)) for a in np.linspace(0, math.pi, 17)]
+        b.poly(band, "#b83a32", texture=0.02, tone=0.55)
+    roof = [(cx + (r + 3) * math.cos(a), 58 + 6 * math.sin(a)) for a in np.linspace(0, math.pi, 17)]
+    b.surface([(cx + 6, 30), (cx - 6, 30)] + roof[::-1], "#d8c8a4", "thatch", slope=(-0.01, 0.006))
+    for a in np.linspace(0.15, math.pi - 0.15, 7):                                         # the roof's ropes
+        b.stroke([(cx + 6 * math.cos(a), 30 + 1), (cx + (r + 2) * math.cos(a), 58 + 6 * math.sin(a))], 0.8, "#7a5a3a")
+    b.ellipse(cx, 30, 7, 2.2, "#7a5a3a", profile="flat")
+    b.rect(cx - 6, GROUND - 22, cx + 6, GROUND, "#c8642a", texture=0.03)                   # the door
+    b.rect(cx - 4.5, GROUND - 20, cx + 4.5, GROUND - 1, "#e88a3a", texture=0.02)
+    b.stroke([(cx, GROUND - 20), (cx, GROUND - 1)], 0.8, "#a84a2a")
+    for (x, y, rr) in ((cx + 2, 24, 2.6), (cx + 5, 18, 2.0), (cx + 9, 13, 1.5)):
+        b.ellipse(x, y, rr, rr * 0.8, "#e8e8f0", profile="flat")
+
+
+def dome_house(b):
+    """A sandstone house with an onion dome: a gilt spire, an arched door and lattice windows."""
+    x0, x1 = 22, 62
+    top = box(b, x0, x1, 34, "#e2c69a", pattern="blocks", depth=0.9)
+    b.surface([(x0 - 2, top), (x1 + 2, top), (x1 + 2 + DX * 0.9, top + DY * 0.9), (x0 - 2 + DX * 0.9, top + DY * 0.9)],
+              "#d8b888", "blocks", tone=0.1)                                              # the flat roof
+    cx = (x0 + x1) / 2 + DX * 0.45
+    b.surface([(cx - 10, top - 2), (cx + 10, top - 2), (cx + 10, top - 7), (cx - 10, top - 7)], "#e2c69a", "blocks")
+    base = top - 7
+    half = [(10, 0), (13, 4), (14, 9), (12, 14), (7.5, 19), (3.5, 23), (0, 27)]          # the onion's profile
+    dome = [(cx - w, base - h) for w, h in half] + [(cx + w, base - h) for w, h in half[::-1]]
+    b.surface(dome, "#2e9a9a", "tiles", slope=(-0.016, 0.0))
+    b.stroke([(cx, top - 26), (cx, top - 34)], 1.2, "#e8c050")
+    b.ellipse(cx, top - 35, 1.6, 1.6, "#f0c040", gloss=0.8)
+    door(b, x0 + 13, w=10, h=17, colour="#2e7a8a", frame="#a8885a")
+    for x in (x1 - 8,):
+        window(b, x, top + 12, w=7, h=10, frame="#a8885a", glass="#f8c86a", arched=True)
+    window(b, x0 + 13, top + 6, w=6, h=5, frame="#a8885a", glass="#f8c86a", arched=True)
+    for x in (x0 + 2, x1 - 2):                                                             # pots by the walls
+        b.ellipse(x, GROUND - 2, 2.6, 3, "#c86a3a")
+
+
+def market_tent(b):
+    """A bazaar stall: a striped canopy on four poles over a counter of pots, rugs and fruit."""
+    for x in (20, 70):
+        b.stroke([(x, GROUND), (x, 42)], 1.6, "#6a4a2e")
+    for x in (28, 78):
+        b.stroke([(x, GROUND - 7), (x, 37)], 1.4, "#5a3e26")
+    b.surface([(18, 64), (72, 64), (80, 58), (26, 58)], "#b07a4a", "planks", tone=0.04)          # the counter top
+    b.surface([(18, 64), (72, 64), (72, GROUND), (18, GROUND)], "#8a5a34", "boards")
+    b.surface([(72, 64), (80, 58), (80, GROUND - 6), (72, GROUND)], "#8a5a34", "boards", tone=-0.22)
+    for k, (x, c) in enumerate(((24, "#c86a3a"), (31, "#2e8a8a"), (38, "#c86a3a"))):          # pots
+        b.ellipse(x, 58, 3, 3.4, c)
+        b.ellipse(x, 54.6, 1.6, 0.8, shade(c, 0.6), profile="flat")
+    for k, x in enumerate(np.arange(46, 66, 3.2)):                                           # fruit
+        b.ellipse(x, 59, 1.7, 1.6, "#f0a020" if k % 2 else "#d83a3a")
+    b.rect(52, 64, 66, 78, "#a8322e", texture=0.02, profile="flat")                        # a rug hung over it
+    for y in (67, 71, 75):
+        b.stroke([(52, y), (66, y)], 0.9, "#f0c040")
+    # The canopy, striped, sloping down to the front with a scalloped hem.
+    n = 9
+    for k in range(n):
+        a, c = 16 + 58 * k / n, 16 + 58 * (k + 1) / n
+        col = "#f2e6c8" if k % 2 else "#2e8a8a"
+        b.poly([(a + 12, 30), (c + 12, 30), (c, 44), (a, 44)], col, tone=0.62)
+        b.ellipse((a + c) / 2, 44, (c - a) / 2, 1.8, col, profile="flat")
+    b.poly([(74, 44), (86, 30), (86, 33), (75, 46)], "#d8cfb4", tone=0.4)
+
+
+def tree_house(b):
+    """A fairy tree house: a great trunk with roots, a cottage on a platform in its branches under the
+    leaves, a ladder up to it and a lantern."""
+    bark = "#7a5a46"
+    b.stroke([(48, GROUND), (49, 60), (47, 40)], 13, bark)
+    for (x, y) in ((34, GROUND + 1), (62, GROUND + 1), (40, GROUND + 2), (57, GROUND + 2)):
+        b.stroke([(48, GROUND - 6), (x, y)], 5, bark)
+    b.stroke([(47, 44), (30, 34), (20, 30)], 5, bark)
+    b.stroke([(48, 42), (66, 33), (76, 30)], 5, bark)
+    canopy(b, 48, 18, 34, 13, "#5aa86a", size=7.5, seed=8)
+    b.surface([(24, 46), (72, 46), (72, 49), (24, 49)], "#9a6a44", "planks")                  # the platform
+    top = box(b, 32, 60, 15, "#c8945a", pattern="planks", ground=46, depth=0.6)
+    eaves_roof(b, 32, 60, top, "#b85a8a", "tiles", rise=9, over=3, depth=0.6)
+    door(b, 40, w=6, h=10, colour="#5a7a3a", ground=46)
+    window(b, 52, top + 7, w=5, h=5, arched=True)
+    for (x, c) in ((24, "#3a2a20"), (72, "#3a2a20")):
+        b.stroke([(x, 49), (x, 58)], 1.0, c)
+    b.stroke([(26, 49), (24, 57), (72, 57), (70, 49)], 1.1, "#c8b088")                       # a rope rail
+    for x in (27, 32):                                                                      # the ladder
+        b.stroke([(x, 49), (x - 3, GROUND)], 1.4, "#8a6a4a")
+    for y in np.arange(54, GROUND, 6.5):
+        t = (y - 49) / (GROUND - 49)
+        b.stroke([(27 - 3 * t, y), (32 - 3 * t, y)], 1.3, "#8a6a4a")
+    b.stroke([(66, 46), (66, 52)], 0.6, "#3a3036")
+    b.ellipse(66, 54, 1.8, 2.2, "#ffd06a", profile="flat")                                  # a lantern
+
+
+def acorn_cottage(b):
+    """A cottage in an acorn: a brown nut for walls with a scaly cap for its roof and a twig on top."""
+    cx = 48
+    b.surface([(cx + 24 * math.cos(a), 60 + 27 * math.sin(a) * (0.9 if a > 0 else 1)) for a in np.linspace(0, math.pi, 21)]
+              + [(cx - 24, 52), (cx + 24, 52)], "#c8844a", "boards", slope=(-0.01, 0.0))
+    cap = [(cx + 28 * math.cos(a), 52 - 22 * math.sin(a)) for a in np.linspace(0, math.pi, 21)]
+    cap += [(cx - 28, 55), (cx + 28, 55)][::-1]
+    b.surface(cap, "#8a6a3a", "tiles", slope=(-0.012, 0.006))
+    b.stroke([(cx + 1, 31), (cx + 4, 24), (cx + 9, 21)], 2.6, "#6a4a2e")
+    b.ellipse(cx + 12, 21, 4, 2.2, "#6aa84a")                                                # a leaf on the twig
+    door(b, cx - 4, w=10, h=17, colour="#6a8a3a")
+    window(b, cx + 12, 66, w=7, h=7, arched=True)
+    b.ellipse(cx - 12, 43, 3.2, 3.2, "#5a3a24")
+    b.ellipse(cx - 12, 43, 2.2, 2.2, "#ffd27a", profile="flat")
+    flowers(b, cx + 18, cx + 26, GROUND - 1, ["#f8d84a", "#b88ae0"], seed=5)
+
+
+def bluebell_house(b):
+    """A house in a bluebell: the flower's bell standing on the ground, flaring to a scalloped rim, its
+    stalk arching up over it from behind; a door under the rim, leaves at its foot."""
+    b.stroke([(66, GROUND), (72, 44), (64, 16), (50, 12)], 3.4, "#4e8a3a")                   # the stalk
+    side = [(0, 0), (6, 3), (11, 10), (14, 22), (16, 36), (19, 50), (24, 60), (26, 64)]       # the bell's profile
+    top, cx = 18, 48
+    bell = [(cx - w, top + h) for w, h in side[::-1]] + [(cx + w, top + h) for w, h in side]
+    b.surface(bell[len(side):] + bell[:len(side)], "#6a7ae0", "plaster", slope=(-0.014, 0.002))
+    for k in range(7):                                                                      # the scalloped rim
+        x = cx - 24 + k * 8
+        b.ellipse(x, top + 64, 4.4, 2.6, "#8a9af0" if x < cx else "#5a6ad0", profile="flat")
+    for x in (-10, -4, 4, 10):                                                              # its veins
+        b.stroke([(cx + x * 0.3, top + 6), (cx + x * 1.6, top + 58)], 0.9, "#4a5ac0")
+    b.ellipse(cx, top - 1, 2.6, 2, "#4e8a3a")
+    door(b, cx, w=10, h=14, colour="#f0d8a0", frame="#4a5ac0")
+    window(b, cx - 9, top + 34, w=5, h=6, arched=True, frame="#4a5ac0")
+    window(b, cx + 8, top + 30, w=5, h=6, arched=True, frame="#4a5ac0")
+    for (x, lean) in ((26, -1), (70, 1)):                                                   # leaves at its foot
+        b.poly([(x - 7, GROUND), (x + lean * 6, GROUND - 16), (x + 7, GROUND)], "#5aa84a", profile="dome")
+
+
+def crystal_cottage(b):
+    """A little stone cottage the star's crystals have grown through: spires out of its roof and wall,
+    glowing windows."""
+    x0, x1 = 24, 60
+    top = box(b, x0, x1, 24, "#a8a0b8", pattern="blocks")
+    footing(b, x0, x1, colour="#7a7488")
+    eaves_roof(b, x0, x1, top, "#5a4a8a", "slate", rise=14, over=3, wall="#a8a0b8", wall_pattern="blocks")
+    def spire(x, y, h, w, colour):
+        b.poly([(x - w, y), (x, y - h), (x + w * 0.2, y)], shade(colour, 1.2), tone=0.85)
+        b.poly([(x + w * 0.2, y), (x, y - h), (x + w, y)], shade(colour, 0.85), tone=0.45)
+    spire(38, top - 6, 22, 4.5, "#8ad8f0")
+    spire(46, top - 9, 15, 3.4, "#c8a0f0")
+    spire(70, GROUND - 2, 26, 5, "#8ad8f0")
+    spire(76, GROUND - 1, 14, 3.4, "#c8a0f0")
+    spire(18, GROUND, 12, 3.2, "#8ad8f0")
+    door(b, x0 + 10, w=9, h=14, colour="#4a6ab0")
+    window(b, x1 - 9, top + 10, w=7, h=8, glass="#a8f0ff", frame="#5a4a8a")
+
+
 BUILDINGS = {
     "thatched_cottage": thatched_cottage,
     "timber_house": timber_house,
@@ -620,15 +844,27 @@ BUILDINGS = {
     "flower_shop": flower_shop,
     "tea_house": tea_house,
     "book_shop": book_shop,
+    "pavilion_tent": pavilion_tent,
+    "yurt": yurt,
+    "dome_house": dome_house,
+    "market_tent": market_tent,
+    "tree_house": tree_house,
+    "acorn_cottage": acorn_cottage,
+    "bluebell_house": bluebell_house,
+    "crystal_cottage": crystal_cottage,
 }
 
 
 def fit(draw, width=76, height=76):
     """`draw` (a function of a Build) redrawn scaled about its foot so it fills `width` × `height` of the
     frame, centred, as RD's buildings fill theirs (about 70 to 80 pixels each way)."""
-    left, top, right, bottom = draw(Build()).extent()
+    first = Build()
+    draw(first)
+    left, top, right, bottom = first.extent()
     k = min(width / (right - left), height / (GROUND - top), 1.6)
-    return draw(Build(k, (left + right) / 2))
+    b = Build(k, (left + right) / 2)
+    draw(b)
+    return b
 
 
 def main(argv):

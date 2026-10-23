@@ -7424,7 +7424,7 @@
           "y": -5
         },
         {
-          "art": "stone_hut",
+          "art": "dome_house",
           "x": -6,
           "y": -7
         },
@@ -7434,7 +7434,7 @@
           "y": -10
         },
         {
-          "art": "stone_hut",
+          "art": "market_tent",
           "x": -25,
           "y": -15
         },
@@ -7444,22 +7444,22 @@
           "y": -15
         },
         {
-          "art": "adobe_house",
+          "art": "dome_house",
           "x": 25,
           "y": -16
         },
         {
-          "art": "desert_tent",
+          "art": "pavilion_tent",
           "x": -25,
           "y": -20
         },
         {
-          "art": "adobe_house_tall",
+          "art": "market_tent",
           "x": -5,
           "y": -20
         },
         {
-          "art": "stone_hut",
+          "art": "dome_house",
           "x": 26,
           "y": -21
         },
@@ -7469,7 +7469,7 @@
           "y": -26
         },
         {
-          "art": "stone_hut",
+          "art": "market_tent",
           "x": -27,
           "y": 5
         },
@@ -7479,7 +7479,7 @@
           "y": 9
         },
         {
-          "art": "desert_tent",
+          "art": "pavilion_tent",
           "x": -14,
           "y": -27
         },
@@ -8095,12 +8095,12 @@
       ],
       "buildings": [
         {
-          "art": "item_shop",
+          "art": "market_tent",
           "x": -5,
           "y": 24
         },
         {
-          "art": "inn_teal",
+          "art": "pavilion_tent",
           "x": 6,
           "y": 24
         },
@@ -8110,7 +8110,7 @@
           "y": 16
         },
         {
-          "art": "inn",
+          "art": "dome_house",
           "x": 9,
           "y": 16
         }
@@ -15158,7 +15158,7 @@
       ],
       "buildings": [
         {
-          "art": "inn_red",
+          "art": "yurt",
           "x": -16,
           "y": -2
         },
@@ -15168,7 +15168,7 @@
           "y": -2
         },
         {
-          "art": "adobe_house",
+          "art": "yurt",
           "x": -32,
           "y": -10
         },
@@ -18091,7 +18091,7 @@
           "y": -3
         },
         {
-          "art": "fairy_tree_house_moon",
+          "art": "bluebell_house",
           "x": 12,
           "y": 0
         },
@@ -18101,17 +18101,17 @@
           "y": 10
         },
         {
-          "art": "fairy_tree_house_rose",
+          "art": "tree_house",
           "x": 11,
           "y": 11
         },
         {
-          "art": "fairy_tree_house",
+          "art": "acorn_cottage",
           "x": 5,
           "y": -10
         },
         {
-          "art": "big_hollow_tree",
+          "art": "crystal_cottage",
           "x": -10,
           "y": -9
         }

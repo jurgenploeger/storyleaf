@@ -2270,6 +2270,38 @@
       "kind": "building"
     },
     {
+      "id": "pavilion_tent",
+      "kind": "building"
+    },
+    {
+      "id": "yurt",
+      "kind": "building"
+    },
+    {
+      "id": "dome_house",
+      "kind": "building"
+    },
+    {
+      "id": "market_tent",
+      "kind": "building"
+    },
+    {
+      "id": "tree_house",
+      "kind": "building"
+    },
+    {
+      "id": "acorn_cottage",
+      "kind": "building"
+    },
+    {
+      "id": "bluebell_house",
+      "kind": "building"
+    },
+    {
+      "id": "crystal_cottage",
+      "kind": "building"
+    },
+    {
       "id": "forest_lodge",
       "kind": "building",
       "request": {
