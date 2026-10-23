@@ -134,7 +134,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   `Storyleaf/Battle/ElementEffects.swift` layers soft glows in each element's colours (`ElementLight`).
 - `tools/hero_layers.py`: splits each race's walk sheet into paper-doll layers (bald `body_<race>`,
   `locks_<race>` for a beard, `hair_<style>_<race>` for every hairstyle in that sheet's own hair colour, a
-  gender sheet's own hair as a style of its own (appearance.json `styles` with `sheet`), `hood_`/`helmet_<race>`
+  gender sheet's own hair as a style of its own (appearance.json `styles` with `sheet`), its outer edge a deep
+  shade of its own colour (`hair_edge`: RD drew the top bright, and dyed purple it read as no outline), `hood_`/`helmet_<race>`
   in magenta that GearOverlay paints in the armour's colours). The game stacks them (`GameSession.layers`) and
   dyes every shade of the locks and hair (appearance.json `hairLayer`), never the body. Armour with a walk sheet
   of its own goes over `nape_<style>_<body>` (the hair from a fifth of the way down the head), so long hair
