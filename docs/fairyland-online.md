@@ -740,6 +740,15 @@ No advanced classes.
 
 **Us:**
 - 20 hero skills.
+- Skill levels (ours): a skill point a level, one to learn a skill and one for each step up; ten steps to
+  Mastered (×1.8 damage, ×1 when learned, a point of MP a step). Since 0.7.72 your hero's skills keep growing
+  past it, to level 50 (playtesting 2026-10-23: "you should be able to continuously improve these skills,
+  every level it becomes stronger and at certain milestones the animation in battles becomes grander"):
+  1.5% of a fresh skill's strength a level (×2.4 at 50), a point of MP every five, and a milestone every ten
+  (`GameSession.skillRank`): Heroic at 20, Epic at 30, Mythic at 40, Legendary at 50. Each opens the mastered
+  show wider (bigger magic circles, a second ring, more rays and motes, the milestone's name under the
+  skill's), the ground shakes from Epic, the finale strikes twice from Mythic, and Legendary comes in every
+  colour. Monsters', companions' and friends' skills stop at mastery.
 - Our Mage carries Recovery, Revive, Bless, Holy Glow and Guardianship, which FO gives the Acolyte of Light,
   and Curse (level 12) and Poison (level 25), the Acolyte of Dark's.
 - Like FO's Mage, whose list starts with Fireball, ours learns Fire Bolt on joining the guild at level 10
@@ -752,7 +761,8 @@ No advanced classes.
   - Buffs, FO's skill names with our own effects (FO's aren't in any source reachable from a cloud session):
     Protection (Fighter 12, one ally DEF +40%), Holy Glow (Mage 40, one ally MAG +30%), Bless (Mage 45, ATK
     and DEF +25%), Guardianship (Mage 60, the whole party DEF +20%) and Animal Training (Beast Tamer 25,
-    ATK +20% and SPD +30%). Raises grow with the skill's level like damage, ×1.8 when mastered.
+    ATK +20% and SPD +30%). Raises grow with the skill's level like damage, ×1.8 when mastered, then
+    gentler past it (0.5% a level, ×2 at 50).
   - Monsters and companions: Boost (ATK +20%; golden hamsters, wood hogs, blaze bulls, earth lions) and Berserk
     (ATK +30% but DEF −25%; werewolves, fire bears, black kongs), FO's pet skills. They cast them on
     themselves now and then; friends cast theirs on whoever they'd help most.

@@ -691,7 +691,8 @@ final class BattleScene: SKScene {
     }
 
     /// Picks the effect for a skill; bigger and flashier at higher skill levels, and a full show
-    /// (dimmed field, magic circles, an elemental finale) once the skill is mastered.
+    /// (dimmed field, magic circles, an elemental finale) once the skill is mastered, grander again at
+    /// every milestone past it (`GameSession.skillRank`: Heroic, Epic, Mythic, Legendary).
     private func castSkill(_ skill: SkillDef, level: Int, from actorID: Int, hits: [Hit]) async {
         let targets = hits.compactMap { actors[$0.target] }
         let heal = skill.kind == .heal || skill.kind == .revive
@@ -713,19 +714,23 @@ final class BattleScene: SKScene {
         // level 18, and a show on every one of their turns would drag every battle out.
         let isBoss = fighter?.speciesID.flatMap { Content.shared.monster($0)?.boss } == true
         let mastered = level >= GameSession.maxSkillLevel && (fighter?.isHero == true || isBoss)
+        // Each milestone past mastery opens the show wider: bigger circles and more light, the
+        // ground shaking from Epic, the finale twice from Mythic, in every colour at Legendary.
+        let rank = mastered ? GameSession.skillRank(level) : 0
         var dimmer: SKNode?
         if mastered {
             // A grand chord as its name goes up in gold.
             SoundEffects.shared.play(.ultimate)
-            SkillEffects.masterBanner(skill.name, level: level, size: size, in: self)
-            dimmer = SkillEffects.ultimateStart(caster: actors[actorID], color: color, size: size, in: stage)
-            await pause(0.75)
+            SkillEffects.masterBanner(skill.name, level: level, rank: rank, size: size, in: self)
+            dimmer = SkillEffects.ultimateStart(caster: actors[actorID], color: color, size: size, rank: rank, in: stage)
+            if rank >= 3 { shake(strength: 6 + 3 * CGFloat(rank - 3)) }
+            await pause(0.75 + 0.1 * Double(rank - 1))
         }
         defer {
-            if let dimmer { SkillEffects.ultimateEnd(dimmer, color: color, size: size, in: stage) }
+            if let dimmer { SkillEffects.ultimateEnd(dimmer, color: color, size: size, rank: rank, in: stage) }
         }
-        // The effects grow in five tiers: every two skill levels look a step grander.
-        let level = (level + 1) / 2
+        // The effects grow in five tiers: every two skill levels look a step grander, to mastery.
+        let level = min(5, (level + 1) / 2)
         // From the third tier, your hero's and bosses' skills gather themselves with a swell of sound,
         // louder each tier (everyone else's would swell on every turn).
         if level >= 3, fighter?.isHero == true || isBoss {
@@ -756,8 +761,8 @@ final class BattleScene: SKScene {
             }
             for target in targets { SkillEffects.glory(on: target, color: color, level: level, in: stage) }
             if mastered {
-                SkillEffects.ultimateFinale(on: targets, style: "holy", color: color, size: size, in: stage)
-                await pause(0.7)
+                SkillEffects.ultimateFinale(on: targets, style: "holy", color: color, size: size, rank: rank, in: stage)
+                await pause(rank >= 4 ? 1.1 : 0.7)
             }
             return
         }
@@ -767,8 +772,8 @@ final class BattleScene: SKScene {
             await pause(SkillEffects.buff(style, on: targets, level: level, in: stage))
             for target in targets { SkillEffects.glory(on: target, color: color, level: level, in: stage) }
             if mastered {
-                SkillEffects.ultimateFinale(on: targets, style: "holy", color: color, size: size, in: stage)
-                await pause(0.7)
+                SkillEffects.ultimateFinale(on: targets, style: "holy", color: color, size: size, rank: rank, in: stage)
+                await pause(rank >= 4 ? 1.1 : 0.7)
             }
             return
         }
@@ -942,10 +947,10 @@ final class BattleScene: SKScene {
         if level >= 4, !heal { shake(strength: CGFloat(level - 2) * 3) }
         if mastered {
             await pause(0.2)
-            SkillEffects.ultimateFinale(on: targets, style: SkillEffects.finale(for: style), color: color, size: size, in: stage)
-            await pause(0.35)
-            SkillEffects.screenFlash(color: .white, strength: 0.55, size: size, in: self)
-            if !heal { shake(strength: 14) }
+            SkillEffects.ultimateFinale(on: targets, style: SkillEffects.finale(for: style), color: color, size: size, rank: rank, in: stage)
+            await pause(rank >= 4 ? 0.75 : 0.35)
+            SkillEffects.screenFlash(color: .white, strength: min(0.85, 0.55 + 0.08 * CGFloat(rank - 1)), size: size, in: self)
+            if !heal { shake(strength: 14 + 4 * CGFloat(rank - 1)) }
             await pause(0.6)
         }
     }

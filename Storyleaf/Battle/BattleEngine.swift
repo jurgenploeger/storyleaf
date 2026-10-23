@@ -325,9 +325,17 @@ final class BattleEngine {
         return 1 - 0.75 * (hp - captureThreshold) / (1 - captureThreshold)
     }
 
-    /// How much stronger a skill is at `level`: ×1 when learned, ×1.8 when mastered (level 10).
+    /// How much stronger a skill is at `level`: ×1 when learned, ×1.8 when mastered (level 10), then
+    /// gentler, 1.5% of a fresh skill's strength a level, to ×2.4 at your hero's cap (50).
     static func skillBoost(_ level: Int) -> Double {
-        1 + 0.8 * Double(min(level, GameSession.maxSkillLevel) - 1) / Double(GameSession.maxSkillLevel - 1)
+        let toMastery = 0.8 * Double(min(level, GameSession.maxSkillLevel) - 1) / Double(GameSession.maxSkillLevel - 1)
+        return 1 + toMastery + 0.015 * Double(max(0, level - GameSession.maxSkillLevel))
+    }
+
+    /// The same for what a buff raises, gentler still past mastery (0.5% a level, ×2 at 50): a stat
+    /// raised by half again more would make a few buffs all a fight needs.
+    static func buffBoost(_ level: Int) -> Double {
+        skillBoost(min(level, GameSession.maxSkillLevel)) + 0.005 * Double(max(0, level - GameSession.maxSkillLevel))
     }
 
     /// Share of a spell's damage that also hits everyone else on the target's side: from
@@ -341,7 +349,7 @@ final class BattleEngine {
     /// mastered, like damage), and what it lowers in return (Berserk's guard), which stays put.
     static func statChanges(of skill: SkillDef, level: Int) -> [StatChange] {
         BattleStat.allCases.compactMap { stat in
-            if let up = skill.raises?[stat.rawValue] { return StatChange(stat: stat, amount: up * skillBoost(level)) }
+            if let up = skill.raises?[stat.rawValue] { return StatChange(stat: stat, amount: up * buffBoost(level)) }
             if let down = skill.lowers?[stat.rawValue] { return StatChange(stat: stat, amount: -down) }
             return nil
         }
@@ -472,7 +480,8 @@ final class BattleEngine {
                 $0.mp -= GameSession.mpCost(of: skill, level: level)
                 if skill.kind == .heal { $0.healsCast += 1 }
             }
-            // A mastered skill hits 80% harder than a fresh one, a little more each step.
+            // A mastered skill hits 80% harder than a fresh one, a little more each step, and your hero's
+            // keep growing past it.
             let boost = Self.skillBoost(level)
             let chosen = targets(for: skill, actor: actor, preferring: targetID)
             var hits = chosen.map { target -> Hit in
