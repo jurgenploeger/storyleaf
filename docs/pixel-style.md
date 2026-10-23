@@ -183,7 +183,7 @@ and a faint weave. `leather`: grain and a seam stitched two pixels in. `wood`: g
 `stone`: cracks and flecks. `fur`: short combed strands. `crystal`: facets, each its own tone, the ridges
 lit. `metal`: polished, one hard streak. `item_art.preset_for` picks one per item: set hats by their kind
 (plate helms, mail coifs, cloth hats and hoods), gauntlets and set boots plate, gloves and boots leather,
-capes cloth, whips their drawn braid (scales for a dragon's, crocodile's or snake's), materials by name
+capes cloth, whips leather (scales for a dragon's, crocodile's or snake's), materials by name
 (`MATERIAL_PRESETS`).
 
 **Colour from the set.** A hat, gloves or boots that belong to an armour (`item_art.set_armour`) take
@@ -196,7 +196,7 @@ Families share their shapes, so fix a family's helper, not its items: `boot`, `g
 rounded toe, fingers of different lengths with shadow between them, a domed helm with cheek guards, a hat
 with its tip bent over, a hood with a soft peak), never boxes. Whips (`whip_line`) hang from the hand:
 the handle up and to the right from the pommel, the lash out of its tip, over the top and down the right
-in a loose arc, its end flicked out along the bottom (thick enough to stay one line); never coiled.
+in a loose arc, its end trailing off thin along the bottom; never coiled.
 
 ## Making a sprite in code
 
@@ -230,8 +230,8 @@ in a loose arc, its end flicked out along the bottom (thick enough to stay one l
   from the light (`rim="lower"`), no seams between clusters, and a crown laid as clusters of leaves on a
   jittered grid (`puffs`), each lit on its own with a paler patch toward its top left. Beside RD's own
   `tree` they read as the same game but softer, with less contrast in the leaves.
-- **Whips:** 20 of the 25 pass; the rest fail `cluster_size` and `orphans`, as a three-pixel lash
-  braided every few pixels does by nature. Their shape was picked by eye.
+- **Whips:** the shape and finish were picked by eye (2026-10-23); a three-pixel braided lash fails
+  `cluster_size` and `orphans` by nature, so not every whip passes.
 - **Next, in order:**
   1. Ramps of 4 to 5 shades on icons (RD's 4, ours 6), and less of the designs' own top-left falloff.
   2. Presets on more than the main region (a gauntlet's plate *and* its leather cuff), and per-region
@@ -256,8 +256,8 @@ in a loose arc, its end flicked out along the bottom (thick enough to stay one l
   failed `outline_dark`; it's now deepened to half the light of what it rounds.
 - **2026-10-23 (whips):** Four shapes tried; the one picked is the lash arching from the handle's tip over
   the top and down the right, its end flicked along the bottom. A coil read as a rope, an S from a
-  diagonal handle as a hook, a closed D loop as a lasso. A tip thinner than a pixel and a half across
-  breaks into dots when shrunk.
+  diagonal handle as a hook, a closed D loop as a lasso. Its tip trailing off into a few specks was
+  liked as it is: thickening it to one line made a heavy foot.
 - **2026-10-23 (hoods):** A hood's opening as one flat dark shade read as a black hole: the inside needs
   its own light, darkest under the brim and lighter down the lower inner wall.
 - **2026-10-23 (fur):** A hood's fur drawn as a thin even cream ring read as a white border, nothing

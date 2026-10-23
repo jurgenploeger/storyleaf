@@ -472,12 +472,11 @@ def draw_tamer_whip(c):
 
 def draw_beast_whip(c):
     def tassel(c):
-        c.line(5, 14, 6, 18, hexc("5a2c26"))               # a paw pad on a cord from the pommel
+        c.line(5, 14, 6, 18, hexc("5a4028"))               # a paw pad on a cord from the pommel
         c.disc(6, 22, 3, hexc("f6c33b"))
         for (x, y) in ((3, 18.5), (6, 18), (9, 18.5)):
             c.disc(x, y, 1.2, hexc("f6c33b"))
-    # A red-brown grip: a yellow-brown one is one colour family with the paw (pixel_kit.restyle).
-    whip_line(c, [hexc("7a1a1a"), hexc("b8302a"), hexc("e8604a")], [hexc("3a1c18"), hexc("5a2c26"), hexc("7a4840")],
+    whip_line(c, [hexc("7a1a1a"), hexc("b8302a"), hexc("e8604a")], [hexc("3a2a1a"), hexc("5a4028"), hexc("7a5a38")],
               tassel=tassel)
 
 
@@ -1207,7 +1206,7 @@ def whip_line(c, leather, grip, turns=3.2, tip=None, gem=None, studs=None, tasse
         t = i / 11
         points.append((ex - 1 + t * 10, ey + 3.5 * t - 1.5 * t * t))
     for i, (x, y) in enumerate(points):           # braided, light and dark in turn, thinner to the tip
-        r = 1.5 if i < 16 else 1.1 if i < 40 else 0.75  # any thinner and the tip breaks into dots
+        r = 1.5 if i < 16 else 1.1 if i < 40 else 0.6   # the tip trails off thin
         c.disc(x, y, r, leather[2] if i % 6 < 2 else leather[1])
         if studs and i % 9 == 4 and i < 45:
             c.set(x, y, studs)
@@ -3375,7 +3374,7 @@ def hanging_whip(leather, grip, front, tip=None, gem=None, studs=None, tassel=No
 HANGING = {_id: _args for _id, _level, _name, _args, _desc in WHIPS}
 HANGING["tamer_whip"] = dict(leather=LEATHER, grip=WOOD)
 HANGING["beast_whip"] = dict(leather=[hexc("7a1a1a"), hexc("b8302a"), hexc("e8604a")],
-                             grip=[hexc("3a1c18"), hexc("5a2c26"), hexc("7a4840")], tassel=hexc("f6c33b"))
+                             grip=[hexc("3a2a1a"), hexc("5a4028"), hexc("7a5a38")], tassel=hexc("f6c33b"))
 HANGING["starfall_whip"] = dict(leather=MOTH, grip=NIGHT, tip=STARLIGHT[1], gem=GOLD, studs=WHITE)
 HANGING["goldleaf_whip"] = dict(leather=LEAFGOLD, grip=HEARTOAK, tip=hexc("b8d040"), gem=GREEN, studs=WHITE)
 
@@ -3415,7 +3414,7 @@ MATERIAL_PRESET = {i: name for name, ids in MATERIAL_PRESETS.items() for i in id
 def preset_for(item_id):
     """The main material an item's icon is finished in (pixel_kit.PRESETS), or None: set hats by their kind
     (plate helms, mail coifs, cloth hats and hoods), gauntlets and set boots plate, gloves and boots leather,
-    capes cloth, whips their drawn braid (scaled for a dragon's, a crocodile's or a snake's), materials by name."""
+    capes cloth, whips leather (scaled for a dragon's, a crocodile's or a snake's), materials by name."""
     item = ITEMS.get(item_id, {})
     kind, t = item.get("headgear"), item.get("type")
     if item_id in MATERIAL_PRESET:
@@ -3429,8 +3428,7 @@ def preset_for(item_id):
     if t == "boots":
         return "plate" if item.get("tier") else "leather"
     if t == "weapon" and ("whip" in item_id or "lash" in item_id):
-        # A lash is too thin for leather's stitching (its dots were stray pixels): the braid is drawn.
-        return "scales" if any(k in item_id for k in ("dragon", "crocodile", "snake")) else None
+        return "scales" if any(k in item_id for k in ("dragon", "crocodile", "snake")) else "leather"
     return None
 
 
