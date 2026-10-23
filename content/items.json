@@ -7957,7 +7957,7 @@
       "art": "item_copper_hide_hood",
       "name": "Copper Hide Hood",
       "type": "head",
-      "headgear": "hood",
+      "headgear": "hide_hood",
       "price": 40,
       "stats": {
         "defense": 2,
@@ -7971,8 +7971,20 @@
       "description": "A hood, to wear with the cloak of the same name.",
       "color": "#B8733A",
       "accent": "#E8D8B0",
-      "pattern": "fur",
-      "tier": "copper"
+      "tier": "copper",
+      "tint": [
+        {
+          "hue": [
+            180,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 27,
+          "spread": 1.0,
+          "saturation": 1.14,
+          "value": 1.31
+        }
+      ]
     },
     {
       "id": "copper_gauntlets",
@@ -8338,7 +8350,7 @@
       "art": "item_silver_hide_hood",
       "name": "Silver Hide Hood",
       "type": "head",
-      "headgear": "hood",
+      "headgear": "hide_hood",
       "price": 120,
       "stats": {
         "defense": 2,
@@ -8352,8 +8364,20 @@
       "description": "A hood, to wear with the cloak of the same name.",
       "color": "#C4CCD8",
       "accent": "#E8D8B0",
-      "pattern": "fur",
-      "tier": "silver"
+      "tier": "silver",
+      "tint": [
+        {
+          "hue": [
+            180,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 216,
+          "spread": 1.0,
+          "saturation": 0.15,
+          "value": 1.54
+        }
+      ]
     },
     {
       "id": "silver_gauntlets",
@@ -8719,7 +8743,7 @@
       "art": "item_onyx_hide_hood",
       "name": "Onyx Hide Hood",
       "type": "head",
-      "headgear": "hood",
+      "headgear": "hide_hood",
       "price": 290,
       "stats": {
         "defense": 4,
@@ -8733,8 +8757,20 @@
       "description": "A hood, to wear with the cloak of the same name.",
       "color": "#3A3846",
       "accent": "#E8D8B0",
-      "pattern": "fur",
-      "tier": "onyx"
+      "tier": "onyx",
+      "tint": [
+        {
+          "hue": [
+            180,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 249,
+          "spread": 1.0,
+          "saturation": 0.33,
+          "value": 0.5
+        }
+      ]
     },
     {
       "id": "onyx_gauntlets",
@@ -9102,7 +9138,7 @@
       "art": "item_sapphire_hide_hood",
       "name": "Sapphire Hide Hood",
       "type": "head",
-      "headgear": "hood",
+      "headgear": "hide_hood",
       "price": 450,
       "stats": {
         "defense": 4,
@@ -9116,8 +9152,20 @@
       "description": "A hood, to wear with the cloak of the same name.",
       "color": "#3555C8",
       "accent": "#E8D8B0",
-      "pattern": "fur",
-      "tier": "sapphire"
+      "tier": "sapphire",
+      "tint": [
+        {
+          "hue": [
+            180,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 227,
+          "spread": 1.0,
+          "saturation": 1.23,
+          "value": 1.43
+        }
+      ]
     },
     {
       "id": "sapphire_gauntlets",
@@ -9485,7 +9533,7 @@
       "art": "item_jade_hide_hood",
       "name": "Jade Hide Hood",
       "type": "head",
-      "headgear": "hood",
+      "headgear": "hide_hood",
       "price": 720,
       "stats": {
         "defense": 6,
@@ -9499,8 +9547,20 @@
       "description": "A hood, to wear with the cloak of the same name.",
       "color": "#2E9A58",
       "accent": "#E8D8B0",
-      "pattern": "fur",
-      "tier": "jade"
+      "tier": "jade",
+      "tint": [
+        {
+          "hue": [
+            180,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 143,
+          "spread": 1.0,
+          "saturation": 1.17,
+          "value": 1.1
+        }
+      ]
     },
     {
       "id": "jade_gauntlets",
@@ -9868,7 +9928,7 @@
       "art": "item_aquamarine_hide_hood",
       "name": "Aquamarine Hide Hood",
       "type": "head",
-      "headgear": "hood",
+      "headgear": "hide_hood",
       "price": 1050,
       "stats": {
         "defense": 6,
@@ -9882,8 +9942,20 @@
       "description": "A hood, to wear with the cloak of the same name.",
       "color": "#3AB8D0",
       "accent": "#E8D8B0",
-      "pattern": "fur",
-      "tier": "aquamarine"
+      "tier": "aquamarine",
+      "tint": [
+        {
+          "hue": [
+            180,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 190,
+          "spread": 1.0,
+          "saturation": 1.2,
+          "value": 1.48
+        }
+      ]
     },
     {
       "id": "aquamarine_gauntlets",
@@ -10251,7 +10323,7 @@
       "art": "item_ruby_hide_hood",
       "name": "Ruby Hide Hood",
       "type": "head",
-      "headgear": "hood",
+      "headgear": "hide_hood",
       "price": 1550,
       "stats": {
         "defense": 8,
@@ -10265,8 +10337,20 @@
       "description": "A hood, to wear with the cloak of the same name.",
       "color": "#C02838",
       "accent": "#E8D8B0",
-      "pattern": "fur",
-      "tier": "ruby"
+      "tier": "ruby",
+      "tint": [
+        {
+          "hue": [
+            180,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 354,
+          "spread": 1.0,
+          "saturation": 1.32,
+          "value": 1.37
+        }
+      ]
     },
     {
       "id": "ruby_gauntlets",
@@ -10634,7 +10718,7 @@
       "art": "item_amethyst_hide_hood",
       "name": "Amethyst Hide Hood",
       "type": "head",
-      "headgear": "hood",
+      "headgear": "hide_hood",
       "price": 2140,
       "stats": {
         "defense": 9,
@@ -10648,8 +10732,20 @@
       "description": "A hood, to wear with the cloak of the same name.",
       "color": "#8A48C8",
       "accent": "#E8D8B0",
-      "pattern": "fur",
-      "tier": "amethyst"
+      "tier": "amethyst",
+      "tint": [
+        {
+          "hue": [
+            180,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 271,
+          "spread": 1.0,
+          "saturation": 1.07,
+          "value": 1.43
+        }
+      ]
     },
     {
       "id": "amethyst_gauntlets",
@@ -11017,7 +11113,7 @@
       "art": "item_topaz_hide_hood",
       "name": "Topaz Hide Hood",
       "type": "head",
-      "headgear": "hood",
+      "headgear": "hide_hood",
       "price": 2820,
       "stats": {
         "defense": 10,
@@ -11031,8 +11127,20 @@
       "description": "A hood, to wear with the cloak of the same name.",
       "color": "#E0A830",
       "accent": "#E8D8B0",
-      "pattern": "fur",
-      "tier": "topaz"
+      "tier": "topaz",
+      "tint": [
+        {
+          "hue": [
+            180,
+            260
+          ],
+          "minSaturation": 0.2,
+          "to": 41,
+          "spread": 1.0,
+          "saturation": 1.31,
+          "value": 1.6
+        }
+      ]
     },
     {
       "id": "topaz_gauntlets",

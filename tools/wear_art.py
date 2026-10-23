@@ -56,6 +56,12 @@ ARMOUR = {
     "armor_chain_mail_human": "pilot_chain_mail_human/20261019-113735_0.png",
     "armor_chain_mail_elf": "pilot_chain_mail_elf/20261019-115042_0.png",
     "armor_chain_mail_dwarf": "pilot_chain_mail_dwarf/20261019-115104_0.png",
+    # The hide cloaks' hood (2026-10-23; drawn in code as a smooth dome with a spike till then): a
+    # hero in a blue fur-lined hood, only its hat kept (HAT_ONLY), blue so recolouring it into the
+    # nine hide colours (items.json `tint`) leaves the face in it alone.
+    "armor_hide_hood_human": "pilot_hide_hood_human/20261023-065741_0.png",
+    "armor_hide_hood_elf": "pilot_hide_hood_elf/20261023-065810_0.png",
+    "armor_hide_hood_dwarf": "pilot_hide_hood_dwarf/20261023-065930_0.png",
 } | {f"armor_{kind}_{race}": f"legacy/armor_{kind}_{race}.png"   # drawn before these notes were kept
      for kind in ("iron_plate", "dragon_mail", "snow_cloak", "ranger_cloak") for race in RACES}
 # Each armour's main material brought to one colour on every race (Retro Diffusion draws each race's
@@ -72,6 +78,7 @@ MATERIAL = {
     "dragon_mail": dict(hue=(330, 20), min=0.3, to=(2, 0.85, 0.85)),
     "snow_cloak": dict(hue=(150, 260), min=0.03, to=(202, None, None)),
     "ranger_cloak": dict(hue=(60, 170), min=0.15, to=(110, 0.56, 0.33)),
+    "hide_hood": dict(hue=(180, 260), min=0.2, to=(215, 0.60, 0.55)),
 }
 
 F = 48
@@ -129,7 +136,9 @@ def material(img, hue, min, to, max=1.0):
 # "any armor that shows a hat should have that as a hat item"). What's cut off is that hat:
 # `hat_<kind>_<race>`, the sheet's head down to the neck (helmet, hood or coif, and the face in it),
 # worn by the matching hat item (items.json `headgear`).
-BARE_HEADED = {"chain_mail", "iron_plate", "dragon_mail", "mage_robe", "ranger_cloak", "snow_cloak"}
+BARE_HEADED = {"chain_mail", "iron_plate", "dragon_mail", "mage_robe", "ranger_cloak", "snow_cloak", "hide_hood"}
+# Sheets drawn only for their hat: the body under it is the hero's own, so it isn't kept.
+HAT_ONLY = {"hide_hood"}
 # Heroes' bodies (tools/hero_layers.py), each race's: its own and its other gender's.
 BODIES = {race: [race] + [f"{race}_{g}" for g in ("male", "female") if (SPRITES / f"body_{race}_{g}.png").exists()]
           for race in RACES}
@@ -196,6 +205,8 @@ def armour():
             img, hat = bared(img, name[name.rindex("_") + 1:])
             save(hat, "hat_" + name[len("armor_"):])
             print(f"art/sprites/hat_{name[len('armor_'):]}.png  its hat")
+        if kind in HAT_ONLY:
+            continue
         save(img, name)
         made[name] = img
         print(f"art/sprites/{name}.png  from art-variants/{source}")

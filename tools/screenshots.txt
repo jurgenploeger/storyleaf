@@ -668,4 +668,6 @@ character_whip | newgame,level=20,class=tamer,equip=cowhide_whip,menu=character 
 cape_dwarf_girl | newgame,race=dwarf,gender=female,level=30,equip=sunny_meadow_cape,facing=up,weather=clear,hour=12 | 8
 cape_elf_girl   | newgame,race=elf,gender=female,level=30,equip=mage_robe+sunny_meadow_cape,facing=up,weather=clear,hour=12 | 8
 cape_hide_cloak | newgame,race=elf,gender=female,level=20,equip=copper_hide,facing=up,weather=clear,hour=12 | 8
+hide_hood_back  | newgame,race=elf,gender=female,level=20,equip=copper_hide+copper_hide_hood,facing=up,weather=clear,hour=12 | 8
+hide_hood_front | newgame,race=dwarf,level=20,equip=jade_hide+jade_hide_hood,facing=down,weather=clear,hour=12 | 8
 cape_front      | newgame,level=30,equip=leather_vest+sunny_meadow_cape,facing=down,weather=clear,hour=12 | 8
