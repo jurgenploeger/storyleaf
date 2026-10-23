@@ -261,10 +261,13 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 - **2026-10-23 (hoods):** A hood's opening as one flat dark shade read as a black hole: the inside needs
   its own light, darkest under the brim and lighter down the lower inner wall.
 - **2026-10-23 (fur):** A hood's fur drawn as a thin even cream ring read as a white border, nothing
-  like the fur on the cloak it goes with. RD's is thick (3 to 4 pixels), tufted at its edge, and shaded
-  cream, beige and a warm taupe: drawn so (`item_art.FUR`), and kept in its drawn colours
+  like the fur on the cloak it goes with; a thick tufted one read as overdone. As on the cloak's collar:
+  about 3 pixels, a smooth edge, shaded cream, beige and a warm taupe (`item_art.FUR`), a few flecks;
+  kept in its drawn colours
   (`restyle(trim=...)`), as re-ramped its shadows turned a cold grey. A trim can outsize the cloth it
   edges, so it's never the region that takes the set's colour.
+- **2026-10-23 (coif):** A face painted in a coif's opening read as a skin-coloured stain at icon size;
+  the opening is the inside, in shadow, like a hood's.
 - **2026-10-23 (restyle):** The outline colour (a deep violet) grouped with a purple hood by hue, so the
   whole hood was shaded as its own opening. The outline colour is now a region of its own.
 - **2026-10-23 (glints):** RD's armour has a near-white glint on each plate; our helms had only a

@@ -2694,8 +2694,7 @@ def hat_piece(c, item):
             for x in range(2, 30):
                 if c.get(x, y) == mid and (x + y) % 2 == 0:
                     c.set(x, y, light if x < 16 else dark)
-        c.ellipse(16, 17, 6, 7, OUTLINE)                                     # the face opening
-        c.ellipse(16, 18, 5, 6, hexc("f0c8a0"))
+        c.ellipse(16, 17, 6, 7, OUTLINE)                                     # the face opening, in shadow
     else:   # a hood: a soft peak, falling in folds to the shoulders
         c.poly([(15, 2.4), (20.6, 4), (24.8, 8.6), (26.6, 14.6), (27.6, 21), (29.6, 28.2), (24, 29.6),
                 (16, 29.8), (8, 29.6), (2.4, 28.2), (4.4, 21), (5.4, 14.6), (7.2, 8.6), (11, 4.2)], mid)
@@ -2707,14 +2706,11 @@ def hat_piece(c, item):
         # The opening, in shadow (smaller in a fur-lined hood, the fur taking its edge).
         c.ellipse(16, 17.6, 5.6 if fur_lined else 6.8, 6.6 if fur_lined else 8, OUTLINE)
         if fur_lined:
-            # A thick fur trim round the opening, as on the matching cloak's collar (its RD icon's own
-            # three furs: cream in the light, a pale beige, a taupe in shadow), its outer edge in tufts;
-            # a thin even ring read as a white border.
+            # A fur trim round the opening, as on the matching cloak's collar (its RD icon's own three
+            # furs: cream in the light, a pale beige, a taupe in shadow), about as wide as the cloak's;
+            # a thin even ring read as a white border, a thick tufted one as overdone.
             fur_dark, fur, fur_light = FUR
-            c.ring(16, 17.6, 9.2, 5.4, fur_light, ry_scale=1.18)
-            for k in range(9):
-                a = (k + 0.3) / 9 * 2 * math.pi
-                c.disc(16 + math.cos(a) * 9.1, 17.6 + math.sin(a) * 9.1 * 1.18, 1.3, fur_light)
+            c.ring(16, 17.6, 8.2, 5.4, fur_light, ry_scale=1.18)
             def place(x, y):
                 dx, dy = x + 0.5 - 16, (y + 0.5 - 17.6) / 1.18
                 return dx, dy, math.hypot(dx, dy)
@@ -2724,9 +2720,8 @@ def hat_piece(c, item):
             c.shade(lambda x, y, col: col in (fur, fur_light) and place(x, y)[2] < 6.6
                     and (place(x, y)[1] < -2.5 or place(x, y)[0] + place(x, y)[1] > 5), fur_dark)
             c.shade(lambda x, y, col: col == fur and place(x, y)[0] + place(x, y)[1] > 9, fur_dark)
-            # Tufts: a scatter of the next shade down through each, as RD's fur is never one flat cream.
-            c.shade(lambda x, y, col: col == fur_light and (x * 7 + y * 13) % 11 in (0, 5), fur)
-            c.shade(lambda x, y, col: col == fur and (x * 5 + y * 3) % 13 == 0, fur_dark)
+            # A few flecks of the next shade down, as RD's fur is never one flat cream.
+            c.shade(lambda x, y, col: col == fur_light and (x * 7 + y * 13) % 17 == 0, fur)
 
 
 # The fur on hide hoods and snow hoods, as RD drew it on the cloaks they go with.
