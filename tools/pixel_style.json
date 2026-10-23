@@ -1,0 +1,209 @@
+{
+  "_about": "Accepted bands per metric and kind (p10/p90 here hold the reference's 5th and 95th percentile) (tools/pixel_style.py calibrate). Edit by recalibrating, not by hand.",
+  "kinds": {
+    "icon": {
+      "count": 138,
+      "semi_alpha": {
+        "p10": 0.0,
+        "median": 0.0,
+        "p90": 0.0
+      },
+      "colour_density": {
+        "p10": 2.6328,
+        "median": 5.0093,
+        "p90": 8.1032
+      },
+      "outline_dark": {
+        "p10": 0.98,
+        "median": 1.0,
+        "p90": 1.02
+      },
+      "outline_sat": {
+        "p10": 0.4885,
+        "median": 0.5385,
+        "p90": 0.5885
+      },
+      "outline_value": {
+        "p10": 0.1539,
+        "median": 0.2039,
+        "p90": 0.2539
+      },
+      "flat": {
+        "p10": 0.0,
+        "median": 0.0,
+        "p90": 0.0241
+      },
+      "orphans": {
+        "p10": 0.2,
+        "median": 0.3579,
+        "p90": 0.5625
+      },
+      "shades_per_ramp": {
+        "p10": 1.0,
+        "median": 3.0,
+        "p90": 11.5
+      },
+      "hue_shift": {
+        "p10": -1.9213,
+        "median": 7.7318,
+        "p90": 22.1989
+      },
+      "value_range": {
+        "p10": 0.3483,
+        "median": 0.637,
+        "p90": 0.827
+      },
+      "light_top_left": {
+        "p10": -0.0944,
+        "median": 0.1416,
+        "p90": 0.4782
+      },
+      "highlight_share": {
+        "p10": 0.0,
+        "median": 0.1077,
+        "p90": 0.2907
+      },
+      "cluster_size": {
+        "p10": 1.4169,
+        "median": 1.8932,
+        "p90": 3.2692
+      }
+    },
+    "creature": {
+      "count": 65,
+      "semi_alpha": {
+        "p10": 0.0,
+        "median": 0.0,
+        "p90": 0.0
+      },
+      "colour_density": {
+        "p10": 1.6511,
+        "median": 3.8647,
+        "p90": 6.318
+      },
+      "outline_dark": {
+        "p10": 0.1784,
+        "median": 0.4902,
+        "p90": 0.85
+      },
+      "outline_sat": {
+        "p10": 0.1757,
+        "median": 0.5357,
+        "p90": 0.8383
+      },
+      "outline_value": {
+        "p10": 0.1122,
+        "median": 0.298,
+        "p90": 0.5718
+      },
+      "flat": {
+        "p10": 0.0,
+        "median": 0.0072,
+        "p90": 0.1381
+      },
+      "orphans": {
+        "p10": 0.0925,
+        "median": 0.2513,
+        "p90": 0.4019
+      },
+      "shades_per_ramp": {
+        "p10": 4.0,
+        "median": 9.0,
+        "p90": 23.85
+      },
+      "hue_shift": {
+        "p10": 0.5842,
+        "median": 11.1224,
+        "p90": 21.837
+      },
+      "value_range": {
+        "p10": 0.3701,
+        "median": 0.5733,
+        "p90": 0.6705
+      },
+      "light_top_left": {
+        "p10": -0.0639,
+        "median": 0.2768,
+        "p90": 0.5847
+      },
+      "highlight_share": {
+        "p10": 0.0,
+        "median": 0.0423,
+        "p90": 0.1786
+      },
+      "cluster_size": {
+        "p10": 1.5999,
+        "median": 2.246,
+        "p90": 4.7855
+      }
+    },
+    "scenery": {
+      "count": 133,
+      "semi_alpha": {
+        "p10": 0.0,
+        "median": 0.0,
+        "p90": 0.0
+      },
+      "colour_density": {
+        "p10": 0.62,
+        "median": 2.4752,
+        "p90": 5.4233
+      },
+      "outline_dark": {
+        "p10": 0.0,
+        "median": 0.284,
+        "p90": 0.5948
+      },
+      "outline_sat": {
+        "p10": 0.0,
+        "median": 0.4118,
+        "p90": 0.7861
+      },
+      "outline_value": {
+        "p10": 0.1498,
+        "median": 0.2941,
+        "p90": 1.0
+      },
+      "flat": {
+        "p10": 0.0,
+        "median": 0.0,
+        "p90": 0.1416
+      },
+      "orphans": {
+        "p10": 0.0975,
+        "median": 0.2594,
+        "p90": 0.6101
+      },
+      "shades_per_ramp": {
+        "p10": 2.0,
+        "median": 5.0,
+        "p90": 16.7
+      },
+      "hue_shift": {
+        "p10": -3.8863,
+        "median": 10.3188,
+        "p90": 27.7061
+      },
+      "value_range": {
+        "p10": 0.193,
+        "median": 0.5728,
+        "p90": 0.7697
+      },
+      "light_top_left": {
+        "p10": -0.1705,
+        "median": 0.1704,
+        "p90": 0.5163
+      },
+      "highlight_share": {
+        "p10": 0.0,
+        "median": 0.1017,
+        "p90": 0.2461
+      },
+      "cluster_size": {
+        "p10": 1.295,
+        "median": 2.257,
+        "p90": 4.8898
+      }
+    }
+  }
+}
