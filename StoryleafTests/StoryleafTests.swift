@@ -3935,21 +3935,29 @@ struct LandPlanTests {
                 let least = min(npc.summit == nil ? 4 : 2, npc.lair?.count ?? 0)
                 #expect(near.count >= least, "\(npc.id): only \(near.count) of its lair's \(npc.lair?.count ?? 0) pieces set down")
                 // Never walled in: from beside it you can walk to a road (the way you came), or a good way
-                // over the land. (Counting cells lost to it failed on trees planted after the lair: a few
-                // cells closed off between them, the boss as free as before.)
+                // over the land; or, where its own land holds less (the Emerald Dragon stands in a pocket
+                // of it you reach from the land next door), its lair cuts off no more than a few cells
+                // there (between its pieces and the trees planted after them).
                 let steps = [(0, 1), (1, 0), (0, -1), (-1, 0)]
-                let starts = steps.map { GridPoint(col: boss.col + $0.0, row: boss.row + $0.1) }.filter { map.isWalkable($0) }
-                var reached = Set(starts)
-                var queue = starts
-                var road = false
-                while let cell = queue.popLast(), reached.count < 400, !road {
-                    road = map.ground[cell.row][cell.col] == .path
-                    for (dc, dr) in steps {
-                        let next = GridPoint(col: cell.col + dc, row: cell.row + dr)
-                        if map.isWalkable(next), reached.insert(next).inserted { queue.append(next) }
+                let lair = Set(near.map(\.cell)).filter { !map.isWalkable($0) }
+                func walk(_ open: (GridPoint) -> Bool) -> (cells: Int, road: Bool) {
+                    let starts = steps.map { GridPoint(col: boss.col + $0.0, row: boss.row + $0.1) }.filter(open)
+                    var reached = Set(starts)
+                    var queue = starts
+                    var road = false
+                    while let cell = queue.popLast(), reached.count < 400, !road {
+                        road = map.ground[cell.row][cell.col] == .path
+                        for (dc, dr) in steps {
+                            let next = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                            if open(next), reached.insert(next).inserted { queue.append(next) }
+                        }
                     }
+                    return (min(400, reached.count), road)
                 }
-                #expect(road || reached.count >= 400, "\(npc.id) is walled in by its lair: no road from it, \(reached.count) cells round it")
+                let with = walk { map.isWalkable($0) }
+                let without = walk { map.isWalkable($0) || lair.contains($0) }
+                #expect(with.road || with.cells >= 400 || (!without.road && with.cells + lair.count + 12 >= without.cells),
+                        "\(npc.id) is walled in by its lair: \(with.cells) cells round it, no road (\(without.cells) without it)")
             }
         }
     }
