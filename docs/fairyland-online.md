@@ -1180,6 +1180,9 @@ included; the translations were made with AI and haven't had a native speaker's 
 
 - Monster skills with an element but physical damage (Golden Spin, Vine Whip, Web Shot, Rock Throw) ignore
   their element. FO lets physical attacks carry one (Arms fusion).
+- Boss lairs (2026-10-23, maps.json `lair`): no source says how FO staged its field bosses, so their lairs
+  follow what similar games do (a place of its own round the boss, a way in marked by braziers, a warning on
+  the approach, something tall to find it by), not FO. Our own design.
 - Finishing `new_friend` lets you walk to all 30 maps (frog_swamp → goldburg_lake → goldburg), so the other
   quest gates can be walked round.
 

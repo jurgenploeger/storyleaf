@@ -513,6 +513,18 @@ for map_def in maps.values():
         check(art_id in art, f"map {map_def['id']} → unknown art {art_id}")
     for npc in map_def.get("npcs", []):
         check(npc["art"] in art, f"npc {npc['id']} → unknown art {npc['art']}")
+        # A boss's lair (LandPlanner.planLair): pieces round it, its way in to the south kept clear.
+        if "lair" in npc:
+            where = f"npc {npc['id']} lair"
+            check(npc["role"] == "boss", f"{where} → only a boss has a lair")
+            for piece in npc["lair"]:
+                check(set(piece) <= {"art", "x", "y", "blocking"} and piece.get("art") in art,
+                      f"{where} → a piece is art (known), x, y and maybe blocking: {piece}")
+                x, y = piece.get("x"), piece.get("y")
+                check(isinstance(x, int) and isinstance(y, int) and max(abs(x), abs(y)) <= 7 and (x, y) != (0, 0),
+                      f"{where} → {piece.get('art')} at {x}, {y}: within 7 cells of the boss, not on it")
+                check(not (x == 0 and -4 <= y < 0) or piece.get("blocking") is False,
+                      f"{where} → {piece.get('art')} at {x}, {y} blocks the way in (straight south of the boss)")
         check(npc["role"] in ("healer", "shop", "quests", "guild", "chest", "boss", "smith", "weaver", "stairs", "barber", "waystone"), f"npc {npc['id']} → unknown role {npc['role']}")
         # A waystone (`NPCRole.waystone`): out in a wild land on the continent (you arrive in front of
         # it, `WorldMap.waystoneArrival`), one to a land, woken by a quest someone in that land gives.

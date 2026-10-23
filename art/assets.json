@@ -2226,6 +2226,26 @@
       "kind": "building"
     },
     {
+      "id": "standing_stone",
+      "kind": "prop"
+    },
+    {
+      "id": "brazier",
+      "kind": "prop"
+    },
+    {
+      "id": "gold_hoard",
+      "kind": "prop"
+    },
+    {
+      "id": "warning_post",
+      "kind": "prop"
+    },
+    {
+      "id": "junk_throne",
+      "kind": "prop"
+    },
+    {
       "id": "timber_house",
       "kind": "building"
     },

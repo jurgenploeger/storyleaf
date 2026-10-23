@@ -3918,6 +3918,35 @@ struct LandPlanTests {
         return (map, planner.plan)
     }
 
+    /// Every boss stands in its lair (`NPCDef.lair`, `LandPlanner.planLair`; playtesting 2026-10-23:
+    /// bosses stood about on open ground): most of its pieces set down round it, and never walled in,
+    /// so you can walk from the boss out over the land.
+    @Test func bossesStandInTheirLairs() async {
+        for def in content.maps {
+            for npc in def.npcs ?? [] where npc.lair != nil {
+                let (map, plan) = await planned(def)
+                guard let boss = plan.npcs.first(where: { $0.npc.id == npc.id })?.cell else {
+                    Issue.record("\(npc.id) isn't set down")
+                    continue
+                }
+                let arts = Set(npc.lair?.map(\.art) ?? [])
+                let near = plan.localProps.filter { arts.contains($0.art) && max(abs($0.cell.col - boss.col), abs($0.cell.row - boss.row)) <= 7 }
+                // A summit's top or a cave's chamber leaves less room than open ground: most, or at least four.
+                #expect(near.count >= min(4, npc.lair?.count ?? 0), "\(npc.id): only \(near.count) of its lair's \(npc.lair?.count ?? 0) pieces set down")
+                let starts = [(0, 1), (1, 0), (0, -1), (-1, 0)].map { GridPoint(col: boss.col + $0.0, row: boss.row + $0.1) }.filter { map.isWalkable($0) }
+                var reached = Set(starts)
+                var queue = starts
+                while let cell = queue.popLast(), reached.count < 400 {
+                    for (dc, dr) in [(0, 1), (1, 0), (0, -1), (-1, 0)] {
+                        let next = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                        if map.isWalkable(next), reached.insert(next).inserted { queue.append(next) }
+                    }
+                }
+                #expect(reached.count >= 400, "\(npc.id) is walled in by its lair (\(reached.count) cells round it)")
+            }
+        }
+    }
+
     /// Every way into a cave still leads on once its scenery and signposts are set down
     /// (playtesting 2026-10-16: the Rat Cavern's signpost stood where you came in from Lotus Land, in
     /// a tunnel a cell wide, and shut you in).

@@ -499,6 +499,9 @@ nonisolated struct NPCDef: Decodable, Identifiable, Sendable {
     let waves: Int?
     /// Bosses: what beating it means, told the first time you win (and kept in the Monster Book).
     let victory: Victory?
+    /// Bosses: their lair, set down round them (`LandPlanner.planLair`): pieces at `x`, `y` out from
+    /// the boss, the way in to the south (y below 0), turned to face the land's middle.
+    let lair: [MapDef.Decor]?
 
     nonisolated struct Victory: Decodable, Sendable {
         let title: String

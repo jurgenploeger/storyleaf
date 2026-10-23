@@ -269,6 +269,12 @@ treasure_card    | newgame,class=fighter,level=100,menu=bag,bag=oxhide_mail,insp
 treasure_bag     | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king+rat_king+puss_in_boots+crystal_hearts,menu=bag | 8
 treasure_post    | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king | 8
 treasure_offer   | newgame,class=fighter,level=72,map=sleepy_town,npc=thomas | 8
+# Bosses in their lairs (maps.json `lair`, LandPlanner.planLair; playtesting 2026-10-23: they stood
+# about on open ground), from a few cells off.
+lair_dragon  | newgame,level=80,map=genie_desert,at=27_13,weather=clear,hour=12 | 8
+lair_morvane | newgame,level=130,map=secret_plain,at=0_15,weather=clear,hour=12 | 8
+lair_wolf    | newgame,level=95,map=snow_white_forest,at=18_22,weather=clear,hour=12 | 8
+lair_rat     | newgame,level=60,map=rat_cavern,at=32_15 | 8
 skills       | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,menu=character,sub=skills | 8
 skills_learn | newgame,level=20,class=mage,menu=character,sub=skills             | 8
 boss_oak     | newgame,level=28,map=smiling_forest,at=-7_-11,npc=oak_grove    | 15

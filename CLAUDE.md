@@ -132,6 +132,10 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   and the glossy marks by the HP bars, drawn smooth at 3×: poison's drop and the arrows for lowered and raised
   stats). `--sheet out.png` writes a contact sheet. Spells are light, not sprites:
   `Storyleaf/Battle/ElementEffects.swift` layers soft glows in each element's colours (`ElementLight`).
+- `tools/lair_art.py`: the pieces of the bosses' lairs no sprite had (a standing stone, a brazier, a gold hoard, a
+  warning post, the Rat King's junk throne), drawn with `pixel_kit` and scored as scenery. A boss's lair is
+  maps.json `lair` on the boss: pieces round it, its way in to the south, turned by `LandPlanner.planLair` to face
+  the land's middle, a clearing kept round it; `check_content.py` keeps the way in clear.
 - `tools/critter_art.py`: the critters (`ambience.critters`) and the birds crossing the sky, as PNGs
   (`art/sprites/critter_<name>.png`, loaded by `CritterArt.drawn`; one missing is drawn in Swift as before): the
   same shapes and sizes as `Critters.swift`, lit from the top left and outlined in a deep shade of each part.

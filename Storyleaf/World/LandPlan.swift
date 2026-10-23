@@ -204,6 +204,34 @@ final class LandPlanner {
             let cell = map.spot(of: npc)
             map.occupy(cell, blocking: true)
             plan.npcs.append((npc: npc, cell: cell))
+            planLair(of: npc, at: cell)
+        }
+    }
+
+    /// A boss's lair (`NPCDef.lair`; playtesting 2026-10-23: bosses stood about on open ground): its
+    /// pieces set down round it, turned so its way in (the pieces' south, y below 0) faces the land's
+    /// middle, where the roads come from, a piece that would land on a road, water or the land next
+    /// door, a cave's rock or a cliff left out; then a clearing round it where no tree grows, so it stands in a place of its own.
+    private func planLair(of npc: NPCDef, at cell: GridPoint) {
+        guard let lair = npc.lair, !lair.isEmpty else { return }
+        let toward = (col: map.center.col - cell.col, row: map.center.row - cell.row)
+        // Where the way in points after 0 to 3 quarter turns (y up is a row up).
+        let ways = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+        let turns = (0..<4).max { ways[$0].0 * toward.col + ways[$0].1 * toward.row < ways[$1].0 * toward.col + ways[$1].1 * toward.row } ?? 0
+        for piece in lair {
+            var (dx, dy) = (piece.x, piece.y)
+            for _ in 0..<turns { (dx, dy) = (-dy, dx) }
+            let at = GridPoint(col: cell.col + dx, row: cell.row + dy)
+            let blocking = piece.blocking ?? true
+            guard map.owns(at), map.isWalkable(at), map.isFreeForScenery(at, blocking: blocking) else { continue }
+            map.occupy(at, blocking: blocking)
+            plan.localProps.append(scenery(piece.art, at: at))
+        }
+        for dr in -3...3 {
+            for dc in -3...3 where dc * dc + dr * dr <= 10 {
+                let at = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                if map.contains(at) { map.occupy(at, blocking: false) }
+            }
         }
     }
 
