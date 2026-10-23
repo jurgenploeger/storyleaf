@@ -44,21 +44,23 @@ These are the rules the numbers measure. A sprite that keeps them looks like Sto
 
 `tools/pixel_style.py check` measures 14 criteria. Each one's band is the reference's 5th to 95th
 percentile for its kind (icon, creature, scenery), recalibrated from the shipped art; a few are fixed
-house rules. **A sprite passes with every hard criterion and 80% of the soft ones.**
+house rules, and three have house-rule floors under them (`pixel_style.FLOORS`, marked *floor*), set where
+about 85% or more of RD's own sprites of that kind meet them. **A sprite passes with every hard criterion
+and 80% of the soft ones.**
 
 | criterion | what it measures | kind | icon | creature | scenery |
 |---|---|---|---|---|---|
-| `colour_density` | colours per 100 opaque pixels (ramps and texture) | hard, min | ≥ 2.6 | ≥ 1.7 | ≥ 0.6 |
+| `colour_density` | colours per 100 opaque pixels (ramps and texture) | hard, min | ≥ 2.4 | ≥ 1.7 | ≥ 0.6 |
 | `flat` | share of inner pixels whose 8 neighbours are all their colour | hard, max | ≤ 0.02 | ≤ 0.14 | ≤ 0.14 |
 | `outline_dark` | share of edge pixels darker than the inside | hard, min | ≥ 0.98 | ≥ 0.18 | – |
 | `fill` | the sprite's longer side over the canvas (icons only) | hard, rule | ≥ 0.78 | – | – |
 | `cluster_size` | mean size of same-colour patches inside: noise is 1, flat fills are big | soft | 1.4 – 3.3 | 1.6 – 4.8 | 1.3 – 4.9 |
 | `outline_sat`, `outline_value` | the outline's colour: tinted, deep | soft | the house colour | 0.18+ / 0.11 – 0.57 | – |
 | `orphans` | single pixels unlike all four neighbours | soft, max | ≤ 0.56 | ≤ 0.40 | ≤ 0.61 |
-| `shades_per_ramp` | shades in each material's ramp | soft, min | ≥ 1 | ≥ 4 | ≥ 2 |
-| `hue_shift` | degrees the dark shades sit further from yellow than the light ones | soft, min | ≥ −1.9 | ≥ 0.6 | ≥ −3.9 |
+| `shades_per_ramp` | brightness levels in each ramp (colours chained by hue, greys one ramp) | soft, min | ≥ 3 *floor* | ≥ 5 *floor* | ≥ 4 *floor* |
+| `hue_shift` | degrees a ramp's dark third sits further from yellow than its light third | soft, min | ≥ 0° *floor* | ≥ 6.1° | ≥ 2° *floor* |
 | `value_range` | luma from the 5th to the 95th percentile | soft, min | ≥ 0.35 | ≥ 0.37 | ≥ 0.19 |
-| `light_top_left` | correlation of brightness with nearness to the top left | soft, min | ≥ −0.09 | ≥ −0.06 | ≥ −0.17 |
+| `light_top_left` | correlation of brightness with nearness to the top left | soft, min | ≥ 0 *floor* | ≥ 0 *floor* | ≥ −0.05 *floor* |
 | `highlight_share` | share of inner pixels far brighter than the median | soft | ≤ 0.29 | ≤ 0.18 | ≤ 0.25 |
 | `semi_alpha` | partly transparent pixels (light effects only) | soft, max | 0 | 0 | 0 |
 
@@ -70,10 +72,11 @@ The criteria are only trusted while they tell the two kinds of art apart. Rerun 
 to a metric or band:
 
 - **The reference passes:** at least 80% of RD's own sprites of each kind (the bands are 5th to 95th
-  percentiles, so a few of RD's own always fall outside one). 2026-10-23: icons 91% (126 / 138), scenery
-  84% (112 / 133), creatures 82% (53 / 65).
-- **The flat look fails:** the code-drawn icons (`tools/item_art.py`) pass at most 10%. 2026-10-23: 4%
-  (14 / 323), failing on `cluster_size` (99%), `flat` (90%) and `colour_density` (89%).
+  percentiles, so a few of RD's own always fall outside one). 2026-10-23, with the floors: icons 88%
+  (123 / 140), scenery 84% (112 / 133), creatures 80% (52 / 65).
+- **The flat look fails:** `tools/item_art.py`'s designs, unfinished, pass at most 10%. 2026-10-23: 4%
+  (14 / 322), failing on `cluster_size` (99%), `flat` (90%), `colour_density` (85%) and `shades_per_ramp`
+  (79%). The same items as shipped, finished by the kit, pass 90% (307 / 343).
 
 ### Review by eye: what the numbers can't see
 
@@ -104,6 +107,18 @@ item's own colour, shiny things go smooth and glossy, a small drawing is scaled 
 art/assets.json) are swapped on the flat drawing first, where their hue windows were tuned, and finished
 the same way. Per-item options live in `item_art.RESTYLE` (smooth paper: less texture).
 
+**Material presets** (`pixel_kit.PRESETS`) bring the detail RD invents and a design doesn't describe: a
+pattern of light and shade at the sprite's own pixels, laid on the item's main (biggest) region, with the
+finish that goes with it. `plate`: two or three overlapping plates to a piece, lit along their top edges
+and shadowed under the next, rivets at their ends, a hard shine. `chain`: rings with dark holes, rows
+offset. `scales`: offset rows, each lit on top and shadowed along its round foot. `cloth`: long soft folds
+and a faint weave. `leather`: grain and a seam stitched two pixels in. `wood`: grain along its length.
+`stone`: cracks and flecks. `fur`: short combed strands. `crystal`: facets, each its own tone, the ridges
+lit. `metal`: polished, one hard streak. `item_art.preset_for` picks one per item: set hats by their kind
+(plate helms, mail coifs, cloth hats and hoods), gauntlets and set boots plate, gloves and boots leather,
+capes cloth, whips leather (scales for a dragon's, crocodile's or snake's), materials by name
+(`MATERIAL_PRESETS`).
+
 Families share their shapes, so fix a family's helper, not its items: `boot`, `glove`, `cape` and
 `hat_piece` (helm, wizard's hat, coif, hood) in tools/item_art.py, drawn with curves (a calf and heel, a
 rounded toe, fingers of different lengths with shadow between them, a domed helm with cheek guards, a hat
@@ -120,28 +135,43 @@ with its tip bent over, a hood with a soft peak), never boxes.
 
 ## Where it stands (2026-10-23)
 
-- **Every item icon drawn in code is restyled** (322 of them, and the 21 palette swaps of them): 92% pass
-  (297 / 322), against 4% before; RD's own pass 91%. Most of the rest fail a soft criterion
-  (`highlight_share`: too many bright pixels on shiny things). Known exception: items darker than the
-  house outline (onyx, the Bossbane cape, a dark ranger's hood) fail the outline checks, as the outline
-  can't be darker than what's nearly black; RD's own dark icons do the same.
+- **Every item icon drawn in code is finished by the kit** (322 of them, and the 21 palette swaps of
+  them), 212 of them with a material preset: 90% pass (307 / 343), against 4% as designed; RD's own
+  icons pass 88%. Most of the rest fail a soft criterion (`highlight_share`: too many bright pixels on
+  shiny things). Known exception: items darker than the house outline (onyx, the Bossbane cape, a dark
+  ranger's hood) fail the outline checks, as the outline can't be darker than what's nearly black; RD's own
+  dark icons do the same.
+- **Monsters are all RD's** (checked 2026-10-23): 63 of the 124 drawn by RD, the other 61 palette swaps of
+  them. Nothing to redraw there; the criteria's `creature` bands guard any added in code later.
 
 ![As drawn before, the kit, and RD's own](pixel-style-demo.png)
 
 - The kit's first six icons (`pixel_kit.py --demo`: amber, agate, the amethyst boots and helm, the amber
   amulet, the alloy shortsword) all pass; as drawn now by `item_art.py`, one of them does. Beside RD's they
   read as the same game but plainer: less designed material detail, and RD's metals have more contrast.
+- **Done 2026-10-23:** material presets; the three loose criteria tightened (`shades_per_ramp`,
+  `hue_shift`, `light_top_left`, measured afresh: see *Learned*).
 - **Next, in order:**
-  1. Material presets with their own texture (plate metal with seams and a hard specular band; chain
-     links; scales; woven cloth with folds; leather with stitching; wood grain; stone; fur), so detail
-     comes from the material instead of each drawing.
-  2. Tighten the loose bands with house rules once the kit meets them: `hue_shift` ≥ 3°,
-     `light_top_left` ≥ 0, `shades_per_ramp` ≥ 4 (now set by RD's spread, which allows almost anything).
-  3. Creatures and scenery: the tinted, broken outline (`render(outline="tinted")`) and eyes, then a
-     redraw of a few monsters measured against RD's.
+  1. Presets on more than the main region (a gauntlet's plate *and* its leather cuff), and per-region
+     choice in the designs.
+  2. A criterion for designed detail (how much of the inside is a deliberate line or edge, not texture),
+     calibrated on RD, so a sprite with less detail than its neighbours fails by number, not only by eye.
+  3. Scenery and props drawn in code (`tools/prop_art.py`) through the kit.
   4. Animation: walk cycles stay RD's for now (`sprite-acceptance.md`).
 
 ## Learned
+
+- **2026-10-23 (criteria):** `shades_per_ramp` and `hue_shift` first grouped colours in fixed 30° hue
+  bins; a hue-shifted ramp crosses bins by design, so it was split and counted short (RD's own icons scored
+  a median of 3 shades, and a shift could never exceed 30°). Ramps are now chained by hue (a gap over 25°
+  starts a new one), greys one ramp, shades counted as brightness levels: RD's icons median 4, creatures
+  9, the flat designs 2. Fix the measurement before tightening a band on it.
+- **2026-10-23 (presets):** A preset must add to the design's own shading, never replace it: replaced, a
+  silver ingot lost its lit top and shaded side and went flat.
+- **2026-10-23 (presets):** Plate bands every 5 pixels made helms look like hamburgers; RD draws two or
+  three overlapping plates to a piece, so the band spacing follows the piece's height.
+- **2026-10-23 (ramps):** A base drawn in pure white leaves the ramp nowhere to go but white: the base is
+  capped at 0.88 brightness, and a pale colour sits lower on its ramp.
 
 - **2026-10-23:** RD's icons have almost no flat area (median `flat` 0) and small colour patches (median
   cluster 1.9 pixels): the texture is fine-grained, not blotchy. Code-drawn icons fail on exactly that.

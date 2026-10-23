@@ -57,14 +57,19 @@ def ramp(base, n=6, shift_dark=24.0, shift_light=14.0):
     r, g, b = _rgb(base) if isinstance(base, str) else base
     h, s, v = colorsys.rgb_to_hsv(r, g, b)
     h *= 360
+    pale = max(0.0, v - 0.7) / 0.3 * (1 - s)  # 0 … 1: how near white the colour is
+    v = min(v, 0.88)                         # a base drawn in white still leaves the light somewhere to go
     grey = s < 0.1
     out = []
+    # Where the base sits on the ramp: a little above the middle, lower for a pale colour (silver, snow),
+    # which would otherwise have nothing left above it but white.
+    pivot = 0.62 - 0.2 * max(0.0, (v - 0.8) / 0.2) * (1 - min(1.0, s * 3))
     for i in range(n):
         t = i / (n - 1)                      # 0 darkest … 1 lightest
-        k = t - 0.62                         # where the base sits
+        k = (t - pivot) * 0.62 / pivot if t < pivot else (t - pivot) * 0.38 / (1 - pivot)
         vv = min(1.0, v * (1 + 1.25 * k)) if k < 0 else min(1.0, v + (1 - v) * 0.9 * k / 0.38 + 0.08 * k)
         # Pale materials (pearl, snow, silver) stay soft in shadow, never near-black.
-        vv = max(0.08 + 0.32 * max(0.0, v - 0.7) / 0.3 * (1 - s), vv)
+        vv = max(0.08 + 0.4 * pale, vv)
         if grey:
             hh = SHADOW_HUE if k < 0 else LIGHT_HUE
             ss = 0.16 * abs(k) / 0.62 if k < 0 else 0.07 * k / 0.38
@@ -332,6 +337,167 @@ class Sprite:
         return Image.fromarray(out, "RGBA")
 
 
+# --- Material presets: surfaces that bring their own detail ------------------------------------------------
+#
+# RD draws material detail no shape describes: the bands of plate armour, the rings of mail, rows of
+# scales, folds in cloth, a seam stitched in leather, grain in wood. A preset is that detail as a pattern
+# of light and shade at the sprite's own pixels (so it lands crisp, not averaged away), laid over a
+# region's lighting, and the finish that goes with it (gloss, texture). Patterns follow the region:
+# its top, left and long axis.
+
+def _noise(region, seed, cell=1):
+    """Deterministic 0..1 noise per pixel (per `cell` × `cell` block)."""
+    h, w = region.shape
+    rng = np.random.default_rng(seed)
+    coarse = rng.random((h // cell + 2, w // cell + 2))
+    return np.kron(coarse, np.ones((cell, cell)))[:h, :w]
+
+
+def _inset(region):
+    """Each pixel's distance in from the region's edge, in pixels (1 on the edge)."""
+    d = np.zeros(region.shape, int)
+    cur = region.copy()
+    k = 0
+    while cur.any() and k < 40:
+        k += 1
+        d[cur] = k
+        p = np.pad(cur, 1)
+        cur = cur & p[:-2, 1:-1] & p[2:, 1:-1] & p[1:-1, :-2] & p[1:-1, 2:]
+    return d
+
+
+def _plate(region, ys, xs, top, left, bottom, right, seed):
+    """Overlapping plates, two or three to a piece as RD draws them: each lit along its top edge and
+    shadowed under the next; rivets at their ends."""
+    period = max(6, (bottom - top + 1) // 3)
+    r = (ys - top) % period
+    t = np.where((r == period - 1) & (ys < bottom - 1), -0.5, np.where((r == 0) & (ys > top), 0.28, 0.0))
+    ins = _inset(region)
+    rivet = (r == 2) & (ins == 2) & (((xs - left) < 4) | ((right - xs) < 4))
+    return t + np.where(rivet, 0.45, 0.0)
+
+
+def _chain(region, ys, xs, top, left, bottom, right, seed):
+    """Rings of mail: a dark hole in each, lit on its upper left, rows offset."""
+    yy = ys - top
+    xx = xs - left + (yy // 2) % 2
+    hole = (yy % 2 == 1) & (xx % 2 == 1)
+    lit = (yy % 2 == 0) & (xx % 2 == 0)
+    return np.where(hole, -0.45, np.where(lit, 0.2, 0.0))
+
+
+def _scales(region, ys, xs, top, left, bottom, right, seed):
+    """Rows of scales, each lit at its top and shadowed along its round foot where the next overlaps."""
+    row = (ys - top) // 3
+    xo = (xs - left + 2 * (row % 2)) % 4
+    yo = (ys - top) % 3
+    foot = yo == 2
+    return np.where(foot & ((xo == 0) | (xo == 3)), -0.48, np.where(foot, -0.26,
+                    np.where((yo == 0) & (xo == 1), 0.3, 0.0)))
+
+
+def _cloth(region, ys, xs, top, left, bottom, right, seed):
+    """Long soft folds falling down the cloth, and the faintest weave."""
+    folds = 0.17 * np.sin((xs - left) * 0.8 + (ys - top) * 0.12 + seed % 7)
+    weave = np.where((xs + ys) % 2 == 0, 0.025, -0.025)
+    return folds + weave
+
+
+def _leather(region, ys, xs, top, left, bottom, right, seed):
+    """Grain, and a seam stitched two pixels in from the edge."""
+    grain = (_noise(region, seed, 1) - 0.5) * 0.18
+    ins = _inset(region)
+    stitch = (ins == 2) & ((xs + ys) % 2 == 0)
+    return grain + np.where(stitch, 0.34, 0.0)
+
+
+def _wood(region, ys, xs, top, left, bottom, right, seed):
+    """Grain lines running along the wood's length, wavering a little."""
+    py, px = np.nonzero(region)
+    if len(px) < 3:
+        return np.zeros(region.shape)
+    cov = np.cov(np.stack([px, py]))
+    vals, vecs = np.linalg.eigh(cov)
+    ax = vecs[:, -1]                                  # the long axis
+    across = -(xs - px.mean()) * ax[1] + (ys - py.mean()) * ax[0]
+    waver = (_noise(region, seed, 3) - 0.5) * 1.2
+    return 0.22 * np.sign(np.sin(across * 1.7 + waver)) * (np.abs(np.sin(across * 1.7 + waver)) > 0.55)
+
+
+def _stone(region, ys, xs, top, left, bottom, right, seed):
+    """A few cracks wandering across, and light flecks."""
+    t = np.zeros(region.shape)
+    rng = np.random.default_rng(seed)
+    pts = np.argwhere(region)
+    for _ in range(max(1, len(pts) // 90)):
+        y, x = pts[rng.integers(len(pts))]
+        dy, dx = rng.choice([-1, 1]), rng.choice([-1, 1])
+        for _step in range(rng.integers(3, 7)):
+            if 0 <= y < region.shape[0] and 0 <= x < region.shape[1] and region[y, x]:
+                t[y, x] = -0.45
+            if rng.random() < 0.5:
+                y += dy
+            else:
+                x += dx
+    fleck = _noise(region, seed + 1) > 0.93
+    return t + np.where(fleck & (t == 0), 0.26, 0.0)
+
+
+def _fur(region, ys, xs, top, left, bottom, right, seed):
+    """Short strands of fur, dark and light, combed one way."""
+    shift = (_noise(region, seed, 3) * 4).astype(int)
+    k = (xs - ys + shift) % 4
+    return np.where(k == 0, -0.22, np.where(k == 1, 0.14, 0.0))
+
+
+def _crystal(region, ys, xs, top, left, bottom, right, seed):
+    """Facets: a few planes, each its own tone, the edge between two lit where it faces the light."""
+    rng = np.random.default_rng(seed)
+    pts = np.argwhere(region)
+    if len(pts) < 6:
+        return np.zeros(region.shape)
+    seeds = pts[rng.choice(len(pts), size=min(6, len(pts)), replace=False)]
+    d = np.stack([(ys - sy) ** 2 + (xs - sx) ** 2 for sy, sx in seeds])
+    cell = d.argmin(0)
+    tones = rng.uniform(-0.28, 0.28, len(seeds))
+    t = tones[cell]
+    p = np.pad(cell, 1, mode="edge")
+    ridge = (p[1:-1, 2:] != cell) | (p[2:, 1:-1] != cell)
+    return t + np.where(ridge, 0.22, 0.0)
+
+
+def _metal(region, ys, xs, top, left, bottom, right, seed):
+    """Polished metal: a hard bright streak where it catches the light, the rest smooth."""
+    across = (xs - left) + (ys - top)
+    span = max(1, (right - left) + (bottom - top))
+    return np.where(np.abs(across - span * 0.35) < 1.2, 0.3, 0.0)
+
+
+# name: (pattern, finish overrides for the Material)
+PRESETS = {
+    "plate": (_plate, {"gloss": 0.9, "texture": 0.02, "variety": 3.0}),
+    "chain": (_chain, {"gloss": 0.5, "texture": 0.015, "variety": 3.0}),
+    "scales": (_scales, {"gloss": 0.45, "texture": 0.025}),
+    "cloth": (_cloth, {"gloss": 0.0, "texture": 0.035}),
+    "leather": (_leather, {"gloss": 0.15, "texture": 0.04}),
+    "wood": (_wood, {"gloss": 0.0, "texture": 0.04}),
+    "stone": (_stone, {"gloss": 0.0, "texture": 0.07}),
+    "fur": (_fur, {"gloss": 0.0, "texture": 0.05}),
+    "crystal": (_crystal, {"gloss": 0.95, "texture": 0.01, "variety": 4.0}),
+    "metal": (_metal, {"gloss": 0.95, "texture": 0.03, "variety": 3.0}),
+}
+
+
+def preset_pattern(name, region, seed=11):
+    """The preset's light and shade over `region` (1×, bool), 0 outside it."""
+    if not region.any():
+        return np.zeros(region.shape)
+    ys, xs = np.mgrid[0:region.shape[0], 0:region.shape[1]]
+    py, px = np.nonzero(region)
+    t = PRESETS[name][0](region, ys, xs, py.min(), px.min(), py.max(), px.max(), seed)
+    return np.where(region, t, 0.0)
+
+
 # --- Restyle: an existing drawing brought to the look --------------------------------------------------
 
 def _hsv(c):
@@ -350,12 +516,13 @@ def _scaled(arr, scale, src_centre, dst_centre, fill_value):
     return out
 
 
-def restyle(img, round_corners=0.6, texture=0.045, fill=0.84):
+def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None):
     """An icon drawn the old way (tools/item_art.py: flat three-tone fills, one outline) re-rendered in
     the look: its regions of colour become materials on hue-shifted ramps, its silhouette rounded at the
     corners, the whole lit from the top left as one form with each region swelling a little on it, the
     old drawing's own light and dark kept as detail (creases, slits, laces), textured, rim-lit and
-    outlined afresh. Sparkles and soft glows are kept as drawn."""
+    outlined afresh. Sparkles and soft glows are kept as drawn. `preset` (PRESETS: "plate", "chain",
+    "cloth"…) is the main material's, its detail and finish laid on the biggest region."""
     a = np.asarray(img.convert("RGBA")).copy()
     h, w = a.shape[:2]
     opaque = a[..., 3] >= 250
@@ -465,6 +632,8 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84):
     # deep shadow: the darkest shades of the biggest region's own colour, not black.
     biggest = max(range(len(groups)), key=lambda i: (cur == i).sum()) if groups else 0
     deep = ramp("#%02x%02x%02x" % tuple(int(v) for v in groups[biggest][0]), 10)[1] if groups else OUTLINE
+    main = max(range(len(groups)), key=lambda i: (cur == i).sum() if tuple(groups[i][0]) != OUTLINE else -1) \
+        if groups else -1
     for i, (base, cols) in enumerate(groups):
         m = cur == i
         if not m.any():
@@ -489,7 +658,15 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84):
                        texture=texture * (0.45 if shiny else 1.0),
                        relief=0.0 if is_void else 1.0, gloss=0.6 if shiny and not is_void else 0.0,
                        variety=0.0 if is_void else (4.0 if shiny else 8.0))
-        if is_void:
+        if preset and i == main:
+            pattern, finish = PRESETS[preset]
+            mat = Material("#%02x%02x%02x" % tuple(base), shades=mat.shades,
+                           **{"texture": mat.texture, "gloss": mat.gloss, "variety": 8.0, **finish})
+            region1 = (gmap == i)
+            extra = np.kron(preset_pattern(preset, region1), np.ones((SS, SS)))
+            # The preset's detail goes on top of the drawing's own shading (its planes and lines).
+            s.mask(m, mat, height=height + own, detail=detail + extra)
+        elif is_void:
             # Flat deep shadow: no light on it, a little darker than the colour's own middle.
             s.mask(m, mat, height=np.zeros_like(height), detail=np.full(height.shape, -0.18))
         else:

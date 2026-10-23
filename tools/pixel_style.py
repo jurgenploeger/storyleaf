@@ -9,7 +9,7 @@ the look RD gave us, and the bands can be re-run as the reference grows.
 
     python3 tools/pixel_style.py calibrate                 # measure the reference, write the bands
     python3 tools/pixel_style.py check <png>...            # score sprites (exit 1 if any fails)
-    python3 tools/pixel_style.py compare                   # reference vs the code-drawn item icons
+    python3 tools/pixel_style.py compare                   # RD's icons, ours, and the flat designs
     python3 tools/pixel_style.py check --kind icon <png>   # pick the band set (icon, creature, scenery)
 
 Needs pillow + numpy.
@@ -165,24 +165,40 @@ def measure(path):
         sizes.append(size)
     m["cluster_size"] = float(np.mean(sizes)) if sizes else None
 
-    # Ramps: colours grouped by hue family (saturated ones), shades per family and their hue shift.
+    # Ramps: a sprite's colours chained into ramps by hue (a gap of more than 25° round the wheel starts a
+    # new one, so a ramp that hue-shifts from blue shadows to yellow lights stays one), greys a ramp of
+    # their own. Shades are a ramp's distinct brightness levels (steps of 0.05); hue shift compares its
+    # darker third with its lighter third.
     hsv = np.array([colorsys.rgb_to_hsv(*(np.array([(u >> 16) & 255, (u >> 8) & 255, u & 255]) / 255)) for u in uniq])
-    fam = {}
-    for (h, s, v), c in zip(hsv, counts):
-        if s < 0.15 or v < 0.12:
-            continue
-        fam.setdefault(int(((h * 360 + 15) % 360) // 30), []).append((h * 360, s, v, c))
-    big = [f for f in fam.values() if sum(x[3] for x in f) >= max(6, n * 0.06)]
-    m["shades_per_ramp"] = float(np.median([len(f) for f in big])) if big else None
+    ramps = {"grey": []}
+    sat = [(h * 360, s_, v, c) for (h, s_, v), c in zip(hsv, counts) if s_ >= 0.15 and v >= 0.12]
+    for (h, s_, v), c in zip(hsv, counts):
+        if (s_ < 0.15 or v < 0.12) and v >= 0.12:
+            ramps["grey"].append((h * 360, s_, v, c))
+    if sat:
+        sat.sort()
+        hues = [x[0] for x in sat]
+        gaps = [(hues[(k + 1) % len(hues)] - hues[k]) % 360 for k in range(len(hues))]
+        start = (int(np.argmax(gaps)) + 1) % len(hues)       # cut the wheel at its widest gap
+        order = sat[start:] + sat[:start]
+        current = [order[0]]
+        for prev, nxt in zip(order, order[1:]):
+            if (nxt[0] - prev[0]) % 360 > 25:
+                ramps[len(ramps)] = current
+                current = []
+            current.append(nxt)
+        ramps[len(ramps)] = current
+    big = [f for f in ramps.values() if f and sum(x[3] for x in f) >= max(6, n * 0.06)]
+    m["shades_per_ramp"] = float(np.median([len({round(x[2] / 0.05) for x in f}) for f in big])) if big else None
     shifts = []
-    for f in big:
-        if len(f) < 3:
+    for key, f in ramps.items():
+        if key == "grey" or f not in big or len(f) < 3:
             continue
         f = sorted(f, key=lambda x: x[2])
         dark, light = f[: max(1, len(f) // 3)], f[-max(1, len(f) // 3):]
-        hd = np.average([x[0] for x in dark], weights=[x[3] for x in dark])
-        hl = np.average([x[0] for x in light], weights=[x[3] for x in light])
-        shifts.append(float(warm_distance(np.array(hd)) - warm_distance(np.array(hl))))
+        hd = np.degrees(np.angle(np.average(np.exp(1j * np.radians([x[0] for x in dark])), weights=[x[3] for x in dark])))
+        hl = np.degrees(np.angle(np.average(np.exp(1j * np.radians([x[0] for x in light])), weights=[x[3] for x in light])))
+        shifts.append(float(warm_distance(np.array(hd % 360)) - warm_distance(np.array(hl % 360))))
     m["hue_shift"] = float(np.median(shifts)) if shifts else None
     # Value range across the sprite's colours: deep shadows to bright highlights.
     lum = luma(cols)
@@ -223,6 +239,13 @@ ICON_RULES = {"fill": ("min", 0.78)}
 # The band is the reference's 5th to 95th percentile, never narrower than this (a house rule such as the
 # icons' one outline colour has no spread at all).
 MIN_WIDTH = {"outline_sat": 0.1, "outline_value": 0.1, "outline_dark": 0.04}
+# House rules: floors under the measured bands, where the reference's spread alone allowed almost anything
+# (2026-10-23). Each is met by about 85% or more of RD's own sprites of its kind; tighten as they allow.
+FLOORS = {
+    "icon": {"shades_per_ramp": 3, "hue_shift": 0.0, "light_top_left": 0.0},
+    "creature": {"shades_per_ramp": 5, "hue_shift": 4.0, "light_top_left": 0.0},
+    "scenery": {"shades_per_ramp": 4, "hue_shift": 2.0, "light_top_left": -0.05},
+}
 
 
 def calibrate():
@@ -238,7 +261,8 @@ def calibrate():
                 continue
             lo, hi = float(np.percentile(vals, 5)), float(np.percentile(vals, 95))
             pad = max(0.0, MIN_WIDTH.get(name, 0.0) - (hi - lo)) / 2
-            kb[name] = {"p10": round(lo - pad, 4), "median": round(float(np.median(vals)), 4),
+            low = max(lo - pad, FLOORS.get(kind, {}).get(name, -np.inf))
+            kb[name] = {"p10": round(low, 4), "median": round(float(np.median(vals)), 4),
                         "p90": round(hi + pad, 4)}
         bands["kinds"][kind] = kb
     BANDS.write_text(json.dumps(bands, indent=2) + "\n")
@@ -286,10 +310,27 @@ def score(paths, kind):
     return res
 
 
+def flat_designs():
+    """tools/item_art.py's designs as drawn, before pixel_kit finishes them: the flat look the criteria
+    must keep failing (written to a temporary folder)."""
+    import tempfile
+    import item_art
+    folder = pathlib.Path(tempfile.mkdtemp())
+    out = []
+    shipped = {p.stem[len("item_"):] for p in code_drawn_icons()}
+    for item_id in sorted(item_art.DRAWINGS):
+        if item_id in shipped:
+            path = folder / f"item_{item_id}.png"
+            path.write_bytes(item_art.render(item_id).png())
+            out.append(path)
+    return out
+
+
 def compare():
     ref = reference()["icon"]
     code = code_drawn_icons()
-    for label, paths in (("RD icons (reference)", ref), ("code-drawn icons", code)):
+    for label, paths in (("RD icons (reference, should pass)", ref), ("item icons as shipped", code),
+                         ("flat designs, unfinished (should fail)", flat_designs())):
         res = score(paths, "icon")
         fails = {}
         for _, (_, _, f) in res.items():

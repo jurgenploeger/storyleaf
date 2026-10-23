@@ -3365,6 +3365,45 @@ def held_pair(item_id):
 # Items whose finish differs from the rest (pixel_kit.restyle's options): smooth paper and the like.
 RESTYLE = {f"{colour}_party_hat": {"texture": 0.015} for colour in ("red", "yellow", "green", "blue", "purple", "white")}
 
+# The main material of the crafting materials (pixel_kit.PRESETS), which brings its own detail.
+MATERIAL_PRESETS = {
+    "wood": "bamboo ebony poplar rattan red_cypress red_yew teak yew driftwood_piece starwood driftwood_flute",
+    "metal": "alloy_steel bronze_ingot copper_ingot dragon_steel gold_ingot iron_ingot platinum_ingot silver_ingot "
+             "steel_ingot titanium_alloy tungsten_alloy bell_clapper gold_nugget",
+    "crystal": "amber azurite cats_eye chalcedony diamond emerald topaz rough_gem glimmerstone starfall_shard "
+               "clear_ice sugar_crystal",
+    "stone": "raw_ore agate",
+    "fur": "lion_mane marten_fur sheepskin tuft_of_wool",
+    "leather": "cowhide deer_hide",
+    "scales": "crocodile_hide dragon_scale snake_scale",
+    "cloth": "crystal_silk sailcloth_scrap wisp_silk swan_lace_veil coffee_sack seed_pouch stray_sock",
+}
+MATERIAL_PRESET = {i: name for name, ids in MATERIAL_PRESETS.items() for i in ids.split()}
+
+
+def preset_for(item_id):
+    """The main material an item's icon is finished in (pixel_kit.PRESETS), or None: set hats by their kind
+    (plate helms, mail coifs, cloth hats and hoods), gauntlets and set boots plate, gloves and boots leather,
+    capes cloth, whips leather (scaled for a dragon's, a crocodile's or a snake's), materials by name."""
+    item = ITEMS.get(item_id, {})
+    kind, t = item.get("headgear"), item.get("type")
+    if item_id in MATERIAL_PRESET:
+        return MATERIAL_PRESET[item_id]
+    if kind:
+        return {"iron_plate": "plate", "dragon_mail": "plate", "chain_mail": "chain"}.get(kind, "cloth")
+    if t == "cape":
+        return "cloth"
+    if t == "gloves":
+        return "plate" if "gauntlet" in item_id or item.get("tier") else "leather"
+    if t == "boots":
+        return "plate" if item.get("tier") else "leather"
+    if t == "weapon" and ("whip" in item_id or "lash" in item_id):
+        return "scales" if any(k in item_id for k in ("dragon", "crocodile", "snake")) else "leather"
+    return None
+
+
+ITEMS = {i["id"]: i for i in json.loads((ROOT / "content" / "items.json").read_text())["items"]}
+
 
 def main(argv):
     sheet_path = None
@@ -3389,7 +3428,8 @@ def main(argv):
     from pixel_kit import restyle
     for item_id in ids:
         drawn = Image.open(io.BytesIO(render(item_id).png()))
-        restyle(drawn, **RESTYLE.get(item_id, {})).render().save(SPRITES / f"item_{item_id}.png")
+        options = {"preset": preset_for(item_id), **RESTYLE.get(item_id, {})}
+        restyle(drawn, **options).render().save(SPRITES / f"item_{item_id}.png")
     # Items that are palette swaps of these (art/assets.json `derive`) are swapped on the flat drawing,
     # where their hue windows were tuned, and finished the same way: swapping the finished icon misses
     # the shades the ramps turn toward blue and yellow. Their own PNG then wins over the swap in the game.
@@ -3402,7 +3442,7 @@ def main(argv):
         flat = np.asarray(Image.open(io.BytesIO(render(base[len("item_"):]).png())).convert("RGBA")).astype(float) / 255
         swapped = recolor(flat, asset["derive"]["recolor"])
         drawn = Image.fromarray((np.clip(swapped, 0, 1) * 255).round().astype(np.uint8), "RGBA")
-        restyle(drawn).render().save(SPRITES / f"{asset['id']}.png")
+        restyle(drawn, preset=preset_for(base[len("item_"):])).render().save(SPRITES / f"{asset['id']}.png")
         if item_id in weapons:
             side, front = held_pair(item_id)
             (SPRITES / f"held_{item_id}_side.png").write_bytes(side.png())
