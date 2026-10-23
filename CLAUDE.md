@@ -137,8 +137,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 
 ## Rules
 - **Cloud sessions (Linux) can't build or run the app.** After editing `content/` or `art/assets.json`, run
-  `python3 tools/check_content.py`. Keep Swift edits small and careful: Xcode Cloud compiles them after a
-  push to `main` and emails failures.
+  `python3 tools/check_content.py`. Keep Swift edits small and careful: the Screenshots workflow compiles
+  them on a `claude/**` branch, and `.github/workflows/testflight.yml` after a push to `main` (Xcode Cloud
+  isn't used: its GitHub app was uninstalled on 2026-10-23).
 - **Retro Diffusion costs money.** Always run `python3 tools/rd.py generate <ids> --dry-run` (free) and get
   the user's OK before generating. Paid runs are logged in `art/spend-log.jsonl`. Never commit `.env` or the
   API key (`RETRO_DIFFUSION_API_KEY`).

@@ -116,15 +116,14 @@ StoryleafTests/        rules and content tests
 
 ## Working from your phone (no Mac needed)
 
-Pushes to `main` are built by **Xcode Cloud** (`ci_scripts/ci_post_clone.sh` installs XcodeGen and generates
-the project). With a TestFlight step in the Xcode Cloud workflow, every build lands on your iPhone through the
+Pushes to `main` are built by GitHub Actions (`.github/workflows/testflight.yml`): it archives the app, signs
+it with Apple's cloud signing and uploads it to TestFlight, so every build lands on your iPhone through the
 TestFlight app:
 
 1. In App Store Connect, create the app (bundle id `com.jurgenploeger.fairyland`) and an internal TestFlight
    group with yourself in it; install **TestFlight** on the iPhone.
-2. In Xcode Cloud, edit the workflow: start condition **Branch changes → main**, action **Archive (iOS)** with
-   deployment preparation **TestFlight (Internal Testing Only)**, and a post-action **TestFlight Internal
-   Testing** for your group.
+2. Add the repository secrets the workflow's header lists (`ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`,
+   `APPLE_TEAM_ID`): an App Store Connect API key with the Admin role, and your team ID.
 3. From the Claude app on your phone, open a **Claude Code** cloud session on this repo. It can edit and push
    but can't run Xcode, so check game-data edits with `python3 tools/check_content.py` before pushing.
    To generate art there, add `RETRO_DIFFUSION_API_KEY` to the cloud environment's variables.
