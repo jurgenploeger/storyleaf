@@ -216,6 +216,57 @@ def measure(path):
     # Highlights: a few bright specks (top 4% of luma) that stand out from their surroundings.
     m["highlight_share"] = float((il > np.median(il) + 0.25).mean()) if len(il) else 0.0
 
+    # Pillow shading (the classic beginner's mistake, Pixel Fixer, TU Delft 2025): light that follows the
+    # outline in from every side instead of coming from one direction. How much more the inside's
+    # brightness tracks the distance in from the edge than it tracks nearness to the light.
+    if interior.sum() > 20:
+        ins = np.zeros(opaque.shape)
+        cur = opaque.copy()
+        k = 0
+        while cur.any() and k < 40:
+            k += 1
+            ins[cur] = k
+            q = np.pad(cur, 1)
+            cur = cur & q[:-2, 1:-1] & q[2:, 1:-1] & q[1:-1, :-2] & q[1:-1, 2:]
+        l = luma(rgb[interior])
+        d = ins[interior]
+        pillow = float(np.corrcoef(d, l)[0, 1]) if l.std() > 1e-6 and d.std() > 1e-6 else 0.0
+        m["pillow"] = pillow - (m["light_top_left"] or 0.0)
+    else:
+        m["pillow"] = None
+    # Jaggies: along one slope of an outline, the steps should grow or shrink steadily (1, 1, 2, 2, 3),
+    # never jump about (1, 3, 1, 3). Each column's top edge and each row's left edge is read as runs of
+    # equal height; a run is a jaggy when the outline steps the same way on both sides of it (one slope,
+    # not the turn at the top of a curve) and it is 2 or more longer, or shorter, than both neighbours.
+    # The share of such runs among those inside a slope.
+    jag = total = 0
+    for mask in (opaque, opaque.T):
+        tops = [int(np.argmax(col)) for col in mask.T if col.any()]
+        runs, steps, cur_run = [], [], 1
+        for a_, b_ in zip(tops, tops[1:]):
+            if a_ == b_:
+                cur_run += 1
+            else:
+                runs.append(cur_run)
+                steps.append(np.sign(b_ - a_))
+                cur_run = 1
+        runs.append(cur_run)
+        for k in range(1, len(runs) - 1):
+            if steps[k - 1] != steps[k]:
+                continue                      # the outline turns here: not inside one slope
+            total += 1
+            d0, d1 = runs[k] - runs[k - 1], runs[k] - runs[k + 1]
+            if abs(d0) >= 2 and abs(d1) >= 2 and d0 * d1 > 0:
+                jag += 1
+    m["jaggies"] = float(jag / total) if total else 0.0
+    # Dithering on a small sprite reads as noise: the share of the inside in 2 × 2 checkerboards of two
+    # colours.
+    kk = k_ = None
+    kq = np.where(opaque, np.round(rgb * 255).astype(int) @ np.array([65536, 256, 1]), -1)
+    a00, a01, a10, a11 = kq[:-1, :-1], kq[:-1, 1:], kq[1:, :-1], kq[1:, 1:]
+    checker = (a00 == a11) & (a01 == a10) & (a00 != a01) & (a00 >= 0) & (a01 >= 0)
+    m["checker"] = float(checker.sum() / max(1, interior.sum()))
+
     # Size and placement in the canvas (icons: centred, filling most of it).
     ys, xs = np.nonzero(opaque)
     h, w = opaque.shape
@@ -230,7 +281,10 @@ ENFORCED = {
     "semi_alpha": "max", "colour_density": "min", "outline_dark": "min", "outline_sat": "min",
     "outline_value": "both", "flat": "max", "orphans": "max", "shades_per_ramp": "min", "hue_shift": "min",
     "value_range": "min", "light_top_left": "min", "highlight_share": "both", "cluster_size": "both",
+    "jaggies": "max",
 }
+# Reported, not judged (2026-10-23): `pillow` and `checker` measure two classic mistakes, but neither
+# separates RD's art from the flat designs or ours, so they describe, they don't judge.
 # Partial transparency is soft: only a light effect (a magic staff's glow) may use it.
 HARD = {"colour_density", "flat", "outline_dark", "fill"}
 SOFT_PASS = 0.8

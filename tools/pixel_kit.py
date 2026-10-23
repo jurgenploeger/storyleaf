@@ -6,8 +6,8 @@ each of a material: a base colour and how its surface takes light. The kit rende
 from the top left (each shape bulges as its profile says: a dome, a cylinder along a stroke, flat, or cut
 facets like a gem), adds the material's surface texture and a contact shadow under whatever lies on top,
 then brings it down to the sprite's size, each pixel on its material's ramp: a few shades whose shadows
-lean to blue and highlights to yellow, as RD's do. Then the house outline round the silhouette, a darker
-line where one material meets the one over it, and a speck of highlight on anything glossy.
+turn away from yellow and highlights toward it, as RD's do. Then the house outline round the silhouette, a
+darker line where one material meets the one over it, and a speck of highlight on anything glossy.
 
     from pixel_kit import Material, Sprite
     gem = Material("#E8508C", texture=0.04, gloss=0.9)
@@ -32,7 +32,10 @@ from PIL.ImageFilter import GaussianBlur as ImageFilterGaussian
 
 SS = 4                                   # supersampling: shapes are rendered this many times larger
 OUTLINE = (35, 24, 52)                   # the item icons' house outline (tools/item_art.py OUTLINE)
-LIGHT = np.array([-0.55, -0.7, 0.9])     # from the top left, a little in front
+# The light, tuned to RD's armour icons (2026-10-23): mostly from the front, so a form is lit in its middle
+# and darkens toward every edge, with a mild pull to the top left (RD's icons measure 0.12 on
+# pixel_style's light_top_left; a light from the top left alone gave ours 0.52).
+LIGHT = np.array([-0.17, -0.22, 1.0])
 LIGHT = LIGHT / np.linalg.norm(LIGHT)
 HALF = (LIGHT + np.array([0, 0, 1.0])) / np.linalg.norm(LIGHT + np.array([0, 0, 1.0]))
 
@@ -50,7 +53,7 @@ def _toward(h, target, amount):
     return (h + max(-abs(d), min(abs(d), amount)) * (1 if d >= 0 else -1)) % 360
 
 
-def ramp(base, n=6, shift_dark=24.0, shift_light=14.0):
+def ramp(base, n=6, shift_dark=12.0, shift_light=7.0):
     """`n` shades of `base`, dark to light. The base sits a little above the middle; shadows go deeper,
     more saturated and toward blue; highlights paler and toward yellow. Greys (metal, stone) get a cool
     tint in shadow and a warm one in light, so they aren't dead grey."""
@@ -63,19 +66,24 @@ def ramp(base, n=6, shift_dark=24.0, shift_light=14.0):
     out = []
     # Where the base sits on the ramp: a little above the middle, lower for a pale colour (silver, snow),
     # which would otherwise have nothing left above it but white.
-    pivot = 0.62 - 0.2 * max(0.0, (v - 0.8) / 0.2) * (1 - min(1.0, s * 3))
+    pivot = 0.52 - 0.17 * max(0.0, (v - 0.8) / 0.2) * (1 - min(1.0, s * 3))
     for i in range(n):
         t = i / (n - 1)                      # 0 darkest … 1 lightest
         k = (t - pivot) * 0.62 / pivot if t < pivot else (t - pivot) * 0.38 / (1 - pivot)
-        vv = min(1.0, v * (1 + 1.25 * k)) if k < 0 else min(1.0, v + (1 - v) * 0.9 * k / 0.38 + 0.08 * k)
+        # Compressed ends, as RD's armour: the darkest shade about two fifths of the base, the lightest
+        # well short of white (the glossy speck aside).
+        vv = min(1.0, v * (1 + 0.95 * k)) if k < 0 else min(1.0, v + (1 - v) * 0.6 * k / 0.38 + 0.06 * k)
         # Pale materials (pearl, snow, silver) stay soft in shadow, never near-black.
         vv = max(0.08 + 0.4 * pale, vv)
         if grey:
             hh = SHADOW_HUE if k < 0 else LIGHT_HUE
             ss = 0.16 * abs(k) / 0.62 if k < 0 else 0.07 * k / 0.38
         else:
-            hh = _toward(h, SHADOW_HUE, shift_dark * -k / 0.62) if k < 0 else _toward(h, LIGHT_HUE, shift_light * k / 0.38)
-            ss = min(1.0, s * (1 + 0.25 * -k / 0.62)) if k < 0 else s * (1 - 0.55 * (k / 0.38) ** 1.4)
+            # Shadows turn away from yellow and lights toward it, round the wheel the short way from this
+            # colour (a blue's shadows go to violet, its lights toward cyan; a red's shadows to crimson).
+            away = 1 if (h - LIGHT_HUE) % 360 < 180 else -1
+            hh = (h + away * shift_dark * -k / 0.62) % 360 if k < 0 else _toward(h, LIGHT_HUE, shift_light * k / 0.38)
+            ss = min(1.0, s * (1 + 0.25 * -k / 0.62)) if k < 0 else s * (1 - 0.3 * (k / 0.38) ** 1.4)
         out.append(tuple(round(c * 255) for c in colorsys.hsv_to_rgb(hh / 360, ss, vv)))
     return out
 
@@ -85,7 +93,7 @@ class Material:
     pixels), how glossy (a specular highlight), and how much it takes light at all (`relief`: 1 rounded
     by the light, 0 flat colour)."""
 
-    def __init__(self, base, shades=10, texture=0.06, grain=1.5, gloss=0.0, relief=1.0, variety=8.0):
+    def __init__(self, base, shades=6, texture=0.06, grain=1.5, gloss=0.0, relief=1.0, variety=4.0):
         self.base, self.shades, self.texture, self.grain = base, shades, texture, grain
         self.gloss, self.relief = gloss, relief
         self.colours = ramp(base, shades)
@@ -196,7 +204,9 @@ class Sprite:
         n = np.stack([-gx, -gy, np.ones(mask.shape)], -1)
         n /= np.linalg.norm(n, axis=-1, keepdims=True)
         diffuse = np.clip(n @ LIGHT, 0, 1)
-        lit = 0.08 + 0.78 * diffuse ** 1.3
+        # A surface facing the light lands on the base colour (the ramp's middle), the edges turning away
+        # step down into shadow; only the gloss climbs above it.
+        lit = 0.05 + 0.55 * diffuse ** 2
         if profile == "flat":
             cx, cy = extra["centre"]
             span = max(2.0, np.sqrt(mask.sum()) / SS)
@@ -207,7 +217,7 @@ class Sprite:
             # A plane given its own light (a gem's facet, a cut face): 0 dark … 1 lit.
             lit = np.full(mask.shape, float(extra["tone"]))
         if mat.gloss and not toned:
-            lit = lit + mat.gloss * np.clip(n @ HALF, 0, 1) ** 24
+            lit = lit + mat.gloss * 0.8 * np.clip(n @ HALF, 0, 1) ** 60
         if extra.get("detail") is not None:
             lit = lit + extra["detail"]
         if mat.texture:
@@ -254,6 +264,39 @@ class Sprite:
                     best = vals2[np.argmax(counts2)]
                 idx[ty, tx] = best
                 val[ty, tx] = light[ty * SS:(ty + 1) * SS, tx * SS:(tx + 1) * SS][block == best].mean()
+        # Clean edges (the guides' "jaggies"): shrinking leaves one-pixel notches in straight edges and
+        # one-pixel spurs on them. A gap with three or four of its neighbours filled is filled from them;
+        # a pixel with one neighbour or none, sticking out of an edge, goes.
+        for _ in range(2):
+            filled = idx >= 0
+            p4 = np.pad(idx, 1, constant_values=-1)
+            nbrs = np.stack([p4[:-2, 1:-1], p4[2:, 1:-1], p4[1:-1, :-2], p4[1:-1, 2:]])
+            count = (nbrs >= 0).sum(0)
+            # Only a notch open to the outside: a hole inside (a charm's loop, a ring's middle) stays.
+            outside = np.zeros(filled.shape, bool)
+            stack = [(y, x) for y in range(self.h) for x in (0, self.w - 1) if not filled[y, x]] + \
+                    [(y, x) for x in range(self.w) for y in (0, self.h - 1) if not filled[y, x]]
+            for y, x in stack:
+                outside[y, x] = True
+            while stack:
+                y, x = stack.pop()
+                for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                    yy, xx = y + dy, x + dx
+                    if 0 <= yy < self.h and 0 <= xx < self.w and not filled[yy, xx] and not outside[yy, xx]:
+                        outside[yy, xx] = True
+                        stack.append((yy, xx))
+            for y, x in np.argwhere(~filled & (count == 3) & outside):
+                vals = [v for v in nbrs[:, y, x] if v >= 0]
+                best = max(set(vals), key=vals.count)
+                idx[y, x] = best
+                same = (idx == best) & (val > 0)
+                val[y, x] = val[same].mean() if same.any() else 0.5
+            # (Corners count: a diagonal line, a chain, touches only at its corners and isn't a spur.)
+            f = np.pad(idx >= 0, 1)
+            count8 = sum(f[1 + dy:f.shape[0] - 1 + dy, 1 + dx:f.shape[1] - 1 + dx].astype(int)
+                         for dy in (-1, 0, 1) for dx in (-1, 0, 1) if dy or dx)
+            spur = (idx >= 0) & (count <= 1) & (count8 <= 1)
+            idx[spur] = -1
         # Onto the ramps, through the material's grain at the sprite's own pixels (texture added at SS×
         # averages away) and a light 2 × 2 ordered dither, so a step between shades breaks up as RD's do
         # instead of running as a clean band.
@@ -287,10 +330,12 @@ class Sprite:
             sel = idx == i
             p = np.pad(sel if self.rim == "shape" else idx >= 0, 1)
             up, down, left, right = p[:-2, 1:-1], p[2:, 1:-1], p[1:-1, :-2], p[1:-1, 2:]
-            lit_edge = sel & (~up | ~left)
-            dark_edge = sel & (~down | ~right) & ~lit_edge
-            level[lit_edge] = np.minimum(level[lit_edge] + 1, mat.shades - 1)
-            level[dark_edge] = np.maximum(level[dark_edge] - 1, 0)
+            # RD darkens a form's inner edge all the way round (the light turns away there), a step deeper
+            # where it faces away from the light; no lit rim.
+            edge = sel & (~up | ~left | ~down | ~right)
+            away = sel & (~down | ~right)
+            level[edge] = np.maximum(level[edge] - 1, 0)
+            level[away] = np.maximum(level[away] - (1 if self.rim == "silhouette" else 0), 0)
         # A darker line where a shape meets one lying over it (on the lower one's side).
         for y in range(self.h if self.seams else 0):
             for x in range(self.w):
@@ -323,9 +368,15 @@ class Sprite:
             solid = out[..., 3] > 0
             p = np.pad(solid, 1)
             ring = ~solid & (p[:-2, 1:-1] | p[2:, 1:-1] | p[1:-1, :-2] | p[1:-1, 2:])
+            # The house outline, deepened on a dark sprite (a navy lash) so it still reads as the edge:
+            # at most half the light of what it rounds.
+            house = np.array(OUTLINE, float)
+            if solid.any():
+                inner = np.median(out[solid][:, :3] @ np.array([0.299, 0.587, 0.114]))
+                house *= min(1.0, 0.5 * inner / (house @ np.array([0.299, 0.587, 0.114])))
             for y, x in np.argwhere(ring):
                 if outline == "house":
-                    out[y, x] = (*OUTLINE, 255)
+                    out[y, x] = (*house.astype(int), 255)
                 else:
                     near = [idx[y + dy, x + dx] for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1))
                             if 0 <= y + dy < self.h and 0 <= x + dx < self.w and idx[y + dy, x + dx] >= 0]
@@ -516,13 +567,47 @@ def _scaled(arr, scale, src_centre, dst_centre, fill_value):
     return out
 
 
-def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None):
+def _deepen(base):
+    """A design's colour brought to RD's depth: RD's armour sits darker and richer in its mid-tones than
+    the flat designs' pastel fills (its icons' median luma 0.38 against the designs' 0.49)."""
+    h, s_, v = colorsys.rgb_to_hsv(*(np.array(base[:3]) / 255))
+    if v > 0.55:
+        v = 0.55 + (v - 0.55) * 0.7
+    if s_ > 0.15:
+        s_ = min(1.0, s_ * 1.12)
+    return tuple(int(round(c * 255)) for c in colorsys.hsv_to_rgb(h, s_, v))
+
+
+def dominant_colour(img):
+    """The main material's colour in a finished sprite (an RD armour icon): its commonest hue, at the
+    middle of that hue's brightness; for a grey sprite (iron), its middle grey."""
+    a = np.asarray(img.convert("RGBA")).astype(float) / 255
+    on = (a[..., 3] > 0.5) & ~np.all(np.round(a[..., :3] * 255) == OUTLINE, axis=-1)
+    px = a[..., :3][on]
+    hsv = np.array([colorsys.rgb_to_hsv(*c) for c in px])
+    sat = hsv[:, 1] > 0.15
+    if sat.mean() > 0.4:
+        bins = (hsv[sat, 0] * 18).astype(int) % 18
+        top = np.bincount(bins, minlength=18).argmax()
+        pick = hsv[sat][bins == top]
+        # The median of each of hue, saturation and brightness: one desaturated pixel at the middle
+        # brightness would otherwise give a ruby a dusty pink.
+        hue = np.angle(np.mean(np.exp(2j * np.pi * pick[:, 0]))) / (2 * np.pi) % 1
+        mid = colorsys.hsv_to_rgb(hue, float(np.median(pick[:, 1])), float(np.median(pick[:, 2])))
+    else:
+        lum = px @ np.array([0.299, 0.587, 0.114])
+        mid = px[np.argsort(lum)[len(lum) // 2]]
+    return "#%02x%02x%02x" % tuple(int(round(c * 255)) for c in mid)
+
+
+def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=None):
     """An icon drawn the old way (tools/item_art.py: flat three-tone fills, one outline) re-rendered in
     the look: its regions of colour become materials on hue-shifted ramps, its silhouette rounded at the
     corners, the whole lit from the top left as one form with each region swelling a little on it, the
     old drawing's own light and dark kept as detail (creases, slits, laces), textured, rim-lit and
     outlined afresh. Sparkles and soft glows are kept as drawn. `preset` (PRESETS: "plate", "chain",
-    "cloth"…) is the main material's, its detail and finish laid on the biggest region."""
+    "cloth"…) is the main material's, its detail and finish laid on the biggest region; `base` (a hex
+    colour) is that region's colour instead of the design's (a set piece takes its armour's)."""
     a = np.asarray(img.convert("RGBA")).copy()
     h, w = a.shape[:2]
     opaque = a[..., 3] >= 250
@@ -589,8 +674,19 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None):
         a = np.where(gmap_scaled[..., None] >= 0, at1(a, 0), a * 0)
         gmap = gmap_scaled
     sil = Image.fromarray(((big >= 0) * 255).astype(np.uint8)).filter(ImageFilterGaussian(SS * round_corners))
-    # Rounding only takes corners off: it never fills a notch (the gaps between a glove's fingers).
-    sil = (np.asarray(sil) >= 128) & (big >= 0)
+    # The blur smooths the outline both ways, cutting corners and evening out dips, so the steps along a
+    # slope change steadily (no jaggies); but it never closes a narrow gap (between a glove's fingers): an
+    # empty pixel with the body close on both sides, across or up and down, stays empty.
+    sil = np.asarray(sil) >= 128
+    body = big >= 0
+    gap = SS * 2
+    def near(mask, axis, step):
+        out = np.zeros_like(mask)
+        for k in range(1, gap + 1):
+            out |= np.roll(mask, step * k, axis=axis)
+        return out
+    narrow = ~body & ((near(body, 1, 1) & near(body, 1, -1)) | (near(body, 0, 1) & near(body, 0, -1)))
+    sil &= ~narrow
     # Lines (a chain, a whip's lash) are never rounded away: a pixel with its body neighbours on opposite
     # sides (left and right, up and down, or corner to corner) is part of something thin, and stays. A
     # spur sticking out of an edge (one neighbour) is a corner, and goes.
@@ -627,13 +723,14 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None):
         tone[y, x] = np.clip((_hsv(a[y, x])[2] - _hsv(g[0])[2]) / spread, -1, 1)
     # Drawn dark lines (creases between fingers, seams, a slit) count double, so the new light doesn't
     # wash them out.
-    detail = np.kron(np.where(tone < -0.5, tone * 2, tone), np.ones((SS, SS))) * 0.3
+    detail = np.kron(np.where(tone < -0.5, tone * 2 * 0.3, tone * 0.15), np.ones((SS, SS)))
     # An opening drawn in the outline's colour (a hood's, a helm's slit) is the inside of the thing, in
     # deep shadow: the darkest shades of the biggest region's own colour, not black.
     biggest = max(range(len(groups)), key=lambda i: (cur == i).sum()) if groups else 0
     deep = ramp("#%02x%02x%02x" % tuple(int(v) for v in groups[biggest][0]), 10)[1] if groups else OUTLINE
     main = max(range(len(groups)), key=lambda i: (cur == i).sum() if tuple(groups[i][0]) != OUTLINE else -1) \
         if groups else -1
+    base_colour = base
     for i, (base, cols) in enumerate(groups):
         m = cur == i
         if not m.any():
@@ -644,6 +741,10 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None):
         is_void = tuple(base) == OUTLINE
         if is_void:
             base = deep
+        elif i == main and base_colour:
+            base = tuple(int(base_colour.lstrip("#")[k:k + 2], 16) for k in (0, 2, 4))
+        else:
+            base = _deepen(base)
         bright = max(_hsv(c)[2] for c in cols)
         # Shiny stuff (glass, metal, gems: a near-white highlight drawn in it) is smooth and glossy;
         # everything else carries the surface texture.
@@ -654,14 +755,14 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None):
         white_beside = any(_hsv(a[y, x])[1] < 0.15 and _hsv(a[y, x])[2] > 0.92 for y, x in zip(*np.nonzero(beside)))
         shiny = (any(_hsv(c)[1] < 0.3 and _hsv(c)[2] > 0.9 for c in cols) or (ss < 0.3 and bright > 0.85)
                  or white_beside)
-        mat = Material("#%02x%02x%02x" % tuple(base), shades=10 if m.sum() > 40 * SS * SS else 7,
+        mat = Material("#%02x%02x%02x" % tuple(base), shades=6 if m.sum() > 40 * SS * SS else 5,
                        texture=texture * (0.45 if shiny else 1.0),
                        relief=0.0 if is_void else 1.0, gloss=0.6 if shiny and not is_void else 0.0,
-                       variety=0.0 if is_void else (4.0 if shiny else 8.0))
+                       variety=0.0 if is_void else (2.0 if shiny else 4.0))
         if preset and i == main:
             pattern, finish = PRESETS[preset]
             mat = Material("#%02x%02x%02x" % tuple(base), shades=mat.shades,
-                           **{"texture": mat.texture, "gloss": mat.gloss, "variety": 8.0, **finish})
+                           **{"texture": mat.texture, "gloss": mat.gloss, "variety": 4.0, **finish})
             region1 = (gmap == i)
             extra = np.kron(preset_pattern(preset, region1), np.ones((SS, SS)))
             # The preset's detail goes on top of the drawing's own shading (its planes and lines).

@@ -251,22 +251,6 @@ def ring(c, band, gem=None, gem_color=None):
         c.poly([(13, 10), (16, 10), (15, 12), (12, 12)], gem_color[2])
 
 
-def whip(c, leather, grip, tassel=None):
-    # A braided lash: the coil alternates light and dark every few steps.
-    for i in range(0, 60):
-        t = i / 60 * math.pi * 3.2
-        r = 3 + i * 0.13
-        c.disc(17 + r * math.cos(t), 14 + r * math.sin(t) * 0.8, 1.1, leather[2] if i % 6 < 2 else leather[1])
-    c.line(6, 28, 11, 21, grip[1], width=3)
-    c.line(7, 28, 12, 22, grip[0], width=1)
-    for (x, y) in ((7, 26), (9, 24)):                       # wrapped handle
-        c.line(x - 1, y - 1, x + 1, y + 1, grip[2])
-    c.rect(10, 20, 13, 22, GOLD[1])
-    c.set(10, 20, GOLD[2])
-    if tassel:
-        tassel(c)
-
-
 # ---------------------------------------------------------------- the items
 
 RED = [hexc("a8202e"), hexc("e0384a"), hexc("ff8a8a")]
@@ -483,15 +467,18 @@ def draw_star_wand(c):
 
 
 def draw_tamer_whip(c):
-    whip(c, LEATHER, WOOD)
+    whip_line(c, LEATHER, WOOD)
 
 
 def draw_beast_whip(c):
     def tassel(c):
-        c.disc(24, 25, 3, hexc("f6c33b"))                 # paw pad
-        for (x, y) in ((21, 21), (24, 20), (27, 21)):
-            c.disc(x, y, 1.2, hexc("f6c33b"))
-    whip(c, [hexc("7a1a1a"), hexc("b8302a"), hexc("e8604a")], [hexc("3a2a1a"), hexc("5a4028"), hexc("7a5a38")], tassel)
+        c.line(3, 8, 3, 21, hexc("5a2c26"))               # a paw pad on a cord from the handle
+        c.disc(4, 26, 2.6, hexc("f6c33b"))
+        for (x, y) in ((1.5, 22.5), (4, 22), (6.5, 22.5)):
+            c.disc(x, y, 1.1, hexc("f6c33b"))
+    # A red-brown grip: a yellow-brown one is one colour family with the paw (pixel_kit.restyle).
+    whip_line(c, [hexc("7a1a1a"), hexc("b8302a"), hexc("e8604a")], [hexc("3a1c18"), hexc("5a2c26"), hexc("7a4840")],
+              tassel=tassel)
 
 
 def draw_wild_horn(c):
@@ -1203,25 +1190,41 @@ def axe_line(c, head, handle, style="axe", gem=None):
         c.set(20, 9, gem[2])
 
 
-def whip_line(c, leather, grip, turns=3.2, tip=None, gem=None, studs=None):
-    points = 60
-    for i in range(points):
-        t = i / points * math.pi * turns
-        r = 3 + i * 0.13
-        x, y = 17 + r * math.cos(t), 14 + r * math.sin(t) * 0.8
-        c.disc(x, y, 1.1, leather[1])
-        if studs and i % 9 == 4:
+def whip_line(c, leather, grip, turns=3.2, tip=None, gem=None, studs=None, tassel=None):
+    """A whip held up by its handle, the lash dangling from it (as hanging_whip, not coiled): the
+    handle across the top left, pommel up, and the lash out of its lower end and down the icon in a
+    loose S, thinner to the tip, which flicks out at the bottom. `turns` (the coil's turns, once)
+    swings the S wider or narrower."""
+    sway = 1 + (turns - 3.2) * 2.5
+    lash = [(11, 11), (22 + sway, 13), (5 - sway, 21), (17, 27)]
+    points = []
+    for i in range(48):
+        t = i / 47
+        w = ((1 - t) ** 3, 3 * t * (1 - t) ** 2, 3 * t * t * (1 - t), t ** 3)
+        points.append((sum(p[0] * k for p, k in zip(lash, w)), sum(p[1] * k for p, k in zip(lash, w))))
+    ex, ey = points[-1]
+    for i in range(1, 10):                       # the end, flicking out to the right
+        t = i / 9
+        points.append((ex + t * 9, ey + 1.5 * t - 3 * t * t))
+    for i, (x, y) in enumerate(points):           # braided, light and dark in turn, thinner to the tip
+        r = 1.7 if i < 14 else 1.4 if i < 36 else 1.0
+        c.disc(x, y, r, leather[2] if i % 6 < 2 else leather[1])
+        if studs and i % 9 == 4 and i < 45:
             c.set(x, y, studs)
-    c.shade(lambda x, y, col: col == leather[1] and x + y > 34, leather[0])
-    c.shade(lambda x, y, col: col == leather[1] and x + y < 22, leather[2])
     if tip:
-        c.disc(17 + 3, 14, 1.8, tip)
-    c.line(6, 28, 11, 21, grip[1], width=3)
-    c.line(7, 28, 12, 22, grip[0])
-    c.rect(10, 20, 13, 22, GOLD[1])
+        c.disc(points[-1][0], points[-1][1], 1.5, tip)
+    c.line(4, 4, 11, 11, grip[1], width=3.4)      # the handle, wrapped
+    c.line(4, 5, 10, 11, grip[0])
+    for (x, y) in ((6, 6), (8, 8)):
+        c.line(x - 1, y + 1, x + 1, y - 1, grip[2])
+    c.disc(11, 11, 1.7, GOLD[1])                 # the band where the lash meets the handle
+    c.set(10, 10, GOLD[2])
     if gem:
-        c.disc(5.5, 28.5, 1.7, gem[1])
-        c.set(5, 28, gem[2])
+        c.disc(3.5, 3.5, 2.0, gem[1])
+        c.set(3, 3, gem[2])
+    if tassel:
+        tassel(c)
+    return points[-1]
 
 
 # Metals, from the bronze of a first sword to the tungsten of the level-80 dragonslayer.
@@ -1704,7 +1707,9 @@ def draw_starfall_axe(c):
 
 def draw_starfall_whip(c):
     """A lilac lash with a star of light at its tip."""
-    whip_line(c, leather=MOTH, grip=NIGHT, turns=3.6, tip=STARLIGHT[1], gem=GOLD, studs=WHITE)
+    x, y = whip_line(c, leather=MOTH, grip=NIGHT, turns=3.6, gem=GOLD, studs=WHITE)
+    star_shape(c, x, y - 1, 3.6, STARLIGHT[1])
+    c.set(x, y - 1, WHITE)
 
 
 GEODE = [hexc("4a3e6a"), hexc("7e6ea8"), hexc("b4a6d8")]
@@ -1846,8 +1851,8 @@ def draw_goldleaf_staff(c):
 
 def draw_goldleaf_whip(c):
     """A golden lash with a leaf at its tip and a heart-oak grip."""
-    whip_line(c, leather=LEAFGOLD, grip=HEARTOAK, turns=3.6, gem=GREEN, studs=WHITE)
-    gold_leaf(c, 20, 14, 5, angle=-math.pi / 2, colors=[hexc("6a8a1e"), hexc("b8d040"), hexc("f4ffb0")])
+    x, y = whip_line(c, leather=LEAFGOLD, grip=HEARTOAK, turns=3.6, gem=GREEN, studs=WHITE)
+    gold_leaf(c, x - 1, y, 6, angle=-math.pi / 6, colors=[hexc("6a8a1e"), hexc("b8d040"), hexc("f4ffb0")])
 
 
 def ramp(colour):
@@ -3344,7 +3349,7 @@ def hanging_whip(leather, grip, front, tip=None, gem=None, studs=None, tassel=No
 HANGING = {_id: _args for _id, _level, _name, _args, _desc in WHIPS}
 HANGING["tamer_whip"] = dict(leather=LEATHER, grip=WOOD)
 HANGING["beast_whip"] = dict(leather=[hexc("7a1a1a"), hexc("b8302a"), hexc("e8604a")],
-                             grip=[hexc("3a2a1a"), hexc("5a4028"), hexc("7a5a38")], tassel=hexc("f6c33b"))
+                             grip=[hexc("3a1c18"), hexc("5a2c26"), hexc("7a4840")], tassel=hexc("f6c33b"))
 HANGING["starfall_whip"] = dict(leather=MOTH, grip=NIGHT, tip=STARLIGHT[1], gem=GOLD, studs=WHITE)
 HANGING["goldleaf_whip"] = dict(leather=LEAFGOLD, grip=HEARTOAK, tip=hexc("b8d040"), gem=GREEN, studs=WHITE)
 
@@ -3384,7 +3389,7 @@ MATERIAL_PRESET = {i: name for name, ids in MATERIAL_PRESETS.items() for i in id
 def preset_for(item_id):
     """The main material an item's icon is finished in (pixel_kit.PRESETS), or None: set hats by their kind
     (plate helms, mail coifs, cloth hats and hoods), gauntlets and set boots plate, gloves and boots leather,
-    capes cloth, whips leather (scaled for a dragon's, a crocodile's or a snake's), materials by name."""
+    capes cloth, whips their drawn braid (scaled for a dragon's, a crocodile's or a snake's), materials by name."""
     item = ITEMS.get(item_id, {})
     kind, t = item.get("headgear"), item.get("type")
     if item_id in MATERIAL_PRESET:
@@ -3398,11 +3403,37 @@ def preset_for(item_id):
     if t == "boots":
         return "plate" if item.get("tier") else "leather"
     if t == "weapon" and ("whip" in item_id or "lash" in item_id):
-        return "scales" if any(k in item_id for k in ("dragon", "crocodile", "snake")) else "leather"
+        # A lash is too thin for leather's stitching (its dots were stray pixels): the braid is drawn.
+        return "scales" if any(k in item_id for k in ("dragon", "crocodile", "snake")) else None
     return None
 
 
 ITEMS = {i["id"]: i for i in json.loads((ROOT / "content" / "items.json").read_text())["items"]}
+
+
+def set_armour(item_id):
+    """The armour a piece belongs to, whose RD icon gives the piece its colour: a hat the armour's
+    `headpiece`, a tier's gauntlets and boots its plate."""
+    item = ITEMS.get(item_id, {})
+    for other in ITEMS.values():
+        if other["type"] == "armor" and other.get("headpiece") == item_id:
+            return other["id"]
+    if item.get("tier") and item["type"] in ("gloves", "boots"):
+        for other in ITEMS.values():
+            if other["type"] == "armor" and other.get("tier") == item["tier"] and other.get("wear") == "plate":
+                return other["id"]
+    return None
+
+
+def set_colour(item_id):
+    """The main colour of the piece's armour as RD drew it (pixel_kit.dominant_colour), or None."""
+    armour = set_armour(item_id)
+    icon = SPRITES / f"item_{armour}.png" if armour else None
+    if not icon or not icon.exists():
+        return None
+    from PIL import Image
+    from pixel_kit import dominant_colour
+    return dominant_colour(Image.open(icon))
 
 
 def main(argv):
@@ -3428,7 +3459,7 @@ def main(argv):
     from pixel_kit import restyle
     for item_id in ids:
         drawn = Image.open(io.BytesIO(render(item_id).png()))
-        options = {"preset": preset_for(item_id), **RESTYLE.get(item_id, {})}
+        options = {"preset": preset_for(item_id), "base": set_colour(item_id), **RESTYLE.get(item_id, {})}
         restyle(drawn, **options).render().save(SPRITES / f"item_{item_id}.png")
     # Items that are palette swaps of these (art/assets.json `derive`) are swapped on the flat drawing,
     # where their hue windows were tuned, and finished the same way: swapping the finished icon misses
@@ -3443,6 +3474,7 @@ def main(argv):
         swapped = recolor(flat, asset["derive"]["recolor"])
         drawn = Image.fromarray((np.clip(swapped, 0, 1) * 255).round().astype(np.uint8), "RGBA")
         restyle(drawn, preset=preset_for(base[len("item_"):])).render().save(SPRITES / f"{asset['id']}.png")
+    for item_id in ids:
         if item_id in weapons:
             side, front = held_pair(item_id)
             (SPRITES / f"held_{item_id}_side.png").write_bytes(side.png())

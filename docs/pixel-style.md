@@ -25,24 +25,80 @@ These are the rules the numbers measure. A sprite that keeps them looks like Sto
    Shrinking is done offline, each pixel the colour covering most of it, never by the game.
 2. **One light, from the top left.** Every form is rounded by it: a lit rim on its top-left edge, a core
    shadow along its bottom right, and a contact shadow under anything lying on top of it.
-3. **Ramps, not fills.** Each material is a ramp of 5 to 8 shades. Shadows go deeper, more saturated and
-   lean toward blue-violet; highlights go paler and lean toward yellow (hue-shifting). Greys (steel, stone)
-   get a cool tint in shadow and a warm one in the light, never dead grey.
+3. **Ramps, not fills.** Each material is a ramp of shades: 3 to 5 on a 32-pixel icon, more on a bigger
+   sprite (RD's icons have a median of 4 per ramp, its creatures 9). Shadows go deeper, more saturated and
+   turn away from yellow round the colour wheel (a red's toward crimson, a blue's toward violet); highlights
+   go paler and turn toward yellow (hue-shifting). Greys (steel, stone) get a cool tint in shadow and a warm
+   one in the light, never dead grey.
 4. **Texture everywhere.** No interior pixel sits in a field of its own colour: surfaces carry small
    clusters of near-duplicate shades (one to three pixels), and the clusters follow the light rather than
-   scattering as noise.
-5. **Outlines.** Item icons: one dark outline all round, the house colour `#231834` (`item_art.OUTLINE`).
-   Creatures and scenery: a broken, tinted outline (a deep shade of what it rounds), lighter or gone where
-   the light hits.
-6. **A few highlights.** A speck or two of the lightest shade on what's glossy (metal, gems, eyes), not
+   scattering as noise. Dithering only to soften a step between two shades, never as a checkerboard field:
+   on a sprite this small it reads as noise.
+5. **Light from one side, not from the outline in.** Shading that darkens every edge evenly and brightens
+   the middle ("pillow shading") flattens a form; RD's shade a form on its side away from the light.
+6. **Clean lines.** Along a slope the steps of the outline grow or shrink steadily (1, 1, 2, 2, 3), never
+   jump about (1, 3, 1, 3: "jaggies"); no lone pixel stuck out of an edge, no doubled corner.
+7. **Outlines.** Item icons: one dark outline all round, the house colour `#231834` (`item_art.OUTLINE`).
+   On something darker than it (a navy lash), the kit deepens it to half the light of what it rounds, so it
+   still reads as the edge. Creatures and scenery: a broken, tinted outline (a deep shade of what it
+   rounds), lighter or gone where the light hits.
+8. **A few highlights.** A speck or two of the lightest shade on what's glossy (metal, gems, eyes), not
    a wash.
-7. **Size and placement.** Icons fill 80% or more of their 32 × 32 tile and sit in its middle (armour; a
+9. **Size and placement.** Icons fill 80% or more of their 32 × 32 tile and sit in its middle (armour; a
    weapon sits on the bottom edge with room above for its glow). Creatures and scenery at their kind's size
    (`art/assets.json`: monsters 40 or 64, props 32 to 96, buildings 96, tiles 32).
 
-## The acceptance criteria
+## What the craft says (sources)
 
-`tools/pixel_style.py check` measures 14 criteria. Each one's band is the reference's 5th to 95th
+Read 2026-10-23, from search results (the network policy blocked fetching the pages themselves, so these
+are their summaries, checked against each other). What each taught, and where it went:
+
+- **Pillow shading and banding** are the two mistakes the craft names first: shading from the outline
+  inward instead of from a light, and parallel bands of shades that follow the outline and reveal the
+  sprite's pixel grid. A 2025 TU Delft thesis on detecting pixel-art mistakes automatically ("Pixel Fixer",
+  [repository.tudelft.nl](https://repository.tudelft.nl/record/uuid:b3c91b18-d9e8-48e0-91ce-8afafd2439d8))
+  measures them from the image, as `pixel_style.py` does: its `pillow` metric (reported).
+- **Jaggies:** along a line or curve the run lengths should change steadily; an odd run breaks the slope
+  ([Pixel Parmesan, anti-aliasing fundamentals](https://pixelparmesan.com/anti-aliasing-fundamentals-for-pixel-artists),
+  [saint11's tutorials](https://saint11.art/blog/pixel-art-tutorials/)). Became the `jaggies` criterion,
+  and the kit's cleanup of notches and spurs after shrinking.
+- **Hue shifting:** shadows move round the wheel away from the light's colour, highlights toward it,
+  rather than only darkening ([pixnote, shading](https://pixnote.net/en/learn/shading),
+  [Slynyrd's Pixelblog](https://www.slynyrd.com/pixelblog-catalogue)). The kit turns shadows away from
+  yellow (it had leaned every ramp toward blue, which turned a blue's shadow *toward* yellow: `hue_shift`
+  negative on every blue item).
+- **Outlines and selout:** a coloured outline, a deep shade of what it rounds, reads softer than black;
+  lighter where the light hits ([Lospec, outlines part 2](https://lospec.com/articles/pixel-art-outlines-part-2-using-color)).
+  Our icons keep one house outline (the game's choice for the bag); creatures and scenery are measured on
+  tinted ones (`outline_sat`, `outline_value`).
+- **Dithering restraint:** on a small sprite, dither only a narrow band between two shades; a field of it
+  is noise ([pixnote, dithering](https://pixnote.net/en/learn/dithering),
+  [Pixel Parmesan, dithering](https://pixelparmesan.com/dithering-for-pixel-artists)). The kit dithers only
+  near a step; `checker` reports any field of it.
+- **Shades per ramp:** a 16 to 32 pixel sprite needs 3 to 5 shades a material; more muddies it. RD's icons
+  have a median of 4; ours had 6 (see the armour study below).
+- **Scenery:** foliage in clusters of light and shade, never per-leaf noise; a top-down object lit from one
+  side with its own shadow on the ground; a repeated prop varied by shape, not only by colour
+  ([Slynyrd, top-down objects](https://www.slynyrd.com/blog/2019/9/18/pixelblog-21-top-down-objects)).
+
+## RD's armour, studied (2026-10-23)
+
+RD's 57 armour icons are the closest reference for everything worn, so the hats, gloves, boots and capes
+drawn in code were measured against them (medians):
+
+| | light from the top left | value range | colours / 100 px | highlight share | shades per ramp | hue shift | pass |
+|---|---|---|---|---|---|---|---|
+| RD's armour (57) | 0.12 | 0.59 | 3.8 | 0.06 | 4 | 9.1° | 84% |
+| ours, worn pieces (143) | 0.31 | 0.61 | 4.2 | 0.10 | 6 | 12.3° | 84% |
+
+What was changed to get there: the light comes more from the front (`pixel_kit.LIGHT`), so a form is lit
+across its face and turns dark only at its edges, as RD's are; the ramps' ends are compressed (deep, rich
+shadows, a pale top never white) and pivot lower, as RD's colours sit darker than a flat design's;
+shadows turn away from yellow; a set piece takes its armour's colour. What's still different: our
+light falls off more from the top left (0.31 against 0.12), which comes from the designs' own shading,
+not the kit (softening the kit's light moved it by 0.01); and our ramps carry 6 shades to RD's 4.
+
+`tools/pixel_style.py check` measures 15 criteria, and reports two more. Each one's band is the reference's 5th to 95th
 percentile for its kind (icon, creature, scenery), recalibrated from the shipped art; a few are fixed
 house rules, and three have house-rule floors under them (`pixel_style.FLOORS`, marked *floor*), set where
 about 85% or more of RD's own sprites of that kind meet them. **A sprite passes with every hard criterion
@@ -63,6 +119,14 @@ and 80% of the soft ones.**
 | `light_top_left` | correlation of brightness with nearness to the top left | soft, min | ≥ 0 *floor* | ≥ 0 *floor* | ≥ −0.05 *floor* |
 | `highlight_share` | share of inner pixels far brighter than the median | soft | ≤ 0.29 | ≤ 0.18 | ≤ 0.25 |
 | `semi_alpha` | partly transparent pixels (light effects only) | soft, max | 0 | 0 | 0 |
+| `jaggies` | runs along one slope of the outline 2 or more longer, or shorter, than both neighbours | soft, max | ≤ 0.08 | ≤ 0.12 | ≤ 0.14 |
+| `pillow` | how much more the inside's light follows the distance in from the edge than the light | reported | – | – | – |
+| `checker` | share of the inside in 2 × 2 checkerboards of two colours (dithering) | reported | – | – | – |
+
+`pillow` and `checker` measure two classic mistakes the sources below warn about, but neither catches
+anything yet: RD's icons have a median `pillow` of 0.10 and `checker` of 0.009, ours 0.09 and 0.008, and
+the flat designs score lower still on both (−0.33, 0). So they describe and don't judge; promote one to a
+criterion once a sprite fails it by eye.
 
 The numbers above are from the 2026-10-23 calibration; `tools/pixel_style.json` holds the current ones.
 
@@ -72,11 +136,11 @@ The criteria are only trusted while they tell the two kinds of art apart. Rerun 
 to a metric or band:
 
 - **The reference passes:** at least 80% of RD's own sprites of each kind (the bands are 5th to 95th
-  percentiles, so a few of RD's own always fall outside one). 2026-10-23, with the floors: icons 88%
-  (123 / 140), scenery 84% (112 / 133), creatures 80% (52 / 65).
-- **The flat look fails:** `tools/item_art.py`'s designs, unfinished, pass at most 10%. 2026-10-23: 4%
-  (14 / 322), failing on `cluster_size` (99%), `flat` (90%), `colour_density` (85%) and `shades_per_ramp`
-  (79%). The same items as shipped, finished by the kit, pass 90% (307 / 343).
+  percentiles, so a few of RD's own always fall outside one). 2026-10-23, with the floors and `jaggies`:
+  icons 88% (123 / 140), scenery 86% (115 / 133), creatures 80% (52 / 65).
+- **The flat look fails:** `tools/item_art.py`'s designs, unfinished, pass at most 10%. 2026-10-23: 8%
+  (27 / 322), failing on `cluster_size` (91%), `flat` (90%), `colour_density` (82%) and `shades_per_ramp`
+  (79%). The same items as shipped, finished by the kit, pass 84% (288 / 343).
 
 ### Review by eye: what the numbers can't see
 
@@ -116,13 +180,20 @@ and a faint weave. `leather`: grain and a seam stitched two pixels in. `wood`: g
 `stone`: cracks and flecks. `fur`: short combed strands. `crystal`: facets, each its own tone, the ridges
 lit. `metal`: polished, one hard streak. `item_art.preset_for` picks one per item: set hats by their kind
 (plate helms, mail coifs, cloth hats and hoods), gauntlets and set boots plate, gloves and boots leather,
-capes cloth, whips leather (scales for a dragon's, crocodile's or snake's), materials by name
+capes cloth, whips their drawn braid (scales for a dragon's, crocodile's or snake's), materials by name
 (`MATERIAL_PRESETS`).
+
+**Colour from the set.** A hat, gloves or boots that belong to an armour (`item_art.set_armour`) take
+its colour from that armour's RD icon (`pixel_kit.dominant_colour`: the median colour of its commonest
+hue), so a set reads as one set in the bag; every other region is deepened a little (`_deepen`), as RD's
+colours sit lower and richer than a flat design's.
 
 Families share their shapes, so fix a family's helper, not its items: `boot`, `glove`, `cape` and
 `hat_piece` (helm, wizard's hat, coif, hood) in tools/item_art.py, drawn with curves (a calf and heel, a
 rounded toe, fingers of different lengths with shadow between them, a domed helm with cheek guards, a hat
-with its tip bent over, a hood with a soft peak), never boxes.
+with its tip bent over, a hood with a soft peak), never boxes. Whips (`whip_line`) are drawn as they're
+held (`hanging_whip`): the handle across the top left, the lash dangling from it in a loose S, its end
+flicked out at the bottom; never coiled.
 
 ## Making a sprite in code
 
@@ -136,11 +207,9 @@ with its tip bent over, a hood with a soft peak), never boxes.
 ## Where it stands (2026-10-23)
 
 - **Every item icon drawn in code is finished by the kit** (322 of them, and the 21 palette swaps of
-  them), 212 of them with a material preset: 90% pass (307 / 343), against 4% as designed; RD's own
-  icons pass 88%. Most of the rest fail a soft criterion (`highlight_share`: too many bright pixels on
-  shiny things). Known exception: items darker than the house outline (onyx, the Bossbane cape, a dark
-  ranger's hood) fail the outline checks, as the outline can't be darker than what's nearly black; RD's own
-  dark icons do the same.
+  them), most with a material preset: 84% pass (288 / 343), against 8% as designed; RD's own icons pass
+  88%. Most of the rest fail on `cluster_size`, `hue_shift` (pale colours near yellow, whose shift has
+  nowhere to go) or `jaggies`.
 - **Monsters are all RD's** (checked 2026-10-23): 63 of the 124 drawn by RD, the other 61 palette swaps of
   them. Nothing to redraw there; the criteria's `creature` bands guard any added in code later.
 
@@ -150,16 +219,31 @@ with its tip bent over, a hood with a soft peak), never boxes.
   amulet, the alloy shortsword) all pass; as drawn now by `item_art.py`, one of them does. Beside RD's they
   read as the same game but plainer: less designed material detail, and RD's metals have more contrast.
 - **Done 2026-10-23:** material presets; the three loose criteria tightened (`shades_per_ramp`,
-  `hue_shift`, `light_top_left`, measured afresh: see *Learned*).
+  `hue_shift`, `light_top_left`, measured afresh: see *Learned*); `jaggies` added, `pillow` and `checker`
+  reported; the kit tuned on RD's armour (above); whips redrawn hanging, as held.
+- **Known:** thin things (a whip's lash, three pixels wide) fail `cluster_size` and `orphans` by nature:
+  the braid alternates every few pixels. 16 of the 25 whips pass; their look was judged by eye.
 - **Next, in order:**
-  1. Presets on more than the main region (a gauntlet's plate *and* its leather cuff), and per-region
+  1. Ramps of 4 to 5 shades on icons (RD's 4, ours 6), and less of the designs' own top-left falloff.
+  2. Presets on more than the main region (a gauntlet's plate *and* its leather cuff), and per-region
      choice in the designs.
-  2. A criterion for designed detail (how much of the inside is a deliberate line or edge, not texture),
+  3. A criterion for designed detail (how much of the inside is a deliberate line or edge, not texture),
      calibrated on RD, so a sprite with less detail than its neighbours fails by number, not only by eye.
-  3. Scenery and props drawn in code (`tools/prop_art.py`) through the kit.
-  4. Animation: walk cycles stay RD's for now (`sprite-acceptance.md`).
+  4. Scenery and props drawn in code (`tools/prop_art.py`) through the kit.
+  5. Animation: walk cycles stay RD's for now (`sprite-acceptance.md`).
 
 ## Learned
+
+- **2026-10-23 (hue shift):** "Shadows toward blue" is a shortcut that only works for warm colours: on a
+  blue it turns the shadow toward cyan and yellow, the wrong way, and every blue item measured a negative
+  `hue_shift`. The rule is relative to the light: shadows away from yellow, round the short way.
+- **2026-10-23 (outline):** The house outline is no darker than a navy or shadow-violet item, and those
+  failed `outline_dark`; it's now deepened to half the light of what it rounds.
+- **2026-10-23 (whips):** A coiled whip read as a rope or a snail in the bag; held hanging from a diagonal
+  handle it reads as a whip. Arched up and over from an upright handle it read as a cane, so the handle
+  lies across the top left and the lash falls from its lower end.
+- **2026-10-23 (restyle):** Colour families group by hue (within 22°): a yellow paw and a yellow-brown grip
+  became one region and the paw turned brown. Give parts that must stay apart hues that are apart.
 
 - **2026-10-23 (criteria):** `shades_per_ramp` and `hue_shift` first grouped colours in fixed 30° hue
   bins; a hue-shifted ramp crosses bins by design, so it was split and counted short (RD's own icons scored
