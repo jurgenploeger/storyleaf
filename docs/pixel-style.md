@@ -279,6 +279,12 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 
 ## Learned
 
+- **2026-10-23 (frost tree):** The bare winter tree drawn as kit strokes looked out of place among RD's
+  snow scenery: limbs of one width like pipes, a thin strip of snow, icicles. RD's snow is soft clumps in
+  its own colours (`scenery_art.SNOW`, from its `snow_tree`); a near-white base on a ramp turns grey, so
+  snow is drawn in a key blue and laid on RD's colours after. Twigs drawn by the kit get an outline each
+  and run together into a dark mass at 64 pixels: they're single pixel lines (`pixel_lines`), as RD's.
+
 - **2026-10-23 (outlines):** The tinted outline at 0.6 of each shape's darkest shade came out near-black
   (`outline_rel` 0.37 on our trees and houses, against RD's 0.6 to 0.85), the stark black line round
   everything we drew. It's now the shape's own ramp at the shade of the body within two pixels, about

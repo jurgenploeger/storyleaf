@@ -183,21 +183,90 @@ def birch():
     return s
 
 
+# RD's snow, from its `snow_tree`: shadow to light, and the deep blue-grey it's outlined in. A pale base on
+# a ramp turns grey (pixel-style.md, Learned), so snow is drawn in a key blue and laid on these after.
+SNOW = ["#4b677f", "#6a8fa1", "#a4c0c4", "#d5e6df", "#f7f8ed"]
+SNOW_KEY = "#5a8cff"
+
+
+def snow_palette(img):
+    """Every pixel of the key blue's family (snow, and the outline drawn round it) laid on RD's snow by
+    its brightness among them."""
+    import colorsys
+    a = np.array(img)
+    on = a[..., 3] > 0
+    hsv = np.array([colorsys.rgb_to_hsv(*(px / 255)) for px in a[..., :3].reshape(-1, 3)]).reshape(a.shape[:2] + (3,))
+    key = colorsys.rgb_to_hsv(*(int(SNOW_KEY[k:k + 2], 16) / 255 for k in (1, 3, 5)))[0]
+    snowy = on & (np.abs((hsv[..., 0] - key + 0.5) % 1 - 0.5) < 0.06) & (hsv[..., 1] > 0.25)
+    if not snowy.any():
+        return img
+    v = hsv[..., 2][snowy]
+    t = (v - v.min()) / max(1e-6, v.max() - v.min())
+    ramp = np.array([[int(c[k:k + 2], 16) for k in (1, 3, 5)] for c in SNOW])
+    a[..., :3][snowy] = ramp[np.clip(np.round(t * 4.0 + 0.2).astype(int), 0, 4)]
+    return Image.fromarray(a, "RGBA")
+
+
+def pixel_lines(img, lines, colour, lit):
+    """Twigs as RD draws them on a bare tree: a line one pixel wide in a dark bark colour, its upper
+    left pixel by each step a shade lighter, laid only where nothing's drawn yet (behind the snow). Drawn
+    by the kit they'd each get an outline and run together into a dark mass."""
+    a = np.array(img)
+    h, w = a.shape[:2]
+    dark = [int(colour[k:k + 2], 16) for k in (1, 3, 5)]
+    light = [int(lit[k:k + 2], 16) for k in (1, 3, 5)]
+    for points in lines:
+        for (x0, y0), (x1, y1) in zip(points, points[1:]):
+            n = int(max(abs(x1 - x0), abs(y1 - y0)) * 2) + 1
+            for t in np.linspace(0, 1, n):
+                x, y = int(round(x0 + (x1 - x0) * t)), int(round(y0 + (y1 - y0) * t))
+                if 0 <= x < w and 0 <= y < h and a[y, x, 3] == 0:
+                    a[y, x] = dark + [255]
+                    if y > 0 and a[y - 1, x, 3] == 0 and t < 0.6:
+                        a[y - 1, x] = light + [255]
+    return Image.fromarray(a, "RGBA")
+
+
 def frosted():
-    """frost_tree: a bare winter tree, every limb capped with snow, icicles hanging under the lowest."""
+    """frost_tree: a bare winter tree as RD's snow scenery is drawn: a dark trunk forking into limbs that
+    taper to twigs, snow lying on the limbs in soft clumps (RD's own snow colours, `SNOW`), the forks
+    holding the most, the twigs bare, and a drift round its foot. Its first drawing, even limbs like
+    pipes with a strip of white along each and icicles, looked out of place among RD's snowy trees
+    (playtesting 2026-10-23)."""
     s = scene()
-    bark, snow, ice = Material("#5a5468", texture=0.06), Material("#eef6ff", texture=0.02), Material("#a8dcf4", texture=0.0, gloss=0.6)
-    trunk(s, 32, 60, 40, 6, bark, roots=3)
-    limbs = [[(32, 44), (20, 34), (10, 30)], [(32, 44), (44, 34), (55, 31)], [(32, 40), (30, 26), (24, 14)],
-             [(31, 34), (38, 22), (42, 10)], [(21, 35), (17, 24)], [(44, 34), (49, 22)], [(30, 26), (36, 16)]]
-    for limb in limbs:
-        branch(s, limb, 2.6, bark)
-    for limb in limbs:   # snow along the top of each limb
-        for (x0, y0), (x1, y1) in zip(limb, limb[1:]):
-            s.stroke([(x0, y0 - 1.3), (x1, y1 - 1.3)], 1.8, snow)
-    for (x, y) in ((14, 33), (19, 35), (47, 35), (52, 33)):
-        s.poly([(x - 0.9, y), (x + 0.9, y), (x, y + 4)], ice, profile="flat")
-    s.ellipse(32, 60, 9, 2.2, snow, profile="flat")
+    bark = Material("#5d5462", texture=0.06)
+    snow = Material(SNOW_KEY, texture=0.02, shades=6, variety=0)
+    r = rng(71)
+    forks, twigs = [], []
+
+    def grow(x, y, angle, length, width, depth):
+        """A limb from (x, y) at `angle` (0 up, negative left), bending a little, forking twice."""
+        bend = r.uniform(-0.25, 0.25)
+        mx, my = x + math.sin(angle) * length * 0.5, y - math.cos(angle) * length * 0.5
+        ex, ey = x + math.sin(angle + bend) * length, y - math.cos(angle + bend) * length
+        if width >= 2.0:
+            s.stroke([(x, y), (mx, my)], width, bark)
+            s.stroke([(mx, my), (ex, ey)], max(1.0, width * 0.72), bark)
+        else:                               # a twig: one pixel wide, drawn after (`twigs`)
+            twigs.append([(x, y), (mx, my), (ex, ey)])
+        if depth:
+            forks.append((ex, ey, width, depth))
+            for side in (-1, 1):
+                grow(ex, ey, angle + bend + side * r.uniform(0.3, 0.55), length * r.uniform(0.7, 0.82),
+                     max(1.0, width * 0.62), depth - 1)
+
+    trunk(s, 32, 58, 40, 4.2, bark, lean=-0.6, roots=3)
+    for angle, length in ((-0.85, 11), (-0.25, 12), (0.3, 11.5), (0.9, 10)):
+        grow(32 + angle * 2, 42, angle, length, 3.4, 3)
+    # Snow lies in the forks of the limbs and the first branches; the twigs past them stay bare.
+    for x, y, width, depth in sorted(forks, key=lambda f: f[1]):
+        if depth < 2 or (depth == 2 and r.random() < 0.35):
+            continue
+        size = 1.0 + width * 0.7
+        s.ellipse(x, y - size * 0.4, size * 1.25, size * 0.65, snow)
+    s.ellipse(32, 41.5, 4.5, 2.2, snow)                       # in the crotch of the trunk
+    s.ellipse(32, 58.5, 13, 3.2, snow)                        # the drift round its foot
+    s.finish = lambda img: snow_palette(pixel_lines(img, twigs, "#3a3442", "#6a6070"))
     return s
 
 
@@ -389,7 +458,8 @@ def main(argv):
     ids = argv or sorted(drawings)
     out = {}
     for item in ids:
-        img = grounded(drawings[item]().render(outline="tinted"))
+        drawn = drawings[item]()
+        img = grounded(getattr(drawn, "finish", lambda i: i)(drawn.render(outline="tinted")))
         img.save(SPRITES / f"{item}.png")
         out[item] = img
     print(f"wrote {len(out)} scenery sprites to art/sprites/")
