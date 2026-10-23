@@ -10,7 +10,7 @@ the look RD gave us, and the bands can be re-run as the reference grows.
     python3 tools/pixel_style.py calibrate                 # measure the reference, write the bands
     python3 tools/pixel_style.py check <png>...            # score sprites (exit 1 if any fails)
     python3 tools/pixel_style.py compare                   # RD's icons, ours, and the flat designs
-    python3 tools/pixel_style.py check --kind icon <png>   # pick the band set (icon, creature, scenery)
+    python3 tools/pixel_style.py check --kind icon <png>   # pick the band set (icon, creature, scenery, building)
 
 Needs pillow + numpy.
 """
@@ -37,9 +37,10 @@ CODE_PROPS = {"candy_cane", "ship", "cave_ladder", "cave_rope", "waystone"}
 def reference():
     """{kind: [png paths]}: every shipped sprite RD drew. Icons are the 32 × 32 item icons tools/weapon_art.py
     and tools/armour_art.py made from picked RD drawings; creatures the monsters; scenery props, buildings
-    and tiles."""
+    and tiles; buildings also on their own (a 96-pixel house holds fewer colours to its size than a bush,
+    so RD's own failed a third of the scenery bands)."""
     assets = json.loads((ROOT / "art" / "assets.json").read_text())["assets"]
-    out = {"icon": [], "creature": [], "scenery": []}
+    out = {"icon": [], "creature": [], "scenery": [], "building": []}
     for a in assets:
         if "request" not in a or "derive" in a or a["id"] in CODE_PROPS or a["id"].startswith("crystal"):
             continue
@@ -50,6 +51,8 @@ def reference():
             out["creature"].append(path)
         elif a["kind"] in ("prop", "building", "tile"):
             out["scenery"].append(path)
+            if a["kind"] == "building":
+                out["building"].append(path)
     out["icon"] = [SPRITES / f"item_{i}.png" for i in sorted(rd_items()) if (SPRITES / f"item_{i}.png").exists()]
     return out
 
@@ -96,6 +99,14 @@ def warm_distance(hue_deg):
     return d
 
 
+def _box(a, r):
+    """The mean of each pixel's (2r + 1)-square neighbourhood, zero outside."""
+    k = 2 * r + 1
+    c = np.pad(np.pad(a, r).cumsum(0).cumsum(1), ((1, 0), (1, 0)))
+    H, W = a.shape
+    return (c[k:k + H, k:k + W] - c[:H, k:k + W] - c[k:k + H, :W] + c[:H, :W]) / (k * k)
+
+
 def measure(path):
     """Every metric for one sprite, as {name: value}. None where a metric doesn't apply (too few pixels)."""
     img = load(path)
@@ -128,6 +139,32 @@ def measure(path):
     m["outline_sat"] = float(np.median(dark_edge[:, 1])) if len(dark_edge) else 0.0
     m["outline_value"] = float(np.median(dark_edge[:, 2])) if len(dark_edge) else 1.0
     m["outline_colours"] = int(len(np.unique(np.round(rgb[edge] * 255).astype(int) @ np.array([65536, 256, 1]))))
+    # The outline against what it rounds: each edge pixel's value (HSV) over the mean value of the inside
+    # within 2 pixels of it, median. RD's outlines are a deep shade of the colour inside (a green tree's
+    # dark green, about 0.6 to 0.85 of it); a near-black line round everything sits far lower.
+    val = rgb.max(axis=2)
+    pad = 2
+    iv = np.pad(np.where(interior, val, 0.0), pad)
+    ic = np.pad(interior.astype(float), pad)
+    tot = np.zeros(opaque.shape)
+    cnt = np.zeros(opaque.shape)
+    for dy in range(-pad, pad + 1):
+        for dx in range(-pad, pad + 1):
+            tot += iv[pad + dy:pad + dy + opaque.shape[0], pad + dx:pad + dx + opaque.shape[1]]
+            cnt += ic[pad + dy:pad + dy + opaque.shape[0], pad + dx:pad + dx + opaque.shape[1]]
+    near = edge & (cnt > 0)
+    inside_v = tot[near] / cnt[near]
+    rel = val[near] / np.maximum(inside_v, 0.04)
+    m["outline_rel"] = float(np.median(np.minimum(rel, 1.5))) if near.any() else None
+    # Light in broad areas: how much of the inside's spread of light survives a 5 × 5 blur. RD lights a
+    # house as a few big areas (a lit front, a side in shadow, a dark band under the eaves) with detail
+    # on top; light that lives only in a grain on every pixel blurs away to nothing.
+    lum = luma(rgb)
+    w = opaque.astype(float)
+    full = _box(w, 2)
+    blurred = _box(lum * w, 2) / np.maximum(full, 1e-6)
+    deep = opaque & (full > 0.99)
+    m["light_masses"] = float(blurred[deep].std() / max(lum[deep].std(), 1e-6)) if deep.sum() >= 30 else None
 
     # Flatness: interior pixels with all 8 neighbours their own colour.
     k = np.full(opaque.shape, -1)
@@ -281,12 +318,22 @@ ENFORCED = {
     "semi_alpha": "max", "colour_density": "min", "outline_dark": "min", "outline_sat": "min",
     "outline_value": "both", "flat": "max", "orphans": "max", "shades_per_ramp": "min", "hue_shift": "min",
     "value_range": "min", "light_top_left": "min", "highlight_share": "both", "cluster_size": "both",
-    "jaggies": "max",
+    "jaggies": "max", "outline_rel": "min", "light_masses": "min",
 }
+# Where a kind is judged the other way too: a building's palette is capped as well as floored (RD's hold
+# 18 to 35 colours; drawn shape by shape, ours held over a hundred, every face its own seven shades).
+BOTH_BY_KIND = {"building": {"colour_density"}}
+# Judged on some kinds only: light in broad areas is a building's (a bush or a tile is all small detail).
+ONLY_FOR = {"light_masses": {"building"}}
 # Reported, not judged (2026-10-23): `pillow` and `checker` measure two classic mistakes, but neither
 # separates RD's art from the flat designs or ours, so they describe, they don't judge.
 # Partial transparency is soft: only a light effect (a magic staff's glow) may use it.
 HARD = {"colour_density", "flat", "outline_dark", "fill"}
+# Buildings: a broken, tinted outline is how RD draws them (a lit roof edge has none), so it's soft there.
+# The outline's light against what it rounds (`outline_rel`) is hard wherever RD tints it: a near-black
+# line round a green tree is the commonest tell of a sprite drawn in code (playtesting 2026-10-23).
+# (Soft on creatures: RD drew every one, and a dark one's outline sits close to its body's light.)
+HARD_BY_KIND = {"building": {"colour_density", "flat", "outline_rel"}, "scenery": HARD | {"outline_rel"}}
 SOFT_PASS = 0.8
 # Icons fill most of their tile (fixed rules, not measured bands).
 ICON_RULES = {"fill": ("min", 0.78)}
@@ -299,7 +346,11 @@ FLOORS = {
     "icon": {"shades_per_ramp": 3, "hue_shift": 0.0, "light_top_left": 0.0},
     "creature": {"shades_per_ramp": 5, "hue_shift": 4.0, "light_top_left": 0.0},
     "scenery": {"shades_per_ramp": 4, "hue_shift": 2.0, "light_top_left": -0.05},
+    "building": {"light_masses": 0.55},
 }
+# And ceilings over them, where the band's 95th percentile alone would cut RD's own: a building's palette
+# cap sits over all but the smallest of RD's (its fence).
+CEILINGS = {"building": {"colour_density": 1.4}}
 
 
 def calibrate():
@@ -316,8 +367,9 @@ def calibrate():
             lo, hi = float(np.percentile(vals, 5)), float(np.percentile(vals, 95))
             pad = max(0.0, MIN_WIDTH.get(name, 0.0) - (hi - lo)) / 2
             low = max(lo - pad, FLOORS.get(kind, {}).get(name, -np.inf))
+            high = max(hi + pad, CEILINGS.get(kind, {}).get(name, -np.inf))
             kb[name] = {"p10": round(low, 4), "median": round(float(np.median(vals)), 4),
-                        "p90": round(hi + pad, 4)}
+                        "p90": round(high, 4)}
         bands["kinds"][kind] = kb
     BANDS.write_text(json.dumps(bands, indent=2) + "\n")
     print(f"wrote {BANDS.relative_to(ROOT)}: " + ", ".join(f"{k} ({v['count']})" for k, v in bands["kinds"].items()))
@@ -328,10 +380,12 @@ def judge(m, kind):
     bands = json.loads(BANDS.read_text())["kinds"][kind]
     out = []
     for name, way in ENFORCED.items():
-        if name not in bands or m.get(name) is None:
+        if name not in bands or m.get(name) is None or kind not in ONLY_FOR.get(name, {kind}):
             continue
         b = bands[name]
         v = m[name]
+        if name in BOTH_BY_KIND.get(kind, ()):
+            way = "both"
         low_ok = v >= b["p10"] if way in ("min", "both") else True
         high_ok = v <= b["p90"] if way in ("max", "both") else True
         band = {"min": f"≥{b['p10']}", "max": f"≤{b['p90']}", "both": f"{b['p10']}–{b['p90']}"}[way]
@@ -343,10 +397,11 @@ def judge(m, kind):
     return out
 
 
-def verdict(j):
+def verdict(j, kind=None):
     """(passes, soft score): every hard criterion, and SOFT_PASS of the soft ones."""
-    hard = all(ok for n, *_, ok in j if n in HARD)
-    soft = [ok for n, *_, ok in j if n not in HARD]
+    hard_set = HARD_BY_KIND.get(kind, HARD)
+    hard = all(ok for n, *_, ok in j if n in hard_set)
+    soft = [ok for n, *_, ok in j if n not in hard_set]
     s = sum(soft) / len(soft) if soft else 1.0
     return hard and s >= SOFT_PASS, s
 
@@ -359,7 +414,7 @@ def score(paths, kind):
         if not m:
             continue
         j = judge(m, kind)
-        ok, s = verdict(j)
+        ok, s = verdict(j, kind)
         res[str(p)] = (ok, s, [(n, round(v, 3), b) for n, v, b, good in j if not good])
     return res
 
@@ -421,10 +476,10 @@ def main(argv):
                 bad += 1
                 continue
             j = judge(m, kind)
-            ok, s = verdict(j)
+            ok, s = verdict(j, kind)
             print(f"{p}: {'PASS' if ok else 'FAIL'} (soft {s:.0%}, needs {SOFT_PASS:.0%} and every hard one)")
             for n, v, b, good in j:
-                print(f"   {'✓' if good else '✗'} {n:16} {v:8.3f}   {b}{'   hard' if n in HARD else ''}")
+                print(f"   {'✓' if good else '✗'} {n:16} {v:8.3f}   {b}{'   hard' if n in HARD_BY_KIND.get(kind, HARD) else ''}")
             bad += not ok
         return 1 if bad else 0
     print(__doc__)

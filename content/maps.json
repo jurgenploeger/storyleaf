@@ -1,5 +1,5 @@
 {
-  "_about": "Maps. Walk off an edge listed in `exits` to travel to that map. `theme` picks ground tiles, ponds, fairy rings and scenery (art ids from art/assets.json); props with `cluster` grow in groups, `sway` ones move in the breeze. `ambience` adds particles (petals | leaves | fireflies | sparkles | bubbles | dandelions | sprinkles | lanterns | zzz | notes, joined with +), butterflies, `critters` that hop off when you come near (bunny | frog | crab), `birds` crossing the sky (songbirds | gulls | bats), cloud shadows, a colour tint and `weather` weights (clear | cloudy | rain | storm | fog | snow; {} for no sky). A prop with `bob` floats gently up and down. Maps with `encounters` have random battles; `music` is a song id from music.json. Building/decor/NPC x,y are tile offsets from the map centre (y up). Boss NPCs name their `monster` and `level`, `minions` (how many of the map's own monsters fight beside it, 9 unless set), `waves` (how many waves the fight comes in, 3 unless set: waves of 10 of the map's monsters, then the boss) and a `victory` story (a title and 1 to 3 short paragraphs), told the first time you beat it. `locals` are the people who live there (MapDef.Local in Content.swift): a name, a look, a home (`at` a landmark: jetty | bridge | island | shore | mouth, else on a `summit` or `x`, `y` out from the middle), `roam` or a `walk` there and back, maybe a `pet`, something to `hold`, armour to `wear` and `props` round them, and `lines`: their story, told a line at a time in order.",
+  "_about": "Maps. Walk off an edge listed in `exits` to travel to that map. `theme` picks ground tiles, ponds, fairy rings and scenery (art ids from art/assets.json); props with `cluster` grow in groups, `sway` ones move in the breeze. `ambience` adds particles (petals | leaves | fireflies | sparkles | bubbles | dandelions | sprinkles | lanterns | zzz | notes, joined with +), butterflies, `critters` that hop off when you come near (bunny | frog | crab), `birds` crossing the sky (songbirds | gulls | bats), cloud shadows, a colour tint and `weather` weights (clear | cloudy | rain | storm | fog | snow; {} for no sky). A prop with `bob` floats gently up and down. Maps with `encounters` have random battles; `music` is a song id from music.json. Building/decor/NPC x,y are tile offsets from the map centre (y up). Boss NPCs name their `monster` and `level`, `minions` (how many of the map's own monsters fight beside it, 9 unless set), `waves` (how many waves the fight comes in, 3 unless set: waves of 10 of the map's monsters, then the boss) and a `victory` story (a title and 1 to 3 short paragraphs), told the first time you beat it. A boss's `lair` is set down round it (LandPlanner.planLair): pieces (`art`, `x`, `y` out from the boss, `blocking`) with the way in to the south (y below 0), turned to face the land's middle; one that would land on a road, water, rock or a cliff is left out, and a clearing round the boss keeps the trees off. `locals` are the people who live there (MapDef.Local in Content.swift): a name, a look, a home (`at` a landmark: jetty | bridge | island | shore | mouth, else on a `summit` or `x`, `y` out from the middle), `roam` or a `walk` there and back, maybe a `pet`, something to `hold`, armour to `wear` and `props` round them, and `lines`: their story, told a line at a time in order.",
   "start": "meadowbrook",
   "maps": [
     {
@@ -1173,22 +1173,22 @@
           "mushroom_house",
           "mushroom_house_blue",
           "mushroom_house_gold",
-          "house",
-          "house_green",
-          "house_purple",
+          "timber_house",
+          "tailor_shop",
+          "thatched_cottage",
           "mushroom_house",
-          "mushroom_house_blue",
-          "mushroom_house_gold",
-          "house",
-          "house_green",
+          "book_shop",
+          "garden_cottage",
+          "garden_cottage",
+          "weapon_shop",
+          "timber_house",
+          "round_cottage",
+          "armour_shop",
+          "round_cottage",
+          "tea_house",
+          "thatched_cottage",
           "house_purple",
-          "mushroom_house",
-          "mushroom_house_blue",
-          "mushroom_house_gold",
-          "house",
-          "house_green",
-          "house_purple",
-          "mushroom_house",
+          "teapot_house",
           "mushroom_house_blue",
           "mushroom_house_gold",
           "bakery",
@@ -1196,9 +1196,9 @@
           "item_shop_red",
           "house",
           "mushroom_house",
-          "house_green",
+          "flower_shop",
           "house",
-          "house_green",
+          "thatched_cottage",
           "house_purple",
           "mushroom_house",
           "mushroom_house_blue",
@@ -3619,6 +3619,20 @@
           "greeting": "Hrmph. Stop smiling at me. STOP IT.",
           "monster": "grumpy_oak",
           "level": 28,
+          "lair": [
+            {"art": "tree_stump", "x": -4, "y": 0},
+            {"art": "thorn_bush", "x": -3, "y": 3},
+            {"art": "fallen_log", "x": 0, "y": 4},
+            {"art": "thorn_bush", "x": 3, "y": 3},
+            {"art": "tree_stump", "x": 4, "y": 0},
+            {"art": "big_hollow_tree", "x": 0, "y": 6},
+            {"art": "mushroom", "x": -2, "y": 1, "blocking": false},
+            {"art": "dead_bush", "x": 2, "y": 2, "blocking": false},
+            {"art": "toadstool", "x": -1, "y": -2, "blocking": false},
+            {"art": "tree_stump", "x": -2, "y": -3},
+            {"art": "tree_stump", "x": 2, "y": -3},
+            {"art": "warning_post", "x": -3, "y": -6}
+          ],
           "victory": {
             "title": "The Forest Smiles Again",
             "story": [
@@ -4238,35 +4252,35 @@
           "mushroom_house_blue",
           "mushroom_house_gold",
           "house",
-          "house_green",
-          "house_purple",
+          "teapot_house",
+          "round_cottage",
           "mushroom_house",
-          "mushroom_house_blue",
-          "mushroom_house_gold",
+          "book_shop",
+          "tailor_shop",
           "house",
+          "teapot_house",
+          "flower_shop",
+          "mushroom_house",
+          "round_cottage",
+          "weapon_shop",
+          "thatched_cottage",
+          "armour_shop",
+          "timber_house",
+          "mushroom_house",
+          "tea_house",
+          "tailor_shop",
+          "stone_townhouse",
           "house_green",
-          "house_purple",
+          "stone_townhouse",
           "mushroom_house",
           "mushroom_house_blue",
-          "mushroom_house_gold",
-          "house",
-          "house_green",
-          "house_purple",
-          "mushroom_house",
-          "mushroom_house_blue",
-          "mushroom_house_gold",
-          "house",
-          "house_green",
-          "house_purple",
-          "mushroom_house",
-          "mushroom_house_blue",
-          "mushroom_house_gold",
+          "book_shop",
           "item_shop_red",
           "inn_teal",
           "bakery",
           "house",
-          "mushroom_house_gold",
-          "house_purple",
+          "timber_house",
+          "garden_cottage",
           "house",
           "house_green",
           "house_purple",
@@ -5190,6 +5204,20 @@
           "greeting": "Grrr… what big eyes you have. All the better to FIGHT you with!",
           "monster": "big_bad_wolf",
           "level": 92,
+          "lair": [
+            {"art": "ice_boulder", "x": -4, "y": 0},
+            {"art": "frozen_bush", "x": -3, "y": 3},
+            {"art": "fallen_log", "x": 0, "y": 4},
+            {"art": "ice_rock", "x": 3, "y": 3},
+            {"art": "ice_boulder", "x": 4, "y": 0},
+            {"art": "big_dead_tree", "x": 0, "y": 6},
+            {"art": "skull_bones", "x": -2, "y": 1, "blocking": false},
+            {"art": "small_skull", "x": 2, "y": 2, "blocking": false},
+            {"art": "small_skull", "x": -1, "y": -2, "blocking": false},
+            {"art": "brazier", "x": -2, "y": -3},
+            {"art": "brazier", "x": 2, "y": -3},
+            {"art": "warning_post", "x": -3, "y": -6}
+          ],
           "victory": {
             "title": "Nobody's Afraid Anymore",
             "story": [
@@ -6270,6 +6298,20 @@
           "greeting": "Ooooh, follow the pretty light... just a little further... hee hee!",
           "monster": "great_wisp",
           "level": 48,
+          "lair": [
+            {"art": "tombstone", "x": -4, "y": 0},
+            {"art": "wisp_lantern", "x": -3, "y": 3},
+            {"art": "tombstone", "x": 0, "y": 4},
+            {"art": "wisp_lantern", "x": 3, "y": 3},
+            {"art": "tombstone", "x": 4, "y": 0},
+            {"art": "big_dead_tree", "x": 0, "y": 6},
+            {"art": "small_skull", "x": -2, "y": 1, "blocking": false},
+            {"art": "glow_mushroom", "x": 2, "y": 2, "blocking": false},
+            {"art": "skull_bones", "x": -1, "y": -2, "blocking": false},
+            {"art": "spooky_lantern", "x": -2, "y": -3},
+            {"art": "spooky_lantern", "x": 2, "y": -3},
+            {"art": "warning_post", "x": -3, "y": -6}
+          ],
           "victory": {
             "title": "The Light Goes Out",
             "story": [
@@ -6588,6 +6630,20 @@
           "greeting": "Squeak! Who dares enter MY cavern? Bow to the king!",
           "monster": "rat_king",
           "level": 58,
+          "lair": [
+            {"art": "barrels", "x": -4, "y": 0},
+            {"art": "wooden_crates", "x": -3, "y": 3},
+            {"art": "mine_cart", "x": 0, "y": 4},
+            {"art": "wooden_crates", "x": 3, "y": 3},
+            {"art": "barrels", "x": 4, "y": 0},
+            {"art": "junk_throne", "x": 0, "y": 2},
+            {"art": "small_skull", "x": -2, "y": 1, "blocking": false},
+            {"art": "skull_bones", "x": 2, "y": 2, "blocking": false},
+            {"art": "pebbles", "x": -1, "y": -2, "blocking": false},
+            {"art": "brazier", "x": -2, "y": -3},
+            {"art": "brazier", "x": 2, "y": -3},
+            {"art": "warning_post", "x": -3, "y": -6}
+          ],
           "victory": {
             "title": "The Rat King Falls",
             "story": [
@@ -7128,20 +7184,20 @@
           "mushroom_house",
           "mushroom_house_gold",
           "house",
-          "house_purple",
+          "stone_townhouse",
           "mushroom_house",
-          "mushroom_house_gold",
-          "house",
-          "house_purple",
-          "mushroom_house",
-          "mushroom_house_gold",
-          "house",
-          "house_purple",
-          "mushroom_house",
-          "mushroom_house_gold",
+          "round_cottage",
+          "armour_shop",
+          "stone_townhouse",
+          "tea_house",
+          "weapon_shop",
+          "armour_shop",
+          "stone_townhouse",
+          "timber_house",
+          "weapon_shop",
           "blacksmith",
           "inn_red",
-          "house",
+          "timber_house",
           "mushroom_house",
           "house",
           "house_purple",
@@ -7424,7 +7480,7 @@
           "y": -5
         },
         {
-          "art": "stone_hut",
+          "art": "dome_house",
           "x": -6,
           "y": -7
         },
@@ -7434,7 +7490,7 @@
           "y": -10
         },
         {
-          "art": "stone_hut",
+          "art": "market_tent",
           "x": -25,
           "y": -15
         },
@@ -7444,22 +7500,22 @@
           "y": -15
         },
         {
-          "art": "adobe_house",
+          "art": "dome_house",
           "x": 25,
           "y": -16
         },
         {
-          "art": "desert_tent",
+          "art": "pavilion_tent",
           "x": -25,
           "y": -20
         },
         {
-          "art": "adobe_house_tall",
+          "art": "market_tent",
           "x": -5,
           "y": -20
         },
         {
-          "art": "stone_hut",
+          "art": "dome_house",
           "x": 26,
           "y": -21
         },
@@ -7469,7 +7525,7 @@
           "y": -26
         },
         {
-          "art": "stone_hut",
+          "art": "market_tent",
           "x": -27,
           "y": 5
         },
@@ -7479,7 +7535,7 @@
           "y": 9
         },
         {
-          "art": "desert_tent",
+          "art": "pavilion_tent",
           "x": -14,
           "y": -27
         },
@@ -7951,6 +8007,20 @@
           "greeting": "*hic* Heyyy… you wanna piece of this? *hic*",
           "monster": "drunk_dragon",
           "level": 78,
+          "lair": [
+            {"art": "oasis_palm", "x": -4, "y": 0},
+            {"art": "sand_ruin", "x": -3, "y": 3},
+            {"art": "oasis_palm", "x": 0, "y": 4},
+            {"art": "sandstone_boulder", "x": 3, "y": 3},
+            {"art": "oasis_palm", "x": 4, "y": 0},
+            {"art": "gold_hoard", "x": 0, "y": 2},
+            {"art": "barrels", "x": -2, "y": 1, "blocking": false},
+            {"art": "desert_pot", "x": 2, "y": 2, "blocking": false},
+            {"art": "skull_bones", "x": -1, "y": -2, "blocking": false},
+            {"art": "brazier", "x": -2, "y": -3},
+            {"art": "brazier", "x": 2, "y": -3},
+            {"art": "warning_post", "x": -3, "y": -6}
+          ],
           "victory": {
             "title": "A Dragon Sobers Up",
             "story": [
@@ -8095,12 +8165,12 @@
       ],
       "buildings": [
         {
-          "art": "item_shop",
+          "art": "market_tent",
           "x": -5,
           "y": 24
         },
         {
-          "art": "inn_teal",
+          "art": "pavilion_tent",
           "x": 6,
           "y": 24
         },
@@ -8110,7 +8180,7 @@
           "y": 16
         },
         {
-          "art": "inn",
+          "art": "dome_house",
           "x": 9,
           "y": 16
         }
@@ -9087,6 +9157,18 @@
           "greeting": "Who stole my moon-mochi? Was it YOU? Hop to it and face me!",
           "monster": "moon_rabbit_queen",
           "level": 105,
+          "lair": [
+            {"art": "moon_lantern_post", "x": -4, "y": 0},
+            {"art": "moon_flower", "x": -3, "y": 3},
+            {"art": "statue", "x": 0, "y": 4},
+            {"art": "moon_flower", "x": 3, "y": 3},
+            {"art": "moon_lantern_post", "x": 4, "y": 0},
+            {"art": "mochi_stack", "x": 1, "y": 2},
+            {"art": "moon_flower", "x": -2, "y": 1, "blocking": false},
+            {"art": "mochi_stack", "x": 2, "y": 2, "blocking": false},
+            {"art": "moon_lantern_post", "x": -2, "y": -3},
+            {"art": "moon_lantern_post", "x": 2, "y": -3}
+          ],
           "victory": {
             "title": "The Queen Hops Home",
             "story": [
@@ -10047,6 +10129,20 @@
           "greeting": "The Gilded King's treasure is mine! Mine, mine, MINE!",
           "monster": "golden_grunt",
           "level": 20,
+          "lair": [
+            {"art": "wooden_crates", "x": -4, "y": 0},
+            {"art": "mine_cart", "x": -3, "y": 3},
+            {"art": "treasure_chest", "x": 0, "y": 4},
+            {"art": "mine_beam", "x": 3, "y": 3},
+            {"art": "barrels", "x": 4, "y": 0},
+            {"art": "gold_hoard", "x": 0, "y": 2},
+            {"art": "gift_box_gold", "x": -2, "y": 1, "blocking": false},
+            {"art": "small_skull", "x": 2, "y": 2, "blocking": false},
+            {"art": "pebbles", "x": -1, "y": -2, "blocking": false},
+            {"art": "brazier", "x": -2, "y": -3},
+            {"art": "brazier", "x": 2, "y": -3},
+            {"art": "warning_post", "x": -3, "y": -6}
+          ],
           "victory": {
             "title": "Fool's Gold",
             "story": [
@@ -11200,6 +11296,20 @@
           "greeting": "Grrr... the sheep's lambs are ours. Turn back, little hero.",
           "monster": "wolf_leader",
           "level": 36,
+          "lair": [
+            {"art": "standing_stone", "x": -4, "y": 0},
+            {"art": "boulder", "x": -3, "y": 3},
+            {"art": "standing_stone", "x": 0, "y": 4},
+            {"art": "boulder", "x": 3, "y": 3},
+            {"art": "standing_stone", "x": 4, "y": 0},
+            {"art": "big_dead_tree", "x": 0, "y": 6},
+            {"art": "skull_bones", "x": -2, "y": 1, "blocking": false},
+            {"art": "small_skull", "x": 2, "y": 2, "blocking": false},
+            {"art": "small_skull", "x": -1, "y": -2, "blocking": false},
+            {"art": "brazier", "x": -2, "y": -3},
+            {"art": "brazier", "x": 2, "y": -3},
+            {"art": "warning_post", "x": -3, "y": -6}
+          ],
           "victory": {
             "title": "The Lambs Come Home",
             "story": [
@@ -11825,7 +11935,7 @@
           "house",
           "house",
           "house",
-          "house",
+          "weapon_shop",
           "windmill",
           "mushroom_house",
           "inn_teal",
@@ -11833,26 +11943,26 @@
           "item_shop_red",
           "house_purple",
           "mushroom_house_blue",
-          "house",
+          "teapot_house",
           "mushroom_house",
           "house_green",
           "house_purple",
           "mushroom_house_blue",
-          "house",
-          "house_purple",
-          "mushroom_house_blue",
+          "thatched_cottage",
+          "round_cottage",
+          "garden_cottage",
+          "flower_shop",
+          "mushroom_house",
+          "house_green",
+          "garden_cottage",
+          "tea_house",
+          "thatched_cottage",
+          "book_shop",
+          "tailor_shop",
           "house",
           "mushroom_house",
           "house_green",
-          "house_purple",
-          "mushroom_house_blue",
-          "house",
-          "house_purple",
-          "mushroom_house_blue",
-          "house",
-          "mushroom_house",
-          "house_green",
-          "house_purple",
+          "armour_shop",
           "mushroom_house_blue",
           "house",
           "house_purple",
@@ -13655,6 +13765,19 @@
           "greeting": "Dance! Dance for your king, forever and ever!",
           "monster": "puppet_king",
           "level": 62,
+          "lair": [
+            {"art": "marionette", "x": -4, "y": 0},
+            {"art": "toy_blocks", "x": -3, "y": 3},
+            {"art": "marionette", "x": 0, "y": 4},
+            {"art": "jack_in_the_box", "x": 3, "y": 3},
+            {"art": "marionette", "x": 4, "y": 0},
+            {"art": "marionette", "x": -1, "y": 2},
+            {"art": "toy_blocks", "x": -2, "y": 1, "blocking": false},
+            {"art": "spooky_lantern", "x": 2, "y": 2, "blocking": false},
+            {"art": "spooky_lantern", "x": -2, "y": -3},
+            {"art": "spooky_lantern", "x": 2, "y": -3},
+            {"art": "warning_post", "x": -3, "y": -6}
+          ],
           "victory": {
             "title": "The Strings Are Cut",
             "story": [
@@ -14636,6 +14759,20 @@
           "greeting": "Rrrrmmmbbllle... sleep... everyone... sleep...",
           "monster": "rock_monster",
           "level": 86,
+          "lair": [
+            {"art": "boulder", "x": -4, "y": 0},
+            {"art": "red_rock", "x": -3, "y": 3},
+            {"art": "standing_stone", "x": 0, "y": 4},
+            {"art": "red_rock", "x": 3, "y": 3},
+            {"art": "boulder", "x": 4, "y": 0},
+            {"art": "standing_stone", "x": 0, "y": 6},
+            {"art": "pebbles", "x": -2, "y": 1, "blocking": false},
+            {"art": "small_boulder", "x": 2, "y": 2, "blocking": false},
+            {"art": "skull_bones", "x": -1, "y": -2, "blocking": false},
+            {"art": "brazier", "x": -2, "y": -3},
+            {"art": "brazier", "x": 2, "y": -3},
+            {"art": "warning_post", "x": -3, "y": -6}
+          ],
           "victory": {
             "title": "Dozywick Wakes Up",
             "story": [
@@ -15110,6 +15247,19 @@
           "greeting": "The goddess's treasure has a guardian, and it is me.",
           "monster": "idreus",
           "level": 125,
+          "lair": [
+            {"art": "standing_stone", "x": -4, "y": 0},
+            {"art": "standing_stone", "x": -3, "y": 3},
+            {"art": "standing_stone", "x": 0, "y": 4},
+            {"art": "standing_stone", "x": 3, "y": 3},
+            {"art": "standing_stone", "x": 4, "y": 0},
+            {"art": "statue", "x": 0, "y": 6},
+            {"art": "treasure_chest", "x": -2, "y": 1, "blocking": false},
+            {"art": "skull_bones", "x": 2, "y": 2, "blocking": false},
+            {"art": "brazier", "x": -2, "y": -3},
+            {"art": "brazier", "x": 2, "y": -3},
+            {"art": "warning_post", "x": -3, "y": -6}
+          ],
           "victory": {
             "title": "The Goddess's Treasure",
             "story": [
@@ -15158,7 +15308,7 @@
       ],
       "buildings": [
         {
-          "art": "inn_red",
+          "art": "yurt",
           "x": -16,
           "y": -2
         },
@@ -15168,7 +15318,7 @@
           "y": -2
         },
         {
-          "art": "adobe_house",
+          "art": "yurt",
           "x": -32,
           "y": -10
         },
@@ -16546,6 +16696,20 @@
           "greeting": "The lake keeps its secrets. So will your bones.",
           "monster": "tide_dragon",
           "level": 170,
+          "lair": [
+            {"art": "wall_pillar", "x": -4, "y": 0},
+            {"art": "coral", "x": -3, "y": 3},
+            {"art": "wall_pillar", "x": 0, "y": 4},
+            {"art": "coral", "x": 3, "y": 3},
+            {"art": "wall_pillar", "x": 4, "y": 0},
+            {"art": "statue", "x": 0, "y": 6},
+            {"art": "seashells", "x": -2, "y": 1, "blocking": false},
+            {"art": "seashells", "x": 2, "y": 2, "blocking": false},
+            {"art": "message_bottle", "x": -1, "y": -2, "blocking": false},
+            {"art": "brazier", "x": -2, "y": -3},
+            {"art": "brazier", "x": 2, "y": -3},
+            {"art": "warning_post", "x": -3, "y": -6}
+          ],
           "victory": {
             "title": "The Tide Turns",
             "story": [
@@ -16884,6 +17048,20 @@
           "greeting": "The Silver Wraith sends his regards.",
           "monster": "silver_lieutenant",
           "level": 185,
+          "lair": [
+            {"art": "wall_pillar", "x": -4, "y": 0},
+            {"art": "tombstone", "x": -3, "y": 3},
+            {"art": "statue", "x": 0, "y": 4},
+            {"art": "tombstone", "x": 3, "y": 3},
+            {"art": "wall_pillar", "x": 4, "y": 0},
+            {"art": "brazier", "x": 0, "y": 2},
+            {"art": "skull_bones", "x": -2, "y": 1, "blocking": false},
+            {"art": "small_skull", "x": 2, "y": 2, "blocking": false},
+            {"art": "ore_vein", "x": -1, "y": -2, "blocking": false},
+            {"art": "brazier", "x": -2, "y": -3},
+            {"art": "brazier", "x": 2, "y": -3},
+            {"art": "warning_post", "x": -3, "y": -6}
+          ],
           "victory": {
             "title": "The Way Is Open",
             "story": [
@@ -17531,6 +17709,20 @@
           "greeting": "At the end of the road, a dragon. Of course there is.",
           "monster": "emerald_dragon",
           "level": 200,
+          "lair": [
+            {"art": "wall_pillar", "x": -4, "y": 0},
+            {"art": "crystal_spire", "x": -3, "y": 3},
+            {"art": "statue", "x": 0, "y": 4},
+            {"art": "crystal_spire", "x": 3, "y": 3},
+            {"art": "wall_pillar", "x": 4, "y": 0},
+            {"art": "gold_hoard", "x": 0, "y": 2},
+            {"art": "skull_bones", "x": -2, "y": 1, "blocking": false},
+            {"art": "gold_hoard", "x": 2, "y": 2, "blocking": false},
+            {"art": "small_skull", "x": -1, "y": -2, "blocking": false},
+            {"art": "brazier", "x": -2, "y": -3},
+            {"art": "brazier", "x": 2, "y": -3},
+            {"art": "warning_post", "x": -3, "y": -6}
+          ],
           "victory": {
             "title": "The Emerald Gates",
             "story": [
@@ -18091,7 +18283,7 @@
           "y": -3
         },
         {
-          "art": "fairy_tree_house_moon",
+          "art": "bluebell_house",
           "x": 12,
           "y": 0
         },
@@ -18101,17 +18293,17 @@
           "y": 10
         },
         {
-          "art": "fairy_tree_house_rose",
+          "art": "tree_house",
           "x": 11,
           "y": 11
         },
         {
-          "art": "fairy_tree_house",
+          "art": "acorn_cottage",
           "x": 5,
           "y": -10
         },
         {
-          "art": "big_hollow_tree",
+          "art": "crystal_cottage",
           "x": -10,
           "y": -9
         }
@@ -18171,6 +18363,18 @@
           "greeting": "The light on the hill flares as you come near, humming like a lost song.",
           "monster": "fallen_star",
           "level": 150,
+          "lair": [
+            {"art": "star_crystal", "x": -4, "y": 0},
+            {"art": "crystal_shard", "x": -3, "y": 3},
+            {"art": "crystal_spire", "x": 0, "y": 4},
+            {"art": "pink_shard", "x": 3, "y": 3},
+            {"art": "star_crystal", "x": 4, "y": 0},
+            {"art": "star_crystal", "x": 1, "y": 2},
+            {"art": "small_crystal_spire", "x": -2, "y": 1, "blocking": false},
+            {"art": "pink_shard", "x": 2, "y": 2, "blocking": false},
+            {"art": "wisp_lantern", "x": -2, "y": -3},
+            {"art": "wisp_lantern", "x": 2, "y": -3}
+          ],
           "victory": {
             "title": "A Star Goes Home",
             "story": [
@@ -18941,6 +19145,19 @@
           "greeting": "Light ripples across a coil of crystal scales. Something vast lifts its head, and every crystal in the cave flares at once.",
           "monster": "prism_drake",
           "level": 180,
+          "lair": [
+            {"art": "crystal_spire", "x": -4, "y": 0},
+            {"art": "crystal_geode", "x": -3, "y": 3},
+            {"art": "amethyst_spire", "x": 0, "y": 4},
+            {"art": "crystal_geode", "x": 3, "y": 3},
+            {"art": "crystal_spire", "x": 4, "y": 0},
+            {"art": "gold_hoard", "x": 0, "y": 2},
+            {"art": "star_crystal", "x": -2, "y": 1, "blocking": false},
+            {"art": "small_crystal_spire", "x": 2, "y": 2, "blocking": false},
+            {"art": "crystal_shard", "x": -1, "y": -2, "blocking": false},
+            {"art": "small_crystal_spire", "x": -2, "y": -3},
+            {"art": "small_crystal_spire", "x": 2, "y": -3}
+          ],
           "victory": {
             "title": "The Glimmerdeep Shines",
             "story": [

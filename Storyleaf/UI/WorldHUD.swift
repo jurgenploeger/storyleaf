@@ -32,7 +32,16 @@ struct WorldHUD: View {
                     .allowsHitTesting(false)
                 SystemLog(lines: session.log)
                     .allowsHitTesting(false)
+                // A land's name as you walk in, under the panels on both sides, across the middle.
+                if let name = session.landBanner {
+                    LandBanner(name: name)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 10)
+                        .allowsHitTesting(false)
+                        .transition(.opacity)
+                }
             }
+            .animation(.easeInOut(duration: 0.6), value: session.landBanner)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
             VStack(alignment: .trailing, spacing: 6) {
@@ -436,6 +445,25 @@ private struct CalendarPlate: View {
 
 /// Fairyland Online's yellow system messages, fading after a few seconds. The game's announcements stand
 /// out on banners of their own.
+/// A land's name, big and gold on a dark plate, as you walk into it.
+private struct LandBanner: View {
+    let name: String
+
+    var body: some View {
+        Text(name)
+            .font(HUDStyle.mono(18))
+            .foregroundStyle(HUDStyle.gold)
+            .shadow(color: .black, radius: 0, x: 1, y: 1)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(HUDStyle.ink.opacity(0.75))
+                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(HUDStyle.gold.opacity(0.75), lineWidth: 1))
+            )
+    }
+}
+
 private struct SystemLog: View {
     let lines: [GameSession.LogLine]
 
@@ -689,7 +717,9 @@ struct MinimapIcon: View {
         case .chest: Color(red: 0.74, green: 0.47, blue: 0.2)
         case .boss: Color(red: 0.62, green: 0.1, blue: 0.16)
         case .stairsDown, .stairsUp: Color(red: 0.42, green: 0.42, blue: 0.5)
-        case .waystone: Color(red: 0.36, green: 0.6, blue: 0.9)
+        // A portal's own bright cyan: in the quest givers' blue it read as one of them (playtesting
+        // 2026-10-23).
+        case .waystone: Color(red: 0.05, green: 0.8, blue: 0.95)
         }
     }
 }

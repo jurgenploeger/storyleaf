@@ -40,8 +40,10 @@ These are the rules the numbers measure. A sprite that keeps them looks like Sto
    jump about (1, 3, 1, 3: "jaggies"); no lone pixel stuck out of an edge, no doubled corner.
 7. **Outlines.** Item icons: one dark outline all round, the house colour `#231834` (`item_art.OUTLINE`).
    On something darker than it (a navy lash), the kit deepens it to half the light of what it rounds, so it
-   still reads as the edge. Creatures and scenery: a broken, tinted outline (a deep shade of what it
-   rounds), lighter or gone where the light hits.
+   still reads as the edge. Creatures, scenery and buildings: a broken, tinted outline, a deep shade of
+   what it rounds and close to its colour, never near-black: a green tree's is dark green, a red roof's
+   dark red (about 0.6 to 0.85 of the light inside it, `outline_rel`; the kit's `outline="tinted"` takes
+   it from the shape's own ramp), lighter or gone where the light hits.
 8. **A few highlights.** A speck or two of the lightest shade on what's glossy (gems, eyes), not a
    wash. Polished metal and cut stone get RD's glint: a small cross of near-white (`pixel_kit.GLINT`,
    `#f1f5f3`, one white for every metal) where the form faces the light, on its upper left, ringed by the
@@ -49,6 +51,11 @@ These are the rules the numbers measure. A sprite that keeps them looks like Sto
 9. **Size and placement.** Icons fill 80% or more of their 32 × 32 tile and sit in its middle (armour; a
    weapon sits on the bottom edge with room above for its glow). Creatures and scenery at their kind's size
    (`art/assets.json`: monsters 40 or 64, props 32 to 96, buildings 96, tiles 32).
+10. **Light in broad areas, a palette kept small (buildings).** RD lights a house as a few big areas: a lit
+    front, the side going back well into shadow, a dark band under the eaves, the lit roof plane bright at
+    each tile's top, shadows turned toward blue and lights toward yellow. Detail sits on top of that, never
+    instead of it (`light_masses`), and the whole house holds about 18 to 35 colours (`colour_density`
+    capped as well as floored): every face its own seven shades made ours a hundred colours of grain.
 
 ## What the craft says (sources)
 
@@ -122,6 +129,8 @@ and 80% of the soft ones.**
 | `highlight_share` | share of inner pixels far brighter than the median | soft | ≤ 0.29 | ≤ 0.18 | ≤ 0.25 |
 | `semi_alpha` | partly transparent pixels (light effects only) | soft, max | 0 | 0 | 0 |
 | `jaggies` | runs along one slope of the outline 2 or more longer, or shorter, than both neighbours | soft, max | ≤ 0.08 | ≤ 0.12 | ≤ 0.14 |
+| `outline_rel` | the outline's light over the inside's within 2 pixels (median): deep, not black | hard (scenery, buildings), soft, min | ≥ 0.27 | ≥ 0.49 | ≥ 0.61 |
+| `light_masses` | share of the inside's spread of light left after a 5 × 5 blur (buildings only) | soft, min | – | – | – |
 | `pillow` | how much more the inside's light follows the distance in from the edge than the light | reported | – | – | – |
 | `checker` | share of the inside in 2 × 2 checkerboards of two colours (dithering) | reported | – | – | – |
 
@@ -138,10 +147,11 @@ The criteria are only trusted while they tell the two kinds of art apart. Rerun 
 to a metric or band:
 
 - **The reference passes:** at least 80% of RD's own sprites of each kind (the bands are 5th to 95th
-  percentiles, so a few of RD's own always fall outside one). 2026-10-23, with the floors and `jaggies`:
-  icons 88% (123 / 140), scenery 86% (115 / 133), creatures 80% (52 / 65).
-- **The flat look fails:** `tools/item_art.py`'s designs, unfinished, pass at most 10%. 2026-10-23: 8%
-  (27 / 322), failing on `cluster_size` (91%), `flat` (90%), `colour_density` (82%) and `shades_per_ramp`
+  percentiles, so a few of RD's own always fall outside one). 2026-10-23, with the floors, `jaggies` and
+  `outline_rel`: icons 87% (122 / 140), scenery 82% (109 / 133), creatures 78% (51 / 65), buildings 69%
+  (20 / 29, below).
+- **The flat look fails:** `tools/item_art.py`'s designs, unfinished, pass at most 10%. 2026-10-23: 7%
+  (22 / 322), failing on `cluster_size` (91%), `flat` (90%), `colour_density` (82%) and `shades_per_ramp`
   (79%). The same items as shipped, finished by the kit, pass 84% (289 / 343).
 
 ### Review by eye: what the numbers can't see
@@ -157,9 +167,63 @@ first texture passed as salt-and-pepper noise, which is what added `cluster_size
 - **The texture follows the form:** clusters run along the light, never as noise or a checkerboard.
 - **Colours belong to the game:** the material's colour matches its family elsewhere (an armour's icon and
   its walk sheet: `wear_art.MATERIAL`).
+- **It reads as what it is, first:** a prop's familiar shape comes before its story. The Rat King's junk
+  throne heaped from crates read as no throne; drawn as a throne (a high arched back, arms, a cushioned seat
+  on legs) with junk in its making, it does.
+- **Nothing about it looks like a stand:** two matching flat shapes either side of a foot (roots, legs)
+  read as a stand it's set on. Vary them: lengths, angles, one in front.
+- **It looks like its neighbours on the map:** a new tree beside RD's trees, a house beside RD's houses.
+  Different in kind is fine; different in make (a thick dark outline, a pole of one colour, flat feet)
+  stands out.
 
 When the eye catches something the numbers passed, write it down under *Learned* below and add or tighten
 a criterion so it can't pass again. That is how the criteria get stricter.
+
+### Trees
+
+Checked as `tools/scenery_art.py` draws them (it fails the run): **its trunk runs up into its crown**,
+no sky in the trunk's middle column between the ground and the top of the tree (`tree_shape`; the willow's
+and the lilac's showed 2 and 3 pixels of it), and **its crown is centred over its trunk**, within
+1.5 pixels, as RD's own tree is (`CROWN_OFF_MAX`; the candy trees' hung 2.5 left). Exceptions, each for a
+reason: the dark tree leans (`LEANS`), the frost tree is bare (`BARE`). And by eye, against RD's `tree`:
+
+- **A short trunk under a low crown:** about a quarter of the tree's height shows (RD's 14 pixels of 56),
+  never half of it as a pole.
+- **Bark, not one brown:** a few warm browns (`#422711` to `#a58153` on RD's) in streaks down it, lit on
+  its left, in shadow on its right, and the crown's shadow across its top.
+- **Roots as fingers:** four or so, of different lengths, leaving the trunk well up it and sloping down
+  and out, the nearer ones shorter and steeper; never two flat feet, one either side, like a stand.
+
+### Small sprites (critters, about 10 to 17 pixels)
+
+Too small for the kit's finish or the bands: most of a sprite this size is edge, so rims and ramps
+darken nearly all of it. Each part keeps its colour; only the silhouette is lit (its top and left a shade
+lighter, its bottom and right a shade darker and turned from yellow), a shade under a part of another
+colour lying on it, and an outline in a deep shade of each part (`tools/critter_art.py`). Reviewed by eye
+beside the old drawing: brighter or the same, never muddier.
+
+### Snow
+
+Snow is RD's own colours (`scenery_art.SNOW`, from its `snow_tree`): white, pale blue-green, blue-grey,
+outlined in a deep blue-grey. A near-white base on a ramp turns grey, so it's drawn in a key colour and laid
+on these after (`snow_palette`). Snow lies in soft clumps, never in a strip along an edge.
+
+### Buildings
+
+RD's buildings have a band set of their own (`--kind building`, the 29 RD drew): a 96-pixel house holds
+fewer colours to its size than a bush, and a third of RD's own failed the general scenery bands. Their
+`outline_dark` is soft, not hard: RD draws buildings with a broken, tinted outline that a lit roof edge
+goes without; but `outline_rel` is hard, so what outline there is stays a deep shade of the wall or roof.
+Three more rules are theirs alone (playtesting 2026-10-23, "more and better shading and lighting, like
+RD's"): `colour_density` is capped as well as floored (0.54 to 1.4 colours per 100 pixels, the cap a
+house rule, `pixel_style.CEILINGS`, over all of RD's but its fence), `light_masses` at least 0.55 (a
+floor met by 86% of RD's), and `outline_rel` at least 0.55. `tools/building_art.py` meets them with
+quiet textures (`TEXTURE`), a stronger hue shift (`SHIFT`), faces lit by the way they turn (the side
+going back 0.4 darker, the lit roof plane 0.14 lighter, the eave's shadow 0.6) and a palette cut to
+about 1.1 colours per 100 pixels (`pixel_kit.limit_palette`, which merges the closest pair into the
+commoner over and over, so a lit window or a flower keeps its colour). RD's buildings pass their own bands
+69% (20 / 29), under the 80% the criteria aim for: in a sample of 29 every new band cuts one or two of
+RD's own. Widen one before adding another.
 
 ## Restyle: how every item icon is finished
 
@@ -224,6 +288,14 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 - **Done 2026-10-23:** material presets; the three loose criteria tightened (`shades_per_ramp`,
   `hue_shift`, `light_top_left`, measured afresh: see *Learned*); `jaggies` added, `pillow` and `checker`
   reported; the kit tuned on RD's armour (above); whips redrawn hanging, as held.
+- **UI icons (2026-10-23):** finished by the kit as the items are: 17 of 20 pass (2 did as drawn); three
+  stay flat (`ui_icon_art.KEEP_FLAT`), as the finish ran their small parts together at button size.
+- **Skill icons (2026-10-23): not pixel art.** Finished by the kit they passed 34 of 41, but read as
+  objects, not as the spells they cast (playtesting: "more like their animations, with flares and
+  glows"). `tools/skill_art.py` now draws each as light (glows, flares, sparks, trails in its element's
+  colours) on a dark backdrop at 128 pixels, shown smoothed; these criteria don't apply to them.
+- **Buildings (2026-10-23):** 20 drawn by `tools/building_art.py` (homes, shops, and buildings for the
+  deserts, the steppe and Starfall Isle), all passing the building bands.
 - **Scenery (2026-10-23):** the 21 trees and bushes that were palette swaps of RD's `tree` and
   `berry_bush` are drawn in code by `tools/scenery_art.py`, a species each; all 21 pass the scenery
   criteria. Lit from lower down than the icons (`Sprite.light`), edges darkened only where they turn
@@ -243,6 +315,57 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   5. Animation: walk cycles stay RD's for now (`sprite-acceptance.md`).
 
 ## Learned
+
+- **2026-10-23 (roots, throne):** Roots drawn as one long flat wedge either side of the trunk read as a
+  stand the tree was set on; RD's are separate fingers of different lengths, leaving the trunk well up it.
+  A willow's trunk that stopped under its crown left sky between them, hidden from the sides by its
+  strands and plain from the front: `tree_shape` now fails a tree for it. The Rat King's throne, crates
+  heaped into a seat, read as no throne: a familiar shape first, its story in the details.
+
+- **2026-10-23 (trunks):** A trunk drawn as one stroke of dark brown was a flat pole, half the tree's
+  height, that stood out from the land; and a crown set above where the branches end left a gap of grass
+  under it. RD's trunk is short under a low crown, flares into long roots, and is bark: a few warm browns
+  in streaks (`#422711` to `#a58153`), lit down its left. `scenery_art.trunk` draws it so, and `lower`
+  sets the crowns down over it.
+
+- **2026-10-23 (critters):** At 10 to 15 pixels the kit's finish turns a sprite muddy: most of it is edge,
+  so its rim shadows and ramps darken nearly every pixel (a white bunny came out grey, a chick olive).
+  `tools/critter_art.py` keeps each part's colour and lights only the silhouette: its top and left a
+  shade lighter, its bottom and right a shade darker and turned from yellow, a shade under a part of
+  another colour lying on it, and an outline in a deep shade of each part.
+
+- **2026-10-23 (frost tree):** The bare winter tree drawn as kit strokes looked out of place among RD's
+  snow scenery: limbs of one width like pipes, a thin strip of snow, icicles. RD's snow is soft clumps in
+  its own colours (`scenery_art.SNOW`, from its `snow_tree`); a near-white base on a ramp turns grey, so
+  snow is drawn in a key blue and laid on RD's colours after. Twigs drawn by the kit get an outline each
+  and run together into a dark mass at 64 pixels: they're single pixel lines (`pixel_lines`), as RD's.
+
+- **2026-10-23 (outlines):** The tinted outline at 0.6 of each shape's darkest shade came out near-black
+  (`outline_rel` 0.37 on our trees and houses, against RD's 0.6 to 0.85), the stark black line round
+  everything we drew. It's now the shape's own ramp at the shade of the body within two pixels, about
+  0.74 of its light (0.9 on the lit top and left), a touch richer: our trees 0.81, houses 0.77. Taken
+  from each pixel it touched, it doubled the colour count; from the ramp a material's outline holds a
+  handful. Taken from the darkened rim alone, pale bushes still came out too dark.
+- **2026-10-23 (buildings):** Seven shades for every face, a second ramp to flick between and texture on
+  every pixel gave our houses 115 to 180 colours against RD's 18 to 35, and light that lived in grain
+  instead of areas. Fewer, broader: quieter textures, one ramp, the palette merged to about RD's size,
+  and the faces' light set by how they turn.
+
+- **2026-10-23 (buildings):** Patterns laid in the screen's rows put a receding roof's tiles at the wrong
+  angle; each face now carries its own axes (`building_art.surface(axes=...)`: along its eave, down its
+  slope or wall), so tiles run along the eave and their seams down the slope. Evenly lit faces looked
+  flat: walls now lie in the eave's shadow at the top and the ground's at the foot, the side going back
+  a step darker, a lit corner, the roof's edge thick, its planes lit by the way they face.
+
+- **2026-10-23 (icons):** A design's halves in a colour's mid and light leave the light the commonest, and
+  the finish ramps the whole shape from it: an orange arrow came out beige. Draw in the mid and the
+  shadow; the finish brings the light. Small parts closer than about three pixels (a paw's toes, three
+  dots) run together once rounded and outlined: space them, or keep the drawing flat.
+
+- **2026-10-23 (buildings):** Pale plaster on a ramp turns cold grey (its shadows turned away from yellow),
+  as fur did: a wall's colour is drawn a little deeper and warmer (`#ead2a8`, not `#efe4d0`) so its middle
+  stays cream. Drawn at a guessed size, the houses filled half their frame beside RD's; each is now scaled
+  to fill it, its materials' patterns kept at the sprite's own pixels.
 
 - **2026-10-23 (scenery):** A crown of leaf clusters placed at random came out lopsided; on a jittered grid
   it's full and even. Big clusters on a 32-pixel bush read as a smooth lump: RD's bushes are leafy, so

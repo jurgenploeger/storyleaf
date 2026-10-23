@@ -175,6 +175,14 @@ def seg_distance(x0, y0, x1, y1):
     t = np.zeros_like(_X) if L == 0 else np.clip(((_X - x0) * dx + (_Y - y0) * dy) / L, 0, 1)
     return np.hypot(x0 + t * dx - _X, y0 + t * dy - _Y)
 
+# mirrors ArtLibrary: the shallows' turquoise, a bank's earth and pebbles, how much deeper water darkens
+SHALLOWS, BANK, PEBBLE = np.array([128, 214, 222]) / 255, np.array([104, 86, 60]) / 255, np.array([186, 180, 168]) / 255
+NATURAL_WATER = [True]
+
+def deep_shade(depth):
+    t = np.clip((depth - 0.25) / 0.55, 0, 1)
+    return 0.2 * t * t * (3 - 2 * t)
+
 def organic_tile(base, layers, col=0, row=0):
     out = base.copy(); rim = 1.2 / _S
     for tex, mask, style in layers:
@@ -196,10 +204,29 @@ def organic_tile(base, layers, col=0, row=0):
             shade = np.where((style == 'road') & (depth < rim), 0.72, 1.0)[..., None]
             out[on, :3] = (tex[..., :3] * shade)[on]
         else:
-            foam = np.where(depth < 0.05, 0.35, 0.0)[..., None]
-            out[on, :3] = (tex[..., :3] * (1 - foam) + foam)[on]
-            bank = (depth <= 0) & (depth > -0.06)
-            out[bank, :3] *= 0.8
+            # mirrors ArtLibrary.organicTile's water: shallows, depth, broken foam, the lip and the bank
+            natural = NATURAL_WATER[0]
+            h = (np.arange(_S)[None, :] * 73856093 ^ np.arange(_S)[:, None] * 19349663 ^ col * 83492791 ^ row * 2654435761) & 0xFFFFFFFF
+            h = ((h ^ (h >> 13)) * 1274126177) & 0xFFFFFFFF
+            speck = ((h ^ (h >> 16)) & 0xFFFF) / 65535
+            foam = np.where(depth < 0.05, np.where(speck < 0.75, 0.35, 0.12), np.where((depth < 0.1) & (speck < 0.12), 0.22, 0.0))[..., None]
+            shallow = (0.3 * np.clip(1 - depth / 0.4, 0, 1) ** 1.5)[..., None] if natural else 0.0
+            deep = deep_shade(depth)[..., None] if natural else 0.0
+            water = tex[..., :3] * (1 - deep)
+            water = water + (SHALLOWS - water) * shallow
+            water = water * (1 - foam) + foam
+            out[on, :3] = water[on]
+            lip = (depth <= 0) & (depth > -0.06)
+            if natural:
+                out[lip, :3] = out[lip, :3] * 0.55 + BANK * 0.2
+                band = (depth <= -0.06) & (depth > -0.3)
+                near = np.clip((depth + 0.3) / 0.24, 0, 1) ** 1.2
+                pebble = band & (speck < 0.035) & (near > 0.2)
+                mix = np.where(pebble, 0.85, 0.72 * near)[..., None]
+                earth = np.where(pebble[..., None], PEBBLE, BANK)
+                out[band, :3] = (out[..., :3] + (earth - out[..., :3]) * mix)[band]
+            else:
+                out[lip, :3] *= 0.8
         out[on, 3] = 1
     return out
 
@@ -238,13 +265,18 @@ def ground_tiles(m, kinds, palette, col0=0, row0=0):
             if road: layers.append(('p', road, 'road'))
             if pond: layers.append(('w', pool_mask(r, c), 'water'))
             v = variant_of(c + col0, r + row0)
-            if pond == 511: key = ('w', v)
+            natural = (th.get('water') or 'tile_water') == 'tile_water'
+            NATURAL_WATER[0] = natural
+            if pond == 511 and natural and pool_mask(r, c) == (1 << 25) - 1: key = ('deep', v)
+            elif pond == 511 and not natural: key = ('w', v)
             elif road == 511 and pond == 0: key = ('p', v)
             elif not layers: key = (base, v)
             elif patch == 511 and road == 0 and pond == 0: key = ('a', v)
             else: key = (base, tuple(layers), (c, r, v) if pond else None)
             if key not in cache:
-                if len(key) == 2: cache[key] = tile_variant(tex[key[0]], v)
+                if key[0] == 'deep':
+                    t = tile_variant(tex['w'], v).copy(); t[..., :3] *= 1 - deep_shade(np.ones(1))[0]; cache[key] = t
+                elif len(key) == 2: cache[key] = tile_variant(tex[key[0]], v)
                 else:
                     pick = v if pond else 0
                     cache[key] = organic_tile(tile_variant(tex[base], pick), [(tile_variant(tex[t], pick), mk, st) for t, mk, st in layers], c + col0, r + row0)

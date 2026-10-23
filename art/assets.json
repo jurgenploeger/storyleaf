@@ -2222,6 +2222,106 @@
       }
     },
     {
+      "id": "thatched_cottage",
+      "kind": "building"
+    },
+    {
+      "id": "standing_stone",
+      "kind": "prop"
+    },
+    {
+      "id": "brazier",
+      "kind": "prop"
+    },
+    {
+      "id": "gold_hoard",
+      "kind": "prop"
+    },
+    {
+      "id": "warning_post",
+      "kind": "prop"
+    },
+    {
+      "id": "junk_throne",
+      "kind": "prop"
+    },
+    {
+      "id": "timber_house",
+      "kind": "building"
+    },
+    {
+      "id": "stone_townhouse",
+      "kind": "building"
+    },
+    {
+      "id": "round_cottage",
+      "kind": "building"
+    },
+    {
+      "id": "teapot_house",
+      "kind": "building"
+    },
+    {
+      "id": "garden_cottage",
+      "kind": "building"
+    },
+    {
+      "id": "weapon_shop",
+      "kind": "building"
+    },
+    {
+      "id": "armour_shop",
+      "kind": "building"
+    },
+    {
+      "id": "tailor_shop",
+      "kind": "building"
+    },
+    {
+      "id": "flower_shop",
+      "kind": "building"
+    },
+    {
+      "id": "tea_house",
+      "kind": "building"
+    },
+    {
+      "id": "book_shop",
+      "kind": "building"
+    },
+    {
+      "id": "pavilion_tent",
+      "kind": "building"
+    },
+    {
+      "id": "yurt",
+      "kind": "building"
+    },
+    {
+      "id": "dome_house",
+      "kind": "building"
+    },
+    {
+      "id": "market_tent",
+      "kind": "building"
+    },
+    {
+      "id": "tree_house",
+      "kind": "building"
+    },
+    {
+      "id": "acorn_cottage",
+      "kind": "building"
+    },
+    {
+      "id": "bluebell_house",
+      "kind": "building"
+    },
+    {
+      "id": "crystal_cottage",
+      "kind": "building"
+    },
+    {
       "id": "forest_lodge",
       "kind": "building",
       "request": {
@@ -10229,6 +10329,10 @@
         "height": 32,
         "remove_bg": true
       }
+    },
+    {
+      "id": "item_beastfriend_cape",
+      "kind": "item"
     },
     {
       "id": "item_storyleaf_cape",

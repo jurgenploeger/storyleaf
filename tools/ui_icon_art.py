@@ -163,12 +163,13 @@ def draw_user(c):
 
 def draw_paw(c):
     # Companions: a paw with pink pads.
-    for (cx, cy) in [(7, 13), (12.5, 7.5), (19.5, 7.5), (25, 13)]:
-        c.ellipse(cx, cy, 3.4, 4, PINK[1])
-        shade_ball(c, PINK, cx, cy, 3)
-    c.poly([(9, 22), (12, 15), (20, 15), (23, 22), (20, 27), (12, 27)], PINK[1])
-    c.ellipse(16, 22, 7.5, 5.5, PINK[1])
-    shade_ball(c, PINK, 16, 21, 6)
+    # Toes a little smaller and apart from the pad: closer, the finish ran them together.
+    for (cx, cy) in [(5.5, 12.5), (12, 6), (20, 6), (26.5, 12.5)]:
+        c.ellipse(cx, cy, 3, 3.6, PINK[1])
+        shade_ball(c, PINK, cx, cy, 2.6)
+    c.poly([(10, 23), (12.5, 17.5), (19.5, 17.5), (22, 23), (19.5, 28), (12.5, 28)], PINK[1])
+    c.ellipse(16, 23, 7, 5, PINK[1])
+    shade_ball(c, PINK, 16, 22, 5.5)
     c.rect(12, 17, 13, 18, WHITE)
 
 
@@ -316,6 +317,12 @@ def render(name):
     return canvas
 
 
+# Icons whose meaning is in small separate parts the finish runs together at button size (the three
+# dots ran into a bar, the two faces into a smudge, the backpack's flap and pocket into a lump): they
+# keep their crisp flat drawing.
+KEEP_FLAT = {"more", "users", "backpack"}
+
+
 def main(argv):
     sheet_path = None
     if "--sheet" in argv:
@@ -323,8 +330,16 @@ def main(argv):
         sheet_path = argv[index + 1]
         argv = argv[:index] + argv[index + 2:]
     names = argv or sorted(DRAWINGS)
+    # Finished in the game's pixel style by tools/pixel_kit.py, as the item and skill icons are.
+    import io
+    from PIL import Image
+    from pixel_kit import restyle
     for name in names:
-        (SPRITES / f"ui_{name}.png").write_bytes(render(name).png())
+        drawn = Image.open(io.BytesIO(render(name).png()))
+        if name in KEEP_FLAT:
+            drawn.save(SPRITES / f"ui_{name}.png")
+            continue
+        restyle(drawn, round_corners=0.3, texture=0.025).render().save(SPRITES / f"ui_{name}.png")
     print(f"wrote {len(names)} UI icons to art/sprites/")
     if sheet_path:
         # Each icon on the HUD's blue button and the battle's red one, at 4×.

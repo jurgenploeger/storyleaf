@@ -1,448 +1,768 @@
 #!/usr/bin/env python3
-"""Draws every skill's 32×32 icon in code, in the same style as tools/item_art.py (free).
+"""Draws every skill's icon in code, as light: the glows, flares, sparks and trails its battle
+animation is made of (`Storyleaf/Battle/SkillStyles.swift`, `ElementEffects.swift`), in its colours,
+on a dark backdrop of its own tile's colour. Not pixel art (playtesting 2026-10-23: "the spell icons
+don't have to be pixel art, but could be more like their animations, with flares and glows"): drawn
+smooth at 512 pixels and shrunk to 128, shown smoothed by the game (`IconTile`, `BattleScene.skillTile`).
 
     python3 tools/skill_art.py                 # all skills → art/sprites/skill_<id>.png
     python3 tools/skill_art.py fire_bolt flash # just these
-    python3 tools/skill_art.py --sheet /tmp/skills.png
+    python3 tools/skill_art.py --sheet out.png # a contact sheet, each on its tile's colour
 
-The icons sit on the coloured tile of the skill's element or kind in menus and the battle bar.
+The icons sit on the coloured tile of the skill's element or kind, which frames them.
 """
 
 import math
 import pathlib
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from item_art import (  # noqa: E402
-    BLUE, GOLD, GREEN, LEATHER, ORANGE, RED, SIZE, SNOW, SPRITES, STEEL, TEAL, VIOLET, WHITE, WOOD,
-    Canvas, encode_png, hexc, light_top_left, star_shape,
-)
-
-FIRE = [hexc("c0301a"), hexc("ff7a1a"), hexc("ffe060")]
-STONE = [hexc("5a4a3a"), hexc("9a8266"), hexc("d0bc98")]
-MUD = [hexc("4a3018"), hexc("7a5230"), hexc("b08050")]
-JELLY = [hexc("1c6ab0"), hexc("48a8f0"), hexc("c4ecff")]
-SHADOW = [hexc("2a1a4a"), hexc("5a3a9a"), hexc("b09aff")]
-BONE = [hexc("b8b0a0"), hexc("f0ece0"), WHITE]
-
-
-def flame(c, cx, cy, r, colors=FIRE):
-    dark, mid, light = colors
-    c.poly([(cx, cy - r * 1.6), (cx + r * 0.9, cy - r * 0.2), (cx + r, cy + r * 0.5), (cx, cy + r),
-            (cx - r, cy + r * 0.5), (cx - r * 0.9, cy - r * 0.2)], dark)
-    c.disc(cx, cy + r * 0.2, r * 0.8, mid)
-    c.poly([(cx, cy - r * 1.1), (cx + r * 0.5, cy), (cx, cy + r * 0.6), (cx - r * 0.5, cy)], mid)
-    c.disc(cx, cy + r * 0.3, r * 0.4, light)
-
-
-def trail(c, x, y, color, dx=-1, dy=1):
-    """A comet tail of shrinking puffs behind a flying spell."""
-    for i, r in enumerate((2.6, 1.9, 1.2)):
-        c.disc(x + dx * (4 + i * 4), y + dy * (4 + i * 4), r, color)
-
-
-def swirl(c, cx, cy, color, turns=2.2, r0=1.5, grow=0.16, width=1.1, points=60):
-    for i in range(points):
-        t = i / points * math.pi * 2 * turns
-        r = r0 + i * grow
-        c.disc(cx + r * math.cos(t), cy + r * math.sin(t) * 0.8, width, color)
-
-
-def leaf(c, cx, cy, angle, length=5, colors=GREEN):
-    dx, dy = math.cos(angle) * length, math.sin(angle) * length
-    nx, ny = -dy * 0.45, dx * 0.45
-    c.poly([(cx - dx, cy - dy), (cx + nx, cy + ny), (cx + dx, cy + dy), (cx - nx, cy - ny)], colors[1])
-    c.line(cx - dx, cy - dy, cx + dx, cy + dy, colors[0])
-
-
-def heart(c, cx, cy, r, colors):
-    c.disc(cx - r * 0.5, cy - r * 0.2, r * 0.6, colors[1])
-    c.disc(cx + r * 0.5, cy - r * 0.2, r * 0.6, colors[1])
-    c.poly([(cx - r * 1.08, cy), (cx + r * 1.08, cy), (cx, cy + r * 1.1)], colors[1])
-    c.disc(cx - r * 0.6, cy - r * 0.4, r * 0.22, colors[2])
-
-
-def paw(c, cx, cy, colors):
-    c.ellipse(cx, cy + 3, 5, 4, colors[1])
-    for (dx, dy) in ((-5, -3), (-2, -6), (2, -6), (5, -3)):
-        c.disc(cx + dx, cy + dy, 1.8, colors[1])
-    c.disc(cx - 1.5, cy + 2, 1.2, colors[2])
-
-
-def fangs(c, cx, cy, colors, jaw=BONE):
-    c.poly([(cx - 9, cy - 3), (cx + 9, cy - 3), (cx + 7, cy + 2), (cx - 7, cy + 2)], colors[1])   # upper jaw
-    for dx in (-6, -2, 2, 6):
-        c.poly([(dx + cx - 1.8, cy + 1), (dx + cx + 1.8, cy + 1), (dx + cx, cy + 6)], jaw[1])
-    c.poly([(cx - 8, cy + 9), (cx + 8, cy + 9), (cx + 6, cy + 13), (cx - 6, cy + 13)], colors[1])   # lower jaw
-    for dx in (-4, 0, 4):
-        c.poly([(dx + cx - 1.5, cy + 10), (dx + cx + 1.5, cy + 10), (dx + cx, cy + 6)], jaw[1])
-
-
-# ---------------------------------------------------------------- the skills
-
-def draw_bash(c):
-    c.line(7, 26, 18, 13, WOOD[1], width=3)
-    c.line(8, 26, 19, 14, WOOD[0])
-    c.poly([(15, 5), (25, 13), (20, 19), (10, 11)], STEEL[1])          # hammer head
-    c.shade(lambda x, y, col: col == STEEL[1] and x + y > 32, STEEL[0])
-    c.line(15, 6, 24, 13, STEEL[2])
-    for (x, y) in ((26, 20), (28, 16), (24, 24)):
-        c.line(x, y, x + 3, y + 1, GOLD[2], width=2)                    # impact
-
-
-def draw_first_aid(c):
-    c.rect(6, 9, 26, 25, WHITE)
-    c.rect(6, 22, 26, 25, hexc("d8dce8"))
-    c.rect(14, 11, 18, 23, RED[1])
-    c.rect(10, 15, 22, 19, RED[1])
-    c.rect(14, 11, 15, 23, RED[2])
-
-
-def draw_power_strike(c):
-    c.line(10, 22, 26, 6, STEEL[1], width=4)
-    c.line(11, 21, 25, 7, STEEL[2])
-    c.line(6, 18, 13, 25, GOLD[1], width=3)
-    c.line(8, 23, 4, 27, LEATHER[1], width=3)
-    star_shape(c, 26, 6, 4, WHITE, inner=0.35)
-
-
-def draw_whirlwind(c):
-    swirl(c, 16, 16, hexc("e8f4ff"), turns=2.4, grow=0.2, width=1.3)
-    for a in range(3):
-        t = a * 2 * math.pi / 3
-        x, y = 16 + 11 * math.cos(t), 16 + 9 * math.sin(t)
-        c.line(x, y, x + 4 * math.cos(t + 1.9), y + 4 * math.sin(t + 1.9), STEEL[2], width=2)
-
-
-def draw_fire_bolt(c):
-    trail(c, 14, 19, FIRE[1])
-    flame(c, 19, 14, 7)
-
-
-def draw_ember(c):
-    flame(c, 16, 17, 6)
-    for (x, y) in ((8, 10), (24, 9), (25, 24)):
-        c.disc(x, y, 1.2, FIRE[2])
-
-
-def draw_stone_spike(c):
-    for (x, h, w) in ((9, 14, 4), (16, 22, 5), (23, 16, 4)):
-        c.poly([(x - w, 28), (x, 28 - h), (x + w, 28)], STONE[1])
-        c.shade(lambda px, py, col, x=x: col == STONE[1] and px > x, STONE[0])
-    c.rect(3, 27, 29, 29, MUD[1])
-
-
-def draw_rock_throw(c):
-    trail(c, 13, 19, STONE[2])
-    c.poly([(14, 9), (22, 7), (27, 13), (25, 21), (17, 23), (13, 17)], STONE[1])
-    c.shade(lambda x, y, col: col == STONE[1] and x + y > 38, STONE[0])
-    c.line(15, 11, 21, 9, STONE[2])
-
-
-def draw_mud_shot(c):
-    trail(c, 14, 20, MUD[1])
-    c.disc(20, 16, 7, MUD[1])
-    light_top_left(c, MUD, 20, 16, 7)
-    for (x, y) in ((27, 11), (28, 20), (24, 25)):
-        c.disc(x, y, 1.4, MUD[1])
-
-
-def draw_leaf_storm(c):
-    swirl(c, 16, 16, hexc("c8f0b0", 200), turns=1.6, grow=0.2, width=0.8)
-    for i in range(5):
-        t = i * 2 * math.pi / 5
-        leaf(c, 16 + 9 * math.cos(t), 16 + 8 * math.sin(t), t + 1.2, 4)
-
-
-def draw_vine_whip(c):
-    for i in range(50):
-        t = i / 50
-        x, y = 6 + t * 20, 26 - t * 18 + math.sin(t * math.pi * 2.2) * 4
-        c.disc(x, y, 1.3, GREEN[1])
-    for t in (0.25, 0.55, 0.85):
-        leaf(c, 6 + t * 20, 26 - t * 18 + math.sin(t * math.pi * 2.2) * 4 - 3, -0.6, 3)
-
-
-def draw_blessing(c):
-    for i in range(8):
-        t = i * math.pi / 4
-        c.line(16 + 6 * math.cos(t), 18 + 6 * math.sin(t), 16 + 13 * math.cos(t), 18 + 13 * math.sin(t), GOLD[2], width=2)
-    c.disc(16, 18, 5.5, GOLD[1])
-    c.disc(15, 17, 2.2, WHITE)
-    c.ring(16, 6, 6, 4.4, GOLD[2], ry_scale=0.4)                         # halo
-
-
-def draw_flash(c):
-    star_shape(c, 16, 16, 13, hexc("fff6b0"), inner=0.3)
-    star_shape(c, 16, 16, 7, WHITE, inner=0.4, rotation=-math.pi / 2 + math.pi / 5)
-    c.disc(16, 16, 3, WHITE)
-
-
-def draw_wild_call(c):
-    paw(c, 13, 17, LEATHER)
-    for r in (5, 8):
-        for i in range(10):
-            t = -0.9 + i * 0.2
-            c.set(20 + r * math.cos(t), 16 + r * math.sin(t), WHITE)
-
-
-def draw_roar(c):
-    c.ellipse(12, 16, 8, 9, ORANGE[1])                                  # a lion's head
-    c.disc(12, 16, 5.5, hexc("f4c890"))
-    c.ellipse(13, 19, 3, 2.2, RED[0])                                   # open mouth
-    c.set(10, 14, hexc("231834")); c.set(14, 14, hexc("231834"))
-    for r in (4, 7, 10):
-        for i in range(9):
-            t = -0.8 + i * 0.2
-            c.set(19 + r * math.cos(t), 17 + r * math.sin(t), WHITE)
-
-
-def draw_mend_beast(c):
-    heart(c, 16, 17, 10, [hexc("a01c4a"), hexc("f04a7a"), hexc("ffb0c8")])
-    paw(c, 16, 17, [BONE[0], WHITE, BONE[0]])
-
-
-def draw_nibble(c):
-    c.disc(16, 16, 11, hexc("f4e0b0"))                                  # a biscuit with a bite out
-    for (x, y) in ((26, 8), (28, 14), (22, 4)):
-        c.disc(x, y, 4.5, None)
-    for (x, y) in ((11, 13), (16, 20), (19, 12), (12, 20)):
-        c.disc(x, y, 1, hexc("b07a3a"))
-
-
-def draw_shadow_bite(c):
-    c.disc(16, 16, 12, hexc("2a1a4a", 160))
-    fangs(c, 16, 11, SHADOW)
-
-
-def draw_jelly_splash(c):
-    c.poly([(8, 24), (8, 16), (12, 9), (20, 9), (24, 16), (24, 24)], JELLY[1])
-    c.shade(lambda x, y, col: col == JELLY[1] and x > 19, JELLY[0])
-    c.disc(12, 13, 2, JELLY[2])
-    c.set(13, 18, hexc("231834")); c.set(19, 18, hexc("231834"))
-    for (x, y) in ((5, 27), (27, 27), (28, 21), (4, 21)):
-        c.disc(x, y, 1.5, JELLY[1])
-
-
-def draw_bubble(c):
-    for (x, y, r) in ((13, 18, 7), (23, 10, 4), (23, 22, 3), (7, 8, 2.5)):
-        c.ring(x, y, r, r - 1.3, JELLY[2])
-        c.disc(x - r * 0.4, y - r * 0.4, max(1, r * 0.22), WHITE)
-
-
-def draw_frost_breath(c):
-    for i in range(6):
-        t = i * math.pi / 3
-        x, y = 16 + 12 * math.cos(t), 16 + 12 * math.sin(t)
-        c.line(16, 16, x, y, SNOW[2], width=2)
-        for k in (0.55, 0.8):
-            bx, by = 16 + 12 * k * math.cos(t), 16 + 12 * k * math.sin(t)
-            for s in (-1, 1):
-                c.line(bx, by, bx + 3 * math.cos(t + s * 0.9), by + 3 * math.sin(t + s * 0.9), SNOW[1])
-    c.disc(16, 16, 2.5, WHITE)
-
-
-def draw_pine_needles(c):
-    for (x0, y0, x1, y1) in ((6, 24, 22, 8), (10, 27, 26, 11), (4, 18, 18, 5)):
-        c.line(x0, y0, x1, y1, GREEN[0], width=2)
-        c.line(x0, y0 - 1, x1, y1 - 1, GREEN[2])
-        c.poly([(x1, y1 - 2), (x1 + 3, y1 - 3), (x1 + 2, y1)], GREEN[2])
-
-
-def draw_web_shot(c):
-    for i in range(8):
-        t = i * math.pi / 4
-        c.line(16, 16, 16 + 13 * math.cos(t), 16 + 13 * math.sin(t), hexc("eeeaf8"))
-    for r in (4, 8, 12):
-        pts = [(16 + r * math.cos(i * math.pi / 4), 16 + r * math.sin(i * math.pi / 4)) for i in range(9)]
-        for (a, b) in zip(pts, pts[1:]):
-            c.line(a[0], a[1], b[0], b[1], hexc("eeeaf8"))
-    c.disc(16, 16, 2.4, SHADOW[1])
-
-
-def draw_bounce(c):
-    c.ellipse(16, 25, 8, 2, hexc("231834", 90))                          # shadow
-    c.disc(16, 13, 7.5, hexc("ff8ab8"))
-    light_top_left(c, [hexc("c04a7a"), hexc("ff8ab8"), hexc("ffd0e4")], 16, 13, 7.5)
-    for (x, y) in ((6, 12), (26, 12), (8, 6), (24, 6)):
-        c.disc(x, y, 1, WHITE)
-
-
-def draw_golden_spin(c):
-    swirl(c, 16, 16, GOLD[2], turns=1.3, r0=8, grow=0.08, width=0.8, points=40)
-    c.ellipse(16, 16, 6, 8, GOLD[1])
-    c.ellipse(16, 16, 3.5, 5.5, GOLD[0])
-    c.line(16, 11, 16, 21, GOLD[2])
-    star_shape(c, 25, 7, 3, WHITE, inner=0.35)
-
-
-def draw_gust(c):
-    for (y, x0, x1, curl) in ((10, 5, 22, 1), (17, 3, 26, -1), (24, 7, 20, 1)):
-        c.line(x0, y, x1, y, hexc("e8f4ff"), width=2)
-        for i in range(12):
-            t = i / 12 * math.pi * 1.4
-            c.set(x1 + 3 * math.sin(t), y - curl * (3 - 3 * math.cos(t)), hexc("e8f4ff"))
-
-
-def draw_recovery(c):
-    heart(c, 16, 18, 9, GREEN)
-    c.rect(14, 11, 18, 23, WHITE)                                       # a white cross on the heart
-    c.rect(10, 15, 22, 19, WHITE)
-    for x, y in ((5, 7), (27, 9), (26, 26)):
-        c.rect(x - 1, y, x + 2, y + 1, GREEN[2])
-        c.rect(x, y - 1, x + 1, y + 2, GREEN[2])
-
-
-def draw_revive(c):
-    c.ring(16, 6, 6, 4.4, GOLD[2], ry_scale=0.4)                        # halo
-    for side in (-1, 1):                                                 # a pair of white wings
-        c.poly([(16, 14), (16 + side * 13, 9), (16 + side * 12, 14), (16 + side * 14, 17),
-                (16 + side * 10, 21), (16 + side * 11, 24), (16, 22)], WHITE)
-        c.line(16, 16, 16 + side * 11, 12, hexc("c8d4f0"))
-        c.line(16, 19, 16 + side * 10, 18, hexc("c8d4f0"))
-    c.disc(16, 18, 3.4, GOLD[1])
-    c.disc(15, 17, 1.4, GOLD[2])
-
-
-def draw_bless(c):
-    c.poly([(6, 7), (26, 7), (26, 16), (16, 28), (6, 16)], BLUE[1])     # a shield
-    c.poly([(6, 7), (16, 7), (16, 28), (6, 16)], BLUE[2])
-    c.poly([(9, 10), (23, 10), (23, 16), (16, 24), (9, 16)], BLUE[0])
-    star_shape(c, 16, 15.5, 6, GOLD[1])
-    c.disc(15, 14, 1.6, GOLD[2])
-
-
-def draw_protection(c):
-    c.poly([(6, 5), (26, 5), (26, 15), (16, 28), (6, 15)], STEEL[1])     # a steel shield
-    c.poly([(6, 5), (16, 5), (16, 28), (6, 15)], STEEL[2])
-    c.poly([(9, 8), (23, 8), (23, 15), (16, 24), (9, 15)], STEEL[0])
-    c.line(9, 8, 23, 8, GOLD[1], width=2)                                # a gold rim along the top
-    c.disc(16, 15, 4, GOLD[1])                                           # and a gold boss
-    c.disc(15, 14, 1.6, GOLD[2])
-
-
-def draw_holy_glow(c):
-    for i in range(12):                                                  # rays of light round...
-        t = i * math.pi / 6
-        reach = 14 if i % 2 == 0 else 10
-        c.line(16 + 7 * math.cos(t), 16 + 7 * math.sin(t), 16 + reach * math.cos(t), 16 + reach * math.sin(t),
-               hexc("ffe0f8") if i % 2 else GOLD[2], width=2)
-    c.disc(16, 16, 7, hexc("f070c0"))                                    # ...an orb of rosy magic
-    c.disc(16, 16, 5, hexc("ffb0e0"))
-    c.disc(14.5, 14.5, 2, WHITE)
-
-
-def draw_guardianship(c):
-    c.ring(16, 24, 14, 11.5, SNOW[1])                                    # a dome of light...
-    c.ring(16, 24, 11.5, 10.5, SNOW[2])
-    for y in range(25, 32):                                              # (its top half)
-        for x in range(32):
-            c.px[y][x] = None
-    c.rect(2, 24, 30, 26, SNOW[0])                                       # ...over the ground
-    c.poly([(11, 11), (21, 11), (21, 17), (16, 23), (11, 17)], BLUE[1])  # and a shield inside
-    c.poly([(11, 11), (16, 11), (16, 23), (11, 17)], BLUE[2])
-    star_shape(c, 16, 16, 3.4, GOLD[1])
-
-
-def draw_animal_training(c):
-    paw(c, 12, 18, LEATHER)
-    c.poly([(24, 3), (30, 10), (26.5, 10), (26.5, 19), (21.5, 19), (21.5, 10), (18, 10)], GOLD[1])   # an arrow up
-    c.poly([(24, 3), (24, 19), (21.5, 19), (21.5, 10), (18, 10)], GOLD[2])
-    for y in (22, 25, 28):                                               # speed lines
-        c.line(20, y, 28, y, WHITE)
-
-
-def draw_boost(c):
-    c.poly([(16, 2), (28, 14), (21.5, 14), (21.5, 28), (10.5, 28), (10.5, 14), (4, 14)], ORANGE[1])  # a big arrow up
-    c.poly([(16, 2), (16, 28), (10.5, 28), (10.5, 14), (4, 14)], ORANGE[2])
-    c.line(16, 6, 16, 26, hexc("fff0c0"))
-    for (x, y) in ((5, 22), (27, 21), (26, 26)):
-        star_shape(c, x, y, 2.6, WHITE, inner=0.35)                     # sparks
-
-
-def draw_berserk(c):
-    flame(c, 16, 18, 10, colors=[RED[0], RED[1], ORANGE[2]])             # a blaze of rage...
-    c.line(10, 17, 14, 19, hexc("231834"), width=2)                      # ...with angry eyes
-    c.line(22, 17, 18, 19, hexc("231834"), width=2)
-    c.disc(13, 21, 1.2, WHITE)
-    c.disc(19, 21, 1.2, WHITE)
-
-def draw_bridge_of_light(c):
-    for r, color in ((14, GOLD[1]), (11.5, WHITE), (9, hexc("9ccaff"))):  # a rainbow arch of light
-        c.ring(16, 26, r, r - 2.2, color)
-    for y in range(26, 32):                                              # only the top half of the rings
-        for x in range(32):
-            c.px[y][x] = None
-    c.rect(4, 25, 9, 27, GOLD[0])
-    c.rect(23, 25, 28, 27, GOLD[0])
-    c.disc(16, 10, 2.2, WHITE)
-
-
-POISON = [hexc("2e6a1e"), hexc("6ab83a"), hexc("b8f070")]
-GUMS = [hexc("3a1a2a"), hexc("7a2a4a"), hexc("b05a7a")]
-INK = hexc("1e2a14")
-
-
-def draw_curse(c):
-    swirl(c, 16, 17, SHADOW[1], turns=1.8, r0=2, grow=0.18, width=1.4)   # dark magic behind
-    c.line(4, 4, 7, 7, LEATHER[1], width=2)                              # a sword, snapped in two
-    c.line(4, 10, 10, 4, GOLD[1], width=2)
-    c.line(9, 9, 14, 14, STEEL[1], width=3)
-    c.line(9, 8, 14, 13, STEEL[2])
-    c.line(18, 17, 24, 23, STEEL[1], width=3)
-    c.line(18, 16, 24, 22, STEEL[2])
-    c.poly([(23, 25), (27, 27), (25, 23)], STEEL[1])
-    for (x, y) in ((15, 20), (21, 11), (8, 21)):
-        c.disc(x, y, 1.3, SHADOW[2])                                     # wisps
-
-
-def draw_poison(c):
-    c.poly([(16, 3), (23, 13), (25, 19), (22, 26), (16, 28), (10, 26), (7, 19), (9, 13)], POISON[1])   # a drop of venom
-    c.shade(lambda x, y, col: col == POISON[1] and x > 18 and y > 15, POISON[0])
-    c.disc(12, 15, 1.8, POISON[2])
-    c.disc(13, 19, 1.5, INK)                                             # a sickly face
-    c.disc(19, 19, 1.5, INK)
-    c.line(13, 24, 19, 24, INK)
-    for (x, y) in ((26, 6), (28, 11), (5, 7)):
-        c.ring(x, y, 2.2, 1.1, POISON[2])                                # bubbles
-
-
-def draw_venom_bite(c):
-    c.disc(16, 16, 12, hexc("1e3a14", 160))
-    fangs(c, 16, 8, GUMS)
-    for (x, y) in ((10, 25), (16, 28), (22, 25)):
-        c.poly([(x - 1.4, y - 3), (x + 1.4, y - 3), (x, y + 1.5)], POISON[1])   # venom dripping
-        c.set(x - 0.5, y - 2, POISON[2])
-
-
-def draw_poison_mist(c):
-    for (x, y, r) in ((10, 19, 6), (17, 14, 7.5), (23, 19, 6), (16, 22, 6)):
-        c.disc(x, y, r, POISON[1])                                       # a cloud
-    c.shade(lambda x, y, col: col == POISON[1] and y > 21, POISON[0])
-    for (x, y, r) in ((11, 17, 2.6), (17, 11, 3)):
-        c.disc(x, y, r, POISON[2])
-    for (x, y) in ((5, 8), (26, 7), (21, 3)):
-        c.ring(x, y, 2.2, 1.1, VIOLET[2])                                # bubbles
-
-
-def draw_evil_eye(c):
-    c.poly([(3, 16), (9, 10), (16, 8), (23, 10), (29, 16), (23, 22), (16, 24), (9, 22)], hexc("efe8ff"))   # the eye
-    c.disc(16, 16, 6, SHADOW[1])                                         # a violet iris
-    c.disc(16, 16, 3.2, SHADOW[0])
-    c.rect(15.5, 12, 16.5, 20, hexc("ff5a7a"))                           # a red slit
-    c.disc(13.5, 13.5, 1.2, WHITE)
-    for (x0, y0, x1, y1) in ((16, 5, 16, 2), (8, 7, 6, 4), (24, 7, 26, 4), (8, 25, 6, 28), (24, 25, 26, 28)):
-        c.line(x0, y0, x1, y1, SHADOW[2])                                # a dark glare
+import numpy as np
+from PIL import Image, ImageDraw, ImageFilter
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+SPRITES = ROOT / "art" / "sprites"
+N = 512                      # drawn at
+OUT = 128                    # shipped at
+
+
+def rgb(hexcode):
+    h = hexcode.lstrip("#")
+    return np.array([int(h[i:i + 2], 16) for i in (0, 2, 4)], float) / 255
+
+
+# Each element's light, as `ElementEffects.ElementLight` has it (deep, main, bright, core), and the
+# same four for what has no element: healing's green, a buff's sky blue, a curse's and Dark's violet,
+# Light's gold, Metal's silver-gold, a blow's white-hot orange.
+LIGHTS = {
+    "fire": ["#fa4d0a", "#ff801f", "#ffcc66", "#fff5cc"],
+    "water": ["#0d61f2", "#4d9eff", "#99d9ff", "#e6faff"],
+    "wood": ["#1a991f", "#66e047", "#b8ff80", "#ebffcc"],
+    "earth": ["#80470f", "#cc802e", "#f2b359", "#ffe09e"],
+    "light": ["#f2a30d", "#ffd640", "#fff08c", "#fffde6"],
+    "dark": ["#4a1a8c", "#8a4ae0", "#c69aff", "#f0e6ff"],
+    "metal": ["#a6801a", "#e6c24a", "#fff0a0", "#fffef0"],
+    "heal": ["#14904a", "#3cd77a", "#a6ffc4", "#effff4"],
+    "buff": ["#1a5ec8", "#4a9cff", "#a8d8ff", "#f0fbff"],
+    "poison": ["#3a8a14", "#86d42a", "#d0ff70", "#f6ffd8"],
+    "blow": ["#e0401a", "#ff9a3a", "#ffe08a", "#fffbe8"],
+    "white": ["#8aa0c0", "#d0e0f4", "#f4f8ff", "#ffffff"],
+}
+LIGHTS = {k: [rgb(c) for c in v] for k, v in LIGHTS.items()}
+
+# The tile behind each icon (SkillDef.tileColor): its element's colour, else its kind's.
+TILES = {"fire": "#ff8033", "water": "#59a6ff", "wood": "#73d959", "earth": "#bf8c4d", "metal": "#d9d9e6",
+         "light": "#fff28c", "dark": "#9966d9", "heal": "#4db873", "revive": "#4db873", "buff": "#4d8cd9",
+         "curse": "#73479e", "field": "#d9a640", "magic": "#8c6be6", "physical": "#d96b52"}
+
+
+class Icon:
+    """A 512-pixel picture built up in layers, composited "over" in premultiplied colour. Coordinates
+    are 0 to 1 across the picture, (0, 0) at the top left."""
+
+    def __init__(self, backdrop):
+        self.rgb = np.zeros((N, N, 3))
+        self.a = np.zeros((N, N))
+        y, x = (np.mgrid[0:N, 0:N] + 0.5) / N
+        self.x, self.y = x, y
+        if backdrop is not None:
+            # The dark of the tile's own colour, lit a little in the middle, so light reads on it.
+            d = np.hypot(x - 0.5, y - 0.45)
+            centre, edge = backdrop * 0.42, backdrop * 0.13
+            self.over(centre * (1 - np.clip(d / 0.75, 0, 1))[..., None] + edge * np.clip(d / 0.75, 0, 1)[..., None],
+                      np.ones((N, N)))
+
+    # --- compositing ----------------------------------------------------------------------------
+
+    def over(self, colour, alpha):
+        """`colour` (an RGB triple, or an N × N × 3 field) laid over what's there with `alpha` (0 to 1)."""
+        alpha = np.clip(alpha, 0, 1)
+        c = np.broadcast_to(np.asarray(colour, float), (N, N, 3))
+        self.rgb = c * alpha[..., None] + self.rgb * (1 - alpha[..., None])
+        self.a = alpha + self.a * (1 - alpha)
+
+    def add(self, colour, amount):
+        """Light added on top: brightens toward `colour` and white where it piles up, as a glow does."""
+        amount = np.clip(amount, 0, None)
+        c = np.broadcast_to(np.asarray(colour, float), (N, N, 3))
+        self.rgb = 1 - (1 - self.rgb) * (1 - np.clip(c * amount[..., None], 0, 1))    # screen
+        self.a = np.clip(self.a + amount * (1 - self.a), 0, 1)
+
+    # --- masks ----------------------------------------------------------------------------------
+
+    @staticmethod
+    def _canvas():
+        return Image.new("L", (N, N), 0)
+
+    @staticmethod
+    def _px(points):
+        return [(px * N, py * N) for px, py in points]
+
+    def poly(self, points, blur=0.0):
+        img = self._canvas()
+        ImageDraw.Draw(img).polygon(self._px(points), fill=255)
+        return self._done(img, blur)
+
+    def ellipse(self, cx, cy, rx, ry=None, blur=0.0):
+        ry = rx if ry is None else ry
+        img = self._canvas()
+        ImageDraw.Draw(img).ellipse([(cx - rx) * N, (cy - ry) * N, (cx + rx) * N, (cy + ry) * N], fill=255)
+        return self._done(img, blur)
+
+    def line(self, points, width, blur=0.0):
+        img = self._canvas()
+        d = ImageDraw.Draw(img)
+        px = self._px(points)
+        d.line(px, fill=255, width=max(1, int(width * N)), joint="curve")
+        r = width * N / 2
+        for x, y in (px[0], px[-1]):
+            d.ellipse([x - r, y - r, x + r, y + r], fill=255)
+        return self._done(img, blur)
+
+    def ring(self, cx, cy, r, width, blur=0.0):
+        img = self._canvas()
+        ImageDraw.Draw(img).ellipse([(cx - r) * N, (cy - r) * N, (cx + r) * N, (cy + r) * N], outline=255,
+                                    width=max(1, int(width * N)))
+        return self._done(img, blur)
+
+    def arc(self, cx, cy, r, start, end, width, blur=0.0):
+        img = self._canvas()
+        ImageDraw.Draw(img).arc([(cx - r) * N, (cy - r) * N, (cx + r) * N, (cy + r) * N], start, end, fill=255,
+                                width=max(1, int(width * N)))
+        return self._done(img, blur)
+
+    @staticmethod
+    def _done(img, blur):
+        if blur:
+            img = img.filter(ImageFilter.GaussianBlur(blur * N))
+        return np.asarray(img, float) / 255
+
+    # --- fields ---------------------------------------------------------------------------------
+
+    def radial(self, cx, cy, r, inner, outer, power=1.0):
+        """A colour field from `inner` at (cx, cy) to `outer` at `r` and beyond."""
+        t = np.clip(np.hypot(self.x - cx, self.y - cy) / r, 0, 1) ** power
+        return inner * (1 - t)[..., None] + outer * t[..., None]
+
+    def linear(self, x0, y0, x1, y1, start, end):
+        dx, dy = x1 - x0, y1 - y0
+        t = np.clip(((self.x - x0) * dx + (self.y - y0) * dy) / (dx * dx + dy * dy), 0, 1)
+        return start * (1 - t)[..., None] + end * t[..., None]
+
+    # --- light ----------------------------------------------------------------------------------
+
+    def glow(self, cx, cy, r, colour, strength=1.0, ry=None):
+        """A soft round of light, falling off as a Gaussian."""
+        ry = r if ry is None else ry
+        d2 = ((self.x - cx) / r) ** 2 + ((self.y - cy) / ry) ** 2
+        self.add(colour, strength * np.exp(-d2 * 2.2))
+
+    def flare(self, cx, cy, size, light, rays=4, turn=0.0, strength=1.0):
+        """A lens flare: a white-hot core, its glow, and thin rays of light crossing it."""
+        deep, main, bright, core = light
+        self.glow(cx, cy, size * 0.55, main, 0.75 * strength)
+        for k in range(rays):
+            a = turn + math.pi * k / rays
+            long = size * (1.0 if k % 2 == 0 else 0.6)
+            dx, dy = math.cos(a), math.sin(a)
+            # A ray: a thin diamond, blurred a touch, brightest at the middle.
+            w = size * 0.05
+            pts = [(cx - dx * long, cy - dy * long), (cx - dy * w, cy + dx * w), (cx + dx * long, cy + dy * long),
+                   (cx + dy * w, cy - dx * w)]
+            self.add(bright, self.poly(pts, blur=0.004) * strength)
+        self.glow(cx, cy, size * 0.2, core, 1.0 * strength)
+
+    def sparkle(self, cx, cy, size, light, strength=1.0):
+        """A small four-pointed star of light."""
+        deep, main, bright, core = light
+        self.glow(cx, cy, size * 0.8, main, 0.5 * strength)
+        w = size * 0.18
+        star = [(cx, cy - size), (cx + w, cy - w), (cx + size, cy), (cx + w, cy + w), (cx, cy + size),
+                (cx - w, cy + w), (cx - size, cy), (cx - w, cy - w)]
+        self.add(core, self.poly(star, blur=0.002) * strength)
+
+    def body(self, mask, light, cx, cy, r, rim=True, shadow=True):
+        """A solid made of light: deep at its rim, bright toward (cx, cy), its core white, a glow round it
+        and (`shadow`) a soft dark under it so it stands off the backdrop."""
+        deep, main, bright, core = light
+        if shadow:
+            self.over(np.zeros(3), self._soft(mask, 0.02) * 0.45)
+        self.glow(cx, cy, r * 1.5, main, 0.55)
+        field = self.radial(cx, cy, r, core, deep, power=0.8)
+        field = self.radial(cx, cy, r * 0.55, core, bright, power=1.2) * (np.hypot(self.x - cx, self.y - cy) < r * 0.55)[..., None] + \
+            field * (np.hypot(self.x - cx, self.y - cy) >= r * 0.55)[..., None]
+        self.over(field, mask)
+        if rim:
+            self.add(bright, np.clip(mask - Icon._erode(mask), 0, 1) * 0.5)
+
+    @staticmethod
+    def _soft(mask, blur):
+        img = Image.fromarray((np.clip(mask, 0, 1) * 255).astype(np.uint8))
+        return np.asarray(img.filter(ImageFilter.GaussianBlur(blur * N)), float) / 255
+
+    @staticmethod
+    def _erode(mask, px=6):
+        img = Image.fromarray((np.clip(mask, 0, 1) * 255).astype(np.uint8))
+        return np.asarray(img.filter(ImageFilter.MinFilter(px * 2 + 1)), float) / 255
+
+    def trail(self, points, width, light, strength=1.0):
+        """Light streaming behind something along `points` (oldest first): thin and faint at its end,
+        full where it meets the thing."""
+        deep, main, bright, core = light
+        n = len(points) - 1
+        for k in range(n):
+            t = (k + 1) / n
+            seg = self.line(points[k:k + 2], width * (0.25 + 0.75 * t), blur=0.01)
+            self.add(main, seg * strength * (0.25 + 0.75 * t) * 0.8)
+            self.add(bright, self.line(points[k:k + 2], width * 0.35 * (0.25 + 0.75 * t), blur=0.004) * strength * t)
+
+    def finish(self):
+        """The picture at 128 pixels, its corners rounded like the tile it sits in."""
+        corner = self._canvas()
+        ImageDraw.Draw(corner).rounded_rectangle([0, 0, N - 1, N - 1], radius=int(N * 0.2), fill=255)
+        cut = np.asarray(corner, float) / 255
+        a = self.a * cut
+        rgba = np.dstack([np.clip(self.rgb, 0, 1) * cut[..., None], a])       # premultiplied
+        img = Image.fromarray((rgba * 255).round().astype(np.uint8), "RGBa")
+        return img.resize((OUT, OUT), Image.LANCZOS).convert("RGBA")
+
+
+# ------------------------------------------------------------------------------------- the skills
+# Each draws on an Icon, from its battle animation: what flies, what bursts, what rises, in its colours.
+
+def bolt(ic, light, angle=-0.6, r=0.17, cx=0.6, cy=0.42, tail=0.42):
+    """A ball of light flying up and right, its trail behind it (fire bolt, jelly splash, mud shot)."""
+    dx, dy = math.cos(angle), math.sin(angle)
+    pts = [(cx - dx * tail * (1 - k / 6), cy - dy * tail * (1 - k / 6)) for k in range(7)]
+    ic.trail(pts, r * 1.3, light)
+    ic.body(ic.ellipse(cx, cy, r), light, cx - r * 0.25, cy - r * 0.25, r)
+
+
+def flames(ic, light, cx, cy, h, w, lean=0.0):
+    """A tongue of fire: three flames in one, deep to white-hot."""
+    deep, main, bright, core = light
+    for scale, colour, alpha in ((1.0, deep, 0.95), (0.74, main, 1.0), (0.48, bright, 1.0), (0.26, core, 1.0)):
+        hh, ww = h * scale, w * scale
+        base = cy
+        pts = [(cx + lean * hh, base - hh), (cx + ww * 0.55, base - hh * 0.45), (cx + ww * 0.5, base - hh * 0.05),
+               (cx + ww * 0.25, base + ww * 0.3), (cx - ww * 0.25, base + ww * 0.3), (cx - ww * 0.5, base - hh * 0.05),
+               (cx - ww * 0.45, base - hh * 0.5)]
+        ic.over(colour, ic.poly(pts, blur=0.006) * alpha)
+
+
+def draw_fire_bolt(ic):
+    L = LIGHTS["fire"]
+    dx, dy = math.cos(-0.65), math.sin(-0.65)
+    pts = [(0.62 - dx * 0.5 * (1 - k / 7), 0.4 - dy * 0.5 * (1 - k / 7)) for k in range(8)]
+    ic.trail(pts, 0.24, L)
+    for k, (ox, oy, s) in enumerate(((-0.2, 0.26, 0.04), (-0.08, 0.3, 0.03), (-0.28, 0.14, 0.025))):
+        ic.sparkle(0.62 + ox, 0.4 + oy, s * 1.6, L, 0.8)
+    ic.glow(0.62, 0.4, 0.3, L[1], 0.6)
+    ic.body(ic.ellipse(0.62, 0.4, 0.16), L, 0.58, 0.36, 0.16)
+    flames(ic, L, 0.63, 0.47, 0.32, 0.26, lean=0.18)
+    ic.flare(0.6, 0.38, 0.22, L, strength=0.7)
+
+
+def draw_ember(ic):
+    L = LIGHTS["fire"]
+    ic.glow(0.5, 0.78, 0.4, L[0], 0.5, ry=0.15)
+    flames(ic, L, 0.5, 0.8, 0.5, 0.36)
+    for (x, y, s) in ((0.26, 0.42, 0.05), (0.74, 0.34, 0.06), (0.36, 0.2, 0.04), (0.66, 0.6, 0.035), (0.2, 0.66, 0.03),
+                      (0.82, 0.56, 0.04)):
+        ic.glow(x, y, s * 1.6, L[1], 0.7)
+        ic.over(L[2], ic.ellipse(x, y, s * 0.5, blur=0.003))
+        ic.add(L[3], ic.ellipse(x, y, s * 0.25))
+
+
+def draw_flash(ic):
+    L = LIGHTS["light"]
+    ic.glow(0.5, 0.5, 0.42, L[0], 0.6)
+    ic.flare(0.5, 0.5, 0.46, L, rays=8, turn=0.0, strength=1.0)
+    ic.flare(0.5, 0.5, 0.3, L, rays=4, turn=math.pi / 4, strength=0.6)
+    ic.over(L[3], ic.ellipse(0.5, 0.5, 0.08, blur=0.01))
+
+
+def draw_holy_glow(ic):
+    L = LIGHTS["light"]
+    ic.glow(0.5, 0.86, 0.45, L[0], 0.6, ry=0.12)
+    for a in np.linspace(-2.6, -0.54, 7):                   # rays fanning up round the hero
+        ic.add(L[1], ic.poly([(0.5, 0.9), (0.5 + math.cos(a - 0.08) * 0.7, 0.9 + math.sin(a - 0.08) * 0.7),
+                              (0.5 + math.cos(a + 0.08) * 0.7, 0.9 + math.sin(a + 0.08) * 0.7)], blur=0.03) * 0.35)
+    ic.body(ic.ellipse(0.5, 0.42, 0.13), L, 0.5, 0.4, 0.13, shadow=False)
+    ic.flare(0.5, 0.42, 0.34, L, rays=8, strength=0.9)
+    for (x, y) in ((0.24, 0.3), (0.78, 0.24), (0.7, 0.66)):
+        ic.sparkle(x, y, 0.05, L)
+
+
+def draw_frost_breath(ic):
+    L = LIGHTS["water"]
+    # A cone of frost from the lower left, crystals of ice in it.
+    ic.add(L[1], ic.poly([(0.08, 0.86), (0.92, 0.22), (0.94, 0.62)], blur=0.05) * 0.6)
+    ic.add(L[2], ic.poly([(0.1, 0.84), (0.9, 0.34), (0.9, 0.52)], blur=0.03) * 0.7)
+    for (x, y, s, a) in ((0.7, 0.4, 0.13, 0.2), (0.48, 0.58, 0.1, -0.3), (0.82, 0.58, 0.08, 0.6), (0.3, 0.7, 0.06, 0.1)):
+        for k in range(3):
+            t = a + k * math.pi / 3
+            dx, dy = math.cos(t) * s, math.sin(t) * s
+            ic.over(L[3], ic.line([(x - dx, y - dy), (x + dx, y + dy)], 0.018, blur=0.002))
+        ic.glow(x, y, s * 0.8, L[2], 0.5)
+    for (x, y) in ((0.6, 0.24), (0.9, 0.82), (0.38, 0.42)):
+        ic.sparkle(x, y, 0.04, L)
+
+
+def draw_jelly_splash(ic):
+    L = LIGHTS["water"]
+    ic.glow(0.5, 0.62, 0.38, L[0], 0.5)
+    drop = [(0.5, 0.12)] + [(0.5 + 0.24 * math.sin(t), 0.56 - 0.24 * math.cos(t)) for t in np.linspace(0.5, 2 * math.pi - 0.5, 24)]
+    ic.body(ic.poly(drop, blur=0.003), L, 0.44, 0.5, 0.26)
+    ic.over(L[3], ic.ellipse(0.42, 0.46, 0.05, 0.08, blur=0.006) * 0.9)
+    for (x, y, r) in ((0.16, 0.72, 0.05), (0.84, 0.66, 0.06), (0.24, 0.3, 0.035), (0.8, 0.3, 0.04), (0.5, 0.92, 0.03)):
+        ic.body(ic.ellipse(x, y, r), L, x - r * 0.3, y - r * 0.3, r, shadow=False)
+
+
+def draw_bubble(ic):
+    L = LIGHTS["water"]
+    for (x, y, r) in ((0.42, 0.56, 0.24), (0.74, 0.3, 0.13), (0.78, 0.7, 0.09), (0.24, 0.24, 0.08)):
+        ic.glow(x, y, r * 1.3, L[1], 0.35)
+        ic.over(L[0], ic.ellipse(x, y, r) * 0.25)
+        ic.add(L[2], ic.ring(x, y, r, r * 0.16, blur=0.004) * 0.9)
+        ic.over(L[3], ic.arc(x, y, r * 0.72, 200, 250, r * 0.14, blur=0.003))
+        ic.over(L[3], ic.ellipse(x - r * 0.38, y - r * 0.4, r * 0.12))
+
+
+def draw_leaf_storm(ic):
+    L = LIGHTS["wood"]
+    ic.add(L[1], ic.arc(0.5, 0.5, 0.36, 200, 520, 0.03, blur=0.015) * 0.7)
+    ic.add(L[2], ic.arc(0.5, 0.5, 0.22, 20, 300, 0.025, blur=0.012) * 0.6)
+    for k, (x, y, a, s) in enumerate(((0.3, 0.3, -0.6, 0.11), (0.72, 0.28, 0.5, 0.1), (0.78, 0.66, 2.0, 0.12),
+                                      (0.32, 0.72, 2.6, 0.1), (0.52, 0.5, 0.9, 0.14))):
+        dx, dy = math.cos(a) * s, math.sin(a) * s
+        nx, ny = -dy * 0.45, dx * 0.45
+        pts = [(x - dx, y - dy), (x + nx, y + ny), (x + dx, y + dy), (x - nx, y - ny)]
+        ic.glow(x, y, s * 1.1, L[1], 0.4)
+        ic.body(ic.poly(pts, blur=0.002), L, x - nx * 0.4, y - ny * 0.4, s, shadow=True)
+        ic.over(L[0], ic.line([(x - dx, y - dy), (x + dx, y + dy)], 0.008))
+    ic.sparkle(0.84, 0.44, 0.04, L)
+    ic.sparkle(0.18, 0.5, 0.035, L)
+
+
+def draw_vine_whip(ic):
+    L = LIGHTS["wood"]
+    pts = [(0.14 + 0.72 * t, 0.84 - 0.66 * t + 0.16 * math.sin(t * 7)) for t in np.linspace(0, 1, 30)]
+    ic.add(L[1], ic.line(pts, 0.1, blur=0.03) * 0.6)
+    ic.over(L[0], ic.line(pts, 0.06))
+    ic.over(L[1], ic.line(pts, 0.035))
+    ic.add(L[2], ic.line(pts, 0.012) * 0.8)
+    for k in (6, 13, 20, 26):
+        x, y = pts[k]
+        ic.over(L[1], ic.poly([(x, y), (x + 0.08, y - 0.06), (x + 0.12, y + 0.01)], blur=0.003))
+    ic.flare(0.86, 0.2, 0.16, L, strength=0.8)
+
+
+def draw_pine_needles(ic):
+    L = LIGHTS["wood"]
+    a = -0.7
+    dx, dy = math.cos(a), math.sin(a)
+    for (x, y) in ((0.36, 0.74), (0.56, 0.7), (0.72, 0.52), (0.44, 0.52), (0.62, 0.32), (0.3, 0.38)):
+        ic.trail([(x - dx * 0.26, y - dy * 0.26), (x - dx * 0.13, y - dy * 0.13), (x, y)], 0.07, L, 0.6)
+        needle = [(x - dx * 0.02 - dy * 0.03, y - dy * 0.02 + dx * 0.03), (x + dx * 0.2, y + dy * 0.2),
+                  (x - dx * 0.02 + dy * 0.03, y - dy * 0.02 - dx * 0.03)]
+        ic.over(np.zeros(3), ic.poly(needle, blur=0.01) * 0.4)
+        ic.over(ic.linear(x, y, x + dx * 0.2, y + dy * 0.2, L[0], L[2]), ic.poly(needle, blur=0.002))
+        ic.add(L[3], ic.line([(x + dx * 0.05, y + dy * 0.05), (x + dx * 0.17, y + dy * 0.17)], 0.008, blur=0.002) * 0.8)
+    ic.sparkle(0.86, 0.18, 0.05, L)
+
+
+def draw_stone_spike(ic):
+    L = LIGHTS["earth"]
+    ic.glow(0.5, 0.84, 0.44, L[1], 0.5, ry=0.12)
+    for (x, h, w) in ((0.3, 0.42, 0.13), (0.7, 0.36, 0.12), (0.5, 0.66, 0.17)):
+        pts = [(x - w, 0.86), (x - w * 0.15, 0.86 - h), (x + w * 0.2, 0.86 - h * 0.92), (x + w, 0.86)]
+        ic.over(np.zeros(3), ic.poly(pts, blur=0.02) * 0.4)
+        ic.over(ic.linear(x - w, 0.86 - h, x + w, 0.86, L[2], L[0]), ic.poly(pts, blur=0.002))
+        ic.add(L[3], ic.line([(x - w * 0.15, 0.86 - h), (x - w * 0.6, 0.86)], 0.012, blur=0.003) * 0.7)
+    for (x, y, s) in ((0.2, 0.5, 0.025), (0.84, 0.44, 0.03), (0.62, 0.18, 0.02)):
+        ic.over(L[1], ic.ellipse(x, y, s, blur=0.003))
+    ic.flare(0.5, 0.2, 0.18, L, strength=0.7)
+
+
+def draw_mud_shot(ic):
+    L = LIGHTS["earth"]
+    bolt(ic, L, r=0.16)
+    for (x, y, r) in ((0.3, 0.74, 0.04), (0.2, 0.62, 0.03), (0.4, 0.86, 0.025)):
+        ic.over(L[0], ic.ellipse(x, y, r, blur=0.004))
+
+
+def draw_rock_throw(ic):
+    L = LIGHTS["earth"]
+    dx, dy = math.cos(-0.5), math.sin(-0.5)
+    ic.trail([(0.6 - dx * 0.46 * (1 - k / 5), 0.44 - dy * 0.46 * (1 - k / 5)) for k in range(6)], 0.22, L, 0.6)
+    rock = [(0.44, 0.34), (0.6, 0.24), (0.76, 0.3), (0.82, 0.48), (0.7, 0.62), (0.5, 0.62), (0.4, 0.5)]
+    ic.over(np.zeros(3), ic.poly(rock, blur=0.025) * 0.45)
+    ic.over(ic.linear(0.44, 0.26, 0.78, 0.62, L[2], L[0] * 0.7), ic.poly(rock, blur=0.002))
+    ic.over(L[0] * 0.6, ic.line([(0.56, 0.38), (0.66, 0.46), (0.62, 0.56)], 0.012))
+    ic.add(L[3], ic.line([(0.46, 0.34), (0.6, 0.26)], 0.014, blur=0.004) * 0.7)
+    ic.flare(0.84, 0.62, 0.16, L, strength=0.6)
+
+
+def jaws(ic, gum, tooth, gap_light, open_=0.1):
+    """A bite seen from the front: an upper jaw curving down at its ends and a lower one up, each a band
+    of `gum` with fangs (long ones at the corners, small between) pointing in, staggered so they'd
+    close between each other, and light in the gap where they snap."""
+    ic.add(gap_light[1], ic.ellipse(0.5, 0.5, 0.4, 0.08, blur=0.04) * 0.8)
+    ic.add(gap_light[3], ic.ellipse(0.5, 0.5, 0.3, 0.015, blur=0.01) * 0.8)
+    for side in (-1, 1):                                   # -1 the upper jaw, 1 the lower
+        def edge(x, inset=0.0):
+            return 0.5 + side * (open_ + 0.28 - 0.9 * (x - 0.5) ** 2 + inset)
+        xs = np.linspace(0.12, 0.88, 24)
+        band = [(x, edge(x)) for x in xs] + [(x, edge(x, 0.09)) for x in xs[::-1]]
+        ic.over(np.zeros(3), ic.poly(band, blur=0.02) * 0.5)
+        ic.over(ic.linear(0.5, edge(0.5, 0.09), 0.5, edge(0.5), gum * 1.25, gum * 0.7), ic.poly(band, blur=0.002))
+        for k, x in enumerate(np.linspace(0.24, 0.76, 5) + (0.0 if side < 0 else 0.065)):
+            if x > 0.82:
+                continue
+            long = 0.2 if k in (0, 4) or (side > 0 and k == 3) else 0.11
+            w = 0.05 if long > 0.15 else 0.035
+            base = edge(x)
+            tip = base - side * long
+            fang = [(x - w, base + side * 0.01), (x + w, base + side * 0.01), (x + 0.004, tip)]
+            ic.over(np.zeros(3), ic.poly(fang, blur=0.01) * 0.35)
+            ic.over(ic.linear(x, base, x, tip, tooth * 0.78, np.minimum(tooth * 1.12, 1)), ic.poly(fang, blur=0.002))
+            ic.add(np.ones(3), ic.line([(x - w * 0.45, base), (x - w * 0.1, tip + side * 0.03)], 0.008, blur=0.002) * 0.5)
+
+
+def draw_shadow_bite(ic):
+    L = LIGHTS["dark"]
+    ic.glow(0.5, 0.5, 0.42, L[0], 0.8)
+    jaws(ic, rgb("#3a1a6a"), rgb("#e8dcff"), L)
+    ic.sparkle(0.84, 0.16, 0.05, L)
+    ic.sparkle(0.16, 0.84, 0.04, L)
+
+
+def draw_nibble(ic):
+    L = LIGHTS["blow"]
+    ic.glow(0.5, 0.5, 0.4, L[0], 0.5)
+    jaws(ic, rgb("#c04a5a"), rgb("#f4eee0"), L)
+    ic.flare(0.5, 0.5, 0.26, L, strength=0.6)
+
+
+def draw_venom_bite(ic):
+    L = LIGHTS["poison"]
+    ic.glow(0.5, 0.5, 0.42, L[0], 0.6)
+    jaws(ic, rgb("#5a2a4a"), rgb("#f0f4e0"), L, open_=0.08)
+    for (x, y) in ((0.24, 0.47), (0.76, 0.47)):              # venom dripping from the upper fangs
+        drop = [(x, y - 0.03)] + [(x + 0.035 * math.sin(t), y + 0.035 - 0.035 * math.cos(t)) for t in np.linspace(0.6, 2 * math.pi - 0.6, 12)]
+        ic.body(ic.poly(drop, blur=0.002), L, x - 0.01, y, 0.05, shadow=False)
+
+
+def draw_poison(ic):
+    L = LIGHTS["poison"]
+    ic.glow(0.5, 0.56, 0.4, L[0], 0.6)
+    drop = [(0.5, 0.1)] + [(0.5 + 0.25 * math.sin(t), 0.6 - 0.25 * math.cos(t)) for t in np.linspace(0.55, 2 * math.pi - 0.55, 24)]
+    ic.body(ic.poly(drop, blur=0.003), L, 0.44, 0.54, 0.28)
+    ic.over(rgb("#1c2a10"), ic.ellipse(0.42, 0.6, 0.035, 0.05))
+    ic.over(rgb("#1c2a10"), ic.ellipse(0.58, 0.6, 0.035, 0.05))
+    ic.over(rgb("#1c2a10"), ic.arc(0.5, 0.78, 0.07, 200, 340, 0.018))
+    for (x, y, r) in ((0.84, 0.24, 0.05), (0.18, 0.3, 0.04), (0.88, 0.5, 0.03)):
+        ic.add(L[2], ic.ring(x, y, r, 0.012, blur=0.003))
+        ic.glow(x, y, r, L[1], 0.4)
+
+
+def draw_poison_mist(ic):
+    L = LIGHTS["poison"]
+    D = LIGHTS["dark"]
+    for (x, y, r) in ((0.3, 0.6, 0.2), (0.52, 0.48, 0.24), (0.72, 0.6, 0.2), (0.5, 0.7, 0.2)):
+        ic.add(D[1], ic.ellipse(x, y, r, blur=0.04) * 0.5)
+        ic.add(L[1], ic.ellipse(x, y - 0.02, r * 0.8, blur=0.05) * 0.6)
+    ic.add(L[2], ic.ellipse(0.46, 0.44, 0.12, blur=0.05) * 0.6)
+    for (x, y, r) in ((0.2, 0.24, 0.04), (0.82, 0.22, 0.05), (0.64, 0.12, 0.03)):
+        ic.add(D[2], ic.ring(x, y, r, 0.012, blur=0.003))
+
+
+def draw_curse(ic):
+    L = LIGHTS["dark"]
+    ic.glow(0.5, 0.5, 0.42, L[0], 0.8)
+    for k in range(3):
+        ic.add(L[1], ic.arc(0.5, 0.5, 0.16 + k * 0.1, k * 70, k * 70 + 250, 0.025, blur=0.01) * (0.9 - k * 0.2))
+    moon = np.clip(ic.ellipse(0.5, 0.5, 0.2) - ic.ellipse(0.6, 0.44, 0.17), 0, 1)
+    ic.body(moon, L, 0.42, 0.46, 0.2)
+    ic.sparkle(0.76, 0.26, 0.05, L)
+    ic.sparkle(0.24, 0.76, 0.04, L)
+
+
+def draw_evil_eye(ic):
+    L = LIGHTS["dark"]
+    ic.glow(0.5, 0.5, 0.45, L[0], 0.7)
+    eye = [(0.08, 0.5), (0.3, 0.32), (0.5, 0.27), (0.7, 0.32), (0.92, 0.5), (0.7, 0.68), (0.5, 0.73), (0.3, 0.68)]
+    ic.over(np.zeros(3), ic.poly(eye, blur=0.02) * 0.5)
+    ic.over(rgb("#f0e8ff"), ic.poly(eye, blur=0.002))
+    ic.over(ic.radial(0.5, 0.5, 0.18, L[2], L[0]), ic.ellipse(0.5, 0.5, 0.18))
+    ic.over(rgb("#ff4a7a"), ic.ellipse(0.5, 0.5, 0.035, 0.13))
+    ic.add(rgb("#ff9ab8"), ic.ellipse(0.5, 0.5, 0.06, 0.16, blur=0.02) * 0.6)
+    ic.over(np.ones(3), ic.ellipse(0.44, 0.43, 0.03))
+    for a in np.linspace(0, 2 * math.pi, 9)[:-1]:
+        x, y = 0.5 + math.cos(a) * 0.44, 0.5 + math.sin(a) * 0.4
+        ic.add(L[2], ic.line([(0.5 + math.cos(a) * 0.36, 0.5 + math.sin(a) * 0.32), (x, y)], 0.015, blur=0.006) * 0.7)
+
+
+def draw_web_shot(ic):
+    L = LIGHTS["white"]
+    D = LIGHTS["dark"]
+    ic.glow(0.5, 0.5, 0.42, D[0], 0.6)
+    for a in np.linspace(0, 2 * math.pi, 9)[:-1]:
+        ic.add(L[2], ic.line([(0.5, 0.5), (0.5 + math.cos(a) * 0.42, 0.5 + math.sin(a) * 0.42)], 0.012, blur=0.002))
+    for r in (0.12, 0.22, 0.32, 0.4):
+        pts = [(0.5 + math.cos(a) * r * (0.92 if k % 2 else 1), 0.5 + math.sin(a) * r * (0.92 if k % 2 else 1))
+               for k, a in enumerate(np.linspace(0, 2 * math.pi, 17))]
+        ic.add(L[1], ic.line(pts, 0.01, blur=0.002))
+    ic.flare(0.5, 0.5, 0.16, D, strength=0.6)
+
+
+def draw_whirlwind(ic):
+    L = LIGHTS["white"]
+    for k in range(6):
+        y = 0.18 + k * 0.12
+        r = 0.36 - k * 0.05
+        ic.add(L[1], ic.arc(0.5 + k * 0.01, y, r, 20 + k * 30, 300 + k * 30, 0.03, blur=0.008) * 0.85)
+        ic.add(L[3], ic.arc(0.5 + k * 0.01, y, r, 40 + k * 30, 140 + k * 30, 0.012, blur=0.003))
+    ic.glow(0.5, 0.5, 0.36, LIGHTS["buff"][1], 0.35)
+    for (x, y) in ((0.16, 0.3), (0.84, 0.46), (0.26, 0.84)):
+        ic.sparkle(x, y, 0.035, L)
+
+
+def draw_gust(ic):
+    L = LIGHTS["white"]
+    for k, (y, x0, x1) in enumerate(((0.3, 0.1, 0.78), (0.5, 0.18, 0.9), (0.7, 0.08, 0.7))):
+        pts = [(x0 + (x1 - x0) * t, y + 0.04 * math.sin(t * 6 + k)) for t in np.linspace(0, 1, 20)]
+        ic.add(LIGHTS["buff"][1], ic.line(pts, 0.06, blur=0.02) * 0.6)
+        ic.add(L[3], ic.line(pts, 0.018, blur=0.003))
+        ic.add(L[3], ic.arc(x1 - 0.04, y - 0.06, 0.07, 270, 450, 0.018, blur=0.003))
+    ic.sparkle(0.88, 0.22, 0.04, L)
+
+
+def draw_bash(ic):
+    L = LIGHTS["blow"]
+    ic.flare(0.5, 0.5, 0.44, L, rays=6, turn=0.2, strength=0.9)
+    star = [(0.5 + math.cos(a) * (0.36 if k % 2 == 0 else 0.16), 0.5 + math.sin(a) * (0.36 if k % 2 == 0 else 0.16))
+            for k, a in enumerate(np.linspace(-math.pi / 2, 1.5 * math.pi, 15)[:-1])]
+    ic.body(ic.poly(star, blur=0.003), L, 0.5, 0.5, 0.3)
+    for a in np.linspace(0.3, 2 * math.pi + 0.3, 7)[:-1]:
+        ic.add(L[2], ic.line([(0.5 + math.cos(a) * 0.38, 0.5 + math.sin(a) * 0.38),
+                              (0.5 + math.cos(a) * 0.47, 0.5 + math.sin(a) * 0.47)], 0.02, blur=0.004))
+
+
+def draw_power_strike(ic):
+    L = LIGHTS["blow"]
+    ic.add(L[1], ic.arc(0.1, 0.92, 0.82, 290, 360, 0.09, blur=0.03) * 0.7)
+    ic.add(L[2], ic.arc(0.1, 0.92, 0.82, 292, 358, 0.04, blur=0.008))
+    ic.add(L[3], ic.arc(0.1, 0.92, 0.82, 300, 352, 0.014, blur=0.002))
+    ic.flare(0.62, 0.34, 0.3, L, strength=0.9)
+
+
+def draw_golden_spin(ic):
+    L = LIGHTS["metal"]
+    ic.glow(0.5, 0.5, 0.42, L[0], 0.5)
+    for k in range(3):
+        ic.add(L[1], ic.arc(0.5, 0.5, 0.34 - k * 0.04, k * 120, k * 120 + 200, 0.04, blur=0.012) * 0.8)
+        ic.add(L[3], ic.arc(0.5, 0.5, 0.34 - k * 0.04, k * 120 + 120, k * 120 + 200, 0.012, blur=0.002))
+    ic.body(ic.ellipse(0.5, 0.5, 0.15), L, 0.45, 0.45, 0.15)
+    ic.over(L[0], ic.ring(0.5, 0.5, 0.1, 0.014))
+    for (x, y) in ((0.16, 0.22), (0.86, 0.3), (0.8, 0.82), (0.2, 0.78)):
+        ic.sparkle(x, y, 0.05, L)
+
+
+def draw_bounce(ic):
+    L = LIGHTS["water"]
+    pts = [(0.1 + 0.8 * t, 0.84 - 0.6 * abs(math.sin(t * math.pi * 1.5))) for t in np.linspace(0, 0.66, 30)]
+    ic.trail(pts, 0.08, LIGHTS["white"], 0.7)
+    ic.body(ic.ellipse(0.66, 0.3, 0.14, 0.12), L, 0.62, 0.26, 0.14)
+    ic.glow(0.4, 0.86, 0.14, LIGHTS["white"][2], 0.6, ry=0.04)
+    ic.add(LIGHTS["white"][3], ic.arc(0.4, 0.86, 0.12, 190, 350, 0.012, blur=0.003))
+
+
+def draw_roar(ic):
+    L = LIGHTS["blow"]
+    for k in range(4):
+        r = 0.14 + k * 0.1
+        ic.add(L[1], ic.arc(0.24, 0.5, r, -50, 50, 0.035, blur=0.01) * (1 - k * 0.18))
+        ic.add(L[3], ic.arc(0.24, 0.5, r, -40, 40, 0.012, blur=0.002) * (1 - k * 0.2))
+    ic.flare(0.24, 0.5, 0.2, L, strength=0.8)
+
+
+def draw_wild_call(ic):
+    L = LIGHTS["wood"]
+    ic.glow(0.5, 0.56, 0.38, L[0], 0.6)
+    ic.body(ic.ellipse(0.5, 0.64, 0.16, 0.13), L, 0.46, 0.6, 0.16)
+    for (x, y, r) in ((0.3, 0.42, 0.065), (0.43, 0.32, 0.07), (0.57, 0.32, 0.07), (0.7, 0.42, 0.065)):
+        ic.body(ic.ellipse(x, y, r, r * 1.15), L, x - r * 0.3, y - r * 0.3, r)
+    for k in range(2):
+        ic.add(L[2], ic.arc(0.5, 0.5, 0.36 + k * 0.08, 200, 340, 0.016, blur=0.005) * (0.8 - k * 0.3))
+
+
+def paw(ic, light, cx=0.5, cy=0.5, s=1.0):
+    ic.body(ic.ellipse(cx, cy + 0.12 * s, 0.15 * s, 0.12 * s), light, cx - 0.03, cy + 0.08 * s, 0.15 * s)
+    for (x, y, r) in ((-0.19, -0.04, 0.06), (-0.07, -0.15, 0.065), (0.07, -0.15, 0.065), (0.19, -0.04, 0.06)):
+        ic.body(ic.ellipse(cx + x * s, cy + y * s, r * s, r * 1.15 * s), light, cx + x * s - 0.02, cy + y * s - 0.02, r * s)
+
+
+def heart_shape(ic, cx, cy, r):
+    pts = []
+    for t in np.linspace(0, 2 * math.pi, 60):
+        x = 16 * math.sin(t) ** 3
+        y = 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)
+        pts.append((cx + x / 17 * r, cy - y / 17 * r))
+    return ic.poly(pts, blur=0.002)
+
+
+def plus(ic, cx, cy, s, w):
+    return np.clip(ic.poly([(cx - w, cy - s), (cx + w, cy - s), (cx + w, cy + s), (cx - w, cy + s)]) +
+                   ic.poly([(cx - s, cy - w), (cx + s, cy - w), (cx + s, cy + w), (cx - s, cy + w)]), 0, 1)
+
+
+def rising_motes(ic, light, spots):
+    for (x, y, s) in spots:
+        ic.add(light[1], ic.line([(x, y + s * 4), (x, y)], s * 0.9, blur=0.01) * 0.5)
+        ic.sparkle(x, y, s, light, 0.9)
+
+
+def draw_first_aid(ic):
+    L = LIGHTS["heal"]
+    ic.glow(0.5, 0.5, 0.4, L[0], 0.5)
+    ic.body(plus(ic, 0.5, 0.5, 0.28, 0.1), L, 0.44, 0.44, 0.3)
+    rising_motes(ic, L, ((0.18, 0.3, 0.04), (0.82, 0.24, 0.045), (0.8, 0.74, 0.035)))
+
+
+def draw_recovery(ic):
+    L = LIGHTS["heal"]
+    ic.glow(0.5, 0.52, 0.4, L[0], 0.5)
+    ic.body(heart_shape(ic, 0.46, 0.52, 0.3), rgb_light("#e0405a", "#ff7a8a", "#ffc0c8", "#fff0f2"), 0.4, 0.44, 0.3)
+    ic.body(plus(ic, 0.76, 0.28, 0.1, 0.035), L, 0.74, 0.26, 0.1, shadow=True)
+    rising_motes(ic, L, ((0.18, 0.24, 0.035), (0.84, 0.66, 0.04)))
+
+
+def draw_mend_beast(ic):
+    L = LIGHTS["heal"]
+    ic.glow(0.5, 0.5, 0.42, L[0], 0.5)
+    paw(ic, L, 0.46, 0.54, 1.1)
+    ic.body(plus(ic, 0.8, 0.24, 0.09, 0.03), L, 0.78, 0.22, 0.09)
+    rising_motes(ic, L, ((0.16, 0.24, 0.035), (0.84, 0.7, 0.035)))
+
+
+def draw_blessing(ic):
+    L = LIGHTS["heal"]
+    S = LIGHTS["light"]
+    ic.glow(0.5, 0.22, 0.4, S[1], 0.6, ry=0.2)
+    ic.flare(0.5, 0.18, 0.22, S, rays=8, strength=0.8)
+    for (x, y) in ((0.24, 0.48), (0.4, 0.62), (0.58, 0.52), (0.74, 0.66), (0.32, 0.82), (0.62, 0.84), (0.84, 0.44)):
+        drop = [(x, y - 0.06)] + [(x + 0.03 * math.sin(t), y - 0.03 * math.cos(t)) for t in np.linspace(0.6, 2 * math.pi - 0.6, 10)]
+        ic.add(L[1], ic.line([(x, y - 0.16), (x, y - 0.04)], 0.015, blur=0.006) * 0.6)
+        ic.body(ic.poly(drop, blur=0.002), L, x - 0.008, y - 0.02, 0.04, shadow=False)
+
+
+def draw_revive(ic):
+    L = LIGHTS["light"]
+    H = LIGHTS["heal"]
+    ic.glow(0.5, 0.6, 0.4, H[0], 0.5)
+    ic.add(L[1], ic.poly([(0.36, 0.95), (0.64, 0.95), (0.58, 0.05), (0.42, 0.05)], blur=0.04) * 0.6)
+    ic.add(L[2], ic.poly([(0.45, 0.95), (0.55, 0.95), (0.52, 0.05), (0.48, 0.05)], blur=0.02) * 0.7)
+    feather = [(0.5, 0.2), (0.62, 0.36), (0.6, 0.62), (0.5, 0.78), (0.42, 0.6), (0.4, 0.36)]
+    ic.body(ic.poly(feather, blur=0.003), L, 0.48, 0.38, 0.3)
+    ic.over(L[0], ic.line([(0.5, 0.24), (0.5, 0.86)], 0.012))
+    rising_motes(ic, L, ((0.22, 0.4, 0.04), (0.78, 0.3, 0.045), (0.74, 0.74, 0.035), (0.26, 0.76, 0.03)))
+
+
+def shield(ic, light, cx=0.5, cy=0.5, s=1.0):
+    pts = [(cx - 0.26 * s, cy - 0.28 * s), (cx, cy - 0.34 * s), (cx + 0.26 * s, cy - 0.28 * s), (cx + 0.24 * s, cy + 0.06 * s),
+           (cx, cy + 0.34 * s), (cx - 0.24 * s, cy + 0.06 * s)]
+    mask = ic.poly(pts, blur=0.002)
+    ic.body(mask, light, cx - 0.08 * s, cy - 0.12 * s, 0.34 * s)
+    ic.add(light[3], (mask - Icon._erode(mask, 14)).clip(0, 1) * 0.6)
+    return mask
+
+
+def draw_protection(ic):
+    L = LIGHTS["buff"]
+    ic.add(L[1], ic.ring(0.5, 0.5, 0.42, 0.03, blur=0.015) * 0.7)
+    shield(ic, L)
+    ic.flare(0.36, 0.3, 0.16, L, strength=0.7)
+
+
+def draw_bless(ic):
+    L = LIGHTS["buff"]
+    S = LIGHTS["light"]
+    ic.glow(0.5, 0.5, 0.42, L[0], 0.5)
+    shield(ic, L, 0.46, 0.54, 0.9)
+    ic.body(plus(ic, 0.46, 0.52, 0.12, 0.04), S, 0.45, 0.5, 0.12, shadow=False)
+    ic.flare(0.78, 0.22, 0.18, S, strength=0.8)
+
+
+def draw_guardianship(ic):
+    L = LIGHTS["buff"]
+    S = LIGHTS["light"]
+    for k in range(3):
+        ic.add(L[1], ic.ring(0.5, 0.5, 0.3 + k * 0.07, 0.02, blur=0.008) * (0.8 - k * 0.2))
+    shield(ic, L, 0.5, 0.5, 0.85)
+    star = [(0.5 + math.cos(a) * (0.13 if k % 2 == 0 else 0.055), 0.47 + math.sin(a) * (0.13 if k % 2 == 0 else 0.055))
+            for k, a in enumerate(np.linspace(-math.pi / 2, 1.5 * math.pi, 11)[:-1])]
+    ic.body(ic.poly(star, blur=0.002), S, 0.5, 0.46, 0.13, shadow=False)
+
+
+def draw_boost(ic):
+    L = LIGHTS["blow"]
+    ic.glow(0.5, 0.5, 0.42, L[0], 0.5)
+    arrow = [(0.5, 0.12), (0.8, 0.46), (0.62, 0.46), (0.62, 0.86), (0.38, 0.86), (0.38, 0.46), (0.2, 0.46)]
+    ic.body(ic.poly(arrow, blur=0.003), L, 0.46, 0.36, 0.42)
+    for x in (0.2, 0.8):
+        ic.add(L[2], ic.line([(x, 0.9), (x, 0.62)], 0.02, blur=0.008) * 0.7)
+    ic.sparkle(0.5, 0.14, 0.06, L)
+
+
+def draw_berserk(ic):
+    L = LIGHTS["fire"]
+    R = rgb_light("#a01020", "#e0303a", "#ff8070", "#ffe0d0")
+    ic.glow(0.5, 0.6, 0.44, R[0], 0.7)
+    flames(ic, R, 0.3, 0.86, 0.5, 0.3, lean=-0.1)
+    flames(ic, R, 0.7, 0.86, 0.5, 0.3, lean=0.1)
+    flames(ic, L, 0.5, 0.88, 0.7, 0.4)
+    ic.flare(0.5, 0.5, 0.24, L, strength=0.5)
+
+
+def draw_animal_training(ic):
+    L = LIGHTS["light"]
+    ic.glow(0.5, 0.5, 0.4, LIGHTS["earth"][0], 0.6)
+    paw(ic, LIGHTS["earth"], 0.46, 0.56, 1.05)
+    ic.flare(0.78, 0.24, 0.2, L, strength=0.9)
+    ic.sparkle(0.2, 0.24, 0.04, L)
+
+
+def draw_bridge_of_light(ic):
+    L = LIGHTS["light"]
+    ic.add(L[0], ic.arc(0.5, 0.92, 0.42, 180, 360, 0.12, blur=0.03) * 0.5)
+    for k, colour in enumerate((rgb("#ff8aa8"), L[1], rgb("#8ae0a0"), rgb("#8ac4ff"))):
+        ic.add(colour, ic.arc(0.5, 0.92, 0.42 - k * 0.04, 180, 360, 0.04, blur=0.006) * 0.9)
+    ic.add(L[3], ic.arc(0.5, 0.92, 0.4, 190, 350, 0.012, blur=0.002))
+    for (x, y) in ((0.12, 0.84), (0.88, 0.84), (0.5, 0.42)):
+        ic.sparkle(x, y, 0.05, L)
+
+
+def rgb_light(*hexes):
+    return [rgb(h) for h in hexes]
 
 
 SKILLS = {name[5:]: fn for name, fn in dict(globals()).items() if name.startswith("draw_")}
 
 
+def skill_defs():
+    import json
+    return {s["id"]: s for s in json.loads((ROOT / "content" / "skills.json").read_text())["skills"]}
+
+
+def tile_of(skill):
+    return rgb(TILES[skill.get("element") or skill["kind"]] if (skill.get("element") or skill["kind"]) in TILES else "#8c6be6")
+
+
 def render(skill_id):
-    canvas = Canvas()
-    SKILLS[skill_id](canvas)
-    canvas.outline()
-    return canvas
+    ic = Icon(tile_of(skill_defs()[skill_id]))
+    SKILLS[skill_id](ic)
+    return ic.finish()
 
 
 def main(argv):
@@ -451,28 +771,31 @@ def main(argv):
         index = argv.index("--sheet")
         sheet_path = argv[index + 1]
         argv = argv[:index] + argv[index + 2:]
-    ids = argv or sorted(SKILLS)
+    defs = skill_defs()
+    ids = argv or sorted(s for s in defs if s in SKILLS)
+    missing = [s for s in defs if s not in SKILLS]
+    if missing:
+        print("no drawing for: " + ", ".join(missing))
+    out = {}
     for skill_id in ids:
-        (SPRITES / f"skill_{skill_id}.png").write_bytes(render(skill_id).png())
+        img = render(skill_id)
+        img.save(SPRITES / f"skill_{skill_id}.png")
+        out[skill_id] = img
     print(f"wrote {len(ids)} skill icons to art/sprites/")
     if sheet_path:
-        columns, scale, pad = 7, 4, 6
-        rows = math.ceil(len(ids) / columns)
-        cell = SIZE * scale + pad
-        width, height = columns * cell + pad, rows * cell + pad
-        tiles = [(120, 90, 200), (220, 110, 80), (80, 170, 110), (70, 130, 220)]
-        pixels = [[(40, 36, 60, 255)] * width for _ in range(height)]
-        for n, skill_id in enumerate(ids):
-            art = render(skill_id)
-            ox, oy = pad + (n % columns) * cell, pad + (n // columns) * cell
-            tint = tiles[n % len(tiles)] + (255,)
-            for y in range(SIZE * scale):
-                for x in range(SIZE * scale):
-                    col = art.px[y // scale][x // scale]
-                    pixels[oy + y][ox + x] = col if col and col[3] == 255 else tint
-        raw = b"".join(b"\x00" + b"".join(bytes(p) for p in row) for row in pixels)
-        pathlib.Path(sheet_path).write_bytes(encode_png(width, height, raw))
-        print(f"contact sheet: {sheet_path} (order: {', '.join(ids)})")
+        cols, cell, pad = 7, 96, 10
+        rows = math.ceil(len(out) / cols)
+        sheet = Image.new("RGBA", (cols * (cell + pad) + pad, rows * (cell + pad) + pad), (40, 36, 60, 255))
+        for n, (skill_id, img) in enumerate(out.items()):
+            x, y = pad + (n % cols) * (cell + pad), pad + (n // cols) * (cell + pad)
+            tile = Image.new("RGBA", (cell, cell), (0, 0, 0, 0))
+            ImageDraw.Draw(tile).rounded_rectangle([0, 0, cell - 1, cell - 1], radius=int(cell * 0.26),
+                                                   fill=tuple(int(c * 255) for c in tile_of(defs[skill_id])) + (255,))
+            inner = int(cell * 0.84)
+            tile.alpha_composite(img.resize((inner, inner), Image.LANCZOS), ((cell - inner) // 2, (cell - inner) // 2))
+            sheet.alpha_composite(tile, (x, y))
+        sheet.save(sheet_path)
+        print(f"contact sheet: {sheet_path}")
 
 
 if __name__ == "__main__":

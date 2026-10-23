@@ -513,6 +513,18 @@ for map_def in maps.values():
         check(art_id in art, f"map {map_def['id']} → unknown art {art_id}")
     for npc in map_def.get("npcs", []):
         check(npc["art"] in art, f"npc {npc['id']} → unknown art {npc['art']}")
+        # A boss's lair (LandPlanner.planLair): pieces round it, its way in to the south kept clear.
+        if "lair" in npc:
+            where = f"npc {npc['id']} lair"
+            check(npc["role"] == "boss", f"{where} → only a boss has a lair")
+            for piece in npc["lair"]:
+                check(set(piece) <= {"art", "x", "y", "blocking"} and piece.get("art") in art,
+                      f"{where} → a piece is art (known), x, y and maybe blocking: {piece}")
+                x, y = piece.get("x"), piece.get("y")
+                check(isinstance(x, int) and isinstance(y, int) and max(abs(x), abs(y)) <= 7 and (x, y) != (0, 0),
+                      f"{where} → {piece.get('art')} at {x}, {y}: within 7 cells of the boss, not on it")
+                check(not (x == 0 and -4 <= y < 0) or piece.get("blocking") is False,
+                      f"{where} → {piece.get('art')} at {x}, {y} blocks the way in (straight south of the boss)")
         check(npc["role"] in ("healer", "shop", "quests", "guild", "chest", "boss", "smith", "weaver", "stairs", "barber", "waystone"), f"npc {npc['id']} → unknown role {npc['role']}")
         # A waystone (`NPCRole.waystone`): out in a wild land on the continent (you arrive in front of
         # it, `WorldMap.waystoneArrival`), one to a land, woken by a quest someone in that land gives.
@@ -1099,7 +1111,7 @@ for milestone in milestones:
 # (price 0, no shop, quest, chest, smith or monster has one), with a colour and a trim, for a milestone
 # that can be met: a land's own monsters, or the whole world's. One weaver weaves them.
 prizes = rewards.get("prizes", [])
-PRIZE_KINDS = {"land", "book", "cards", "quests", "bosses", "lands", "capes"}
+PRIZE_KINDS = {"land", "book", "cards", "quests", "bosses", "lands", "companion", "capes"}
 capes = {item_id for item_id, item in items.items() if item["type"] == "cape"}
 prized = [prize.get("item") for prize in prizes]
 check(len(prized) == len(set(prized)), "rewards prizes → a cape is the prize for one milestone only")
@@ -1114,6 +1126,9 @@ for prize in prizes:
         check(bool(homes), f"{where} → land {prize.get('land')} has no monsters to beat")
     else:
         check("land" not in prize, f"{where} → only a land prize names a land")
+    if prize.get("kind") == "companion":
+        check(isinstance(prize.get("level"), int) and 1 < prize["level"] <= 200,
+              f"{where} → a companion prize names the `level` to raise one to (2 to 200, the level cap)")
 lands_prized = [prize.get("land") for prize in prizes if prize.get("kind") == "land"]
 check(len(lands_prized) == len(set(lands_prized)), "rewards prizes → one cape a land")
 elsewhere = stocked | quest_rewards | boss_drops | {npc.get("gives") for npc in npcs.values()}

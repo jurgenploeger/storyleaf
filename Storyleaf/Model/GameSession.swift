@@ -52,6 +52,9 @@ final class GameSession {
     var data: SaveData
     /// Name of the map the player is on, for the HUD.
     var mapName = ""
+    /// A land's name for a few seconds after you walk into it, shown under the HUD's top panels
+    /// (`WorldHUD`), where it can't end up behind them.
+    var landBanner: String?
     /// NPC close enough to talk to, for the HUD's Talk button.
     var nearbyNPC: String?
     /// The tile the hero stands on, for the minimap.
@@ -592,15 +595,34 @@ final class GameSession {
 
     /// Ten steps from learning a skill to mastering it.
     static let maxSkillLevel = 10
+    /// Past mastery your hero's skills keep growing, a little stronger every level and grander in
+    /// battle at every ten (`skillRank`), up to 50 (playtesting 2026-10-23: "you should be able to
+    /// continuously improve these skills"). Monsters', companions' and friends' stop at mastery.
+    static let skillLevelCap = 50
+
+    /// The milestone a skill has reached: 0 before mastery, then one for every ten levels, from
+    /// 1 (Mastered, 10) to 5 (Legendary, 50).
+    static func skillRank(_ level: Int) -> Int { min(5, max(0, level / 10)) }
+
+    static func skillRankName(_ rank: Int) -> String? {
+        switch rank {
+        case 1: L("Mastered")
+        case 2: L("Heroic")
+        case 3: L("Epic")
+        case 4: L("Mythic")
+        case 5: L("Legendary")
+        default: nil
+        }
+    }
 
     func skillLevel(_ id: String) -> Int {
         max(1, data.hero.skillLevels?[id] ?? 1)
     }
 
-    /// A point to spend and something to spend it on: a skill to learn, or one not yet mastered.
+    /// A point to spend and something to spend it on: a skill to learn, or one not yet at its cap.
     var canSpendSkillPoint: Bool {
         unspentSkillPoints > 0
-            && (!learnableSkills.isEmpty || heroSkills.contains { skillLevel($0.id) < Self.maxSkillLevel })
+            && (!learnableSkills.isEmpty || heroSkills.contains { skillLevel($0.id) < Self.skillLevelCap })
     }
 
     /// One point per level gained. Learning costs one and each upgrade one; points in skills
@@ -621,14 +643,17 @@ final class GameSession {
     }
 
     func upgradeSkill(_ id: String) {
-        guard unspentSkillPoints > 0, heroSkills.contains(where: { $0.id == id }), skillLevel(id) < Self.maxSkillLevel else { return }
+        guard unspentSkillPoints > 0, heroSkills.contains(where: { $0.id == id }), skillLevel(id) < Self.skillLevelCap else { return }
         var levels = data.hero.skillLevels ?? [:]
         levels[id] = skillLevel(id) + 1
         data.hero.skillLevels = levels
     }
 
-    /// Higher skill levels hit harder and cost a little more.
-    static func mpCost(of skill: SkillDef, level: Int) -> Int { skill.mp + (level - 1) }
+    /// Higher skill levels hit harder and cost a little more: a point a level to mastery, then a
+    /// point every five.
+    static func mpCost(of skill: SkillDef, level: Int) -> Int {
+        skill.mp + min(level, maxSkillLevel) - 1 + max(0, level - maxSkillLevel) / 5
+    }
 
     var canChooseClass: Bool {
         data.hero.classID == "novice" && data.hero.level >= content.classChoiceLevel

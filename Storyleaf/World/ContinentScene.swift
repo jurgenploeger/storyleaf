@@ -165,8 +165,6 @@ final class ContinentScene: SKScene {
     /// The world cell you last stood in.
     private var lastCell: GridPoint?
     private var leftFoot = false
-    /// The name of the land you've just walked into, at the top of the screen for a moment.
-    private var banner: SKNode?
     /// Who you're walking up to talk to (a tap on them), by land and id; near enough is `talkRange`.
     private var talkTarget: (land: String, npc: String)?
     private let talkRange: CGFloat = 50
@@ -1086,7 +1084,7 @@ final class ContinentScene: SKScene {
 
     /// You've walked into a land: its light on everyone, its music, and the game knows you're there
     /// (its checkpoint, the map you're on); and, new to you since you were last in it, its name at
-    /// the top of the screen and in the chat (as `WorldScene.didMove` greets you).
+    /// the top of the screen (under the HUD's panels) and in the chat (as `WorldScene.didMove` greets you).
     private func arrive(in def: MapDef) {
         let walkedIn = here != nil
         let before = here.flatMap { airs[$0.id] }
@@ -1323,16 +1321,16 @@ final class ContinentScene: SKScene {
         return picture
     }
 
-    /// A land's name at the top of the screen as you walk into it, fading in and away.
+    /// The land's name for a few seconds, drawn by the HUD under its top panels (`landBanner`): drawn
+    /// here, a set distance from the top of the screen, it ended up behind them. Cleared on a timer of
+    /// its own, not the scene's, which stops when a battle pauses it or a cave takes its place.
     private func showBanner(_ name: String) {
-        banner?.removeFromParent()
-        let tag = NameTag(name, color: Nodes.gold, size: 20)
-        tag.position = CGPoint(x: 0, y: size.height / 2 - 90)
-        tag.zPosition = 45_000
-        tag.alpha = 0
-        cam.addChild(tag)
-        tag.run(.sequence([.fadeIn(withDuration: 0.6), .wait(forDuration: 2.4), .fadeOut(withDuration: 0.9), .removeFromParent()]))
-        banner = tag
+        let session = self.session
+        session.landBanner = name
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(3.2))
+            if session.landBanner == name { session.landBanner = nil }
+        }
     }
 
     /// While the land you stand on isn't laid out yet (`id`), a note above you with its name and how

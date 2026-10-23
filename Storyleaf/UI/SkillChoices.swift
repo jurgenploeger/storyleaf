@@ -88,7 +88,7 @@ struct SkillRow: View {
                     .disabled(!affordable)
                     .opacity(affordable ? 1 : 0.5)
             }
-            if session.unspentSkillPoints > 0, level < GameSession.maxSkillLevel {
+            if session.unspentSkillPoints > 0, level < GameSession.skillLevelCap {
                 Button {
                     session.upgradeSkill(skill.id)
                 } label: {
@@ -147,13 +147,19 @@ struct LevelUpCard: View {
     }
 }
 
-/// A skill's progress to mastery: ten segments in a little bar that fill as you raise it, warming
-/// from bronze through silver to gold, and glowing in rainbow colours once mastered. Its level
-/// sits under it, so the bar fits at the end of a skill's row.
+/// A skill's progress: ten segments in a little bar that fill as you raise it, warming from bronze
+/// through silver to gold, and glowing in rainbow colours once mastered. Past mastery the bar fills
+/// again toward the next milestone (`GameSession.skillRank`: Heroic at 20, Epic, Mythic, Legendary at
+/// 50) in that milestone's colour, its name and the level under it. Its label sits under it, so the bar
+/// fits at the end of a skill's row.
 struct SkillGauge: View {
     let level: Int
 
     private var mastered: Bool { level >= GameSession.maxSkillLevel }
+    private var rank: Int { GameSession.skillRank(level) }
+    /// Past mastery and on the way to the next milestone (or at one, the bar full in its colour).
+    private var growing: Bool { level > GameSession.maxSkillLevel }
+    private var legendary: Bool { level >= GameSession.skillLevelCap }
 
     /// Bronze for the first steps, then silver, then gold.
     private func color(for step: Int) -> Color {
@@ -162,6 +168,29 @@ struct SkillGauge: View {
         case 4...6: Color(red: 0.8, green: 0.85, blue: 0.92)
         default: HUDStyle.gold
         }
+    }
+
+    /// The colour of the milestone a growing skill is filling toward (or has just reached).
+    private var rankColor: Color {
+        let toward = level % 10 == 0 ? rank : rank + 1
+        switch toward {
+        case 2: return Color(red: 1, green: 0.62, blue: 0.3)       // Heroic, a warm flame
+        case 3: return Color(red: 0.75, green: 0.5, blue: 1)       // Epic, violet
+        case 4: return Color(red: 1, green: 0.4, blue: 0.5)        // Mythic, crimson
+        default: return HUDStyle.gold                              // Legendary
+        }
+    }
+
+    /// How many of the ten segments are filled.
+    private var filled: Int {
+        guard growing else { return level }
+        return level % 10 == 0 ? 10 : level % 10
+    }
+
+    private var label: String {
+        if !mastered { return L("Lv {level}/{max}", ["level": level, "max": GameSession.maxSkillLevel]) }
+        let name = GameSession.skillRankName(rank) ?? L("Mastered")
+        return growing ? L("{rank} Lv {level}", ["rank": name, "level": level]) : name
     }
 
     private static let rainbow = [Color(red: 1, green: 0.45, blue: 0.45), Color(red: 1, green: 0.8, blue: 0.35),
@@ -173,14 +202,14 @@ struct SkillGauge: View {
             HStack(spacing: 1.5) {
                 ForEach(1...GameSession.maxSkillLevel, id: \.self) { step in
                     RoundedRectangle(cornerRadius: 1.5)
-                        .fill(step <= level ? color(for: step) : Color.white.opacity(0.12))
+                        .fill(step <= filled ? (growing ? rankColor : color(for: step)) : Color.white.opacity(0.12))
                         .frame(width: 7, height: 8)
                 }
             }
             .padding(2)
             .overlay {
-                if mastered {
-                    // Mastered: the whole bar shimmers in rainbow colours.
+                if mastered && (!growing || legendary) {
+                    // Mastered, and Legendary: the whole bar shimmers in rainbow colours.
                     RoundedRectangle(cornerRadius: 3)
                         .fill(LinearGradient(colors: Self.rainbow, startPoint: .leading, endPoint: .trailing))
                         .opacity(0.75)
@@ -189,12 +218,14 @@ struct SkillGauge: View {
             }
             .background(RoundedRectangle(cornerRadius: 3).fill(HUDStyle.ink.opacity(0.8)))
             .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(mastered ? HUDStyle.gold : .white.opacity(0.35), lineWidth: 1))
-            .shadow(color: mastered ? HUDStyle.gold.opacity(0.7) : .clear, radius: 4)
-            Text(mastered ? L("Mastered") : L("Lv {level}/{max}", ["level": level, "max": GameSession.maxSkillLevel]))
+            .shadow(color: mastered ? (growing && !legendary ? rankColor : HUDStyle.gold).opacity(0.7) : .clear, radius: 4)
+            Text(label)
                 .font(HUDStyle.font(10))
                 .foregroundStyle(mastered ? HUDStyle.gold : HUDStyle.cream)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(mastered ? L("Mastered") : L("Level {level} of {max}", ["level": level, "max": GameSession.maxSkillLevel]))
+        .accessibilityLabel(mastered && !growing ? L("Mastered")
+                            : growing ? L("{rank}, level {level} of {max}", ["rank": GameSession.skillRankName(rank) ?? L("Mastered"), "level": level, "max": GameSession.skillLevelCap])
+                            : L("Level {level} of {max}", ["level": level, "max": GameSession.maxSkillLevel]))
     }
 }

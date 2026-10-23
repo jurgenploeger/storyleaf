@@ -3434,6 +3434,23 @@ struct RewardTests {
         #expect(session.titleRequirement(wolfbane).contains("Wolf"))
     }
 
+    /// The Beastfriend Cape (rewards.json `prizes`, kind `companion`): earned when a companion
+    /// reaches its level (200, the cap), and kept once told, though that companion is let go.
+    @Test func companionCapeAtLevelTwoHundred() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let prize = try #require(session.prizes.first { $0.kind == .companion })
+        #expect(prize.level == GameSession.levelCap)
+        #expect(session.prizeProgress(prize).have == 0 && !session.hasEarned(prize))
+        session.data.pets.append(Pet(id: UUID(), speciesID: "test", name: "Test", level: 199, exp: 0, hp: 10, mp: 10))
+        #expect(session.prizeProgress(prize).have == 199 && !session.hasEarned(prize))
+        session.data.pets[0].level = 200
+        #expect(session.hasEarned(prize) && session.capesWaiting.contains { $0.item == prize.item })
+        session.checkTitles()
+        #expect(session.data.capesTold?.contains(prize.item) == true)
+        session.data.pets.removeAll()
+        #expect(session.hasEarned(prize))
+    }
+
     /// A land's cape (rewards.json `prizes`): earned once every monster that lives there is beaten,
     /// told of once, woven by the weaver (whose "!" says so) and had once; worn in its own slot for
     /// its stats; and woven again if it's lost.
@@ -3899,6 +3916,50 @@ struct LandPlanTests {
         await planner.planUpToLocals(pause: {})
         await planner.planTheRest(pause: {})
         return (map, planner.plan)
+    }
+
+    /// Every boss stands in its lair (`NPCDef.lair`, `LandPlanner.planLair`; playtesting 2026-10-23:
+    /// bosses stood about on open ground): most of its pieces set down round it, and never walled in,
+    /// so you can walk from the boss out over the land.
+    @Test func bossesStandInTheirLairs() async {
+        for def in content.maps {
+            for npc in def.npcs ?? [] where npc.lair != nil {
+                let (map, plan) = await planned(def)
+                guard let boss = plan.npcs.first(where: { $0.npc.id == npc.id })?.cell else {
+                    Issue.record("\(npc.id) isn't set down")
+                    continue
+                }
+                let arts = Set(npc.lair?.map(\.art) ?? [])
+                let near = plan.localProps.filter { arts.contains($0.art) && max(abs($0.cell.col - boss.col), abs($0.cell.row - boss.row)) <= 7 }
+                // A cave's chamber leaves less room than open ground, and a summit's top less again.
+                let least = min(npc.summit == nil ? 4 : 2, npc.lair?.count ?? 0)
+                #expect(near.count >= least, "\(npc.id): only \(near.count) of its lair's \(npc.lair?.count ?? 0) pieces set down")
+                // Never walled in: from beside it you can walk to a road (the way you came), or a good way
+                // over the land; or, where its own land holds less (the Emerald Dragon stands in a pocket
+                // of it you reach from the land next door), its lair cuts off no more than a few cells
+                // there (between its pieces and the trees planted after them).
+                let steps = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+                let lair = Set(near.map(\.cell)).filter { !map.isWalkable($0) }
+                func walk(_ open: (GridPoint) -> Bool) -> (cells: Int, road: Bool) {
+                    let starts = steps.map { GridPoint(col: boss.col + $0.0, row: boss.row + $0.1) }.filter(open)
+                    var reached = Set(starts)
+                    var queue = starts
+                    var road = false
+                    while let cell = queue.popLast(), reached.count < 400, !road {
+                        road = map.ground[cell.row][cell.col] == .path
+                        for (dc, dr) in steps {
+                            let next = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                            if open(next), reached.insert(next).inserted { queue.append(next) }
+                        }
+                    }
+                    return (min(400, reached.count), road)
+                }
+                let with = walk { map.isWalkable($0) }
+                let without = walk { map.isWalkable($0) || lair.contains($0) }
+                #expect(with.road || with.cells >= 400 || (!without.road && with.cells + lair.count + 12 >= without.cells),
+                        "\(npc.id) is walled in by its lair: \(with.cells) cells round it, no road (\(without.cells) without it)")
+            }
+        }
     }
 
     /// Every way into a cave still leads on once its scenery and signposts are set down

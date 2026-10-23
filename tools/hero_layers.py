@@ -771,14 +771,35 @@ def build():
         layers[f"hood_{rid}"] = headgear(race, "hood")
         layers[f"helmet_{rid}"] = headgear(race, "helmet")
         for style, (source, hair) in sources.items():
-            layers[f"hair_{style}_{rid}"] = race.hair if source is race else fit_hair(hair, source, race)
+            layers[f"hair_{style}_{rid}"] = hair_edge(race.hair if source is race else fit_hair(hair, source, race),
+                                                      race.body)
             layers[f"nape_{style}_{rid}"] = nape(layers[f"hair_{style}_{rid}"], race.body)
     for body, (race_id, sheet) in TOWNSFOLK.items():
         folk = Race(race_id, sheet, template=races[race_id], sidehair=True)
         layers[f"body_{body}"] = folk.body
         layers[f"locks_{body}"] = folk.locks
-        layers[f"hair_{body}"] = folk.hair
+        layers[f"hair_{body}"] = hair_edge(folk.hair, folk.body)
     return races, layers
+
+
+def hair_edge(hair, body):
+    """The hair's outer edge (where neither it nor the body is drawn beyond it) in a deep shade of its own
+    colour, as RD outlines everything else: RD drew the ginger's top edge bright, as lit, and dyed purple
+    or blue on a dark battle field it read as no outline at all (playtesting 2026-10-23). Kept inside
+    the dye's window (`hairLayer`), so a dye turns it a deep shade of the new colour."""
+    out = hair.copy()
+    solid = (hair[..., 3] > 0.5) | (body[..., 3] > 0.5)
+    H, W = solid.shape
+    for y, x in zip(*np.nonzero(hair[..., 3] > 0.5)):
+        if not any(not (0 <= y + dy < H and 0 <= x + dx < W) or not solid[y + dy, x + dx]
+                   or (y + dy) // F != y // F or (x + dx) // F != x // F
+                   for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1))):
+            continue
+        h, s_, v = hsv(hair[y, x])
+        if v < 0.4:
+            continue                        # dark already
+        out[y, x, :3] = colorsys.hsv_to_rgb(h, min(1.0, s_ * 1.15 + 0.06), max(0.2, v * 0.48))
+    return out
 
 
 def nape(hair, body):

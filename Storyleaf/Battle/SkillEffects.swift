@@ -325,9 +325,15 @@ enum SkillEffects {
         }
     }
 
-    /// A mastered skill (top level) announces itself: its name in big gold letters.
-    static func masterBanner(_ name: String, level: Int, size: CGSize, in scene: SKScene) {
-        let banner = NameTag(name, color: Nodes.gold, size: 30, alignment: .center)
+    /// A mastered skill announces itself: its name in big gold letters, bigger at each milestone past
+    /// mastery, with the milestone's name (Heroic, Epic...) under it.
+    static func masterBanner(_ name: String, level: Int, rank: Int = 1, size: CGSize, in scene: SKScene) {
+        let banner = NameTag(name, color: Nodes.gold, size: 30 + 3 * CGFloat(max(0, rank - 1)), alignment: .center)
+        if rank >= 2, let title = GameSession.skillRankName(rank) {
+            let under = NameTag(title, color: .white, size: 15, alignment: .center)
+            under.position = CGPoint(x: 0, y: -30)
+            banner.addChild(under)
+        }
         banner.position = CGPoint(x: size.width / 2, y: size.height * 0.6)
         banner.zPosition = 31_000
         banner.setScale(0.4)
@@ -538,7 +544,8 @@ extension SkillEffects {
     /// The stage for a mastered skill: the battlefield dims (fighters stay lit), a spinning magic
     /// circle opens under the caster and a pillar of light rises from it. Returns the dimmer, which
     /// `ultimateEnd` lifts again.
-    static func ultimateStart(caster: BattleActor?, color: UIColor, size: CGSize, in parent: SKNode) -> SKNode {
+    static func ultimateStart(caster: BattleActor?, color: UIColor, size: CGSize, rank: Int = 1, in parent: SKNode) -> SKNode {
+        let more = CGFloat(max(0, rank - 1))
         let dim = SKSpriteNode(color: .black, size: CGSize(width: size.width * 3, height: size.height * 3))
         dim.position = CGPoint(x: size.width / 2, y: size.height / 2)
         dim.zPosition = -9_000   // above the ground, below every fighter
@@ -546,8 +553,12 @@ extension SkillEffects {
         parent.addChild(dim)
         dim.run(.fadeAlpha(to: 0.6, duration: 0.25))
         guard let caster else { return dim }
-        magicCircle(at: caster.position, color: color, radius: 70, duration: 1.4, in: parent)
-        let pillar = glowSprite(color, size: CGSize(width: 60, height: size.height * 1.2))
+        magicCircle(at: caster.position, color: color, radius: 70 + 16 * more, duration: 1.4, in: parent)
+        if rank >= 2 {
+            // A second, wider circle turning round the first.
+            magicCircle(at: caster.position, color: .white, radius: 110 + 20 * more, duration: 1.6, in: parent)
+        }
+        let pillar = glowSprite(color, size: CGSize(width: 60 + 18 * more, height: size.height * 1.2))
         pillar.anchorPoint = CGPoint(x: 0.5, y: 0)
         pillar.position = caster.position
         pillar.zPosition = caster.zPosition - 1
@@ -560,9 +571,9 @@ extension SkillEffects {
             .group([.fadeOut(withDuration: 0.4), .scaleX(to: 2.2, duration: 0.4)]),
             .removeFromParent(),
         ]))
-        rays(at: caster.center, color: .white, count: 18, length: 170, width: 10, z: caster.zPosition - 2, in: parent)
-        for _ in 0..<26 {
-            let mote = glowSprite(Bool.random() ? .white : color, size: CGSize(width: 10, height: 10))
+        rays(at: caster.center, color: .white, count: 18 + 6 * Int(more), length: 170 + 40 * more, width: 10, z: caster.zPosition - 2, in: parent)
+        for _ in 0..<(26 + 12 * Int(more)) {
+            let mote = glowSprite(rank >= 5 ? rainbow.randomElement()! : Bool.random() ? .white : color, size: CGSize(width: 10, height: 10))
             mote.position = caster.position + CGVector(dx: .random(in: -70...70), dy: .random(in: -20...10))
             mote.alpha = 0
             parent.addChild(mote)
@@ -578,9 +589,28 @@ extension SkillEffects {
     /// The finale of a mastered skill on its targets, in the skill's own style (`animation` in
     /// content/skills.json): a meteor rain for fire, a tidal wave for water, a forest of stone
     /// spikes, a leaf hurricane, pillars of holy light, giant crossing blades, a tornado...
-    static func ultimateFinale(on targets: [BattleActor], style: String, color: UIColor, size: CGSize, in parent: SKNode) {
+    static func ultimateFinale(on targets: [BattleActor], style: String, color: UIColor, size: CGSize, rank: Int = 1,
+                               in parent: SKNode) {
+        finale(on: targets, style: style, color: color, size: size, rank: rank, in: parent)
+        // From Mythic it strikes a second time, a beat later.
+        guard rank >= 4 else { return }
+        parent.run(.sequence([.wait(forDuration: 0.4), .run {
+            finale(on: targets, style: style, color: rank >= 5 ? rainbow.randomElement()! : color, size: size, rank: rank, in: parent)
+        }]))
+    }
+
+    /// The colours a Legendary skill's light comes in.
+    static let rainbow: [UIColor] = [UIColor(red: 1, green: 0.45, blue: 0.45, alpha: 1), UIColor(red: 1, green: 0.8, blue: 0.35, alpha: 1),
+                                     UIColor(red: 0.5, green: 0.9, blue: 0.5, alpha: 1), UIColor(red: 0.45, green: 0.75, blue: 1, alpha: 1),
+                                     UIColor(red: 0.75, green: 0.55, blue: 1, alpha: 1)]
+
+    private static func finale(on targets: [BattleActor], style: String, color: UIColor, size: CGSize, rank: Int,
+                               in parent: SKNode) {
         for target in targets {
-            magicCircle(at: target.position, color: color, radius: 55, duration: 0.9, in: parent)
+            magicCircle(at: target.position, color: color, radius: 55 + 10 * CGFloat(max(0, rank - 1)), duration: 0.9, in: parent)
+            if rank >= 3 {
+                rays(at: target.center, color: color, count: 12, length: 120, width: 7, z: target.zPosition - 1, in: parent)
+            }
         }
         switch style {
         case "fire":
@@ -648,11 +678,11 @@ extension SkillEffects {
     }
 
     /// Lifts the dimmer with a last shower of light.
-    static func ultimateEnd(_ dim: SKNode, color: UIColor, size: CGSize, in parent: SKNode) {
+    static func ultimateEnd(_ dim: SKNode, color: UIColor, size: CGSize, rank: Int = 1, in parent: SKNode) {
         dim.run(.sequence([.fadeOut(withDuration: 0.45), .removeFromParent()]))
-        for _ in 0..<30 {
+        for _ in 0..<(30 + 10 * max(0, rank - 1)) {
             let spark = SKSpriteNode(texture: SoftTextures.star, size: CGSize(width: 10, height: 10))
-            spark.color = Bool.random() ? .white : color
+            spark.color = rank >= 5 ? rainbow.randomElement()! : Bool.random() ? .white : color
             spark.colorBlendFactor = 1
             spark.blendMode = .add
             spark.zPosition = 19_500

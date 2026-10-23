@@ -86,7 +86,10 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `tools/weapon_art.py`: weapons from Retro Diffusion: a picked 64-pixel drawing (`PICKED`, from `art-variants/`)
   shrunk to the icon and the held sprite at the drawn weapons' size, outlined afresh; `item_art.py` leaves those
   alone. `tools/gear_preview.py --weapons out.png <ids>` shows weapons in hand on every body, direction and armour.
-- `tools/skill_art.py`: the same for every skill's icon (`art/sprites/skill_<id>.png`).
+- `tools/skill_art.py`: every skill's icon (`art/sprites/skill_<id>.png`), drawn as light, not pixel art: the
+  glows, flares, sparks and trails of its battle animation in its colours (`LIGHTS`, `ElementLight`'s), on a dark
+  backdrop of its tile's colour, at 128 pixels. The game shows art over 64 pixels smoothed (`IconTile`,
+  `BattleScene.skillTile`). A new skill needs a `draw_<id>`; `--sheet out.png` previews them on their tiles.
 - `tools/armour_art.py`: the same for every armour's icon, from one picked RD drawing per shape (`PICKED`, `rda_<shape>`),
   coloured as it's worn: the sheets' `MATERIAL` and the item's `tint` (a hide cloak its hood's), so icon and hero match.
 - `tools/prop_art.py`: the same for the few props a generated sprite got wrong (`candy_cane`, whose hook came out
@@ -100,23 +103,47 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   gnarled dark tree, an autumn oak, a maple, a birch, a frosted bare tree, a willow, a jacaranda, candy trees,
   and ten bushes (a fir sapling, a tumbleweed, a bramble...). Each writes its own PNG, which wins over the
   asset's `derive`; its `big_` twin, derived from it, follows. `--sheet out.png` previews them.
+- `tools/building_art.py`: town houses and shops drawn in code with `pixel_kit`, so the towns don't build only
+  with RD's few buildings and their recolours: a thatched and a timber-framed cottage, a stone townhouse, a
+  round cottage, a teapot house, a garden cottage, and weapon, armour, tailor, flower, tea and book shops; and
+  buildings that belong to a land: a pavilion tent, a bazaar stall and an onion-domed house for the deserts, a
+  yurt for the steppe, a tree house, an acorn cottage, a bluebell house and a crystal cottage for Starfall
+  Isle's Glimmerbough (maps.json `buildings`). Walls
+  and roofs are surfaces with a building material's pattern at the sprite's pixels (stone blocks, plaster,
+  planks, clay tiles, thatch, slate); each is drawn in a 96-pixel frame's coordinates and scaled about its
+  foot to fill it as RD's do (`fit`). Registered in art/assets.json with no `request`, placed by maps.json's
+  town `lots`; scored with `pixel_style.py check --kind building`. `--sheet out.png` previews them.
 - `tools/crystal_art.py`: the Glimmerdeep's crystal scenery from the caves' own rock (its walls, floor, spires and
   geodes): each pixel's brightness laid on a ramp of crystal colours, as a `derive` can't tint the grey tiles.
   Rerun it after editing a ramp; `--sheet out.png` previews them.
-- `tools/ui_icon_art.py`: the same for the UI's button icons (`art/sprites/ui_<GameIcon>.png`): `IconImage` shows
+- `tools/ui_icon_art.py`: the UI's button icons (`art/sprites/ui_<GameIcon>.png`), designed in code and finished
+  by `pixel_kit.restyle` but for `KEEP_FLAT` (the three dots, the two people, the backpack: their small parts ran
+  together at button size): `IconImage` shows
   them from 18 pt up (battle buttons, the HUD's buttons, the menu's tabs) and keeps Iconaut's vector icons for
   small inline glyphs. `--sheet out.png` previews them on the game's button colours.
 - `tools/water_art.py`: the same for the water: `sea.png` (16 × 16 cells that tile as a whole; the continent gives each
   world cell its own, `ContinentScene.seaGroups`) and `tile_water.png` (a land's lakes and rivers, calm so its versions
-  don't make a grid), ripples level on screen. It replaced a generated tile that repeated every 16 pixels; rerun it
+  don't make a grid), ripples level on screen. Round a land's own water (`tile_water`, not ice or chocolate)
+  `ArtLibrary.organicTile` adds depth and a bank: paler shallows by the shore, deeper water out from it (two
+  cells out, `deepWaterTile`), broken foam, and a strip of damp earth and pebbles on the land; mirrored in
+  `tools/palette_preview.py`. It replaced a generated tile that repeated every 16 pixels; rerun it
   after editing, `--preview out.png` shows them turned as the game draws them.
 - `tools/fx_art.py`: the same for the few battle marks that aren't light (`art/sprites/fx_*.png`: poison's bubble
   and the glossy marks by the HP bars, drawn smooth at 3×: poison's drop and the arrows for lowered and raised
   stats). `--sheet out.png` writes a contact sheet. Spells are light, not sprites:
   `Storyleaf/Battle/ElementEffects.swift` layers soft glows in each element's colours (`ElementLight`).
+- `tools/lair_art.py`: the pieces of the bosses' lairs no sprite had (a standing stone, a brazier, a gold hoard, a
+  warning post, the Rat King's junk throne), drawn with `pixel_kit` and scored as scenery. A boss's lair is
+  maps.json `lair` on the boss: pieces round it, its way in to the south, turned by `LandPlanner.planLair` to face
+  the land's middle, a clearing kept round it; `check_content.py` keeps the way in clear.
+- `tools/critter_art.py`: the critters (`ambience.critters`) and the birds crossing the sky, as PNGs
+  (`art/sprites/critter_<name>.png`, loaded by `CritterArt.drawn`; one missing is drawn in Swift as before): the
+  same shapes and sizes as `Critters.swift`, lit from the top left and outlined in a deep shade of each part.
+  Too small for pixel_kit's finish (it turned them muddy). `--sheet out.png` previews them.
 - `tools/hero_layers.py`: splits each race's walk sheet into paper-doll layers (bald `body_<race>`,
   `locks_<race>` for a beard, `hair_<style>_<race>` for every hairstyle in that sheet's own hair colour, a
-  gender sheet's own hair as a style of its own (appearance.json `styles` with `sheet`), `hood_`/`helmet_<race>`
+  gender sheet's own hair as a style of its own (appearance.json `styles` with `sheet`), its outer edge a deep
+  shade of its own colour (`hair_edge`: RD drew the top bright, and dyed purple it read as no outline), `hood_`/`helmet_<race>`
   in magenta that GearOverlay paints in the armour's colours). The game stacks them (`GameSession.layers`) and
   dyes every shade of the locks and hair (appearance.json `hairLayer`), never the body. Armour with a walk sheet
   of its own goes over `nape_<style>_<body>` (the hair from a fifth of the way down the head), so long hair
