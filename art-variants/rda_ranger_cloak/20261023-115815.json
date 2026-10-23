@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "a green hooded ranger cloak with a brown leather clasp, folded hood at the back, game item, laid out flat, front view, centered",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792756693,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 17.891,
+    "request_id": "37b06e91-1bd5-4f54-84f7-469e078921c1",
+    "outputs_retained_until": 1792843075
+  }
+}

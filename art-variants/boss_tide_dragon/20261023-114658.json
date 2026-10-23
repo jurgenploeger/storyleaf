@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "ancient sea dragon, long serpentine body of deep blue and teal scales shaped like curling ocean waves, a white foam crest along its back, fin-like ears, glowing aqua eyes, rising from a splash of water, boss monster, fantasy, chibi",
+    "prompt_style": "rd_plus__low_res",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792756016,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 19.511,
+    "request_id": "1a91b725-9ef3-4ac6-878f-c0c1bbba8513",
+    "outputs_retained_until": 1792842394
+  }
+}

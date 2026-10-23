@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "a simple beige cloth tunic with short sleeves and a brown rope belt, game item, laid out flat, front view, centered",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792756536,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 18.971,
+    "request_id": "a96b83f0-9575-4cba-acd1-16ab9a4da423",
+    "outputs_retained_until": 1792842884
+  }
+}

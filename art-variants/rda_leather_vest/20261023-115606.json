@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "a brown leather vest with stitched seams, a belt and small buckles, game item, laid out flat, front view, centered",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792756563,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 18.791,
+    "request_id": "26d5cb18-9934-402e-9c8d-bfb51257557e",
+    "outputs_retained_until": 1792842937
+  }
+}

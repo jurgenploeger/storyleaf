@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "a blue leather hide cloak with a cream white fur collar and a bone clasp, game item, laid out flat, front view, centered",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792756770,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 17.351,
+    "request_id": "fef2e5a5-003b-475f-aaf0-9f03905b27cf",
+    "outputs_retained_until": 1792843142
+  }
+}

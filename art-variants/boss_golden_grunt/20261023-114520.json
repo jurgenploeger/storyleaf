@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "hulking golden brute, a stocky ogre guard in gleaming gold plate armour with a horned gold helmet, glowing ember eyes, a big gold-studded club, little puffs of flame from its nose, boss monster, chibi, cute monster",
+    "prompt_style": "rd_plus__low_res",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792755920,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 20.231,
+    "request_id": "8e91b05a-a386-4a0d-864e-88d84a08b667",
+    "outputs_retained_until": 1792842265
+  }
+}

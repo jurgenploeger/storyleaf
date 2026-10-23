@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "legendary emerald dragon, majestic and proud, great spread wings, glittering green emerald scales, gemstone horns, vines and leaves growing along its back and tail, glowing golden eyes, boss monster, fantasy, chibi",
+    "prompt_style": "rd_plus__low_res",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792756078,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 19.151,
+    "request_id": "38fa98bc-9772-490e-b0a2-ab17ca1e642e",
+    "outputs_retained_until": 1792842456
+  }
+}

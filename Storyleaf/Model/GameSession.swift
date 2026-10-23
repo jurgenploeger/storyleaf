@@ -1608,9 +1608,35 @@ final class GameSession {
         quest.objective.type == .chooseClass || quest.objective.type == .deliver ? 1 : (quest.objective.count ?? 1)
     }
 
-    /// How hard a quest is: as it says (`QuestDef.difficulty`), else by what it asks. Fights with a
-    /// boss and long hunts are hard; a handful of monsters, an errand or a level to reach is easy.
+    /// How hard a quest is for the hero now: how hard it is in itself (`baseDifficulty(of:)`),
+    /// eased or toughened by how the level of what it has you fight compares with the hero's
+    /// (playtesting 2026-10-23: "if I need to beat enemies that are way lower level than me, the
+    /// quest difficulty is easy"). Twenty levels under the hero is easy whatever the quest.
     func difficulty(of quest: QuestDef) -> QuestDifficulty {
+        let base = baseDifficulty(of: quest)
+        guard let level = level(of: quest) else { return base }
+        let gap = level - data.hero.level
+        if gap <= -20 { return .easy }
+        let step = gap <= -8 ? -1 : gap >= 20 ? 2 : gap >= 8 ? 1 : 0
+        return QuestDifficulty(rawValue: min(max(base.rawValue + step, 1), QuestDifficulty.elite.rawValue)) ?? base
+    }
+
+    /// The level of what a quest has you fight (`Content.habitatLevel`): its target's, or for one
+    /// that asks for drops, the gentlest of the monsters that drop them. Nil for one with no fight.
+    func level(of quest: QuestDef) -> Int? {
+        switch quest.objective.type {
+        case .defeat, .capture:
+            return quest.objective.target.flatMap(content.habitatLevel)
+        case .bring:
+            return (quest.drops ?? []).flatMap(\.from).compactMap(content.habitatLevel).min()
+        case .cards, .collect, .hatch, .reachLevel, .chooseClass, .deliver:
+            return nil
+        }
+    }
+
+    /// How hard a quest is in itself: as it says (`QuestDef.difficulty`), else by what it asks. Fights
+    /// with a boss and long hunts are hard; a handful of monsters, an errand or a level to reach is easy.
+    func baseDifficulty(of quest: QuestDef) -> QuestDifficulty {
         if let set = quest.difficulty.flatMap(QuestDifficulty.init(rawValue:)) { return set }
         let count = quest.objective.count ?? 1
         switch quest.objective.type {

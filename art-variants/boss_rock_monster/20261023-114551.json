@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "giant sleepy rock golem of mossy brown boulders, droopy half-closed eyes, a big yawning mouth, little sleep bubbles, moss and tiny flowers on its shoulders, boss monster, chibi, cute monster",
+    "prompt_style": "rd_plus__low_res",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792755950,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 19.871,
+    "request_id": "7e2be875-c1f4-4f66-b79b-73ceff9487e2",
+    "outputs_retained_until": 1792842338
+  }
+}

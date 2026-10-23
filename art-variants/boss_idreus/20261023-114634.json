@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "dark sorcerer lord in a tall hooded violet and black robe with a high collar, glowing purple eyes in the shadow of the hood, a horned crown, a staff topped with a dark purple orb, wisps of shadow floating round him, boss monster, fantasy, chibi",
+    "prompt_style": "rd_plus__low_res",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792755993,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 19.691,
+    "request_id": "1e81c3b3-4fe4-4b89-ba01-e2886a75677b",
+    "outputs_retained_until": 1792842352
+  }
+}
