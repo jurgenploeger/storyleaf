@@ -256,6 +256,12 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 
 ## Learned
 
+- **2026-10-23 (buildings):** Patterns laid in the screen's rows put a receding roof's tiles at the wrong
+  angle; each face now carries its own axes (`building_art.surface(axes=...)`: along its eave, down its
+  slope or wall), so tiles run along the eave and their seams down the slope. Evenly lit faces looked
+  flat: walls now lie in the eave's shadow at the top and the ground's at the foot, the side going back
+  a step darker, a lit corner, the roof's edge thick, its planes lit by the way they face.
+
 - **2026-10-23 (icons):** A design's halves in a colour's mid and light leave the light the commonest, and
   the finish ramps the whole shape from it: an orange arrow came out beige. Draw in the mid and the
   shadow; the finish brings the light. Small parts closer than about three pixels (a paw's toes, three
