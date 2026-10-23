@@ -125,19 +125,22 @@ def cherry():
 
 
 def gnarled():
-    """dark_tree: a dead-looking crooked tree, its trunk twisting and leaning, bare twigs clawing out of
-    a few sparse clumps of dusky purple leaves."""
+    """dark_tree: a crooked tree, its trunk twisting and leaning, under one ragged crown of dusky purple
+    leaves that droops at its ends, a bare twig or two clawing out of it. (Three separate clumps on bare
+    branches read, in a forest of them, as crowns with a hole in the middle: playtesting 2026-10-23.)"""
     s = scene()
     bark, leaves = Material("#4a3c4e", texture=0.08), foliage("#7a52b0")
-    trunk(s, 30, 60, 46, 7, bark, lean=4, roots=4)
-    branch(s, [(33, 47), (28, 38), (34, 30), (31, 20)], 5, bark)
-    branch(s, [(32, 42), (20, 36), (14, 26), (8, 23)], 3, bark)
-    branch(s, [(33, 38), (44, 33), (50, 24), (57, 21)], 3, bark)
-    branch(s, [(14, 27), (17, 19)], 2, bark)
-    branch(s, [(50, 25), (47, 16)], 2, bark)
-    branch(s, [(31, 22), (25, 13)], 2, bark)
-    for (cx, cy, rx, ry, n, seed) in ((31, 15, 8, 5, 6, 11), (11, 24, 6, 4, 4, 12), (52, 20, 6, 4, 4, 13)):
-        puffs(s, cx, cy, rx, ry, leaves, n, 4.0, seed, flat=0.75)
+    trunk(s, 30, 60, 40, 7, bark, lean=4, roots=4)
+    branch(s, [(33, 44), (28, 34), (33, 24)], 5, bark)
+    branch(s, [(32, 40), (20, 33), (12, 27)], 3, bark)
+    branch(s, [(33, 36), (44, 30), (53, 25)], 3, bark)
+    branch(s, [(5, 28), (1, 31)], 1.6, bark)                        # bare twigs past the leaves
+    branch(s, [(58, 27), (62, 30)], 1.6, bark)
+    branch(s, [(36, 9), (39, 2)], 1.6, bark)
+    # One crown, wider than tall, drooping lower at its ends, its edge notched but never split.
+    puffs(s, 33, 17, 25, 9, leaves, 40, 4.4, 11, flat=0.75, skip=lambda x, y: (x - 22) ** 2 + (y - 9) ** 2 < 8)
+    for (x, y) in ((9, 27), (57, 26)):
+        puffs(s, x, y, 4, 3, leaves, 3, 3.8, 12 + x, flat=0.75)
     return s
 
 
