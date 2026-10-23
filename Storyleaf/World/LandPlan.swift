@@ -218,14 +218,42 @@ final class LandPlanner {
         // Where the way in points after 0 to 3 quarter turns (y up is a row up).
         let ways = [(0, -1), (1, 0), (0, 1), (-1, 0)]
         let turns = (0..<4).max { ways[$0].0 * toward.col + ways[$0].1 * toward.row < ways[$1].0 * toward.col + ways[$1].1 * toward.row } ?? 0
-        for piece in lair {
-            var (dx, dy) = (piece.x, piece.y)
+        func turned(_ x: Int, _ y: Int) -> (Int, Int) {
+            var (dx, dy) = (x, y)
             for _ in 0..<turns { (dx, dy) = (-dy, dx) }
-            let at = GridPoint(col: cell.col + dx, row: cell.row + dy)
-            let blocking = piece.blocking ?? true
-            guard map.owns(at), map.isWalkable(at), map.isFreeForScenery(at, blocking: blocking) else { continue }
-            map.occupy(at, blocking: blocking)
-            plan.localProps.append(scenery(piece.art, at: at))
+            return (dx, dy)
+        }
+        // The way in, straight on from the boss toward the middle, stays clear.
+        var taken: Set<GridPoint> = [cell]
+        for step in 1...3 {
+            let (dx, dy) = turned(0, -step)
+            taken.insert(GridPoint(col: cell.col + dx, row: cell.row + dy))
+        }
+        // Each piece at its spot, else pulled in toward the boss (a summit's top or a cave's chamber
+        // has less room than open ground); one that mayn't block where it fits (by a cave's passage)
+        // stands there to be walked through.
+        var chosen: [(art: String, cell: GridPoint, blocking: Bool)] = []
+        for piece in lair {
+            let (dx, dy) = turned(piece.x, piece.y)
+            let wantsToBlock = piece.blocking ?? true
+            for scale in [1.0, 0.7, 0.45] {
+                let at = GridPoint(col: cell.col + Int((Double(dx) * scale).rounded()), row: cell.row + Int((Double(dy) * scale).rounded()))
+                guard !taken.contains(at), map.owns(at), map.isWalkable(at) else { continue }
+                let blocking = wantsToBlock && map.isFreeForScenery(at, blocking: true)
+                guard blocking || map.isFreeForScenery(at, blocking: false) else { continue }
+                chosen.append((art: piece.art, cell: at, blocking: blocking))
+                taken.insert(at)
+                break
+            }
+        }
+        // Never walled in: if what blocks would shut the boss in, nothing of the lair blocks.
+        let walls = Set(chosen.filter { $0.blocking }.map { $0.cell })
+        if !walls.isEmpty, !leavesRoom(around: cell, walls: walls) {
+            chosen = chosen.map { (art: $0.art, cell: $0.cell, blocking: false) }
+        }
+        for piece in chosen {
+            map.occupy(piece.cell, blocking: piece.blocking)
+            plan.localProps.append(scenery(piece.art, at: piece.cell))
         }
         for dr in -3...3 {
             for dc in -3...3 where dc * dc + dr * dr <= 10 {
@@ -233,6 +261,23 @@ final class LandPlanner {
                 if map.contains(at) { map.occupy(at, blocking: false) }
             }
         }
+    }
+
+    /// Whether, with `walls` blocked too, you can still walk a good way (400 cells) out from beside
+    /// `cell`: a lair mustn't shut its boss in (playtesting's test: the Emerald Dragon's, at the end
+    /// of its road between hills, did).
+    private func leavesRoom(around cell: GridPoint, walls: Set<GridPoint>) -> Bool {
+        let steps = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+        let starts = steps.map { GridPoint(col: cell.col + $0.0, row: cell.row + $0.1) }.filter { map.isWalkable($0) && !walls.contains($0) }
+        var reached = Set(starts)
+        var queue = starts
+        while let at = queue.popLast(), reached.count < 400 {
+            for (dc, dr) in steps {
+                let next = GridPoint(col: at.col + dc, row: at.row + dr)
+                if map.isWalkable(next), !walls.contains(next), reached.insert(next).inserted { queue.append(next) }
+            }
+        }
+        return reached.count >= 400
     }
 
     /// The people who live here (`MapDef.Local`): where each lives and walks to, their things set
