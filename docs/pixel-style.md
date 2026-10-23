@@ -221,6 +221,12 @@ flicked out at the bottom; never coiled.
 - **Done 2026-10-23:** material presets; the three loose criteria tightened (`shades_per_ramp`,
   `hue_shift`, `light_top_left`, measured afresh: see *Learned*); `jaggies` added, `pillow` and `checker`
   reported; the kit tuned on RD's armour (above); whips redrawn hanging, as held.
+- **Scenery (2026-10-23):** the 21 trees and bushes that were palette swaps of RD's `tree` and
+  `berry_bush` are drawn in code by `tools/scenery_art.py`, a species each; all 21 pass the scenery
+  criteria. Lit from lower down than the icons (`Sprite.light`), edges darkened only where they turn
+  from the light (`rim="lower"`), no seams between clusters, and a crown laid as clusters of leaves on a
+  jittered grid (`puffs`), each lit on its own with a paler patch toward its top left. Beside RD's own
+  `tree` they read as the same game but softer, with less contrast in the leaves.
 - **Known:** thin things (a whip's lash, three pixels wide) fail `cluster_size` and `orphans` by nature:
   the braid alternates every few pixels. 16 of the 25 whips pass; their look was judged by eye.
 - **Next, in order:**
@@ -229,10 +235,16 @@ flicked out at the bottom; never coiled.
      choice in the designs.
   3. A criterion for designed detail (how much of the inside is a deliberate line or edge, not texture),
      calibrated on RD, so a sprite with less detail than its neighbours fails by number, not only by eye.
-  4. Scenery and props drawn in code (`tools/prop_art.py`) through the kit.
+  4. More scenery through the kit: the rest of the recoloured families (`crystal` ×6, `mushroom`,
+     `giant_flower`, `gift_box`, the lollipops recoloured from a beach umbrella, three houses).
   5. Animation: walk cycles stay RD's for now (`sprite-acceptance.md`).
 
 ## Learned
+
+- **2026-10-23 (scenery):** A crown of leaf clusters placed at random came out lopsided; on a jittered grid
+  it's full and even. Big clusters on a 32-pixel bush read as a smooth lump: RD's bushes are leafy, so
+  bushes use many small clusters (3 pixels across) and trees fewer, bigger ones. Seams between clusters
+  read as cracks: RD parts them by shadow alone.
 
 - **2026-10-23 (hue shift):** "Shadows toward blue" is a shortcut that only works for warm colours: on a
   blue it turns the shadow toward cyan and yellow, the wrong way, and every blue item measured a negative

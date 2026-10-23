@@ -37,7 +37,6 @@ OUTLINE = (35, 24, 52)                   # the item icons' house outline (tools/
 # pixel_style's light_top_left; a light from the top left alone gave ours 0.52).
 LIGHT = np.array([-0.17, -0.22, 1.0])
 LIGHT = LIGHT / np.linalg.norm(LIGHT)
-HALF = (LIGHT + np.array([0, 0, 1.0])) / np.linalg.norm(LIGHT + np.array([0, 0, 1.0]))
 
 SHADOW_HUE, LIGHT_HUE = 245.0, 50.0      # shadows lean to blue-violet, highlights to warm yellow
 
@@ -113,6 +112,8 @@ class Sprite:
         # Shapes stacked on each other cast contact shadows and get a seam where they meet; regions that
         # only touch (a restyled drawing's) don't. Rim light runs round each shape, or the silhouette.
         self.contact, self.seams, self.rim = True, True, "shape"
+        # The light, if not the icons' (LIGHT): scenery stands in the world, lit more from the side.
+        self.light = LIGHT
         self.overlay = None      # RGBA pixels put on top after the outline (sparkles, glows)
 
     # --- shapes, in the sprite's own pixels -----------------------------------------------------------
@@ -203,7 +204,7 @@ class Sprite:
             gx, gy = -np.cos(facet) * tilt * (r > 0), -np.sin(facet) * tilt * (r > 0)
         n = np.stack([-gx, -gy, np.ones(mask.shape)], -1)
         n /= np.linalg.norm(n, axis=-1, keepdims=True)
-        diffuse = np.clip(n @ LIGHT, 0, 1)
+        diffuse = np.clip(n @ self.light, 0, 1)
         # A surface facing the light lands on the base colour (the ramp's middle), the edges turning away
         # step down into shadow; only the gloss climbs above it.
         lit = 0.05 + 0.55 * diffuse ** 2
@@ -217,7 +218,8 @@ class Sprite:
             # A plane given its own light (a gem's facet, a cut face): 0 dark … 1 lit.
             lit = np.full(mask.shape, float(extra["tone"]))
         if mat.gloss and not toned:
-            lit = lit + mat.gloss * 0.8 * np.clip(n @ HALF, 0, 1) ** 60
+            half = (self.light + np.array([0, 0, 1.0])) / np.linalg.norm(self.light + np.array([0, 0, 1.0]))
+            lit = lit + mat.gloss * 0.8 * np.clip(n @ half, 0, 1) ** 60
         if extra.get("detail") is not None:
             lit = lit + extra["detail"]
         if mat.texture:
@@ -333,6 +335,9 @@ class Sprite:
             # RD darkens a form's inner edge all the way round (the light turns away there), a step deeper
             # where it faces away from the light; no lit rim.
             edge = sel & (~up | ~left | ~down | ~right)
+            if self.rim == "lower":
+                # Foliage: only the edges turned from the light darken; a cluster's top stays lit.
+                edge = sel & (~down | ~right)
             away = sel & (~down | ~right)
             level[edge] = np.maximum(level[edge] - 1, 0)
             level[away] = np.maximum(level[away] - (1 if self.rim == "silhouette" else 0), 0)

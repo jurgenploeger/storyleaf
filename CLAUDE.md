@@ -95,6 +95,11 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   `stairs` in maps.json; `waystone`, NPC role `waystone`, a standing stone out in a wild land that a quest
   wakes, then a stop for travel like the towns: `GameSession.travelDestinations`).
   Rerun it after editing a drawing; `--sheet out.png` previews them.
+- `tools/scenery_art.py`: trees and bushes drawn in code with `pixel_kit` (docs/pixel-style.md), one species
+  each where every tree had been a recolour of RD's `tree` and every bush of its `berry_bush`: a cherry, a
+  gnarled dark tree, an autumn oak, a maple, a birch, a frosted bare tree, a willow, a jacaranda, candy trees,
+  and ten bushes (a fir sapling, a tumbleweed, a bramble...). Each writes its own PNG, which wins over the
+  asset's `derive`; its `big_` twin, derived from it, follows. `--sheet out.png` previews them.
 - `tools/crystal_art.py`: the Glimmerdeep's crystal scenery from the caves' own rock (its walls, floor, spires and
   geodes): each pixel's brightness laid on a ramp of crystal colours, as a `derive` can't tint the grey tiles.
   Rerun it after editing a ramp; `--sheet out.png` previews them.
