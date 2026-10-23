@@ -78,7 +78,21 @@ def icon(shape, mat, tint):
     buf = io.BytesIO()
     Image.fromarray((np.clip(img, 0, 1) * 255).round().astype(np.uint8), "RGBA").save(buf, "PNG")
     buf.seek(0)
-    return wa.shrink(wa.load(buf), ia.SIZE, wa.ICON_INNER)
+    return centred(wa.shrink(wa.load(buf), ia.SIZE, wa.ICON_INNER))
+
+
+def centred(c):
+    """The icon moved to the middle of its canvas by what's drawn: shrink() sits a weapon on the
+    bottom edge, and keeps whatever margin the RD drawing had, so robes and cloaks came out low and
+    to the left in the inventory's tiles (playtest 2026-10-23)."""
+    drawn = [(x, y) for y in range(c.size) for x in range(c.size) if c.px[y][x]]
+    xs, ys = [x for x, _ in drawn], [y for _, y in drawn]
+    dx = (c.size - (max(xs) - min(xs) + 1)) // 2 - min(xs)
+    dy = (c.size - (max(ys) - min(ys) + 1)) // 2 - min(ys)
+    out = ia.Canvas(c.size)
+    for x, y in drawn:
+        out.px[y + dy][x + dx] = c.px[y][x]
+    return out
 
 
 def main(argv):
