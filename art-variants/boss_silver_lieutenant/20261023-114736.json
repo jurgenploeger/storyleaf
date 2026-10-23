@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "spectral knight in polished silver plate armour, a tattered pale blue cape, glowing ice blue eyes behind the visor, a long silver sword with a fang-shaped blade, ghostly mist round its feet, boss monster, fantasy, chibi",
+    "prompt_style": "rd_plus__low_res",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792756054,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 19.331,
+    "request_id": "fc36a84c-7199-4128-bc29-c0771afd679e",
+    "outputs_retained_until": 1792842418
+  }
+}

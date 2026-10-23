@@ -261,6 +261,10 @@ boss_oak     | newgame,level=28,map=smiling_forest,at=-7_-11,npc=oak_grove    | 
 boss_emerald | newgame,level=190,map=emerald_road,at=-2_18                   | 10
 boss_fight   | newgame,level=60,class=fighter,map=rat_cavern,boss=rat_throne | 25
 boss_wave    | newgame,level=60,class=fighter,map=rat_cavern,boss=rat_throne,wave=3 | 25
+boss_fight_emerald | newgame,level=200,class=fighter,map=emerald_road,boss=emerald_gate | 25
+boss_fight_tide | newgame,level=170,class=fighter,map=water_temple,boss=temple_depths | 25
+boss_fight_morvane | newgame,level=125,class=fighter,map=secret_plain,boss=treasure_of_queen | 25
+boss_fight_grotto | newgame,level=20,class=fighter,map=slime_cave,boss=slime_throne | 25
 boss_story   | newgame,level=60,class=fighter,map=rat_cavern,boss=rat_throne,win | 35
 boss_story_landscape | newgame,level=60,class=fighter,map=rat_cavern,boss=rat_throne,win,landscape | 35
 battle_companion | newgame,level=30,class=tamer,pet=pineapple,map=sunny_meadow,battle=2,orders | 15
