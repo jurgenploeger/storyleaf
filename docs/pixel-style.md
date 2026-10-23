@@ -40,8 +40,10 @@ These are the rules the numbers measure. A sprite that keeps them looks like Sto
    jump about (1, 3, 1, 3: "jaggies"); no lone pixel stuck out of an edge, no doubled corner.
 7. **Outlines.** Item icons: one dark outline all round, the house colour `#231834` (`item_art.OUTLINE`).
    On something darker than it (a navy lash), the kit deepens it to half the light of what it rounds, so it
-   still reads as the edge. Creatures and scenery: a broken, tinted outline (a deep shade of what it
-   rounds), lighter or gone where the light hits.
+   still reads as the edge. Creatures, scenery and buildings: a broken, tinted outline, a deep shade of
+   what it rounds and close to its colour, never near-black: a green tree's is dark green, a red roof's
+   dark red (about 0.6 to 0.85 of the light inside it, `outline_rel`; the kit's `outline="tinted"` takes
+   it from the shape's own ramp), lighter or gone where the light hits.
 8. **A few highlights.** A speck or two of the lightest shade on what's glossy (gems, eyes), not a
    wash. Polished metal and cut stone get RD's glint: a small cross of near-white (`pixel_kit.GLINT`,
    `#f1f5f3`, one white for every metal) where the form faces the light, on its upper left, ringed by the
@@ -49,6 +51,11 @@ These are the rules the numbers measure. A sprite that keeps them looks like Sto
 9. **Size and placement.** Icons fill 80% or more of their 32 × 32 tile and sit in its middle (armour; a
    weapon sits on the bottom edge with room above for its glow). Creatures and scenery at their kind's size
    (`art/assets.json`: monsters 40 or 64, props 32 to 96, buildings 96, tiles 32).
+10. **Light in broad areas, a palette kept small (buildings).** RD lights a house as a few big areas: a lit
+    front, the side going back well into shadow, a dark band under the eaves, the lit roof plane bright at
+    each tile's top, shadows turned toward blue and lights toward yellow. Detail sits on top of that, never
+    instead of it (`light_masses`), and the whole house holds about 18 to 35 colours (`colour_density`
+    capped as well as floored): every face its own seven shades made ours a hundred colours of grain.
 
 ## What the craft says (sources)
 
@@ -122,6 +129,8 @@ and 80% of the soft ones.**
 | `highlight_share` | share of inner pixels far brighter than the median | soft | ≤ 0.29 | ≤ 0.18 | ≤ 0.25 |
 | `semi_alpha` | partly transparent pixels (light effects only) | soft, max | 0 | 0 | 0 |
 | `jaggies` | runs along one slope of the outline 2 or more longer, or shorter, than both neighbours | soft, max | ≤ 0.08 | ≤ 0.12 | ≤ 0.14 |
+| `outline_rel` | the outline's light over the inside's within 2 pixels (median): deep, not black | hard (scenery, buildings), soft, min | ≥ 0.27 | ≥ 0.49 | ≥ 0.61 |
+| `light_masses` | share of the inside's spread of light left after a 5 × 5 blur (buildings only) | soft, min | – | – | – |
 | `pillow` | how much more the inside's light follows the distance in from the edge than the light | reported | – | – | – |
 | `checker` | share of the inside in 2 × 2 checkerboards of two colours (dithering) | reported | – | – | – |
 
@@ -138,10 +147,11 @@ The criteria are only trusted while they tell the two kinds of art apart. Rerun 
 to a metric or band:
 
 - **The reference passes:** at least 80% of RD's own sprites of each kind (the bands are 5th to 95th
-  percentiles, so a few of RD's own always fall outside one). 2026-10-23, with the floors and `jaggies`:
-  icons 88% (123 / 140), scenery 86% (115 / 133), creatures 80% (52 / 65).
-- **The flat look fails:** `tools/item_art.py`'s designs, unfinished, pass at most 10%. 2026-10-23: 8%
-  (27 / 322), failing on `cluster_size` (91%), `flat` (90%), `colour_density` (82%) and `shades_per_ramp`
+  percentiles, so a few of RD's own always fall outside one). 2026-10-23, with the floors, `jaggies` and
+  `outline_rel`: icons 87% (122 / 140), scenery 82% (109 / 133), creatures 78% (51 / 65), buildings 69%
+  (20 / 29, below).
+- **The flat look fails:** `tools/item_art.py`'s designs, unfinished, pass at most 10%. 2026-10-23: 7%
+  (22 / 322), failing on `cluster_size` (91%), `flat` (90%), `colour_density` (82%) and `shades_per_ramp`
   (79%). The same items as shipped, finished by the kit, pass 84% (289 / 343).
 
 ### Review by eye: what the numbers can't see
@@ -165,8 +175,18 @@ a criterion so it can't pass again. That is how the criteria get stricter.
 
 RD's buildings have a band set of their own (`--kind building`, the 29 RD drew): a 96-pixel house holds
 fewer colours to its size than a bush, and a third of RD's own failed the general scenery bands. Their
-outline is soft, not hard: RD draws buildings with a broken, tinted outline that a lit roof edge goes
-without. 2026-10-23: RD's buildings pass their own bands 79% (23 / 29).
+`outline_dark` is soft, not hard: RD draws buildings with a broken, tinted outline that a lit roof edge
+goes without; but `outline_rel` is hard, so what outline there is stays a deep shade of the wall or roof.
+Three more rules are theirs alone (playtesting 2026-10-23, "more and better shading and lighting, like
+RD's"): `colour_density` is capped as well as floored (0.54 to 1.4 colours per 100 pixels, the cap a
+house rule, `pixel_style.CEILINGS`, over all of RD's but its fence), `light_masses` at least 0.55 (a
+floor met by 86% of RD's), and `outline_rel` at least 0.55. `tools/building_art.py` meets them with
+quiet textures (`TEXTURE`), a stronger hue shift (`SHIFT`), faces lit by the way they turn (the side
+going back 0.4 darker, the lit roof plane 0.14 lighter, the eave's shadow 0.6) and a palette cut to
+about 1.1 colours per 100 pixels (`pixel_kit.limit_palette`, which merges the closest pair into the
+commoner over and over, so a lit window or a flower keeps its colour). RD's buildings pass their own bands
+69% (20 / 29), under the 80% the criteria aim for: in a sample of 29 every new band cuts one or two of
+RD's own. Widen one before adding another.
 
 ## Restyle: how every item icon is finished
 
@@ -255,6 +275,17 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   5. Animation: walk cycles stay RD's for now (`sprite-acceptance.md`).
 
 ## Learned
+
+- **2026-10-23 (outlines):** The tinted outline at 0.6 of each shape's darkest shade came out near-black
+  (`outline_rel` 0.37 on our trees and houses, against RD's 0.6 to 0.85), the stark black line round
+  everything we drew. It's now the shape's own ramp at the shade of the body within two pixels, about
+  0.74 of its light (0.9 on the lit top and left), a touch richer: our trees 0.81, houses 0.77. Taken
+  from each pixel it touched, it doubled the colour count; from the ramp a material's outline holds a
+  handful. Taken from the darkened rim alone, pale bushes still came out too dark.
+- **2026-10-23 (buildings):** Seven shades for every face, a second ramp to flick between and texture on
+  every pixel gave our houses 115 to 180 colours against RD's 18 to 35, and light that lived in grain
+  instead of areas. Fewer, broader: quieter textures, one ramp, the palette merged to about RD's size,
+  and the faces' light set by how they turn.
 
 - **2026-10-23 (buildings):** Patterns laid in the screen's rows put a receding roof's tiles at the wrong
   angle; each face now carries its own axes (`building_art.surface(axes=...)`: along its eave, down its

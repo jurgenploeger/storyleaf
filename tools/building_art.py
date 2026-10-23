@@ -22,7 +22,7 @@ import numpy as np
 from PIL import Image
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from pixel_kit import SS, Material, Sprite  # noqa: E402
+from pixel_kit import SS, Material, Sprite, limit_palette  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SPRITES = ROOT / "art" / "sprites"
@@ -31,6 +31,12 @@ SIZE = 96
 GROUND = 86                      # the front wall's foot (RD's buildings stand on rows 75 to 87)
 DX, DY = 12, -7                  # a wall's depth going back, as the view shows it: up and to the right
 LIGHT = np.array([-0.45, -0.55, 0.7]) / np.linalg.norm([-0.45, -0.55, 0.7])
+# RD's finish: light and shade in broad areas, not a grain on every pixel (the materials' own texture
+# toned down to this share, no second ramp to flick between), shadows turned well toward blue and
+# lights toward yellow (`shift`), and a palette of about RD's size (`PALETTE`, pixel_kit.limit_palette),
+# fewer on a smaller house.
+TEXTURE, SHIFT, PALETTE = 0.35, 1.8, 40
+DENSITY = 1.1                    # colours per 100 pixels at most, as RD's (about 0.55 to 1.3)
 
 
 # --------------------------------------------------------------------------------- materials' patterns
@@ -57,13 +63,13 @@ def blocks(region, a, d, w=6, h=4, seed=1):
     lit = D % h == 0
     shade = _table(seed)[row % 64, ((A + off) // w) % 64]
     fleck = _table(seed + 1, region.shape[0], region.shape[1]) < 0.05
-    return np.where(joint, -0.5, np.where(lit, 0.22, 0.0)) + (shade - 0.5) * 0.18 + np.where(fleck & ~joint, 0.15, 0)
+    return np.where(joint, -0.4, np.where(lit, 0.2, 0.0)) + (shade - 0.5) * 0.12 + np.where(fleck & ~joint, 0.15, 0)
 
 
 def plaster(region, a, d, seed=2):
     """Lime plaster: soft patches, never flat."""
     A, D = _grid(region, a, d)
-    return (_table(seed)[(D // 3) % 64, (A // 3) % 64] - 0.5) * 0.16
+    return (_table(seed)[(D // 5) % 64, (A // 5) % 64] - 0.5) * 0.1
 
 
 def planks(region, a, d, h=3, seed=3, vertical=False):
@@ -77,7 +83,7 @@ def planks(region, a, d, h=3, seed=3, vertical=False):
     joint = (along + board * 7) % (joints[board % 64] + 9) == 0
     grain = (np.sin(along * 0.9 + board * 2.1) > 0.85) * -0.12
     tone = (rng.random(64)[board % 64] - 0.5) * 0.16
-    return np.where(seam | joint, -0.45, grain + tone)
+    return np.where(seam | joint, -0.36, grain + tone)
 
 
 def tiles(region, a, d, w=5, h=4, seed=4):
@@ -88,7 +94,7 @@ def tiles(region, a, d, w=5, h=4, seed=4):
     xo = (A + (row % 2) * (w // 2)) % w
     yo = D % h
     tone = (_table(seed)[row % 64, ((A + (row % 2) * (w // 2)) // w) % 64] - 0.5) * 0.14
-    return np.where(yo == h - 1, -0.45, np.where(xo == w - 1, -0.28, np.where((yo == 0) & (xo < 2), 0.3, 0.05))) + tone
+    return np.where(yo == h - 1, -0.45, np.where(xo == w - 1, -0.28, np.where((yo == 0) & (xo < 3), 0.36, 0.08))) + tone
 
 
 def thatch(region, a, d, seed=5):
@@ -178,15 +184,16 @@ class Build:
             depth = d_ - d_[region].min()
             height = d_[region].max() - d_[region].min()
             if eave:
-                detail = detail - 0.5 * np.clip(1 - depth / eave, 0, 1) ** 0.7
+                detail = detail - 0.6 * np.clip(1 - depth / eave, 0, 1) ** 0.7
             if foot:
                 detail = detail - 0.22 * np.clip(1 - (height - depth) / foot, 0, 1)
         detail = np.kron(detail, np.ones((SS, SS)))
-        mat = Material(colour, texture=texture, shades=shades, gloss=gloss, variety=2.0)
+        mat = Material(colour, texture=texture * TEXTURE, shades=shades, gloss=gloss, variety=0, shift=SHIFT)
         self.s.mask(m, mat, height=np.zeros(m.shape), detail=detail)
 
     def poly(self, points, colour, texture=0.02, profile="flat", tone=None, shades=6, gloss=0.0):
-        self.s.poly(self.t(points), Material(colour, texture=texture, shades=shades, gloss=gloss), profile=profile,
+        self.s.poly(self.t(points), Material(colour, texture=texture * TEXTURE, shades=shades, gloss=gloss, variety=0,
+                                             shift=SHIFT), profile=profile,
                     tone=tone)
 
     def rect(self, x0, y0, x1, y1, colour, **kw):
@@ -194,10 +201,11 @@ class Build:
 
     def ellipse(self, cx, cy, rx, ry, colour, texture=0.02, profile="dome", gloss=0.0):
         (x, y), = self.t([(cx, cy)])
-        self.s.ellipse(x, y, rx * self.k, ry * self.k, Material(colour, texture=texture, gloss=gloss), profile=profile)
+        self.s.ellipse(x, y, rx * self.k, ry * self.k, Material(colour, texture=texture * TEXTURE, gloss=gloss, variety=0,
+                                                                         shift=SHIFT), profile=profile)
 
     def stroke(self, points, width, colour, texture=0.02):
-        self.s.stroke(self.t(points), width * self.k, Material(colour, texture=texture))
+        self.s.stroke(self.t(points), width * self.k, Material(colour, texture=texture * TEXTURE, variety=0, shift=SHIFT))
 
     def extent(self):
         """The drawing's bounds so far, in the frame's pixels: (left, top, right, bottom)."""
@@ -208,7 +216,9 @@ class Build:
         return xs.min() / SS, ys.min() / SS, xs.max() / SS, ys.max() / SS
 
     def render(self):
-        return self.s.render(outline="tinted")
+        img = self.s.render(outline="tinted")
+        size = int((np.asarray(img)[..., 3] > 0).sum())
+        return limit_palette(img, max(16, min(PALETTE, int(size * DENSITY / 100))))
 
 
 def box(b, x0, x1, height, wall, side=None, pattern="plaster", side_pattern=None, ground=GROUND, depth=1.0):
@@ -219,8 +229,8 @@ def box(b, x0, x1, height, wall, side=None, pattern="plaster", side_pattern=None
     # The side going back, turned from the light; the front lit from the upper left, both in the roof's
     # shadow under the eaves and the ground's at their foot.
     b.surface([(x1, ground), (x1 + dx, ground + dy), (x1 + dx, top + dy), (x1, top)], side or wall,
-              side_pattern or pattern, tone=-0.26, slope=(0.0, 0.0), axes=(SIDEWAYS, DOWN), eave=6, foot=4)
-    b.surface([(x0, ground), (x1, ground), (x1, top), (x0, top)], wall, pattern, slope=(-0.005, 0.0),
+              side_pattern or pattern, tone=-0.4, slope=(-0.004, -0.006), axes=(SIDEWAYS, DOWN), eave=6, foot=4)
+    b.surface([(x0, ground), (x1, ground), (x1, top), (x0, top)], wall, pattern, slope=(-0.008, -0.006),
               eave=6, foot=4)
     b.stroke([(x1, ground - 3), (x1, top + 4)], 0.9, shade(wall, 1.12))          # the corner catches the light
     return top
@@ -230,7 +240,7 @@ def footing(b, x0, x1, ground=GROUND, depth=1.0, colour="#8f8a86"):
     """A course of stone along the foot of the walls, front and side."""
     dx, dy = DX * depth, DY * depth
     b.surface([(x1, ground + 1), (x1 + dx, ground + 1 + dy), (x1 + dx, ground - 3 + dy), (x1, ground - 3)],
-              colour, "blocks", tone=-0.24, axes=(SIDEWAYS, DOWN))
+              colour, "blocks", tone=-0.38, axes=(SIDEWAYS, DOWN))
     b.surface([(x0 - 1, ground + 1), (x1, ground + 1), (x1, ground - 3), (x0 - 1, ground - 3)], colour, "blocks")
 
 
@@ -245,7 +255,7 @@ def gable_roof(b, x0, x1, top, colour, pattern="tiles", rise=20, over=3, depth=1
     # right, from the light, so a shade under the front's; lighter toward its ridge.
     down = unit(right_eave[0] - apex[0], right_eave[1] - apex[1])
     b.surface([apex, right_eave, (right_eave[0] + dx, right_eave[1] + dy), (apex[0] + dx, apex[1] + dy)],
-              colour, pattern, tone=-0.1, slope=(0.0, -0.006), axes=(SIDEWAYS, down))
+              colour, pattern, tone=-0.2, slope=(0.0, -0.006), axes=(SIDEWAYS, down))
     # The barge boards along the gable's two slopes, so the roof's edge reads.
     left_eave = (x0 - over, top + 2)
     b.stroke([left_eave, apex, right_eave], 2.6, colour)
@@ -265,13 +275,13 @@ def eaves_roof(b, x0, x1, top, colour, pattern="tiles", rise=16, over=3, depth=1
     ridge_l = (x0 - over + dx / 2, top + dy / 2 - rise)
     ridge_r = (x1 + dx / 2, top + dy / 2 - rise)
     if wall:
-        b.surface([(x1, top), (x1 + dx, top + dy), ridge_r], wall, wall_pattern or "plaster", tone=-0.24,
+        b.surface([(x1, top), (x1 + dx, top + dy), ridge_r], wall, wall_pattern or "plaster", tone=-0.38,
                   axes=(SIDEWAYS, DOWN), eave=3)
     # The front plane faces up toward the light: its rows along the eave, its seams down the slope
     # leaning back with it, a little lighter toward the ridge.
     down = unit((x0 - over) - ridge_l[0], (top + 3) - ridge_l[1])
     b.surface([(x0 - over, top + 3), (x1 + over, top + 3), (ridge_r[0] + over, ridge_r[1]), ridge_l],
-              colour, pattern, tone=0.08, slope=(-0.002, -0.005), axes=((1.0, 0.0), down))
+              colour, pattern, tone=0.14, slope=(-0.004, -0.006), axes=((1.0, 0.0), down))
     # The roof's right edge, down the gable.
     b.stroke([(ridge_r[0] + over * 0.6, ridge_r[1]), (x1 + dx + over * 0.6, top + dy + 2)], 2.4, colour)
     b.stroke([(ridge_l[0], ridge_l[1]), (ridge_r[0] + over, ridge_r[1])], 2.4, shade(colour, 1.1))   # the ridge
@@ -777,7 +787,7 @@ def market_tent(b):
         b.stroke([(x, GROUND - 7), (x, 37)], 1.4, "#5a3e26")
     b.surface([(18, 64), (72, 64), (80, 58), (26, 58)], "#b07a4a", "planks", tone=0.04)          # the counter top
     b.surface([(18, 64), (72, 64), (72, GROUND), (18, GROUND)], "#8a5a34", "boards")
-    b.surface([(72, 64), (80, 58), (80, GROUND - 6), (72, GROUND)], "#8a5a34", "boards", tone=-0.22)
+    b.surface([(72, 64), (80, 58), (80, GROUND - 6), (72, GROUND)], "#8a5a34", "boards", tone=-0.36)
     for k, (x, c) in enumerate(((24, "#c86a3a"), (31, "#2e8a8a"), (38, "#c86a3a"))):          # pots
         b.ellipse(x, 58, 3, 3.4, c)
         b.ellipse(x, 54.6, 1.6, 0.8, shade(c, 0.6), profile="flat")

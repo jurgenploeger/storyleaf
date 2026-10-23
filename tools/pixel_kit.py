@@ -93,17 +93,19 @@ class Material:
     pixels), how glossy (a specular highlight), and how much it takes light at all (`relief`: 1 rounded
     by the light, 0 flat colour)."""
 
-    def __init__(self, base, shades=6, texture=0.06, grain=1.5, gloss=0.0, relief=1.0, variety=4.0):
+    def __init__(self, base, shades=6, texture=0.06, grain=1.5, gloss=0.0, relief=1.0, variety=4.0, shift=1.0):
         self.base, self.shades, self.texture, self.grain = base, shades, texture, grain
         self.gloss, self.relief = gloss, relief
-        self.colours = ramp(base, shades)
+        # `shift` scales how far the ramp's shadows and lights turn round the wheel (RD's buildings turn
+        # theirs about twice as far as an icon's).
+        self.colours = ramp(base, shades, 12.0 * shift, 7.0 * shift)
         # A sister ramp a few degrees round the wheel: the texture picks between the two, so a surface
         # carries the near-duplicate colours RD's do instead of one clean ramp (0 turns it off).
         r, g, b = _rgb(base)
         h, sat, v = colorsys.rgb_to_hsv(r, g, b)
         twin = colorsys.hsv_to_rgb(((h * 360 + variety) % 360) / 360, max(0, sat - 0.06), min(1, v * 0.97))
-        self.twin = ramp(twin, shades) if variety else self.colours
-        self.key = hashlib.md5(f"{base}{shades}{texture}{grain}".encode()).hexdigest()
+        self.twin = ramp(twin, shades, 12.0 * shift, 7.0 * shift) if variety else self.colours
+        self.key = hashlib.md5(f"{base}{shades}{texture}{grain}{shift}".encode()).hexdigest()
 
 
 class Sprite:
@@ -414,10 +416,28 @@ class Sprite:
                 if outline == "house":
                     out[y, x] = (*house.astype(int), 255)
                 else:
-                    near = [idx[y + dy, x + dx] for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1))
-                            if 0 <= y + dy < self.h and 0 <= x + dx < self.w and idx[y + dy, x + dx] >= 0]
-                    c = self.shapes[near[0]][1].colours[0]
-                    out[y, x] = (*[int(v * 0.6) for v in c], 255)
+                    # A deep shade of the very pixel it rounds, its hue kept and its colour a touch
+                    # richer, at about two thirds of its light (a little more on the side facing the
+                    # light, less turned from it), as RD outlines its scenery and creatures: a green
+                    # tree in dark green. At 0.6 of each shape's darkest shade it came out near-black
+                    # (playtesting 2026-10-23; `outline_rel` in tools/pixel_style.py).
+                    inside = [(dy, dx) for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1))
+                              if 0 <= y + dy < self.h and 0 <= x + dx < self.w and solid[y + dy, x + dx]]
+                    # Taken from the shape's own ramp at the shade of its pixels within two of it (the body,
+                    # not just the darkened rim it touches; its lightest shades as one), so a material's
+                    # outline holds a handful of colours, not one per pixel.
+                    dy, dx = inside[0]
+                    i = idx[y + dy, x + dx]
+                    mat = self.shapes[i][1]
+                    lit = dy > 0 or dx > 0          # the inside lies below or right: this is a top or left edge
+                    near = (slice(max(0, y - 2), y + 3), slice(max(0, x - 2), x + 3))
+                    body = level[near][idx[near] == i]
+                    step = min(int(np.median(body)), mat.shades * 2 // 3 if lit else mat.shades // 2)
+                    r, g, b_ = (np.array(mat.colours[step]) / 255.0).tolist()
+                    h_, s_, v_ = colorsys.rgb_to_hsv(r, g, b_)
+                    v_ = v_ * (0.9 if lit else 0.74)
+                    s_ = min(1.0, s_ * 1.2 + 0.1)
+                    out[y, x] = (*[int(c * 255) for c in colorsys.hsv_to_rgb(h_, s_, v_)], 255)
         if self.overlay is not None:
             on = self.overlay[..., 3] > 0
             out[on] = self.overlay[on]
@@ -431,6 +451,32 @@ class Sprite:
 # of light and shade at the sprite's own pixels (so it lands crisp, not averaged away), laid over a
 # region's lighting, and the finish that goes with it (gloss, texture). Patterns follow the region:
 # its top, left and long axis.
+
+def limit_palette(img, n):
+    """`img` (PIL RGBA) with at most `n` colours: the two closest (by a rough perceptual distance) merge
+    into the commoner of them, over and over, so the colours that stay are ones the sprite already had
+    and a rare accent (a lit window, a flower) survives while near-twins from different shapes go. RD's
+    buildings hold about 18 to 35 colours; drawn shape by shape, ours held over a hundred."""
+    a = np.array(img.convert("RGBA"))
+    on = a[..., 3] > 0
+    keys, inverse, counts = np.unique(a[on][:, :3], axis=0, return_inverse=True, return_counts=True)
+    cols = keys.astype(float)
+    alive = list(range(len(cols)))
+    target = np.arange(len(cols))
+    weight = np.array([0.30, 0.59, 0.11]) * 3
+    while len(alive) > n:
+        c = cols[alive]
+        d = (((c[:, None, :] - c[None, :, :]) ** 2) * weight).sum(-1)
+        np.fill_diagonal(d, np.inf)
+        i, j = np.unravel_index(np.argmin(d), d.shape)
+        keep, drop = (alive[i], alive[j]) if counts[alive[i]] >= counts[alive[j]] else (alive[j], alive[i])
+        counts[keep] += counts[drop]
+        target[target == drop] = keep
+        alive.remove(drop)
+    rgb = cols[target[inverse.ravel()]].astype(np.uint8)
+    a[on, :3] = rgb
+    return Image.fromarray(a, "RGBA")
+
 
 def _noise(region, seed, cell=1):
     """Deterministic 0..1 noise per pixel (per `cell` × `cell` block)."""
