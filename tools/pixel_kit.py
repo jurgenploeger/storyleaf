@@ -636,7 +636,7 @@ def dominant_colour(img):
     return "#%02x%02x%02x" % tuple(int(round(c * 255)) for c in mid)
 
 
-def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=None):
+def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=None, trim=()):
     """An icon drawn the old way (tools/item_art.py: flat three-tone fills, one outline) re-rendered in
     the look: its regions of colour become materials on hue-shifted ramps, its silhouette rounded at the
     corners, the whole lit from the top left as one form with each region swelling a little on it, the
@@ -671,6 +671,8 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
         hh, ss, vv = _hsv(col)
         home = None
         for g in groups:
+            if OUTLINE in (tuple(col), tuple(g[0])):
+                continue             # an opening drawn in the outline's colour is its own region, never a purple's
             gh, gs, gv = _hsv(g[0])
             dh = abs((hh - gh + 0.5) % 1 - 0.5) * 360
             grey = ss < 0.14 and gs < 0.14
@@ -760,11 +762,11 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
     # Drawn dark lines (creases between fingers, seams, a slit) count double, so the new light doesn't
     # wash them out.
     detail = np.kron(np.where(tone < -0.5, tone * 2 * 0.3, tone * 0.15), np.ones((SS, SS)))
-    # An opening drawn in the outline's colour (a hood's, a helm's slit) is the inside of the thing, in
-    # deep shadow: the darkest shades of the biggest region's own colour, not black.
-    biggest = max(range(len(groups)), key=lambda i: (cur == i).sum()) if groups else 0
-    deep = ramp("#%02x%02x%02x" % tuple(int(v) for v in groups[biggest][0]), 10)[1] if groups else OUTLINE
-    main = max(range(len(groups)), key=lambda i: (cur == i).sum() if tuple(groups[i][0]) != OUTLINE else -1) \
+    # The main region is the biggest, leaving out a `trim` (colours drawn as a trim, a hood's fur, which
+    # can outsize the cloth it edges and would take the set's colour from it).
+    trims = {tuple(t[:3]) for t in trim}
+    main = max(range(len(groups)), key=lambda i: (cur == i).sum()
+               if tuple(groups[i][0]) != OUTLINE and not trims & {tuple(c) for c in groups[i][1]} else -1) \
         if groups else -1
     base_colour = base
     for i, (base, cols) in enumerate(groups):
@@ -775,11 +777,14 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
         own = np.sqrt(np.clip(d / max(1.0, d.max()), 0, 1)) * (d.max() / SS) * 0.3
         hh, ss, vv = _hsv(base)
         is_void = tuple(base) == OUTLINE
+        is_trim = bool(trims & {tuple(c) for c in cols})
         if is_void:
-            # The inside is the thing's own colour in shadow, on its own long ramp (its light set below).
-            big = groups[biggest][0]
-            base = (tuple(int(base_colour.lstrip("#")[k:k + 2], 16) for k in (0, 2, 4)) if base_colour and biggest == main
-                    else _deepen(big))
+            # An opening drawn in the outline's colour (a hood's, a helm's slit) is the inside of the thing:
+            # the main region's own colour in shadow, on its own long ramp (its light set below), not black.
+            base = (tuple(int(base_colour.lstrip("#")[k:k + 2], 16) for k in (0, 2, 4)) if base_colour
+                    else _deepen(groups[main][0]))
+        elif is_trim:
+            pass                     # a trim keeps its drawn colours (fur stays cream)
         elif i == main and base_colour:
             base = tuple(int(base_colour.lstrip("#")[k:k + 2], 16) for k in (0, 2, 4))
         else:
@@ -793,7 +798,7 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
         beside = (po[:-2, 1:-1] | po[2:, 1:-1] | po[1:-1, :-2] | po[1:-1, 2:]) & ~region & (gmap >= 0)
         white_beside = any(_hsv(a[y, x])[1] < 0.15 and _hsv(a[y, x])[2] > 0.92 for y, x in zip(*np.nonzero(beside)))
         shiny = (any(_hsv(c)[1] < 0.3 and _hsv(c)[2] > 0.9 for c in cols) or (ss < 0.3 and bright > 0.85)
-                 or white_beside)
+                 or white_beside) and not is_trim
         mat = Material("#%02x%02x%02x" % tuple(base), shades=8 if is_void else 6 if m.sum() > 40 * SS * SS else 5,
                        texture=texture * (0.45 if shiny else 0.2 if is_void else 1.0),
                        relief=0.0 if is_void else 1.0, gloss=0.6 if shiny and not is_void else 0.0,
@@ -817,10 +822,18 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
             rim = s._distance(m)
             near = np.clip(1 - rim / (SS * 2.5), 0, 1)
             lower = np.clip((t - 0.45) / 0.55, 0, 1)
-            light = 0.0 + 0.24 * t ** 1.6 + near * (0.22 * lower - 0.05 * (1 - lower))
+            light = 0.0 + 0.18 * t ** 1.6 + near * (0.16 * lower - 0.05 * (1 - lower))
             s.mask(m, mat, height=np.zeros_like(height), detail=light - 0.55)
         else:
             s.mask(m, mat, height=height + own, detail=detail)
+    # A trim is kept in its drawn colours, laid over the render: fur re-ramped turns from cream to a cold
+    # grey (its shadows turned away from yellow), where RD's cloaks shade it toward a warm taupe.
+    trim_groups = [i for i, (_, cols) in enumerate(groups) if trims & {tuple(c) for c in cols}]
+    if trim_groups:
+        kept = np.isin(gmap, trim_groups)
+        overlay = overlay.copy()
+        overlay[kept] = a[kept]
+        overlay[kept, 3] = 255
     s.overlay = overlay
     return s
 

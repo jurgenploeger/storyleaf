@@ -2704,11 +2704,35 @@ def hat_piece(c, item):
         c.shade(lambda x, y, col: col == mid and x < 10.5 and y < 19, light)
         c.line(8.6, 22, 6.4, 28.4, dark)                                     # folds over the shoulders
         c.line(23.4, 22, 25.6, 28.4, dark)
-        c.ellipse(16, 17.6, 6.8, 8, OUTLINE)                                 # the opening, in shadow
-        if kind in ("hood", "hide_hood", "snow_cloak"):
-            c.ring(16, 17.6, 8.6, 7, hexc("f4ecd8"))
-            for x in range(9, 24, 3):
-                c.set(x, 25.4, hexc("c8b890"))
+        fur_lined = kind in ("hood", "hide_hood", "snow_cloak")
+        # The opening, in shadow (smaller in a fur-lined hood, the fur taking its edge).
+        c.ellipse(16, 17.6, 5.6 if fur_lined else 6.8, 6.6 if fur_lined else 8, OUTLINE)
+        if fur_lined:
+            # A thick fur trim round the opening, as on the matching cloak's collar (its RD icon's own
+            # three furs: cream in the light, a pale beige, a taupe in shadow), its outer edge in tufts;
+            # a thin even ring read as a white border.
+            fur_dark, fur, fur_light = FUR
+            c.ring(16, 17.6, 9.2, 5.4, fur_light, ry_scale=1.18)
+            for k in range(9):
+                a = (k + 0.3) / 9 * 2 * math.pi
+                c.disc(16 + math.cos(a) * 9.1, 17.6 + math.sin(a) * 9.1 * 1.18, 1.3, fur_light)
+            def place(x, y):
+                dx, dy = x + 0.5 - 16, (y + 0.5 - 17.6) / 1.18
+                return dx, dy, math.hypot(dx, dy)
+            # Cream in the light, beige turning away from it, taupe in the crease along the opening's top
+            # and lower right.
+            c.shade(lambda x, y, col: col == fur_light and place(x, y)[0] + place(x, y)[1] > 2.5, fur)
+            c.shade(lambda x, y, col: col in (fur, fur_light) and place(x, y)[2] < 6.6
+                    and (place(x, y)[1] < -2.5 or place(x, y)[0] + place(x, y)[1] > 5), fur_dark)
+            c.shade(lambda x, y, col: col == fur and place(x, y)[0] + place(x, y)[1] > 9, fur_dark)
+            # Tufts: a scatter of the next shade down through each, as RD's fur is never one flat cream.
+            c.shade(lambda x, y, col: col == fur_light and (x * 7 + y * 13) % 11 in (0, 5), fur)
+            c.shade(lambda x, y, col: col == fur and (x * 5 + y * 3) % 13 == 0, fur_dark)
+
+
+# The fur on hide hoods and snow hoods, as RD drew it on the cloaks they go with.
+FUR = [hexc("998a7c"), hexc("d9ccb1"), hexc("f9f0d4")]
+
 
 # Every hat that goes with an armour.
 for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
@@ -3461,7 +3485,7 @@ def main(argv):
     from pixel_kit import restyle
     for item_id in ids:
         drawn = Image.open(io.BytesIO(render(item_id).png()))
-        options = {"preset": preset_for(item_id), "base": set_colour(item_id), **RESTYLE.get(item_id, {})}
+        options = {"preset": preset_for(item_id), "base": set_colour(item_id), "trim": FUR, **RESTYLE.get(item_id, {})}
         restyle(drawn, **options).render().save(SPRITES / f"item_{item_id}.png")
     # Items that are palette swaps of these (art/assets.json `derive`) are swapped on the flat drawing,
     # where their hue windows were tuned, and finished the same way: swapping the finished icon misses
