@@ -21,6 +21,8 @@ settings_dark | newgame,menu=settings,weather=clear,dark | 8
 meadowbrook_dark | newgame,dark                  | 8
 land_banner  | newgame,map=sunny_meadow,weather=clear,hour=12 | 1
 land_banner_land | newgame,map=sunny_meadow,landscape,weather=clear,hour=12 | 1
+desert_homes | newgame,level=60,map=genie_desert,weather=clear,hour=12 | 8
+glimmerbough | newgame,level=80,map=starfall_isle,weather=clear,hour=12 | 8
 battle_dark  | newgame,map=sunny_meadow,battle,dark | 15
 npc_dark     | newgame,npc=elder,dark            | 8
 battle_ru    | newgame,lang=ru,map=sunny_meadow,battle | 15

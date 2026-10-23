@@ -63,8 +63,9 @@ def heart(c, cx, cy, r, colors):
 
 
 def paw(c, cx, cy, colors):
-    c.ellipse(cx, cy + 3, 5, 4, colors[1])
-    for (dx, dy) in ((-5, -3), (-2, -6), (2, -6), (5, -3)):
+    # Toes well apart from each other and the pad: closer, the finish rounded them into one lump.
+    c.ellipse(cx, cy + 4, 4.4, 3.4, colors[1])
+    for (dx, dy) in ((-7, -1.6), (-3, -7.4), (3, -7.4), (7, -1.6)):
         c.disc(cx + dx, cy + dy, 1.8, colors[1])
     c.disc(cx - 1.5, cy + 2, 1.2, colors[2])
 
@@ -225,8 +226,10 @@ def draw_jelly_splash(c):
 
 
 def draw_bubble(c):
+    # Filled with the pale of the water, not rings alone (finished, thin rings read as a chain).
     for (x, y, r) in ((13, 18, 7), (23, 10, 4), (23, 22, 3), (7, 8, 2.5)):
-        c.ring(x, y, r, r - 1.3, JELLY[2])
+        c.disc(x, y, r, JELLY[2])
+        c.ring(x, y, r, r - 1.4, JELLY[1])
         c.disc(x - r * 0.4, y - r * 0.4, max(1, r * 0.22), WHITE)
 
 
@@ -346,15 +349,17 @@ def draw_guardianship(c):
 
 def draw_animal_training(c):
     paw(c, 12, 18, LEATHER)
-    c.poly([(24, 3), (30, 10), (26.5, 10), (26.5, 19), (21.5, 19), (21.5, 10), (18, 10)], GOLD[1])   # an arrow up
-    c.poly([(24, 3), (24, 19), (21.5, 19), (21.5, 10), (18, 10)], GOLD[2])
+    c.poly([(24, 3), (30, 10), (26.5, 10), (26.5, 19), (21.5, 19), (21.5, 10), (18, 10)], GOLD[0])   # an arrow up
+    c.poly([(24, 3), (24, 19), (21.5, 19), (21.5, 10), (18, 10)], GOLD[1])
     for y in (22, 25, 28):                                               # speed lines
         c.line(20, y, 28, y, WHITE)
 
 
 def draw_boost(c):
-    c.poly([(16, 2), (28, 14), (21.5, 14), (21.5, 28), (10.5, 28), (10.5, 14), (4, 14)], ORANGE[1])  # a big arrow up
-    c.poly([(16, 2), (16, 28), (10.5, 28), (10.5, 14), (4, 14)], ORANGE[2])
+    # Its halves in the orange and its shade: a pale half was the commonest colour, and the finish
+    # ramped the whole arrow from it, beige.
+    c.poly([(16, 2), (28, 14), (21.5, 14), (21.5, 28), (10.5, 28), (10.5, 14), (4, 14)], ORANGE[0])  # a big arrow up
+    c.poly([(16, 2), (16, 28), (10.5, 28), (10.5, 14), (4, 14)], ORANGE[1])
     c.line(16, 6, 16, 26, hexc("fff0c0"))
     for (x, y) in ((5, 22), (27, 21), (26, 26)):
         star_shape(c, x, y, 2.6, WHITE, inner=0.35)                     # sparks
@@ -452,8 +457,14 @@ def main(argv):
         sheet_path = argv[index + 1]
         argv = argv[:index] + argv[index + 2:]
     ids = argv or sorted(SKILLS)
+    # Each design is finished in the game's pixel style (docs/pixel-style.md) by tools/pixel_kit.py, as
+    # the item icons are: lit, ramped, textured and outlined afresh, its glows kept as drawn.
+    import io
+    from PIL import Image
+    from pixel_kit import restyle
     for skill_id in ids:
-        (SPRITES / f"skill_{skill_id}.png").write_bytes(render(skill_id).png())
+        drawn = Image.open(io.BytesIO(render(skill_id).png()))
+        restyle(drawn, round_corners=0.3).render().save(SPRITES / f"skill_{skill_id}.png")
     print(f"wrote {len(ids)} skill icons to art/sprites/")
     if sheet_path:
         columns, scale, pad = 7, 4, 6

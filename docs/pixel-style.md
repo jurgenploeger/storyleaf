@@ -231,6 +231,11 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 - **Done 2026-10-23:** material presets; the three loose criteria tightened (`shades_per_ramp`,
   `hue_shift`, `light_top_left`, measured afresh: see *Learned*); `jaggies` added, `pillow` and `checker`
   reported; the kit tuned on RD's armour (above); whips redrawn hanging, as held.
+- **Skill and UI icons (2026-10-23):** finished by the kit as the items are. Skills pass 34 of 41 (none
+  did as drawn), UI icons 17 of 20 (2 did); three UI icons stay flat (`ui_icon_art.KEEP_FLAT`), as the
+  finish ran their small parts together at button size.
+- **Buildings (2026-10-23):** 20 drawn by `tools/building_art.py` (homes, shops, and buildings for the
+  deserts, the steppe and Starfall Isle), all passing the building bands.
 - **Scenery (2026-10-23):** the 21 trees and bushes that were palette swaps of RD's `tree` and
   `berry_bush` are drawn in code by `tools/scenery_art.py`, a species each; all 21 pass the scenery
   criteria. Lit from lower down than the icons (`Sprite.light`), edges darkened only where they turn
@@ -250,6 +255,11 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   5. Animation: walk cycles stay RD's for now (`sprite-acceptance.md`).
 
 ## Learned
+
+- **2026-10-23 (icons):** A design's halves in a colour's mid and light leave the light the commonest, and
+  the finish ramps the whole shape from it: an orange arrow came out beige. Draw in the mid and the
+  shadow; the finish brings the light. Small parts closer than about three pixels (a paw's toes, three
+  dots) run together once rounded and outlined: space them, or keep the drawing flat.
 
 - **2026-10-23 (buildings):** Pale plaster on a ramp turns cold grey (its shadows turned away from yellow),
   as fur did: a wall's colour is drawn a little deeper and warmer (`#ead2a8`, not `#efe4d0`) so its middle
