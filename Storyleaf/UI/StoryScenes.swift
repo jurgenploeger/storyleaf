@@ -1183,7 +1183,7 @@ final class StoryScene: SKScene {
             tile.strokeColor = UIColor(white: 1, alpha: 0.75)
             tile.lineWidth = 1.5
             let texture = SKTexture(image: image)
-            texture.filteringMode = .nearest
+            texture.filteringMode = image.size.width > 64 ? .linear : .nearest
             tile.addChild(SKSpriteNode(texture: texture, size: CGSize(width: side * 0.84, height: side * 0.84)))
             let gap: CGFloat = 4
             let total = side + gap + label.frame.width

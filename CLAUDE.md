@@ -86,8 +86,10 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `tools/weapon_art.py`: weapons from Retro Diffusion: a picked 64-pixel drawing (`PICKED`, from `art-variants/`)
   shrunk to the icon and the held sprite at the drawn weapons' size, outlined afresh; `item_art.py` leaves those
   alone. `tools/gear_preview.py --weapons out.png <ids>` shows weapons in hand on every body, direction and armour.
-- `tools/skill_art.py`: every skill's icon (`art/sprites/skill_<id>.png`), designed in code and finished by
-  `pixel_kit.restyle` as the items are (gentler rounding, so a paw's toes stay apart).
+- `tools/skill_art.py`: every skill's icon (`art/sprites/skill_<id>.png`), drawn as light, not pixel art: the
+  glows, flares, sparks and trails of its battle animation in its colours (`LIGHTS`, `ElementLight`'s), on a dark
+  backdrop of its tile's colour, at 128 pixels. The game shows art over 64 pixels smoothed (`IconTile`,
+  `BattleScene.skillTile`). A new skill needs a `draw_<id>`; `--sheet out.png` previews them on their tiles.
 - `tools/armour_art.py`: the same for every armour's icon, from one picked RD drawing per shape (`PICKED`, `rda_<shape>`),
   coloured as it's worn: the sheets' `MATERIAL` and the item's `tint` (a hide cloak its hood's), so icon and hero match.
 - `tools/prop_art.py`: the same for the few props a generated sprite got wrong (`candy_cane`, whose hook came out

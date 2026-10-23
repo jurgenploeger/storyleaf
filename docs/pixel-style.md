@@ -251,9 +251,12 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 - **Done 2026-10-23:** material presets; the three loose criteria tightened (`shades_per_ramp`,
   `hue_shift`, `light_top_left`, measured afresh: see *Learned*); `jaggies` added, `pillow` and `checker`
   reported; the kit tuned on RD's armour (above); whips redrawn hanging, as held.
-- **Skill and UI icons (2026-10-23):** finished by the kit as the items are. Skills pass 34 of 41 (none
-  did as drawn), UI icons 17 of 20 (2 did); three UI icons stay flat (`ui_icon_art.KEEP_FLAT`), as the
-  finish ran their small parts together at button size.
+- **UI icons (2026-10-23):** finished by the kit as the items are: 17 of 20 pass (2 did as drawn); three
+  stay flat (`ui_icon_art.KEEP_FLAT`), as the finish ran their small parts together at button size.
+- **Skill icons (2026-10-23): not pixel art.** Finished by the kit they passed 34 of 41, but read as
+  objects, not as the spells they cast (playtesting: "more like their animations, with flares and
+  glows"). `tools/skill_art.py` now draws each as light (glows, flares, sparks, trails in its element's
+  colours) on a dark backdrop at 128 pixels, shown smoothed; these criteria don't apply to them.
 - **Buildings (2026-10-23):** 20 drawn by `tools/building_art.py` (homes, shops, and buildings for the
   deserts, the steppe and Starfall Isle), all passing the building bands.
 - **Scenery (2026-10-23):** the 21 trees and bushes that were palette swaps of RD's `tree` and

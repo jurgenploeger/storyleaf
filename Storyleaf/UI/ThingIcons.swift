@@ -20,8 +20,9 @@ struct IconTile: View {
             }
             .overlay {
                 if let picture {
+                    // Pixel art stays crisp; the skills' icons, drawn as light at 128 pixels, smooth.
                     Image(uiImage: picture)
-                        .interpolation(.none)
+                        .interpolation(picture.size.width > 64 ? .high : .none)
                         .resizable()
                         .scaledToFit()
                         .frame(width: size * 0.84, height: size * 0.84)

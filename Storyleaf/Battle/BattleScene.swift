@@ -1026,7 +1026,7 @@ final class BattleScene: SKScene {
         tile.strokeColor = UIColor(white: 1, alpha: 0.75)
         tile.lineWidth = 1.5
         let texture = SKTexture(image: image)
-        texture.filteringMode = .nearest
+        texture.filteringMode = image.size.width > 64 ? .linear : .nearest
         let picture = SKSpriteNode(texture: texture, size: CGSize(width: size * 0.84, height: size * 0.84))
         tile.addChild(picture)
         return tile

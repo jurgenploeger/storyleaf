@@ -717,7 +717,9 @@ struct MinimapIcon: View {
         case .chest: Color(red: 0.74, green: 0.47, blue: 0.2)
         case .boss: Color(red: 0.62, green: 0.1, blue: 0.16)
         case .stairsDown, .stairsUp: Color(red: 0.42, green: 0.42, blue: 0.5)
-        case .waystone: Color(red: 0.36, green: 0.6, blue: 0.9)
+        // A portal's own bright cyan: in the quest givers' blue it read as one of them (playtesting
+        // 2026-10-23).
+        case .waystone: Color(red: 0.05, green: 0.8, blue: 0.95)
         }
     }
 }
