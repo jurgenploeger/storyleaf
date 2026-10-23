@@ -263,11 +263,12 @@ final class LandPlanner {
         }
     }
 
-    /// Whether, with `walls` blocked too, you can still walk as far out from beside `cell` as without
-    /// them (up to 400 cells; a boss near its land's edge walks on into the next land, so its own land
-    /// may hold fewer): a lair mustn't shut its boss in.
+    /// Whether, with `walls` blocked too, you can still walk to everything you could without them but
+    /// the walls' own cells (up to 400 cells; a boss near its land's edge walks on into the next land,
+    /// so its own land may hold fewer): a lair mustn't shut its boss in.
     private func leavesRoom(around cell: GridPoint, walls: Set<GridPoint>) -> Bool {
-        reach(from: cell, walls: walls) >= reach(from: cell, walls: [])
+        let without = reach(from: cell, walls: [])
+        return without >= 400 ? reach(from: cell, walls: walls) >= 400 : reach(from: cell, walls: walls) + walls.count >= without
     }
 
     /// How many cells (up to 400) you can walk to from beside `cell`, `walls` blocked too.

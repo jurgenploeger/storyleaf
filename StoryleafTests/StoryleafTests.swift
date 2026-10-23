@@ -3934,7 +3934,8 @@ struct LandPlanTests {
                 // A cave's chamber leaves less room than open ground, and a summit's top less again.
                 let least = min(npc.summit == nil ? 4 : 2, npc.lair?.count ?? 0)
                 #expect(near.count >= least, "\(npc.id): only \(near.count) of its lair's \(npc.lair?.count ?? 0) pieces set down")
-                // Never walled in: as far to walk from beside it as with its lair's pieces walked through
+                // Never walled in: as far to walk from beside it as with its lair's pieces walked through,
+                // but for the cells they stand on
                 // (a boss near its land's edge walks on into the next land, so its own may hold fewer).
                 let walls = Set(near.map(\.cell)).filter { !map.isWalkable($0) }
                 func reach(_ walkable: (GridPoint) -> Bool) -> Int {
@@ -3950,7 +3951,8 @@ struct LandPlanTests {
                     return min(400, reached.count)
                 }
                 let with = reach { map.isWalkable($0) }, without = reach { map.isWalkable($0) || walls.contains($0) }
-                #expect(with >= without, "\(npc.id) is walled in by its lair (\(with) cells round it, \(without) without it)")
+                // What it blocks may cost only its own cells, never cut off any beyond them.
+                #expect(with + walls.count >= without, "\(npc.id) is walled in by its lair (\(with) cells round it, \(without) without it, \(walls.count) of them its own)")
             }
         }
     }
