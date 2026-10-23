@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "round fluffy puff made of the night sky, deep purple and blue with swirling nebula clouds and tiny twinkling stars inside, sleepy eyes, chibi, cute monster",
+    "prompt_style": "rd_plus__low_res",
+    "width": 40,
+    "height": 40,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792757550,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 15.911,
+    "request_id": "c4aa9f6c-9dad-4c9b-88b5-c611a72826b9",
+    "outputs_retained_until": 1792843938
+  }
+}

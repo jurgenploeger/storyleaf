@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "stocky golem made of smooth lavender dreamstone blocks with veins of gold ore, sleepy glowing eyes, a little pickaxe, chibi, cute monster",
+    "prompt_style": "rd_plus__low_res",
+    "width": 40,
+    "height": 40,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792757523,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 16.271,
+    "request_id": "cb89dd40-3988-40f7-bfae-73486a73bc44",
+    "outputs_retained_until": 1792843904
+  }
+}

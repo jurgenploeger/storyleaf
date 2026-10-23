@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "round aqua water jelly blob wearing a small golden temple circlet with a blue gem, shimmering droplets, serene eyes, chibi, cute monster",
+    "prompt_style": "rd_plus__low_res",
+    "width": 40,
+    "height": 40,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792757586,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 15.731,
+    "request_id": "8b58315a-5b43-46fd-9cb1-0ffaf2d01569",
+    "outputs_retained_until": 1792843951
+  }
+}

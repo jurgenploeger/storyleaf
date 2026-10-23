@@ -161,6 +161,9 @@ depths_glimmer_map | newgame,level=162,map=glimmerdeep_depths,from=glimmerdeep,w
 depths_ladder      | newgame,level=162,map=glimmerdeep_depths,from=glimmerdeep_heart | 8
 depths_heart       | newgame,level=165,map=glimmerdeep_heart,from=glimmerdeep_depths | 8
 depths_battle      | newgame,level=162,class=fighter,map=glimmerdeep_depths,from=glimmerdeep,battle=4 | 15
+pet_late_a | newgame,level=150,map=starfall_isle,pet=nebula_puff,weather=clear,hour=12 | 8
+pet_late_b | newgame,level=150,map=rosen_lake,pet=frost_bear,weather=clear,hour=12 | 8
+pet_late_c | newgame,level=150,map=glimmerdeep,pet=crystal_widow | 8
 # Its whole map once Pip's A Map of the Deep is done (playtesting 2026-10-19), and Pip offering it.
 depths_charted     | newgame,level=162,map=glimmerdeep_depths,from=glimmerdeep,done=the_fallen_star+glimmerdeep_crabs+a_map_of_the_deep,worldmap | 12
 quest_pip_map      | newgame,level=152,map=starfall_isle,at=-5_-3,npc=pip_lamplighter,done=lanterns_of_glimmerbough+sleeping_moonflowers+the_crystal_garden+a_lantern_for_lune+the_fallen_star+glimmerdeep_crabs,weather=clear,hour=12 | 8

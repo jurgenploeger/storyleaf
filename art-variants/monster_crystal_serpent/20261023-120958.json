@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "long slender serpent made of clear living glass with faint rainbow light shining through its body, glowing white eyes, chibi, cute monster",
+    "prompt_style": "rd_plus__low_res",
+    "width": 40,
+    "height": 40,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792757395,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 16.991,
+    "request_id": "be4e88ab-e27b-4aad-8a68-90866d855dff",
+    "outputs_retained_until": 1792843751
+  }
+}
