@@ -1,6 +1,11 @@
 # Builds the app for the iOS Simulator, launches it once per scene in tools/screenshots.txt and
 # saves the screenshots to the `screenshots` branch under <branch>/, so they can be viewed from a
 # phone (or fetched by a Claude cloud session, which can't run Xcode).
+#
+# macOS runners are free on a public repository, but a private one gets 2,000 minutes a month on
+# GitHub Free and a macOS minute counts as ten: 200 real minutes, about one test run and a few
+# scenes. So on a private repository pushes run nothing, and a run by hand does only what it's
+# asked: the tests or the screenshots (`run`), and only the scenes it names.
 name: Screenshots
 
 on:
@@ -9,8 +14,14 @@ on:
     paths: ["Storyleaf/**", "StoryleafTests/**", "content/**", "art/**", "project.yml", "tools/screenshots.*", ".github/workflows/screenshots.yml"]
   workflow_dispatch:
     inputs:
+      run:
+        description: "What to run: the tests, the screenshots or both."
+        required: false
+        type: choice
+        options: [both, tests, screenshots]
+        default: both
       scenes:
-        description: "Only these scenes (comma-separated names from tools/screenshots.txt). Empty = all."
+        description: "Only these scenes (comma-separated names from tools/screenshots.txt). Empty = all, on a public repository only."
         required: false
         default: ""
       tests:
@@ -33,6 +44,7 @@ jobs:
   # The unit tests (StoryleafTests) on a simulator, alongside the screenshots: their own check,
   # red or green in a few minutes.
   tests:
+    if: (github.event_name == 'push' && !github.event.repository.private) || (github.event_name == 'workflow_dispatch' && inputs.run != 'screenshots')
     runs-on: macos-26
     # The suite builds every map several times in a debug build: 23 minutes on 2026-10-12, over
     # 30 with the continent's tests, 38 before the coasts (2026-10-13) and past 42 after, so 45
@@ -96,6 +108,10 @@ jobs:
           tail -15 build/tests.log || true
 
   screenshots:
+    # On a private repository, a run by hand must name its scenes: all of them is hours of macOS time.
+    if: >-
+      (github.event_name == 'push' && !github.event.repository.private) ||
+      (github.event_name == 'workflow_dispatch' && inputs.run != 'tests' && (inputs.scenes != '' || !github.event.repository.private))
     runs-on: macos-26
     # A full run of about 130 scenes (two of them filmed) takes two and a half hours at most, a
     # minute or so a scene; this leaves room. At 130 minutes, full runs were cut off before they
@@ -149,37 +165,15 @@ jobs:
           done
           ls -l shots | grep -E 'mp4' || true
 
+      # Also on the branch below: kept a day only, as artifacts count against a private repository's storage.
       - uses: actions/upload-artifact@v4
         with:
           name: screenshots
           path: shots
+          retention-days: 1
 
       - name: Publish to the screenshots branch
-        env:
-          BRANCH: ${{ github.ref_name }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # Only its latest commit: the branch's whole history of pictures is gigabytes, and fetching it
-          # all held this step up for half an hour. The retries below fetch just what's new since.
-          git fetch --depth 1 origin screenshots || true
-          git worktree add -B screenshots ../pub origin/screenshots 2>/dev/null \
-            || { git worktree add --detach ../pub && cd ../pub && git checkout --orphan screenshots && git rm -rfq . && cd -; }
-          mkdir -p "../pub/$BRANCH"
-          cp shots/*.png "../pub/$BRANCH/"
-          cp shots/*.mp4 shots/*.mp4.part-* "../pub/$BRANCH/" 2>/dev/null || true
-          echo "${GITHUB_SHA}" > "../pub/$BRANCH/COMMIT"
-          cd ../pub
-          git add -A
-          git commit -qm "Screenshots of $BRANCH at ${GITHUB_SHA::7}" || exit 0
-          # Other branches publish at the same time; each writes only its own folder, so catch up
-          # and try again.
-          for attempt in 1 2 3 4 5; do
-            git push -q origin screenshots && exit 0
-            sleep $((attempt * 3))
-            git fetch -q origin screenshots && git rebase -q origin/screenshots
-          done
-          exit 1
+        run: tools/publish_shots.sh "${{ github.ref_name }}" "${GITHUB_SHA}" shots
 
       - name: Summary
         env:

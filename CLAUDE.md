@@ -159,5 +159,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   shoots the scenes in `tools/screenshots.txt` (STORYLEAF_DEBUG flags); a scene that crashes the app prints
   its crash report in the log. Results
   land on the `screenshots` branch under `<branch>/`: `git fetch origin screenshots` and read the PNGs.
+  While the repo is public that's free; once it's private, macOS minutes count ten times against 2,000 a
+  month, so pushes run nothing: run it by hand (`workflow_dispatch`) with `run` (tests, screenshots or
+  both) and the `scenes` you need, as few as will do.
 - On a Mac: `make open` or `make sim`; tests with `xcodebuild test` (see README). Tests and debug launches use
   separate save files, so they never touch the player's save.
