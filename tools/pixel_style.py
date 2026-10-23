@@ -10,7 +10,7 @@ the look RD gave us, and the bands can be re-run as the reference grows.
     python3 tools/pixel_style.py calibrate                 # measure the reference, write the bands
     python3 tools/pixel_style.py check <png>...            # score sprites (exit 1 if any fails)
     python3 tools/pixel_style.py compare                   # RD's icons, ours, and the flat designs
-    python3 tools/pixel_style.py check --kind icon <png>   # pick the band set (icon, creature, scenery)
+    python3 tools/pixel_style.py check --kind icon <png>   # pick the band set (icon, creature, scenery, building)
 
 Needs pillow + numpy.
 """
@@ -37,9 +37,10 @@ CODE_PROPS = {"candy_cane", "ship", "cave_ladder", "cave_rope", "waystone"}
 def reference():
     """{kind: [png paths]}: every shipped sprite RD drew. Icons are the 32 × 32 item icons tools/weapon_art.py
     and tools/armour_art.py made from picked RD drawings; creatures the monsters; scenery props, buildings
-    and tiles."""
+    and tiles; buildings also on their own (a 96-pixel house holds fewer colours to its size than a bush,
+    so RD's own failed a third of the scenery bands)."""
     assets = json.loads((ROOT / "art" / "assets.json").read_text())["assets"]
-    out = {"icon": [], "creature": [], "scenery": []}
+    out = {"icon": [], "creature": [], "scenery": [], "building": []}
     for a in assets:
         if "request" not in a or "derive" in a or a["id"] in CODE_PROPS or a["id"].startswith("crystal"):
             continue
@@ -50,6 +51,8 @@ def reference():
             out["creature"].append(path)
         elif a["kind"] in ("prop", "building", "tile"):
             out["scenery"].append(path)
+            if a["kind"] == "building":
+                out["building"].append(path)
     out["icon"] = [SPRITES / f"item_{i}.png" for i in sorted(rd_items()) if (SPRITES / f"item_{i}.png").exists()]
     return out
 
@@ -287,6 +290,8 @@ ENFORCED = {
 # separates RD's art from the flat designs or ours, so they describe, they don't judge.
 # Partial transparency is soft: only a light effect (a magic staff's glow) may use it.
 HARD = {"colour_density", "flat", "outline_dark", "fill"}
+# Buildings: a broken, tinted outline is how RD draws them (a lit roof edge has none), so it's soft there.
+HARD_BY_KIND = {"building": {"colour_density", "flat"}}
 SOFT_PASS = 0.8
 # Icons fill most of their tile (fixed rules, not measured bands).
 ICON_RULES = {"fill": ("min", 0.78)}
@@ -343,10 +348,11 @@ def judge(m, kind):
     return out
 
 
-def verdict(j):
+def verdict(j, kind=None):
     """(passes, soft score): every hard criterion, and SOFT_PASS of the soft ones."""
-    hard = all(ok for n, *_, ok in j if n in HARD)
-    soft = [ok for n, *_, ok in j if n not in HARD]
+    hard_set = HARD_BY_KIND.get(kind, HARD)
+    hard = all(ok for n, *_, ok in j if n in hard_set)
+    soft = [ok for n, *_, ok in j if n not in hard_set]
     s = sum(soft) / len(soft) if soft else 1.0
     return hard and s >= SOFT_PASS, s
 
@@ -359,7 +365,7 @@ def score(paths, kind):
         if not m:
             continue
         j = judge(m, kind)
-        ok, s = verdict(j)
+        ok, s = verdict(j, kind)
         res[str(p)] = (ok, s, [(n, round(v, 3), b) for n, v, b, good in j if not good])
     return res
 
@@ -421,10 +427,10 @@ def main(argv):
                 bad += 1
                 continue
             j = judge(m, kind)
-            ok, s = verdict(j)
+            ok, s = verdict(j, kind)
             print(f"{p}: {'PASS' if ok else 'FAIL'} (soft {s:.0%}, needs {SOFT_PASS:.0%} and every hard one)")
             for n, v, b, good in j:
-                print(f"   {'✓' if good else '✗'} {n:16} {v:8.3f}   {b}{'   hard' if n in HARD else ''}")
+                print(f"   {'✓' if good else '✗'} {n:16} {v:8.3f}   {b}{'   hard' if n in HARD_BY_KIND.get(kind, HARD) else ''}")
             bad += not ok
         return 1 if bad else 0
     print(__doc__)

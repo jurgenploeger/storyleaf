@@ -2222,6 +2222,54 @@
       }
     },
     {
+      "id": "thatched_cottage",
+      "kind": "building"
+    },
+    {
+      "id": "timber_house",
+      "kind": "building"
+    },
+    {
+      "id": "stone_townhouse",
+      "kind": "building"
+    },
+    {
+      "id": "round_cottage",
+      "kind": "building"
+    },
+    {
+      "id": "teapot_house",
+      "kind": "building"
+    },
+    {
+      "id": "garden_cottage",
+      "kind": "building"
+    },
+    {
+      "id": "weapon_shop",
+      "kind": "building"
+    },
+    {
+      "id": "armour_shop",
+      "kind": "building"
+    },
+    {
+      "id": "tailor_shop",
+      "kind": "building"
+    },
+    {
+      "id": "flower_shop",
+      "kind": "building"
+    },
+    {
+      "id": "tea_house",
+      "kind": "building"
+    },
+    {
+      "id": "book_shop",
+      "kind": "building"
+    },
+    {
       "id": "forest_lodge",
       "kind": "building",
       "request": {

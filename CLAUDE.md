@@ -100,6 +100,13 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   gnarled dark tree, an autumn oak, a maple, a birch, a frosted bare tree, a willow, a jacaranda, candy trees,
   and ten bushes (a fir sapling, a tumbleweed, a bramble...). Each writes its own PNG, which wins over the
   asset's `derive`; its `big_` twin, derived from it, follows. `--sheet out.png` previews them.
+- `tools/building_art.py`: town houses and shops drawn in code with `pixel_kit`, so the towns don't build only
+  with RD's few buildings and their recolours: a thatched and a timber-framed cottage, a stone townhouse, a
+  round cottage, a teapot house, a garden cottage, and weapon, armour, tailor, flower, tea and book shops. Walls
+  and roofs are surfaces with a building material's pattern at the sprite's pixels (stone blocks, plaster,
+  planks, clay tiles, thatch, slate); each is drawn in a 96-pixel frame's coordinates and scaled about its
+  foot to fill it as RD's do (`fit`). Registered in art/assets.json with no `request`, placed by maps.json's
+  town `lots`; scored with `pixel_style.py check --kind building`. `--sheet out.png` previews them.
 - `tools/crystal_art.py`: the Glimmerdeep's crystal scenery from the caves' own rock (its walls, floor, spires and
   geodes): each pixel's brightness laid on a ramp of crystal colours, as a `derive` can't tint the grey tiles.
   Rerun it after editing a ramp; `--sheet out.png` previews them.

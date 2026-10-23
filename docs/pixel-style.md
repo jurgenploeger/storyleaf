@@ -161,6 +161,13 @@ first texture passed as salt-and-pepper noise, which is what added `cluster_size
 When the eye catches something the numbers passed, write it down under *Learned* below and add or tighten
 a criterion so it can't pass again. That is how the criteria get stricter.
 
+### Buildings
+
+RD's buildings have a band set of their own (`--kind building`, the 29 RD drew): a 96-pixel house holds
+fewer colours to its size than a bush, and a third of RD's own failed the general scenery bands. Their
+outline is soft, not hard: RD draws buildings with a broken, tinted outline that a lit roof edge goes
+without. 2026-10-23: RD's buildings pass their own bands 79% (23 / 29).
+
 ## Restyle: how every item icon is finished
 
 `tools/item_art.py` designs each item in flat three-tone fills (shapes, colours, details) and
@@ -243,6 +250,11 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   5. Animation: walk cycles stay RD's for now (`sprite-acceptance.md`).
 
 ## Learned
+
+- **2026-10-23 (buildings):** Pale plaster on a ramp turns cold grey (its shadows turned away from yellow),
+  as fur did: a wall's colour is drawn a little deeper and warmer (`#ead2a8`, not `#efe4d0`) so its middle
+  stays cream. Drawn at a guessed size, the houses filled half their frame beside RD's; each is now scaled
+  to fill it, its materials' patterns kept at the sprite's own pixels.
 
 - **2026-10-23 (scenery):** A crown of leaf clusters placed at random came out lopsided; on a jittered grid
   it's full and even. Big clusters on a 32-pixel bush read as a smooth lump: RD's bushes are leafy, so
