@@ -2845,11 +2845,22 @@ struct RulesTests {
         let boss = try #require(content.quests.first { quest in
             quest.difficulty == nil && quest.objective.type == .defeat && quest.objective.target.flatMap(content.monster)?.boss == true
         })
-        #expect(session.difficulty(of: boss) == .hard)
+        #expect(session.baseDifficulty(of: boss) == .hard)
         let errand = try #require(content.quests.first { $0.objective.type == .deliver && $0.difficulty == nil })
         #expect(session.difficulty(of: errand) == .easy)
         // Every rank is used somewhere.
-        #expect(Set(content.quests.map(session.difficulty(of:))) == Set(QuestDifficulty.allCases))
+        #expect(Set(content.quests.map(session.baseDifficulty(of:))) == Set(QuestDifficulty.allCases))
+
+        // For the hero now: the boss at its own level is as hard as it is, far above the hero
+        // harder, and far below the hero easy (playtesting 2026-10-23).
+        let bossLevel = try #require(session.level(of: boss))
+        session.data.hero.level = bossLevel
+        #expect(session.difficulty(of: boss) == .hard)
+        session.data.hero.level = max(1, bossLevel - 25)
+        #expect(session.difficulty(of: boss) == .elite)
+        session.data.hero.level = bossLevel + 25
+        #expect(session.difficulty(of: boss) == .easy)
+        #expect(session.difficulty(of: errand) == .easy)
     }
 
     @Test func waystonesWakeByTheirQuestAndJoinTheTravelList() throws {

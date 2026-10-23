@@ -414,7 +414,7 @@ nonisolated struct QuestDef: Decodable, Identifiable, Sendable {
     /// What its monsters drop while it's on (`Drop`).
     let drops: [Drop]?
     /// How hard it is, 1 to 4 (`QuestDifficulty`), when it's harder than its objective makes it
-    /// look; unset, `GameSession.difficulty(of:)` works it out.
+    /// look; unset, `GameSession.baseDifficulty(of:)` works it out.
     let difficulty: Int?
 }
 
@@ -1509,4 +1509,7 @@ final class Content {
     /// The level a monster's card is worth (`RewardsDef.Cards`): the middle of the gentlest band
     /// of levels it lives in, or a boss's own level; 1 for one that lives nowhere.
     func cardLevel(_ monsterID: String) -> Int { max(1, loaded.cardLevels[monsterID] ?? 1) }
+
+    /// The same level, or nil for a monster that lives nowhere.
+    func habitatLevel(_ monsterID: String) -> Int? { loaded.cardLevels[monsterID] }
 }

@@ -2,7 +2,7 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
-      "version": "0.7.68",
+      "version": "0.7.69",
       "date": "2026-10-23",
       "title": "Waystones and favours",
       "notes": [
