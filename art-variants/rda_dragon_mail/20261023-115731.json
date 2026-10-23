@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "red dragon scale armour, overlapping crimson scales, gold trim at the collar and shoulders, game item, laid out flat, front view, centered",
+    "prompt_style": "rd_plus__topdown_item",
+    "width": 64,
+    "height": 64,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792756649,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 18.251,
+    "request_id": "e1b2f2f4-16fb-4ab4-b356-51f366eeb0ad",
+    "outputs_retained_until": 1792843013
+  }
+}

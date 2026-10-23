@@ -2670,7 +2670,7 @@ def hat_piece(c, item):
         c.shade(lambda x, y, col: col == mid and x > 20, dark)
         c.shade(lambda x, y, col: col == mid and x < 11 and y < 18, light)
         c.ellipse(16, 18, 7, 8, OUTLINE)          # the opening, in shadow
-        if kind == "hood" or kind == "snow_cloak":
+        if kind in ("hood", "hide_hood", "snow_cloak"):
             c.ring(16, 18, 9, 7, hexc("f4ecd8"))
             for x in range(8, 25, 3):
                 c.set(x, 26, hexc("c8b890"))
@@ -3347,6 +3347,10 @@ def main(argv):
     # Weapons drawn by Retro Diffusion instead (tools/weapon_art.py PICKED) are made there.
     from weapon_art import PICKED
     ids = [i for i in ids if i not in PICKED]
+    # So is armour (tools/armour_art.py).
+    from armour_art import plan
+    armour = plan()
+    ids = [i for i in ids if i not in armour]
     for item_id in ids:
         (SPRITES / f"item_{item_id}.png").write_bytes(render(item_id).png())
         if item_id in weapons:

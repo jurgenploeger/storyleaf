@@ -8545,111 +8545,70 @@
       "id": "skill_evil_eye",
       "kind": "icon"
     },
-    {
+{
       "id": "item_crimson_ranger_cloak",
       "kind": "item",
-      "derive": {
-        "from": "item_ranger_cloak",
-        "recolor": [
-          {
-            "hue": [
-              70,
-              170
-            ],
-            "minSaturation": 0.2,
-            "to": 358
-          }
-        ]
+      "request": {
+        "prompt": "crimson ranger cloak, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "item_golden_plate",
       "kind": "item",
-      "derive": {
-        "from": "item_iron_plate",
-        "recolor": [
-          {
-            "hue": [
-              170,
-              250
-            ],
-            "minSaturation": 0.05,
-            "to": 44,
-            "saturation": 2.6,
-            "value": 1.05
-          }
-        ]
+      "request": {
+        "prompt": "golden plate, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "item_golden_dragon_mail",
       "kind": "item",
-      "derive": {
-        "from": "item_dragon_mail",
-        "recolor": [
-          {
-            "hue": [
-              335,
-              20
-            ],
-            "minSaturation": 0.55,
-            "to": 44,
-            "value": 1.1
-          }
-        ]
+      "request": {
+        "prompt": "golden dragon mail, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "item_azure_dragon_mail",
       "kind": "item",
-      "derive": {
-        "from": "item_dragon_mail",
-        "recolor": [
-          {
-            "hue": [
-              335,
-              20
-            ],
-            "minSaturation": 0.55,
-            "to": 212
-          }
-        ]
+      "request": {
+        "prompt": "azure dragon mail, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "item_rose_snow_cloak",
       "kind": "item",
-      "derive": {
-        "from": "item_snow_cloak",
-        "recolor": [
-          {
-            "hue": [
-              180,
-              250
-            ],
-            "minSaturation": 0.1,
-            "to": 335
-          }
-        ]
+      "request": {
+        "prompt": "rose snow cloak, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "item_shadow_snow_cloak",
       "kind": "item",
-      "derive": {
-        "from": "item_snow_cloak",
-        "recolor": [
-          {
-            "hue": [
-              180,
-              250
-            ],
-            "minSaturation": 0.1,
-            "to": 250,
-            "saturation": 0.5,
-            "value": 0.45
-          }
-        ]
+      "request": {
+        "prompt": "shadow snow cloak, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
     {
@@ -8720,59 +8679,37 @@
         ]
       }
     },
-    {
+{
       "id": "item_gilded_chain_mail",
       "kind": "item",
-      "derive": {
-        "from": "item_chain_mail",
-        "recolor": [
-          {
-            "hue": [
-              190,
-              235
-            ],
-            "minSaturation": 0.05,
-            "to": 45,
-            "saturation": 3.0
-          }
-        ]
+      "request": {
+        "prompt": "gilded chain mail, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "item_dawn_silk_robe",
       "kind": "item",
-      "derive": {
-        "from": "item_silk_robe",
-        "recolor": [
-          {
-            "hue": [
-              255,
-              295
-            ],
-            "minSaturation": 0.08,
-            "minValue": 0.45,
-            "to": 22
-          }
-        ]
+      "request": {
+        "prompt": "dawn silk robe, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "item_moonlight_mage_robe",
       "kind": "item",
-      "derive": {
-        "from": "item_mage_robe",
-        "recolor": [
-          {
-            "hue": [
-              205,
-              240
-            ],
-            "minValue": 0.3,
-            "to": 275,
-            "saturation": 0.45,
-            "value": 1.2
-          }
-        ]
+      "request": {
+        "prompt": "moonlight mage robe, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
     {
@@ -9392,73 +9329,37 @@
         ]
       }
     },
-    {
+{
       "id": "item_howlmaster_mantle",
       "kind": "item",
-      "derive": {
-        "from": "item_ranger_cloak",
-        "recolor": [
-          {
-            "hue": [
-              90,
-              135
-            ],
-            "minSaturation": 0.2,
-            "to": 220,
-            "spread": 0.3,
-            "saturation": 0.25,
-            "value": 1.05
-          }
-        ]
+      "request": {
+        "prompt": "howlmaster's mantle, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "item_puppeteers_coat",
       "kind": "item",
-      "derive": {
-        "from": "item_tamer_jacket",
-        "recolor": [
-          {
-            "hue": [
-              10,
-              40
-            ],
-            "minSaturation": 0.2,
-            "to": 300,
-            "spread": 0.5,
-            "saturation": 0.85,
-            "value": 0.95
-          }
-        ]
+      "request": {
+        "prompt": "puppeteer's coat, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "item_briar_rose_robe",
       "kind": "item",
-      "derive": {
-        "from": "item_mage_robe",
-        "recolor": [
-          {
-            "hue": [
-              205,
-              240
-            ],
-            "minSaturation": 0.2,
-            "to": 340,
-            "spread": 0.5,
-            "saturation": 0.8,
-            "value": 1.15
-          },
-          {
-            "hue": [
-              25,
-              55
-            ],
-            "minSaturation": 0.2,
-            "to": 110,
-            "saturation": 0.8
-          }
-        ]
+      "request": {
+        "prompt": "briar rose robe, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
     {
@@ -9481,82 +9382,48 @@
         ]
       }
     },
-    {
+{
       "id": "item_oxhide_mail",
       "kind": "item",
-      "derive": {
-        "from": "item_iron_plate",
-        "recolor": [
-          {
-            "hue": [
-              195,
-              225
-            ],
-            "minSaturation": 0.1,
-            "to": 26,
-            "spread": 0.3,
-            "saturation": 3.2,
-            "value": 0.62
-          }
-        ]
+      "request": {
+        "prompt": "oxhide mail, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "item_lioras_veil",
       "kind": "item",
-      "derive": {
-        "from": "item_silk_robe",
-        "recolor": [
-          {
-            "hue": [
-              250,
-              285
-            ],
-            "minSaturation": 0.2,
-            "minValue": 0.3,
-            "to": 48,
-            "spread": 0.3,
-            "saturation": 0.45,
-            "value": 1.25
-          }
-        ]
+      "request": {
+        "prompt": "liora's veil, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "item_wavecrest_scale_mail",
       "kind": "item",
-      "derive": {
-        "from": "item_dragon_mail",
-        "recolor": [
-          {
-            "hue": [
-              340,
-              20
-            ],
-            "minSaturation": 0.3,
-            "to": 184,
-            "spread": 0.5,
-            "value": 1.05
-          }
-        ]
+      "request": {
+        "prompt": "wavecrest scale mail, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "item_emerald_dragon_mail",
       "kind": "item",
-      "derive": {
-        "from": "item_dragon_mail",
-        "recolor": [
-          {
-            "hue": [
-              340,
-              20
-            ],
-            "minSaturation": 0.3,
-            "to": 140,
-            "spread": 0.5
-          }
-        ]
+      "request": {
+        "prompt": "emerald dragon mail, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
     {
@@ -16577,24 +16444,15 @@
         "remove_bg": true
       }
     },
-    {
+{
       "id": "item_prismscale_mail",
       "kind": "item",
-      "derive": {
-        "from": "item_dragon_mail",
-        "recolor": [
-          {
-            "hue": [
-              340,
-              20
-            ],
-            "minSaturation": 0.3,
-            "to": 200,
-            "spread": 0.4,
-            "saturation": 0.45,
-            "value": 1.25
-          }
-        ]
+      "request": {
+        "prompt": "prismscale mail, game item icon",
+        "prompt_style": "rd_tile__tile_object",
+        "width": 32,
+        "height": 32,
+        "remove_bg": true
       }
     },
     {
