@@ -7439,26 +7439,16 @@
         ]
       }
     },
-    {
+{
       "id": "boss_golden_grunt",
       "kind": "monster",
-      "derive": {
-        "from": "monster_jelly",
-        "recolor": [
-          {
-            "hue": [
-              280,
-              20
-            ],
-            "minSaturation": 0.25,
-            "to": 32.5,
-            "spread": 1.0,
-            "saturation": 1.2,
-            "value": 1.05
-          }
-        ]
-      },
-      "scale": 1.8
+      "request": {
+        "prompt": "hulking golden brute, a stocky ogre guard in gleaming gold plate armour with a horned gold helmet, glowing ember eyes, a big gold-studded club, little puffs of flame from its nose, boss monster, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 64,
+        "height": 64,
+        "remove_bg": true
+      }
     },
     {
       "id": "monster_candy_puff",
@@ -7561,34 +7551,15 @@
       },
       "scale": 0.65
     },
-    {
+{
       "id": "boss_wolf_leader",
       "kind": "monster",
-      "derive": {
-        "from": "boss_big_bad_wolf",
-        "recolor": [
-          {
-            "hue": [
-              0,
-              360
-            ],
-            "minSaturation": 0,
-            "maxSaturation": 0.25,
-            "to": 222,
-            "saturation": 4,
-            "value": 0.7
-          },
-          {
-            "hue": [
-              330,
-              40
-            ],
-            "minSaturation": 0.25,
-            "to": 0,
-            "saturation": 1.1,
-            "value": 0.9
-          }
-        ]
+      "request": {
+        "prompt": "huge scarred dark grey alpha wolf with a thick silver mane, a scar across one eye, a bone necklace, standing proud, wise old pack leader, boss monster, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 64,
+        "height": 64,
+        "remove_bg": true
       }
     },
     {
@@ -7683,35 +7654,16 @@
         ]
       }
     },
-    {
+{
       "id": "boss_rock_monster",
       "kind": "monster",
-      "derive": {
-        "from": "monster_floating_stone",
-        "recolor": [
-          {
-            "hue": [
-              140,
-              200
-            ],
-            "minSaturation": 0.1,
-            "to": 35,
-            "saturation": 0.35,
-            "value": 0.8
-          },
-          {
-            "hue": [
-              0,
-              360
-            ],
-            "minSaturation": 0.25,
-            "to": 35,
-            "saturation": 0.35,
-            "value": 0.8
-          }
-        ]
-      },
-      "scale": 1.7
+      "request": {
+        "prompt": "giant sleepy rock golem of mossy brown boulders, droopy half-closed eyes, a big yawning mouth, little sleep bubbles, moss and tiny flowers on its shoulders, boss monster, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 64,
+        "height": 64,
+        "remove_bg": true
+      }
     },
     {
       "id": "monster_crystal_widow",
@@ -7752,81 +7704,49 @@
         ]
       }
     },
-    {
+{
       "id": "boss_idreus",
       "kind": "monster",
-      "derive": {
-        "from": "boss_drunk_dragon",
-        "recolor": [
-          {
-            "hue": [
-              320,
-              60
-            ],
-            "minSaturation": 0.25,
-            "to": 273.7,
-            "spread": 0.82,
-            "saturation": 0.9,
-            "value": 0.9
-          }
-        ]
+      "request": {
+        "prompt": "dark sorcerer lord in a tall hooded violet and black robe with a high collar, glowing purple eyes in the shadow of the hood, a horned crown, a staff topped with a dark purple orb, wisps of shadow floating round him, boss monster, fantasy, chibi",
+        "prompt_style": "rd_plus__low_res",
+        "width": 64,
+        "height": 64,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "boss_tide_dragon",
       "kind": "monster",
-      "derive": {
-        "from": "boss_drunk_dragon",
-        "recolor": [
-          {
-            "hue": [
-              320,
-              60
-            ],
-            "minSaturation": 0.25,
-            "to": 203.3,
-            "spread": -0.82
-          }
-        ]
+      "request": {
+        "prompt": "ancient sea dragon, long serpentine body of deep blue and teal scales shaped like curling ocean waves, a white foam crest along its back, fin-like ears, glowing aqua eyes, rising from a splash of water, boss monster, fantasy, chibi",
+        "prompt_style": "rd_plus__low_res",
+        "width": 64,
+        "height": 64,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "boss_emerald_dragon",
       "kind": "monster",
-      "derive": {
-        "from": "boss_drunk_dragon",
-        "recolor": [
-          {
-            "hue": [
-              320,
-              60
-            ],
-            "minSaturation": 0.25,
-            "to": 138.3,
-            "spread": -0.82
-          }
-        ]
+      "request": {
+        "prompt": "legendary emerald dragon, majestic and proud, great spread wings, glittering green emerald scales, gemstone horns, vines and leaves growing along its back and tail, glowing golden eyes, boss monster, fantasy, chibi",
+        "prompt_style": "rd_plus__low_res",
+        "width": 64,
+        "height": 64,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "boss_silver_lieutenant",
       "kind": "monster",
-      "derive": {
-        "from": "monster_phantom",
-        "recolor": [
-          {
-            "hue": [
-              200,
-              300
-            ],
-            "minSaturation": 0.25,
-            "to": 215,
-            "saturation": 0.2,
-            "value": 1.3
-          }
-        ]
-      },
-      "scale": 1.5
+      "request": {
+        "prompt": "spectral knight in polished silver plate armour, a tattered pale blue cape, glowing ice blue eyes behind the visor, a long silver sword with a fang-shaped blade, ghostly mist round its feet, boss monster, fantasy, chibi",
+        "prompt_style": "rd_plus__low_res",
+        "width": 64,
+        "height": 64,
+        "remove_bg": true
+      }
     },
     {
       "id": "npc_linns",
