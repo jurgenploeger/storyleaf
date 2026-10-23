@@ -236,7 +236,7 @@ final class LandPlanner {
         for piece in lair {
             let (dx, dy) = turned(piece.x, piece.y)
             let wantsToBlock = piece.blocking ?? true
-            for scale in [1.0, 0.7, 0.45] {
+            for scale in [1.0, 0.7, 0.45, 0.25] {
                 let at = GridPoint(col: cell.col + Int((Double(dx) * scale).rounded()), row: cell.row + Int((Double(dy) * scale).rounded()))
                 guard !taken.contains(at), map.owns(at), map.isWalkable(at) else { continue }
                 let blocking = wantsToBlock && map.isFreeForScenery(at, blocking: true)
@@ -263,10 +263,15 @@ final class LandPlanner {
         }
     }
 
-    /// Whether, with `walls` blocked too, you can still walk a good way (400 cells) out from beside
-    /// `cell`: a lair mustn't shut its boss in (playtesting's test: the Emerald Dragon's, at the end
-    /// of its road between hills, did).
+    /// Whether, with `walls` blocked too, you can still walk as far out from beside `cell` as without
+    /// them (up to 400 cells; a boss near its land's edge walks on into the next land, so its own land
+    /// may hold fewer): a lair mustn't shut its boss in.
     private func leavesRoom(around cell: GridPoint, walls: Set<GridPoint>) -> Bool {
+        reach(from: cell, walls: walls) >= reach(from: cell, walls: [])
+    }
+
+    /// How many cells (up to 400) you can walk to from beside `cell`, `walls` blocked too.
+    private func reach(from cell: GridPoint, walls: Set<GridPoint>) -> Int {
         let steps = [(0, 1), (1, 0), (0, -1), (-1, 0)]
         let starts = steps.map { GridPoint(col: cell.col + $0.0, row: cell.row + $0.1) }.filter { map.isWalkable($0) && !walls.contains($0) }
         var reached = Set(starts)
@@ -277,7 +282,7 @@ final class LandPlanner {
                 if map.isWalkable(next), !walls.contains(next), reached.insert(next).inserted { queue.append(next) }
             }
         }
-        return reached.count >= 400
+        return min(400, reached.count)
     }
 
     /// The people who live here (`MapDef.Local`): where each lives and walks to, their things set
