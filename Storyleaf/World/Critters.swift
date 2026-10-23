@@ -184,65 +184,78 @@ final class Critters {
     private static func make(_ kind: String, at point: CGPoint, rng: inout SeededRandom) -> Critter? {
         switch kind {
         case "bunny":
-            let furs: [(fur: UInt32, light: UInt32, dark: UInt32)] = [
-                (0xB98A62, 0xE2C29F, 0x7D5A3F), (0xEDDCC2, 0xFFF6E8, 0xB8A386),
-                (0xA9A9B0, 0xD8D8DE, 0x707078), (0xF4F4F4, 0xFFFFFF, 0xC0C0C8),
+            let furs: [(name: String, fur: UInt32, light: UInt32, dark: UInt32)] = [
+                ("brown", 0xB98A62, 0xE2C29F, 0x7D5A3F), ("cream", 0xEDDCC2, 0xFFF6E8, 0xB8A386),
+                ("grey", 0xA9A9B0, 0xD8D8DE, 0x707078), ("white", 0xF4F4F4, 0xFFFFFF, 0xC0C0C8),
             ]
             let coat = furs[Int.random(in: 0..<furs.count, using: &rng)]
-            let frames = [false, true].map {
-                CritterArt.bunny(fur: PixelColor(coat.fur), light: PixelColor(coat.light), dark: PixelColor(coat.dark), hop: $0)
+            let frames = [false, true].map { hop in
+                CritterArt.drawn("bunny_\(coat.name)_\(hop ? "hop" : "sit")",
+                                 CritterArt.bunny(fur: PixelColor(coat.fur), light: PixelColor(coat.light), dark: PixelColor(coat.dark), hop: hop))
             }
             return Critter(frames: frames, at: point, reach: 26, height: 7, time: 0.3, rest: .random(in: 0.5...4, using: &rng))
         case "frog":
-            return Critter(frames: [CritterArt.frog(hop: false), CritterArt.frog(hop: true)], at: point,
+            return Critter(frames: [CritterArt.drawn("frog_sit", CritterArt.frog(hop: false)),
+                                    CritterArt.drawn("frog_hop", CritterArt.frog(hop: true))], at: point,
                            reach: 34, height: 9, time: 0.34, rest: .random(in: 1...6, using: &rng))
         case "crab":
-            return Critter(frames: [CritterArt.crab(up: false), CritterArt.crab(up: true)], at: point,
+            return Critter(frames: [CritterArt.drawn("crab_down", CritterArt.crab(up: false)),
+                                    CritterArt.drawn("crab_up", CritterArt.crab(up: true))], at: point,
                            reach: 22, height: 0, time: 0.5, rest: .random(in: 0.5...4, using: &rng))
         case "songbird":
             // A robin, a bluebird or a finch.
-            let plumes: [(back: UInt32, breast: UInt32, wing: UInt32)] = [
-                (0x8A6248, 0xE8834A, 0x6B4A36), (0x4F7FC8, 0xE8A06A, 0x3A5E9A), (0xD9B23A, 0xF4DA74, 0x7A6028),
+            let plumes: [(name: String, back: UInt32, breast: UInt32, wing: UInt32)] = [
+                ("robin", 0x8A6248, 0xE8834A, 0x6B4A36), ("bluebird", 0x4F7FC8, 0xE8A06A, 0x3A5E9A), ("finch", 0xD9B23A, 0xF4DA74, 0x7A6028),
             ]
             let plume = plumes[Int.random(in: 0..<plumes.count, using: &rng)]
             func draw(_ pose: CritterArt.BirdPose) -> SKTexture {
-                CritterArt.songbird(pose, back: PixelColor(plume.back), breast: PixelColor(plume.breast), wing: PixelColor(plume.wing))
+                CritterArt.drawn("songbird_\(plume.name)_\(pose)",
+                                 CritterArt.songbird(pose, back: PixelColor(plume.back), breast: PixelColor(plume.breast), wing: PixelColor(plume.wing)))
             }
             return Critter(frames: [draw(.sit), draw(.hop)], peck: draw(.peck), flight: draw(.fly), at: point,
                            reach: 14, height: 4, time: 0.18, rest: .random(in: 0.5...3, using: &rng))
         case "crow":
             // A songbird's shape, bigger, in black with a red eye.
             func draw(_ pose: CritterArt.BirdPose) -> SKTexture {
-                CritterArt.songbird(pose, back: PixelColor(0x2E2C3A), breast: PixelColor(0x3C3A4C), wing: PixelColor(0x211F2C),
-                                    beak: PixelColor(0x6E6A78), eye: PixelColor(0xFF4A4A), outline: PixelColor(0x15121C), longBeak: true)
+                CritterArt.drawn("crow_\(pose)",
+                                 CritterArt.songbird(pose, back: PixelColor(0x2E2C3A), breast: PixelColor(0x3C3A4C), wing: PixelColor(0x211F2C),
+                                                     beak: PixelColor(0x6E6A78), eye: PixelColor(0xFF4A4A), outline: PixelColor(0x15121C), longBeak: true))
             }
             return Critter(frames: [draw(.sit), draw(.hop)], peck: draw(.peck), flight: draw(.fly), at: point,
                            reach: 16, height: 5, time: 0.22, rest: .random(in: 0.5...3, using: &rng), scale: 1.25)
         case "spider":
-            return Critter(frames: [CritterArt.spider(step: false), CritterArt.spider(step: true)], at: point,
+            return Critter(frames: [CritterArt.drawn("spider_a", CritterArt.spider(step: false)),
+                                    CritterArt.drawn("spider_b", CritterArt.spider(step: true))], at: point,
                            reach: 22, height: 0, time: 0.3, rest: .random(in: 0.5...4, using: &rng))
         case "rat":
-            return Critter(frames: [CritterArt.rat(step: false), CritterArt.rat(step: true)], at: point,
+            return Critter(frames: [CritterArt.drawn("rat_a", CritterArt.rat(step: false)),
+                                    CritterArt.drawn("rat_b", CritterArt.rat(step: true))], at: point,
                            reach: 26, height: 0, time: 0.3, rest: .random(in: 0.5...3, using: &rng))
         case "scorpion":
-            return Critter(frames: [CritterArt.scorpion(step: false), CritterArt.scorpion(step: true)], at: point,
+            return Critter(frames: [CritterArt.drawn("scorpion_a", CritterArt.scorpion(step: false)),
+                                    CritterArt.drawn("scorpion_b", CritterArt.scorpion(step: true))], at: point,
                            reach: 18, height: 0, time: 0.45, rest: .random(in: 1...5, using: &rng))
         case "wisp":
             // Drifts slowly instead of hopping, floating and flickering.
-            return Critter(frames: [CritterArt.wisp(flicker: false), CritterArt.wisp(flicker: true)], at: point,
+            return Critter(frames: [CritterArt.drawn("wisp_a", CritterArt.wisp(flicker: false)),
+                                    CritterArt.drawn("wisp_b", CritterArt.wisp(flicker: true))], at: point,
                            reach: 20, height: 0, time: 1.1, rest: .random(in: 1...4, using: &rng),
                            hover: 14, glow: UIColor(red: 0.45, green: 0.85, blue: 1, alpha: 1))
         case "chick":
-            return Critter(frames: [CritterArt.chick(.sit), CritterArt.chick(.hop)], peck: CritterArt.chick(.peck), at: point,
+            return Critter(frames: [CritterArt.drawn("chick_sit", CritterArt.chick(.sit)), CritterArt.drawn("chick_hop", CritterArt.chick(.hop))],
+                           peck: CritterArt.drawn("chick_peck", CritterArt.chick(.peck)), at: point,
                            reach: 10, height: 3, time: 0.2, rest: .random(in: 0.5...3, using: &rng))
         case "squirrel":
-            return Critter(frames: [CritterArt.squirrel(hop: false), CritterArt.squirrel(hop: true)], at: point,
+            return Critter(frames: [CritterArt.drawn("squirrel_sit", CritterArt.squirrel(hop: false)),
+                                    CritterArt.drawn("squirrel_hop", CritterArt.squirrel(hop: true))], at: point,
                            reach: 30, height: 8, time: 0.28, rest: .random(in: 0.5...4, using: &rng))
         case "lizard":
-            return Critter(frames: [CritterArt.lizard(step: false), CritterArt.lizard(step: true)], at: point,
+            return Critter(frames: [CritterArt.drawn("lizard_a", CritterArt.lizard(step: false)),
+                                    CritterArt.drawn("lizard_b", CritterArt.lizard(step: true))], at: point,
                            reach: 26, height: 0, time: 0.35, rest: .random(in: 1...5, using: &rng))
         case "mouse":
-            return Critter(frames: [CritterArt.mouse(step: false), CritterArt.mouse(step: true)], at: point,
+            return Critter(frames: [CritterArt.drawn("mouse_a", CritterArt.mouse(step: false)),
+                                    CritterArt.drawn("mouse_b", CritterArt.mouse(step: true))], at: point,
                            reach: 20, height: 0, time: 0.3, rest: .random(in: 0.5...4, using: &rng))
         default:
             return nil
@@ -344,7 +357,8 @@ final class Critters {
         let startX = fromLeft ? visible.minX - 60 : visible.maxX + 60
         let endX = fromLeft ? visible.maxX + 160 : visible.minX - 160
         let path = SKAction.moveBy(x: endX - startX, y: CGFloat.random(in: -60...60), duration: TimeInterval(abs(endX - startX) / speed))
-        let frames = [CritterArt.bird(kind, up: true), CritterArt.bird(kind, up: false)]
+        let frames = [CritterArt.drawn("flock_\(kind)_up", CritterArt.bird(kind, up: true)),
+                      CritterArt.drawn("flock_\(kind)_down", CritterArt.bird(kind, up: false))]
         for index in 0..<count {
             // A loose V behind the leader.
             let back = CGFloat(index) * 16 * (fromLeft ? -1 : 1)
@@ -379,6 +393,15 @@ enum CritterArt {
     private static let ink = PixelColor(0x3B2A22)
 
     enum BirdPose { case sit, hop, peck, fly }
+
+    /// A critter as tools/critter_art.py draws it (art/sprites/critter_<name>.png: lit from the top
+    /// left, outlined in a deep shade of each part), else as it's drawn here.
+    static func drawn(_ name: String, _ fallback: @autoclosure () -> SKTexture) -> SKTexture {
+        guard let image = ArtLibrary.shared.artImage("critter_" + name)?.cgImage else { return fallback() }
+        let texture = SKTexture(cgImage: image)
+        texture.filteringMode = .nearest
+        return texture
+    }
 
     /// A little songbird on the ground: sitting, mid-hop (legs tucked), pecking, or taking off.
     /// A crow is drawn the same way, black, with a red `eye` and a longer grey beak.

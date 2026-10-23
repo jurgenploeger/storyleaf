@@ -1136,13 +1136,15 @@ nonisolated struct RewardsDef: Decodable, Sendable {
     nonisolated struct Prize: Decodable, Sendable, Identifiable {
         /// What earns it: every monster of a `land` beaten (`land`), every monster beaten (`book`),
         /// every monster card (`cards`), every quest finished (`quests`), every boss beaten
-        /// (`bosses`), every land set foot in (`lands`), every other prize earned (`capes`).
+        /// (`bosses`), every land set foot in (`lands`), a companion raised to `level` (`companion`),
+        /// every other prize earned (`capes`).
         nonisolated enum Kind: String, Decodable, Sendable {
-            case land, book, cards, quests, bosses, lands, capes
+            case land, book, cards, quests, bosses, lands, companion, capes
         }
         let item: String
         let kind: Kind
         let land: String?
+        let level: Int?
         var id: String { item }
     }
 }

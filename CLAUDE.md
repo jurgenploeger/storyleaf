@@ -132,6 +132,10 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   and the glossy marks by the HP bars, drawn smooth at 3×: poison's drop and the arrows for lowered and raised
   stats). `--sheet out.png` writes a contact sheet. Spells are light, not sprites:
   `Storyleaf/Battle/ElementEffects.swift` layers soft glows in each element's colours (`ElementLight`).
+- `tools/critter_art.py`: the critters (`ambience.critters`) and the birds crossing the sky, as PNGs
+  (`art/sprites/critter_<name>.png`, loaded by `CritterArt.drawn`; one missing is drawn in Swift as before): the
+  same shapes and sizes as `Critters.swift`, lit from the top left and outlined in a deep shade of each part.
+  Too small for pixel_kit's finish (it turned them muddy). `--sheet out.png` previews them.
 - `tools/hero_layers.py`: splits each race's walk sheet into paper-doll layers (bald `body_<race>`,
   `locks_<race>` for a beard, `hair_<style>_<race>` for every hairstyle in that sheet's own hair colour, a
   gender sheet's own hair as a style of its own (appearance.json `styles` with `sheet`), its outer edge a deep

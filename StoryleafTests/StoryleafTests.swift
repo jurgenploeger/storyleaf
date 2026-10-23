@@ -3434,6 +3434,23 @@ struct RewardTests {
         #expect(session.titleRequirement(wolfbane).contains("Wolf"))
     }
 
+    /// The Beastfriend Cape (rewards.json `prizes`, kind `companion`): earned when a companion
+    /// reaches its level (200, the cap), and kept once told, though that companion is let go.
+    @Test func companionCapeAtLevelTwoHundred() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let prize = try #require(session.prizes.first { $0.kind == .companion })
+        #expect(prize.level == GameSession.levelCap)
+        #expect(session.prizeProgress(prize).have == 0 && !session.hasEarned(prize))
+        session.data.pets.append(Pet(id: UUID(), speciesID: "test", name: "Test", level: 199, exp: 0, hp: 10, mp: 10))
+        #expect(session.prizeProgress(prize).have == 199 && !session.hasEarned(prize))
+        session.data.pets[0].level = 200
+        #expect(session.hasEarned(prize) && session.capesWaiting.contains { $0.item == prize.item })
+        session.checkTitles()
+        #expect(session.data.capesTold?.contains(prize.item) == true)
+        session.data.pets.removeAll()
+        #expect(session.hasEarned(prize))
+    }
+
     /// A land's cape (rewards.json `prizes`): earned once every monster that lives there is beaten,
     /// told of once, woven by the weaver (whose "!" says so) and had once; worn in its own slot for
     /// its stats; and woven again if it's lost.

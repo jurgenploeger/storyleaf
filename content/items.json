@@ -5960,6 +5960,23 @@
       "accent": "#F2C14E"
     },
     {
+      "id": "beastfriend_cape",
+      "icon": "shield-star",
+      "art": "item_beastfriend_cape",
+      "name": "Beastfriend Cape",
+      "type": "cape",
+      "price": 0,
+      "stats": {
+        "defense": 12,
+        "hp": 90,
+        "magic": 8,
+        "speed": 6
+      },
+      "description": "For one who has raised a companion all the way to level 200. Every scratch and nuzzle on the road there is in its weave.",
+      "color": "#1F7A8C",
+      "accent": "#F7E3A1"
+    },
+    {
       "id": "starlight_dust",
       "icon": "sparkles",
       "art": "item_starlight_dust",

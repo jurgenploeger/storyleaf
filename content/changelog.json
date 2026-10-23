@@ -2,13 +2,14 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
-      "version": "0.7.73",
+      "version": "0.7.74",
       "date": "2026-10-23",
       "title": "Skills that keep growing",
       "notes": [
         "Your hero's skills keep growing past Mastered, up to level 50: a little stronger every level, with new milestones at 20, 30, 40 and 50 (Heroic, Epic, Mythic and Legendary).",
         "Each milestone makes the skill grander in battle: wider magic circles and more light, the ground shaking from Epic, a second strike from Mythic, and every colour at Legendary.",
-        "Skill icons glow like the spells they cast, houses catch the light and shade like the rest of the town, and waystones have a cyan badge of their own on the map."
+        "Skill icons glow like the spells they cast, houses catch the light and shade like the rest of the town, and waystones have a cyan badge of their own on the map.",
+        "Raise a companion to level 200 and the weaver makes you the Beastfriend Cape. The critters about the lands are redrawn too."
       ]
     },
     {

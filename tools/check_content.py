@@ -1099,7 +1099,7 @@ for milestone in milestones:
 # (price 0, no shop, quest, chest, smith or monster has one), with a colour and a trim, for a milestone
 # that can be met: a land's own monsters, or the whole world's. One weaver weaves them.
 prizes = rewards.get("prizes", [])
-PRIZE_KINDS = {"land", "book", "cards", "quests", "bosses", "lands", "capes"}
+PRIZE_KINDS = {"land", "book", "cards", "quests", "bosses", "lands", "companion", "capes"}
 capes = {item_id for item_id, item in items.items() if item["type"] == "cape"}
 prized = [prize.get("item") for prize in prizes]
 check(len(prized) == len(set(prized)), "rewards prizes → a cape is the prize for one milestone only")
@@ -1114,6 +1114,9 @@ for prize in prizes:
         check(bool(homes), f"{where} → land {prize.get('land')} has no monsters to beat")
     else:
         check("land" not in prize, f"{where} → only a land prize names a land")
+    if prize.get("kind") == "companion":
+        check(isinstance(prize.get("level"), int) and 1 < prize["level"] <= 200,
+              f"{where} → a companion prize names the `level` to raise one to (2 to 200, the level cap)")
 lands_prized = [prize.get("land") for prize in prizes if prize.get("kind") == "land"]
 check(len(lands_prized) == len(set(lands_prized)), "rewards prizes → one cape a land")
 elsewhere = stocked | quest_rewards | boss_drops | {npc.get("gives") for npc in npcs.values()}

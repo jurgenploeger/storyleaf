@@ -279,6 +279,12 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 
 ## Learned
 
+- **2026-10-23 (critters):** At 10 to 15 pixels the kit's finish turns a sprite muddy: most of it is edge,
+  so its rim shadows and ramps darken nearly every pixel (a white bunny came out grey, a chick olive).
+  `tools/critter_art.py` keeps each part's colour and lights only the silhouette: its top and left a
+  shade lighter, its bottom and right a shade darker and turned from yellow, a shade under a part of
+  another colour lying on it, and an outline in a deep shade of each part.
+
 - **2026-10-23 (frost tree):** The bare winter tree drawn as kit strokes looked out of place among RD's
   snow scenery: limbs of one width like pipes, a thin strip of snow, icicles. RD's snow is soft clumps in
   its own colours (`scenery_art.SNOW`, from its `snow_tree`); a near-white base on a ramp turns grey, so

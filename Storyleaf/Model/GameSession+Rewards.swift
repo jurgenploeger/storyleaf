@@ -128,6 +128,12 @@ extension GameSession {
             return (have: bosses.intersection(data.defeatedBosses ?? []).count, need: bosses.count)
         case .lands:
             return (have: content.maps.filter { hasVisited($0.id) }.count, need: content.maps.count)
+        case .companion:
+            // Your highest companion's level; once you've been told you earned it, it stays earned,
+            // though that companion is let go.
+            let need = prize.level ?? Self.levelCap
+            if (data.capesTold ?? []).contains(prize.item) { return (have: need, need: need) }
+            return (have: min(need, data.pets.map(\.level).max() ?? 0), need: need)
         case .capes:
             let others = prizes.filter { $0.kind != .capes }
             return (have: others.filter { hasEarned($0) }.count, need: others.count)
@@ -168,6 +174,7 @@ extension GameSession {
         case .quests: L("Finish every quest")
         case .bosses: L("Beat every boss")
         case .lands: L("Set foot in every land")
+        case .companion: L("Raise a companion to level {level}", ["level": prize.level ?? Self.levelCap])
         case .capes: L("Earn every other cape")
         }
     }
