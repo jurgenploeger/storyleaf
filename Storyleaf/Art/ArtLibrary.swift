@@ -340,6 +340,23 @@ final class ArtLibrary {
         return texture
     }
 
+    /// A land's water two cells or more from any shore, out in a lake or a wide river: version `index`
+    /// of its tile a shade deeper (`deepShade`), as `organicTile` darkens the water toward it from
+    /// the shallows, so a lake has a middle instead of one flat blue.
+    func deepWaterTile(_ id: String, _ index: Int) -> SKTexture {
+        let key = "deep|\(id)|\(index % 4)"
+        if let cached = blended[key] { return cached }
+        let size = max(tileImage(id).width, 16)
+        var out = variantPixels(id, index, size: size)
+        let deep = Self.deepShade(1)
+        for i in stride(from: 0, to: out.count, by: 4) {
+            for c in 0..<3 { out[i + c] = UInt8(Double(out[i + c]) * (1 - deep)) }
+        }
+        let texture = makeTexture(out, size: size)
+        blended[key] = texture
+        return texture
+    }
+
     private func variantPixels(_ id: String, _ index: Int, size: Int) -> [UInt8] {
         let key = "\(id)|\(index % 4)|\(size)"
         if let cached = variantCache[key] { return cached }
@@ -540,15 +557,38 @@ final class ArtLibrary {
                         for c in 0..<3 { out[index + c] = UInt8(Double(texels[index + c]) * shade) }
                         out[index + 3] = 255
                     case .water:
+                        // A land's own water (not ice or chocolate) gets depth and a bank: paler in the
+                        // shallows, deeper out from the shore, and a strip of damp earth and pebbles
+                        // along it, where the land had stopped dead at a flat blue (playtesting 2026-10-23).
+                        let natural = layer.tile == "tile_water"
+                        let speck = Self.speck(px, py, cell)
                         if depth > 0 {
-                            let foam = depth < 0.05 ? 0.35 : 0
+                            // Foam along the edge, broken here and there, with a few flecks out past it.
+                            let foam = depth < 0.05 ? (speck < 0.75 ? 0.35 : 0.12) : (depth < 0.1 && speck < 0.12 ? 0.22 : 0)
+                            let shallow = natural ? 0.3 * pow(max(0, 1 - depth / 0.4), 1.5) : 0
+                            let deep = natural ? Self.deepShade(depth) : 0
                             for c in 0..<3 {
-                                let mixed: Double = Double(texels[index + c]) * (1 - foam) + 255 * foam
-                                out[index + c] = UInt8(min(255, mixed))
+                                var value: Double = Double(texels[index + c]) * (1 - deep)
+                                value += (Self.shallows[c] - value) * shallow
+                                value = value * (1 - foam) + 255 * foam
+                                out[index + c] = UInt8(max(0, min(255, value)))
                             }
                             out[index + 3] = 255
                         } else if depth > -0.06 {
-                            for c in 0..<3 { out[index + c] = UInt8(Double(out[index + c]) * 0.8) }
+                            // The lip of the bank, in the shadow it throws on the water's edge.
+                            for c in 0..<3 {
+                                let value: Double = natural ? Double(out[index + c]) * 0.55 + Self.bank[c] * 0.2 : Double(out[index + c]) * 0.8
+                                out[index + c] = UInt8(max(0, min(255, value)))
+                            }
+                        } else if natural, depth > -0.3 {
+                            // The bank: damp earth, more of it toward the water, and pebbles in it.
+                            let near: Double = pow((depth + 0.3) / 0.24, 1.2)
+                            for c in 0..<3 {
+                                let ground: Double = Double(out[index + c])
+                                let earth: Double = speck < 0.035 && near > 0.2 ? Self.pebble[c] : Self.bank[c]
+                                let mix: Double = speck < 0.035 && near > 0.2 ? 0.85 : 0.72 * near
+                                out[index + c] = UInt8(max(0, min(255, ground + (earth - ground) * mix)))
+                            }
                         }
                     case .cut:
                         // Clear past the shore; the lip of the land along it a shade darker.
@@ -603,6 +643,26 @@ final class ArtLibrary {
             sources = sources.filter { $0.value.texture != nil }
             sourcesPrunedAt = max(4096, sources.count * 2)
         }
+    }
+
+    /// How much darker a land's water is `depth` cells in from its shore: none in the shallows, the
+    /// most two cells out (`deepWaterTile`).
+    nonisolated static func deepShade(_ depth: Double) -> Double {
+        let t = max(0, min(1, (depth - 0.25) / 0.55))
+        return 0.2 * t * t * (3 - 2 * t)
+    }
+
+    /// The shallows' pale turquoise, a bank's damp earth and its pebbles (premultiplied, opaque).
+    nonisolated private static let shallows: [Double] = [128, 214, 222]
+    nonisolated private static let bank: [Double] = [104, 86, 60]
+    nonisolated private static let pebble: [Double] = [186, 180, 168]
+
+    /// A pixel's own fixed chance, 0 to 1, for the foam's breaks and the bank's pebbles.
+    nonisolated private static func speck(_ px: Int, _ py: Int, _ cell: GridPoint) -> Double {
+        var h = UInt32(truncatingIfNeeded: px &* 73_856_093) ^ UInt32(truncatingIfNeeded: py &* 19_349_663)
+        h ^= UInt32(truncatingIfNeeded: cell.col &* 83_492_791) ^ UInt32(truncatingIfNeeded: cell.row &* 2_654_435_761)
+        h = (h ^ (h >> 13)) &* 1_274_126_177
+        return Double((h ^ (h >> 16)) & 0xFFFF) / 65_535
     }
 
     /// Centres of the water cells in a 5×5 mask, relative to the middle cell (x east, y north).

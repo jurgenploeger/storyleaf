@@ -164,7 +164,7 @@ final class LandPlanner {
                 for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
                     let land = GridPoint(col: cell.col + dc, row: cell.row + dr)
                     guard map.contains(land), map.ground[land.row][land.col] != .water, seen.insert(land).inserted else { continue }
-                    guard Double.random(in: 0..<1, using: &reedRNG) < 0.12, map.isFreeForScenery(land, blocking: false) else { continue }
+                    guard Double.random(in: 0..<1, using: &reedRNG) < 0.18, map.isFreeForScenery(land, blocking: false) else { continue }
                     map.occupy(land, blocking: false)
                     let scale = CGFloat.random(in: 0.75...1, using: &reedRNG)
                     plan.reeds.append(scenery("reeds", at: land, nudge: true, scale: scale))

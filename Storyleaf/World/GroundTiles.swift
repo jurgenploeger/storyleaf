@@ -33,6 +33,8 @@ final class GroundTiles {
     private var others: [String: (land: MapDef, from: ArtLibrary.Foreign)?] = [:]
     private var lookPast: [GridPoint: String?] = [:]
     private static let full = 0b111_111_111, sides = 0b010_101_010
+    /// Every cell of `poolMask`'s 5×5.
+    private static let wholePool = (1 << 25) - 1
 
     /// The tiles picked so far, for a tile set.
     var allGroups: [SKTileGroup] { Array(groups.values) }
@@ -224,7 +226,12 @@ final class GroundTiles {
         let coast = near == 0 ? 0 : shore(cell)
         if coast != 0 { layers.append(.init(tile: base, mask: near, style: .cut)) }
         let chosen: SKTileGroup
-        if pond == full, coast == 0 {
+        // A land's own water deepens out from its shores (`ArtLibrary.organicTile`): two cells out it's
+        // the deep tile, nearer it's drawn as a shore is, shaded by how far in it lies.
+        let natural = waterID == "tile_water" && waterVaries
+        if pond == full, coast == 0, natural, poolMask(cell) == Self.wholePool {
+            chosen = group("deep|\(waterID)#\(variant)") { art.deepWaterTile(waterID, variant) }
+        } else if pond == full, coast == 0, !natural {
             chosen = waterVaries ? plain(waterID, variant) : water
         } else if road == full, pond == 0, coast == 0 {
             if let fade {

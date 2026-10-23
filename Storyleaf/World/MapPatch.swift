@@ -143,7 +143,12 @@ final class MapPatch: SKNode {
                 if road != 0 { layers.append(.init(tile: theme.path, mask: road, style: .road)) }
                 if pond != 0 { layers.append(.init(tile: waterID, mask: poolMask(col, row), style: .water)) }
                 let chosen: SKTileGroup
-                if pond == full {
+                // As GroundTiles: a land's own water deepens out from its shores, the deep tile two
+                // cells out, nearer drawn as a shore is (`ArtLibrary.organicTile`).
+                let natural = waterID == "tile_water" && waterVaries
+                if pond == full, natural, poolMask(col, row) == (1 << 25) - 1 {
+                    chosen = group("deep|\(waterID)#\(variant)") { art.deepWaterTile(waterID, variant) }
+                } else if pond == full, !natural {
                     chosen = waterVaries ? plain(waterID, variant) : water
                 } else if road == full, pond == 0 {
                     chosen = plain(theme.path, variant)

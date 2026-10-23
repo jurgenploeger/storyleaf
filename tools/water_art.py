@@ -175,7 +175,7 @@ def preview(sea, lake, path):
 def main():
     args = sys.argv[1:]
     sea = draw(SEA_CELLS * 32, 11)
-    lake = draw(32, 23, swells=0.25, ripples=0.97)
+    lake = draw(32, 23, swells=0.5, ripples=0.94)
     if "--preview" in args:
         preview(sea, lake, args[args.index("--preview") + 1])
     (SPRITES / "sea.png").write_bytes(png(sea))

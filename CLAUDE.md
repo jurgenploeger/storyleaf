@@ -118,7 +118,10 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   small inline glyphs. `--sheet out.png` previews them on the game's button colours.
 - `tools/water_art.py`: the same for the water: `sea.png` (16 × 16 cells that tile as a whole; the continent gives each
   world cell its own, `ContinentScene.seaGroups`) and `tile_water.png` (a land's lakes and rivers, calm so its versions
-  don't make a grid), ripples level on screen. It replaced a generated tile that repeated every 16 pixels; rerun it
+  don't make a grid), ripples level on screen. Round a land's own water (`tile_water`, not ice or chocolate)
+  `ArtLibrary.organicTile` adds depth and a bank: paler shallows by the shore, deeper water out from it (two
+  cells out, `deepWaterTile`), broken foam, and a strip of damp earth and pebbles on the land; mirrored in
+  `tools/palette_preview.py`. It replaced a generated tile that repeated every 16 pixels; rerun it
   after editing, `--preview out.png` shows them turned as the game draws them.
 - `tools/fx_art.py`: the same for the few battle marks that aren't light (`art/sprites/fx_*.png`: poison's bubble
   and the glossy marks by the HP bars, drawn smooth at 3×: poison's drop and the arrows for lowered and raised
