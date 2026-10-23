@@ -26,6 +26,11 @@ nonisolated enum GameSettings {
     static let turnTimerKey = "turnTimer"
     /// What Settings offers for it, Off first.
     static let turnTimerChoices: [Double] = [0, 10, 20, 30]
+    /// The game's look: "system" follows the phone's Light or Dark Mode, "light" or "dark" keeps to one
+    /// (`RootView.applyAppearance`).
+    static let appearanceKey = "appearance"
+    /// What Settings offers for it, the phone's own first.
+    static let appearanceChoices = ["system", "light", "dark"]
     /// The newest release notes opened from the title screen (What's new); newer ones get its gold dot.
     static let seenReleaseKey = "seenRelease"
 
@@ -40,6 +45,7 @@ nonisolated enum GameSettings {
     static var battleSpeed: Double { value(battleSpeedKey, fallback: 1) }
     static var autoBattle: Bool { value(autoBattleKey, fallback: false) }
     static var turnTimer: Double { value(turnTimerKey, fallback: 10) }
+    static var appearance: String { value(appearanceKey, fallback: "system") }
 
     private static func value<T>(_ key: String, fallback: T) -> T {
         UserDefaults.standard.object(forKey: key) as? T ?? fallback

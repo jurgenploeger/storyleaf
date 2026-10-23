@@ -16,8 +16,6 @@ struct FairylandApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                // The phone's own look (Light or Dark Mode), unless a debug launch picks one.
-                .preferredColorScheme(DebugLaunch.colorScheme)
         }
     }
 }
@@ -33,6 +31,7 @@ struct RootView: View {
     @State private var coordinator: GameCoordinator?
     @State private var pending: GameSession?
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage(GameSettings.appearanceKey) private var appearance = "system"
 
     var body: some View {
         Group {
@@ -64,6 +63,7 @@ struct RootView: View {
             }
         }
         .onAppear {
+            Self.applyAppearance(appearance)
             if coordinator == nil, let session = DebugLaunch.session() {
                 let coordinator = GameCoordinator(session: session)
                 self.coordinator = coordinator
@@ -73,9 +73,26 @@ struct RootView: View {
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .background: coordinator?.session.save()
-            case .active: MusicPlayer.shared.resume()
+            case .active:
+                MusicPlayer.shared.resume()
+                Self.applyAppearance(appearance)
             default: break
             }
+        }
+        .onChange(of: appearance) { _, choice in Self.applyAppearance(choice) }
+    }
+
+    /// Settings → Appearance on every window: Light, Dark, or the phone's own look ("system").
+    /// On the window rather than SwiftUI's `preferredColorScheme`, so alerts and file pickers follow
+    /// too and going back to the phone's look takes at once. A debug launch's `dark` or `light` wins.
+    static func applyAppearance(_ choice: String) {
+        let style: UIUserInterfaceStyle = switch DebugLaunch.appearance ?? choice {
+        case "light": .light
+        case "dark": .dark
+        default: .unspecified
+        }
+        for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+            for window in scene.windows { window.overrideUserInterfaceStyle = style }
         }
     }
 
