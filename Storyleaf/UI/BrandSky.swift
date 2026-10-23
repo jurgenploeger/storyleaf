@@ -19,6 +19,17 @@ enum Brand {
     static let lavender = Color(red: 0.8, green: 0.722, blue: 1)       // #CCB8FF
     static let sky = Color(red: 0.659, green: 0.859, blue: 1)          // #A8DBFF
     static let mint = Color(red: 0.722, green: 0.961, blue: 0.839)     // #B8F5D6
+
+    /// The same sky at night, for Dark Mode (the dark app icon's, `tools/app_icon_art.py`):
+    /// deep indigo, navy and teal where the day has lavender, sky blue and mint.
+    static let nightTop = Color(red: 0.17, green: 0.12, blue: 0.38)    // #2B1F61
+    static let night = Color(red: 0.07, green: 0.13, blue: 0.33)       // #122154
+    static let nightBottom = Color(red: 0.04, green: 0.2, blue: 0.25)  // #0A3340
+    /// The night's clouds, lit by the moon.
+    static let moonCloud = Color(red: 0.3, green: 0.38, blue: 0.52)    // #4D6185
+
+    /// Lettering straight on the sky (not on a window or a button): deep navy by day, cream at night.
+    static let skyText = Color.adaptive(light: HUDStyle.ink, dark: HUDStyle.cream)
 }
 
 /// Where the sun rays fan out from: the centre of the leaf over the logo's wordmark, measured in
@@ -63,10 +74,20 @@ extension View {
 
 /// The sky the app icon's leaf floats in, behind the title and loading screens: lavender at the
 /// top through sky blue to mint, soft sun rays fanning out from behind the logo, and clouds
-/// along the bottom.
+/// along the bottom. In Dark Mode it's the dark icon's night: indigo through navy to teal, the
+/// rays faint, the clouds moonlit and a scatter of stars.
 struct StoryleafSky: View {
     /// Where the rays fan out from, as a share of the screen: behind the logo.
     var raysFrom = UnitPoint(x: 0.5, y: 0.3)
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// The night's stars: where, as shares of the screen, and how big, in points. Kept to the
+    /// sky's upper part and its edges, clear of the logo and the clouds.
+    private static let stars: [(x: CGFloat, y: CGFloat, size: CGFloat)] = [
+        (0.08, 0.06, 3), (0.22, 0.14, 2), (0.9, 0.08, 3.5), (0.76, 0.18, 2), (0.06, 0.34, 2.5),
+        (0.95, 0.3, 2), (0.14, 0.52, 2), (0.88, 0.5, 3), (0.42, 0.04, 2), (0.6, 0.1, 2.5),
+        (0.04, 0.68, 2), (0.97, 0.66, 2.5),
+    ]
 
     /// The clouds along the bottom, a bank in each corner like the icon's: where across the
     /// screen, and how big, as shares of its shorter side.
@@ -78,17 +99,30 @@ struct StoryleafSky: View {
     var body: some View {
         GeometryReader { proxy in
             let side = min(proxy.size.width, proxy.size.height)
+            let night = colorScheme == .dark
             ZStack {
-                LinearGradient(colors: [Brand.lavender, Brand.sky, Brand.mint], startPoint: .top, endPoint: .bottom)
+                LinearGradient(colors: night ? [Brand.nightTop, Brand.night, Brand.nightBottom] : [Brand.lavender, Brand.sky, Brand.mint],
+                               startPoint: .top, endPoint: .bottom)
 
                 SunRays(center: raysFrom)
-                    .fill(RadialGradient(colors: [.white.opacity(0.3), .white.opacity(0)], center: raysFrom,
+                    .fill(RadialGradient(colors: [.white.opacity(night ? 0.1 : 0.3), .white.opacity(0)], center: raysFrom,
                                          startRadius: 0, endRadius: max(proxy.size.width, proxy.size.height) * 0.7))
+
+                if night {
+                    ForEach(Self.stars.indices, id: \.self) { index in
+                        let star = Self.stars[index]
+                        Circle()
+                            .fill(.white.opacity(0.85))
+                            .frame(width: star.size, height: star.size)
+                            .shadow(color: .white.opacity(0.6), radius: star.size)
+                            .position(x: proxy.size.width * star.x, y: proxy.size.height * star.y)
+                    }
+                }
 
                 ForEach(Self.puffs.indices, id: \.self) { index in
                     let puff = Self.puffs[index]
                     Circle()
-                        .fill(.white.opacity(0.88))
+                        .fill(night ? Brand.moonCloud.opacity(0.92) : .white.opacity(0.88))
                         .frame(width: side * puff.size, height: side * puff.size)
                         .position(x: proxy.size.width * puff.x, y: proxy.size.height + side * puff.size * 0.12)
                 }

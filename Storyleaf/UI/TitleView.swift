@@ -482,12 +482,12 @@ private struct SavedHeroCard: View {
             IdlePair(hero: art, pet: petArt)
             Text(L("Lv {level} {class} · {map}", ["level": save.hero.level, "class": content.classDef(save.hero.classID).name, "map": content.map(save.mapID)?.name ?? ""]))
                 .font(HUDStyle.font(10))
-                .foregroundStyle(HUDStyle.ink.opacity(0.65))
+                .foregroundStyle(Brand.skyText.opacity(0.65))
             // When you last played it, so you can tell your games apart.
             if let savedAt = save.savedAt {
                 Text(L("Played {time}", ["time": savedAt.formatted(.relative(presentation: .named).locale(Localizer.shared.locale))]))
                     .font(HUDStyle.font(9))
-                    .foregroundStyle(HUDStyle.ink.opacity(0.5))
+                    .foregroundStyle(Brand.skyText.opacity(0.5))
             }
         }
         .padding(.bottom, 28)   // room for the page dots
@@ -553,7 +553,7 @@ private struct TitleRoundButtonStyle: ButtonStyle {
                 .frame(width: 50, height: 50)
                 .background(
                     Circle()
-                        .fill(LinearGradient(colors: [.white, HUDStyle.cream, HUDStyle.cream.opacity(0.85)], startPoint: .top, endPoint: .bottom))
+                        .fill(LinearGradient(colors: [HUDStyle.buttonShine, HUDStyle.buttonFace, HUDStyle.buttonFace.opacity(0.85)], startPoint: .top, endPoint: .bottom))
                         .shadow(color: .black.opacity(0.35), radius: 0, x: 0, y: configuration.isPressed ? 0 : 3)
                         .overlay(Circle().strokeBorder(HUDStyle.frameDark.opacity(0.7), lineWidth: 1.5))
                 )
@@ -569,7 +569,7 @@ private struct TitleRoundButtonStyle: ButtonStyle {
                 .offset(y: configuration.isPressed ? 2 : 0)
             configuration.label
                 .font(HUDStyle.font(11))
-                .foregroundStyle(HUDStyle.ink.opacity(0.75))
+                .foregroundStyle(Brand.skyText.opacity(0.75))
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }

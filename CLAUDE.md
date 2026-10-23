@@ -65,6 +65,12 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   it's nearer you (facing you, walking right), behind it where it's farther (held sideways from the front it looked
   wrong, off to the side it looked stood behind); a whip's lash hanging down to the feet (`hanging_whip`; held up like a sword it
   read as a stick). Shrunk and turned offline, each pixel the colour covering most of it: in the game it was ragged.
+- Dark Mode: the game follows the phone's look. `Color.adaptive(light:dark:)` (`Storyleaf/UI/Style.swift`) gives the
+  HUD's light surfaces (frames, title bars, plates, buttons, portraits) a dimmer twin and the glass a deeper one;
+  lettering keeps its colours. The title and loading sky turns to night (`Brand.night*`, `StoryleafSky`), and
+  text straight on it uses `Brand.skyText`. Debug flag `dark` (or `light`) forces a look for screenshots.
+- `tools/app_icon_art.py`: the app icon's dark and tinted versions (iOS 18+), made from `AppIcon.png`: the
+  leaf-book kept, its sky turned to the night `StoryleafSky` draws in Dark Mode. Rerun after changing the icon.
 - `tools/store_slides.py`: App Store slides from the landscape `store_land_*` screenshot scenes: captions in the
   logo's style (`tools/store_slides.json`, font in `tools/fonts/`), cropped clear of the Dynamic Island the
   simulator draws in, exported at 2622×1206 and 2868×1320 with no alpha.

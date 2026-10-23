@@ -319,7 +319,7 @@ private struct Portrait: View {
             .scaledToFit()
             .padding(size * 0.08)
             .frame(width: size, height: size)
-            .background(Circle().fill(RadialGradient(colors: [Color(red: 0.98, green: 0.95, blue: 0.85), Color(red: 0.75, green: 0.88, blue: 0.98)],
+            .background(Circle().fill(RadialGradient(colors: [HUDStyle.portrait, HUDStyle.portraitRim],
                                                      center: UnitPoint(x: 0.4, y: 0.35), startRadius: 1, endRadius: size * 0.7)))
             .clipShape(Circle())
             .overlay(Circle().strokeBorder(HUDStyle.bevel, lineWidth: size > 40 ? 3 : 2))

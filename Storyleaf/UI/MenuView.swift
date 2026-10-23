@@ -1750,7 +1750,7 @@ struct GiverFace: View {
             }
         }
         .frame(width: size, height: size)
-        .background(Circle().fill(Color(red: 0.98, green: 0.95, blue: 0.85).opacity(0.9)))
+        .background(Circle().fill(HUDStyle.portrait.opacity(0.9)))
         .clipShape(Circle())
         .overlay(Circle().strokeBorder(HUDStyle.bevel, lineWidth: size > 30 ? 2 : 1.5))
     }

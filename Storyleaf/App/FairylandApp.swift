@@ -16,6 +16,8 @@ struct FairylandApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                // The phone's own look (Light or Dark Mode), unless a debug launch picks one.
+                .preferredColorScheme(DebugLaunch.colorScheme)
         }
     }
 }
