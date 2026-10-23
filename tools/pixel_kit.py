@@ -31,6 +31,7 @@ from PIL import Image
 from PIL.ImageFilter import GaussianBlur as ImageFilterGaussian
 
 SS = 4                                   # supersampling: shapes are rendered this many times larger
+GLINT = (241, 245, 243)                  # RD's armour glint: one near-white for every metal
 OUTLINE = (35, 24, 52)                   # the item icons' house outline (tools/item_art.py OUTLINE)
 # The light, tuned to RD's armour icons (2026-10-23): mostly from the front, so a form is lit in its middle
 # and darkens toward every edge, with a mild pull to the top left (RD's icons measure 0.12 on
@@ -320,7 +321,7 @@ class Sprite:
             # Dither only where a pixel sits near the middle between two shades.
             frac = v - np.floor(v)
             near_step = np.abs(frac - 0.5) < 0.18
-            if self.shapes[i][2] == "flat" or self.shapes[i][3].get("tone") is not None:
+            if self.shapes[i][2] == "flat" or self.shapes[i][3].get("tone") is not None or mat.relief == 0:
                 near_step = np.zeros_like(near_step)
             v = v + np.where(near_step, dither * 0.5, 0)
             level[sel] = np.clip(np.round(v[sel]), 0, steps)
@@ -363,12 +364,42 @@ class Sprite:
                     mat = self.shapes[i][1]
                     out[y, x, :3] = (mat.twin if pick[y, x] else mat.colours)[level[y, x]]
                     out[y, x, 3] = 255
-        # Highlight specks: each glossy shape's brightest pixel gets its lightest shade.
+        # Highlight specks: each glossy shape's brightest pixel gets its lightest shade. Polished metal and
+        # cut stone (gloss 0.8 and over) get RD's glint instead: a small cross of near-white where the
+        # light hits hardest, ringed by the lightest shade, and a speck or two more on other bulges
+        # (each plate of a helm or a pauldron catches its own).
         for i, (_, mat, *_r) in enumerate(self.shapes):
             sel = np.argwhere(idx == i)
-            if mat.gloss and len(sel):
-                y, x = sel[np.argmax(val[idx == i])]
+            if not mat.gloss or not len(sel):
+                continue
+            lit_here = val[idx == i]
+            y, x = sel[np.argmax(lit_here)]
+            if mat.gloss >= 0.8 and len(sel) >= 30:
+                # The main glint where the form faces the light: the brightest point of its upper left
+                # (a plate's own lit edges lower down would pull it onto a helm's cheek).
+                (y0, x0), (y1, x1) = sel.min(0), sel.max(0)
+                upper_left = (sel[:, 0] <= y0 + (y1 - y0) * 0.45) & (sel[:, 1] <= x0 + (x1 - x0) * 0.6)
+                if upper_left.any():
+                    y, x = sel[upper_left][np.argmax(lit_here[upper_left])]
+            if mat.gloss < 0.8 or len(sel) < 30:
                 out[y, x, :3] = mat.colours[-1]
+                continue
+            def paint(yy, xx, colour):
+                if 0 <= yy < self.h and 0 <= xx < self.w and idx[yy, xx] == i:
+                    out[yy, xx, :3] = colour
+            for dy, dx in ((-1, -1), (-1, 1), (1, -1), (1, 1)):
+                paint(y + dy, x + dx, mat.colours[-1])
+            for dy, dx in ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)):
+                paint(y + dy, x + dx, GLINT)
+            taken = [(y, x)]
+            for k in np.argsort(-lit_here):
+                if len(taken) == 3 or lit_here[k] < lit_here.max() * 0.8:
+                    break
+                yy, xx = sel[k]
+                if all(abs(yy - ty) + abs(xx - tx) >= 7 for ty, tx in taken):
+                    paint(yy, xx, GLINT)
+                    paint(yy, xx + 1, mat.colours[-1])
+                    taken.append((yy, xx))
         if outline:
             solid = out[..., 3] > 0
             p = np.pad(solid, 1)
@@ -745,7 +776,10 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
         hh, ss, vv = _hsv(base)
         is_void = tuple(base) == OUTLINE
         if is_void:
-            base = deep
+            # The inside is the thing's own colour in shadow, on its own long ramp (its light set below).
+            big = groups[biggest][0]
+            base = (tuple(int(base_colour.lstrip("#")[k:k + 2], 16) for k in (0, 2, 4)) if base_colour and biggest == main
+                    else _deepen(big))
         elif i == main and base_colour:
             base = tuple(int(base_colour.lstrip("#")[k:k + 2], 16) for k in (0, 2, 4))
         else:
@@ -760,8 +794,8 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
         white_beside = any(_hsv(a[y, x])[1] < 0.15 and _hsv(a[y, x])[2] > 0.92 for y, x in zip(*np.nonzero(beside)))
         shiny = (any(_hsv(c)[1] < 0.3 and _hsv(c)[2] > 0.9 for c in cols) or (ss < 0.3 and bright > 0.85)
                  or white_beside)
-        mat = Material("#%02x%02x%02x" % tuple(base), shades=6 if m.sum() > 40 * SS * SS else 5,
-                       texture=texture * (0.45 if shiny else 1.0),
+        mat = Material("#%02x%02x%02x" % tuple(base), shades=8 if is_void else 6 if m.sum() > 40 * SS * SS else 5,
+                       texture=texture * (0.45 if shiny else 0.2 if is_void else 1.0),
                        relief=0.0 if is_void else 1.0, gloss=0.6 if shiny and not is_void else 0.0,
                        variety=0.0 if is_void else (2.0 if shiny else 4.0))
         if preset and i == main:
@@ -773,8 +807,18 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
             # The preset's detail goes on top of the drawing's own shading (its planes and lines).
             s.mask(m, mat, height=height + own, detail=detail + extra)
         elif is_void:
-            # Flat deep shadow: no light on it, a little darker than the colour's own middle.
-            s.mask(m, mat, height=np.zeros_like(height), detail=np.full(height.shape, -0.18))
+            # The inside, in deep shadow but with depth, as RD paints a hood's: darkest at the back,
+            # under the brim; the lower inner wall, facing up toward the light coming in, a few steps
+            # lighter, and lightest along the lip where it turns out toward the opening.
+            ys_, xs_ = np.nonzero(m)
+            top, bottom = ys_.min(), ys_.max()
+            yy, xx = np.mgrid[0:m.shape[0], 0:m.shape[1]]
+            t = np.clip((yy - top) / max(1, bottom - top), 0, 1)
+            rim = s._distance(m)
+            near = np.clip(1 - rim / (SS * 2.5), 0, 1)
+            lower = np.clip((t - 0.45) / 0.55, 0, 1)
+            light = 0.0 + 0.24 * t ** 1.6 + near * (0.22 * lower - 0.05 * (1 - lower))
+            s.mask(m, mat, height=np.zeros_like(height), detail=light - 0.55)
         else:
             s.mask(m, mat, height=height + own, detail=detail)
     s.overlay = overlay

@@ -42,8 +42,10 @@ These are the rules the numbers measure. A sprite that keeps them looks like Sto
    On something darker than it (a navy lash), the kit deepens it to half the light of what it rounds, so it
    still reads as the edge. Creatures and scenery: a broken, tinted outline (a deep shade of what it
    rounds), lighter or gone where the light hits.
-8. **A few highlights.** A speck or two of the lightest shade on what's glossy (metal, gems, eyes), not
-   a wash.
+8. **A few highlights.** A speck or two of the lightest shade on what's glossy (gems, eyes), not a
+   wash. Polished metal and cut stone get RD's glint: a small cross of near-white (`pixel_kit.GLINT`,
+   `#f1f5f3`, one white for every metal) where the form faces the light, on its upper left, ringed by the
+   lightest shade, and a speck more on another bulge; helms the same as the armour they go with.
 9. **Size and placement.** Icons fill 80% or more of their 32 × 32 tile and sit in its middle (armour; a
    weapon sits on the bottom edge with room above for its glow). Creatures and scenery at their kind's size
    (`art/assets.json`: monsters 40 or 64, props 32 to 96, buildings 96, tiles 32).
@@ -140,7 +142,7 @@ to a metric or band:
   icons 88% (123 / 140), scenery 86% (115 / 133), creatures 80% (52 / 65).
 - **The flat look fails:** `tools/item_art.py`'s designs, unfinished, pass at most 10%. 2026-10-23: 8%
   (27 / 322), failing on `cluster_size` (91%), `flat` (90%), `colour_density` (82%) and `shades_per_ramp`
-  (79%). The same items as shipped, finished by the kit, pass 84% (288 / 343).
+  (79%). The same items as shipped, finished by the kit, pass 87% (298 / 343).
 
 ### Review by eye: what the numbers can't see
 
@@ -165,8 +167,9 @@ a criterion so it can't pass again. That is how the criteria get stricter.
 `pixel_kit.restyle` finishes it: each region of colour becomes a material on a hue-shifted ramp, the
 silhouette loses its square corners (never its notches or thin lines), the whole is lit from the top left
 as one form with each region swelling a little on it, the drawing's own light and dark are kept as detail
-(drawn dark lines count double), openings drawn in the outline colour become flat deep shadow in the
-item's own colour, shiny things go smooth and glossy, a small drawing is scaled up to fill its tile from
+(drawn dark lines count double), openings drawn in the outline colour become the inside of the thing in
+the item's own colour (darkest at the back under the brim, the lower inner wall a few steps lighter where
+the light comes in, its lip lightest; no dither), shiny things go smooth and glossy, a small drawing is scaled up to fill its tile from
 4×, and sparkles and glows are kept as drawn. Items that are palette swaps of one (`derive` in
 art/assets.json) are swapped on the flat drawing first, where their hue windows were tuned, and finished
 the same way. Per-item options live in `item_art.RESTYLE` (smooth paper: less texture).
@@ -191,9 +194,9 @@ colours sit lower and richer than a flat design's.
 Families share their shapes, so fix a family's helper, not its items: `boot`, `glove`, `cape` and
 `hat_piece` (helm, wizard's hat, coif, hood) in tools/item_art.py, drawn with curves (a calf and heel, a
 rounded toe, fingers of different lengths with shadow between them, a domed helm with cheek guards, a hat
-with its tip bent over, a hood with a soft peak), never boxes. Whips (`whip_line`) are drawn as they're
-held (`hanging_whip`): the handle across the top left, the lash dangling from it in a loose S, its end
-flicked out at the bottom; never coiled.
+with its tip bent over, a hood with a soft peak), never boxes. Whips (`whip_line`) are a D: the handle
+upright on the left, pommel down, the lash looping out of its top, round the right and back along the
+bottom to the pommel; never coiled.
 
 ## Making a sprite in code
 
@@ -207,7 +210,7 @@ flicked out at the bottom; never coiled.
 ## Where it stands (2026-10-23)
 
 - **Every item icon drawn in code is finished by the kit** (322 of them, and the 21 palette swaps of
-  them), most with a material preset: 84% pass (288 / 343), against 8% as designed; RD's own icons pass
+  them), most with a material preset: 87% pass (298 / 343), against 8% as designed; RD's own icons pass
   88%. Most of the rest fail on `cluster_size`, `hue_shift` (pale colours near yellow, whose shift has
   nowhere to go) or `jaggies`.
 - **Monsters are all RD's** (checked 2026-10-23): 63 of the 124 drawn by RD, the other 61 palette swaps of
@@ -227,8 +230,7 @@ flicked out at the bottom; never coiled.
   from the light (`rim="lower"`), no seams between clusters, and a crown laid as clusters of leaves on a
   jittered grid (`puffs`), each lit on its own with a paler patch toward its top left. Beside RD's own
   `tree` they read as the same game but softer, with less contrast in the leaves.
-- **Known:** thin things (a whip's lash, three pixels wide) fail `cluster_size` and `orphans` by nature:
-  the braid alternates every few pixels. 16 of the 25 whips pass; their look was judged by eye.
+- **Whips:** all 25 pass as a D (16 did as an S: the loop's long, even curve has steadier runs).
 - **Next, in order:**
   1. Ramps of 4 to 5 shades on icons (RD's 4, ours 6), and less of the designs' own top-left falloff.
   2. Presets on more than the main region (a gauntlet's plate *and* its leather cuff), and per-region
@@ -251,9 +253,14 @@ flicked out at the bottom; never coiled.
   `hue_shift`. The rule is relative to the light: shadows away from yellow, round the short way.
 - **2026-10-23 (outline):** The house outline is no darker than a navy or shadow-violet item, and those
   failed `outline_dark`; it's now deepened to half the light of what it rounds.
-- **2026-10-23 (whips):** A coiled whip read as a rope or a snail in the bag; held hanging from a diagonal
-  handle it reads as a whip. Arched up and over from an upright handle it read as a cane, so the handle
-  lies across the top left and the lash falls from its lower end.
+- **2026-10-23 (whips):** A coiled whip read as a rope or a snail in the bag; dangling in an S from a
+  diagonal handle it read as a hook. The look the player liked is a D: the handle upright, the lash
+  looping out of its top and back down to the pommel.
+- **2026-10-23 (hoods):** A hood's opening as one flat dark shade read as a black hole: the inside needs
+  its own light, darkest under the brim and lighter down the lower inner wall.
+- **2026-10-23 (glints):** RD's armour has a near-white glint on each plate; our helms had only a
+  lightest-shade speck, so beside their armour they looked dull. A plate's lit lower edges can outshine
+  its dome, so the main glint is looked for on the upper left.
 - **2026-10-23 (restyle):** Colour families group by hue (within 22°): a yellow paw and a yellow-brown grip
   became one region and the paw turned brown. Give parts that must stay apart hues that are apart.
 
