@@ -279,6 +279,12 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 
 ## Learned
 
+- **2026-10-23 (trunks):** A trunk drawn as one stroke of dark brown was a flat pole, half the tree's
+  height, that stood out from the land; and a crown set above where the branches end left a gap of grass
+  under it. RD's trunk is short under a low crown, flares into long roots, and is bark: a few warm browns
+  in streaks (`#422711` to `#a58153`), lit down its left. `scenery_art.trunk` draws it so, and `lower`
+  sets the crowns down over it.
+
 - **2026-10-23 (critters):** At 10 to 15 pixels the kit's finish turns a sprite muddy: most of it is edge,
   so its rim shadows and ramps darken nearly every pixel (a white bunny came out grey, a chick olive).
   `tools/critter_art.py` keeps each part's colour and lights only the silhouette: its top and left a

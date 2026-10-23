@@ -19,7 +19,7 @@ import numpy as np
 from PIL import Image
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from pixel_kit import Material, Sprite  # noqa: E402
+from pixel_kit import SS, Material, Sprite  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SPRITES = ROOT / "art" / "sprites"
@@ -80,13 +80,56 @@ def puffs(s, cx, cy, rx, ry, mats, count, size, seed, flat=1.0, skip=None, bulge
 
 
 def trunk(s, base_x, base_y, top_y, width, mat, lean=0.0, roots=2):
-    """A trunk from the ground up, wider at its foot, with a few roots splayed along the ground."""
-    s.stroke([(base_x, base_y), (base_x + lean * 0.5, (base_y + top_y) / 2), (base_x + lean, top_y)], width, mat)
+    """A trunk as RD draws one: wider at its foot, flaring into roots splayed long along the ground, and
+    shaded in a few browns as bark: lit streaks down its left and middle, a dark groove or two, its right
+    side in shadow (the crown above casts its own). Drawn as a stroke of one brown it was a flat pole
+    that stood out from the land (playtesting 2026-10-23)."""
+    w = width
+    tx = base_x + lean
+
+    def at(t):
+        """The trunk's middle and half-width at t (0 at its foot, 1 at its top)."""
+        return base_x + lean * t, base_y - (base_y - top_y) * t, w * (0.5 + 0.32 * (1 - t) ** 2)
+    ts = np.linspace(0, 1, 8)
+    left = [(x - h, y) for x, y, h in (at(t) for t in ts)]
+    right = [(x + h, y) for x, y, h in (at(t) for t in ts)]
+    s.poly(left + right[::-1], mat, profile="flat", tone=0.5)
+    # Roots: wedges from the foot, out and down to the ground, each lit along its top.
     for k in range(roots):
         side = -1 if k % 2 == 0 else 1
-        reach = 3 + k // 2 * 2
-        s.stroke([(base_x, base_y - 2), (base_x + side * reach, base_y + 0.5)], width * 0.55, mat)
+        reach = w * (1.5 + 0.35 * (k // 2)) + 2
+        drop = 1.2 + 0.6 * (k // 2)
+        root = [(base_x + side * w * 0.1, base_y - 6 - k // 2), (base_x + side * (reach + w * 0.3), base_y + drop),
+                (base_x + side * (reach + w * 0.3) - side * 1.5, base_y + drop + 1.8), (base_x - side * w * 0.3, base_y + 1.0)]
+        s.poly(root, mat, profile="flat", tone=0.55 if side < 0 else 0.38)
+        s.stroke([(base_x + side * w * 0.3, base_y - 3 - k // 2), (base_x + side * (reach + w * 0.1), base_y + drop - 0.4)],
+                 0.9, mat, profile="flat")
+        s.shapes[-1][3]["tone"] = 0.85 if side < 0 else 0.62
+    # Bark: the side away from the light in shadow, streaks of light down the left and middle, grooves.
+    shade = [(x + h * 0.35, y) for x, y, h in (at(t) for t in ts)]
+    s.poly(shade + right[::-1], mat, profile="flat", tone=0.28)
+    for off, tone, width_ in ((-0.55, 0.92, 0.9), (-0.1, 0.72, 0.8), (0.3, 0.12, 0.7)):
+        line = [(x + h * off, y) for x, y, h in (at(t) for t in np.linspace(0.04, 0.92, 6))]
+        s.stroke(line, width_, mat, profile="flat")
+        s.shapes[-1][3]["tone"] = tone
     return s
+
+
+def lower(s, start, dy):
+    """The shapes from `start` on (a crown) moved `dy` pixels down, over more of the trunk: RD's trees
+    show a short trunk under a low crown, ours stood on long bare poles (playtesting 2026-10-23)."""
+    for k in range(start, len(s.shapes)):
+        mask, mat, profile, extra = s.shapes[k]
+        moved = np.zeros_like(mask)
+        moved[int(dy * SS):] = mask[:mask.shape[0] - int(dy * SS)]
+        extra = dict(extra)
+        if "centre" in extra:
+            extra["centre"] = (extra["centre"][0], extra["centre"][1] + dy)
+        if extra.get("axis_dist") is not None:
+            ad = np.full_like(extra["axis_dist"], np.inf)
+            ad[int(dy * SS):] = extra["axis_dist"][:mask.shape[0] - int(dy * SS)]
+            extra["axis_dist"] = ad
+        s.shapes[k] = (moved, mat, profile, extra)
 
 
 def branch(s, points, width, mat):
@@ -96,7 +139,7 @@ def branch(s, points, width, mat):
 
 # ------------------------------------------------------------------------------------------- trees
 
-BARK = "#6b4a32"
+BARK = "#7a5232"                 # RD's own tree trunk, warmer and lighter than a dark pole
 SIDE_LIGHT = np.array([-0.45, -0.55, 0.7]) / np.linalg.norm([-0.45, -0.55, 0.7])
 
 
@@ -117,10 +160,12 @@ def cherry():
     branch(s, [(31, 44), (23, 36), (12, 32)], 3.4, bark)
     branch(s, [(31, 44), (41, 35), (52, 31)], 3.4, bark)
     branch(s, [(31, 42), (33, 30)], 3, bark)
+    crown = len(s.shapes)
     # Drifts of blossom in tiers, the widest at the bottom, gaps between them showing the limbs.
     for (cx, cy, rx, ry, n, seed) in ((32, 15, 13, 4, 5, 1), (15, 29, 8, 3, 4, 2), (49, 28, 8, 3, 4, 3),
                                       (32, 26, 12, 3, 5, 4)):
         puffs(s, cx, cy, rx, ry, pink, n, 6.5, seed, flat=0.8)
+    lower(s, crown, 5)
     return s
 
 
@@ -153,8 +198,10 @@ def oak(colour, seed=21, ragged=False):
     branch(s, [(32, 42), (22, 32)], 3.5, bark)
     branch(s, [(32, 40), (43, 31)], 3.5, bark)
     gap = (lambda x, y: (x - 22) ** 2 + (y - 30) ** 2 < 20 or (x - 44) ** 2 + (y - 22) ** 2 < 16) if ragged else None
+    crown = len(s.shapes)
     puffs(s, 32, 16, 18, 7, leaves, 7, 7.0, seed, skip=gap)
     puffs(s, 32, 28, 20, 4, leaves, 6, 6.5, seed + 1, flat=0.85, skip=gap)
+    lower(s, crown, 5)
     return s
 
 
@@ -165,9 +212,11 @@ def maple():
     trunk(s, 32, 60, 40, 6, bark, roots=3)
     branch(s, [(32, 44), (18, 36)], 3, bark)
     branch(s, [(32, 44), (46, 36)], 3, bark)
+    crown = len(s.shapes)
     for (cx, cy, rx, ry, n, seed, size) in ((32, 12, 8, 3, 3, 31, 6.0), (32, 22, 16, 3, 5, 32, 6.5),
                                             (32, 32, 24, 3, 7, 33, 6.0)):
         puffs(s, cx, cy, rx, ry, leaves, n, size, seed, flat=0.7)
+    lower(s, crown, 5)
     return s
 
 
@@ -292,13 +341,15 @@ def jacaranda():
     """lilac_tree: a round lilac crown, panicles of blossom hanging from its rim like cones."""
     s = scene()
     bark, bloom = Material(BARK, texture=0.07), foliage("#a678e0")
-    trunk(s, 32, 60, 38, 6, bark, roots=3)
-    branch(s, [(32, 44), (22, 36)], 3, bark)
-    branch(s, [(32, 42), (42, 35)], 3, bark)
+    trunk(s, 32, 60, 26, 6, bark, roots=3)
+    branch(s, [(32, 40), (23, 29)], 3, bark)
+    branch(s, [(32, 38), (41, 28)], 3, bark)
+    crown = len(s.shapes)
     for x in (14, 21, 28, 36, 43, 50):
         y = 30 - abs(x - 32) * 0.25
         s.poly([(x - 2.6, y - 3), (x + 2.6, y - 3), (x + 0.4, y + 6)], bloom[1 if x < 40 else 2])
     puffs(s, 32, 19, 17, 10, bloom, 12, 6.0, 61)
+    lower(s, crown, 5)
     return s
 
 
