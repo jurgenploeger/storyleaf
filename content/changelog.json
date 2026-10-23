@@ -4,6 +4,15 @@
     {
       "version": "0.7.70",
       "date": "2026-10-23",
+      "title": "Night skies and new item art",
+      "notes": [
+        "Dark Mode: the game follows your phone's look, or pick Light or Dark in Settings. The app icon has a night version too.",
+        "Over three hundred items are repainted to match the rest of the game's art: lit and shaded, with rounder helmets, hoods, boots and gloves."
+      ]
+    },
+    {
+      "version": "0.7.69",
+      "date": "2026-10-23",
       "title": "Waystones and favours",
       "notes": [
         "Seven waystones out in the wild wake when you finish their quests: touch one to travel free to any town you've been to or waystone you've woken, and Homeward Feathers and Bridge of Light reach them too.",

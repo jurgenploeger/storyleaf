@@ -92,6 +92,23 @@ first texture passed as salt-and-pepper noise, which is what added `cluster_size
 When the eye catches something the numbers passed, write it down under *Learned* below and add or tighten
 a criterion so it can't pass again. That is how the criteria get stricter.
 
+## Restyle: how every item icon is finished
+
+`tools/item_art.py` designs each item in flat three-tone fills (shapes, colours, details) and
+`pixel_kit.restyle` finishes it: each region of colour becomes a material on a hue-shifted ramp, the
+silhouette loses its square corners (never its notches or thin lines), the whole is lit from the top left
+as one form with each region swelling a little on it, the drawing's own light and dark are kept as detail
+(drawn dark lines count double), openings drawn in the outline colour become flat deep shadow in the
+item's own colour, shiny things go smooth and glossy, a small drawing is scaled up to fill its tile from
+4×, and sparkles and glows are kept as drawn. Items that are palette swaps of one (`derive` in
+art/assets.json) are swapped on the flat drawing first, where their hue windows were tuned, and finished
+the same way. Per-item options live in `item_art.RESTYLE` (smooth paper: less texture).
+
+Families share their shapes, so fix a family's helper, not its items: `boot`, `glove`, `cape` and
+`hat_piece` (helm, wizard's hat, coif, hood) in tools/item_art.py, drawn with curves (a calf and heel, a
+rounded toe, fingers of different lengths with shadow between them, a domed helm with cheek guards, a hat
+with its tip bent over, a hood with a soft peak), never boxes.
+
 ## Making a sprite in code
 
 1. Describe it with `pixel_kit.Sprite`: shapes back to front, one `Material` per surface (base colour,
@@ -103,7 +120,13 @@ a criterion so it can't pass again. That is how the criteria get stricter.
 
 ## Where it stands (2026-10-23)
 
-![As drawn now, the kit, and RD's own](pixel-style-demo.png)
+- **Every item icon drawn in code is restyled** (322 of them, and the 21 palette swaps of them): 92% pass
+  (297 / 322), against 4% before; RD's own pass 91%. Most of the rest fail a soft criterion
+  (`highlight_share`: too many bright pixels on shiny things). Known exception: items darker than the
+  house outline (onyx, the Bossbane cape, a dark ranger's hood) fail the outline checks, as the outline
+  can't be darker than what's nearly black; RD's own dark icons do the same.
+
+![As drawn before, the kit, and RD's own](pixel-style-demo.png)
 
 - The kit's first six icons (`pixel_kit.py --demo`: amber, agate, the amethyst boots and helm, the amber
   amulet, the alloy shortsword) all pass; as drawn now by `item_art.py`, one of them does. Beside RD's they
@@ -127,5 +150,13 @@ a criterion so it can't pass again. That is how the criteria get stricter.
 - **2026-10-23:** One clean ramp per material looks plastic: RD's surfaces carry near-duplicate colours. A
   second ramp a few degrees round the wheel, picked in 2 × 2 patches, brought the kit up to RD's colour
   density.
+- **2026-10-23 (restyle):** Blur-and-threshold rounding fills notches as readily as it cuts corners: a
+  glove's fingers merged into a mitten. Rounding may only remove pixels, and a thin line (body neighbours
+  on opposite sides) is kept while a one-pixel spur (one neighbour) is cut.
+- **2026-10-23 (restyle):** A hood's opening drawn in black came out as a flat black hole; RD shades the
+  inside of a hood as a deep shadow of the hood's own colour.
+- **2026-10-23 (restyle):** Palette swaps tuned on flat fills miss hue-shifted ramps (shadows lean blue,
+  highlights yellow): swap the design, then finish it, never the other way round.
+- **2026-10-23 (restyle):** Pale materials need a higher shadow floor, or a pearl's shade drops to navy.
 - **2026-10-23:** Cut gems read best as explicit planes, each with its own tone (lit crown on the left, the
   pavilion stepping into shade to the right), not as a dome.

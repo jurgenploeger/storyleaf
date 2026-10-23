@@ -50,21 +50,28 @@ def reference():
             out["creature"].append(path)
         elif a["kind"] in ("prop", "building", "tile"):
             out["scenery"].append(path)
-    import armour_art
-    import weapon_art
-    rd_items = set(weapon_art.PICKED) | set(armour_art.plan())
-    out["icon"] = [SPRITES / f"item_{i}.png" for i in sorted(rd_items) if (SPRITES / f"item_{i}.png").exists()]
+    out["icon"] = [SPRITES / f"item_{i}.png" for i in sorted(rd_items()) if (SPRITES / f"item_{i}.png").exists()]
     return out
 
 
-def code_drawn_icons():
-    """The item icons tools/item_art.py draws in code (what the style has to lift)."""
+def rd_items():
+    """Items whose icon RD drew: the weapons and armour shrunk from picked RD drawings, and any item
+    sprite generated outright (assets.json, not drawn by tools/item_art.py: the Potion)."""
     import armour_art
+    import item_art
     import weapon_art
-    rd_items = set(weapon_art.PICKED) | set(armour_art.plan())
+    assets = json.loads((ROOT / "art" / "assets.json").read_text())["assets"]
+    generated = {a["id"][len("item_"):] for a in assets
+                 if a["id"].startswith("item_") and "request" in a and "derive" not in a}
+    return set(weapon_art.PICKED) | set(armour_art.plan()) | (generated - set(item_art.DRAWINGS))
+
+
+def code_drawn_icons():
+    """The item icons tools/item_art.py draws in code."""
+    rd = rd_items()
     items = json.loads((ROOT / "content" / "items.json").read_text())["items"]
     return [SPRITES / f"item_{i['id']}.png" for i in items
-            if i["id"] not in rd_items and (SPRITES / f"item_{i['id']}.png").exists()]
+            if i["id"] not in rd and (SPRITES / f"item_{i['id']}.png").exists()]
 
 
 # --- Metrics ---------------------------------------------------------------------------------------

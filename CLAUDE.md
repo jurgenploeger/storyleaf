@@ -63,7 +63,10 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   pale tips stay ginger. Derive them with `layers` instead (body, locks, hair from `tools/hero_layers.py`, the hair's
   rules widened to appearance.json `hairLayer`), as every quest giver is; `check_content.py` insists.
 - `Storyleaf/`: Swift code (World = maps and walking, Battle = combat, UI = SwiftUI HUD and menus).
-- `tools/item_art.py`: draws every item's 32×32 sprite in code (free); rerun it after editing a drawing. A weapon also
+- `tools/item_art.py`: designs every item's 32×32 sprite in code (free), finished in the game's pixel style by
+  `pixel_kit.restyle` (docs/pixel-style.md; a palette swap of one, `derive`, is swapped on the design and
+  finished too); rerun it after editing a drawing. Boots, gloves, capes and set hats share helpers (`boot`,
+  `glove`, `cape`, `hat_piece`): fix the family there. A weapon also
   gets `held_<id>_side.png` and `_front.png` (`held_pair`), its grip in the middle of a 64-pixel canvas, one of its
   pixels to one of the hero's (`GearArt.posed`): its drawing about 24 pixels across walking left or right; facing
   you or away held up nearly upright in the hand (`FRONT_TURN`). Always in the same hand: in front of the body where

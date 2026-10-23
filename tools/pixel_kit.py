@@ -28,6 +28,7 @@ import sys
 
 import numpy as np
 from PIL import Image
+from PIL.ImageFilter import GaussianBlur as ImageFilterGaussian
 
 SS = 4                                   # supersampling: shapes are rendered this many times larger
 OUTLINE = (35, 24, 52)                   # the item icons' house outline (tools/item_art.py OUTLINE)
@@ -62,7 +63,8 @@ def ramp(base, n=6, shift_dark=24.0, shift_light=14.0):
         t = i / (n - 1)                      # 0 darkest … 1 lightest
         k = t - 0.62                         # where the base sits
         vv = min(1.0, v * (1 + 1.25 * k)) if k < 0 else min(1.0, v + (1 - v) * 0.9 * k / 0.38 + 0.08 * k)
-        vv = max(0.08, vv)
+        # Pale materials (pearl, snow, silver) stay soft in shadow, never near-black.
+        vv = max(0.08 + 0.32 * max(0.0, v - 0.7) / 0.3 * (1 - s), vv)
         if grey:
             hh = SHADOW_HUE if k < 0 else LIGHT_HUE
             ss = 0.16 * abs(k) / 0.62 if k < 0 else 0.07 * k / 0.38
@@ -78,7 +80,7 @@ class Material:
     pixels), how glossy (a specular highlight), and how much it takes light at all (`relief`: 1 rounded
     by the light, 0 flat colour)."""
 
-    def __init__(self, base, shades=8, texture=0.06, grain=1.5, gloss=0.0, relief=1.0, variety=8.0):
+    def __init__(self, base, shades=10, texture=0.06, grain=1.5, gloss=0.0, relief=1.0, variety=8.0):
         self.base, self.shades, self.texture, self.grain = base, shades, texture, grain
         self.gloss, self.relief = gloss, relief
         self.colours = ramp(base, shades)
@@ -95,6 +97,10 @@ class Sprite:
     def __init__(self, size=32, height=None):
         self.w, self.h = size, height or size
         self.shapes = []         # (mask hi-res bool, material, profile, extra)
+        # Shapes stacked on each other cast contact shadows and get a seam where they meet; regions that
+        # only touch (a restyled drawing's) don't. Rim light runs round each shape, or the silhouette.
+        self.contact, self.seams, self.rim = True, True, "shape"
+        self.overlay = None      # RGBA pixels put on top after the outline (sparkles, glows)
 
     # --- shapes, in the sprite's own pixels -----------------------------------------------------------
 
@@ -118,6 +124,13 @@ class Sprite:
             inside ^= crosses
         cx, cy = np.mean([p[0] for p in pts]), np.mean([p[1] for p in pts])
         self.shapes.append((inside, mat, profile, {"centre": (cx, cy), "bulge": bulge, "tone": tone}))
+        return self
+
+    def mask(self, mask, mat, height=None, detail=None):
+        """A shape given as a hi-res mask, with its own height field and per-pixel light (a restyle's)."""
+        ys, xs = np.nonzero(mask)
+        centre = (xs.mean() / SS, ys.mean() / SS) if len(xs) else (0, 0)
+        self.shapes.append((mask, mat, "dome", {"centre": centre, "bulge": 1.0, "height": height, "detail": detail}))
         return self
 
     def stroke(self, points, width, mat, profile="cylinder", bulge=1.0):
@@ -151,7 +164,9 @@ class Sprite:
     def _shade(self, mask, mat, profile, extra):
         """Light on one shape, 0 dark … 1 lit, at hi-res."""
         x, y = self._grid()
-        if profile == "cylinder" and "axis_dist" in extra:
+        if extra.get("height") is not None:
+            hgt = extra["height"]
+        elif profile == "cylinder" and "axis_dist" in extra:
             hgt = np.sqrt(np.clip(1 - extra["axis_dist"] ** 2, 0, 1)) * extra["bulge"]
         elif profile == "flat":
             hgt = np.zeros(mask.shape)
@@ -188,6 +203,8 @@ class Sprite:
             lit = np.full(mask.shape, float(extra["tone"]))
         if mat.gloss and not toned:
             lit = lit + mat.gloss * np.clip(n @ HALF, 0, 1) ** 24
+        if extra.get("detail") is not None:
+            lit = lit + extra["detail"]
         if mat.texture:
             rng = np.random.default_rng(int(mat.key[:8], 16))
             gw, gh = int(self.w / mat.grain) + 2, int(self.h / mat.grain) + 2
@@ -208,7 +225,7 @@ class Sprite:
             layer[mask] = i
             light[mask] = shade[mask]
         # Contact shadow: what lies on top darkens what's under it, a pixel down and to the right.
-        for i, (mask, mat, *_rest) in enumerate(self.shapes):
+        for i, (mask, mat, *_rest) in enumerate(self.shapes if self.contact else []):
             above = np.zeros((H, W), bool)
             for j in range(i + 1, len(self.shapes)):
                 above |= self.shapes[j][0]
@@ -263,14 +280,14 @@ class Sprite:
             if profile == "flat" or mat.relief < 0.5 or _e.get("tone") is not None:
                 continue
             sel = idx == i
-            p = np.pad(sel, 1)
+            p = np.pad(sel if self.rim == "shape" else idx >= 0, 1)
             up, down, left, right = p[:-2, 1:-1], p[2:, 1:-1], p[1:-1, :-2], p[1:-1, 2:]
             lit_edge = sel & (~up | ~left)
             dark_edge = sel & (~down | ~right) & ~lit_edge
             level[lit_edge] = np.minimum(level[lit_edge] + 1, mat.shades - 1)
             level[dark_edge] = np.maximum(level[dark_edge] - 1, 0)
         # A darker line where a shape meets one lying over it (on the lower one's side).
-        for y in range(self.h):
+        for y in range(self.h if self.seams else 0):
             for x in range(self.w):
                 i = idx[y, x]
                 if i < 0:
@@ -309,7 +326,176 @@ class Sprite:
                             if 0 <= y + dy < self.h and 0 <= x + dx < self.w and idx[y + dy, x + dx] >= 0]
                     c = self.shapes[near[0]][1].colours[0]
                     out[y, x] = (*[int(v * 0.6) for v in c], 255)
+        if self.overlay is not None:
+            on = self.overlay[..., 3] > 0
+            out[on] = self.overlay[on]
         return Image.fromarray(out, "RGBA")
+
+
+# --- Restyle: an existing drawing brought to the look --------------------------------------------------
+
+def _hsv(c):
+    return colorsys.rgb_to_hsv(*(np.array(c[:3]) / 255))
+
+
+def _scaled(arr, scale, src_centre, dst_centre, fill_value):
+    """`arr` (hi-res) scaled by `scale` about `src_centre`, moved to `dst_centre` (nearest neighbour)."""
+    H, W = arr.shape
+    ys, xs = np.mgrid[0:H, 0:W]
+    sy = np.round((ys + 0.5 - dst_centre[1]) / scale + src_centre[1] - 0.5).astype(int)
+    sx = np.round((xs + 0.5 - dst_centre[0]) / scale + src_centre[0] - 0.5).astype(int)
+    ok = (sy >= 0) & (sy < H) & (sx >= 0) & (sx < W)
+    out = np.full(arr.shape, fill_value, dtype=arr.dtype)
+    out[ok] = arr[sy[ok], sx[ok]]
+    return out
+
+
+def restyle(img, round_corners=0.6, texture=0.045, fill=0.84):
+    """An icon drawn the old way (tools/item_art.py: flat three-tone fills, one outline) re-rendered in
+    the look: its regions of colour become materials on hue-shifted ramps, its silhouette rounded at the
+    corners, the whole lit from the top left as one form with each region swelling a little on it, the
+    old drawing's own light and dark kept as detail (creases, slits, laces), textured, rim-lit and
+    outlined afresh. Sparkles and soft glows are kept as drawn."""
+    a = np.asarray(img.convert("RGBA")).copy()
+    h, w = a.shape[:2]
+    opaque = a[..., 3] >= 250
+    outline = np.all(a[..., :3] == OUTLINE, axis=-1) & opaque
+    # Sparkles (a lone pixel off the body) and glows (partly transparent) stay as they are.
+    p = np.pad(opaque, 1)
+    neigh = sum(p[1 + dy:h + 1 + dy, 1 + dx:w + 1 + dx] for dy in (-1, 0, 1) for dx in (-1, 0, 1) if dy or dx)
+    lone = opaque & (neigh == 0)
+    overlay = np.zeros_like(a)
+    keep = lone | ((a[..., 3] > 0) & ~opaque)
+    overlay[keep] = a[keep]
+    body = opaque & ~lone
+    # The old outline goes (the kit draws its own); dark lines inside the drawing stay as a material.
+    q = np.pad(body, 1)
+    touches_air = ~(q[:-2, 1:-1] & q[2:, 1:-1] & q[1:-1, :-2] & q[1:-1, 2:])
+    body &= ~(outline & touches_air)
+    # Regions: colours grouped into families by hue and saturation (a drawing's dark/mid/light of one
+    # ramp land together), each family's commonest colour its base.
+    keys = [tuple(c) for c in a[..., :3][body]]
+    counts = {}
+    for k in keys:
+        counts[k] = counts.get(k, 0) + 1
+    groups = []                                      # [base colour, [colours]]
+    for col, _ in sorted(counts.items(), key=lambda kv: -kv[1]):
+        hh, ss, vv = _hsv(col)
+        home = None
+        for g in groups:
+            gh, gs, gv = _hsv(g[0])
+            dh = abs((hh - gh + 0.5) % 1 - 0.5) * 360
+            grey = ss < 0.14 and gs < 0.14
+            if (grey and abs(vv - gv) < 0.45) or (not grey and ss >= 0.1 and gs >= 0.1 and dh < 22 and abs(ss - gs) < 0.4):
+                home = g
+                break
+        if home is None:
+            groups.append([col, [col]])
+        else:
+            home[1].append(col)
+    of = {c: i for i, g in enumerate(groups) for c in g[1]}
+    gmap = np.full((h, w), -1)
+    for y, x in zip(*np.nonzero(body)):
+        gmap[y, x] = of[tuple(a[y, x, :3])]
+    # Hi-res: the regions blown up, and (a drawing smaller than its tile) scaled up so it fills `fill`
+    # of it, centred, as RD's icons do: re-rendered from 4×, nothing is stretched.
+    big = np.kron(gmap, np.ones((SS, SS), int))
+    every = (gmap >= 0) | (overlay[..., 3] > 0)
+    ys, xs = np.nonzero(every)
+    span = max(xs.max() - xs.min() + 1, ys.max() - ys.min() + 1) if len(xs) else w
+    scale = min(1.5, fill * max(h, w) / span) if fill and span < fill * max(h, w) else 1.0
+    if scale > 1.0:
+        src = ((xs.min() + xs.max() + 1) / 2 * SS, (ys.min() + ys.max() + 1) / 2 * SS)
+        dst = (w * SS / 2, h * SS / 2)
+        big = _scaled(big, scale, src, dst, -1)
+        # The 1× maps follow (the old drawing's shading, the sparkles), sampled at each pixel's middle.
+        def at1(arr, fill_value):
+            hi = np.kron(arr, np.ones((SS, SS) + arr.shape[2:], arr.dtype)) if arr.ndim == 2 else \
+                np.repeat(np.repeat(arr, SS, 0), SS, 1)
+            if hi.ndim == 2:
+                moved = _scaled(hi, scale, src, dst, fill_value)
+            else:
+                moved = np.stack([_scaled(hi[..., k], scale, src, dst, fill_value) for k in range(hi.shape[2])], -1)
+            return moved[SS // 2::SS, SS // 2::SS]
+        overlay = at1(overlay, 0)
+        gmap_scaled = at1(gmap, -1)
+        a = np.where(gmap_scaled[..., None] >= 0, at1(a, 0), a * 0)
+        gmap = gmap_scaled
+    sil = Image.fromarray(((big >= 0) * 255).astype(np.uint8)).filter(ImageFilterGaussian(SS * round_corners))
+    # Rounding only takes corners off: it never fills a notch (the gaps between a glove's fingers).
+    sil = (np.asarray(sil) >= 128) & (big >= 0)
+    # Lines (a chain, a whip's lash) are never rounded away: a pixel with its body neighbours on opposite
+    # sides (left and right, up and down, or corner to corner) is part of something thin, and stays. A
+    # spur sticking out of an edge (one neighbour) is a corner, and goes.
+    qb = np.pad(gmap >= 0, 1)
+    n_, s_, w_, e_ = qb[:-2, 1:-1], qb[2:, 1:-1], qb[1:-1, :-2], qb[1:-1, 2:]
+    nw, ne, sw, se = qb[:-2, :-2], qb[:-2, 2:], qb[2:, :-2], qb[2:, 2:]
+    nb4 = n_.astype(int) + s_ + w_ + e_
+    through = (n_ & s_) | (w_ & e_) | (nw & se) | (ne & sw)
+    thin = (gmap >= 0) & (nb4 <= 2) & through
+    sil |= np.kron(thin, np.ones((SS, SS), bool))
+    cur = big.copy()
+    for _ in range(SS * 3):
+        empty = cur < 0
+        if not (empty & sil).any():
+            break
+        pc = np.pad(cur, 1, constant_values=-1)
+        for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            nb = pc[1 + dy:cur.shape[0] + 1 + dy, 1 + dx:cur.shape[1] + 1 + dx]
+            fill = (cur < 0) & (nb >= 0)
+            cur[fill] = nb[fill]
+    cur[~sil] = -1
+    # Height: one round form over the silhouette, each region swelling a little on it.
+    s = Sprite(w, h)
+    s.contact, s.seams, s.rim = False, False, "silhouette"
+    whole = s._distance(cur >= 0)
+    t = whole / max(1.0, whole.max())
+    height = np.sqrt(np.clip(1 - (1 - t) ** 2, 0, 1)) * (whole.max() / SS) * 0.55
+    # The old drawing's own shading, as detail: each pixel's value against its region's base.
+    tone = np.zeros((h, w))
+    for y, x in zip(*np.nonzero(gmap >= 0)):
+        g = groups[gmap[y, x]]
+        vals = [_hsv(c)[2] for c in g[1]]
+        spread = max(0.12, max(vals) - min(vals))
+        tone[y, x] = np.clip((_hsv(a[y, x])[2] - _hsv(g[0])[2]) / spread, -1, 1)
+    # Drawn dark lines (creases between fingers, seams, a slit) count double, so the new light doesn't
+    # wash them out.
+    detail = np.kron(np.where(tone < -0.5, tone * 2, tone), np.ones((SS, SS))) * 0.3
+    # An opening drawn in the outline's colour (a hood's, a helm's slit) is the inside of the thing, in
+    # deep shadow: the darkest shades of the biggest region's own colour, not black.
+    biggest = max(range(len(groups)), key=lambda i: (cur == i).sum()) if groups else 0
+    deep = ramp("#%02x%02x%02x" % tuple(int(v) for v in groups[biggest][0]), 10)[1] if groups else OUTLINE
+    for i, (base, cols) in enumerate(groups):
+        m = cur == i
+        if not m.any():
+            continue
+        d = s._distance(m)
+        own = np.sqrt(np.clip(d / max(1.0, d.max()), 0, 1)) * (d.max() / SS) * 0.3
+        hh, ss, vv = _hsv(base)
+        is_void = tuple(base) == OUTLINE
+        if is_void:
+            base = deep
+        bright = max(_hsv(c)[2] for c in cols)
+        # Shiny stuff (glass, metal, gems: a near-white highlight drawn in it) is smooth and glossy;
+        # everything else carries the surface texture.
+        # (a white highlight drawn on it counts, though it lands in a group of its own).
+        region = gmap == i
+        po = np.pad(region, 1)
+        beside = (po[:-2, 1:-1] | po[2:, 1:-1] | po[1:-1, :-2] | po[1:-1, 2:]) & ~region & (gmap >= 0)
+        white_beside = any(_hsv(a[y, x])[1] < 0.15 and _hsv(a[y, x])[2] > 0.92 for y, x in zip(*np.nonzero(beside)))
+        shiny = (any(_hsv(c)[1] < 0.3 and _hsv(c)[2] > 0.9 for c in cols) or (ss < 0.3 and bright > 0.85)
+                 or white_beside)
+        mat = Material("#%02x%02x%02x" % tuple(base), shades=10 if m.sum() > 40 * SS * SS else 7,
+                       texture=texture * (0.45 if shiny else 1.0),
+                       relief=0.0 if is_void else 1.0, gloss=0.6 if shiny and not is_void else 0.0,
+                       variety=0.0 if is_void else (4.0 if shiny else 8.0))
+        if is_void:
+            # Flat deep shadow: no light on it, a little darker than the colour's own middle.
+            s.mask(m, mat, height=np.zeros_like(height), detail=np.full(height.shape, -0.18))
+        else:
+            s.mask(m, mat, height=height + own, detail=detail)
+    s.overlay = overlay
+    return s
 
 
 # --- Demo: code-drawn icons redrawn with the kit ------------------------------------------------------
@@ -389,22 +575,26 @@ def main(argv):
         return 0
     target = pathlib.Path(argv[argv.index("--demo") + 1])
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import io
+    import tempfile
+    import item_art
     import pixel_style as ps
     root = pathlib.Path(__file__).resolve().parent.parent
-    tmp = target.parent / "kit"
-    tmp.mkdir(exist_ok=True)
+    tmp = pathlib.Path(tempfile.mkdtemp())
     rows = []
     for item_id, sprite in demo_sprites().items():
         new = tmp / f"item_{item_id}.png"
         sprite.render().save(new)
-        old = root / "art" / "sprites" / f"item_{item_id}.png"
+        # Before: the flat design as tools/item_art.py draws it, unfinished.
+        old = tmp / f"flat_{item_id}.png"
+        Image.open(io.BytesIO(item_art.render(item_id).png())).save(old)
         verdicts = []
         for p in (old, new):
             j = ps.judge(ps.measure(p), "icon")
             ok, soft = ps.verdict(j)
             verdicts.append((ok, soft, [n for n, *_, good in j if not good]))
         rows.append((item_id, old, new, verdicts))
-        print(f"{item_id:18} old: {'PASS' if verdicts[0][0] else 'FAIL'} {verdicts[0][2]}   "
+        print(f"{item_id:18} flat: {'PASS' if verdicts[0][0] else 'FAIL'} {verdicts[0][2]}   "
               f"kit: {'PASS' if verdicts[1][0] else 'FAIL'} {verdicts[1][2]}")
     scale, cell = 6, 32 * 6 + 12
     # Three columns: as drawn now, the kit, and an icon RD drew (the target look), one per row.
@@ -416,7 +606,7 @@ def main(argv):
             im = Image.open(p).convert("RGBA").resize((32 * scale, 32 * scale), Image.NEAREST)
             sheet.alpha_composite(im, (c * (cell + 8) + 6, r * cell + 6))
     sheet.save(target)
-    print(f"wrote {target} (left: as drawn now, middle: the kit, right: drawn by RD, for the look)")
+    print(f"wrote {target} (left: the flat design, middle: the kit, right: drawn by RD, for the look)")
     return 0
 
 

@@ -2,16 +2,16 @@
   "_about": "Accepted bands per metric and kind (p10/p90 here hold the reference's 5th and 95th percentile) (tools/pixel_style.py calibrate). Edit by recalibrating, not by hand.",
   "kinds": {
     "icon": {
-      "count": 138,
+      "count": 140,
       "semi_alpha": {
         "p10": 0.0,
         "median": 0.0,
         "p90": 0.0
       },
       "colour_density": {
-        "p10": 2.6328,
-        "median": 5.0093,
-        "p90": 8.1032
+        "p10": 2.4,
+        "median": 4.9951,
+        "p90": 8.0683
       },
       "outline_dark": {
         "p10": 0.98,
@@ -31,12 +31,12 @@
       "flat": {
         "p10": 0.0,
         "median": 0.0,
-        "p90": 0.0241
+        "p90": 0.0249
       },
       "orphans": {
-        "p10": 0.2,
-        "median": 0.3579,
-        "p90": 0.5625
+        "p10": 0.1993,
+        "median": 0.3537,
+        "p90": 0.562
       },
       "shades_per_ramp": {
         "p10": 1.0,
@@ -44,29 +44,29 @@
         "p90": 11.5
       },
       "hue_shift": {
-        "p10": -1.9213,
+        "p10": -1.8991,
         "median": 7.7318,
-        "p90": 22.1989
+        "p90": 22.1263
       },
       "value_range": {
-        "p10": 0.3483,
-        "median": 0.637,
-        "p90": 0.827
+        "p10": 0.3512,
+        "median": 0.6321,
+        "p90": 0.8267
       },
       "light_top_left": {
-        "p10": -0.0944,
+        "p10": -0.1118,
         "median": 0.1416,
-        "p90": 0.4782
+        "p90": 0.4811
       },
       "highlight_share": {
         "p10": 0.0,
-        "median": 0.1077,
-        "p90": 0.2907
+        "median": 0.107,
+        "p90": 0.2906
       },
       "cluster_size": {
-        "p10": 1.4169,
-        "median": 1.8932,
-        "p90": 3.2692
+        "p10": 1.4184,
+        "median": 1.9014,
+        "p90": 3.2706
       }
     },
     "creature": {
