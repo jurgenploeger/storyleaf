@@ -29,6 +29,11 @@ enum HUDStyle {
     /// Deep navy: window glass and dark text on light buttons.
     static let ink = Color(red: 0.06, green: 0.15, blue: 0.3)
     static let orange = Color(red: 0.98, green: 0.52, blue: 0.16)
+    /// The close button's lit top and shaded foot, either side of `orange`.
+    static let closeLight = Color(red: 1, green: 0.75, blue: 0.4)
+    static let closeDeep = Color(red: 0.75, green: 0.3, blue: 0.05)
+    /// The dark track under a bar's fill (at 85%).
+    static let barTrack = Color(red: 0.05, green: 0.1, blue: 0.2)
 
     static let frameLight = Color.adaptive(light: Color(red: 0.86, green: 0.96, blue: 1), dark: Color(red: 0.42, green: 0.56, blue: 0.72))
     static let frameMid = Color.adaptive(light: Color(red: 0.5, green: 0.77, blue: 0.95), dark: Color(red: 0.24, green: 0.4, blue: 0.6))
@@ -183,7 +188,7 @@ struct GlossyBar: View {
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
-                Capsule().fill(Color(red: 0.05, green: 0.1, blue: 0.2).opacity(0.85))
+                Capsule().fill(HUDStyle.barTrack.opacity(0.85))
                 Capsule()
                     .fill(LinearGradient(colors: [color.opacity(0.75), color, color.opacity(0.8)], startPoint: .top, endPoint: .bottom))
                     .frame(width: max(height, proxy.size.width * fraction))
@@ -235,7 +240,7 @@ struct OrangeCloseButton: View {
                 .frame(width: 24, height: 24)
                 .background(
                     Circle()
-                        .fill(RadialGradient(colors: [Color(red: 1, green: 0.75, blue: 0.4), HUDStyle.orange, Color(red: 0.75, green: 0.3, blue: 0.05)], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 1, endRadius: 16))
+                        .fill(RadialGradient(colors: [HUDStyle.closeLight, HUDStyle.orange, HUDStyle.closeDeep], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 1, endRadius: 16))
                         .overlay(Circle().strokeBorder(.white.opacity(0.8), lineWidth: 1.5))
                 )
         }
