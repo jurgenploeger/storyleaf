@@ -70,7 +70,9 @@ ARMOUR = {
 # bent (a power, so black and white stay put and the shading keeps its shape) until their middles are
 # the target's (None: as drawn). Only these pixels change: skin, hair, leather and trim keep each
 # sheet's own. Steel is greyish (`max`), so a tunic in navy doesn't count as mail; the snow cloak
-# keeps each sheet's whiteness, as the dwarf's is mostly white fur.
+# keeps each sheet's whiteness, as the dwarf's is mostly white fur. `even`: saturation and value scaled
+# evenly instead: the elf's hood is blue at 0.95, and bent down to 0.6 its paler blues went near white
+# (a white patch on the crown that no hide's `tint` could reach, being under its minSaturation).
 MATERIAL = {
     "mage_robe": dict(hue=(170, 260), min=0.2, to=(222, 0.80, 0.50)),
     "chain_mail": dict(hue=(100, 280), min=0.0, max=0.4, to=(210, 0.20, 0.40)),
@@ -78,7 +80,7 @@ MATERIAL = {
     "dragon_mail": dict(hue=(330, 20), min=0.3, to=(2, 0.85, 0.85)),
     "snow_cloak": dict(hue=(150, 260), min=0.03, to=(202, None, None)),
     "ranger_cloak": dict(hue=(60, 170), min=0.15, to=(110, 0.56, 0.33)),
-    "hide_hood": dict(hue=(180, 260), min=0.2, to=(215, 0.60, 0.55)),
+    "hide_hood": dict(hue=(180, 260), min=0.2, to=(215, 0.60, 0.55), even=True),
 }
 
 F = 48
@@ -109,7 +111,7 @@ def save(img, name):
     Image.fromarray((np.clip(img, 0, 1) * 255).round().astype(np.uint8), "RGBA").save(SPRITES / f"{name}.png")
 
 
-def material(img, hue, min, to, max=1.0):
+def material(img, hue, min, to, max=1.0, even=False):
     """`img` with its main material (MATERIAL) brought to the colour `to` (hue, saturation, value).
     Repeated till it settles: turning the hue moves a few pixels in or out of the material's range."""
     lo, hi = hue
@@ -123,7 +125,11 @@ def material(img, hue, min, to, max=1.0):
         middle = mean + np.median((h[m] - mean + 180) % 360 - 180)   # the median, round the circle
         turn = (to[0] - middle + 180) % 360 - 180
         def bend(x, target):
-            return x if target is None else np.clip(x, 1e-4, 1) ** (np.log(target) / np.log(np.clip(np.median(x), 1e-4, 0.9999)))
+            if target is None:
+                return x
+            if even:
+                return np.clip(x * target / np.clip(np.median(x), 1e-4, 1), 0, 1)
+            return np.clip(x, 1e-4, 1) ** (np.log(target) / np.log(np.clip(np.median(x), 1e-4, 0.9999)))
         if abs(turn) < 1 and all(t is None or abs(np.median(x) - t) < 0.01 for x, t in ((s[m], to[1]), (v[m], to[2]))):
             break
         out[..., :3][m] = hsv2rgb((h[m] + turn) % 360, bend(s[m], to[1]), bend(v[m], to[2]))
