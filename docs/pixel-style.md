@@ -194,9 +194,9 @@ colours sit lower and richer than a flat design's.
 Families share their shapes, so fix a family's helper, not its items: `boot`, `glove`, `cape` and
 `hat_piece` (helm, wizard's hat, coif, hood) in tools/item_art.py, drawn with curves (a calf and heel, a
 rounded toe, fingers of different lengths with shadow between them, a domed helm with cheek guards, a hat
-with its tip bent over, a hood with a soft peak), never boxes. Whips (`whip_line`) are a D: the handle
-upright on the left, pommel down, the lash looping out of its top, round the right and back along the
-bottom to the pommel; never coiled.
+with its tip bent over, a hood with a soft peak), never boxes. Whips (`whip_line`) hang from the hand:
+the handle up and to the right from the pommel, the lash out of its tip, over the top and down the right
+in a loose arc, its end flicked out along the bottom (thick enough to stay one line); never coiled.
 
 ## Making a sprite in code
 
@@ -230,7 +230,8 @@ bottom to the pommel; never coiled.
   from the light (`rim="lower"`), no seams between clusters, and a crown laid as clusters of leaves on a
   jittered grid (`puffs`), each lit on its own with a paler patch toward its top left. Beside RD's own
   `tree` they read as the same game but softer, with less contrast in the leaves.
-- **Whips:** all 25 pass as a D (16 did as an S: the loop's long, even curve has steadier runs).
+- **Whips:** 20 of the 25 pass; the rest fail `cluster_size` and `orphans`, as a three-pixel lash
+  braided every few pixels does by nature. Their shape was picked by eye.
 - **Next, in order:**
   1. Ramps of 4 to 5 shades on icons (RD's 4, ours 6), and less of the designs' own top-left falloff.
   2. Presets on more than the main region (a gauntlet's plate *and* its leather cuff), and per-region
@@ -253,9 +254,10 @@ bottom to the pommel; never coiled.
   `hue_shift`. The rule is relative to the light: shadows away from yellow, round the short way.
 - **2026-10-23 (outline):** The house outline is no darker than a navy or shadow-violet item, and those
   failed `outline_dark`; it's now deepened to half the light of what it rounds.
-- **2026-10-23 (whips):** A coiled whip read as a rope or a snail in the bag; dangling in an S from a
-  diagonal handle it read as a hook. The look the player liked is a D: the handle upright, the lash
-  looping out of its top and back down to the pommel.
+- **2026-10-23 (whips):** Four shapes tried; the one picked is the lash arching from the handle's tip over
+  the top and down the right, its end flicked along the bottom. A coil read as a rope, an S from a
+  diagonal handle as a hook, a closed D loop as a lasso. A tip thinner than a pixel and a half across
+  breaks into dots when shrunk.
 - **2026-10-23 (hoods):** A hood's opening as one flat dark shade read as a black hole: the inside needs
   its own light, darkest under the brim and lighter down the lower inner wall.
 - **2026-10-23 (glints):** RD's armour has a near-white glint on each plate; our helms had only a

@@ -472,10 +472,10 @@ def draw_tamer_whip(c):
 
 def draw_beast_whip(c):
     def tassel(c):
-        c.line(10, 14, 16, 15.5, hexc("5a2c26"))           # a paw charm hung inside the loop
-        c.disc(18.5, 18.5, 2.6, hexc("f6c33b"))
-        for (x, y) in ((16, 15.2), (18.5, 14.6), (21, 15.2)):
-            c.disc(x, y, 1.1, hexc("f6c33b"))
+        c.line(5, 14, 6, 18, hexc("5a2c26"))               # a paw pad on a cord from the pommel
+        c.disc(6, 22, 3, hexc("f6c33b"))
+        for (x, y) in ((3, 18.5), (6, 18), (9, 18.5)):
+            c.disc(x, y, 1.2, hexc("f6c33b"))
     # A red-brown grip: a yellow-brown one is one colour family with the paw (pixel_kit.restyle).
     whip_line(c, [hexc("7a1a1a"), hexc("b8302a"), hexc("e8604a")], [hexc("3a1c18"), hexc("5a2c26"), hexc("7a4840")],
               tassel=tassel)
@@ -1191,37 +1191,39 @@ def axe_line(c, head, handle, style="axe", gem=None):
 
 
 def whip_line(c, leather, grip, turns=3.2, tip=None, gem=None, studs=None, tassel=None):
-    """A whip held up by its handle, its lash looping out of the top and hanging back down in a D: the
-    handle the D's upright on the left, pommel at the bottom; the lash over the top, round the right
-    and back in along the bottom, thinner to the tip, which ends by the pommel. Not coiled (the old
-    icon read as a rope), not dangling from a diagonal handle (that read as a hook). `turns` (the
-    coil's turns, once) makes the loop rounder or flatter."""
-    bulge = (turns - 3.2) * 2.5
-    def bezier(ps, n):
-        out = []
-        for i in range(n):
-            t = i / (n - 1)
-            w = ((1 - t) ** 3, 3 * t * (1 - t) ** 2, 3 * t * t * (1 - t), t ** 3)
-            out.append((sum(p[0] * k for p, k in zip(ps, w)), sum(p[1] * k for p, k in zip(ps, w))))
-        return out
-    points = bezier([(9, 13), (11, 2 - bulge), (29 + bulge, 2), (27 + bulge, 17)], 34)
-    points += bezier([(27 + bulge, 17), (26 + bulge, 28), (17, 30), (13, 26.5)], 26)[1:]
+    """A whip held up by its handle, the lash hanging from it (as hanging_whip, not coiled): the handle
+    up and to the right from the pommel, the lash out of its tip, over the top and down the right in a
+    loose arc, thinner to the tip, which flicks out along the bottom. The look the player picked over a
+    D and an S (2026-10-23). `turns` (the coil's turns, once) swings the arc wider or narrower."""
+    sway = 2 + (turns - 3.2) * 3
+    lash = [(12, 6), (21 + sway, 5), (24 + sway, 17), (16, 25)]
+    points = []
+    for i in range(48):
+        t = i / 47
+        w = ((1 - t) ** 3, 3 * t * (1 - t) ** 2, 3 * t * t * (1 - t), t ** 3)
+        points.append((sum(p[0] * k for p, k in zip(lash, w)), sum(p[1] * k for p, k in zip(lash, w))))
+    ex, ey = points[-1]
+    for i in range(1, 12):                       # the end, flicking out along the bottom
+        t = i / 11
+        points.append((ex - 1 + t * 10, ey + 3.5 * t - 1.5 * t * t))
     for i, (x, y) in enumerate(points):           # braided, light and dark in turn, thinner to the tip
-        r = 1.7 if i < 16 else 1.4 if i < 42 else 1.0
+        r = 1.5 if i < 16 else 1.1 if i < 40 else 0.75  # any thinner and the tip breaks into dots
         c.disc(x, y, r, leather[2] if i % 6 < 2 else leather[1])
-        if studs and i % 9 == 4 and i < 52:
+        if studs and i % 9 == 4 and i < 45:
             c.set(x, y, studs)
+    c.shade(lambda x, y, col: col in (leather[1], leather[2]) and c.get(x - 1, y) is None and c.get(x, y - 1) is not None
+            and x > 20, leather[0])
     if tip:
-        c.disc(points[-1][0], points[-1][1], 1.5, tip)
-    c.line(7, 28, 9, 14, grip[1], width=3.4)      # the handle, wrapped
-    c.line(7, 28, 8.5, 15, grip[0])
-    for y in (25, 22, 19):
-        c.line(6.6, y + 1, 9.4, y - 1, grip[2])
-    c.disc(9, 13.5, 1.8, GOLD[1])                 # the band where the lash meets the handle
-    c.set(8, 13, GOLD[2])
+        c.disc(points[-1][0], points[-1][1], 1.4, tip)
+    c.line(5, 13, 12, 6, grip[1], width=3.2)      # the handle, wrapped
+    c.line(6, 13, 12, 7, grip[0])
+    for (x, y) in ((7, 11), (9, 9)):
+        c.line(x - 1, y - 1, x + 1, y + 1, grip[2])
+    c.disc(12, 6, 1.6, GOLD[1])                  # the band where the lash meets the handle
+    c.set(11, 5, GOLD[2])
     if gem:
-        c.disc(6.8, 28.8, 2.0, gem[1])
-        c.set(6, 28, gem[2])
+        c.disc(4.5, 13.5, 1.8, gem[1])
+        c.set(4, 13, gem[2])
     if tassel:
         tassel(c)
     return points[-1]
@@ -1852,7 +1854,7 @@ def draw_goldleaf_staff(c):
 def draw_goldleaf_whip(c):
     """A golden lash with a leaf at its tip and a heart-oak grip."""
     x, y = whip_line(c, leather=LEAFGOLD, grip=HEARTOAK, turns=3.6, gem=GREEN, studs=WHITE)
-    gold_leaf(c, x, y, 6, angle=math.pi * 0.95, colors=[hexc("6a8a1e"), hexc("b8d040"), hexc("f4ffb0")])
+    gold_leaf(c, x - 1, y, 6, angle=-math.pi / 6, colors=[hexc("6a8a1e"), hexc("b8d040"), hexc("f4ffb0")])
 
 
 def ramp(colour):
