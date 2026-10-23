@@ -118,18 +118,43 @@ def trunk(s, base_x, base_y, top_y, width, mat, lean=0.0, roots=2):
 def lower(s, start, dy):
     """The shapes from `start` on (a crown) moved `dy` pixels down, over more of the trunk: RD's trees
     show a short trunk under a low crown, ours stood on long bare poles (playtesting 2026-10-23)."""
+    shift(s, start, 0, dy)
+
+
+def centred(s, start, x):
+    """The shapes from `start` on (a crown) moved sideways so their middle is over `x` (the trunk's): a
+    crown of clusters on a jittered grid can come out a few pixels to one side (playtesting 2026-10-23:
+    the candy trees hung left of their sticks). Returns how far they moved."""
+    union = np.zeros_like(s.shapes[start][0])
+    for mask, *_ in s.shapes[start:]:
+        union |= mask
+    cols = np.nonzero(union.any(axis=0))[0]
+    dx = round(x - (cols.min() + cols.max() + 1) / 2 / SS)
+    shift(s, start, dx, 0)
+    return dx
+
+
+def shift(s, start, dx, dy):
+    """The shapes from `start` on moved `dx` right and `dy` down, in whole pixels."""
+    ox, oy = int(round(dx * SS)), int(round(dy * SS))
+
+    def moved(a, fill):
+        out = np.full_like(a, fill)
+        h, w = a.shape
+        out[max(0, oy):h + min(0, oy), max(0, ox):w + min(0, ox)] = a[max(0, -oy):h - max(0, oy), max(0, -ox):w - max(0, ox)]
+        return out
     for k in range(start, len(s.shapes)):
         mask, mat, profile, extra = s.shapes[k]
-        moved = np.zeros_like(mask)
-        moved[int(dy * SS):] = mask[:mask.shape[0] - int(dy * SS)]
         extra = dict(extra)
         if "centre" in extra:
-            extra["centre"] = (extra["centre"][0], extra["centre"][1] + dy)
+            extra["centre"] = (extra["centre"][0] + dx, extra["centre"][1] + dy)
         if extra.get("axis_dist") is not None:
-            ad = np.full_like(extra["axis_dist"], np.inf)
-            ad[int(dy * SS):] = extra["axis_dist"][:mask.shape[0] - int(dy * SS)]
-            extra["axis_dist"] = ad
-        s.shapes[k] = (moved, mat, profile, extra)
+            extra["axis_dist"] = moved(extra["axis_dist"], np.inf)
+        if extra.get("height") is not None:
+            extra["height"] = moved(extra["height"], 0.0)
+        if extra.get("detail") is not None and np.ndim(extra["detail"]) == 2:
+            extra["detail"] = moved(extra["detail"], 0.0)
+        s.shapes[k] = (moved(mask, False), mat, profile, extra)
 
 
 def branch(s, points, width, mat):
@@ -305,6 +330,7 @@ def frosted():
                      max(1.0, width * 0.62), depth - 1)
 
     trunk(s, 32, 58, 40, 4.2, bark, lean=-0.6, roots=3)
+    crown = len(s.shapes)
     for angle, length in ((-0.85, 11), (-0.25, 12), (0.3, 11.5), (0.9, 10)):
         grow(32 + angle * 2, 42, angle, length, 3.4, 3)
     # Snow lies in the forks of the limbs and the first branches; the twigs past them stay bare.
@@ -313,6 +339,8 @@ def frosted():
             continue
         size = 1.0 + width * 0.7
         s.ellipse(x, y - size * 0.4, size * 1.25, size * 0.65, snow)
+    dx = centred(s, crown, 31.4)                              # its limbs grow at random; centred on the trunk
+    twigs[:] = [[(x + dx, y) for x, y in line] for line in twigs]
     s.ellipse(32, 41.5, 4.5, 2.2, snow)                       # in the crotch of the trunk
     s.ellipse(32, 58.5, 13, 3.2, snow)                        # the drift round its foot
     s.finish = lambda img: snow_palette(pixel_lines(img, twigs, "#3a3442", "#6a6070"))
@@ -360,7 +388,9 @@ def candy(colour, stripe):
     s.stroke([(32, 60), (32, 38)], 5, stick)
     for y in np.arange(58, 38, -4.5):
         s.stroke([(29.6, y), (34.4, y - 2.2)], 1.8, band)
+    crown = len(s.shapes)
     puffs(s, 32, 24, 14, 11, fluff, 10, 7.0, 71, bulge=4.0)
+    centred(s, crown, 32)
     return s
 
 
