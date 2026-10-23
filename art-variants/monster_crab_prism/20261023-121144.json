@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "crab with an amethyst crystal shell and little crystal shards stuck on its back like decorations, one big claw, chibi, cute monster",
+    "prompt_style": "rd_plus__low_res",
+    "width": 40,
+    "height": 40,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792757501,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 16.451,
+    "request_id": "cb14eeb2-b2dc-4d8e-8220-0d1d7d83704f",
+    "outputs_retained_until": 1792843884
+  }
+}

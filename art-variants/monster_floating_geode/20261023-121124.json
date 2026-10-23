@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "floating round stone geode cracked open in the front to show a glowing purple crystal heart, small sparkles around it, chibi, cute monster",
+    "prompt_style": "rd_plus__low_res",
+    "width": 40,
+    "height": 40,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792757482,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 16.631,
+    "request_id": "19e357a8-fcfe-4cd5-aa3b-19dce60933cc",
+    "outputs_retained_until": 1792843840
+  }
+}

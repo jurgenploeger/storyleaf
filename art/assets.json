@@ -4205,24 +4205,15 @@
         ]
       }
     },
-    {
+{
       "id": "monster_fire_bear_frost",
       "kind": "monster",
-      "derive": {
-        "from": "monster_fire_bear",
-        "recolor": [
-          {
-            "hue": [
-              320,
-              45
-            ],
-            "minSaturation": 0.2,
-            "to": 197.3,
-            "spread": -1.0,
-            "saturation": 0.6,
-            "value": 1.15
-          }
-        ]
+      "request": {
+        "prompt": "white polar bear cub with icy blue paws and frost on its fur, a little puff of cold breath, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 40,
+        "height": 40,
+        "remove_bg": true
       }
     },
     {
@@ -7470,23 +7461,15 @@
         ]
       }
     },
-    {
+{
       "id": "monster_temple_jelly",
       "kind": "monster",
-      "derive": {
-        "from": "monster_jelly",
-        "recolor": [
-          {
-            "hue": [
-              280,
-              20
-            ],
-            "minSaturation": 0.25,
-            "to": 231.5,
-            "spread": -1.0,
-            "value": 0.9
-          }
-        ]
+      "request": {
+        "prompt": "round aqua water jelly blob wearing a small golden temple circlet with a blue gem, shimmering droplets, serene eyes, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 40,
+        "height": 40,
+        "remove_bg": true
       }
     },
     {
@@ -7625,33 +7608,15 @@
         ]
       }
     },
-    {
+{
       "id": "monster_ore_golem",
       "kind": "monster",
-      "derive": {
-        "from": "monster_floating_stone",
-        "recolor": [
-          {
-            "hue": [
-              0,
-              360
-            ],
-            "minSaturation": 0,
-            "maxSaturation": 0.25,
-            "to": 24,
-            "saturation": 5,
-            "value": 1.0
-          },
-          {
-            "hue": [
-              150,
-              250
-            ],
-            "minSaturation": 0.25,
-            "to": 24,
-            "saturation": 1.2
-          }
-        ]
+      "request": {
+        "prompt": "stocky golem made of smooth lavender dreamstone blocks with veins of gold ore, sleepy glowing eyes, a little pickaxe, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 40,
+        "height": 40,
+        "remove_bg": true
       }
     },
 {
@@ -7665,24 +7630,15 @@
         "remove_bg": true
       }
     },
-    {
+{
       "id": "monster_crystal_widow",
       "kind": "monster",
-      "derive": {
-        "from": "monster_black_widow",
-        "recolor": [
-          {
-            "hue": [
-              310,
-              30
-            ],
-            "minSaturation": 0.25,
-            "to": 194.6,
-            "spread": -1.0,
-            "saturation": 0.9,
-            "value": 1.15
-          }
-        ]
+      "request": {
+        "prompt": "spider with a body of clear cut crystal, glowing cyan facets and thin glass legs, a sparkling web thread, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 40,
+        "height": 40,
+        "remove_bg": true
       }
     },
     {
@@ -10480,23 +10436,15 @@
         "remove_bg": true
       }
     },
-    {
+{
       "id": "monster_yellow_butterfly_star",
       "kind": "monster",
-      "derive": {
-        "from": "monster_yellow_butterfly",
-        "recolor": [
-          {
-            "hue": [
-              0,
-              75
-            ],
-            "minSaturation": 0.12,
-            "to": 262,
-            "spread": 1.0,
-            "saturation": 0.85
-          }
-        ]
+      "request": {
+        "prompt": "fluffy night moth with dark blue wings dusted with glowing stardust and tiny stars, feathery antennae, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 40,
+        "height": 40,
+        "remove_bg": true
       }
     },
     {
@@ -10519,44 +10467,26 @@
         ]
       }
     },
-    {
+{
       "id": "monster_jelly_nebula",
       "kind": "monster",
-      "derive": {
-        "from": "monster_jelly",
-        "recolor": [
-          {
-            "hue": [
-              280,
-              20
-            ],
-            "minSaturation": 0.2,
-            "to": 228,
-            "spread": 1.0,
-            "saturation": 0.9,
-            "value": 0.5
-          }
-        ]
+      "request": {
+        "prompt": "round fluffy puff made of the night sky, deep purple and blue with swirling nebula clouds and tiny twinkling stars inside, sleepy eyes, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 40,
+        "height": 40,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "monster_hedgehog_crystal",
       "kind": "monster",
-      "derive": {
-        "from": "monster_hedgehog",
-        "recolor": [
-          {
-            "hue": [
-              320,
-              55
-            ],
-            "minSaturation": 0.2,
-            "to": 188,
-            "spread": 0.66,
-            "saturation": 0.7,
-            "value": 1.1
-          }
-        ]
+      "request": {
+        "prompt": "small hedgehog whose spines are clear glittering crystal shards tinted pale blue and pink, tiny black nose, digging paws, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 40,
+        "height": 40,
+        "remove_bg": true
       }
     },
     {
@@ -16173,55 +16103,15 @@
         "remove_bg": true
       }
     },
-    {
+{
       "id": "monster_crab_prism",
       "kind": "monster",
-      "derive": {
-        "from": "monster_wood_crab",
-        "recolor": [
-          {
-            "hue": [
-              60,
-              140
-            ],
-            "minSaturation": 0.2,
-            "to": 280,
-            "spread": 0.4,
-            "saturation": 0.9,
-            "value": 1.25
-          },
-          {
-            "hue": [
-              330,
-              360
-            ],
-            "minSaturation": 0.45,
-            "to": 190,
-            "saturation": 0.8,
-            "value": 1.3
-          },
-          {
-            "hue": [
-              0,
-              8
-            ],
-            "minSaturation": 0.45,
-            "to": 190,
-            "saturation": 0.8,
-            "value": 1.3
-          },
-          {
-            "hue": [
-              8,
-              45
-            ],
-            "minSaturation": 0.2,
-            "to": 265,
-            "spread": 0.4,
-            "saturation": 0.5,
-            "value": 1.25
-          }
-        ]
+      "request": {
+        "prompt": "crab with an amethyst crystal shell and little crystal shards stuck on its back like decorations, one big claw, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 40,
+        "height": 40,
+        "remove_bg": true
       }
     },
     {
@@ -16274,53 +16164,26 @@
     {"id": "monster_shardwing_bat_gloom", "kind": "monster", "derive": {"from": "monster_shardwing_bat", "recolor": [{"hue": [225, 335], "minSaturation": 0.12, "to": 222, "spread": 1, "saturation": 0.8, "value": 0.72}]}},
     {"id": "monster_geode_golem_sapphire", "kind": "monster", "derive": {"from": "monster_geode_golem", "recolor": [{"hue": [225, 335], "minSaturation": 0.12, "to": 212, "spread": 1, "saturation": 1.1, "value": 1.1}]}},
     {"id": "monster_geode_golem_heart", "kind": "monster", "derive": {"from": "monster_geode_golem", "recolor": [{"hue": [225, 335], "minSaturation": 0.12, "to": 352, "spread": 1, "saturation": 1.1, "value": 1.1}, {"maxSaturation": 0.12, "minSaturation": 0, "to": 15, "saturation": 2.5, "value": 0.85}]}},
-    {
+{
       "id": "monster_floating_geode",
       "kind": "monster",
-      "derive": {
-        "from": "monster_floating_stone",
-        "recolor": [
-          {
-            "hue": [
-              150,
-              200
-            ],
-            "minSaturation": 0.12,
-            "to": 320,
-            "saturation": 1.1,
-            "value": 1.2
-          },
-          {
-            "hue": [
-              200,
-              250
-            ],
-            "minSaturation": 0.04,
-            "to": 262,
-            "saturation": 4.2,
-            "value": 1.3
-          }
-        ]
+      "request": {
+        "prompt": "floating round stone geode cracked open in the front to show a glowing purple crystal heart, small sparkles around it, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 40,
+        "height": 40,
+        "remove_bg": true
       }
     },
-    {
+{
       "id": "monster_crystal_serpent",
       "kind": "monster",
-      "derive": {
-        "from": "monster_tree_snake",
-        "recolor": [
-          {
-            "hue": [
-              60,
-              140
-            ],
-            "minSaturation": 0.2,
-            "to": 192,
-            "spread": 0.5,
-            "saturation": 0.75,
-            "value": 1.3
-          }
-        ]
+      "request": {
+        "prompt": "long slender serpent made of clear living glass with faint rainbow light shining through its body, glowing white eyes, chibi, cute monster",
+        "prompt_style": "rd_plus__low_res",
+        "width": 40,
+        "height": 40,
+        "remove_bg": true
       }
     },
     {

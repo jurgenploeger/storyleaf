@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "white polar bear cub with icy blue paws and frost on its fur, a little puff of cold breath, chibi, cute monster",
+    "prompt_style": "rd_plus__low_res",
+    "width": 40,
+    "height": 40,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792757606,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 15.551,
+    "request_id": "97c8a4cc-6234-404a-b174-f51131a1316d",
+    "outputs_retained_until": 1792843987
+  }
+}

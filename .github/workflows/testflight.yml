@@ -8,6 +8,10 @@
 #   APPLE_TEAM_ID   your 10-character team ID (developer.apple.com → Account → Membership details)
 # The three IDs aren't sensitive, so they may be repository variables instead; the .p8 must be a secret.
 # The key needs the Admin role: cloud signing creates the distribution certificate on first use.
+# And, optional but stops an Apple email every build, one Apple Development certificate for signing:
+#   DEV_CERT_P12       the certificate and its key exported from Keychain Access as a .p12, base64-encoded
+#                      (base64 -i Certificates.p12 | pbcopy)
+#   DEV_CERT_PASSWORD  the password you gave that .p12
 name: TestFlight
 
 on:
@@ -67,9 +71,32 @@ jobs:
           } > Config/Local.xcconfig
           xcodegen generate
 
+      - name: Install the development certificate
+        # With one kept in the secrets (DEV_CERT_P12, DEV_CERT_PASSWORD), signing uses it instead of
+        # making a new one on each fresh runner, which the step below then revoked: Apple emails
+        # "Your Certificate Has Been Revoked" for each. Without it, the old way still works.
+        env:
+          DEV_CERT_P12: ${{ secrets.DEV_CERT_P12 }}
+          DEV_CERT_PASSWORD: ${{ secrets.DEV_CERT_PASSWORD }}
+        run: |
+          [ -n "$DEV_CERT_P12" ] || { echo "No DEV_CERT_P12: signing makes a certificate of its own."; exit 0; }
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          pass=$(openssl rand -hex 16)
+          printf '%s' "$DEV_CERT_P12" | tr -d ' \t\r\n' | base64 --decode > "$RUNNER_TEMP/dev.p12"
+          security create-keychain -p "$pass" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$pass" "$keychain"
+          security import "$RUNNER_TEMP/dev.p12" -k "$keychain" -P "$DEV_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security \
+            || { echo "::error::DEV_CERT_P12 didn't import: check it's the base64 of the .p12 and DEV_CERT_PASSWORD its password."; exit 1; }
+          rm "$RUNNER_TEMP/dev.p12"
+          security set-key-partition-list -S apple-tool:,apple: -k "$pass" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          security find-identity -v -p codesigning "$keychain"
+
       - name: Clear old CI signing certificates
-        # Each fresh runner's cloud signing makes a new development certificate; Apple caps them
-        # per account, so revoke the ones earlier runs left (only those the API key made).
+        # Each fresh runner's cloud signing makes a new development certificate when none is installed
+        # (above); Apple caps them per account, so revoke the ones earlier runs left (only those the API
+        # key made). With DEV_CERT_P12 set there are none to revoke.
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID || vars.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID || vars.ASC_ISSUER_ID }}

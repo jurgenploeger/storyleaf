@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "spider with a body of clear cut crystal, glowing cyan facets and thin glass legs, a sparkling web thread, chibi, cute monster",
+    "prompt_style": "rd_plus__low_res",
+    "width": 40,
+    "height": 40,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792757437,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 16.811,
+    "request_id": "0d1a3650-1869-4068-b5ad-eb21345cb9dd",
+    "outputs_retained_until": 1792843798
+  }
+}

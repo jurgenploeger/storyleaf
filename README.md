@@ -123,7 +123,10 @@ TestFlight app:
 1. In App Store Connect, create the app (bundle id `com.jurgenploeger.fairyland`) and an internal TestFlight
    group with yourself in it; install **TestFlight** on the iPhone.
 2. Add the repository secrets the workflow's header lists (`ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`,
-   `APPLE_TEAM_ID`): an App Store Connect API key with the Admin role, and your team ID.
+   `APPLE_TEAM_ID`): an App Store Connect API key with the Admin role, and your team ID. Optionally
+   `DEV_CERT_P12` and `DEV_CERT_PASSWORD`, one Apple Development certificate exported from Keychain Access
+   (base64 of the .p12): without it, every build makes a new one and revokes the last, and Apple emails
+   "Your Certificate Has Been Revoked" each time. Renew it when it expires, after a year.
 3. From the Claude app on your phone, open a **Claude Code** cloud session on this repo. It can edit and push
    but can't run Xcode, so check game-data edits with `python3 tools/check_content.py` before pushing.
    To generate art there, add `RETRO_DIFFUSION_API_KEY` to the cloud environment's variables.

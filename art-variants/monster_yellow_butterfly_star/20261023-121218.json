@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "fluffy night moth with dark blue wings dusted with glowing stardust and tiny stars, feathery antennae, chibi, cute monster",
+    "prompt_style": "rd_plus__low_res",
+    "width": 40,
+    "height": 40,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792757537,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 16.091,
+    "request_id": "9156bd0e-7dc7-4831-bfe7-24159b691a27",
+    "outputs_retained_until": 1792843924
+  }
+}

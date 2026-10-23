@@ -1,0 +1,21 @@
+{
+  "request": {
+    "num_images": 3,
+    "prompt": "small hedgehog whose spines are clear glittering crystal shards tinted pale blue and pink, tiny black nose, digging paws, chibi, cute monster",
+    "prompt_style": "rd_plus__low_res",
+    "width": 40,
+    "height": 40,
+    "remove_bg": true
+  },
+  "result": {
+    "created_at": 1792757349,
+    "credit_cost": 6,
+    "balance_cost": 0.18,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 17.171,
+    "request_id": "1bad0919-0eee-4fe7-be30-8e4cf182035d",
+    "outputs_retained_until": 1792843716
+  }
+}
