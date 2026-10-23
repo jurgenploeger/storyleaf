@@ -231,6 +231,10 @@ python3 tools/check_content.py
 - Bearded faces need a mouth line in the outline colour (`tools/character_art.py mouth`), which no hair dye
   touches.
 - Never swap a whole hero sheet for a townsperson: hair shares its shades with skin and boots.
+- **Every dye keeps an outline:** the hair's outer edge is a deep shade of its own colour (`hair_edge`,
+  about half its light), inside the dye's window (`hairLayer`), so every dye turns it a deep shade of the
+  new colour. RD drew the ginger's top edge bright, as lit; dyed purple on a dark battle field it read as
+  no outline (playtesting 2026-10-23). Check a light dye and a dark one on a dark background.
 
 ### Working on it
 

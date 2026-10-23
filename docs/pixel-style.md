@@ -167,9 +167,46 @@ first texture passed as salt-and-pepper noise, which is what added `cluster_size
 - **The texture follows the form:** clusters run along the light, never as noise or a checkerboard.
 - **Colours belong to the game:** the material's colour matches its family elsewhere (an armour's icon and
   its walk sheet: `wear_art.MATERIAL`).
+- **It reads as what it is, first:** a prop's familiar shape comes before its story. The Rat King's junk
+  throne heaped from crates read as no throne; drawn as a throne (a high arched back, arms, a cushioned seat
+  on legs) with junk in its making, it does.
+- **Nothing about it looks like a stand:** two matching flat shapes either side of a foot (roots, legs)
+  read as a stand it's set on. Vary them: lengths, angles, one in front.
+- **It looks like its neighbours on the map:** a new tree beside RD's trees, a house beside RD's houses.
+  Different in kind is fine; different in make (a thick dark outline, a pole of one colour, flat feet)
+  stands out.
 
 When the eye catches something the numbers passed, write it down under *Learned* below and add or tighten
 a criterion so it can't pass again. That is how the criteria get stricter.
+
+### Trees
+
+Checked as `tools/scenery_art.py` draws them (it fails the run): **its trunk runs up into its crown**,
+no sky in the trunk's middle column between the ground and the top of the tree (`tree_shape`; the willow's
+and the lilac's showed 2 and 3 pixels of it), and **its crown is centred over its trunk**, within
+1.5 pixels, as RD's own tree is (`CROWN_OFF_MAX`; the candy trees' hung 2.5 left). Exceptions, each for a
+reason: the dark tree leans (`LEANS`), the frost tree is bare (`BARE`). And by eye, against RD's `tree`:
+
+- **A short trunk under a low crown:** about a quarter of the tree's height shows (RD's 14 pixels of 56),
+  never half of it as a pole.
+- **Bark, not one brown:** a few warm browns (`#422711` to `#a58153` on RD's) in streaks down it, lit on
+  its left, in shadow on its right, and the crown's shadow across its top.
+- **Roots as fingers:** four or so, of different lengths, leaving the trunk well up it and sloping down
+  and out, the nearer ones shorter and steeper; never two flat feet, one either side, like a stand.
+
+### Small sprites (critters, about 10 to 17 pixels)
+
+Too small for the kit's finish or the bands: most of a sprite this size is edge, so rims and ramps
+darken nearly all of it. Each part keeps its colour; only the silhouette is lit (its top and left a shade
+lighter, its bottom and right a shade darker and turned from yellow), a shade under a part of another
+colour lying on it, and an outline in a deep shade of each part (`tools/critter_art.py`). Reviewed by eye
+beside the old drawing: brighter or the same, never muddier.
+
+### Snow
+
+Snow is RD's own colours (`scenery_art.SNOW`, from its `snow_tree`): white, pale blue-green, blue-grey,
+outlined in a deep blue-grey. A near-white base on a ramp turns grey, so it's drawn in a key colour and laid
+on these after (`snow_palette`). Snow lies in soft clumps, never in a strip along an edge.
 
 ### Buildings
 
@@ -278,6 +315,12 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   5. Animation: walk cycles stay RD's for now (`sprite-acceptance.md`).
 
 ## Learned
+
+- **2026-10-23 (roots, throne):** Roots drawn as one long flat wedge either side of the trunk read as a
+  stand the tree was set on; RD's are separate fingers of different lengths, leaving the trunk well up it.
+  A willow's trunk that stopped under its crown left sky between them, hidden from the sides by its
+  strands and plain from the front: `tree_shape` now fails a tree for it. The Rat King's throne, crates
+  heaped into a seat, read as no throne: a familiar shape first, its story in the details.
 
 - **2026-10-23 (trunks):** A trunk drawn as one stroke of dark brown was a flat pole, half the tree's
   height, that stood out from the land; and a crown set above where the branches end left a gap of grass

@@ -89,22 +89,33 @@ def trunk(s, base_x, base_y, top_y, width, mat, lean=0.0, roots=2):
 
     def at(t):
         """The trunk's middle and half-width at t (0 at its foot, 1 at its top)."""
-        return base_x + lean * t, base_y - (base_y - top_y) * t, w * (0.5 + 0.32 * (1 - t) ** 2)
+        return base_x + lean * t, base_y - (base_y - top_y) * t, w * (0.5 + 0.12 * (1 - t) ** 2)
     ts = np.linspace(0, 1, 8)
     left = [(x - h, y) for x, y, h in (at(t) for t in ts)]
     right = [(x + h, y) for x, y, h in (at(t) for t in ts)]
     s.poly(left + right[::-1], mat, profile="flat", tone=0.5)
-    # Roots: wedges from the foot, out and down to the ground, each lit along its top.
-    for k in range(roots):
-        side = -1 if k % 2 == 0 else 1
-        reach = w * (1.5 + 0.35 * (k // 2)) + 2
-        drop = 1.2 + 0.6 * (k // 2)
-        root = [(base_x + side * w * 0.1, base_y - 6 - k // 2), (base_x + side * (reach + w * 0.3), base_y + drop),
-                (base_x + side * (reach + w * 0.3) - side * 1.5, base_y + drop + 1.8), (base_x - side * w * 0.3, base_y + 1.0)]
-        s.poly(root, mat, profile="flat", tone=0.55 if side < 0 else 0.38)
-        s.stroke([(base_x + side * w * 0.3, base_y - 3 - k // 2), (base_x + side * (reach + w * 0.1), base_y + drop - 0.4)],
-                 0.9, mat, profile="flat")
-        s.shapes[-1][3]["tone"] = 0.85 if side < 0 else 0.62
+    # Roots as RD draws them: separate fingers of different lengths, out and down from the foot, the
+    # nearer ones shorter and steeper; each lit along its top. (Two long flat feet, one either side,
+    # read as a stand: playtesting 2026-10-23.)
+    # (side, how far out in trunk widths, how far below the foot it ends, how high up the trunk it leaves)
+    fingers = [(-1, 1.55, 1.5, 7.5), (1, 1.4, 1.2, 7.0), (-1, 0.55, 2.8, 5.0), (1, 0.75, 2.6, 5.5),
+               (-1, 1.0, 0.4, 9.0), (1, 0.3, 3.0, 4.5)][:max(2, roots + 1)]
+    for side, reach, drop, up in fingers:
+        root_x = base_x + side * w * 0.15
+        start_y = base_y - up
+        tip = (base_x + side * (w * 0.45 + reach * w), base_y + drop)
+        dx, dy = tip[0] - root_x, tip[1] - start_y
+        n = math.hypot(dx, dy)
+        px, py = -dy / n, dx / n
+        half = w * 0.4
+        mid = (root_x + dx * 0.55 + px * side * 0.6, start_y + dy * 0.55 + py * side * 0.6)    # a slight arch
+        s.poly([(root_x + px * half, start_y + py * half), (mid[0] + px * half * 0.55, mid[1] + py * half * 0.55),
+                (tip[0] + px * 0.7, tip[1] + py * 0.7), (tip[0] - px * 0.7, tip[1] - py * 0.7),
+                (mid[0] - px * half * 0.55, mid[1] - py * half * 0.55), (root_x - px * half, start_y - py * half)], mat,
+               profile="flat", tone=0.58 if side < 0 else 0.4)
+        s.stroke([(root_x - side * 0.4, start_y), (mid[0] - side * 0.3, mid[1] - 0.5), (tip[0] - side * 0.5, tip[1] - 0.6)],
+                 0.8, mat, profile="flat")
+        s.shapes[-1][3]["tone"] = 0.86 if side < 0 else 0.62
     # Bark: the side away from the light in shadow, streaks of light down the left and middle, grooves.
     shade = [(x + h * 0.35, y) for x, y, h in (at(t) for t in ts)]
     s.poly(shade + right[::-1], mat, profile="flat", tone=0.28)
@@ -352,7 +363,7 @@ def willow():
     ground, the trunk showing between them."""
     s = scene()
     bark, leaves = Material("#5a4a36", texture=0.07), foliage("#3e9a6a")
-    trunk(s, 32, 60, 30, 6, bark, roots=4)
+    trunk(s, 32, 60, 17, 6, bark, roots=4)              # up into the crown, no gap under it
     puffs(s, 32, 18, 16, 6, leaves, 7, 6.5, 51, flat=0.8)
     r = rng(52)
     for x in np.linspace(12, 52, 11):
@@ -529,6 +540,31 @@ def grounded(img):
     return out
 
 
+# A tree's shape, checked as it's drawn (docs/pixel-style.md, Trees): its trunk runs up into its crown
+# with no sky between (the willow's and the lilac's didn't: playtesting 2026-10-23), and its crown's
+# middle is over its trunk's (the candy trees' hung 3 pixels left), as close as RD's own tree's (1.5).
+CROWN_OFF_MAX = 1.5
+# Exceptions, each for a reason: the dark tree leans on purpose; the frost tree is bare, its trunk
+# running up into twigs with sky between them.
+LEANS, BARE = {"dark_tree"}, {"frost_tree"}
+
+
+def tree_shape(img):
+    """(pixels of sky in the trunk's middle column between the ground and the top of the tree, how
+    far the crown's middle is from the trunk's, in pixels)."""
+    a = np.asarray(img)[..., 3] > 0
+    rows = np.nonzero(a.any(axis=1))[0]
+    top, bottom = rows.min(), rows.max()
+    foot = np.nonzero(a[bottom - 4])[0]
+    middle = int(round((foot.min() + foot.max()) / 2))
+    column = a[:, middle]
+    filled = np.nonzero(column)[0]
+    gap = int((~column[filled.min():filled.max() + 1]).sum())
+    crown = np.nonzero(a[:top + (bottom - top) // 2].any(axis=0))[0]
+    off = (crown.min() + crown.max() + 1) / 2 - (foot.min() + foot.max() + 1) / 2
+    return gap, off
+
+
 def main(argv):
     sheet = None
     if "--sheet" in argv:
@@ -544,6 +580,17 @@ def main(argv):
         img.save(SPRITES / f"{item}.png")
         out[item] = img
     print(f"wrote {len(out)} scenery sprites to art/sprites/")
+    bad = []
+    for item, img in out.items():
+        if item not in TREES:
+            continue
+        gap, off = tree_shape(img)
+        if gap and item not in BARE:
+            bad.append(f"{item}: {gap} pixels of sky between its trunk and its crown")
+        if abs(off) > CROWN_OFF_MAX and item not in LEANS:
+            bad.append(f"{item}: its crown's middle is {off:+.1f} pixels off its trunk's (at most {CROWN_OFF_MAX})")
+    for line in bad:
+        print("FAIL " + line)
     if sheet:
         refs = [Image.open(SPRITES / "tree.png").convert("RGBA"), Image.open(SPRITES / "berry_bush.png").convert("RGBA")]
         tiles = refs + list(out.values())
@@ -554,7 +601,8 @@ def main(argv):
             board.alpha_composite(img.resize((img.width * k, img.height * k), Image.NEAREST), ((n % 6) * c, (n // 6) * c))
         board.save(sheet)
         print(f"sheet in {sheet}")
+    return 1 if bad else 0
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    sys.exit(main(sys.argv[1:]))

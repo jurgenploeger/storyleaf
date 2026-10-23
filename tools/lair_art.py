@@ -108,24 +108,35 @@ def warning_post():
 
 
 def junk_throne():
-    """The Rat King's throne: a tall back of odd boards nailed together, a crate for a seat with a rag
-    of a cushion, barrels for its arms, a dented pot for a crown on top, bones about its foot."""
+    """The Rat King's throne, a throne first: a tall arched back with a purple panel and a knob at each
+    corner, armrests, a cushioned seat on four legs. Junk shows in its making: a board nailed across
+    the back, mismatched legs, a dented pot for a crown, bones about its foot. (Crates heaped into a
+    seat read as no throne at all: playtesting 2026-10-23.)"""
     s = scene(32, 48)
-    board, crate, barrel = Material("#9a6a3a", texture=0.07), Material("#8a5a30", texture=0.07), Material("#6e4428", texture=0.06)
-    iron, cloth, bone = Material("#7a7884", texture=0.03, gloss=0.4), Material("#7a3a8a", texture=0.05), Material("#e2d8c2", texture=0.03)
-    s.poly([(9.5, 36), (9.5, 16), (25, 17), (25, 36)], Material("#3a2a22", texture=0.0), profile="flat")
-    for x, top, tone in ((9, 14, 0.62), (13, 8, 0.7), (17, 10, 0.58), (21, 15, 0.42)):    # the back, odd boards
-        s.poly([(x, 36), (x, top + 1), (x + 1.6, top), (x + 3.2, top + 1.5), (x + 3.2, 36)], board, profile="flat", tone=tone)
-    s.stroke([(8, 22), (26, 21)], 1.4, barrel, profile="flat")         # a crosspiece nailing them
-    s.poly([(12, 8), (20, 8), (19, 3), (13, 3)], iron)                 # a dented pot for a crown
-    s.ellipse(16, 8, 4.4, 1.2, iron)
-    s.poly([(8, 46), (8, 35), (24, 35), (24, 46)], crate, profile="flat", tone=0.5)          # the seat
-    s.stroke([(9, 40.5), (23, 40.5)], 0.9, barrel, profile="flat")
-    s.ellipse(16, 35, 8.5, 2.4, cloth)                                 # a rag of a cushion
-    for x in (6, 26):                                                  # barrels for its arms
-        s.ellipse(x, 38, 3.6, 6.5, barrel)
-        s.stroke([(x - 3.4, 36), (x + 3.4, 36)], 0.8, iron, profile="flat")
-    for x, y in ((5, 47), (12, 47), (24, 47)):
+    wood, dark = Material("#9a6438", texture=0.06), Material("#6a3e22", texture=0.05)
+    cloth, iron = Material("#8a3aa8", texture=0.04), Material("#8a8894", texture=0.03, gloss=0.5)
+    gold, bone = Material("#e0b040", texture=0.03, gloss=0.6), Material("#e2d8c2", texture=0.03)
+    arch = [(16 + 9.5 * math.cos(a), 13 - 8 * math.sin(a)) for a in np.linspace(0, math.pi, 13)]
+    s.poly([(25.5, 38), (25.5, 13)] + arch + [(6.5, 13), (6.5, 38)], wood, bulge=1.2)          # the back
+    inner = [(16 + 6.5 * math.cos(a), 14 - 5.5 * math.sin(a)) for a in np.linspace(0, math.pi, 11)]
+    s.poly([(22.5, 33), (22.5, 14)] + inner + [(9.5, 14), (9.5, 33)], cloth)                  # its panel
+    s.stroke([(8, 22), (24, 26)], 2.0, dark, profile="flat")                                  # a board nailed across
+    for x, y in ((9.5, 22.6), (22.5, 25.6)):
+        s.ellipse(x, y, 0.6, 0.6, iron, profile="flat")
+    for x in (6.5, 25.5):                                                                      # knobs at its corners
+        s.ellipse(x, 12, 2.2, 2.2, gold)
+    s.poly([(12, 5), (20, 5), (19, 0.5), (13, 0.5)], iron)                                     # a dented pot, its crown
+    s.ellipse(16, 5, 4.6, 1.3, iron)
+    for x0, x1 in ((2, 9), (23, 30)):                                                          # armrests on posts
+        s.stroke([(x0 + 1.5, 42), (x0 + 1.5, 32)], 2.0, dark)
+        s.stroke([(x0, 31), (x1, 31)], 2.4, wood)
+        s.ellipse(x0 + 0.5 if x0 < 16 else x1 - 0.5, 31, 1.6, 1.6, gold)
+    s.poly([(7, 41), (25, 41), (25, 36), (7, 36)], dark, profile="flat", tone=0.45)           # the seat's front
+    s.ellipse(16, 35, 9.5, 2.6, Material("#c83848", texture=0.04))                             # a red cushion
+    for x, top in ((8.5, 41), (23.5, 41)):                                                     # legs, one a log
+        s.stroke([(x, top), (x, 46)], 2.0, dark)
+    s.stroke([(15.5, 41), (16.5, 46)], 2.4, wood)
+    for x, y in ((4, 47), (27, 47)):
         s.stroke([(x - 2, y), (x + 2, y - 1)], 1.1, bone)
         s.ellipse(x - 2.3, y, 0.9, 0.9, bone)
     return s
