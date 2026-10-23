@@ -142,7 +142,7 @@ to a metric or band:
   icons 88% (123 / 140), scenery 86% (115 / 133), creatures 80% (52 / 65).
 - **The flat look fails:** `tools/item_art.py`'s designs, unfinished, pass at most 10%. 2026-10-23: 8%
   (27 / 322), failing on `cluster_size` (91%), `flat` (90%), `colour_density` (82%) and `shades_per_ramp`
-  (79%). The same items as shipped, finished by the kit, pass 85% (292 / 343).
+  (79%). The same items as shipped, finished by the kit, pass 84% (289 / 343).
 
 ### Review by eye: what the numbers can't see
 
@@ -210,7 +210,7 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 ## Where it stands (2026-10-23)
 
 - **Every item icon drawn in code is finished by the kit** (322 of them, and the 21 palette swaps of
-  them), most with a material preset: 85% pass (292 / 343), against 8% as designed; RD's own icons pass
+  them), most with a material preset: 84% pass (289 / 343), against 8% as designed; RD's own icons pass
   88%. Most of the rest fail on `cluster_size`, `hue_shift` (pale colours near yellow, whose shift has
   nowhere to go) or `jaggies`.
 - **Monsters are all RD's** (checked 2026-10-23): 63 of the 124 drawn by RD, the other 61 palette swaps of
