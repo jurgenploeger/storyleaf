@@ -75,8 +75,10 @@ one body and wrong on another isn't done.
 - No armour draws on the head (playtesting 2026-10-21: "any armor that shows a hat should have that as a
   hat item"): every armour sheet (`BARE_HEADED` in tools/wear_art.py, items.json `bareHead`) is cut at the
   neck, the hero's own head (`head_<body>`), beard and hairstyle drawn over it, and what's cut off is its
-  hat (`hat_<kind>_<race>`, a hat item with `headgear`); a hide cloak's hood is its hat too (`hood_<body>`,
-  painted in the hat's colour). Check every body, direction and frame: no leftover helmet or hood round
+  hat (`hat_<kind>_<race>`, a hat item with `headgear`). A hide cloak's hood is a hat too
+  (`hat_hide_hood_<race>`, 2026-10-23): cut off Retro Diffusion sheets of a hero in a blue fur-lined hood
+  (`HAT_ONLY` in tools/wear_art.py keeps only the hat), blue so each hide's `tint` recolours the leather and
+  leaves the face alone; till then it was a dome drawn in code (`hood_<body>`, kind `hood`, now unused). Check every body, direction and frame: no leftover helmet or hood round
   the face, no gap at the neck; armour and its hat together look as the armour did; a hat over other
   armour, and with none, sits on the head and lets long hair show below it.
 

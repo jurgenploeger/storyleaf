@@ -687,12 +687,15 @@ HATS = {"crown", "santa", "ears", "mask"}
 # hat's `color`). Each armour names its own (`headpiece`), of its level, classes, tier and colour
 # variant, given wherever the armour is, and the two together are worth what the armour was.
 HEADGEAR = {f"{kind}" for kind in ("chain_mail", "iron_plate", "dragon_mail", "mage_robe", "ranger_cloak", "snow_cloak")}
+# Hats cut from a sheet drawn only for its hat (wear_art.py HAT_ONLY), worn with a hide cloak, which has
+# no sheet of its own: each its own colour by its `tint` (the cloak is drawn in its `color`).
+CLOAK_HEADGEAR = {"hide_hood"}
 races_ids = [r["id"] for r in classes["races"]]
 for item in items.values():
     if item["type"] == "head" and "headgear" in item:
         kind = item["headgear"]
-        check(kind in HEADGEAR | {"hood"}, f"item {item['id']} → headgear must be one of {sorted(HEADGEAR | {'hood'})}")
-        if kind in HEADGEAR:
+        check(kind in HEADGEAR | CLOAK_HEADGEAR | {"hood"}, f"item {item['id']} → headgear must be one of {sorted(HEADGEAR | CLOAK_HEADGEAR | {'hood'})}")
+        if kind in HEADGEAR | CLOAK_HEADGEAR:
             for race_id in races_ids:
                 check((ROOT / "art" / "sprites" / f"hat_{kind}_{race_id}.png").exists(),
                       f"item {item['id']} → art/sprites/hat_{kind}_{race_id}.png is missing (tools/wear_art.py)")
@@ -702,7 +705,7 @@ for item in items.values():
         owners = [a for a in items.values() if a.get("headpiece") == item["id"]]
         check(len(owners) == 1, f"item {item['id']} → exactly one armour names it as its headpiece (has {len(owners)})")
         for armour in owners:
-            check(all(item.get(k) == armour.get(k) for k in ("level", "classes", "tier", "tint")),
+            check(all(item.get(k) == armour.get(k) for k in ("level", "classes", "tier") + (("tint",) if kind in HEADGEAR else ())),
                   f"item {item['id']} → the same level, classes, tier and tint as {armour['id']}")
             wears = (list(armour.get("sheets", {}).values()) or [""])[0]
             check(wears.startswith(f"armor_{kind}_") if kind in HEADGEAR else (not armour.get("sheets") and armour.get("wear") == "cloak"),
