@@ -103,6 +103,8 @@ a criterion so it can't pass again. That is how the criteria get stricter.
 
 ## Where it stands (2026-10-23)
 
+![As drawn now, the kit, and RD's own](pixel-style-demo.png)
+
 - The kit's first six icons (`pixel_kit.py --demo`: amber, agate, the amethyst boots and helm, the amber
   amulet, the alloy shortsword) all pass; as drawn now by `item_art.py`, one of them does. Beside RD's they
   read as the same game but plainer: less designed material detail, and RD's metals have more contrast.
