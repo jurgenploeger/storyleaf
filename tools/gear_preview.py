@@ -552,18 +552,23 @@ def painted(t, colour, trim=None, floor=0.25):
     return out
 
 
-def face(f, cells, top, chin):
+def face(f, cells, top, chin, eyes_at=None):
     """The face on frame `f` as drawn (GearOverlay.face), its head found on the plain body (`cells`,
     `top`, `chin` from `head`): the eyes' whites with a pupil or lash beside or over them and the
     face's skin near (a glint in a beard or on a helmet has none; a cream white, as some armour sheets
     draw, only if there's no pure one), the highest pair; and the rows from them up and down that show
-    skin or white. As (eye top, the middle of each eye, the face's top row, its bottom row, whether a
-    pixel is face, the columns searched), or None from behind."""
+    skin or white. `eyes_at`: the eyes' row on the plain body, if known; only rows within two of it are
+    searched (a hair's highlight or a glint on mail over or under the face passed for an eye, and the
+    mask slid off the face). As (eye top, the middle of each eye, the face's top row, its bottom row,
+    whether a pixel is face, the columns searched), or None from behind."""
     drawn = f[..., 3] > 0.5
     xs_all = [x for _, x in cells]
+    rows = range(max(0, top + 2), min(FRAME, chin + 3))
+    if eyes_at is not None:
+        rows = range(max(rows.start, eyes_at - 2), min(rows.stop, eyes_at + 3))
     whites, near = [], []
     for most, least in ((0.06, 0.92), (0.25, 0.85)):
-        for y in range(max(0, top + 2), min(FRAME, chin + 3)):
+        for y in rows:
             for x in range(max(0, min(xs_all) - 1), min(FRAME, max(xs_all) + 3)):
                 if not drawn[y, x]:
                     continue
@@ -682,7 +687,11 @@ def hat(body, out, kind, colour, trim=None, base=None):
                         f[y + dy, x + dx, 3] = 1
 
             if kind == 'mask':
-                seen = face(f if base is None else base[oy:oy + FRAME, ox:ox + FRAME], cells, top, chin)
+                # The eyes as drawn near where the plain body has them; where none show there (a
+                # sheet's pale face), the plain body's face.
+                plain = face(body[oy:oy + FRAME, ox:ox + FRAME], cells, top, chin)
+                seen = face(f if base is None else base[oy:oy + FRAME, ox:ox + FRAME], cells, top, chin,
+                            plain[0] if plain else None) or plain
                 if seen is None:
                     continue
                 oy_, mids, high, low, facial, span = seen
