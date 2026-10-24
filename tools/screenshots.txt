@@ -377,6 +377,9 @@ lake_island    | newgame,level=60,map=swan_lake,bridge=0,hour=10,weather=clear |
 lake_jetty     | newgame,level=60,map=swan_lake,bridge=1,hour=10,weather=clear | 8
 lake_swamp     | newgame,level=20,map=frog_swamp,bridge=0,hour=10,weather=clear | 8
 lake_briarmere_land | newgame,level=110,map=rosen_lake,bridge=1,hour=10,weather=clear,landscape | 8
+# Briarmere's road bridge over its river, where its road meets the pool round the river's spring: across
+# the water, not along its edge over the snow (playtesting 2026-10-24).
+bridge_briarmere | newgame,level=110,map=rosen_lake,bridge=0,hour=10,weather=clear,landscape | 8
 river_forest   | newgame,level=26,map=smiling_forest,bridge=0,hour=10,weather=clear | 8
 river_border   | newgame,level=60,map=swan_lake,at=16_50,hour=10,weather=clear | 8
 # Where three lands meet (Swan Lake, Sunny Meadow, the Twilight Woods), each land's ground runs on over
