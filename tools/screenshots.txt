@@ -237,6 +237,10 @@ wear_chain_crown | newgame,race=dwarf,level=30,class=fighter,date=01-01,equip=gi
 wear_mask_human | newgame,level=30,class=fighter,date=10-31,equip=chain_mail+blue_halloween_mask,menu=character | 8
 # A mask on a deep skin tone (2026-10-19: "The mask front view shows a gap in the face": the face wasn't found on it).
 wear_mask_deep | newgame,level=90,class=fighter,skin=deep,date=10-31,equip=woodcutters_coat+red_halloween_mask,menu=character | 8
+# Masks on dwarves (2026-10-24: "The mask is not placed correctly": a spiky fringe's highlight and a glint on mail passed
+# for eyes, and the mask slid off the face or sat on the beard).
+wear_mask_dwarf | newgame,race=dwarf,gender=female,style=spiky,hair=blue,level=30,class=tamer,date=10-31,equip=copper_hide+green_halloween_mask,menu=character | 8
+wear_mask_beard | newgame,race=dwarf,level=30,class=fighter,date=10-31,equip=chain_mail+blue_halloween_mask,menu=character | 8
 hair_blue    | newgame,hair=blue                                              | 8
 hair_elf_male | newgame,race=elf,gender=male,hair=black,menu=character        | 8
 hair_dwarf_female | newgame,race=dwarf,gender=female,hair=white                | 8

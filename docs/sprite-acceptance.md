@@ -64,6 +64,10 @@ one body and wrong on another isn't done.
 - Every colour (green, blue, red) recolours cleanly: check them all, not just the one the reference was.
 - None from behind.
 - It shows on every armour: an eye's white may be cream on an armour sheet, not pure white.
+- Its eyes are looked for within two rows of the plain body's eyes, and where none show there, the plain body's
+  face stands in. Searching the whole head, a spiky fringe's highlight or a glint on mail passed for an eye: the
+  mask slid off a dwarf's face, sat on a beard, or didn't show at all (2026-10-24). Check the dwarves under
+  every armour, and every hairstyle, not only each sheet's own.
 
 ### Scarves
 

@@ -821,10 +821,12 @@ enum GearOverlay {
     /// The face on a frame as drawn, its head found on the plain body (`found`): the eyes' whites with
     /// a pupil or lash beside or over them and the face's skin near (a glint in a beard or on a helmet
     /// has none; a cream white, as some armour sheets draw, only if there's no pure one), the highest
-    /// pair; and the rows from them up and down that show skin or white. Nil from behind.
-    /// tools/gear_preview.py `face`.
+    /// pair; and the rows from them up and down that show skin or white. `eyesAt`: the eyes' row on
+    /// the plain body, if known; only rows within two of it are searched (a hair's highlight or a glint
+    /// on mail over or under the face passed for an eye, and the mask slid off the face, playtesting
+    /// 2026-10-24). Nil from behind. tools/gear_preview.py `face`.
     nonisolated private static func face(_ out: Bitmap, origin: (x: Int, y: Int), size: Int,
-                                         found: (top: Int, chin: Int, cells: [HatCell])) -> Face? {
+                                         found: (top: Int, chin: Int, cells: [HatCell]), eyesAt: Int? = nil) -> Face? {
         func isDrawn(_ x: Int, _ y: Int) -> Bool {
             x >= 0 && y >= 0 && x < size && y < size && out.alpha(origin.x + x, origin.y + y) > 0.5
         }
@@ -836,11 +838,13 @@ enum GearOverlay {
         }
         let xs = found.cells.map(\.x)
         guard let leftmost = xs.min(), let rightmost = xs.max() else { return nil }
+        var first = max(0, found.top + 2), last = min(size, found.chin + 3)
+        if let eyesAt { (first, last) = (max(first, eyesAt - 2), min(last, eyesAt + 3)) }
         var whites: [HatCell] = [], near: [HatCell] = []
         var most = 0.06, least = 0.92
         for (m, l) in [(0.06, 0.92), (0.25, 0.85)] {
             (most, least) = (m, l)
-            for y in stride(from: max(0, found.top + 2), to: min(size, found.chin + 3), by: 1) {
+            for y in stride(from: first, to: last, by: 1) {
                 for x in max(0, leftmost - 1)..<min(size, rightmost + 3) where isDrawn(x, y) {
                     let (_, s, v) = hsv(out.rgb(origin.x + x, origin.y + y))
                     guard s < most, v > least, dark(x - 1, y) || dark(x + 1, y) || dark(x, y - 1) else { continue }
@@ -932,10 +936,15 @@ enum GearOverlay {
             }
         }
         if kind == "mask" {
-            guard let seen = Self.face(base, origin: origin, size: size, found: found),
+            // The eyes as drawn near where the plain body has them; where none show there (a sheet's
+            // pale face), the plain body's face.
+            let plain = Self.face(body, origin: origin, size: size, found: found)
+            let drawnFace = Self.face(base, origin: origin, size: size, found: found, eyesAt: plain?.eyeTop)
+            guard let seen = drawnFace ?? plain,
                   let first = seen.middles.first, let last = seen.middles.last else { return }
             let eyeTop = seen.eyeTop, low = seen.low, high = seen.high, span = seen.span
-            func facial(_ x: Int, _ y: Int) -> Bool { seen.shows(base, origin: origin, x, y) }
+            let image = drawnFace == nil ? body : base
+            func facial(_ x: Int, _ y: Int) -> Bool { seen.shows(image, origin: origin, x, y) }
             let anchor = switch facing {
             case "right": seen.middles.max() ?? last
             case "left": seen.middles.min() ?? first
