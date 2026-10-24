@@ -107,12 +107,14 @@ AMBER = light("#c26a06", "#f2a30d", "#ffd640", "#fff8d0")
 def draw_sparkles(ic):
     # Skills: three sparkles of light, gold, sky and rose, full-bodied with curved sides (playtesting
     # 2026-10-24: thin four-pointed stars had no body and washed out on the buttons).
-    ic.flare(0.4, 0.56, 0.4, GOLD, strength=0.9)
-    ic.body(ic.poly(sparkle_points(0.4, 0.56, 0.34), blur=0.003), AMBER, 0.36, 0.5, 0.3)
-    ic.flare(0.76, 0.22, 0.2, CYAN, strength=0.8)
-    ic.body(ic.poly(sparkle_points(0.76, 0.22, 0.17), blur=0.002), BLUE, 0.74, 0.2, 0.15)
-    ic.flare(0.78, 0.78, 0.16, LIGHTS["dark"], strength=0.6)
-    ic.body(ic.poly(sparkle_points(0.78, 0.78, 0.13), blur=0.002), PINK, 0.76, 0.76, 0.12)
+    # The big one in the middle, the small ones across it from each other on the diagonal, so it sits
+    # centred on its button (off to the left with both small ones on the right, it didn't).
+    ic.flare(0.5, 0.5, 0.4, GOLD, strength=0.9)
+    ic.body(ic.poly(sparkle_points(0.5, 0.5, 0.32), blur=0.003), AMBER, 0.46, 0.44, 0.28)
+    ic.flare(0.8, 0.2, 0.18, CYAN, strength=0.8)
+    ic.body(ic.poly(sparkle_points(0.8, 0.2, 0.15), blur=0.002), BLUE, 0.78, 0.18, 0.13)
+    ic.flare(0.2, 0.8, 0.16, LIGHTS["dark"], strength=0.6)
+    ic.body(ic.poly(sparkle_points(0.2, 0.8, 0.13), blur=0.002), PINK, 0.18, 0.78, 0.12)
 
 
 def draw_backpack(ic):
