@@ -391,6 +391,7 @@ def half_up(v):
 HAT_BRIM, ANCHOR_X, ANCHOR_Y = 40, 24, 20
 SHOULDER_Y, CAPE_DROP, CAPE_SPAN = 24, 20, 14
 CAPE_FLOOR = 0.05   # a cape's shadows take its colour down to here
+CAPE_RISE = 3       # from behind, how far over the shoulder line a cape's top sits (GearOverlay.capeRise)
 CHIN_Y = 20         # where a scarf's wearer's chin is
 
 
@@ -902,8 +903,10 @@ def cape(base, out, colour, trim, emblem=True, skeleton=None):
             cx = (left + right) // 2
             # From the front and the side a little wider than the body, so it shows past its outline.
             flare = {'up': 0, 'down': 4}.get(facing, 2)
-            t = scaled_across(scaled_down(piece, (feet - shoulder) - CAPE_DROP, SHOULDER_Y), (right - left + 1) - CAPE_SPAN + flare)
-            dy, dx = shoulder - SHOULDER_Y, cx - ANCHOR_X
+            # From behind it hangs from just under the head, over the shoulders, down to the feet.
+            hang = shoulder - CAPE_RISE if facing == 'up' else shoulder
+            t = scaled_across(scaled_down(piece, (feet - hang) - CAPE_DROP, SHOULDER_Y), (right - left + 1) - CAPE_SPAN + flare)
+            dy, dx = hang - SHOULDER_Y, cx - ANCHOR_X
 
             def put(x, y, cc, only_empty=False):
                 if 0 <= x < FRAME and 0 <= y < FRAME and (not only_empty or not a[y, x]):
