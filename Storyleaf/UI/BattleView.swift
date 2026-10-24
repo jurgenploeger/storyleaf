@@ -526,8 +526,6 @@ private struct MoreMenu: View {
 
     private static let width: CGFloat = 176
     private static let spring = Animation.spring(response: 0.34, dampingFraction: 0.78)
-    /// RoundCommandButton's quiet colours.
-    private static let colors = [Color(red: 0.42, green: 0.36, blue: 0.56), HUDStyle.ink]
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 0) {
@@ -554,6 +552,7 @@ private struct MoreMenu: View {
                         IconImage(.close, size: size * 0.4)
                     } else {
                         IconImage(.more, size: size * 0.56)
+                            .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
                     }
                 }
                 .foregroundStyle(.white)
@@ -564,10 +563,9 @@ private struct MoreMenu: View {
         .frame(width: open ? Self.width : size, alignment: .trailing)
         .background(
             RoundedRectangle(cornerRadius: open ? 16 : size / 2, style: .continuous)
-                .fill(RadialGradient(colors: Self.colors, center: UnitPoint(x: 0.35, y: 0.3), startRadius: 1,
-                                     endRadius: open ? Self.width : size * 0.75))
+                .fill(LinearGradient(colors: HUDStyle.tile, startPoint: .top, endPoint: .bottom))
                 .overlay(RoundedRectangle(cornerRadius: open ? 16 : size / 2, style: .continuous)
-                    .strokeBorder(.white.opacity(0.35), lineWidth: 2))
+                    .strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
                 .overlay(alignment: .bottomTrailing) {
                     // The button's gloss; none on the cross.
                     Ellipse().fill(.white.opacity(open ? 0 : 0.35))
@@ -925,10 +923,13 @@ struct RoundCommandButton: View {
         case .primary: [Color(red: 1, green: 0.62, blue: 0.45), Color(red: 0.9, green: 0.3, blue: 0.3)]
         case .special, .lit: [Color(red: 1, green: 0.92, blue: 0.55), Color(red: 0.98, green: 0.68, blue: 0.2)]
         case .heal: [Color(red: 0.8, green: 1, blue: 0.75), Color(red: 0.3, green: 0.78, blue: 0.4)]
-        case .normal: [.white, HUDStyle.cream, Color(red: 0.86, green: 0.78, blue: 0.64)]
-        case .quiet: [Color(red: 0.42, green: 0.36, blue: 0.56), HUDStyle.ink]
+        case .normal, .quiet: HUDStyle.tile
         }
     }
+
+    /// The HUD's own glossy blue, top to bottom, in its bevel (`FLIconButton`): the everyday
+    /// commands and More, not cream (playtesting 2026-10-24: "the light yellow doesn't work").
+    private var isBlue: Bool { tint == .normal || tint == .quiet }
 
     /// Buttons that want attention pulse with a coloured glow.
     private var glow: Color? {
@@ -939,19 +940,27 @@ struct RoundCommandButton: View {
         }
     }
 
-    /// A light button (cream, gold, green), its icon on a pale ground.
+    /// A light button (gold, green), its icon on a pale ground.
     private var isLight: Bool {
         switch tint {
-        case .normal, .special, .heal, .lit: true
-        case .primary, .quiet: false
+        case .special, .heal, .lit: true
+        case .primary, .normal, .quiet: false
         }
     }
 
     private var foreground: Color {
         switch tint {
-        case .primary, .quiet: .white
-        case .normal, .special, .heal, .lit: HUDStyle.ink
+        case .primary, .normal, .quiet: .white
+        case .special, .heal, .lit: HUDStyle.ink
         }
+    }
+
+    /// Under an icon: on the blue, the HUD buttons' hard dark blue edge; on a light button a crisp
+    /// warm shadow (a soft dark rim round it looked muddy there).
+    private var iconShadow: (color: Color, radius: CGFloat) {
+        if isBlue { return (HUDStyle.frameDark, 0) }
+        if isLight { return (Color(red: 0.43, green: 0.28, blue: 0.16).opacity(0.4), 0.4) }
+        return (.clear, 0)
     }
 
     var body: some View {
@@ -965,11 +974,9 @@ struct RoundCommandButton: View {
                         .padding(.horizontal, 4)
                 } else {
                     // Big: drawn as light, the icons washed out on the cream buttons at two fifths
-                    // of them (playtesting 2026-10-24). On a light button a crisp warm shadow just
-                    // under it; a soft dark rim round it looked muddy there.
+                    // of them (playtesting 2026-10-24).
                     IconImage(icon, size: size * 0.56)
-                        .shadow(color: isLight ? Color(red: 0.43, green: 0.28, blue: 0.16).opacity(0.4) : .clear,
-                                radius: 0.4, x: 0, y: 1)
+                        .shadow(color: iconShadow.color, radius: iconShadow.radius, x: isBlue ? 1 : 0, y: 1)
                 }
                 if size >= 80 {
                     Text(title).font(HUDStyle.font(12))
@@ -979,8 +986,10 @@ struct RoundCommandButton: View {
             .frame(width: size, height: size)
             .background(
                 Circle()
-                    .fill(RadialGradient(colors: colors, center: UnitPoint(x: 0.35, y: 0.3), startRadius: 1, endRadius: size * 0.75))
-                    .overlay(Circle().strokeBorder(.white.opacity(tint == .quiet ? 0.35 : 0.75), lineWidth: 2))
+                    .fill(isBlue ? AnyShapeStyle(LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom))
+                                 : AnyShapeStyle(RadialGradient(colors: colors, center: UnitPoint(x: 0.35, y: 0.3), startRadius: 1, endRadius: size * 0.75)))
+                    .overlay(Circle().strokeBorder(isBlue ? AnyShapeStyle(HUDStyle.bevel) : AnyShapeStyle(Color.white.opacity(0.75)),
+                                                   lineWidth: isBlue ? 2.5 : 2))
                     .overlay(
                         Ellipse().fill(.white.opacity(0.35))
                             .frame(width: size * 0.5, height: size * 0.2)

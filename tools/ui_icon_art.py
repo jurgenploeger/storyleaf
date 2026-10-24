@@ -111,8 +111,9 @@ def draw_sparkles(ic):
     # centred on its button (off to the left with both small ones on the right, it didn't).
     ic.flare(0.5, 0.5, 0.4, GOLD, strength=0.9)
     ic.body(ic.poly(sparkle_points(0.5, 0.5, 0.32), blur=0.003), AMBER, 0.46, 0.44, 0.28)
-    ic.flare(0.8, 0.2, 0.18, CYAN, strength=0.8)
-    ic.body(ic.poly(sparkle_points(0.8, 0.2, 0.15), blur=0.002), BLUE, 0.78, 0.18, 0.13)
+    # Mint, not sky blue: on the blue buttons a blue one vanished.
+    ic.flare(0.8, 0.2, 0.18, GREEN, strength=0.7)
+    ic.body(ic.poly(sparkle_points(0.8, 0.2, 0.15), blur=0.002), GREEN, 0.78, 0.18, 0.13)
     ic.flare(0.2, 0.8, 0.16, LIGHTS["dark"], strength=0.6)
     ic.body(ic.poly(sparkle_points(0.2, 0.8, 0.13), blur=0.002), PINK, 0.18, 0.78, 0.12)
 
@@ -128,17 +129,19 @@ def draw_backpack(ic):
 
 
 def draw_shield(ic):
-    # Defend: a blue shield, its rim lit, a gold star on it.
-    ic.glow(0.5, 0.5, 0.42, BLUE[1], 0.35)
-    shield(ic, BLUE, 0.5, 0.52, 1.2)
+    # Defend: a red shield, its rim lit, a gold star on it. Red, not blue: on the blue buttons a blue
+    # shield vanished (playtesting 2026-10-24).
+    ic.glow(0.5, 0.5, 0.42, RED[1], 0.3)
+    shield(ic, RED, 0.5, 0.52, 1.2)
     ic.body(ic.poly(star_points(0.5, 0.48, 0.16, 0.065), blur=0.002), GOLD, 0.48, 0.44, 0.16, shadow=False)
     ic.flare(0.32, 0.24, 0.14, GOLD, strength=0.6)
 
 
 def draw_wind(ic):
     # Run: a winged boot, streaks of wind behind it.
+    # White streaks: cyan ones dulled on the blue buttons.
     for k, y in enumerate((0.5, 0.64, 0.78)):
-        ic.trail([(0.04 + 0.04 * k, y), (0.2, y), (0.34, y)], 0.05, CYAN, 0.9)
+        ic.trail([(0.04 + 0.04 * k, y), (0.2, y), (0.34, y)], 0.05, CREAM, 0.9)
     boot = [(0.46, 0.18), (0.66, 0.18), (0.66, 0.6), (0.92, 0.68), (0.94, 0.86), (0.4, 0.86), (0.42, 0.6)]
     ic.body(ic.poly(boot, blur=0.002), LEATHER, 0.5, 0.3, 0.45)
     ic.body(rect(ic, 0.43, 0.16, 0.69, 0.26, 0.03), LEATHER, 0.5, 0.18, 0.2)
