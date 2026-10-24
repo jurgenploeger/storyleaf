@@ -2,7 +2,10 @@
 """Scenery of its own kind, drawn in code with tools/pixel_kit.py, where the game had palette swaps of one
 sprite: every tree a recolour of RD's round `tree`, every bush of its `berry_bush`. Each species here has a
 shape of its own (a willow droops, a cherry spreads, a birch stands tall and pale, a dead tree twists),
-so the lands look different by more than their colours.
+so the lands look different by more than their colours. Since 2026-10-24 RD's own trees, bushes and wood
+are drawn here too (the round `tree`, the apple, dead, snowy and snow-laden trees, the berry and frozen
+bushes, the toadstool, stump and log), so they match; RD's small flowers, ferns, reeds, rocks, palm and
+thorn bush stay RD's (see `PLANTS`).
 
 Each drawing writes art/sprites/<id>.png, which wins over the asset's `derive` in the game
 (ArtLibrary.sourceImage), and its big version (`big_<id>`, derived from it at a larger `scale`) follows.
@@ -405,6 +408,96 @@ def candy(colour, stripe):
     return s
 
 
+def round_tree(colour="#5cbc3a", seed=23):
+    """tree: the lands' everyday tree, a round fluffy crown of bright green on a short brown trunk: many
+    small clusters of leaves heaped into a ball, each lit on its own, as RD's first tree is."""
+    s = scene()
+    bark, leaves = Material(BARK, texture=0.07), foliage(colour)
+    trunk(s, 32, 60, 38, 8, bark, roots=4)
+    branch(s, [(32, 46), (25, 38)], 3.2, bark)
+    branch(s, [(32, 44), (40, 37)], 3.2, bark)
+    crown = len(s.shapes)
+    puffs(s, 32, 22, 21, 17, leaves, 26, 6.2, seed, flat=0.92)
+    centred(s, crown, 32)
+    return s
+
+
+def apple():
+    """apple_tree: the round tree in a deeper green, red apples hanging in its crown."""
+    s = round_tree("#3f9a36", 25)
+    fruit, shine = Material("#d8343a", texture=0.0, gloss=0.6), Material("#ffb0a0", texture=0.0)
+    for x, y in ((19, 18), (30, 11), (42, 16), (24, 28), (37, 25), (47, 28), (15, 29), (31, 35), (41, 34)):
+        s.ellipse(x, y, 1.9, 1.9, fruit)
+        s.ellipse(x - 0.6, y - 0.7, 0.5, 0.5, shine, profile="flat")
+    return s
+
+
+def bare(seed=171, bark_hex="#4e4048"):
+    """dead_tree: a bare dead tree, its dark trunk forking into crooked limbs that taper to twigs, no
+    leaf on it."""
+    s = scene()
+    bark = Material(bark_hex, texture=0.07)
+    r = rng(seed)
+    twigs = []
+
+    def grow(x, y, angle, length, width, depth):
+        bend = r.uniform(-0.35, 0.35)
+        mx, my = x + math.sin(angle) * length * 0.5, y - math.cos(angle) * length * 0.5
+        ex, ey = x + math.sin(angle + bend) * length, y - math.cos(angle + bend) * length
+        if width >= 2.0:
+            s.stroke([(x, y), (mx, my)], width, bark)
+            s.stroke([(mx, my), (ex, ey)], max(1.0, width * 0.7), bark)
+        else:
+            twigs.append([(x, y), (mx, my), (ex, ey)])
+        if depth:
+            for side in (-1, 1):
+                grow(ex, ey, angle + bend + side * r.uniform(0.35, 0.65), length * r.uniform(0.66, 0.8),
+                     max(1.0, width * 0.6), depth - 1)
+
+    trunk(s, 32, 60, 38, 5.2, bark, lean=1.2, roots=4)
+    crown = len(s.shapes)
+    for angle, length in ((-0.95, 11), (-0.3, 13), (0.35, 12), (1.0, 10)):
+        grow(32 + angle * 2.4, 40, angle, length, 3.6, 3)
+    dx = centred(s, crown, 32.6)
+    twigs[:] = [[(x + dx, y) for x, y in line] for line in twigs]
+    s.finish = lambda img: pixel_lines(img, twigs, "#2e2630", "#5e5260")
+    return s
+
+
+def snowy_pine():
+    """snow_pine: a tall fir in tiers, snow lying along the top of each tier (RD's snow, `SNOW`)."""
+    s = scene()
+    stem, needles = Material(BARK, texture=0.06), foliage("#2e7a50")
+    snow = Material(SNOW_KEY, texture=0.02, shades=6, variety=0)
+    s.stroke([(32, 61), (32, 50)], 5, stem)
+    tiers = ((2, 16, 8), (9, 27, 13), (18, 39, 18), (28, 52, 22))
+    for n, (top, bottom, half) in enumerate(tiers):
+        s.poly([(32, top), (32 + half, bottom), (32 + half * 0.45, bottom - 2), (32, bottom + 1),
+                (32 - half * 0.45, bottom - 2), (32 - half, bottom)], needles[min(2, n % 3)])
+        # The snow on its upper slopes, heaviest on the left, where the light is.
+        s.poly([(32, top - 0.5), (32 + half * 0.55, top + (bottom - top) * 0.55), (32 + half * 0.2, top + (bottom - top) * 0.4),
+                (32 - half * 0.25, top + (bottom - top) * 0.62), (32 - half * 0.8, top + (bottom - top) * 0.78),
+                (32 - half * 0.35, top + (bottom - top) * 0.3)], snow)
+    s.ellipse(32, 60.5, 12, 2.6, snow)
+    s.finish = snow_palette
+    return s
+
+
+def snowy_tree():
+    """snow_tree: a round tree so laden with snow its crown is a white cloud of it, a drift at its foot."""
+    s = scene()
+    bark = Material("#5d5462", texture=0.06)
+    snow = [Material(SNOW_KEY, texture=0.02, shades=6, variety=0)] * 3
+    trunk(s, 32, 58, 36, 5, bark, roots=3)
+    crown = len(s.shapes)
+    puffs(s, 32, 17, 20, 9, snow, 12, 6.5, 181, bulge=3.0)
+    puffs(s, 32, 29, 21, 4, snow, 7, 6.0, 182, flat=0.85)
+    lower(s, crown, 4)
+    s.ellipse(32, 58.5, 17, 3.4, snow[0])
+    s.finish = snow_palette
+    return s
+
+
 # ------------------------------------------------------------------------------------------- bushes
 # 32 pixels, like RD's `berry_bush`, standing on the bottom row.
 
@@ -524,6 +617,11 @@ TREES = {
     "candy_tree_lemon": lambda: candy("#f6e070", "#e8b020"),
     "candy_tree_peach": lambda: candy("#f8b49a", "#e86a5a"),
     "candy_tree_sky": lambda: candy("#a6dcf6", "#5a9ae6"),
+    "tree": round_tree,
+    "apple_tree": apple,
+    "dead_tree": bare,
+    "snow_pine": snowy_pine,
+    "snow_tree": snowy_tree,
 }
 
 
@@ -533,7 +631,7 @@ def grounded(img):
     28 of 32), so it sits on the map as they do."""
     a = np.asarray(img)[..., 3] > 0
     rows = np.nonzero(a.any(axis=1))[0]
-    ground = 59 if img.height == 64 else 28
+    ground = {64: 59, 48: 44}.get(img.height, 28)
     shift = ground - rows.max()
     out = Image.new("RGBA", img.size, (0, 0, 0, 0))
     out.paste(img, (0, int(shift)))
@@ -546,7 +644,7 @@ def grounded(img):
 CROWN_OFF_MAX = 1.5
 # Exceptions, each for a reason: the dark tree leans on purpose; the frost tree is bare, its trunk
 # running up into twigs with sky between them.
-LEANS, BARE = {"dark_tree"}, {"frost_tree"}
+LEANS, BARE = {"dark_tree"}, {"frost_tree", "dead_tree"}
 
 
 def tree_shape(img):
@@ -565,13 +663,88 @@ def tree_shape(img):
     return gap, off
 
 
+def berries():
+    """berry_bush: a round dark-green bush hung with red berries."""
+    s = mound("#3e8a34", 141)
+    fruit, shine = Material("#d42e3c", texture=0.0, gloss=0.6), Material("#ffb8b0", texture=0.0)
+    r = rng(142)
+    for _ in range(8):
+        x, y = 16 + r.uniform(-9, 8), 17 + r.uniform(-6, 6)
+        s.ellipse(x, y, 1.3, 1.3, fruit)
+        s.ellipse(x - 0.4, y - 0.4, 0.4, 0.4, shine, profile="flat")
+    return s
+
+
+def frosty():
+    """frozen_bush: a bush under frost, its leaves pale icy blue."""
+    return mound("#9cc8e8", 151)
+
+
+# ------------------------------------------------------------------------------------------- plants
+# Wood and toadstools on the ground (64 pixels, the stump 32), each its own drawing where RD's sprite was.
+# RD's small flowers, ferns, reeds, rocks, palm and thorn bush stay: drawn by the kit they came out
+# duller and muddier than RD's (its shading greys small bright shapes: playtesting 2026-10-24).
+
+
+def toadstool():
+    """giant_mushroom: a toadstool as tall as a hut, a broad red cap with white spots on a pale stalk
+    (the woods' `toadstool` is it small)."""
+    s = scene()
+    stalk, cap, spot = Material("#f2e2c4", texture=0.04), foliage("#d63c3c"), Material("#fff6ea", texture=0.0)
+    s.poly([(24, 61), (40, 61), (38, 46), (36, 34), (28, 34), (26, 46)], stalk)
+    s.ellipse(32, 35, 10, 2.4, Material("#e8d4b0", texture=0.03))           # the gills' shadow under the cap
+    s.ellipse(32, 25, 27, 15, cap[1], bulge=1.8)
+    s.ellipse(27, 20, 14, 8, cap[0], bulge=1.4)
+    for x, y, r_ in ((19, 23, 3.4), (30, 15, 3.0), (42, 20, 3.6), (35, 29, 2.6), (24, 31, 2.2), (48, 28, 2.4)):
+        s.ellipse(x, y, r_, r_ * 0.8, spot)
+    return s
+
+
+def stump():
+    """tree_stump: a cut stump, its rings on top, roots into the grass and a tuft of moss."""
+    s = scene(32)
+    bark, wood, ring = Material(BARK, texture=0.07), Material("#d8b07a", texture=0.03), Material("#a87a4a", texture=0.0)
+    moss = foliage("#5aa83e")
+    s.poly([(8, 28), (24, 28), (23, 15), (9, 15)], bark, profile="cylinder")
+    for side, (x0, x1) in ((-1, (9, 3)), (1, (23, 29))):
+        s.poly([(x0, 22), (x0, 28), (x1, 30), (x1 + side * -1.5, 28)], bark, profile="flat", tone=0.55 if side < 0 else 0.35)
+    s.ellipse(16, 15, 7.4, 3.2, wood)
+    for r_ in (4.6, 2.4):
+        s.ellipse(16, 15, r_, r_ * 0.43, ring, profile="flat")
+        s.ellipse(16, 15, r_ - 0.8, (r_ - 0.8) * 0.43, wood, profile="flat")
+    puffs(s, 22, 27, 4, 2, moss, 4, 2.2, 211, bulge=1.5)
+    return s
+
+
+def log():
+    """fallen_log: a fallen trunk lying in the grass, its cut end showing its rings, moss along its top."""
+    s = scene()
+    bark, wood, ring = Material(BARK, texture=0.07), Material("#d8b07a", texture=0.03), Material("#a87a4a", texture=0.0)
+    moss = foliage("#5aa83e")
+    s.poly([(8, 46), (50, 40), (54, 52), (12, 58)], bark, profile="cylinder")
+    s.ellipse(52, 46, 4.2, 6.2, wood)
+    s.ellipse(52, 46, 2.4, 3.6, ring, profile="flat")
+    s.ellipse(52, 46, 1.4, 2.2, wood, profile="flat")
+    puffs(s, 28, 43, 16, 2.2, moss, 8, 2.8, 221, flat=0.8, bulge=1.6)
+    return s
+
+
+PLANTS = {
+    "giant_mushroom": toadstool,
+    "tree_stump": stump,
+    "fallen_log": log,
+}
+
+BUSHES.update({"berry_bush": berries, "frozen_bush": frosty})
+
+
 def main(argv):
     sheet = None
     if "--sheet" in argv:
         i = argv.index("--sheet")
         sheet = pathlib.Path(argv[i + 1])
         argv = argv[:i] + argv[i + 2:]
-    drawings = {**TREES, **BUSHES}
+    drawings = {**TREES, **BUSHES, **PLANTS}
     ids = argv or sorted(drawings)
     out = {}
     for item in ids:

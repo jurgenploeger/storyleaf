@@ -101,7 +101,10 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `tools/scenery_art.py`: trees and bushes drawn in code with `pixel_kit` (docs/pixel-style.md), one species
   each where every tree had been a recolour of RD's `tree` and every bush of its `berry_bush`: a cherry, a
   gnarled dark tree, an autumn oak, a maple, a birch, a frosted bare tree, a willow, a jacaranda, candy trees,
-  and ten bushes (a fir sapling, a tumbleweed, a bramble...). Each writes its own PNG, which wins over the
+  and ten bushes (a fir sapling, a tumbleweed, a bramble...); and RD's own round `tree`, apple, dead, snowy
+  pine and snow-laden trees, berry and frozen bushes, toadstool, stump and log, drawn again to match (their
+  `derive`d kin follow). RD's small flowers, ferns, reeds, rocks, palm and thorn bush stay RD's: the kit's
+  shading greyed them. Each writes its own PNG, which wins over the
   asset's `derive`; its `big_` twin, derived from it, follows. `--sheet out.png` previews them.
 - `tools/building_art.py`: town houses and shops drawn in code with `pixel_kit`, so the towns don't build only
   with RD's few buildings and their recolours: a thatched and a timber-framed cottage, a stone townhouse, a
