@@ -35,10 +35,14 @@ struct WorldHUD: View {
                     .allowsHitTesting(false)
                 // What just happened, top centre under the panels on both sides (walking into a land
                 // too: its toast, no banner of its own; playtesting 2026-10-24).
-                GameToasts(lines: session.log)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 10)
-                    .allowsHitTesting(false)
+                // The autosave's "Saved" under them, in the same style.
+                VStack(spacing: 4) {
+                    GameToasts(lines: session.log)
+                    SavedBadge(lastSaved: session.lastSaved)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 10)
+                .allowsHitTesting(false)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
@@ -55,7 +59,6 @@ struct WorldHUD: View {
                     onOpen: { coordinator.open(.worldMap) }
                 )
                 .coachTarget(.minimap)
-                SavedBadge(lastSaved: session.lastSaved)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
 
@@ -486,7 +489,9 @@ private struct ExpBar: View {
 
 /// The menu: one button with three lines that, tapped, grows into a panel listing the menu's pages
 /// (Hero, Companion, Inventory, Quests, Settings), its lines turning into a cross that closes it.
-/// A gold dot on the button while any page has something new, and on that page's row.
+/// A gold dot on the button while any page has something new, and on that page's row. It takes the
+/// button's room only: open, the panel spreads up and to the left over Chat, which stays put
+/// (playtesting 2026-10-24: it pushed Chat aside).
 private struct GameMenu: View {
     let items: [MenuTab]
     @Binding var open: Bool
@@ -530,8 +535,9 @@ private struct GameMenu: View {
                 .fill(LinearGradient(colors: HUDStyle.tile, startPoint: .top, endPoint: .bottom))
                 .overlay(RoundedRectangle(cornerRadius: open ? 14 : 9).strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
                 .overlay(alignment: .bottom) {
-                    // The button's gloss, on its own square at the bottom.
-                    RoundedRectangle(cornerRadius: 6).fill(.white.opacity(open ? 0.12 : 0.35))
+                    // The button's gloss, on its own square at the bottom; none on the cross that
+                    // closes the open menu.
+                    RoundedRectangle(cornerRadius: 6).fill(.white.opacity(open ? 0 : 0.35))
                         .frame(width: Self.button - 8, height: Self.button * 0.3)
                         .padding(.bottom, Self.button * 0.62)
                         .frame(maxWidth: .infinity, alignment: .trailing)
@@ -547,6 +553,7 @@ private struct GameMenu: View {
         }
         .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 2)
         .animation(Self.spring, value: open)
+        .frame(width: Self.button, height: Self.button, alignment: .bottomTrailing)
     }
 
     private func row(_ tab: MenuTab) -> some View {
@@ -571,7 +578,6 @@ private struct GameMenu: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
-            .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.08)))
             .contentShape(Rectangle())
         }
         .buttonStyle(PressScaleStyle())
@@ -813,18 +819,14 @@ struct MinimapIcon: View {
     }
 }
 
-/// Flashes briefly whenever the game autosaves.
+/// Flashes briefly whenever the game autosaves: a toast like the rest (`ToastLabel`), top centre
+/// (playtesting 2026-10-24: a green pill under the minimap).
 private struct SavedBadge: View {
     let lastSaved: Date?
     @State private var visible = false
 
     var body: some View {
-        Label(L("Saved"), icon: .checkCircle, size: 13)
-            .font(HUDStyle.font(10))
-            .foregroundStyle(HUDStyle.green)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(Capsule().fill(HUDStyle.ink.opacity(0.8)))
+        ToastLabel(text: L("Saved"))
             .opacity(visible ? 1 : 0)
             .allowsHitTesting(false)
             .onChange(of: lastSaved) {
