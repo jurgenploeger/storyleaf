@@ -10,6 +10,9 @@
     art/sprites/nape_<style>_<race>.png  each hairstyle from a fifth of the way down the head:
                                          worn under armour with a walk sheet of its own, so long
                                          hair, a ponytail or braids show below the helmet or hood
+    art/sprites/napeback_<style>_<race>.png  the same, its back view only (the sheet's first row): over
+                                         the bare head under a helmet, so from behind its hair, not
+                                         its scalp, shows below the helmet
 
 A gender with its own walk sheet (classes.json `sheets`) gets the same set with a _<gender> suffix
 (body_elf_male.png, ...). Every hairstyle is taken from the sheet it was drawn on (STYLES: a
@@ -774,6 +777,7 @@ def build():
             layers[f"hair_{style}_{rid}"] = hair_edge(race.hair if source is race else fit_hair(hair, source, race),
                                                       race.body)
             layers[f"nape_{style}_{rid}"] = nape(layers[f"hair_{style}_{rid}"], race.body)
+            layers[f"napeback_{style}_{rid}"] = back_view(layers[f"nape_{style}_{rid}"], rid)
     for body, (race_id, sheet) in TOWNSFOLK.items():
         folk = Race(race_id, sheet, template=races[race_id], sidehair=True)
         layers[f"body_{body}"] = folk.body
@@ -812,6 +816,20 @@ def nape(hair, body):
                 continue
             cut = rows[0] + int(round((rows[-1] - rows[0]) * NAPE))
             out[row * F:row * F + cut, col * F:(col + 1) * F] = 0
+    return out
+
+
+def back_view(layer, body):
+    """Only the back view of a layer, and of it only what lies on the head: the sheet's first row (walk
+    sheets run up, right, down, left), inside the hero's head as tools/wear_art.py cut it (`head_<body>`).
+    Under a helmet the hero's bare head lies over the hair below it, as it should facing you or side on,
+    where the hair hangs behind the head; from behind it showed a band of scalp between the helmet and
+    the collar (playtesting 2026-10-24). This goes over the head, so from behind the hair does; the rest of
+    a long style stays under the armour, as before (over it, braids and shoulder-length hair threw stray
+    strands across the back)."""
+    head = np.asarray(Image.open(ROOT / "art" / "sprites" / f"head_{body}.png").convert("RGBA")).astype(float) / 255
+    out = np.zeros_like(layer)
+    out[:F] = layer[:F] * (head[:F, ..., 3:4] > 0.5)
     return out
 
 

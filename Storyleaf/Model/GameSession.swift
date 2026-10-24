@@ -322,7 +322,10 @@ final class GameSession {
     /// armour (`headgear`) takes the hair's place: an armour sheet's helmet, hood or coif
     /// (`hat_<kind>_<race>`, in the skin tone and its tint) over the hair from a fifth of the way down
     /// the head (`nape_*`), so long hair, a ponytail or braids show below it, the beard on top; or a
-    /// hide cloak's hood (`hood_*`, painted in its colour by GearOverlay.hood).
+    /// hide cloak's hood (`hood_*`, painted in its colour by GearOverlay.hood). Under the helmet the
+    /// head lies over the nape, as it should facing you or side on; from behind its back view
+    /// (`napeback_*`) goes over the head, or a band of scalp showed below the helmet (playtesting
+    /// 2026-10-24).
     static func layers(race: RaceDef, look: Look, armor: ItemDef? = nil, hat: ItemDef? = nil) -> [ArtLayer] {
         let style = Self.style(for: look, race: race)
         let body = Self.body(race: race, look: look)
@@ -331,23 +334,25 @@ final class GameSession {
         let locks = ArtLayer(id: "locks_\(body)", recolor: hair)
         // What's on the head, and the hair still showing below it.
         var under: [ArtLayer] = []
+        var back: [ArtLayer] = []
         var top = [locks, ArtLayer(id: "hair_\(style)_\(body)", recolor: hair)]
         if let kind = hat?.headgear {
             if kind == "hood" {
                 top = [locks, ArtLayer(id: "hood_\(body)", recolor: [])]
             } else {
                 under = [ArtLayer(id: "nape_\(style)_\(body)", recolor: hair)]
+                back = [ArtLayer(id: "napeback_\(style)_\(body)", recolor: hair)]
                 top = [ArtLayer(id: "hat_\(kind)_\(race.id)", recolor: skin + (hat?.tint ?? [])), locks]
             }
         }
         if let sheet = armor?.sheets?[race.id] {
             // Its head is cut off: the hero's own over it, in their skin tone.
             if armor?.bareHead == true {
-                return under + [ArtLayer(id: sheet), ArtLayer(id: "head_\(body)", recolor: skin)] + top
+                return under + [ArtLayer(id: sheet), ArtLayer(id: "head_\(body)", recolor: skin)] + back + top
             }
             return [ArtLayer(id: "nape_\(style)_\(body)", recolor: hair), ArtLayer(id: sheet)]
         }
-        return under + [ArtLayer(id: "body_\(body)", recolor: bodyRules(for: look, armor: armor))] + top
+        return under + [ArtLayer(id: "body_\(body)", recolor: bodyRules(for: look, armor: armor))] + back + top
     }
 
     /// Which of the paper-doll bodies a hero wears: each gender's walk sheet has its own set, and the

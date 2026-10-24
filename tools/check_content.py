@@ -84,7 +84,9 @@ for race in classes["races"]:
     bodies = [(race["id"], race.get("art", "player_walk"))] + [
         (f"{race['id']}_{gender}", sheet) for gender, sheet in (race.get("sheets") or {}).items()]
     for body, sheet in bodies:
-        layers = [f"body_{body}", f"locks_{body}", f"hood_{body}", f"helmet_{body}"] + [f"hair_{style}_{body}" for style in every_style]
+        # Under a helmet: the hair below it (nape_) and its back view over the head (napeback_).
+        layers = [f"body_{body}", f"locks_{body}", f"hood_{body}", f"helmet_{body}"] + [
+            f"{kind}_{style}_{body}" for style in every_style for kind in ("hair", "nape", "napeback")]
         for layer in layers:
             check((ROOT / "art" / "sprites" / f"{layer}.png").exists(),
                   f"race {race['id']} → art/sprites/{layer}.png is missing (python3 tools/hero_layers.py)")

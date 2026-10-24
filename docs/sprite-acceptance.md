@@ -84,6 +84,12 @@ one body and wrong on another isn't done.
   leaves the face alone; till then it was a dome drawn in code (`hood_<body>`, kind `hood`, now unused). Check every body, direction and frame: no leftover helmet or hood round
   the face, no gap at the neck; armour and its hat together look as the armour did; a hat over other
   armour, and with none, sits on the head and lets long hair show below it.
+- **From behind, hair below the helmet, not scalp** (playtesting 2026-10-24: "a strange skin gap in the
+  back view"). The hair below a helmet (`nape_*`) lies under the bare head, right facing you or side on,
+  where it hangs behind; from behind the head covered it and a band of scalp showed between the helmet and
+  the collar. Its back view, only where it lies on the head (`napeback_*`, `hero_layers.back_view`), goes
+  over the head (`GameSession.layers`). Check every style from behind under every helmet: the strip under
+  a bob is its neck as drawn, bare without a helmet too.
 
 ### Capes
 
