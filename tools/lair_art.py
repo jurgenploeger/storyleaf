@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""The pieces of the bosses' lairs (maps.json, a boss's `lair`) that no sprite had: a standing stone,
-a brazier, a gold hoard, a warning post and a junk throne, drawn in code with tools/pixel_kit.py in the
+"""The pieces of the bosses' lairs (maps.json, a boss's `lair`, `lairRing` and `lairApproach`) that no
+sprite had: a standing stone, a brazier, a gold hoard, a warning post, a junk throne, a heap of bones, a
+hunter's torn tent and a broken pillar, drawn in code with tools/pixel_kit.py in the
 game's pixel style (docs/pixel-style.md), lit from the top left and outlined in a deep shade of each.
 
     python3 tools/lair_art.py                   # all → art/sprites/<id>.png
@@ -142,8 +143,67 @@ def junk_throne():
     return s
 
 
+def bone_pile():
+    """A heap of old bones a beast has left about its den: long bones crossed every way, ribs, and a
+    skull on top, bleached, a shade darker where they lie on each other."""
+    s = scene(32, 32)
+    bone, old = Material("#e8e0cc", texture=0.03), Material("#bdb29a", texture=0.03)
+    dark = Material("#2a2026", texture=0.0)
+    s.ellipse(16, 26, 11, 3.6, old, profile="flat", bulge=0.6)                                # the heap's foot
+    for a, b in (((6, 27), (22, 22)), ((9, 21), (26, 27)), ((5, 24), (17, 19)), ((14, 27), (27, 20)),
+                      ((11, 18), (21, 25))):
+        mat = bone if a[0] < 12 else old
+        s.stroke([a, b], 1.6, mat)
+        for end in (a, b):                                                                     # knobbed ends
+            s.ellipse(end[0], end[1], 1.4, 1.2, mat)
+    for k in range(4):                                                                         # a rib cage
+        x = 19 + k * 1.8
+        s.stroke([(x, 24), (x + 1.4, 19), (x + 0.4, 16.5)], 0.9, bone)
+    s.ellipse(12, 15, 4.2, 3.6, bone)                                                          # the skull on top
+    s.poly([(9.5, 16.5), (14.5, 16.5), (14, 19.5), (10, 19.5)], bone)
+    for x in (10.6, 13.4):
+        s.ellipse(x, 15.4, 1.0, 1.1, dark, profile="flat")
+    return s
+
+
+def torn_tent():
+    """A hunter's tent by a lair, torn open and fallen in on one side: a canvas ridge on two poles,
+    a ragged hole in its side, a pack and a snapped spear left in front. Someone came this way."""
+    s = scene(32, 32)
+    canvas, shade = Material("#c8b48a", texture=0.05), Material("#9a8460", texture=0.05)
+    pole, dark = Material("#6a4a2e", texture=0.05), Material("#2e2420", texture=0.0)
+    s.poly([(3, 27), (14, 9), (22, 13), (29, 27)], shade, profile="flat", tone=0.4)           # its far side
+    s.poly([(3, 27), (14, 9), (17, 27)], canvas, bulge=0.8)                                   # its near side
+    s.poly([(17, 27), (14, 9), (22, 13), (24, 20), (21, 27)], shade, bulge=0.6)
+    s.poly([(8, 25), (10, 18), (13, 21), (12, 26)], dark, profile="flat")                      # the tear
+    s.poly([(12, 20), (15, 23), (13, 26)], canvas, profile="flat", tone=0.7)                   # its flap hanging
+    s.stroke([(14, 28), (14, 7)], 1.2, pole)
+    s.stroke([(22, 28), (23, 12), (21, 9)], 1.2, pole)                                         # the back pole, snapped
+    s.ellipse(25, 27, 3, 2.2, Material("#7a5a3a", texture=0.05))                               # a pack
+    s.stroke([(2, 29), (11, 26)], 0.9, pole)                                                   # a snapped spear
+    s.poly([(11, 25.3), (13.5, 25.2), (11.6, 26.8)], Material("#9a9aa6", texture=0.0, gloss=0.6), profile="flat")
+    return s
+
+
+def broken_pillar():
+    """A fallen temple's pillar, still standing but broken off two thirds up: fluted pale stone, a
+    worn base, its top jagged, a chunk of it lying at its foot and ivy up one side."""
+    s = scene(32, 48)
+    stone, deep = Material("#d0ccc0", texture=0.06), Material("#9a968c", texture=0.05)
+    ivy = foliage("#5a8a3a")
+    s.poly([(8, 46), (24, 46), (24, 42), (8, 42)], deep, profile="flat", tone=0.5)             # its base
+    s.poly([(7, 42), (25, 42), (24, 39), (8, 39)], stone)
+    s.poly([(10, 39), (22, 39), (22, 17), (19, 13), (16, 16), (13, 11), (10, 15)], stone, profile="cylinder")
+    for x in (13, 16, 19):                                                                     # its fluting
+        s.stroke([(x, 38), (x, 18 if x != 16 else 19)], 0.7, deep, profile="flat")
+    s.poly([(24, 46), (31, 44), (30, 40), (25, 41)], stone, bulge=1.2)                         # a fallen chunk
+    for x, y, r in ((10.5, 36, 1.8), (10, 31, 1.6), (11, 26, 1.4), (10.5, 22, 1.2), (12, 33, 1.2)):
+        s.ellipse(x, y, r, r * 0.8, ivy[0 if y < 30 else 1])
+    return s
+
+
 PROPS = {"standing_stone": standing_stone, "brazier": brazier, "gold_hoard": gold_hoard, "warning_post": warning_post,
-         "junk_throne": junk_throne}
+         "junk_throne": junk_throne, "bone_pile": bone_pile, "torn_tent": torn_tent, "broken_pillar": broken_pillar}
 
 
 def main(argv):

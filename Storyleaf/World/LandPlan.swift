@@ -209,58 +209,159 @@ final class LandPlanner {
     }
 
     /// A boss's lair (`NPCDef.lair`; playtesting 2026-10-23: bosses stood about on open ground): its
-    /// pieces set down round it, turned so its way in (the pieces' south, y below 0) faces the land's
-    /// middle, where the roads come from, a piece that would land on a road, water or the land next
-    /// door, a cave's rock or a cliff left out; then a clearing round it where no tree grows, so it stands in a place of its own.
+    /// pieces set down round it, turned so its way in (the pieces' south, y below 0) faces the way you
+    /// come, up its trail (else from the land's middle, where the roads come from), a piece that would
+    /// land on a road, water or the land next door, a cave's rock or a cliff left out. Round it its
+    /// ring (`NPCDef.lairRing`; playtesting 2026-10-24: a lair was a few pieces and an empty space),
+    /// a wall of trees, rocks or pillars open toward the way in; out from that opening, what lines the
+    /// way in (`lairApproach`); a warning by its trail near where it starts (`lairSign`, a sign by
+    /// the lair itself was missed); then a clearing inside where no tree grows, so it stands in a
+    /// place of its own. Its own stream ("/lair/"), so the rest of the land's draws stay as they were.
     private func planLair(of npc: NPCDef, at cell: GridPoint) {
         guard let lair = npc.lair, !lair.isEmpty else { return }
-        let toward = (col: map.center.col - cell.col, row: map.center.row - cell.row)
+        var random = SeededRandom(text: def.id + "/lair/" + npc.id)
+        let trail = trailInto(cell)
+        let toward = trail.map { (col: Double($0.last.col - cell.col), row: Double($0.last.row - cell.row)) }
+            ?? (col: Double(map.center.col - cell.col), row: Double(map.center.row - cell.row))
+        let length = max(0.001, hypot(toward.col, toward.row))
+        let heading = (col: toward.col / length, row: toward.row / length)
         // Where the way in points after 0 to 3 quarter turns (y up is a row up).
-        let ways = [(0, -1), (1, 0), (0, 1), (-1, 0)]
-        let turns = (0..<4).max { ways[$0].0 * toward.col + ways[$0].1 * toward.row < ways[$1].0 * toward.col + ways[$1].1 * toward.row } ?? 0
+        let ways: [(col: Double, row: Double)] = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+        func facing(_ turn: Int) -> Double { ways[turn].col * heading.col + ways[turn].row * heading.row }
+        let turns = (0..<4).max { facing($0) < facing($1) } ?? 0
         func turned(_ x: Int, _ y: Int) -> (Int, Int) {
             var (dx, dy) = (x, y)
             for _ in 0..<turns { (dx, dy) = (-dy, dx) }
             return (dx, dy)
         }
-        // The way in, straight on from the boss toward the middle, stays clear.
+        func ahead(_ step: Double, across: Double = 0) -> GridPoint {
+            GridPoint(col: cell.col + Int((step * heading.col - across * heading.row).rounded()),
+                      row: cell.row + Int((step * heading.row + across * heading.col).rounded()))
+        }
+        let radius = Double(max(3, npc.lairRing?.radius ?? 6))
+        // The way in stays clear: straight on from the boss, and on toward where you come from.
         var taken: Set<GridPoint> = [cell]
         for step in 1...3 {
             let (dx, dy) = turned(0, -step)
             taken.insert(GridPoint(col: cell.col + dx, row: cell.row + dy))
         }
+        for step in 1...Int(radius) + 1 { taken.insert(ahead(Double(step))) }
+        func fits(_ at: GridPoint, blocking: Bool) -> Bool {
+            !taken.contains(at) && map.owns(at) && map.isWalkable(at) && map.isFreeForLair(at, blocking: blocking)
+        }
         // Each piece at its spot, else pulled in toward the boss (a summit's top or a cave's chamber
         // has less room than open ground); one that mayn't block where it fits (by a cave's passage)
         // stands there to be walked through.
-        var chosen: [(art: String, cell: GridPoint, blocking: Bool)] = []
+        var chosen: [(art: String, cell: GridPoint, blocking: Bool, natural: Bool)] = []
         for piece in lair {
             let (dx, dy) = turned(piece.x, piece.y)
             let wantsToBlock = piece.blocking ?? true
             for scale in [1.0, 0.7, 0.45, 0.25] {
                 let at = GridPoint(col: cell.col + Int((Double(dx) * scale).rounded()), row: cell.row + Int((Double(dy) * scale).rounded()))
                 guard !taken.contains(at), map.owns(at), map.isWalkable(at) else { continue }
-                let blocking = wantsToBlock && map.isFreeForScenery(at, blocking: true)
-                guard blocking || map.isFreeForScenery(at, blocking: false) else { continue }
-                chosen.append((art: piece.art, cell: at, blocking: blocking))
+                let blocking = wantsToBlock && map.isFreeForLair(at, blocking: true)
+                guard blocking || map.isFreeForLair(at, blocking: false) else { continue }
+                chosen.append((art: piece.art, cell: at, blocking: blocking, natural: false))
                 taken.insert(at)
                 break
+            }
+        }
+        // Its ring, every cell or so round it but the opening toward the way in (37° either side); in
+        // front of the boss on screen (lower, its column and row less than its own) only the low
+        // things, where a tree would stand over it.
+        if let ring = npc.lairRing {
+            let reach = Int(radius.rounded(.up)) + 1
+            for dr in -reach...reach {
+                for dc in -reach...reach {
+                    let distance = hypot(Double(dc), Double(dr))
+                    guard abs(distance - radius) < 0.5, (Double(dc) * heading.col + Double(dr) * heading.row) / distance < 0.8 else { continue }
+                    let front = dc + dr < -1
+                    let kinds = front || ring.tall.isEmpty ? ring.low : ring.tall
+                    guard !kinds.isEmpty, Double.random(in: 0..<1, using: &random) < (front ? 0.85 : 0.75) else { continue }
+                    let at = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                    let art = kinds[Int.random(in: 0..<kinds.count, using: &random)]
+                    guard fits(at, blocking: true) else { continue }
+                    chosen.append((art: art, cell: at, blocking: true, natural: true))
+                    taken.insert(at)
+                }
+            }
+        }
+        // What lines the way in, in pairs either side of it every third cell out from the opening.
+        if let approach = npc.lairApproach, !approach.isEmpty {
+            let first = (npc.lairRing == nil ? 4.0 : radius + 2)
+            for index in 0..<4 {
+                let art = approach[index % approach.count]
+                for side in [-1.0, 1.0] {
+                    let spot = [2.0, 3.0].map { ahead(first + Double(index * 3), across: side * $0) }.first { fits($0, blocking: true) }
+                    guard let at = spot else { continue }
+                    chosen.append((art: art, cell: at, blocking: true, natural: false))
+                    taken.insert(at)
+                }
             }
         }
         // Never walled in: if what blocks would shut the boss in, nothing of the lair blocks.
         let walls = Set(chosen.filter { $0.blocking }.map { $0.cell })
         if !walls.isEmpty, !leavesRoom(around: cell, walls: walls) {
-            chosen = chosen.map { (art: $0.art, cell: $0.cell, blocking: false) }
+            chosen = chosen.map { (art: $0.art, cell: $0.cell, blocking: false, natural: $0.natural) }
         }
         for piece in chosen {
             map.occupy(piece.cell, blocking: piece.blocking)
-            plan.localProps.append(scenery(piece.art, at: piece.cell))
+            var placement = Placement(art: piece.art, cell: piece.cell)
+            if piece.natural {
+                // A ring of trees or rocks grown, not built: nudged off the grid and in its sizes.
+                placement.nudge = CGVector(dx: CGFloat.random(in: -5...5, using: &random), dy: CGFloat.random(in: -3...3, using: &random))
+                placement.scale = CGFloat.random(in: 0.85...1.1, using: &random)
+            }
+            plan.localProps.append(placement)
         }
-        for dr in -3...3 {
-            for dc in -3...3 where dc * dc + dr * dr <= 10 {
+        if let sign = npc.lairSign, let trail { planLairSign(sign, along: trail) }
+        // Inside the ring nothing grows, nor on the ground in front of the boss (lower on screen).
+        let inside = npc.lairRing == nil ? 3.2 : radius - 0.5
+        let reach = Int(inside.rounded(.up))
+        for dr in -max(5, reach)...reach {
+            for dc in -max(5, reach)...reach where hypot(Double(dc), Double(dr)) <= inside || (dc <= 1 && dr <= 1) {
                 let at = GridPoint(col: cell.col + dc, row: cell.row + dr)
                 if map.contains(at) { map.occupy(at, blocking: false) }
             }
         }
+    }
+
+    /// The trail that ends at a boss in `cell` (`MapDef.Trail`, its end within 8 cells of it): where
+    /// it starts, the stop after that, and the stop before its end, the way you come.
+    private func trailInto(_ cell: GridPoint) -> (start: GridPoint, next: GridPoint, last: GridPoint)? {
+        for trail in def.trails ?? [] {
+            let end = map.offset(trail.to[0], trail.to[1])
+            guard max(abs(end.col - cell.col), abs(end.row - cell.row)) <= 8 else { continue }
+            let stops = [trail.from ?? def.hub ?? [0, 0]] + (trail.via ?? []) + [trail.to]
+            let cells = stops.map { map.offset($0[0], $0[1]) }
+            return (start: cells[0], next: cells[1], last: cells[cells.count - 2])
+        }
+        return nil
+    }
+
+    /// A warning by a boss's trail (`NPCDef.lairSign`), 6 cells on from where it starts: beside the
+    /// trail as it was carved (it wanders), on a cell that closes no way past it.
+    private func planLairSign(_ art: String, along trail: (start: GridPoint, next: GridPoint, last: GridPoint)) {
+        let dx = Double(trail.next.col - trail.start.col), dy = Double(trail.next.row - trail.start.row)
+        let length = max(1, hypot(dx, dy))
+        let along = min(6, length / 2)
+        let aim = GridPoint(col: trail.start.col + Int((dx / length * along).rounded()), row: trail.start.row + Int((dy / length * along).rounded()))
+        func path(_ at: GridPoint) -> Bool { map.owns(at) && map.ground[at.row][at.col] == .path }
+        var best: GridPoint?
+        var nearest = Int.max
+        for dr in -4...4 {
+            for dc in -4...4 {
+                let at = GridPoint(col: aim.col + dc, row: aim.row + dr)
+                guard dc * dc + dr * dr < nearest, map.owns(at), !path(at), map.isWalkable(at), map.isFreeForScenery(at),
+                      [(1, 0), (-1, 0), (0, 1), (0, -1)].contains(where: { path(GridPoint(col: at.col + $0.0, row: at.row + $0.1)) }),
+                      keepsTheWayOpen(at) else { continue }
+                best = at
+                nearest = dc * dc + dr * dr
+            }
+        }
+        guard let at = best else { return }
+        map.occupy(at, blocking: true)
+        plan.localProps.append(Placement(art: art, cell: at))
     }
 
     /// Whether, with `walls` blocked too, you can still walk to everything you could without them but

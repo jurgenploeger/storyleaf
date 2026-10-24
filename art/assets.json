@@ -2246,6 +2246,18 @@
       "kind": "prop"
     },
     {
+      "id": "bone_pile",
+      "kind": "prop"
+    },
+    {
+      "id": "torn_tent",
+      "kind": "prop"
+    },
+    {
+      "id": "broken_pillar",
+      "kind": "prop"
+    },
+    {
       "id": "timber_house",
       "kind": "building"
     },

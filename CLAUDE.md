@@ -133,9 +133,13 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   stats). `--sheet out.png` writes a contact sheet. Spells are light, not sprites:
   `Storyleaf/Battle/ElementEffects.swift` layers soft glows in each element's colours (`ElementLight`).
 - `tools/lair_art.py`: the pieces of the bosses' lairs no sprite had (a standing stone, a brazier, a gold hoard, a
-  warning post, the Rat King's junk throne), drawn with `pixel_kit` and scored as scenery. A boss's lair is
-  maps.json `lair` on the boss: pieces round it, its way in to the south, turned by `LandPlanner.planLair` to face
-  the land's middle, a clearing kept round it; `check_content.py` keeps the way in clear.
+  warning post, the Rat King's junk throne, a heap of bones, a hunter's torn tent, a broken pillar), drawn with
+  `pixel_kit` and scored as scenery. A boss's lair is maps.json `lair` on the boss: pieces round it, its way in to
+  the south, turned by `LandPlanner.planLair` to face the way up its trail (else the land's middle); `lairRing`, a
+  ring of the land's own tall scenery behind it and low in front, open toward the way in; `lairApproach`, pairs
+  lining the way in; `lairSign`, a warning by its trail near where it starts. Its ground is kept for it before
+  hills, lakes or trees (`WorldMap.reserveLair`, `isFreeForLair`). Bosses stand at a land's edge or coast at a
+  trail's end, on a summit, or in a cave; `check_content.py` keeps the way in clear.
 - `tools/critter_art.py`: the critters (`ambience.critters`) and the birds crossing the sky, as PNGs
   (`art/sprites/critter_<name>.png`, loaded by `CritterArt.drawn`; one missing is drawn in Swift as before): the
   same shapes and sizes as `Critters.swift`, lit from the top left and outlined in a deep shade of each part.

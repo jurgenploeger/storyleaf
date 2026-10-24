@@ -502,6 +502,12 @@ nonisolated struct NPCDef: Decodable, Identifiable, Sendable {
     /// Bosses: their lair, set down round them (`LandPlanner.planLair`): pieces at `x`, `y` out from
     /// the boss, the way in to the south (y below 0), turned to face the land's middle.
     let lair: [MapDef.Decor]?
+    /// Bosses: what rings their lair (`LandPlanner.planLair`), open toward the way in.
+    let lairRing: MapDef.LairRing?
+    /// Bosses: what lines the way into their lair, in pairs out from the ring's opening.
+    let lairApproach: [String]?
+    /// Bosses: a warning beside their trail a few cells from where it starts, so you find the way.
+    let lairSign: String?
 
     nonisolated struct Victory: Decodable, Sendable {
         let title: String
@@ -645,6 +651,16 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let blocking: Bool?
         /// Up on one of the map's summits, like an NPC's (`NPCDef.summit`).
         let summit: Int?
+    }
+
+    /// What rings a boss's lair (`NPCDef.lairRing`; playtesting 2026-10-24: a lair was a few pieces
+    /// on open ground): tall things behind the boss on screen (trees, spires, pillars) and low ones in
+    /// front of it, where tall ones would hide it (rocks, bushes), a wall round it but its way in.
+    nonisolated struct LairRing: Decodable, Sendable {
+        let tall: [String]
+        let low: [String]
+        /// How far out it stands, in cells (6 unless set).
+        let radius: Int?
     }
 
     /// Whimsy: floating particles, butterflies, cloud shadows and a colour mood.
