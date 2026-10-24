@@ -52,9 +52,6 @@ final class GameSession {
     var data: SaveData
     /// Name of the map the player is on, for the HUD.
     var mapName = ""
-    /// A land's name for a few seconds after you walk into it, shown under the HUD's top panels
-    /// (`WorldHUD`), where it can't end up behind them.
-    var landBanner: String?
     /// NPC close enough to talk to, for the HUD's Talk button.
     var nearbyNPC: String?
     /// The tile the hero stands on, for the minimap.

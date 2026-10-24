@@ -1113,7 +1113,6 @@ final class ContinentScene: SKScene {
         }
         session.startChat(on: def.name)
         session.mapName = def.name
-        showBanner(def.name)
     }
 
     #if DEBUG
@@ -1319,18 +1318,6 @@ final class ContinentScene: SKScene {
                                                 columns: columns, rows: rows)
         surrounded = (def.id, overviews, picture)
         return picture
-    }
-
-    /// The land's name for a few seconds, drawn by the HUD under its top panels (`landBanner`): drawn
-    /// here, a set distance from the top of the screen, it ended up behind them. Cleared on a timer of
-    /// its own, not the scene's, which stops when a battle pauses it or a cave takes its place.
-    private func showBanner(_ name: String) {
-        let session = self.session
-        session.landBanner = name
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(3.2))
-            if session.landBanner == name { session.landBanner = nil }
-        }
     }
 
     /// While the land you stand on isn't laid out yet (`id`), a note above you with its name and how

@@ -141,6 +141,25 @@ enum HUDStyle {
     }
 }
 
+/// A toast: one short message, cream on a dark rounded plate, two lines at most. The battle's line of
+/// what just happened (`BattleView`) and the map's (`WorldHUD`'s GameToasts) are the same, so every
+/// message the game pops up looks alike (playtesting 2026-10-24: black pills down the right on the map).
+struct ToastLabel: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(HUDStyle.font(12))
+            .foregroundStyle(HUDStyle.cream)
+            .multilineTextAlignment(.center)
+            .lineLimit(2)
+            .minimumScaleFactor(0.75)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 6)
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(HUDStyle.ink.opacity(0.78)))
+    }
+}
+
 /// Glossy Fairyland Online-style bar: coloured fill with a white shine, dark inset track.
 struct StatBar: View {
     let label: String
