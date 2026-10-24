@@ -287,9 +287,14 @@ workshop): give one these when it's next touched. What lifts it (`tools/building
 - **A shadow on the ground.** A building casts one down and to the right of its foot, longer the taller
   it is (`ground_shadow`), away from the light at the top left.
 - **Depth inside.** A basin or a pool shows its far inner wall in shadow before its water.
+- **A round building is a drum, not a box.** Its foot and top curve with it (an ellipse a third as tall as
+  it's wide, `TILT`), its wall shaded round, a ring round it with its top seen from above, and a dome
+  seated on its top edge (`drum`, `ring`, `dome`). A dome on a flat-fronted box, with a wing beside it,
+  looked wrong (the first Star Observatory, 2026-10-24); of four drawn instead, the slender tower was
+  picked.
 
 The three landmarks (`emerald_spire`, `star_observatory`, `moonwell`) went from 0.015, 0.015 and 0.019 to
-0.017, 0.016 and 0.022 with these. `fit` measured a drawing on the 96-pixel frame, so one taller than it
+0.017, 0.023 (redrawn as a drum) and 0.022 with these. `fit` measured a drawing on the 96-pixel frame, so one taller than it
 (the spire) was cut off and measured short; one that reaches the frame's edge is now measured again on a
 canvas with room all round.
 

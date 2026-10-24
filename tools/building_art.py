@@ -1361,47 +1361,88 @@ def emerald_spire(b):
     return b
 
 
+TILT = 0.34      # how round a drum's top and foot look from this height: an ellipse ry = r × TILT
+
+
+def oval(cx, cy, rx, ry, a0, a1, n=17):
+    """Points along an ellipse from angle a0 to a1 (0 is to the right, π/2 down)."""
+    return [(cx + rx * math.cos(a), cy + ry * math.sin(a)) for a in np.linspace(a0, a1, n)]
+
+
+def drum(b, cx, base, r, height, colour, pattern="rubble", curve=1.0):
+    """A round tower or hall seen from a little above, as RD draws one: its wall shaded round, its foot
+    and top curving with it (a box with a dome on it read flat and wrong, 2026-10-24). Returns its top."""
+    top = base - height
+    ry = r * TILT
+    pts = [(cx - r, top), (cx - r, base)] + oval(cx, base, r, ry, math.pi, 0)[1:] + [(cx + r, top)] + oval(cx, top, r, ry, 0, math.pi)[1:]
+    b.surface(pts, colour, pattern, curve=curve, eave=4, foot=3)
+    return top
+
+
+def ring(b, cx, y, r, colour, wall, h=3.0):
+    """A ledge round a drum at `y`: its top seen from above, its rounded front, its shadow on the wall."""
+    ry = r * TILT
+    b.poly(oval(cx, y + h + 1.6, r + 0.5, ry, math.pi, 0) + oval(cx, y + h, r + 0.5, ry, 0, math.pi), shade(wall, 0.55),
+           texture=0.0, profile="flat")
+    b.poly(oval(cx, y, r + 1.6, ry + 0.6, 0, 2 * math.pi, 33), shade(wall, 1.05), texture=0.02, profile="flat", tone=0.6)
+    b.poly(oval(cx, y, r + 1.6, ry + 0.6, math.pi, 0) + oval(cx, y + h, r + 1.6, ry + 0.6, 0, math.pi), colour, texture=0.03,
+           profile="cylinder")
+
+
+def dome(b, cx, top, r, colour, rise=None, stars=True, slit=True):
+    """A dome on a drum's top, shaded round: gold stars on it and its slit open, an observatory's.
+    Returns its peak's height."""
+    rise = rise or r * 0.95
+    ry = r * TILT
+    b.poly(oval(cx, top, r + 1, ry, 0, math.pi) + oval(cx, top, r + 1, rise, math.pi, 2 * math.pi, 25)[1:-1], colour,
+           profile="dome", texture=0.06)
+    if stars:
+        for a, f in ((3.6, 0.55), (4.0, 0.8), (4.4, 0.45), (4.9, 0.75), (5.4, 0.5), (3.9, 0.3), (5.7, 0.7)):
+            b.ellipse(cx + r * f * math.cos(a), top + rise * f * math.sin(a), 0.9, 0.9, "#ffe08a", texture=0.0, profile="flat")
+    if slit:
+        b.poly([(cx + 2, top - rise + 1), (cx + 6, top - rise + 2), (cx + 11, top - rise * 0.35), (cx + 7, top - rise * 0.25)],
+               "#141638", texture=0.0, profile="flat")
+    return top - rise
+
+
+def telescope(b, x, y, length=18, angle=-50, brass="#d8a840"):
+    """A brass telescope from (x, y) up to the sky at `angle` degrees, its lens catching the light."""
+    a = math.radians(angle)
+    ex, ey = x + length * math.cos(a), y + length * math.sin(a)
+    b.stroke([(x, y), (ex, ey)], 4.0, brass)
+    b.stroke([(x + 0.6, y - 0.8), (ex + 0.6, ey - 0.8)], 1.0, "#ffe8a0")
+    b.ellipse(ex, ey, 2.6, 2.6, "#8a6a2a", texture=0.0)
+    b.ellipse(ex, ey, 1.7, 1.7, "#a8e8ff", texture=0.0, profile="flat", gloss=0.6)
+
+
 @by_hand
 @grand(160)
 def star_observatory(b):
-    """The Star Observatory on Starfall Isle, where Glimmerbough watches for falling stars: a stout round
-    tower of pale violet stone under a great midnight-blue dome scattered with gold stars, its slit open and
-    a brass telescope reaching out of it to the sky, a crescent moon on its top; a little stone wing with a
-    slate roof beside it, an arched door, lit windows, star crystals grown up by its wall."""
-    stone, slate, night, brass = "#b8b0cc", "#4a4a7e", "#2a2e6e", "#d8a840"
-    grounds(b, 10, 84, colour="#6a9a5a", stone="#a8a4c0", path=36)
-    ground_shadow(b, 18, 80, 60)
-    wx0, wx1 = 54, 80                                                             # the wing, beside it
-    wtop = box(b, wx0, wx1, 18, stone, pattern="rubble", depth=0.6)
-    footing(b, wx0, wx1, colour="#857e98", depth=0.6)
-    eaves_roof(b, wx0, wx1, wtop, slate, "shingles", rise=12, over=3, depth=0.6, wall=stone, wall_pattern="rubble")
-    window(b, wx0 + 8, wtop + 9, w=6, h=7, glass="#ffe6a0", frame="#4a3a5e", deep=True)
-    window(b, wx1 - 8, wtop + 9, w=6, h=7, glass="#ffe6a0", frame="#4a3a5e", deep=True)
-    x0, x1 = 18, 54
-    cx = (x0 + x1) / 2
-    top = box(b, x0, x1, 34, stone, pattern="rubble", depth=0.6, curve=0.95)      # a round tower
-    footing(b, x0, x1, colour="#857e98", depth=0.6)
-    ledge(b, x0, x1, top - 2, "#d4cce4", stone, h=3.5, over=2)                    # the parapet ring
-    dx, dy = cx + 2, top - 1                                                      # the dome
-    rx, ry = 19.5, 19
-    b.poly([(dx + rx * math.cos(a), dy - ry * math.sin(a)) for a in np.linspace(0, math.pi, 27)], night, profile="dome",
-           texture=0.02)
-    for a, r in ((2.4, 0.75), (2.0, 0.45), (1.6, 0.8), (1.25, 0.55), (0.75, 0.7), (2.7, 0.5), (1.05, 0.85), (2.25, 0.25)):
-        b.ellipse(dx + rx * r * math.cos(a), dy - ry * r * math.sin(a) * 0.98, 0.9, 0.9, "#ffe08a", texture=0.0, profile="flat")
-    slit = [(dx + 3, dy - ry + 1), (dx + 8, dy - ry + 2.5), (dx + 15, dy - 7), (dx + 11, dy - 4)]
-    b.poly(slit, "#141638", texture=0.0, profile="flat")
-    b.stroke([(dx + 7, dy - 9), (dx + 24, dy - 27)], 4.2, brass)                  # the telescope, out to the sky
-    b.stroke([(dx + 7.5, dy - 10), (dx + 23, dy - 26)], 1.0, "#ffe8a0")
-    b.ellipse(dx + 24.5, dy - 27.5, 2.8, 2.8, "#8a6a2a", texture=0.0)
-    b.ellipse(dx + 24.5, dy - 27.5, 1.8, 1.8, "#a8e8ff", texture=0.0, profile="flat", gloss=0.6)
-    b.stroke([(dx, dy - ry), (dx, dy - ry - 4)], 1.0, "#5a5470")                  # the crescent on its top
-    b.ellipse(dx, dy - ry - 8, 3.4, 3.4, "#ffe08a", texture=0.0, profile="flat")
-    b.ellipse(dx + 1.6, dy - ry - 8.8, 2.9, 2.9, "#3a3e7e", texture=0.0, profile="flat")
-    window(b, cx - 8, top + 13, w=5, h=8, frame="#4a3a5e", glass="#ffe6a0", arched=True, deep=True)
-    window(b, cx + 8, top + 13, w=5, h=8, frame="#4a3a5e", glass="#ffe6a0", arched=True, deep=True)
-    door(b, cx, w=10, h=15, colour="#4a3a6e", frame="#3a2e52", deep=True)
-    for x, h, w, colour in ((10, 20, 4.2, "#8ad8f0"), (15, 12, 3.0, "#c8a0f0"), (6, 11, 2.8, "#c8a0f0"),
-                            (86, 14, 3.4, "#8ad8f0")):
+    """The Star Observatory on Starfall Isle, where Glimmerbough watches for falling stars: a slender round
+    tower of pale violet stone on a low step, a balcony ring with a railing up its side, a midnight-blue
+    dome scattered with gold stars on its top, its slit open and a brass telescope reaching out of it, a
+    crescent moon over all; arched windows and a door set deep, star crystals grown up round its foot.
+    (Picked from four, 2026-10-24: a box with a dome and a wing beside it looked wrong.)"""
+    stone, ledge_stone, night = "#b8b0cc", "#c6bed8", "#2a2e6e"
+    grounds(b, 22, 70, colour="#6a9a5a", stone="#a8a4c0", path=46)
+    ground_shadow(b, 34, 58, 70)
+    base = steps(b, ((30, 62),), stone, rise=3, depth=0.4, top=shade(stone, 1.02))
+    cx = 46
+    top = drum(b, cx, base, 11, 44, stone)
+    for y in (top + 14, top + 28):
+        window(b, cx - 2, y, w=4, h=7, frame="#4a3a5e", glass="#ffe6a0", arched=True, deep=True)
+    door(b, cx - 1, w=9, h=14, colour="#4a3a6e", frame="#3a2e52", ground=base, deep=True)
+    ring(b, cx, top + 8, 11, ledge_stone, stone, h=2.5)                           # the balcony, its railing
+    for x in (cx - 12.5, cx - 6.5, cx, cx + 6.5, cx + 12.5):
+        b.stroke([(x, top + 8 + 11 * TILT * math.sin(math.acos(max(-1, min(1, (x - cx) / 12.6))))), (x, top + 3.5)], 0.9, "#4a4262")
+    b.stroke(oval(cx, top + 3.5, 12.6, 12.6 * TILT, 0, math.pi), 1.1, "#5a5274")
+    ring(b, cx, top - 1, 11, ledge_stone, stone, h=2.5)                           # the parapet under the dome
+    peak = dome(b, cx, top - 1, 12, night)
+    telescope(b, cx + 5, top - 9, 17, -48)
+    b.stroke([(cx, peak), (cx, peak - 4)], 1.0, "#5a5470")                        # the crescent over it all
+    b.ellipse(cx, peak - 8, 3.4, 3.4, "#ffe08a", texture=0.0, profile="flat")
+    b.ellipse(cx + 1.6, peak - 8.8, 2.9, 2.9, "#3a3e7e", texture=0.0, profile="flat")
+    for x, h, w, colour in ((24, 16, 3.8, "#8ad8f0"), (29, 9, 2.6, "#c8a0f0"), (67, 12, 3.0, "#8ad8f0"), (71, 7, 2.2, "#c8a0f0")):
         b.poly([(x - w, GROUND + 1), (x, GROUND + 1 - h), (x + w * 0.2, GROUND + 1)], shade(colour, 1.2), tone=0.85, gloss=0.3)
         b.poly([(x + w * 0.2, GROUND + 1), (x, GROUND + 1 - h), (x + w, GROUND + 1)], shade(colour, 0.85), tone=0.45)
     return b
