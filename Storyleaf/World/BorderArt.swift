@@ -5,8 +5,8 @@ import SpriteKit
 /// where either land's ground is rocky (sand, snow, scree, desert); the same with a stone arch over a
 /// road a quest opens, barred and signed "Closed" until it's done. They come down as a whole once you
 /// can cross (the quest's done, or the roads you can take join the two lands). Nothing along a
-/// border open from the start, where the two lands simply meet. And a city's stone wall
-/// (`wallPicture`, `towerPicture`), which `TownFence` stands round its square.
+/// border open from the start, where the two lands simply meet. And the low walls of field stones
+/// along roads (`lowWallPicture`).
 ///
 /// It stands on the line between the two lands, winding along the sides of the cells where their
 /// shapes meet, drawn the same by both (the same pictures, graded with the same land's palette, the
@@ -194,57 +194,24 @@ enum BorderArt {
 
     // MARK: City walls
 
-    /// How tall a city's wall stands, to the top of its battlements (points), and its towers.
+    /// How tall a city's wall stands, to the top of its battlements (points), and its towers
+    /// (`TownFence.place`; art/sprites/city_wall.png and city_tower.png, `tools/city_wall_art.py`).
     static let wallHeight: CGFloat = 32
     static let towerSize = CGSize(width: 30, height: 60)
 
-    /// The wall's stones, as the town gate's arch has them: grey blocks, a lit lip, mortar between.
+    /// The low wall's stones (`lowWallPicture`): grey blocks, a lit lip, mortar between.
     private static let mortar = PixelColor(0x4C4F5A)
     private static let blocks = [PixelColor(0x7E818C), PixelColor(0x737682), PixelColor(0x888B96)]
     private static let lip = PixelColor(0xA4A7B2)
     private static let foot = PixelColor(0x5A5D68)
     private static let moss = PixelColor(0x5D7A3C)
 
-    /// One cell's stretch of city wall, face on, to be slanted along its line (`TownFence`):
-    /// battlements along the top, courses of staggered blocks, a darker foot with moss on it. Its
-    /// pattern repeats every 32 pixels, so stretches side by side run on as one wall.
-    static func wallPicture(palette: MapPalette?) -> CGImage? {
-        var canvas = PixelCanvas(width: 32, height: 30)
-        // Battlements: merlons 5 wide every 8, lit on top and shaded down their right side.
-        for x in stride(from: 0, to: 32, by: 8) {
-            canvas.fill(x, 0, 5, 6, blocks[0])
-            canvas.fill(x, 0, 5, 1, lip)
-            canvas.fill(x + 4, 1, 1, 5, mortar)
-        }
-        // The wall: four courses of blocks 4 high, the joints staggered from course to course.
-        canvas.fill(0, 6, 32, 24, mortar)
-        canvas.fill(0, 6, 32, 1, lip)
-        for course in 0..<4 {
-            let y = 7 + course * 5
-            let offset = course % 2 == 0 ? 0 : 8
-            for x in stride(from: offset - 16, to: 32, by: 16) {
-                let left = max(0, x), right = min(32, x + 15)
-                guard right > left else { continue }
-                let block = blocks[(course + (x + 16) / 16) % blocks.count]
-                canvas.fill(left, y, right - left, 4, block)
-                canvas.fill(left, y, right - left, 1, block.shaded(1.12))
-            }
-        }
-        canvas.fill(0, 27, 32, 3, foot)
-        for x in [2, 3, 11, 19, 20, 27] {
-            canvas[x, 26] = moss
-            canvas[x, 27] = moss
-        }
-        let image = canvas.cgImage()
-        return palette.flatMap { Recolor.grade($0, image: image) } ?? image
-    }
-
     /// How tall a low wall along a road stands (`lowWallPicture`), in points.
     static let lowWallHeight: CGFloat = 13
 
     /// One cell's stretch of a low wall of field stones along a road (`LandPlanner.planRoadsides`),
     /// face on, to be slanted along its line (`TownFence.pieces`): a row of slabs set on edge along
-    /// its top, two courses of rounded stones of the town wall's grey, unevenly long, and a darker
+    /// its top, two courses of rounded grey stones, unevenly long, and a darker
     /// foot with moss. Its pattern repeats every 32 pixels, so stretches run on as one wall.
     static func lowWallPicture(palette: MapPalette?) -> CGImage? {
         var canvas = PixelCanvas(width: 32, height: 14)
@@ -276,38 +243,6 @@ enum BorderArt {
             canvas[x, 11] = moss
             canvas[x, 12] = moss
         }
-        let image = canvas.cgImage()
-        return palette.flatMap { Recolor.grade($0, image: image) } ?? image
-    }
-
-    /// A round tower of the same stone, standing up from the wall: battlements, an arrow slit, its
-    /// right side in shade.
-    static func towerPicture(palette: MapPalette?) -> CGImage? {
-        var canvas = PixelCanvas(width: 20, height: 40)
-        for x in stride(from: 0, to: 20, by: 8) {
-            canvas.fill(x, 0, 4, 5, blocks[0])
-            canvas.fill(x, 0, 4, 1, lip)
-        }
-        canvas.fill(0, 5, 20, 35, mortar)
-        canvas.fill(0, 5, 20, 1, lip)
-        for course in 0..<7 {
-            let y = 6 + course * 5
-            let offset = course % 2 == 0 ? 0 : 5
-            for x in stride(from: offset - 10, to: 20, by: 10) {
-                let left = max(0, x), right = min(20, x + 9)
-                guard right > left else { continue }
-                let block = blocks[(course + (x + 10) / 10) % blocks.count]
-                canvas.fill(left, y, right - left, 4, block)
-                canvas.fill(left, y, right - left, 1, block.shaded(1.12))
-            }
-        }
-        // Rounded: the right third in shade, the left edge lit.
-        for y in 5..<40 {
-            for x in 14..<20 { canvas[x, y] = canvas[x, y].shaded(0.8) }
-            canvas[0, y] = canvas[0, y].shaded(1.1)
-        }
-        canvas.fill(9, 15, 2, 8, PixelColor(0x23252C))
-        canvas.fill(0, 37, 20, 3, foot)
         let image = canvas.cgImage()
         return palette.flatMap { Recolor.grade($0, image: image) } ?? image
     }

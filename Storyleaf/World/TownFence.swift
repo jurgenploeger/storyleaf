@@ -11,11 +11,12 @@ enum TownFence {
     /// A city wall's towers stand at most this many cells apart along a straight stretch.
     private static let towerEvery = 8
 
-    /// `stone`: a city's wall (`BorderArt.wallPicture`) rather than a village's pickets.
+    /// `stone`: a city's wall (art/sprites/city_wall.png and city_tower.png, `tools/city_wall_art.py`)
+    /// rather than a village's pickets.
     static func place(cells: [GridPoint], map: WorldMap, world: SKNode, art: ArtLibrary, stone: Bool = false) {
         let fence = Set(cells)
         let palette = map.def.theme.palette
-        let source = stone ? BorderArt.wallPicture(palette: palette) : art.sprite("fence").texture.cgImage()
+        let source = stone ? art.gradedTile("city_wall", palette: palette) : art.sprite("fence").texture.cgImage()
         let height = stone ? BorderArt.wallHeight : Self.height
         guard !fence.isEmpty, let source else { return }
         func has(_ dc: Int, _ dr: Int, _ cell: GridPoint) -> Bool { fence.contains(GridPoint(col: cell.col + dc, row: cell.row + dr)) }
@@ -29,7 +30,7 @@ enum TownFence {
 
         // A city wall's towers: at its corners and either side of each gate, and along each straight
         // stretch between, no two closer than half the stretch they're spread along.
-        if stone, let tower = BorderArt.towerPicture(palette: palette) {
+        if stone, let tower = art.gradedTile("city_tower", palette: palette) {
             let texture = SKTexture(cgImage: tower)
             texture.filteringMode = .nearest
             var spots: [GridPoint] = []
