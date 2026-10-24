@@ -109,8 +109,10 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   buildings that belong to a land: a pavilion tent, a bazaar stall and an onion-domed house for the deserts, a
   yurt for the steppe, a tree house, an acorn cottage, a bluebell house and a crystal cottage for Starfall
   Isle's Glimmerbough (maps.json `buildings`); and Briarmere's lakeside shrine to Liora (`lake_shrine`), the Warrior Guild's hall and the Wildfolk Lodge,
-  a bell tower and a gem workshop. Not all one size: a grand building (`grand(160)`, the two guild halls) is
-  drawn on a bigger canvas, and maps.json gives it the room (building `size`, its footprint in cells). Walls
+  a bell tower and a gem workshop; and a land's own landmarks, Emerald Road's Emerald Spire and Starfall Isle's
+  Star Observatory and Moonwell. Not all one size: a grand building (`grand(160)`, the two guild halls,
+  the observatory and the moonwell; `grand(192)`, the spire) is drawn on a bigger canvas, and maps.json
+  gives it the room (building `size`, its footprint in cells). Walls
   and roofs are surfaces with a building material's pattern at the sprite's pixels (stone blocks, plaster,
   planks, clay tiles, thatch, slate); each is drawn in a 96-pixel frame's coordinates and scaled about its
   foot to fill it as RD's do (`fit`). Registered in art/assets.json with no `request`, placed by maps.json's

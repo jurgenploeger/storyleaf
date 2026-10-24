@@ -280,6 +280,11 @@ treasure_offer   | newgame,class=fighter,level=72,map=sleepy_town,npc=thomas | 8
 # Bosses in their lairs (maps.json `lair`, `lairRing`, `lairApproach`, LandPlanner.planLair; playtesting
 # 2026-10-23: they stood about on open ground; 2026-10-24: a sign post and an empty space), from the end of
 # their trail, at their land's edge, on a summit or in a cave; and the wolf's sign where its trail starts.
+# Grand landmarks drawn in code (2026-10-24: "bigger visuals for buildings and mystical constructions"): the
+# Emerald Spire at the head of Emerald Road's street, Starfall Isle's Star Observatory and Moonwell.
+grand_spire  | newgame,level=200,map=emerald_road,at=1_-21,weather=clear,hour=12 | 8
+grand_observatory | newgame,level=150,map=starfall_isle,at=-1_-10,weather=clear,hour=12 | 8
+grand_moonwell | newgame,level=150,map=starfall_isle,at=13_-2,weather=clear,hour=12 | 8
 lair_oak     | newgame,level=30,map=smiling_forest,at=-66_-37,weather=clear,hour=12 | 8
 lair_wolf    | newgame,level=95,map=snow_white_forest,at=24_47,weather=clear,hour=12 | 8
 lair_wolf_sign | newgame,level=95,map=snow_white_forest,at=2_5,weather=clear,hour=12 | 8

@@ -1243,6 +1243,159 @@ def gem_workshop(b):
     b.ellipse(71, GROUND - 10.5, 1.3, 1.3, "#4a4850", profile="flat")
     return b
 
+def steps(b, spans, stone, rise=4, depth=0.6, top=None):
+    """Broad steps or a plinth, front and side, each `rise` high, one per span (x0, x1), widest first;
+    `top` a colour for their treads (snow, moss), else their own stone."""
+    for k, (x0, x1) in enumerate(spans):
+        g = GROUND - rise * k
+        b.surface([(x1, g), (x1 + DX * depth, g + DY * depth), (x1 + DX * depth, g - rise + DY * depth), (x1, g - rise)], stone,
+                  "rubble", tone=-0.4, axes=(SIDEWAYS, DOWN))
+        b.surface([(x0, g), (x1, g), (x1, g - rise), (x0, g - rise)], stone, "rubble", slope=(-0.006, 0.0))
+        b.poly([(x0, g - rise), (x1, g - rise), (x1 + DX * depth, g - rise + DY * depth), (x0 + DX * depth, g - rise + DY * depth)],
+               top or shade(stone, 1.15), texture=0.02, profile="flat", tone=0.8)
+    return GROUND - rise * len(spans)
+
+
+def facet_spire(b, x0, x1, base, height, light, dark, side, depth=0.45):
+    """A faceted crystal spire on a base from x0 to x1: its lit facet, its shaded one and its side going
+    back, meeting at a point a little right of its middle. Returns the point."""
+    cx = (x0 + x1) / 2
+    apex = (cx + 1, base - height)
+    b.poly([(x0, base), apex, (cx + 1.5, base)], light, tone=0.85, gloss=0.4)
+    b.poly([(cx + 1.5, base), apex, (x1, base)], dark, tone=0.45, gloss=0.3)
+    b.poly([(x1, base), apex, (x1 + DX * depth, base + DY * depth)], shade(dark, 0.8), tone=0.3)
+    return apex
+
+
+@by_hand
+@grand(192)
+def emerald_spire(b):
+    """The Emerald Spire, the wonder of the Emerald Road: a tall tower of green stone on a broad jade
+    plinth, banded in gold, a narrower tier over it and over that a great faceted emerald spire with a
+    glowing emerald orb at its point; two turrets with green conical roofs behind it, a gold door, lit
+    windows the green of the spectacles everyone here wears, poppies along its foot."""
+    jade, green, gold, glow = "#8ccfa6", "#3a9a62", "#e8c050", "#c8ffb0"
+    grounds(b, 10, 82, colour="#5f9a44", path=47)
+    for x0, x1 in ((14, 28), (66, 80)):                                          # the turrets, behind
+        cx = (x0 + x1) / 2
+        top = box(b, x0, x1, 36, jade, pattern="blocks", depth=0.45)
+        apex = (cx + 1, top - 20)
+        b.surface([(x0 - 2.5, top + 1), (x1 + 2.5, top + 1), apex], green, "shingles", tone=0.1)
+        b.surface([(x1 + 2.5, top + 1), (x1 + 2.5 + DX * 0.45, top + 1 + DY * 0.45), apex], green, "shingles", tone=-0.3,
+                  axes=(SIDEWAYS, DOWN))
+        b.stroke([apex, (apex[0], apex[1] - 5)], 1.0, gold)
+        b.ellipse(apex[0], apex[1] - 6, 1.5, 1.5, gold, gloss=0.6)
+        window(b, cx, top + 13, w=5, h=8, frame="#2e6a46", glass=glow, arched=True)
+    floor = steps(b, ((24, 70), (29, 65)), jade, top=shade(jade, 1.04))
+    x0, x1 = 33, 61
+    cx = (x0 + x1) / 2
+    top = box(b, x0, x1, 46, green, pattern="blocks", ground=floor, depth=0.5)
+    b.rect(x0 - 2, top - 1, x1 + 2, top + 3, gold, texture=0.03)                 # a gold band
+    b.rect(x0 - 1, floor - 26, x1 + 1, floor - 24, gold, texture=0.03)
+    for x in (x0 + 7, x1 - 7):
+        window(b, x, top + 11, w=5, h=9, frame="#2e6a46", glass=glow, arched=True)
+    arc = [(cx + 9 * math.cos(a), floor - 18 + 9 - 9 * math.sin(a)) for a in np.linspace(0, math.pi, 13)]
+    b.poly([(cx + 9, floor)] + arc + [(cx - 9, floor)], jade, texture=0.04)
+    door(b, cx, w=13, h=17, colour="#c8962c", frame="#8a6a1e", ground=floor, knob="#fff0a0")
+    ux0, ux1 = 37, 57                                                             # the upper tier
+    utop = box(b, ux0, ux1, 16, jade, pattern="blocks", ground=top - 1, depth=0.45)
+    window(b, (ux0 + ux1) / 2, utop + 8, w=6, h=7, frame="#2e6a46", glass=glow)
+    b.rect(ux0 - 2, utop - 1, ux1 + 2, utop + 2, gold, texture=0.03)
+    apex = facet_spire(b, ux0 - 1, ux1 + 1, utop - 1, 40, "#6ae896", "#1f8a4a", "#17703c")
+    b.stroke([(ux0 + 2, utop - 3), (apex[0] - 0.5, apex[1] + 4)], 1.0, "#d8ffe0")   # a gleam up its edge
+    b.stroke([apex, (apex[0], apex[1] - 3)], 1.2, gold)
+    b.ellipse(apex[0], apex[1] - 6.5, 3.8, 3.8, "#8affb0", gloss=0.85)
+    b.ellipse(apex[0] - 1.2, apex[1] - 7.8, 1.1, 1.1, "#f0fff4", texture=0.0, profile="flat")
+    for side in (-1, 1):                                                          # green banners down the plinth
+        x = cx + side * 18
+        b.poly([(x - 3, floor - 16), (x + 3, floor - 16), (x + 3, floor - 5), (x, floor - 2.5), (x - 3, floor - 5)],
+               "#2e8a56", texture=0.03)
+        b.stroke([(x - 4, floor - 16), (x + 4, floor - 16)], 1.3, gold)
+    flowers(b, 12, 28, GROUND + 2.5, ["#e8343a", "#f0503a", "#d82838"], seed=4)   # poppies
+    flowers(b, 68, 84, GROUND + 1.5, ["#e8343a", "#f0503a", "#d82838"], seed=7)
+    return b
+
+
+@by_hand
+@grand(160)
+def star_observatory(b):
+    """The Star Observatory on Starfall Isle, where Glimmerbough watches for falling stars: a stout round
+    tower of pale violet stone under a great midnight-blue dome scattered with gold stars, its slit open and
+    a brass telescope reaching out of it to the sky, a crescent moon on its top; a little stone wing with a
+    slate roof beside it, an arched door, lit windows, star crystals grown up by its wall."""
+    stone, slate, night, brass = "#b8b0cc", "#4a4a7e", "#2a2e6e", "#d8a840"
+    grounds(b, 10, 84, colour="#6a9a5a", stone="#a8a4c0", path=36)
+    wx0, wx1 = 54, 80                                                             # the wing, beside it
+    wtop = box(b, wx0, wx1, 18, stone, pattern="rubble", depth=0.6)
+    footing(b, wx0, wx1, colour="#857e98", depth=0.6)
+    eaves_roof(b, wx0, wx1, wtop, slate, "shingles", rise=12, over=3, wall=stone, wall_pattern="rubble")
+    window(b, wx0 + 8, wtop + 9, w=6, h=7, glass="#ffe6a0", frame="#4a3a5e")
+    window(b, wx1 - 8, wtop + 9, w=6, h=7, glass="#ffe6a0", frame="#4a3a5e")
+    x0, x1 = 18, 54
+    cx = (x0 + x1) / 2
+    top = box(b, x0, x1, 34, stone, pattern="rubble", depth=0.6)
+    footing(b, x0, x1, colour="#857e98", depth=0.6)
+    b.rect(x0 - 2, top - 2, x1 + 2, top + 2, "#d4cce4", texture=0.03)             # the parapet ring
+    dx, dy = cx + 2, top - 1                                                      # the dome
+    rx, ry = 19.5, 19
+    b.poly([(dx + rx * math.cos(a), dy - ry * math.sin(a)) for a in np.linspace(0, math.pi, 27)], night, profile="dome",
+           texture=0.02)
+    for a, r in ((2.4, 0.75), (2.0, 0.45), (1.6, 0.8), (1.25, 0.55), (0.75, 0.7), (2.7, 0.5), (1.05, 0.85), (2.25, 0.25)):
+        b.ellipse(dx + rx * r * math.cos(a), dy - ry * r * math.sin(a) * 0.98, 0.9, 0.9, "#ffe08a", texture=0.0, profile="flat")
+    slit = [(dx + 3, dy - ry + 1), (dx + 8, dy - ry + 2.5), (dx + 15, dy - 7), (dx + 11, dy - 4)]
+    b.poly(slit, "#141638", texture=0.0, profile="flat")
+    b.stroke([(dx + 7, dy - 9), (dx + 24, dy - 27)], 4.2, brass)                  # the telescope, out to the sky
+    b.stroke([(dx + 7.5, dy - 10), (dx + 23, dy - 26)], 1.0, "#ffe8a0")
+    b.ellipse(dx + 24.5, dy - 27.5, 2.8, 2.8, "#8a6a2a", texture=0.0)
+    b.ellipse(dx + 24.5, dy - 27.5, 1.8, 1.8, "#a8e8ff", texture=0.0, profile="flat", gloss=0.6)
+    b.stroke([(dx, dy - ry), (dx, dy - ry - 4)], 1.0, "#5a5470")                  # the crescent on its top
+    b.ellipse(dx, dy - ry - 8, 3.4, 3.4, "#ffe08a", texture=0.0, profile="flat")
+    b.ellipse(dx + 1.6, dy - ry - 8.8, 2.9, 2.9, "#3a3e7e", texture=0.0, profile="flat")
+    window(b, cx - 8, top + 12, w=5, h=8, frame="#4a3a5e", glass="#ffe6a0", arched=True)
+    window(b, cx + 8, top + 12, w=5, h=8, frame="#4a3a5e", glass="#ffe6a0", arched=True)
+    door(b, cx, w=10, h=15, colour="#4a3a6e", frame="#3a2e52")
+    for x, h, w, colour in ((10, 20, 4.2, "#8ad8f0"), (15, 12, 3.0, "#c8a0f0"), (6, 11, 2.8, "#c8a0f0"),
+                            (86, 14, 3.4, "#8ad8f0")):
+        b.poly([(x - w, GROUND + 1), (x, GROUND + 1 - h), (x + w * 0.2, GROUND + 1)], shade(colour, 1.2), tone=0.85, gloss=0.3)
+        b.poly([(x + w * 0.2, GROUND + 1), (x, GROUND + 1 - h), (x + w, GROUND + 1)], shade(colour, 0.85), tone=0.45)
+    return b
+
+
+@by_hand
+@grand(160)
+def moonwell(b):
+    """The Moonwell on Starfall Isle: a round pool of glowing water in a basin of pale moonstone, under
+    three arches of moonstone, the middle one tallest with a gold crescent on it; crystals floating over
+    the water and a wisp lantern at each side, on a patch of grass with stones round it."""
+    moon, deep, water = "#dadcf0", "#8a8eb8", "#78e0f0"
+    grounds(b, 8, 84, colour="#6a9a5a", stone="#a8acc8")
+    for x, h, w in ((22, 30, 11), (72, 30, 11), (47, 46, 16)):                    # the arches, behind the pool
+        top = GROUND - 6 - h
+        for px in (x - w / 2, x + w / 2):
+            b.poly([(px - 2, GROUND - 4), (px + 2, GROUND - 4), (px + 2, top + w / 2), (px - 2, top + w / 2)], moon,
+                   texture=0.03, profile="cylinder")
+            b.rect(px - 2.8, GROUND - 6, px + 2.8, GROUND - 3, deep, texture=0.03)
+        arc = [(x + (w / 2) * math.cos(a), top + w / 2 - (w / 2) * math.sin(a)) for a in np.linspace(0, math.pi, 15)]
+        b.stroke(arc, 3.6, moon)
+        b.ellipse(x, top - 0.5, 1.8, 1.6, "#a8f0ff", gloss=0.7)
+        if w > 12:
+            b.ellipse(x, top - 9, 4.4, 4.4, "#ffd860", texture=0.0, profile="flat")   # the crescent
+            b.ellipse(x + 2.2, top - 10, 3.8, 3.8, "#6a9a5a", texture=0.0, profile="flat")
+    b.ellipse(47, GROUND - 1, 30, 9.5, deep, texture=0.04)                        # the basin and its pool
+    b.ellipse(47, GROUND - 2.5, 27.5, 8, moon, texture=0.04)
+    b.ellipse(47, GROUND - 3, 23.5, 6.2, "#3ab8d0", texture=0.0, profile="flat")
+    b.ellipse(46, GROUND - 3.6, 18, 4.4, water, texture=0.0, profile="flat", gloss=0.5)
+    b.ellipse(43, GROUND - 4.4, 7, 1.6, "#e8ffff", texture=0.0, profile="flat")
+    for x, y, h, colour in ((36, GROUND - 22, 9, "#8ad8f0"), (58, GROUND - 26, 8, "#c8a0f0"), (47, GROUND - 16, 6, "#a8f0ff")):
+        b.poly([(x, y - h), (x + 2.6, y), (x, y + h * 0.5), (x - 2.6, y)], colour, texture=0.0, gloss=0.8)
+        b.poly([(x, y - h), (x + 2.6, y), (x, y + h * 0.5)], shade(colour, 0.8), texture=0.0)
+    for x in (8, 86):                                                             # wisp lanterns
+        b.stroke([(x, GROUND + 1), (x, GROUND - 13)], 1.5, "#5a5470")
+        b.ellipse(x, GROUND - 16, 3.0, 3.4, "#b8f0ff", gloss=0.7)
+        b.ellipse(x, GROUND - 16, 1.6, 1.8, "#f0ffff", texture=0.0, profile="flat")
+    return b
+
+
 BUILDINGS = {
     "thatched_cottage": thatched_cottage,
     "timber_house": timber_house,
@@ -1269,6 +1422,9 @@ BUILDINGS = {
     "wildfolk_lodge": wildfolk_lodge,
     "bell_tower": bell_tower,
     "gem_workshop": gem_workshop,
+    "emerald_spire": emerald_spire,
+    "star_observatory": star_observatory,
+    "moonwell": moonwell,
 }
 
 
@@ -1279,6 +1435,14 @@ def fit(draw, width=76, height=76):
     first = Build(organic=organic)
     draw(first)
     left, top, right, bottom = first.extent()
+    if left <= 0 or top <= 0 or right >= SIZE - 1:
+        # Past the frame's own 96 pixels (a spire) it was cut off there and measured short: measured
+        # again on a canvas with room all round, in the frame's coordinates.
+        room = SIZE * 3
+        first = Build(organic=organic, size=room)
+        draw(first)
+        left, top, right, bottom = first.extent()
+        left, right, top = left - (room - SIZE) / 2, right - (room - SIZE) / 2, top - (room - SIZE)
     grow = size / SIZE
     k = min(width * grow / (right - left), height * grow / (GROUND - top), 1.6 * grow)
     b = Build(k, (left + right) / 2, organic, size)
