@@ -897,7 +897,8 @@ your class (`GameSession.equipmentDrop`), never a boss's own rare drop or a ques
 visited, the Monster Book, monster cards, quests, bosses, companions, friends, daily bounties and days
 played (the three rebirth titles went with rebirth in 0.7.27), and one is worn over your name; computer-run adventurers wear the level titles that fit them.
 Duels are with computer-run adventurers in 9 danger zones; a beaten adventurer drops everything they carry
-(the goods they'd sell you that day). The red-named troublemakers only pick a fight with a side about as
+(the goods they'd sell you that day), and their companion can be sealed in the fight like a wild monster,
+joining you (ours, playtesting 2026-10-24). The red-named troublemakers only pick a fight with a side about as
 strong as theirs or weaker: their level plus their companion's at least nine tenths of yours, your companion's
 and your party's (`GameSession.dares`; our decision, 2026-10-11, at the playtester's request). Bosses never
 start a fight: you talk to them. A quest pays its own fixed reward, whatever your level (since 0.7.56,

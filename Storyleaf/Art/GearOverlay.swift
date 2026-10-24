@@ -154,10 +154,14 @@ enum GearOverlay {
         }
         // From the front and the side a little wider than the body, so it shows past its outline.
         let flare = facing == "up" ? 0 : facing == "down" ? 4 : 2
+        // From behind it hangs from just under the head (`capeRise` over the shoulder line), over the
+        // shoulders, down to the feet: from the shoulder line the armour's shoulders showed above it
+        // (playtesting 2026-10-24).
+        let hang = facing == "up" ? shoulder - capeRise : shoulder
         // Resized evenly, not through its middle, so it keeps its outline on every body (`spread`).
-        let fitted = piece.scaledDown(by: (figure.feet - shoulder) - capeDrop, start: shoulderY)
+        let fitted = piece.scaledDown(by: (figure.feet - hang) - capeDrop, start: shoulderY)
             .scaledAcross(by: (figure.right - figure.left + 1) - capeSpan + flare)
-        let dy = shoulder - shoulderY, dx = cx - anchorX
+        let dy = hang - shoulderY, dx = cx - anchorX
         for y in 0..<size {
             for x in 0..<size {
                 guard let c = fitted[x: x, y: y] else { continue }
@@ -188,6 +192,8 @@ enum GearOverlay {
 
     /// How far past its edge a cape's lining reaches to meet the body (from the side).
     nonisolated private static let capeReach = 4
+    /// From behind, how far over the shoulder line (`figure`) a cape's top sits: under the head.
+    nonisolated private static let capeRise = 3
 
     /// A cape's inside, seen from the front or the side wherever the body doesn't cover it: on each
     /// row below the shoulders, every gap within the cape's own span (between its panels, between an

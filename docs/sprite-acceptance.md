@@ -101,6 +101,9 @@ one body and wrong on another isn't done.
 - Its shadows take the cape's colour: no patch of the reference's red left on a blue cape.
 - Its trim along the hem, its emblem on the back, its clasp at the collar from the front.
 - From behind it hangs over the body, under the hair; from the front and side it shows past the outline.
+- From behind its top sits just under the head, three rows over the shoulder line (`capeRise`): hung from the
+  shoulder line (until 2026-10-24) a band of the armour's shoulders, a plate's pauldrons or a tunic's showed
+  between the helmet or hair and the cape.
 - Stretched to each body's height and shoulders, resized evenly (`spread`: its repeated rows and columns spread
   across it, its edges and hem kept), so it's the same shape on every body. Stretched through its middle
   (2026-10-22) it turned boxy on the bodies it grew most on, the line down its back a solid block.

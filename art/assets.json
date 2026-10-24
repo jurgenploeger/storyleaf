@@ -2370,6 +2370,18 @@
       "kind": "building"
     },
     {
+      "id": "emerald_spire",
+      "kind": "building"
+    },
+    {
+      "id": "star_observatory",
+      "kind": "building"
+    },
+    {
+      "id": "moonwell",
+      "kind": "building"
+    },
+    {
       "id": "forest_lodge",
       "kind": "building",
       "request": {

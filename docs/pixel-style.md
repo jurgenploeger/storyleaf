@@ -133,6 +133,7 @@ and 80% of the soft ones.**
 | `light_masses` | share of the inside's spread of light left after a 5 × 5 blur (buildings only) | soft, min | – | – | – |
 | `straight_edges` | share of the silhouette's top, bottom and side edges in straight runs of 6 or more (buildings only) | hard, max | – | – | – |
 | `grid_lines` | share of the inside on straight seams 7 or more long, darker than both neighbours across (buildings only) | soft, max | – | – | – |
+| `form_relief` | median slope of the light after a 9 × 9 blur: light modelling the big forms (buildings only) | hard, min | – | – | – |
 | `pillow` | how much more the inside's light follows the distance in from the edge than the light | reported | – | – | – |
 | `checker` | share of the inside in 2 × 2 checkerboards of two colours (dithering) | reported | – | – | – |
 
@@ -264,6 +265,42 @@ side wall going back, and a hard footing line on nothing. RD's:
   in cells, `MapDef.Building.footprint`; a house's is 3 × 2, the guild halls' 5 × 3). Give it more than
   more of the same: towers, a second storey, a porch or a wing, a crest, a forecourt.
 
+**Modelled, not flat (2026-10-24, the user: the new landmarks "still look a bit too flat and should look a
+bit more three-dimensional, like the retro diffusion sprites").** Measured over RD's 29 and our 28, RD's
+buildings aren't lit left to right as a whole (the mean difference across a row is about 0): what sets
+them apart is light that models every big form. A tower is shaded round, a doorway is deep, a band has
+its shadow under it, a roof darkens toward its eave. Ours lit each face in one tone, so the slope of the
+light once a blur has taken the detail out (`form_relief`, 9 × 9) was RD's median 0.018 and ours 0.014.
+It's hard for buildings, at least 0.016 (`pixel_style.FLOORS`): seven in ten of RD's reach it, and at
+RD's 15th percentile (0.014) our flat ones passed. Fifteen of the other 25 drawn in code fall short
+(most of the houses and shops, the tents, Glimmerbough's houses, the Wildfolk Lodge and the gem
+workshop): give one these when it's next touched. What lifts it (`tools/building_art.py`):
+
+- **Round what's round.** A tower, a turret or a cone is shaded across as a drum (`curve` on `surface` and
+  `box`: lit a little left of its middle, deep at its right edge, a touch dark at its left), not a flat
+  face with a darker strip beside it.
+- **A shadow under everything that stands out.** A band, a cornice, a parapet or a string course is a
+  `ledge`: its top lit going back, its front rounded, and its shadow on the wall under it. Painted on
+  flat, it reads as a stripe.
+- **Openings set back.** A window or a door has a reveal: its frame's shadow along the top and right
+  inside (`window(deep=True)`, `door(deep=True)`), and a sill casts one on the wall.
+- **A shadow on the ground.** A building casts one down and to the right of its foot, longer the taller
+  it is (`ground_shadow`), away from the light at the top left.
+- **Depth inside.** A basin or a pool shows its far inner wall in shadow before its water.
+- **A round building is a drum, not a box.** Its foot and top curve with it (an ellipse a third as tall as
+  it's wide, `TILT`), its wall shaded round, a ring round it with its top seen from above, and a dome
+  seated on its top edge (`drum`, `ring`, `dome`). A dome on a flat-fronted box, with a wing beside it,
+  looked wrong (the first Star Observatory, 2026-10-24); of four drawn instead, the slender tower was
+  picked.
+- **Made things stay straight.** The hand-drawn bend is for walls, roofs and stone. A telescope, a pole
+  or a tube bent with them looks wavy (2026-10-24): draw it `straight=True` (`poly`, `stroke`), shaded
+  round as a cylinder.
+
+The three landmarks (`emerald_spire`, `star_observatory`, `moonwell`) went from 0.015, 0.015 and 0.019 to
+0.017, 0.023 (redrawn as a drum) and 0.022 with these. `fit` measured a drawing on the 96-pixel frame, so one taller than it
+(the spire) was cut off and measured short; one that reaches the frame's edge is now measured again on a
+canvas with room all round.
+
 The five drawn so (`lake_shrine`, `warrior_guild`, `wildfolk_lodge`, `bell_tower`, `gem_workshop`) score
 0.13 to 0.22 on `straight_edges` and under 0.02 on `grid_lines`. The houses and shops drawn before
 (2026-10-23) predate the two criteria and most fail `straight_edges` (0.1 to 0.74): redraw one with
@@ -361,6 +398,12 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   5. Animation: walk cycles stay RD's for now (`sprite-acceptance.md`).
 
 ## Learned
+
+- **2026-10-24 (flat buildings):** The landmarks passed every band, by hand and grand, and still looked
+  flat beside RD's. Side by side, RD's forms are modelled: towers round, ledges with shadows under them,
+  deep doorways, a shadow on the ground. It isn't an overall light-to-dark across the building (RD's is
+  about 0, ours more): it's light changing at the scale of the forms, which a 9 × 9 blur keeps and the
+  material's detail doesn't. `form_relief` (hard, at least 0.016) now catches it; see *Buildings*.
 
 - **2026-10-24 (squared buildings):** Five buildings passed every band and still looked wrong beside
   RD's: boxes on the ruler with gridded faces, tall walls under thin roofs, props spread wide. What made

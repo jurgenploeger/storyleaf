@@ -2584,6 +2584,23 @@ struct RulesTests {
         #expect(session.friends.count == 1)
     }
 
+    /// In a duel the rival's companion can be sealed, as a wild monster can, and joins you (playtesting
+    /// 2026-10-24); the rival can't be.
+    @Test func aRivalsCompanionCanBeSealed() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.hero.level = 20
+        let stone = try #require(Content.shared.items.first { $0.capture == true && $0.sure != true })
+        session.addItem(stone.id)
+        var grump = Adventurer(name: "Grump", raceID: "dwarf", classID: "fighter", level: 20, look: .standard, hostile: true)
+        grump.petSpecies = "jelly"
+        let controller = BattleController.duel(with: grump, session: session)
+        let companion = try #require(controller.enemies.first { $0.ownerID != nil })
+        #expect(companion.speciesID == "jelly")
+        #expect(companion.captureRate > 0)
+        #expect(controller.enemies.first { $0.ownerID == nil }?.captureRate == 0)
+        #expect(controller.canCapture)
+    }
+
     /// Friends don't always come along (playtesting 2026-10-16): mostly yes, but no again for a while
     /// after a no, mostly no far apart in level, and less keen with friends of their own.
     @Test func friendsCanTurnDownAnInvite() {

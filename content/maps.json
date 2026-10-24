@@ -17669,6 +17669,12 @@
           "art": "inn_red",
           "x": 10,
           "y": -19
+        },
+        {
+          "art": "emerald_spire",
+          "x": 1,
+          "y": -26,
+          "size": [5, 3]
         }
       ],
       "trails": [
@@ -18293,6 +18299,18 @@
           "art": "crystal_cottage",
           "x": -10,
           "y": -9
+        },
+        {
+          "art": "star_observatory",
+          "x": -1,
+          "y": -15,
+          "size": [5, 3]
+        },
+        {
+          "art": "moonwell",
+          "x": 13,
+          "y": -7,
+          "size": [5, 3]
         }
       ],
       "npcs": [

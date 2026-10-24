@@ -165,6 +165,16 @@ def measure(path):
     blurred = _box(lum * w, 2) / np.maximum(full, 1e-6)
     deep = opaque & (full > 0.99)
     m["light_masses"] = float(blurred[deep].std() / max(lum[deep].std(), 1e-6)) if deep.sum() >= 30 else None
+    # Light modelling the forms (2026-10-24, the user: ours looked "too flat [...] more three-dimensional,
+    # like the retro diffusion sprites"): the slope of the light once a 9 × 9 blur has taken the detail out,
+    # median over the inside. RD shades every big form as a form (a tower round, a doorway deep, a band
+    # with a shadow under it, a roof darker toward its eave): its median 0.019; ours lit each face in one
+    # tone and scored 0.014.
+    full4 = _box(w, 4)
+    soft = _box(lum * w, 4) / np.maximum(full4, 1e-6)
+    gy, gx = np.gradient(soft)
+    core = opaque & (full4 > 0.99)
+    m["form_relief"] = float(np.median(np.hypot(gx, gy)[core])) if core.sum() >= 30 else None
 
     # Flatness: interior pixels with all 8 neighbours their own colour.
     k = np.full(opaque.shape, -1)
@@ -346,12 +356,14 @@ ENFORCED = {
     "outline_value": "both", "flat": "max", "orphans": "max", "shades_per_ramp": "min", "hue_shift": "min",
     "value_range": "min", "light_top_left": "min", "highlight_share": "both", "cluster_size": "both",
     "jaggies": "max", "outline_rel": "min", "light_masses": "min", "straight_edges": "max", "grid_lines": "max",
+    "form_relief": "min",
 }
 # Where a kind is judged the other way too: a building's palette is capped as well as floored (RD's hold
 # 18 to 35 colours; drawn shape by shape, ours held over a hundred, every face its own seven shades).
 BOTH_BY_KIND = {"building": {"colour_density"}}
 # Judged on some kinds only: light in broad areas is a building's (a bush or a tile is all small detail).
-ONLY_FOR = {"light_masses": {"building"}, "straight_edges": {"building"}, "grid_lines": {"building"}}
+ONLY_FOR = {"light_masses": {"building"}, "straight_edges": {"building"}, "grid_lines": {"building"},
+            "form_relief": {"building"}}
 # Reported, not judged (2026-10-23): `pillow` and `checker` measure two classic mistakes, but neither
 # separates RD's art from the flat designs or ours, so they describe, they don't judge.
 # Partial transparency is soft: only a light effect (a magic staff's glow) may use it.
@@ -361,8 +373,10 @@ HARD = {"colour_density", "flat", "outline_dark", "fill"}
 # line round a green tree is the commonest tell of a sprite drawn in code (playtesting 2026-10-23).
 # (Soft on creatures: RD drew every one, and a dark one's outline sits close to its body's light.)
 # A building's outline in long ruled runs is hard too: it's what made ours read as boxes beside RD's
-# (2026-10-24).
-HARD_BY_KIND = {"building": {"colour_density", "flat", "outline_rel", "straight_edges"}, "scenery": HARD | {"outline_rel"}}
+# (2026-10-24); and so is light that doesn't model its forms (`form_relief`): it's what made ours read
+# flat beside RD's (2026-10-24).
+HARD_BY_KIND = {"building": {"colour_density", "flat", "outline_rel", "straight_edges", "form_relief"},
+                "scenery": HARD | {"outline_rel"}}
 SOFT_PASS = 0.8
 # Icons fill most of their tile (fixed rules, not measured bands).
 ICON_RULES = {"fill": ("min", 0.78)}
@@ -371,11 +385,13 @@ ICON_RULES = {"fill": ("min", 0.78)}
 MIN_WIDTH = {"outline_sat": 0.1, "outline_value": 0.1, "outline_dark": 0.04}
 # House rules: floors under the measured bands, where the reference's spread alone allowed almost anything
 # (2026-10-23). Each is met by about 85% or more of RD's own sprites of its kind; tighten as they allow.
+# But a building's `form_relief` is set higher, at what seven in ten of RD's buildings reach (its median
+# 0.018): at its 15th percentile (0.014) the flat ones we drew passed (2026-10-24).
 FLOORS = {
     "icon": {"shades_per_ramp": 3, "hue_shift": 0.0, "light_top_left": 0.0},
     "creature": {"shades_per_ramp": 5, "hue_shift": 4.0, "light_top_left": 0.0},
     "scenery": {"shades_per_ramp": 4, "hue_shift": 2.0, "light_top_left": -0.05},
-    "building": {"light_masses": 0.55},
+    "building": {"light_masses": 0.55, "form_relief": 0.016},
 }
 # And ceilings over them, where the band's 95th percentile alone would cut RD's own: a building's palette
 # cap sits over all but the smallest of RD's (its fence).

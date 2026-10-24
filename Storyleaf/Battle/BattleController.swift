@@ -173,7 +173,8 @@ final class BattleController {
         }
     }
 
-    /// A duel with another adventurer (and their companion) in a danger zone.
+    /// A duel with another adventurer (and their companion) in a danger zone. Their companion can be
+    /// sealed as a wild monster can (playtesting 2026-10-24), and joins you.
     static func duel(with rival: Adventurer, session: GameSession) -> BattleController {
         var enemies = [adventurer(rival, id: 10, side: .enemies, session: session)]
         if let speciesID = rival.petSpecies, let species = session.content.monster(speciesID) {
@@ -181,9 +182,11 @@ final class BattleController {
             let stats = species.stats(at: level)
             var companion = Combatant(
                 id: 11, side: .enemies, source: .rival(rival.id), name: L("{owner}'s {monster}", ["owner": rival.name, "monster": species.name]), art: species.art,
-                level: level, element: species.element, stats: stats, hp: stats.hp, mp: stats.mp, skills: species.skills, captureRate: 0
+                level: level, element: species.element, stats: stats, hp: stats.hp, mp: stats.mp, skills: species.skills,
+                captureRate: species.captureRate
             )
             companion.ownerID = 10
+            companion.species = speciesID
             enemies.append(companion)
         }
         let engine = BattleEngine(party: party(for: session), enemies: enemies, content: session.content)
