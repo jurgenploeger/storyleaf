@@ -470,6 +470,30 @@ def conifer():
     return s
 
 
+def snow_conifer():
+    """snow_sapling: the young fir under snow, for the cold lands, drawn as RD's snow pine is: tiers of
+    bright needles (its greens, which a snow land's palette turns blue with it), snow lying in flat white
+    clumps on each tier's top, its shoulders and its branch tips (its own white, `#fafbe9`), and a drift
+    round its foot. Bare, the fir came out a dark blue cone among RD's snowy pines (playtesting
+    2026-10-24: "these small dark trees don't look so nice")."""
+    s = scene(32)
+    stem, needles = Material(BARK, texture=0.05), foliage("#41ad55")
+    snow = Material("#fafbe9", texture=0.0, shades=4, variety=0)
+    s.stroke([(16, 31), (16, 25)], 2.6, stem)
+    tiers = ((1, 12, 6, needles[0]), (6, 20, 9, needles[1]), (12, 28, 12.5, needles[2]))
+    for top, bottom, half, mat in tiers:
+        s.poly([(16, top), (16 + half, bottom), (16 + half * 0.4, bottom - 1.2), (16, bottom + 0.6),
+                (16 - half * 0.4, bottom - 1.2), (16 - half, bottom)], mat)
+    for top, bottom, half, _ in tiers:
+        tall = bottom - top
+        s.ellipse(16, top + tall * 0.18, max(1.6, half * 0.28), 1.5, snow, profile="flat")          # on its top
+        for side in (-1, 1):                                                                         # shoulders, tips
+            s.ellipse(16 + side * half * 0.45, top + tall * 0.52, half * 0.22, 1.2, snow, profile="flat")
+            s.ellipse(16 + side * half * 0.86, bottom - 0.8, half * 0.16, 1.0, snow, profile="flat")
+    s.ellipse(16, 30.5, 8.5, 1.8, snow, profile="flat")
+    return s
+
+
 def shrub(colour, seed):
     """golden_bush: a tall rounded shrub, taller than wide, in tufts."""
     s = scene(32)
@@ -506,6 +530,7 @@ BUSHES = {
     "moss_bush": hummock,
     "dark_bush": bramble,
     "pine_sapling": conifer,
+    "snow_sapling": snow_conifer,
     "golden_bush": lambda: shrub("#eab42a", 134),
     "lilac_bush": lilac,
     "sapling": sapling,

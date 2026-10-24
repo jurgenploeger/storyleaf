@@ -5238,13 +5238,28 @@
               40,
               180
             ],
-            "to": 196.1,
-            "spread": 0.46,
-            "saturation": 0.35,
-            "value": 1.25
+            "maxValue": 0.45,
+            "to": 210,
+            "saturation": 0.25,
+            "value": 2.2
+          },
+          {
+            "hue": [
+              40,
+              180
+            ],
+            "to": 200,
+            "spread": 0.4,
+            "saturation": 0.2,
+            "value": 1.5
           }
         ]
       }
+    },
+    {
+      "id": "snow_sapling",
+      "kind": "prop",
+      "scale": 0.9
     },
     {
       "id": "ice_cluster",
