@@ -292,6 +292,9 @@ workshop): give one these when it's next touched. What lifts it (`tools/building
   seated on its top edge (`drum`, `ring`, `dome`). A dome on a flat-fronted box, with a wing beside it,
   looked wrong (the first Star Observatory, 2026-10-24); of four drawn instead, the slender tower was
   picked.
+- **Made things stay straight.** The hand-drawn bend is for walls, roofs and stone. A telescope, a pole
+  or a tube bent with them looks wavy (2026-10-24): draw it `straight=True` (`poly`, `stroke`), shaded
+  round as a cylinder.
 
 The three landmarks (`emerald_spire`, `star_observatory`, `moonwell`) went from 0.015, 0.015 and 0.019 to
 0.017, 0.023 (redrawn as a drum) and 0.022 with these. `fit` measured a drawing on the 96-pixel frame, so one taller than it

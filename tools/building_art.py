@@ -198,9 +198,9 @@ class Build:
         # How far its edges wander off the ruler, in pixels (0: drawn straight; `bend`).
         self.organic = organic
 
-    def t(self, points, closed=True):
+    def t(self, points, closed=True, straight=False):
         pts = [(self.size / 2 + (x - self.cx) * self.k, self.foot + (y - GROUND) * self.k) for x, y in points]
-        return self.bend(pts, closed) if self.organic and len(pts) > 1 else pts
+        return self.bend(pts, closed) if self.organic and len(pts) > 1 and not straight else pts
 
     def bend(self, pts, closed):
         """The outline drawn by hand, as RD's houses are (2026-10-24: ours came out "a bit too squared"):
@@ -264,8 +264,9 @@ class Build:
         mat = Material(colour, texture=texture * TEXTURE, shades=shades, gloss=gloss, variety=0, shift=SHIFT)
         self.s.mask(m, mat, height=np.zeros(m.shape), detail=detail)
 
-    def poly(self, points, colour, texture=0.02, profile="flat", tone=None, shades=6, gloss=0.0):
-        self.s.poly(self.t(points), Material(colour, texture=texture * TEXTURE, shades=shades, gloss=gloss, variety=0,
+    def poly(self, points, colour, texture=0.02, profile="flat", tone=None, shades=6, gloss=0.0, straight=False):
+        """`straight`: kept off the hand-drawn bend (a telescope, a pole: made, not grown)."""
+        self.s.poly(self.t(points, straight=straight), Material(colour, texture=texture * TEXTURE, shades=shades, gloss=gloss, variety=0,
                                              shift=SHIFT), profile=profile,
                     tone=tone)
 
@@ -277,8 +278,8 @@ class Build:
         self.s.ellipse(x, y, rx * self.k, ry * self.k, Material(colour, texture=texture * TEXTURE, gloss=gloss, variety=0,
                                                                          shift=SHIFT), profile=profile)
 
-    def stroke(self, points, width, colour, texture=0.02):
-        self.s.stroke(self.t(points, closed=False), width * self.k, Material(colour, texture=texture * TEXTURE, variety=0, shift=SHIFT))
+    def stroke(self, points, width, colour, texture=0.02, straight=False):
+        self.s.stroke(self.t(points, closed=False, straight=straight), width * self.k, Material(colour, texture=texture * TEXTURE, variety=0, shift=SHIFT))
 
     def extent(self):
         """The drawing's bounds so far, in the frame's pixels: (left, top, right, bottom)."""
@@ -1406,11 +1407,21 @@ def dome(b, cx, top, r, colour, rise=None, stars=True, slit=True):
 
 
 def telescope(b, x, y, length=18, angle=-50, brass="#d8a840"):
-    """A brass telescope from (x, y) up to the sky at `angle` degrees, its lens catching the light."""
+    """A brass telescope from (x, y) up to the sky at `angle` degrees: a straight tube, kept off the
+    hand-drawn bend (bent, it looked wavy, 2026-10-24), widening a little to its end, shaded round, two
+    darker bands round it and its lens catching the light."""
     a = math.radians(angle)
-    ex, ey = x + length * math.cos(a), y + length * math.sin(a)
-    b.stroke([(x, y), (ex, ey)], 4.0, brass)
-    b.stroke([(x + 0.6, y - 0.8), (ex + 0.6, ey - 0.8)], 1.0, "#ffe8a0")
+    ux, uy = math.cos(a), math.sin(a)
+    nx, ny = -uy, ux
+    def tube(t0, t1, w0, w1, colour, profile="cylinder"):
+        p0, p1 = (x + ux * t0, y + uy * t0), (x + ux * t1, y + uy * t1)
+        b.poly([(p0[0] + nx * w0, p0[1] + ny * w0), (p1[0] + nx * w1, p1[1] + ny * w1),
+                (p1[0] - nx * w1, p1[1] - ny * w1), (p0[0] - nx * w0, p0[1] - ny * w0)], colour, texture=0.0,
+               profile=profile, straight=True)
+    tube(0, length, 1.7, 2.3, brass)
+    for t in (length * 0.35, length * 0.8):
+        tube(t, t + 1.3, 2.0, 2.3, shade(brass, 0.7))
+    ex, ey = x + ux * length, y + uy * length
     b.ellipse(ex, ey, 2.6, 2.6, "#8a6a2a", texture=0.0)
     b.ellipse(ex, ey, 1.7, 1.7, "#a8e8ff", texture=0.0, profile="flat", gloss=0.6)
 
