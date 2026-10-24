@@ -279,14 +279,14 @@ lair_wisp    | newgame,level=50,map=valley_of_fear,at=74_3,weather=clear,hour=12
 lair_dragon  | newgame,level=80,map=genie_desert,at=74_46,weather=clear,hour=12 | 8
 lair_morvane | newgame,level=130,map=secret_plain,at=-13_34,weather=clear,hour=12 | 8
 lair_tide    | newgame,level=170,map=water_temple,at=-37_6,weather=clear,hour=12 | 8
-lair_emerald | newgame,level=200,map=emerald_road,at=47_5,weather=clear,hour=12 | 8
+lair_emerald | newgame,level=200,map=emerald_road,at=29_-24,weather=clear,hour=12 | 8
 lair_rock    | newgame,level=90,map=sleepy_town,summit=0,weather=clear,hour=12 | 8
 lair_wolf_peak | newgame,level=40,map=wolf_lair,summit=0,weather=clear,hour=12 | 8
 lair_rat     | newgame,level=60,map=rat_cavern,at=32_15 | 8
 skills       | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,menu=character,sub=skills | 8
 skills_learn | newgame,level=20,class=mage,menu=character,sub=skills             | 8
 boss_oak     | newgame,level=28,map=smiling_forest,at=-66_-36,npc=oak_grove   | 15
-boss_emerald | newgame,level=190,map=emerald_road,at=48_5                    | 10
+boss_emerald | newgame,level=190,map=emerald_road,at=30_-25                   | 10
 boss_fight   | newgame,level=60,class=fighter,map=rat_cavern,boss=rat_throne | 25
 boss_wave    | newgame,level=60,class=fighter,map=rat_cavern,boss=rat_throne,wave=3 | 25
 boss_fight_emerald | newgame,level=200,class=fighter,map=emerald_road,boss=emerald_gate | 25

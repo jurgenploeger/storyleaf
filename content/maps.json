@@ -17678,7 +17678,7 @@
         }
       ],
       "trails": [
-        {"to": [47, 5], "via": [[26, 3]]}
+        {"to": [29, -24]}
       ],
       "npcs": [
         {
@@ -17695,8 +17695,8 @@
           "name": "Emerald Dragon",
           "role": "boss",
           "art": "boss_emerald_dragon",
-          "x": 52,
-          "y": 5,
+          "x": 33,
+          "y": -28,
           "greeting": "At the end of the road, a dragon. Of course there is.",
           "monster": "emerald_dragon",
           "level": 200,
