@@ -3964,7 +3964,7 @@ struct LandPlanTests {
                             "\(npc.id): no \(sign) by its trail")
                 }
                 // Never walled in: from beside it you can walk to a road (the way you came), or a good way
-                // over the land; or, where its own land holds less (the Emerald Dragon stands in a pocket
+                // over the land; or, where its own land holds less (a boss standing in a pocket
                 // of it you reach from the land next door), its lair cuts off no more than a few cells
                 // there (between its pieces and the trees planted after them).
                 let steps = [(0, 1), (1, 0), (0, -1), (-1, 0)]

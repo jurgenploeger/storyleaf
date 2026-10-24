@@ -288,11 +288,19 @@ private struct WorldPage: View {
 /// roads, not the world): each land's own map where it is (`WorldOverview`, as the world map in the
 /// game draws it), its shape in a colour from its ground until that's drawn, the sea all round, turned
 /// like the game's view so north points up-left. The towns are named, the bosses' lands carry a
-/// sword, and where you start a gold dot.
+/// sword, and where you start a gold dot. Pinch (or the buttons) to zoom and drag to look round, as
+/// on the world map in the game (playtesting 2026-10-24); it opens on the whole continent.
 struct IntroAtlas: View {
     /// The place to mark with a gold dot.
     let highlight: String?
     @State private var picture: CGImage?
+    /// Points a cell (0 until the view's size is known), and where the turned map sits in the view.
+    @State private var scale: CGFloat = 0
+    @State private var pan: CGSize = .zero
+    @State private var dragStart: CGSize?
+    @State private var pinchStart: (scale: CGFloat, pan: CGSize)?
+    private static let maxScale: CGFloat = 8
+    private static let height: CGFloat = 440
     private let overview = WorldOverview.shared
 
     /// A land on the continent, its box's south-west cell there and its middle.
@@ -325,44 +333,138 @@ struct IntroAtlas: View {
 
     var body: some View {
         GeometryReader { proxy in
-            // The whole continent across the page: turned, it's as wide as its columns and rows
-            // together, and half that tall.
-            let scale = proxy.size.width / CGFloat(max(1, columns + rows))
+            let size = proxy.size
             ZStack(alignment: .topLeading) {
+                // The picture rides in an overlay, so its size never moves the view's.
                 Color.clear
-                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .frame(width: size.width, height: size.height)
                     .overlay(alignment: .topLeading) {
-                        if let picture {
+                        if let picture, scale > 0 {
                             Image(decorative: picture, scale: 1)
                                 .interpolation(.none)
                                 .resizable()
                                 .frame(width: CGFloat(columns), height: CGFloat(rows))
                                 .transformEffect(CGAffineTransform(a: scale, b: -scale / 2, c: scale, d: scale / 2,
-                                                                   tx: 0, ty: scale * CGFloat(columns) / 2))
+                                                                   tx: pan.width, ty: scale * CGFloat(columns) / 2 + pan.height))
                         }
                     }
-                ForEach(lands) { land in
-                    mark(for: land)
-                        .position(point(of: land.middle, scale: scale))
+                if scale > 0 {
+                    ForEach(lands) { land in
+                        mark(for: land)
+                            .position(point(of: land.middle))
+                    }
                 }
+                controls(in: size)
+                    .frame(width: size.width, height: size.height, alignment: .bottomTrailing)
             }
+            .frame(width: size.width, height: size.height)
+            .clipped()
+            .contentShape(Rectangle())
+            // Ahead of the page's own scrolling while a finger's on the map.
+            .highPriorityGesture(dragging(in: size).simultaneously(with: pinching(in: size)))
+            .onAppear { if scale == 0 { fit(in: size) } }
+            .onChange(of: size) { fit(in: size) }
         }
-        .aspectRatio(2, contentMode: .fit)
+        .frame(height: Self.height)
         .background(Color(red: Double(WorldMap.seaColor.r) / 255, green: Double(WorldMap.seaColor.g) / 255, blue: Double(WorldMap.seaColor.b) / 255))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(HUDStyle.bevel.opacity(0.6), lineWidth: 1.5))
         .onAppear { overview.prepare() }
         // Drawn again as each land's own map comes in.
         .task(id: overview.images.count) { picture = compose() }
-        .accessibilityElement(children: .ignore)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel(L("World map of {count} places, starting in {map}", ["count": lands.count, "map": lands.first { $0.id == highlight }?.def.name ?? "Meadowbrook"]))
     }
 
-    /// Where a cell of the continent shows: its place in the picture (columns east, rows north to
-    /// south), turned and squashed like the world (`WorldAtlas`).
-    private func point(of cell: GridPoint, scale: CGFloat) -> CGPoint {
+    // MARK: Looking round (as `WorldAtlas`)
+
+    /// The whole continent in view, in the middle.
+    private func fit(in size: CGSize) {
+        guard size.width > 0, size.height > 0 else { return }
+        scale = smallestScale(in: size)
+        let wide = scale * CGFloat(columns + rows), tall = wide / 2
+        pan = CGSize(width: (size.width - wide) / 2, height: (size.height - tall) / 2)
+    }
+
+    /// As far out as it zooms: the whole continent in view.
+    private func smallestScale(in size: CGSize) -> CGFloat {
+        min(size.width / CGFloat(max(1, columns + rows)), size.height * 2 / CGFloat(max(1, columns + rows)))
+    }
+
+    private func clamped(_ value: CGFloat, in size: CGSize) -> CGFloat {
+        min(Self.maxScale, max(smallestScale(in: size), value))
+    }
+
+    /// Keeps the continent in view: zoomed out, in the middle; zoomed in, the middle of the view
+    /// over it.
+    private func clampedPan(_ value: CGSize, in size: CGSize) -> CGSize {
+        let wide = scale * CGFloat(columns + rows), tall = wide / 2
+        func axis(_ value: CGFloat, view: CGFloat, map: CGFloat) -> CGFloat {
+            map <= view ? (view - map) / 2 : min(0, max(view - map, value))
+        }
+        return CGSize(width: axis(value.width, view: size.width, map: wide), height: axis(value.height, view: size.height, map: tall))
+    }
+
+    private func dragging(in size: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 4)
+            .onChanged { value in
+                let start = dragStart ?? pan
+                dragStart = start
+                pan = clampedPan(CGSize(width: start.width + value.translation.width, height: start.height + value.translation.height), in: size)
+            }
+            .onEnded { _ in dragStart = nil }
+    }
+
+    private func pinching(in size: CGSize) -> some Gesture {
+        MagnifyGesture()
+            .onChanged { value in
+                let start = pinchStart ?? (scale: scale, pan: pan)
+                pinchStart = start
+                zoom(to: start.scale * value.magnification, around: value.startLocation, from: start, in: size)
+            }
+            .onEnded { _ in pinchStart = nil }
+    }
+
+    /// Zooms to `target`, keeping the spot at `anchor` where it is.
+    private func zoom(to target: CGFloat, around anchor: CGPoint, from start: (scale: CGFloat, pan: CGSize), in size: CGSize) {
+        let next = clamped(target, in: size)
+        let ratio = next / start.scale
+        scale = next
+        pan = clampedPan(CGSize(width: anchor.x - (anchor.x - start.pan.width) * ratio,
+                                height: anchor.y - (anchor.y - start.pan.height) * ratio), in: size)
+    }
+
+    private func controls(in size: CGSize) -> some View {
+        VStack(spacing: 6) {
+            mapButton(Text("+").font(HUDStyle.font(16)), label: L("Zoom in")) {
+                zoom(to: scale * 1.6, around: CGPoint(x: size.width / 2, y: size.height / 2), from: (scale: scale, pan: pan), in: size)
+            }
+            mapButton(Text("−").font(HUDStyle.font(16)), label: L("Zoom out")) {
+                zoom(to: scale / 1.6, around: CGPoint(x: size.width / 2, y: size.height / 2), from: (scale: scale, pan: pan), in: size)
+            }
+        }
+        .padding(6)
+    }
+
+    private func mapButton(_ face: some View, label: String, action: @escaping () -> Void) -> some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.25)) { action() }
+        } label: {
+            face
+                .foregroundStyle(HUDStyle.ink)
+                .frame(width: 30, height: 30)
+                .background(Circle().fill(HUDStyle.plate))
+                .overlay(Circle().strokeBorder(HUDStyle.ink.opacity(0.6), lineWidth: 1.5))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+
+    /// Where a cell of the continent shows in the view: its place in the picture (columns east,
+    /// rows north to south), turned and squashed like the world (`WorldAtlas`).
+    private func point(of cell: GridPoint) -> CGPoint {
         let u = CGFloat(cell.col - low.col) + 0.5, v = CGFloat(rows - (cell.row - low.row)) - 0.5
-        return CGPoint(x: scale * (u + v), y: scale * (v - u) / 2 + scale * CGFloat(columns) / 2)
+        return CGPoint(x: scale * (u + v) + pan.width, y: scale * (v - u) / 2 + scale * CGFloat(columns) / 2 + pan.height)
     }
 
     /// A town's name under a gold square, a boss's sword, where you start a gold dot and its name.

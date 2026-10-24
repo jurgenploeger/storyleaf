@@ -117,8 +117,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   geodes): each pixel's brightness laid on a ramp of crystal colours, as a `derive` can't tint the grey tiles.
   Rerun it after editing a ramp; `--sheet out.png` previews them.
 - `tools/ui_icon_art.py`: the UI's button icons (`art/sprites/ui_<GameIcon>.png`), drawn as light in the skill
-  icons' style with `skill_art.Icon` (glossy shapes, glows, flares, a soft shadow), at 128 pixels on no backdrop,
-  faded out at the edge: `IconImage` shows them smoothed from 18 pt up (battle buttons, the HUD's buttons, the
+  icons' style with `skill_art.Icon` (glossy shapes, flares, a soft shadow; `UIIcon` drops the shapes' coloured
+  glow), at 128 pixels on no backdrop, every glow and shadow kept to a thin rim round the shapes (`HALO`), so
+  nothing smudges or gets cut off on a light button: `IconImage` shows them smoothed from 18 pt up (battle buttons, the HUD's buttons, the
   menu's tabs) and keeps Iconaut's vector icons for small inline glyphs. `--sheet out.png` previews them on the
   game's button colours.
 - `tools/water_art.py`: the same for the water: `sea.png` (16 × 16 cells that tile as a whole; the continent gives each
@@ -140,6 +141,14 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   lining the way in; `lairSign`, a warning by its trail near where it starts. Its ground is kept for it before
   hills, lakes or trees (`WorldMap.reserveLair`, `isFreeForLair`). Bosses stand at a land's edge or coast at a
   trail's end, on a summit, or in a cave; `check_content.py` keeps the way in clear.
+- `tools/city_wall_art.py`: a city's stone wall and round towers (`city_wall`, `city_tower`, placed by
+  `TownFence.place` for town `walls: "stone"`), drawn as the town gate's rubble is, graded with the map's palette.
+  The wall is one cell's stretch that tiles side to side. `--sheet out.png` previews them.
+- `tools/gate_art.py`: each town's own gate over its roads (maps.json town `gate`: Meadowbrook's thatched
+  lychgate, Prismhaven's crystal keystone, Ingothold's gold and red cloth, Larkspur's bluebird); quests'
+  gates across borders keep RD's `town_gate`. Each is laid out as `town_gate` is (`TownFence.widened` spans a
+  wide road by its parts: pillars, the lintel at rows 2 to 11 repeated from x 14 to 25, what hangs in the
+  middle); the tool checks that. `--sheet out.png` shows each as drawn and widened.
 - `tools/critter_art.py`: the critters (`ambience.critters`) and the birds crossing the sky, as PNGs
   (`art/sprites/critter_<name>.png`, loaded by `CritterArt.drawn`; one missing is drawn in Swift as before): the
   same shapes and sizes as `Critters.swift`, lit from the top left and outlined in a deep shade of each part.
@@ -193,6 +202,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   `python3 tools/check_content.py`. Keep Swift edits small and careful: the Screenshots workflow compiles
   them on a `claude/**` branch, and `.github/workflows/testflight.yml` after a push to `main` (Xcode Cloud
   isn't used: its GitHub app was uninstalled on 2026-10-23).
+- **Never redraw Retro Diffusion's art in code** (the user, 2026-10-24: "that's actually really good"). Every
+  asset with a `request` in art/assets.json is RD's and stays as it is, and so does what's `derive`d from it.
+  Draw in code only what RD never made, or what it got wrong and the user asked to have fixed.
 - **Retro Diffusion costs money.** Always run `python3 tools/rd.py generate <ids> --dry-run` (free) and get
   the user's OK before generating. Paid runs are logged in `art/spend-log.jsonl`. Never commit `.env` or the
   API key (`RETRO_DIFFUSION_API_KEY`).
