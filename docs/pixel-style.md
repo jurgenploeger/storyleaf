@@ -131,6 +131,8 @@ and 80% of the soft ones.**
 | `jaggies` | runs along one slope of the outline 2 or more longer, or shorter, than both neighbours | soft, max | ≤ 0.08 | ≤ 0.12 | ≤ 0.14 |
 | `outline_rel` | the outline's light over the inside's within 2 pixels (median): deep, not black | hard (scenery, buildings), soft, min | ≥ 0.27 | ≥ 0.49 | ≥ 0.61 |
 | `light_masses` | share of the inside's spread of light left after a 5 × 5 blur (buildings only) | soft, min | – | – | – |
+| `straight_edges` | share of the silhouette's top, bottom and side edges in straight runs of 6 or more (buildings only) | hard, max | – | – | – |
+| `grid_lines` | share of the inside on straight seams 7 or more long, darker than both neighbours across (buildings only) | soft, max | – | – | – |
 | `pillow` | how much more the inside's light follows the distance in from the edge than the light | reported | – | – | – |
 | `checker` | share of the inside in 2 × 2 checkerboards of two colours (dithering) | reported | – | – | – |
 
@@ -225,6 +227,34 @@ commoner over and over, so a lit window or a flower keeps its colour). RD's buil
 69% (20 / 29), under the 80% the criteria aim for: in a sample of 29 every new band cuts one or two of
 RD's own. Widen one before adding another.
 
+**Drawn by hand, not ruled (2026-10-24, the user: our new buildings were "a bit too squared"; "look at the
+retro diffusion visuals and try to recreate that").** Side by side with RD's, ours were boxes: walls
+and roofs on the ruler, every face's blocks, planks and tiles on a grid, tall walls under thin roofs, a deep
+side wall going back, and a hard footing line on nothing. RD's:
+
+- **Bend.** No edge of a house is straight: walls lean and bulge a little, rooflines sag, eaves curl. Two
+  criteria measure it, met by RD's own and failed by our boxes: `straight_edges` (RD's median 0.17, ours
+  were 0.41; hard, at most 0.40, RD's 90th percentile, `pixel_style.CAPS`) and `grid_lines` (RD's
+  0.014, ours 0.039; soft, at most 0.033). They cost two of RD's own a pass (now 18 / 29): its puppet
+  theatre and shop front are drawn as boxes too. `building_art.by_hand` draws a building with `Build.bend`:
+  every edge cut every couple of pixels and moved by one smooth field of offsets (about 1.2 pixels, the
+  same wherever two faces share an edge, so they still meet).
+- **Big rounded stuff.** Stones are lumps 4 to 8 pixels long, each lit on its upper left and dark on its
+  lower right, corners worn into the joints, every other one a pixel up so no joint runs across the face
+  (`rubble`); shingles are rounded tongues that curl at their foot (`shingles`, 8 × 5). A fine even
+  grid of blocks reads as squared paper.
+- **Squat, under a big roof.** Short walls (20 to 23 pixels on a house), the roof about as tall as the
+  wall and overhanging it by 5 or 6, a narrow side wall (`depth` 0.5 to 0.7 of the old one), and a
+  building about as tall as it's wide: RD's are 0.8 to 1.4 times as tall as wide (median 1.0); ours spread
+  to 0.6 with props off to the sides, which shrank the house itself when `fit` scaled it. Keep props close.
+- **On its own ground.** RD stands a house on a rounded patch of grass, earth or snow a little wider than
+  its walls, with tufts round its edge, a few stones and a path to the door (`grounds`).
+
+The five drawn so (`lake_shrine`, `warrior_guild`, `wildfolk_lodge`, `bell_tower`, `gem_workshop`) score
+0.13 to 0.22 on `straight_edges` and under 0.02 on `grid_lines`. The houses and shops drawn before
+(2026-10-23) predate the two criteria and most fail `straight_edges` (0.1 to 0.74): redraw one with
+`by_hand` when it's next touched.
+
 ## Restyle: how every item icon is finished
 
 `tools/item_art.py` designs each item in flat three-tone fills (shapes, colours, details) and
@@ -317,6 +347,13 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   5. Animation: walk cycles stay RD's for now (`sprite-acceptance.md`).
 
 ## Learned
+
+- **2026-10-24 (squared buildings):** Five buildings passed every band and still looked wrong beside
+  RD's: boxes on the ruler with gridded faces, tall walls under thin roofs, props spread wide. What made
+  the difference, in order: edges bent by a smooth field (`Build.bend`), big rounded stones and shingles
+  instead of a fine grid, a squat body under a big overhanging roof with a narrow side wall, a patch of
+  ground under it, and props kept close so the house fills its frame. `straight_edges` (hard) and
+  `grid_lines` now catch the first two; see *Buildings*.
 
 - **2026-10-23 (roots, throne):** Roots drawn as one long flat wedge either side of the trunk read as a
   stand the tree was set on; RD's are separate fingers of different lengths, leaving the trunk well up it.

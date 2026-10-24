@@ -309,7 +309,34 @@ def measure(path):
     h, w = opaque.shape
     m["fill"] = float(max(xs.max() - xs.min() + 1, ys.max() - ys.min() + 1) / max(h, w))
     m["off_centre"] = float(max(abs((xs.min() + xs.max() + 1) / 2 - w / 2), abs((ys.min() + ys.max() + 1) / 2 - h / 2)))
+
+    # How ruled it looks (2026-10-24, the user: buildings drawn in code came out "a bit too squared"). RD
+    # draws a house by hand: its outline bends, its roof sags and bulges, its stones and shingles are big
+    # rounded lumps. Ours were boxes with every face's pattern on a grid. `straight_edges`: the share of
+    # the silhouette's top, bottom and side edges in straight runs of 6 pixels or more (RD's median 0.17,
+    # ours 0.41). `grid_lines`: the share of the inside on long straight seams, a pixel darker than both its
+    # neighbours across it for 7 or more in a row (mortar, planks and tile rows ruled across a face).
+    top_bottom = opaque & (~np.pad(opaque, 1)[:-2, 1:-1] | ~np.pad(opaque, 1)[2:, 1:-1])
+    sides = opaque & (~np.pad(opaque, 1)[1:-1, :-2] | ~np.pad(opaque, 1)[1:-1, 2:])
+    rows, cols_ = _runs(top_bottom), _runs(sides.T)
+    m["straight_edges"] = float(sum(r for r in rows + cols_ if r >= 6) / max(1, sum(rows) + sum(cols_)))
+    lum = luma(rgb)
+    inside = opaque & ~(top_bottom | sides)
+    seam_h = inside & (lum < np.roll(lum, 1, 0) - 0.06) & (lum < np.roll(lum, -1, 0) - 0.06)
+    seam_v = inside & (lum < np.roll(lum, 1, 1) - 0.06) & (lum < np.roll(lum, -1, 1) - 0.06)
+    seams = sum(r for r in _runs(seam_h) + _runs(seam_v.T) if r >= 7)
+    m["grid_lines"] = float(seams / max(1, inside.sum()))
     return m
+
+
+def _runs(mask):
+    """The lengths of the runs of True along each row of `mask`."""
+    out = []
+    for row in mask:
+        padded = np.concatenate(([False], row, [False])).astype(np.int8)
+        d = np.diff(padded)
+        out += list(np.nonzero(d == -1)[0] - np.nonzero(d == 1)[0])
+    return out
 
 
 # Which way each metric fails, and which the bands enforce. Hard criteria must all pass; soft ones are
@@ -318,13 +345,13 @@ ENFORCED = {
     "semi_alpha": "max", "colour_density": "min", "outline_dark": "min", "outline_sat": "min",
     "outline_value": "both", "flat": "max", "orphans": "max", "shades_per_ramp": "min", "hue_shift": "min",
     "value_range": "min", "light_top_left": "min", "highlight_share": "both", "cluster_size": "both",
-    "jaggies": "max", "outline_rel": "min", "light_masses": "min",
+    "jaggies": "max", "outline_rel": "min", "light_masses": "min", "straight_edges": "max", "grid_lines": "max",
 }
 # Where a kind is judged the other way too: a building's palette is capped as well as floored (RD's hold
 # 18 to 35 colours; drawn shape by shape, ours held over a hundred, every face its own seven shades).
 BOTH_BY_KIND = {"building": {"colour_density"}}
 # Judged on some kinds only: light in broad areas is a building's (a bush or a tile is all small detail).
-ONLY_FOR = {"light_masses": {"building"}}
+ONLY_FOR = {"light_masses": {"building"}, "straight_edges": {"building"}, "grid_lines": {"building"}}
 # Reported, not judged (2026-10-23): `pillow` and `checker` measure two classic mistakes, but neither
 # separates RD's art from the flat designs or ours, so they describe, they don't judge.
 # Partial transparency is soft: only a light effect (a magic staff's glow) may use it.
@@ -333,7 +360,9 @@ HARD = {"colour_density", "flat", "outline_dark", "fill"}
 # The outline's light against what it rounds (`outline_rel`) is hard wherever RD tints it: a near-black
 # line round a green tree is the commonest tell of a sprite drawn in code (playtesting 2026-10-23).
 # (Soft on creatures: RD drew every one, and a dark one's outline sits close to its body's light.)
-HARD_BY_KIND = {"building": {"colour_density", "flat", "outline_rel"}, "scenery": HARD | {"outline_rel"}}
+# A building's outline in long ruled runs is hard too: it's what made ours read as boxes beside RD's
+# (2026-10-24).
+HARD_BY_KIND = {"building": {"colour_density", "flat", "outline_rel", "straight_edges"}, "scenery": HARD | {"outline_rel"}}
 SOFT_PASS = 0.8
 # Icons fill most of their tile (fixed rules, not measured bands).
 ICON_RULES = {"fill": ("min", 0.78)}
@@ -351,6 +380,10 @@ FLOORS = {
 # And ceilings over them, where the band's 95th percentile alone would cut RD's own: a building's palette
 # cap sits over all but the smallest of RD's (its fence).
 CEILINGS = {"building": {"colour_density": 1.4}}
+# And caps under them, where the 95th percentile lets in what RD only does now and then: RD's few boxy
+# buildings (its adobes, its blacksmith, its puppet theatre) set the band's top, but most of its houses
+# bend. Set at RD's own 90th percentile (2026-10-24).
+CAPS = {"building": {"straight_edges": 0.40, "grid_lines": 0.033}}
 
 
 def calibrate():
@@ -368,6 +401,7 @@ def calibrate():
             pad = max(0.0, MIN_WIDTH.get(name, 0.0) - (hi - lo)) / 2
             low = max(lo - pad, FLOORS.get(kind, {}).get(name, -np.inf))
             high = max(hi + pad, CEILINGS.get(kind, {}).get(name, -np.inf))
+            high = min(high, CAPS.get(kind, {}).get(name, np.inf))
             kb[name] = {"p10": round(low, 4), "median": round(float(np.median(vals)), 4),
                         "p90": round(high, 4)}
         bands["kinds"][kind] = kb
