@@ -198,9 +198,12 @@ struct ProfileCard: View {
                               stats: stats, hp: min(stats.hp, friend?.hp ?? stats.hp), mp: min(stats.mp, friend?.mp ?? stats.mp))
             facts.badge = .bot
             facts.title = GameSession.botTitle(level: person.level, id: person.id)
-            // What they hold and wear, as on the map and in battle.
+            // What they hold and wear, as on the map and in battle (`registerAdventurer`): in a festive
+            // season the hat or scarf they wear for it, the hat it takes the place of not.
             let armor = GameSession.armor(for: person)
-            facts.gear = [GameSession.weapon(for: person), armor, armor?.headpiece.flatMap(Content.shared.item)].compactMap { $0 }
+            let festive = GameSession.hat(for: person)
+            let headpiece = festive?.type == .head ? nil : armor?.headpiece.flatMap(Content.shared.item)
+            facts.gear = [GameSession.weapon(for: person), armor, headpiece, festive].compactMap { $0 }
             if let place = session.whereabouts(of: person) {
                 facts.note = L("Waiting for you at {place}", ["place": place])
                 facts.noteColor = HUDStyle.orange
