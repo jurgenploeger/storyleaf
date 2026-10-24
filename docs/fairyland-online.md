@@ -1123,7 +1123,9 @@ the Wishing Seal, which stays the Monster Book's last reward.
   - Us (since 0.4.12, playtesting 2026-10-12: "near the temple keeper and other guilds there should
     actually be something like a temple or building"): whoever works somewhere has it at their back, a
     step right and two rows behind them (maps.json `buildings`), so they stand at its door.
-    - Briarmere's Temple Keeper keeps a lakeside shrine: the stone arch with Liora's statue behind it.
+    - Briarmere's Temple Keeper keeps a lakeside shrine (`lake_shrine`, drawn in code by tools/building_art.py, 2026-10-24):
+      a little snowbound temple of pale stone on three steps, Liora's statue between its columns, a silver bell in its
+      pediment. It had been RD's town gate arch with her statue behind it, which read as a gateway, not a temple.
     - Ambrose the Wise has a tower, Hermit Orrin a mushroom hut, the Old Swan Keeper and Little Pig
       cottages, Mother Sheep a windmill, and Dozywick some houses.
     - In Meadowbrook the Arcane Circle has its own tower beside the guild hall, which the Warrior

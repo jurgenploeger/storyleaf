@@ -16245,7 +16245,7 @@
       },
       "buildings": [
         {
-          "art": "town_gate",
+          "art": "lake_shrine",
           "x": 4,
           "y": 5
         },
@@ -16268,13 +16268,6 @@
           "art": "snow_cabin",
           "x": 23,
           "y": -10
-        }
-      ],
-      "decor": [
-        {
-          "art": "statue",
-          "x": 5,
-          "y": 6
         }
       ],
       "npcs": [

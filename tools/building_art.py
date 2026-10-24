@@ -3,7 +3,8 @@
 Retro Diffusion buildings (and their recolours) to build with. Each is a 96 × 96 sprite seen as RD's are,
 from the front and a little above and to the right: a front wall, the right side wall going back, the
 roof over both, and the things that make it a home or a shop (a door, lit windows, a chimney, a sign,
-an awning, flower boxes) on a stone footing.
+an awning, flower boxes) on a stone footing. And a temple: Briarmere's lakeside shrine to Liora
+(`lake_shrine`), on steps, columns under a snowy pediment.
 
 Walls and roofs are surfaces with a building material's own pattern at the sprite's pixels (stone
 blocks, plaster, planks, timber framing, clay tiles, thatch, slate), lit flat from the top left and a
@@ -890,6 +891,67 @@ def crystal_cottage(b):
     window(b, x1 - 9, top + 10, w=7, h=8, glass="#a8f0ff", frame="#5a4a8a")
 
 
+def lake_shrine(b):
+    """Liora's shrine on Briarmere's shore, the Temple Keeper's, all that's left above the ice of the
+    Tidewater Shrine: a little temple of pale stone on three steps, four columns under a pediment with
+    a silver bell in its round, a slate roof under snow, icicles along its eave, Liora's statue in the
+    dark between its columns and a blue lantern at each front corner."""
+    stone, marble, slate, snow = "#b8bac2", "#d6dae2", "#4a5a7a", "#eef3fc"
+    # The steps, each a course of blocks with its top lit and its side going back in shade.
+    for k, (x0, x1) in enumerate(((12, 76), (16, 72), (20, 68))):
+        g = GROUND - 3 * k
+        b.surface([(x1, g), (x1 + DX, g + DY), (x1 + DX, g - 3 + DY), (x1, g - 3)], stone, "blocks", tone=-0.4,
+                  axes=(SIDEWAYS, DOWN))
+        b.surface([(x0, g), (x1, g), (x1, g - 3), (x0, g - 3)], stone, "blocks", slope=(-0.006, 0.0))
+        b.poly([(x0, g - 3), (x1, g - 3), (x1 + DX, g - 3 + DY), (x0 + DX, g - 3 + DY)], snow, texture=0.02,
+               profile="flat", tone=0.8)
+    floor = GROUND - 9
+    # The cella behind the columns: its side wall going back, its front dark where the columns stand.
+    top = box(b, 24, 64, 32, stone, pattern="blocks", ground=floor)
+    b.rect(26, top + 3, 62, floor, "#2e3448", texture=0.0, profile="flat", tone=0.3)
+    # Liora's statue on a plinth in the dark, a soft blue glow round her.
+    b.ellipse(44, floor - 13, 6, 9, "#4a6a9a", texture=0.0, profile="flat")
+    b.rect(40.5, floor - 6, 47.5, floor, marble, texture=0.04)
+    b.poly([(44, floor - 20), (47, floor - 7), (41, floor - 7)], "#d8dce6", texture=0.03)       # her robe
+    b.poly([(43, floor - 17), (38.5, floor - 21), (40, floor - 13)], "#d8dce6", texture=0.02)  # her wings
+    b.poly([(45, floor - 17), (49.5, floor - 21), (48, floor - 13)], "#d8dce6", texture=0.02)
+    b.ellipse(44, floor - 21, 1.9, 1.9, "#e4e8f0", texture=0.0)                                 # her head
+    # The columns: round, lit down their left, a base and a capital each.
+    for x in (26, 36.7, 47.3, 58):
+        b.poly([(x, floor - 1.5), (x + 4.4, floor - 1.5), (x + 4.4, top + 4), (x, top + 4)], marble, texture=0.03,
+               profile="cylinder")
+        b.rect(x - 1, floor - 2, x + 5.4, floor, stone, texture=0.03)
+        b.rect(x - 1, top + 2.5, x + 5.4, top + 5, stone, texture=0.03)
+    # The entablature over them, its frieze in blocks, icicles hanging off its edge.
+    b.surface([(21, top + 3), (67, top + 3), (67, top - 2), (21, top - 2)], marble, "blocks", tone=0.06)
+    b.surface([(67, top + 3), (67 + DX, top + 3 + DY), (67 + DX, top - 2 + DY), (67, top - 2)], stone, "blocks",
+              tone=-0.38, axes=(SIDEWAYS, DOWN))
+    for x, length in ((24, 2.5), (31, 1.5), (40, 3), (52, 2), (60, 2.5), (65, 1.5)):
+        b.stroke([(x, top + 3.5), (x, top + 3.5 + length)], 0.9, "#d8f0ff", texture=0.0)
+    # The pediment, a round in it with a silver bell, under a slate roof with snow on it.
+    gable(b, 21, 67, top - 2, marble, "blocks", rise=14)
+    gable_roof(b, 21, 67, top - 2, slate, "slate", rise=14, over=3)
+    apex = (44, top - 16)
+    b.ellipse(44, top - 8, 4.2, 3.6, "#9aa8c0", texture=0.0)
+    b.ellipse(44, top - 8, 3.2, 2.7, "#5a6a8a", texture=0.0, profile="flat")
+    b.poly([(44, top - 10.5), (46, top - 6.5), (42, top - 6.5)], "#e0e6f0", gloss=0.7)
+    b.ellipse(44, top - 5.8, 0.8, 0.7, "#e8c050", gloss=0.6)
+    # Snow over the roof, the slate showing only along its eave, and down its barge boards.
+    right_eave = (67 + 3, top)
+    lip = (apex[0] + (right_eave[0] - apex[0]) * 0.8, apex[1] + (right_eave[1] - apex[1]) * 0.8)
+    b.poly([apex, (apex[0] + DX, apex[1] + DY), (lip[0] + DX, lip[1] + DY + 1), (lip[0] + DX * 0.5, lip[1] + DY * 0.5 - 0.6),
+            (lip[0], lip[1] + 1)], snow, texture=0.03, tone=0.62)
+    b.stroke([(21 - 3, top - 0.5), apex, right_eave], 1.4, snow, texture=0.0)
+    b.ellipse(apex[0], apex[1] - 0.6, 2.6, 1.4, snow, texture=0.0)
+    # A blue lantern on a post at each front corner of the steps.
+    for x in (14, 74):
+        b.stroke([(x, GROUND + 1), (x, GROUND - 13)], 1.4, "#4a4250")
+        b.rect(x - 2.2, GROUND - 19, x + 2.2, GROUND - 13, "#3a3a48", texture=0.0)
+        b.rect(x - 1.4, GROUND - 18, x + 1.4, GROUND - 14, "#8ad8ff", texture=0.0, profile="flat", tone=0.8)
+        b.poly([(x - 3, GROUND - 19), (x + 3, GROUND - 19), (x, GROUND - 22)], snow, texture=0.0)
+    return b
+
+
 BUILDINGS = {
     "thatched_cottage": thatched_cottage,
     "timber_house": timber_house,
@@ -911,6 +973,7 @@ BUILDINGS = {
     "acorn_cottage": acorn_cottage,
     "bluebell_house": bluebell_house,
     "crystal_cottage": crystal_cottage,
+    "lake_shrine": lake_shrine,
 }
 
 

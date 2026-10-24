@@ -2350,6 +2350,10 @@
       "kind": "building"
     },
     {
+      "id": "lake_shrine",
+      "kind": "building"
+    },
+    {
       "id": "forest_lodge",
       "kind": "building",
       "request": {
