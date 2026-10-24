@@ -116,11 +116,11 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `tools/crystal_art.py`: the Glimmerdeep's crystal scenery from the caves' own rock (its walls, floor, spires and
   geodes): each pixel's brightness laid on a ramp of crystal colours, as a `derive` can't tint the grey tiles.
   Rerun it after editing a ramp; `--sheet out.png` previews them.
-- `tools/ui_icon_art.py`: the UI's button icons (`art/sprites/ui_<GameIcon>.png`), designed in code and finished
-  by `pixel_kit.restyle` but for `KEEP_FLAT` (the three dots, the two people, the backpack: their small parts ran
-  together at button size): `IconImage` shows
-  them from 18 pt up (battle buttons, the HUD's buttons, the menu's tabs) and keeps Iconaut's vector icons for
-  small inline glyphs. `--sheet out.png` previews them on the game's button colours.
+- `tools/ui_icon_art.py`: the UI's button icons (`art/sprites/ui_<GameIcon>.png`), drawn as light in the skill
+  icons' style with `skill_art.Icon` (glossy shapes, glows, flares, a soft shadow), at 128 pixels on no backdrop,
+  faded out at the edge: `IconImage` shows them smoothed from 18 pt up (battle buttons, the HUD's buttons, the
+  menu's tabs) and keeps Iconaut's vector icons for small inline glyphs. `--sheet out.png` previews them on the
+  game's button colours.
 - `tools/water_art.py`: the same for the water: `sea.png` (16 × 16 cells that tile as a whole; the continent gives each
   world cell its own, `ContinentScene.seaGroups`) and `tile_water.png` (a land's lakes and rivers, calm so its versions
   don't make a grid), ripples level on screen. Round a land's own water (`tile_water`, not ice or chocolate)

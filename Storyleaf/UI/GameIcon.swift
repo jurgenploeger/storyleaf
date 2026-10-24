@@ -3,7 +3,7 @@ import UIKit
 
 /// The game's UI icons: Iconaut's solid set (MIT, iconaut.design), vendored into
 /// Assets.xcassets/Icons by tools/icons.py, plus a few of our own (art/icons: the flame). The ones
-/// on buttons are also drawn as pixel art in the items' style (art/sprites/ui_<name>.png,
+/// on buttons are also drawn in the skills' style, as light (art/sprites/ui_<name>.png,
 /// tools/ui_icon_art.py), which `IconImage` shows at button sizes.
 /// Keep the cases in sync with the script's lists.
 enum GameIcon: String, CaseIterable {
@@ -42,12 +42,13 @@ struct IconImage: View {
     }
 
     var body: some View {
-        // At button size, the game's own pixel art where there is some (full colour: a tint doesn't
-        // touch it); small inline glyphs stay Iconaut's.
+        // At button size, the game's own drawing where there is some (full colour: a tint doesn't
+        // touch it), smoothed: drawn as light at 128 pixels like the skills' icons, not pixel art (a
+        // drawing 64 pixels or under stays crisp); small inline glyphs stay Iconaut's.
         if size >= 18, let art = icon.pixelArt {
             Image(uiImage: art)
                 .resizable()
-                .interpolation(.none)
+                .interpolation(art.size.width > 64 ? .high : .none)
                 .scaledToFit()
                 .frame(width: size, height: size)
                 .accessibilityHidden(true)
@@ -64,8 +65,8 @@ struct IconImage: View {
 }
 
 extension GameIcon {
-    /// The icon drawn as pixel art in the items' style (art/sprites/ui_<name>.png, tools/ui_icon_art.py),
-    /// or nil where there isn't one.
+    /// The icon drawn in the skills' style (art/sprites/ui_<name>.png, tools/ui_icon_art.py), or nil
+    /// where there isn't one.
     var pixelArt: UIImage? {
         if let known = Self.pixelArtCache[self] { return known }
         let art = ArtLibrary.shared.artImage("ui_" + rawValue)

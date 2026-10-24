@@ -1,326 +1,265 @@
 #!/usr/bin/env python3
-"""The UI's own pixel-art icons, drawn in code like the items: writes art/sprites/ui_<icon>.png (32×32).
+"""The UI's own icons, drawn in code in the skills' style (tools/skill_art.py): solid shapes made of
+light, deep at their rim and bright toward their top left, with a glow round them, sparks and flares, a
+soft shadow under them so they stand off whatever button they're on. Not pixel art (playtesting
+2026-10-24: "can we use the same style from the skill visuals for icons in the UI?"): drawn smooth at
+512 pixels and shrunk to 128 (art/sprites/ui_<icon>.png), on no backdrop of their own, as the buttons
+they sit on are tiles already.
 
-Each is named after the `GameIcon` it stands in for (Storyleaf/UI/GameIcon.swift): `IconImage` shows the
-pixel art at button sizes (the battle buttons, the HUD's buttons, the menu's tabs) and keeps the vector
-icon for small inline glyphs. Same look as tools/item_art.py: flat colours with a light and a dark shade
-and the game's dark outline. Edit a drawing and rerun:
+Each is named after the `GameIcon` it stands in for (Storyleaf/UI/GameIcon.swift): `IconImage` shows it
+at button sizes (the battle buttons, the HUD's buttons, the menu's tabs), smoothed, and keeps the vector
+icon for small inline glyphs. Edit a drawing and rerun:
 
     python3 tools/ui_icon_art.py               # all of them
     python3 tools/ui_icon_art.py sword paw     # just these
-    python3 tools/ui_icon_art.py --sheet out.png   # also a 4× contact sheet
+    python3 tools/ui_icon_art.py --sheet out.png   # also a contact sheet on the game's button colours
 """
 
 import math
 import pathlib
 import sys
 
+import numpy as np
+from PIL import Image, ImageDraw
+
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from item_art import OUTLINE, TEAL, Canvas, GOLD, SPRITES, STEEL, WOOD, encode_png, hexc, seal_gem  # noqa: E402
-
-SIZE = 32
-LEATHER = [hexc("6d3f1f"), hexc("9a5b2c"), hexc("c98a4b")]
-RED = [hexc("9e1b2a"), hexc("d8333f"), hexc("ff7a7f")]
-BLUE = [hexc("1f4fa0"), hexc("3d7fe0"), hexc("8fc3ff")]
-GREEN = [hexc("2e6b2e"), hexc("4caf50"), hexc("9be38f")]
-PINK = [hexc("c2507a"), hexc("f48fb1"), hexc("ffd0e2")]
-PARCH = [hexc("b8925a"), hexc("e8cf9a"), hexc("fff3d6")]
-CREAM = [hexc("cdbb98"), hexc("f6ead0"), hexc("ffffff")]
-CYAN = [hexc("1b8fa8"), hexc("4fd1e8"), hexc("c4f6ff")]
-WHITE = hexc("ffffff")
-INK = hexc("2b2140")
+from skill_art import LIGHTS, N, OUT, SPRITES, Icon, heart_shape, paw, rgb, shield  # noqa: E402
 
 
-def shade_ball(c, tones, cx, cy, r, only=None):
-    """Three-tone shading of the pixels in `tones`' middle colour (or `only`): light up-left, dark down-right."""
-    dark, mid, light = tones
-    target = only or mid
-    for y in range(SIZE):
-        for x in range(SIZE):
-            if c.px[y][x] == target:
-                d = (x - cx) + (y - cy)
-                if d > r * 0.5:
-                    c.px[y][x] = dark
-                elif d < -r * 0.7:
-                    c.px[y][x] = light
+def light(*hexes):
+    """A light's four colours, deep to core (as skill_art's LIGHTS)."""
+    return [rgb(h) for h in hexes]
 
 
-def star_points(cx, cy, outer, inner, points, turn=-math.pi / 2):
-    return [
-        (cx + math.cos(turn + i * math.pi / points) * (outer if i % 2 == 0 else inner),
-         cy + math.sin(turn + i * math.pi / points) * (outer if i % 2 == 0 else inner))
-        for i in range(points * 2)
-    ]
+GOLD = LIGHTS["light"]
+STEEL = light("#5a6a86", "#a8b8d0", "#e4ecf8", "#ffffff")
+LEATHER = light("#6d3a18", "#a8622e", "#e09a58", "#ffd8a8")
+RED = light("#9e1b2a", "#e03a46", "#ff8a90", "#ffe4e6")
+BLUE = light("#1a4aa0", "#3d84e8", "#9ccaff", "#eef8ff")
+GREEN = light("#1e6a2a", "#3cb850", "#9be38f", "#efffe8")
+PINK = light("#b0406a", "#f07aa6", "#ffc4da", "#fff2f7")
+PARCH = light("#9a7444", "#e0c48c", "#fff0cc", "#fffdf4")
+CREAM = light("#a8987a", "#eee2c8", "#fffaf0", "#ffffff")
+TEAL = light("#0e6a7a", "#2cb8c8", "#9cf0f4", "#f0ffff")
+CYAN = LIGHTS["water"]
+SKIN = light("#b06a44", "#e8a878", "#ffd8b8", "#fff4ea")
+
+
+def star_points(cx, cy, outer, inner, points=5, turn=-math.pi / 2):
+    return [(cx + math.cos(turn + k * math.pi / points) * (outer if k % 2 == 0 else inner),
+             cy + math.sin(turn + k * math.pi / points) * (outer if k % 2 == 0 else inner)) for k in range(points * 2)]
+
+
+def rect(ic, x0, y0, x1, y1, radius=0.03):
+    img = Image.new("L", (N, N), 0)
+    ImageDraw.Draw(img).rounded_rectangle([x0 * N, y0 * N, x1 * N, y1 * N], radius=int(radius * N), fill=255)
+    return np.asarray(img, float) / 255
 
 
 # ---------------------------------------------------------------- the icons
 
-def draw_sword(c):
-    # Attack: a broad steel blade with a bright edge, a heavy gold guard and a red gem.
-    c.poly([(27.5, 3), (29, 4.5), (13.5, 22.5), (9.5, 18.5)], STEEL[1])
-    c.poly([(27.5, 3), (29, 4.5), (13.5, 22.5), (11.5, 20.5)], STEEL[0])
-    c.line(26.5, 4.5, 11, 19.5, STEEL[2])
-    c.line(25, 5, 12.5, 17.5, STEEL[1])
-    c.line(6, 15, 16, 25, GOLD[1], width=3.4)
-    c.line(6, 14.5, 15, 23.5, GOLD[2])
-    c.line(10, 22, 5, 27, WOOD[1], width=3)
-    c.line(10, 23, 5.5, 27.5, WOOD[0])
-    c.disc(4, 28, 2.2, GOLD[1])
-    c.set(3, 27, GOLD[2])
-    c.disc(11, 20, 1.5, RED[1])
-    c.set(10, 19, RED[2])
+def draw_sword(ic):
+    # Attack: a steel blade up to the top right, its edge catching the light, a gold guard and a red gem.
+    ic.glow(0.56, 0.44, 0.36, STEEL[1], 0.35)
+    blade = [(0.86, 0.1), (0.9, 0.14), (0.42, 0.66), (0.34, 0.58)]
+    ic.body(ic.poly(blade, blur=0.002), STEEL, 0.7, 0.26, 0.5)
+    ic.add(STEEL[3], ic.line([(0.86, 0.12), (0.4, 0.6)], 0.012, blur=0.002) * 0.9)
+    ic.body(ic.line([(0.22, 0.5), (0.5, 0.78)], 0.07, blur=0.002), GOLD, 0.32, 0.6, 0.2)
+    ic.body(ic.line([(0.34, 0.66), (0.16, 0.84)], 0.06, blur=0.002), LEATHER, 0.24, 0.74, 0.14)
+    ic.body(ic.ellipse(0.13, 0.87, 0.055), RED, 0.12, 0.86, 0.06)
+    ic.body(ic.ellipse(0.36, 0.64, 0.045), RED, 0.35, 0.63, 0.05, shadow=False)
+    ic.flare(0.84, 0.14, 0.16, GOLD, strength=0.8)
 
 
-def draw_sparkles(c):
-    # Skills: a big gold star with a cyan and a pink one, each four-pointed.
-    for (cx, cy, outer, inner, tones) in [(13, 15, 11.5, 3.2, GOLD), (24.5, 7.5, 6.5, 2, CYAN), (24.5, 23.5, 5.5, 1.8, PINK)]:
-        c.poly(star_points(cx, cy, outer, inner, 4), tones[1])
-        shade_ball(c, tones, cx, cy, inner * 1.6)
-        c.set(cx, cy, WHITE)
-    c.rect(12, 14, 13, 15, WHITE)
+def draw_sparkles(ic):
+    # Skills: three stars of light, gold, sky and rose.
+    ic.flare(0.4, 0.56, 0.36, GOLD, strength=1.0)
+    ic.body(ic.poly(star_points(0.4, 0.56, 0.24, 0.06, 4), blur=0.003), GOLD, 0.38, 0.54, 0.22, shadow=True)
+    ic.flare(0.74, 0.24, 0.2, CYAN, strength=0.9)
+    ic.body(ic.poly(star_points(0.74, 0.24, 0.13, 0.035, 4), blur=0.002), CYAN, 0.73, 0.23, 0.12)
+    ic.flare(0.76, 0.76, 0.16, LIGHTS["dark"], strength=0.7)
+    ic.body(ic.poly(star_points(0.76, 0.76, 0.1, 0.03, 4), blur=0.002), PINK, 0.75, 0.75, 0.1)
 
 
-def draw_backpack(c):
-    # Bag and Items: a leather pack with a buckled flap, a pocket and a top handle.
-    c.ring(16, 8, 4.5, 2.6, LEATHER[0])
-    c.poly([(6, 10), (26, 10), (27, 28), (5, 28)], LEATHER[1])
-    c.rect(5, 26, 27, 28, LEATHER[0])
-    c.poly([(7, 9), (25, 9), (25, 16), (21, 19), (11, 19), (7, 16)], LEATHER[2])
-    c.shade(lambda x, y, col: col == LEATHER[2] and y >= 16, LEATHER[1])
-    c.rect(10, 21, 22, 26, LEATHER[0])
-    c.rect(11, 21, 21, 25, LEATHER[1])
-    c.rect(14, 16, 17, 19, GOLD[1])
-    c.rect(15, 17, 16, 18, LEATHER[0])
-    c.set(14, 16, GOLD[2])
-    c.shade(lambda x, y, col: col == LEATHER[1] and x >= 24, LEATHER[0])
+def draw_backpack(ic):
+    # The bag: a leather pack, its flap down over it, a pocket and a gold buckle.
+    ic.body(ic.arc(0.5, 0.26, 0.12, 180, 360, 0.04), LEATHER, 0.46, 0.18, 0.14)
+    ic.body(rect(ic, 0.2, 0.26, 0.8, 0.9, 0.1), LEATHER, 0.3, 0.32, 0.5)
+    ic.body(rect(ic, 0.2, 0.26, 0.8, 0.52, 0.1), LEATHER, 0.3, 0.28, 0.36)
+    ic.body(rect(ic, 0.32, 0.62, 0.68, 0.84, 0.05), LEATHER, 0.38, 0.64, 0.26)
+    ic.body(rect(ic, 0.43, 0.46, 0.57, 0.6, 0.02), GOLD, 0.47, 0.49, 0.12)
+    ic.sparkle(0.48, 0.5, 0.05, GOLD, 0.7)
 
 
-def draw_shield(c):
-    # Guard: a steel-rimmed heater shield, blue with a gold star.
-    c.poly([(5, 4), (27, 4), (27, 15), (16, 30), (5, 15)], STEEL[1])
-    c.poly([(8, 7), (24, 7), (24, 15), (16, 26), (8, 15)], BLUE[1])
-    c.shade(lambda x, y, col: col == BLUE[1] and x >= 16, BLUE[0])
-    c.shade(lambda x, y, col: col == BLUE[1] and x < 12 and y < 13, BLUE[2])
-    c.shade(lambda x, y, col: col == STEEL[1] and x >= 17, STEEL[0])
-    c.shade(lambda x, y, col: col == STEEL[1] and (x < 8 or y < 6), STEEL[2])
-    c.poly(star_points(16, 15, 6, 2.6, 5), GOLD[1])
-    shade_ball(c, GOLD, 16, 15, 3)
+def draw_shield(ic):
+    # Defend: a blue shield, its rim lit, a gold star on it.
+    ic.glow(0.5, 0.5, 0.42, BLUE[1], 0.35)
+    shield(ic, BLUE, 0.5, 0.52, 1.2)
+    ic.body(ic.poly(star_points(0.5, 0.48, 0.16, 0.065), blur=0.002), GOLD, 0.48, 0.44, 0.16, shadow=False)
+    ic.flare(0.32, 0.24, 0.14, GOLD, strength=0.6)
 
 
-def draw_wind(c):
-    # Run: a winged boot, with speed lines behind it.
-    c.rect(13, 6, 20, 20, LEATHER[1])
-    c.poly([(13, 19), (25, 19), (28, 23), (28, 26), (13, 26)], LEATHER[1])
-    c.rect(13, 25, 28, 27, LEATHER[0])
-    c.rect(12, 5, 21, 8, LEATHER[2])
-    c.shade(lambda x, y, col: col == LEATHER[1] and x >= 18 and y < 20, LEATHER[0])
-    c.rect(20, 21, 24, 22, LEATHER[2])
-    c.poly([(13, 9), (4, 4), (5, 8), (2, 10), (6, 12), (3, 14), (9, 15), (13, 15)], WHITE)
-    c.shade(lambda x, y, col: col == WHITE and y >= 13, CREAM[0])
-    c.line(5, 9, 11, 11, CREAM[0])
-    for y, x0 in [(19, 2), (22, 4), (25, 1)]:
-        c.line(x0, y, x0 + 7, y, CYAN[1])
+def draw_wind(ic):
+    # Run: a winged boot, streaks of wind behind it.
+    for k, y in enumerate((0.5, 0.64, 0.78)):
+        ic.trail([(0.04 + 0.04 * k, y), (0.2, y), (0.34, y)], 0.05, CYAN, 0.9)
+    boot = [(0.46, 0.18), (0.66, 0.18), (0.66, 0.6), (0.92, 0.68), (0.94, 0.86), (0.4, 0.86), (0.42, 0.6)]
+    ic.body(ic.poly(boot, blur=0.002), LEATHER, 0.5, 0.3, 0.45)
+    ic.body(rect(ic, 0.43, 0.16, 0.69, 0.26, 0.03), LEATHER, 0.5, 0.18, 0.2)
+    wing = [(0.44, 0.34), (0.2, 0.12), (0.26, 0.24), (0.14, 0.24), (0.24, 0.34), (0.16, 0.38), (0.4, 0.46)]
+    ic.body(ic.poly(wing, blur=0.002), CREAM, 0.3, 0.26, 0.26)
 
 
-def draw_heart(c):
-    # A glossy red heart.
-    c.disc(10.5, 11.5, 6.2, RED[1])
-    c.disc(21.5, 11.5, 6.2, RED[1])
-    c.poly([(4.5, 13), (27.5, 13), (16, 27.5)], RED[1])
-    shade_ball(c, RED, 16, 15, 9)
-    c.rect(8, 8, 9, 9, WHITE)
-    c.set(10, 8, RED[2])
-    c.set(8, 10, RED[2])
+def draw_heart(ic):
+    # Health: a red heart, glossy, with a spark of light on it.
+    ic.glow(0.5, 0.52, 0.42, RED[1], 0.4)
+    ic.body(heart_shape(ic, 0.5, 0.54, 0.38), RED, 0.4, 0.4, 0.4)
+    ic.over(RED[3], ic.ellipse(0.34, 0.38, 0.06, 0.04, blur=0.008) * 0.85)
+    ic.sparkle(0.78, 0.22, 0.05, GOLD, 0.8)
 
 
-def draw_seal_stone(c):
-    # Capture: the Seal Stone you throw, the item's own teal crystal with its white spiral.
-    seal_gem(c, TEAL)
+def draw_seal_stone(ic):
+    # Capture: a teal seal stone, a swirl of light inside it.
+    hexagon = [(0.5 + math.cos(a) * 0.34, 0.52 + math.sin(a) * 0.38) for a in np.linspace(-math.pi / 2, 1.5 * math.pi, 7)[:-1]]
+    ic.glow(0.5, 0.52, 0.42, TEAL[1], 0.45)
+    ic.body(ic.poly(hexagon, blur=0.002), TEAL, 0.42, 0.38, 0.4)
+    for k, r in enumerate((0.16, 0.1, 0.05)):
+        ic.add(TEAL[3], ic.arc(0.5, 0.54, r, 200 + k * 60, 470 + k * 60, 0.025, blur=0.003) * 0.8)
+    ic.sparkle(0.78, 0.2, 0.05, CYAN, 0.8)
 
 
-def draw_more(c):
-    # More: three gold orbs.
-    for cx in (7, 16, 25):
-        c.disc(cx, 16, 3.8, GOLD[1])
-        shade_ball(c, GOLD, cx, 16, 3)
-        c.set(cx - 1, 15, WHITE)
+def draw_more(ic):
+    # More: three gold beads of light in a row.
+    for x in (0.2, 0.5, 0.8):
+        ic.body(ic.ellipse(x, 0.52, 0.11), GOLD, x - 0.03, 0.49, 0.12)
 
 
-def draw_user(c):
-    # Character: a knight's helm with a red plume.
-    c.poly([(16, 2), (23, 1), (26, 4), (21, 7), (17, 8)], RED[1])
-    c.line(18, 3, 24, 2, RED[2])
-    c.disc(16, 15, 10, STEEL[1])
-    c.rect(6, 15, 26, 25, STEEL[1])
-    c.poly([(6, 24), (26, 24), (23, 29), (9, 29)], STEEL[1])
-    shade_ball(c, STEEL, 16, 15, 10)
-    c.rect(9, 15, 23, 17, INK)
-    c.rect(15, 18, 16, 26, STEEL[0])
-    c.line(10, 9, 14, 7, STEEL[2])
-    c.rect(11, 20, 13, 21, STEEL[0])
-    c.rect(18, 20, 20, 21, STEEL[0])
+def person(ic, cx, cy, s, shirt):
+    """A head and shoulders: a round face and a shirt."""
+    ic.body(ic.ellipse(cx, cy + 0.3 * s, 0.26 * s, 0.2 * s) * (ic.y < cy + 0.42 * s), shirt, cx - 0.06 * s, cy + 0.16 * s, 0.3 * s)
+    ic.body(ic.ellipse(cx, cy - 0.06 * s, 0.15 * s), SKIN, cx - 0.04 * s, cy - 0.1 * s, 0.16 * s)
 
 
-def draw_paw(c):
-    # Companions: a paw with pink pads.
-    # Toes a little smaller and apart from the pad: closer, the finish ran them together.
-    for (cx, cy) in [(5.5, 12.5), (12, 6), (20, 6), (26.5, 12.5)]:
-        c.ellipse(cx, cy, 3, 3.6, PINK[1])
-        shade_ball(c, PINK, cx, cy, 2.6)
-    c.poly([(10, 23), (12.5, 17.5), (19.5, 17.5), (22, 23), (19.5, 28), (12.5, 28)], PINK[1])
-    c.ellipse(16, 23, 7, 5, PINK[1])
-    shade_ball(c, PINK, 16, 22, 5.5)
-    c.rect(12, 17, 13, 18, WHITE)
+def draw_user(ic):
+    # Character: one hero, head and shoulders.
+    ic.glow(0.5, 0.5, 0.4, BLUE[1], 0.3)
+    person(ic, 0.5, 0.44, 1.25, BLUE)
 
 
-def draw_book(c):
-    # Quests and books: a green storybook with gold corners, a gold leaf and a red ribbon.
-    c.rect(24, 6, 26, 27, CREAM[1])
-    c.rect(25, 7, 25, 26, CREAM[0])
-    c.rect(6, 4, 24, 28, GREEN[1])
-    c.rect(6, 4, 8, 28, GREEN[0])
-    c.rect(9, 5, 23, 6, GREEN[2])
-    for (x, y) in [(22, 4), (22, 27), (9, 4), (9, 27)]:
-        c.rect(x, y, x + 2, y + 1, GOLD[1])
-    c.poly([(16, 9), (21, 14), (16, 22), (11, 14)], GOLD[1])
-    c.line(16, 11, 16, 20, GOLD[0])
-    c.shade(lambda x, y, col: col == GOLD[1] and x < 15 and y < 14, GOLD[2])
-    c.rect(18, 28, 20, 31, RED[1])
-    c.set(19, 31, None)
+def draw_users(ic):
+    # Friends: two heroes side by side, one a little behind.
+    person(ic, 0.34, 0.4, 0.95, GREEN)
+    person(ic, 0.64, 0.5, 1.05, BLUE)
 
 
-def draw_talk(c):
-    # Chat: a cream speech bubble with three blue dots.
-    c.ellipse(16, 13, 13, 9.5, CREAM[1])
-    c.poly([(8, 18), (6, 28), (16, 21)], CREAM[1])
-    c.shade(lambda x, y, col: col == CREAM[1] and (y > 18 or x > 25), CREAM[0])
-    c.shade(lambda x, y, col: col == CREAM[1] and y < 7, CREAM[2])
-    for cx in (10, 16, 22):
-        c.disc(cx, 13, 1.9, BLUE[1])
-        c.set(cx - 1, 12, BLUE[2])
+def draw_paw(ic):
+    # Companions: a pink paw.
+    ic.glow(0.5, 0.52, 0.42, PINK[1], 0.4)
+    paw(ic, PINK, 0.5, 0.5, 1.5)
 
 
-def draw_settings(c):
-    # Settings: a steel cog round a blue gem.
-    for i in range(8):
-        angle = i * math.pi / 4
-        cx, cy = 16 + math.cos(angle) * 11, 16 + math.sin(angle) * 11
-        nx, ny = math.cos(angle + math.pi / 2) * 2.6, math.sin(angle + math.pi / 2) * 2.6
-        dx, dy = math.cos(angle) * 3, math.sin(angle) * 3
-        c.poly([(cx - nx - dx, cy - ny - dy), (cx + nx - dx, cy + ny - dy), (cx + nx + dx, cy + ny + dy), (cx - nx + dx, cy - ny + dy)], STEEL[1])
-    c.disc(16, 16, 10, STEEL[1])
-    shade_ball(c, STEEL, 16, 16, 10)
-    c.disc(16, 16, 5.5, STEEL[0])
-    c.disc(16, 16, 4, BLUE[1])
-    shade_ball(c, BLUE, 16, 16, 3)
-    c.set(15, 15, WHITE)
+def draw_book(ic):
+    # The Monster Book: a green book, a gold gem on its cover, a bookmark below.
+    ic.body(ic.poly([(0.66, 0.86), (0.74, 0.86), (0.74, 0.98), (0.7, 0.94), (0.66, 0.98)]), RED, 0.69, 0.88, 0.06)
+    ic.body(rect(ic, 0.24, 0.1, 0.82, 0.88, 0.04), CREAM, 0.4, 0.2, 0.5)
+    ic.body(rect(ic, 0.18, 0.08, 0.76, 0.86, 0.05), GREEN, 0.28, 0.16, 0.46)
+    ic.over(GREEN[0], rect(ic, 0.18, 0.08, 0.26, 0.86, 0.03) * 0.6)
+    ic.body(ic.poly([(0.47, 0.26), (0.6, 0.47), (0.47, 0.68), (0.34, 0.47)], blur=0.002), GOLD, 0.44, 0.38, 0.22, shadow=False)
+    ic.flare(0.46, 0.4, 0.14, GOLD, strength=0.6)
 
 
-def draw_map(c):
-    # Maps: folded parchment with a dotted red road to an X.
-    c.poly([(3, 8), (11, 5), (20, 8), (29, 5), (29, 25), (20, 28), (11, 25), (3, 28)], PARCH[1])
-    c.shade(lambda x, y, col: col == PARCH[1] and 11 <= x < 20, PARCH[0])
-    c.shade(lambda x, y, col: col == PARCH[1] and x < 11 and y < 12, PARCH[2])
-    c.ellipse(8, 20, 3, 2.5, GREEN[1])
-    c.ellipse(24, 11, 2.5, 2, GREEN[1])
-    for (x, y) in [(8, 15), (11, 13), (14, 15), (17, 17), (20, 15), (22, 13)]:
-        c.set(x, y, RED[1])
-    c.line(23, 18, 27, 22, RED[1], width=2)
-    c.line(27, 18, 23, 22, RED[1], width=2)
+def draw_talk(ic):
+    # Chat: a speech bubble, three dots in it.
+    bubble = ic.ellipse(0.5, 0.44, 0.4, 0.3) + ic.poly([(0.26, 0.62), (0.18, 0.88), (0.44, 0.7)], blur=0.002)
+    ic.body(np.clip(bubble, 0, 1), CREAM, 0.36, 0.28, 0.42)
+    for x in (0.32, 0.5, 0.68):
+        ic.body(ic.ellipse(x, 0.45, 0.055), BLUE, x - 0.015, 0.435, 0.06, shadow=False)
 
 
-def draw_gift(c):
-    # Gifts: a red box tied with a gold ribbon and bow.
-    c.rect(6, 15, 26, 29, RED[1])
-    c.rect(4, 11, 28, 16, RED[2])
-    c.rect(4, 15, 28, 16, RED[0])
-    c.shade(lambda x, y, col: col == RED[1] and x >= 21, RED[0])
-    c.rect(14, 11, 18, 29, GOLD[1])
-    c.rect(14, 11, 15, 29, GOLD[2])
-    c.ellipse(11, 8, 4.2, 3, GOLD[1])
-    c.ellipse(21, 8, 4.2, 3, GOLD[1])
-    c.ellipse(11, 8, 1.8, 1.2, GOLD[0])
-    c.ellipse(21, 8, 1.8, 1.2, GOLD[0])
-    c.rect(15, 7, 17, 10, GOLD[2])
+def draw_settings(ic):
+    # Settings: a steel gear, a blue gem at its hub.
+    teeth = []
+    for k in range(16):
+        a = k * math.pi / 8
+        r = 0.42 if k % 2 == 0 else 0.33
+        for da in (-0.13, 0.13):
+            teeth.append((0.5 + math.cos(a + da) * r, 0.5 + math.sin(a + da) * r))
+    gear = np.clip(ic.poly(teeth, blur=0.002) - ic.ellipse(0.5, 0.5, 0.12), 0, 1)
+    ic.body(gear, STEEL, 0.38, 0.36, 0.44)
+    ic.body(ic.ellipse(0.5, 0.5, 0.1), BLUE, 0.47, 0.47, 0.11, shadow=False)
 
 
-def draw_coins(c):
-    # Gold: three coins, one on top of two, each with a rim, a glint and a mark.
-    for (cx, cy) in [(16, 11), (9.5, 21), (22.5, 21)]:
-        c.disc(cx, cy, 8, OUTLINE)
-        c.disc(cx, cy, 7, GOLD[0])
-        c.disc(cx - 0.5, cy - 0.5, 5.8, GOLD[1])
-        c.line(cx - 4, cy - 1, cx - 1, cy - 4, GOLD[2])
-        c.rect(cx - 0.5, cy - 2.5, cx + 0.5, cy + 2.5, GOLD[0])
+def draw_map(ic):
+    # The world map: a folded parchment, a green land on it and a red X.
+    folds = [[(0.1, 0.2), (0.38, 0.12), (0.38, 0.82), (0.1, 0.9)], [(0.38, 0.12), (0.64, 0.2), (0.64, 0.9), (0.38, 0.82)],
+             [(0.64, 0.2), (0.9, 0.12), (0.9, 0.82), (0.64, 0.9)]]
+    for k, fold in enumerate(folds):
+        ic.body(ic.poly(fold, blur=0.002), PARCH, 0.22 + k * 0.26, 0.26, 0.4)
+    ic.body(ic.ellipse(0.28, 0.42, 0.1, 0.08) + ic.ellipse(0.48, 0.58, 0.08, 0.06), GREEN, 0.3, 0.42, 0.16, shadow=False)
+    for a, b in (((0.68, 0.56), (0.82, 0.7)), ((0.82, 0.56), (0.68, 0.7))):
+        ic.body(ic.line([a, b], 0.04), RED, 0.74, 0.6, 0.1, shadow=False)
 
 
-def draw_star(c):
-    # Stars: a five-pointed gold star with a glint.
-    c.poly(star_points(16, 16.5, 14, 6, 5), GOLD[1])
-    shade_ball(c, GOLD, 16, 16, 7)
-    c.rect(13, 11, 14, 12, WHITE)
+def draw_gift(ic):
+    # Rewards: a red gift box, a gold ribbon and bow, a sparkle.
+    ic.body(rect(ic, 0.18, 0.44, 0.82, 0.9, 0.04), RED, 0.3, 0.48, 0.42)
+    ic.body(rect(ic, 0.12, 0.32, 0.88, 0.48, 0.04), RED, 0.28, 0.34, 0.4)
+    ic.body(rect(ic, 0.44, 0.32, 0.56, 0.9, 0.02), GOLD, 0.48, 0.38, 0.3, shadow=False)
+    for side in (-1, 1):
+        ic.body(ic.ellipse(0.5 + side * 0.12, 0.24, 0.1, 0.07), GOLD, 0.5 + side * 0.1, 0.22, 0.1)
+    ic.flare(0.78, 0.18, 0.14, GOLD, strength=0.8)
 
 
-def draw_egg(c):
-    # Eggs: a cream egg with green spots.
-    c.ellipse(16, 17.5, 9, 12, CREAM[1])
-    shade_ball(c, CREAM, 16, 17, 8)
-    for (x, y, r) in [(12, 13, 2), (19, 20, 2.5), (13, 23, 1.6), (20, 11, 1.4)]:
-        c.disc(x, y, r, GREEN[1])
-    c.rect(12, 8, 13, 9, WHITE)
+def coin(ic, cx, cy, r):
+    ic.body(ic.ellipse(cx, cy, r), GOLD, cx - r * 0.3, cy - r * 0.3, r)
+    ic.over(GOLD[0], ic.ring(cx, cy, r * 0.7, r * 0.12, blur=0.003) * 0.6)
 
 
-def draw_arrow_down(c):
-    # Bringing a game back (Import a backup): a green arrow down into a blue tray.
-    c.rect(4, 19, 27, 28, BLUE[1])
-    c.rect(6, 19, 25, 21, BLUE[0])
-    c.rect(4, 22, 27, 22, BLUE[2])
-    c.shade(lambda x, y, col: col == BLUE[1] and x >= 23, BLUE[0])
-    c.rect(13, 3, 18, 12, GREEN[1])
-    c.poly([(6.5, 11), (24.5, 11), (15.5, 20.5)], GREEN[1])
-    c.shade(lambda x, y, col: col == GREEN[1] and (x <= 13 if y <= 11 else x < 15 - (y - 12) * 0.2), GREEN[2])
-    c.shade(lambda x, y, col: col == GREEN[1] and x >= 18, GREEN[0])
+def draw_coins(ic):
+    # Gold: a stack of three coins.
+    coin(ic, 0.34, 0.64, 0.2)
+    coin(ic, 0.66, 0.66, 0.2)
+    coin(ic, 0.5, 0.38, 0.2)
+    ic.sparkle(0.82, 0.22, 0.05, GOLD, 0.9)
 
 
-def draw_users(c):
-    # Friends: two adventurers side by side, shoulders up, the one in front outlined over the other.
-    skin = [hexc("c98e5f"), hexc("f2c79a"), hexc("ffe3c4")]
-    # Behind, on the left: green tunic, brown hair.
-    c.ellipse(11, 25, 7.5, 7, GREEN[1])
-    c.disc(11, 10, 4.8, skin[1])
-    c.poly([(5.8, 9.5), (7.2, 5.2), (11, 4.2), (14.8, 5.2), (16.2, 9.5), (13.8, 7.6), (8.2, 7.6)], LEATHER[1])
-    c.shade(lambda x, y, col: col == GREEN[1] and x >= 14, GREEN[0])
-    # In front, on the right: blue tunic, gold hair, an outline where it covers the other.
-    c.ellipse(21, 27, 9.5, 7.5, OUTLINE)
-    c.disc(21, 13, 6.3, OUTLINE)
-    c.ellipse(21, 27, 8.5, 6.5, BLUE[1])
-    c.disc(21, 13, 5.3, skin[1])
-    c.poly([(15.2, 12.5), (16.6, 7.8), (21, 6.4), (25.4, 7.8), (26.8, 12.5), (24, 10.6), (18, 10.6)], GOLD[1])
-    c.shade(lambda x, y, col: col == BLUE[1] and x >= 25, BLUE[0])
-    c.shade(lambda x, y, col: col == BLUE[1] and y <= 22 and x <= 19, BLUE[2])
-    c.shade(lambda x, y, col: col == skin[1] and x >= 24 and y >= 13, skin[0])
-    for (x, y) in [(9, 10), (13, 10), (19, 13), (23, 13)]:
-        c.set(x, y, INK)
-    # Cut off flat at the shoulders' foot, inside the frame so the outline goes round it.
-    for y in range(29, 32):
-        for x in range(32):
-            c.px[y][x] = None
+def draw_star(ic):
+    # Favourites and titles: a gold star.
+    ic.glow(0.5, 0.52, 0.44, GOLD[1], 0.45)
+    ic.body(ic.poly(star_points(0.5, 0.54, 0.42, 0.18), blur=0.002), GOLD, 0.42, 0.42, 0.42)
+    ic.flare(0.36, 0.34, 0.14, GOLD, strength=0.6)
+
+
+def draw_egg(ic):
+    # Eggs to hatch: a cream egg with green spots.
+    egg = [(0.5 + 0.28 * math.sin(t), 0.56 - (0.38 if math.cos(t) > 0 else 0.3) * math.cos(t)) for t in np.linspace(0, 2 * math.pi, 48)]
+    ic.glow(0.5, 0.56, 0.42, GREEN[1], 0.25)
+    ic.body(ic.poly(egg, blur=0.002), CREAM, 0.42, 0.4, 0.4)
+    for (x, y, r) in ((0.42, 0.42, 0.05), (0.6, 0.56, 0.06), (0.44, 0.7, 0.045), (0.62, 0.3, 0.035)):
+        ic.body(ic.ellipse(x, y, r), GREEN, x - 0.01, y - 0.01, r, shadow=False)
+
+
+def draw_arrow_down(ic):
+    # Save to the phone: a green arrow down into a blue tray.
+    ic.body(rect(ic, 0.12, 0.66, 0.88, 0.9, 0.05), BLUE, 0.28, 0.7, 0.42)
+    arrow = [(0.4, 0.08), (0.6, 0.08), (0.6, 0.4), (0.76, 0.4), (0.5, 0.7), (0.24, 0.4), (0.4, 0.4)]
+    ic.body(ic.poly(arrow, blur=0.002), GREEN, 0.46, 0.2, 0.5)
+
 
 # GameIcon names use hyphens (arrow-down) where Python names can't: draw_arrow_down draws "arrow-down".
 DRAWINGS = {name[len("draw_"):].replace("_", "-"): fn for name, fn in list(globals().items()) if name.startswith("draw_") and callable(fn)}
 
 
 def render(name):
-    canvas = Canvas(SIZE)
-    DRAWINGS[name](canvas)
-    canvas.outline()
-    return canvas
-
-
-# Icons whose meaning is in small separate parts the finish runs together at button size (the three
-# dots ran into a bar, the two faces into a smudge, the backpack's flap and pocket into a lump): they
-# keep their crisp flat drawing.
-KEEP_FLAT = {"more", "users", "backpack"}
+    """The icon at 128 pixels, on nothing: its glow fades out into the button under it."""
+    ic = Icon(None)
+    DRAWINGS[name](ic)
+    # Faded out over the last few pixels to the edge, so no glow stops short there in a square.
+    edge = np.maximum(np.abs(ic.x - 0.5), np.abs(ic.y - 0.5))
+    a = ic.a * np.clip((0.5 - edge) / 0.07, 0, 1)
+    rgba = np.dstack([np.clip(ic.rgb, 0, 1) * a[..., None], a])            # premultiplied
+    img = Image.fromarray((rgba * 255).round().astype(np.uint8), "RGBa")
+    return img.resize((OUT, OUT), Image.LANCZOS).convert("RGBA")
 
 
 def main(argv):
@@ -330,35 +269,28 @@ def main(argv):
         sheet_path = argv[index + 1]
         argv = argv[:index] + argv[index + 2:]
     names = argv or sorted(DRAWINGS)
-    # Finished in the game's pixel style by tools/pixel_kit.py, as the item and skill icons are.
-    import io
-    from PIL import Image
-    from pixel_kit import restyle
+    out = {}
     for name in names:
-        drawn = Image.open(io.BytesIO(render(name).png()))
-        if name in KEEP_FLAT:
-            drawn.save(SPRITES / f"ui_{name}.png")
-            continue
-        restyle(drawn, round_corners=0.3, texture=0.025).render().save(SPRITES / f"ui_{name}.png")
+        out[name] = render(name)
+        out[name].save(SPRITES / f"ui_{name}.png")
     print(f"wrote {len(names)} UI icons to art/sprites/")
     if sheet_path:
-        # Each icon on the HUD's blue button and the battle's red one, at 4×.
+        # Each icon on the HUD's blue button, the battle's red one and a cream panel, at 96 and 36 pixels.
         backs = [(64, 140, 230, 255), (220, 70, 70, 255), (240, 232, 214, 255)]
-        scale, pad = 4, 6
-        cell = SIZE * scale + pad
-        width, height = len(names) * cell + pad, len(backs) * cell + pad
-        pixels = [[(30, 34, 52, 255)] * width for _ in range(height)]
+        cell, small, pad = 96, 36, 8
+        width = len(names) * (cell + pad) + pad
+        sheet = Image.new("RGBA", (width, len(backs) * (cell + small + 2 * pad) + pad), (30, 34, 52, 255))
         for row, back in enumerate(backs):
             for n, name in enumerate(names):
-                art = render(name)
-                ox, oy = pad + n * cell, pad + row * cell
-                for y in range(SIZE * scale):
-                    for x in range(SIZE * scale):
-                        c = art.px[y // scale][x // scale]
-                        pixels[oy + y][ox + x] = c if c and c[3] == 255 else back
-        raw = b"".join(b"\x00" + b"".join(bytes(p) for p in row) for row in pixels)
-        pathlib.Path(sheet_path).write_bytes(encode_png(width, height, raw))
-        print(f"contact sheet: {sheet_path} (order: {', '.join(names)})")
+                x, y = pad + n * (cell + pad), pad + row * (cell + small + 2 * pad)
+                tile = Image.new("RGBA", (cell, cell), back)
+                tile.alpha_composite(out[name].resize((cell - 12, cell - 12), Image.LANCZOS), (6, 6))
+                sheet.alpha_composite(tile, (x, y))
+                little = Image.new("RGBA", (small, small), back)
+                little.alpha_composite(out[name].resize((small - 4, small - 4), Image.LANCZOS), (2, 2))
+                sheet.alpha_composite(little, (x, y + cell + pad))
+        sheet.save(sheet_path)
+        print(f"contact sheet: {sheet_path}")
 
 
 if __name__ == "__main__":
