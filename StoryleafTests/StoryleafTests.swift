@@ -3038,11 +3038,16 @@ struct RulesTests {
         #expect(session.chat.last?.kind == .notice)
         #expect(session.chat.last?.tone == .reward)
         #expect(session.unreadChat == 0)
+        #expect(session.log.last?.text == "+120 EXP  +40 gold")
+        // A battle's pay, shown on its result card, goes to the chat without a toast.
+        session.post("Found Copper Gauntlets!", .reward, toast: false)
+        #expect(session.chat.last?.text == "Found Copper Gauntlets!")
+        #expect(session.log.last?.text == "+120 EXP  +40 gold")
         session.announce("Dawn breaks over Storyleaf.")
         // An announcement is in the chat once, not again as a notice.
         #expect(session.chat.filter { $0.text == "Dawn breaks over Storyleaf." }.count == 1)
         session.startChat(on: "Ingothold")
-        #expect(session.chat.map(\.kind) == [.notice, .announcement, .system])
+        #expect(session.chat.map(\.kind) == [.notice, .notice, .announcement, .system])
     }
 
     @Test func aRareSightingMakesItTurnUpMoreOften() throws {
