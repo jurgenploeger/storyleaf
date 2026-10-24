@@ -486,7 +486,9 @@ private struct ExpBar: View {
 
 /// The menu: one button with three lines that, tapped, grows into a panel listing the menu's pages
 /// (Hero, Companion, Inventory, Quests, Settings), its lines turning into a cross that closes it.
-/// A gold dot on the button while any page has something new, and on that page's row.
+/// A gold dot on the button while any page has something new, and on that page's row. It takes the
+/// button's room only: open, the panel spreads up and to the left over Chat, which stays put
+/// (playtesting 2026-10-24: it pushed Chat aside).
 private struct GameMenu: View {
     let items: [MenuTab]
     @Binding var open: Bool
@@ -547,6 +549,7 @@ private struct GameMenu: View {
         }
         .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 2)
         .animation(Self.spring, value: open)
+        .frame(width: Self.button, height: Self.button, alignment: .bottomTrailing)
     }
 
     private func row(_ tab: MenuTab) -> some View {
