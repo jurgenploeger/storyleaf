@@ -224,12 +224,14 @@ class Build:
         return self.s.shapes.pop()[0]
 
     def surface(self, points, colour, pattern=None, tone=0.0, slope=(0.0, 0.0), texture=0.03, shades=7,
-                gloss=0.0, mask=None, axes=((1.0, 0.0), DOWN), eave=0, foot=0):
+                gloss=0.0, mask=None, axes=((1.0, 0.0), DOWN), eave=0, foot=0, curve=0.0):
         """A flat face (a wall, a roof plane) in `colour` with a material's `pattern` laid along `axes`
         (the face's along and down, as unit vectors: a face running back leans them); `tone` lightens or
         darkens it (a side wall going back is a step darker), `slope` (per pixel, x and y) grades it;
         `eave` pixels at its top lie in the shadow of the roof over it, `foot` pixels at its bottom in
-        the ground's."""
+        the ground's. `curve` shades it round across, as a drum or a cone is (lit a little left of its
+        middle, deep at its right edge, a touch dark at its left): RD models every big form, where a face lit
+        in one tone reads flat (2026-10-24)."""
         m = self._mask(points) if mask is None else mask
         n = self.size
         region = m.reshape(n, SS, n, SS).mean(axis=(1, 3)) >= 0.5
@@ -243,6 +245,12 @@ class Build:
         a_ = (px * vy - py * vx) / det
         d_ = (py * ux - px * uy) / det
         detail = tone + slope[0] * (xx - xs.mean()) + slope[1] * (yy - ys.mean())
+        if curve:
+            # Across each row of the face, from its left edge (−1) to its right (1).
+            left = np.where(region, xx, n).min(axis=1, keepdims=True)
+            right = np.where(region, xx, -1).max(axis=1, keepdims=True)
+            u = np.clip((xx - left) / np.maximum(right - left, 1) * 2 - 1, -1, 1)
+            detail = detail + curve * (0.35 - 0.75 * ((u + 0.3) / 1.3) ** 2)
         if pattern:
             detail = detail + np.where(region, PATTERNS[pattern](region, a_, d_), 0.0)
         if eave or foot:
@@ -288,9 +296,9 @@ class Build:
         return limit_palette(img, max(16, min(cap, int(size * DENSITY / 100))))
 
 
-def box(b, x0, x1, height, wall, side=None, pattern="plaster", side_pattern=None, ground=GROUND, depth=1.0):
+def box(b, x0, x1, height, wall, side=None, pattern="plaster", side_pattern=None, ground=GROUND, depth=1.0, curve=0.0):
     """The walls: a front from x0 to x1, `height` tall, and the right side going back `depth` of a
-    wall's depth. Returns the wall's top-left and top-right corners and the far corner's top."""
+    wall's depth; `curve` shades the front round (a tower). Returns the wall's top."""
     top = ground - height
     dx, dy = DX * depth, DY * depth
     # The side going back, turned from the light; the front lit from the upper left, both in the roof's
@@ -298,7 +306,7 @@ def box(b, x0, x1, height, wall, side=None, pattern="plaster", side_pattern=None
     b.surface([(x1, ground), (x1 + dx, ground + dy), (x1 + dx, top + dy), (x1, top)], side or wall,
               side_pattern or pattern, tone=-0.4, slope=(-0.004, -0.006), axes=(SIDEWAYS, DOWN), eave=6, foot=4)
     b.surface([(x0, ground), (x1, ground), (x1, top), (x0, top)], wall, pattern, slope=(-0.008, -0.006),
-              eave=6, foot=4)
+              eave=6, foot=4, curve=curve)
     b.stroke([(x1, ground - 3), (x1, top + 4)], 0.9, shade(wall, 1.12))          # the corner catches the light
     return top
 
@@ -358,9 +366,10 @@ def eaves_roof(b, x0, x1, top, colour, pattern="tiles", rise=16, over=3, depth=1
     return ridge_l, ridge_r
 
 
-def window(b, cx, cy, w=8, h=9, frame="#6b4a32", glass="#ffd27a", arched=False, shutters=None, box=None):
+def window(b, cx, cy, w=8, h=9, frame="#6b4a32", glass="#ffd27a", arched=False, shutters=None, box=None, deep=False):
     """A lit window: frame, warm glass with a cross of glazing bars, a sill; `shutters` a colour,
-    `box` a flower box's flowers' colour."""
+    `box` a flower box's flowers' colour; `deep`, set back in the wall: the reveal's shadow along its top
+    and right inside the frame, and the sill's on the wall under it."""
     x0, x1, y0, y1 = cx - w / 2, cx + w / 2, cy - h / 2, cy + h / 2
     if shutters:
         b.rect(x0 - 3.5, y0, x0 - 0.5, y1, shutters, texture=0.04)
@@ -377,6 +386,11 @@ def window(b, cx, cy, w=8, h=9, frame="#6b4a32", glass="#ffd27a", arched=False, 
     b.poly(gpts, glass, texture=0.0, profile="flat")
     b.rect(cx - 0.5, y0, cx + 0.5, y1, frame, texture=0.0)
     b.rect(x0, cy - 0.5, x1, cy + 0.5, frame, texture=0.0)
+    if deep:
+        reveal = shade(frame, 0.55)
+        b.poly([(x0, y0 + (2 if arched else 0)), (x1, y0 + (2 if arched else 0)), (x1, y1), (x1 - 1.4, y1),
+                (x1 - 1.4, y0 + (3.4 if arched else 1.4)), (x0, y0 + (3.4 if arched else 1.4))], reveal, texture=0.0, profile="flat")
+        b.rect(x0 - 1.5, y1 + 2.2, x1 + 2.5, y1 + 3.4, shade(frame, 0.4), texture=0.0, profile="flat")
     b.rect(x0 - 2, y1 + 0.5, x1 + 2, y1 + 2.2, frame, texture=0.03)            # the sill
     if box:
         b.rect(x0 - 1, y1 + 2, x1 + 1, y1 + 5, "#7a5236", texture=0.05)
@@ -384,8 +398,9 @@ def window(b, cx, cy, w=8, h=9, frame="#6b4a32", glass="#ffd27a", arched=False, 
             b.ellipse(x, y1 + 1.6, 1.5, 1.3, "#4e9a3a" if k % 2 else box)
 
 
-def door(b, cx, w=10, h=15, colour="#7a4e2e", ground=GROUND, frame="#5a3a24", arched=True, knob="#e8c050"):
-    """A plank door, arched or square, in a frame, with a step before it."""
+def door(b, cx, w=10, h=15, colour="#7a4e2e", ground=GROUND, frame="#5a3a24", arched=True, knob="#e8c050", deep=False):
+    """A plank door, arched or square, in a frame, with a step before it; `deep`, set back in the wall,
+    the reveal's shadow down its right and under its head."""
     x0, x1, y0 = cx - w / 2, cx + w / 2, ground - h
     if arched:
         arc = [(cx + (w / 2 + 1.2) * math.cos(a), y0 + w / 2 - (w / 2 + 1.2) * math.sin(a)) for a in np.linspace(0, math.pi, 11)]
@@ -395,6 +410,15 @@ def door(b, cx, w=10, h=15, colour="#7a4e2e", ground=GROUND, frame="#5a3a24", ar
     else:
         b.rect(x0 - 1.2, y0 - 1.2, x1 + 1.2, ground, frame, texture=0.03)
         b.surface([(x0, ground), (x1, ground), (x1, y0), (x0, y0)], colour, "boards", texture=0.04, shades=6)
+    if deep:
+        reveal = shade(colour, 0.45)
+        b.rect(x1 - 2, y0 + (w / 2 if arched else 0), x1, ground, reveal, texture=0.0, profile="flat")
+        if arched:
+            arc = [(cx + w / 2 * math.cos(a), y0 + w / 2 - w / 2 * math.sin(a)) for a in np.linspace(0, math.pi, 11)]
+            inner = [(cx + (w / 2 - 1.8) * math.cos(a), y0 + w / 2 + 0.6 - (w / 2 - 1.8) * math.sin(a)) for a in np.linspace(math.pi, 0, 11)]
+            b.poly(arc + inner, reveal, texture=0.0, profile="flat")
+        else:
+            b.rect(x0, y0, x1, y0 + 1.8, reveal, texture=0.0, profile="flat")
     b.ellipse(x1 - 2, ground - h * 0.42, 0.9, 0.9, knob, gloss=0.6)
     b.rect(x0 - 2.5, ground, x1 + 2.5, ground + 2.4, "#9a948e", texture=0.05)    # the step
 
@@ -1243,6 +1267,26 @@ def gem_workshop(b):
     b.ellipse(71, GROUND - 10.5, 1.3, 1.3, "#4a4850", profile="flat")
     return b
 
+def ledge(b, x0, x1, y, colour, wall, h=3.0, depth=0.5, over=1.5):
+    """A band, cornice or string course standing out from a wall at `y` (its top): its top lit, going
+    back; its front; and the shadow it casts on the `wall` under it, as RD draws every ledge (2026-10-24:
+    a band painted flat on a wall reads as a stripe, not a ledge)."""
+    dx, dy = DX * depth * 0.25, DY * depth * 0.25
+    b.poly([(x0 - over, y + h), (x1 + over, y + h), (x1 + over, y + h + 2.2), (x0 - over + 1, y + h + 2.2)], shade(wall, 0.58),
+           texture=0.0, profile="flat")
+    b.poly([(x0 - over, y), (x1 + over, y), (x1 + over + dx, y + dy), (x0 - over + dx, y + dy)], shade(colour, 1.18), texture=0.02,
+           profile="flat", tone=0.8)
+    b.rect(x0 - over, y, x1 + over, y + h, colour, texture=0.03, profile="cylinder")
+
+
+def ground_shadow(b, x0, x1, height, depth=0.6):
+    """The shadow a building casts on its ground, down and to the right of its foot, away from the light
+    at the top left: a soft dark patch, longer the taller it is."""
+    reach = min(18.0, 4 + height * 0.18)
+    b.poly([(x0 + 3, GROUND + 0.5), (x1 + DX * depth, GROUND + DY * depth + 0.5), (x1 + DX * depth + reach, GROUND + DY * depth + 3.5),
+            (x0 + 3 + reach * 0.6, GROUND + 4.5)], "#2e3a24", texture=0.0, profile="flat", tone=0.25)
+
+
 def steps(b, spans, stone, rise=4, depth=0.6, top=None):
     """Broad steps or a plinth, front and side, each `rise` high, one per span (x0, x1), widest first;
     `top` a colour for their treads (snow, moss), else their own stone."""
@@ -1276,31 +1320,32 @@ def emerald_spire(b):
     windows the green of the spectacles everyone here wears, poppies along its foot."""
     jade, green, gold, glow = "#8ccfa6", "#3a9a62", "#e8c050", "#c8ffb0"
     grounds(b, 10, 82, colour="#5f9a44", path=47)
-    for x0, x1 in ((14, 28), (66, 80)):                                          # the turrets, behind
+    ground_shadow(b, 14, 80, 90)
+    for x0, x1 in ((14, 28), (66, 80)):                                          # the turrets, behind: round
         cx = (x0 + x1) / 2
-        top = box(b, x0, x1, 36, jade, pattern="blocks", depth=0.45)
+        top = box(b, x0, x1, 36, jade, pattern="blocks", depth=0.45, curve=0.9)
         apex = (cx + 1, top - 20)
-        b.surface([(x0 - 2.5, top + 1), (x1 + 2.5, top + 1), apex], green, "shingles", tone=0.1)
+        b.surface([(x0 - 2.5, top + 1), (x1 + 2.5, top + 1), apex], green, "shingles", tone=0.1, curve=0.9)
         b.surface([(x1 + 2.5, top + 1), (x1 + 2.5 + DX * 0.45, top + 1 + DY * 0.45), apex], green, "shingles", tone=-0.3,
                   axes=(SIDEWAYS, DOWN))
         b.stroke([apex, (apex[0], apex[1] - 5)], 1.0, gold)
         b.ellipse(apex[0], apex[1] - 6, 1.5, 1.5, gold, gloss=0.6)
-        window(b, cx, top + 13, w=5, h=8, frame="#2e6a46", glass=glow, arched=True)
+        window(b, cx, top + 13, w=5, h=8, frame="#2e6a46", glass=glow, arched=True, deep=True)
     floor = steps(b, ((24, 70), (29, 65)), jade, top=shade(jade, 1.04))
     x0, x1 = 33, 61
     cx = (x0 + x1) / 2
-    top = box(b, x0, x1, 46, green, pattern="blocks", ground=floor, depth=0.5)
-    b.rect(x0 - 2, top - 1, x1 + 2, top + 3, gold, texture=0.03)                 # a gold band
-    b.rect(x0 - 1, floor - 26, x1 + 1, floor - 24, gold, texture=0.03)
+    top = box(b, x0, x1, 46, green, pattern="blocks", ground=floor, depth=0.5, curve=0.6)
+    ledge(b, x0, x1, top - 1, gold, green, h=3.5)                                 # gold bands, standing out
+    ledge(b, x0, x1, floor - 26, gold, green, h=2.2, over=1)
     for x in (x0 + 7, x1 - 7):
-        window(b, x, top + 11, w=5, h=9, frame="#2e6a46", glass=glow, arched=True)
+        window(b, x, top + 12, w=5, h=9, frame="#2e6a46", glass=glow, arched=True, deep=True)
     arc = [(cx + 9 * math.cos(a), floor - 18 + 9 - 9 * math.sin(a)) for a in np.linspace(0, math.pi, 13)]
-    b.poly([(cx + 9, floor)] + arc + [(cx - 9, floor)], jade, texture=0.04)
-    door(b, cx, w=13, h=17, colour="#c8962c", frame="#8a6a1e", ground=floor, knob="#fff0a0")
+    b.poly([(cx + 9, floor)] + arc + [(cx - 9, floor)], jade, texture=0.04, profile="dome")
+    door(b, cx, w=13, h=17, colour="#c8962c", frame="#8a6a1e", ground=floor, knob="#fff0a0", deep=True)
     ux0, ux1 = 37, 57                                                             # the upper tier
-    utop = box(b, ux0, ux1, 16, jade, pattern="blocks", ground=top - 1, depth=0.45)
-    window(b, (ux0 + ux1) / 2, utop + 8, w=6, h=7, frame="#2e6a46", glass=glow)
-    b.rect(ux0 - 2, utop - 1, ux1 + 2, utop + 2, gold, texture=0.03)
+    utop = box(b, ux0, ux1, 16, jade, pattern="blocks", ground=top - 1, depth=0.45, curve=0.7)
+    window(b, (ux0 + ux1) / 2, utop + 8, w=6, h=7, frame="#2e6a46", glass=glow, deep=True)
+    ledge(b, ux0, ux1, utop - 1, gold, jade, h=3)
     apex = facet_spire(b, ux0 - 1, ux1 + 1, utop - 1, 40, "#6ae896", "#1f8a4a", "#17703c")
     b.stroke([(ux0 + 2, utop - 3), (apex[0] - 0.5, apex[1] + 4)], 1.0, "#d8ffe0")   # a gleam up its edge
     b.stroke([apex, (apex[0], apex[1] - 3)], 1.2, gold)
@@ -1325,17 +1370,18 @@ def star_observatory(b):
     slate roof beside it, an arched door, lit windows, star crystals grown up by its wall."""
     stone, slate, night, brass = "#b8b0cc", "#4a4a7e", "#2a2e6e", "#d8a840"
     grounds(b, 10, 84, colour="#6a9a5a", stone="#a8a4c0", path=36)
+    ground_shadow(b, 18, 80, 60)
     wx0, wx1 = 54, 80                                                             # the wing, beside it
     wtop = box(b, wx0, wx1, 18, stone, pattern="rubble", depth=0.6)
     footing(b, wx0, wx1, colour="#857e98", depth=0.6)
     eaves_roof(b, wx0, wx1, wtop, slate, "shingles", rise=12, over=3, wall=stone, wall_pattern="rubble")
-    window(b, wx0 + 8, wtop + 9, w=6, h=7, glass="#ffe6a0", frame="#4a3a5e")
-    window(b, wx1 - 8, wtop + 9, w=6, h=7, glass="#ffe6a0", frame="#4a3a5e")
+    window(b, wx0 + 8, wtop + 9, w=6, h=7, glass="#ffe6a0", frame="#4a3a5e", deep=True)
+    window(b, wx1 - 8, wtop + 9, w=6, h=7, glass="#ffe6a0", frame="#4a3a5e", deep=True)
     x0, x1 = 18, 54
     cx = (x0 + x1) / 2
-    top = box(b, x0, x1, 34, stone, pattern="rubble", depth=0.6)
+    top = box(b, x0, x1, 34, stone, pattern="rubble", depth=0.6, curve=0.95)      # a round tower
     footing(b, x0, x1, colour="#857e98", depth=0.6)
-    b.rect(x0 - 2, top - 2, x1 + 2, top + 2, "#d4cce4", texture=0.03)             # the parapet ring
+    ledge(b, x0, x1, top - 2, "#d4cce4", stone, h=3.5, over=2)                    # the parapet ring
     dx, dy = cx + 2, top - 1                                                      # the dome
     rx, ry = 19.5, 19
     b.poly([(dx + rx * math.cos(a), dy - ry * math.sin(a)) for a in np.linspace(0, math.pi, 27)], night, profile="dome",
@@ -1351,9 +1397,9 @@ def star_observatory(b):
     b.stroke([(dx, dy - ry), (dx, dy - ry - 4)], 1.0, "#5a5470")                  # the crescent on its top
     b.ellipse(dx, dy - ry - 8, 3.4, 3.4, "#ffe08a", texture=0.0, profile="flat")
     b.ellipse(dx + 1.6, dy - ry - 8.8, 2.9, 2.9, "#3a3e7e", texture=0.0, profile="flat")
-    window(b, cx - 8, top + 12, w=5, h=8, frame="#4a3a5e", glass="#ffe6a0", arched=True)
-    window(b, cx + 8, top + 12, w=5, h=8, frame="#4a3a5e", glass="#ffe6a0", arched=True)
-    door(b, cx, w=10, h=15, colour="#4a3a6e", frame="#3a2e52")
+    window(b, cx - 8, top + 13, w=5, h=8, frame="#4a3a5e", glass="#ffe6a0", arched=True, deep=True)
+    window(b, cx + 8, top + 13, w=5, h=8, frame="#4a3a5e", glass="#ffe6a0", arched=True, deep=True)
+    door(b, cx, w=10, h=15, colour="#4a3a6e", frame="#3a2e52", deep=True)
     for x, h, w, colour in ((10, 20, 4.2, "#8ad8f0"), (15, 12, 3.0, "#c8a0f0"), (6, 11, 2.8, "#c8a0f0"),
                             (86, 14, 3.4, "#8ad8f0")):
         b.poly([(x - w, GROUND + 1), (x, GROUND + 1 - h), (x + w * 0.2, GROUND + 1)], shade(colour, 1.2), tone=0.85, gloss=0.3)
@@ -1369,8 +1415,11 @@ def moonwell(b):
     the water and a wisp lantern at each side, on a patch of grass with stones round it."""
     moon, deep, water = "#dadcf0", "#8a8eb8", "#78e0f0"
     grounds(b, 8, 84, colour="#6a9a5a", stone="#a8acc8")
+    ground_shadow(b, 14, 80, 50)
     for x, h, w in ((22, 30, 11), (72, 30, 11), (47, 46, 16)):                    # the arches, behind the pool
         top = GROUND - 6 - h
+        shadow = [(x + 1.6 + (w / 2) * math.cos(a), top + 1.4 + w / 2 - (w / 2) * math.sin(a)) for a in np.linspace(0, math.pi, 15)]
+        b.stroke(shadow, 3.6, shade(deep, 0.6))                                    # its shadow, behind
         for px in (x - w / 2, x + w / 2):
             b.poly([(px - 2, GROUND - 4), (px + 2, GROUND - 4), (px + 2, top + w / 2), (px - 2, top + w / 2)], moon,
                    texture=0.03, profile="cylinder")
@@ -1383,7 +1432,8 @@ def moonwell(b):
             b.ellipse(x + 2.2, top - 10, 3.8, 3.8, "#6a9a5a", texture=0.0, profile="flat")
     b.ellipse(47, GROUND - 1, 30, 9.5, deep, texture=0.04)                        # the basin and its pool
     b.ellipse(47, GROUND - 2.5, 27.5, 8, moon, texture=0.04)
-    b.ellipse(47, GROUND - 3, 23.5, 6.2, "#3ab8d0", texture=0.0, profile="flat")
+    b.ellipse(47, GROUND - 3, 24, 6.4, shade(deep, 0.62), texture=0.0, profile="flat")   # its far wall, inside, in shadow
+    b.ellipse(47, GROUND - 2.2, 23.5, 5.6, "#3ab8d0", texture=0.0, profile="flat")
     b.ellipse(46, GROUND - 3.6, 18, 4.4, water, texture=0.0, profile="flat", gloss=0.5)
     b.ellipse(43, GROUND - 4.4, 7, 1.6, "#e8ffff", texture=0.0, profile="flat")
     for x, y, h, colour in ((36, GROUND - 22, 9, "#8ad8f0"), (58, GROUND - 26, 8, "#c8a0f0"), (47, GROUND - 16, 6, "#a8f0ff")):
