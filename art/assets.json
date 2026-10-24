@@ -2354,6 +2354,22 @@
       "kind": "building"
     },
     {
+      "id": "warrior_guild",
+      "kind": "building"
+    },
+    {
+      "id": "wildfolk_lodge",
+      "kind": "building"
+    },
+    {
+      "id": "bell_tower",
+      "kind": "building"
+    },
+    {
+      "id": "gem_workshop",
+      "kind": "building"
+    },
+    {
       "id": "forest_lodge",
       "kind": "building",
       "request": {

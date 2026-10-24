@@ -515,12 +515,16 @@ local_de       | newgame,map=sunny_meadow,local=1,lang=de,hour=10,weather=clear 
 local_ja       | newgame,map=sunny_meadow,local=1,lang=ja,hour=10,weather=clear | 8
 # Places of their own (maps.json `buildings`, a step right and two rows behind whoever works there):
 # Briarmere's lakeside shrine (Liora's temple, tools/building_art.py), Ambrose's tower, Hermit Orrin's hut,
-# Dozywick's houses, Meadowbrook's guild hall and the Arcane Circle's tower, Prismhaven's plaza.
+# Dozywick's houses, Meadowbrook's three guilds (the Wildfolk Lodge, the Warrior Guild's hall, the Arcane
+# Circle's tower), Prismhaven's plaza; the Bell-Ringer's tower, the Gemcutter's workshop, Ondine's shrine.
 place_shrine   | newgame,level=140,map=rosen_lake,at=2_0,hour=10,weather=clear | 8
 place_tower    | newgame,level=60,map=goldburg_lake,at=2_0,hour=10,weather=clear | 8
 place_hermit   | newgame,level=55,map=puppet_hill,at=2_-6,hour=10,weather=clear | 8
 place_dozywick_land | newgame,level=75,map=sleepy_town,at=2_0,hour=10,weather=clear,landscape | 8
-place_guilds   | newgame,map=meadowbrook,at=-6_-9 | 8
+place_guilds   | newgame,map=meadowbrook,at=-9_-10 | 8
+place_bell_tower | newgame,level=44,map=valley_of_fear,at=-15_-10,weather=clear,hour=12 | 8
+place_gem_workshop | newgame,level=82,map=crystal_mountain,at=-20_-1,weather=clear,hour=12 | 8
+place_water_shrine | newgame,level=164,map=water_temple,at=-23_-4,weather=clear,hour=12 | 8
 place_plaza_land | newgame,map=rainbow_city,at=0_1,landscape | 8
 twilight     | newgame,level=40,map=twilight_woods                 | 15
 battle_big   | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,hp=0.3,map=genie_desert,battle=10 | 15

@@ -555,8 +555,13 @@
           "y": 5
         },
         {
-          "art": "guild_hall",
+          "art": "warrior_guild",
           "x": -8,
+          "y": -4
+        },
+        {
+          "art": "wildfolk_lodge",
+          "x": -14,
           "y": -4
         },
         {
@@ -581,8 +586,8 @@
         },
         {
           "art": "house",
-          "x": -14,
-          "y": -8
+          "x": -16,
+          "y": -10
         },
         {
           "art": "house",
@@ -663,11 +668,6 @@
           "art": "mushroom_house_blue",
           "x": 20,
           "y": -2
-        },
-        {
-          "art": "mushroom_house_gold",
-          "x": -15,
-          "y": -5
         },
         {
           "art": "bakery",
@@ -989,7 +989,7 @@
           "role": "guild",
           "classId": "tamer",
           "art": "npc_journeyman",
-          "x": -7,
+          "x": -15,
           "y": -6,
           "greeting": "The Wildfolk Lodge! We befriend beasts, not beat them. Well, mostly."
         },
@@ -6379,7 +6379,7 @@
           "y": -6
         },
         {
-          "art": "magic_tower",
+          "art": "bell_tower",
           "x": -14,
           "y": -6
         },
@@ -8648,7 +8648,7 @@
       ],
       "buildings": [
         {
-          "art": "magic_tower",
+          "art": "gem_workshop",
           "x": -19,
           "y": 3
         },
@@ -16707,8 +16707,8 @@
           "name": "Shrine-Keeper Ondine",
           "role": "quests",
           "art": "npc_shrinekeeper_ondine",
-          "x": -19,
-          "y": 7,
+          "x": -23,
+          "y": -1,
           "greeting": "Pilgrims rest here before they walk the drowned halls. Rest a while too."
         },
         {
@@ -16722,11 +16722,6 @@
         }
       ],
       "buildings": [
-        {
-          "art": "magic_tower",
-          "x": -18,
-          "y": 9
-        },
         {
           "art": "inn_teal",
           "x": -7,
