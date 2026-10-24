@@ -452,14 +452,17 @@ final class ContinentScene: SKScene {
         // Your companion keeps to ground it can stand on, never into water or through a wall.
         player.markFootstep()
         let standable: (CGPoint) -> Bool = { [unowned self] in self.store.isWalkable(Self.cell(at: $0)) }
+        // In a party (friends walking with you, or a party you've joined) your companion walks at your
+        // side, as theirs do at theirs (playtesting 2026-10-24); on your own, behind you.
+        let inParty = session.joinedParty != nil || allies.contains { $0.waiting == nil }
         if let follower {
-            follower.follow(player, dt: dt, footstep: player.footstep(behind: 36), canStand: standable)
+            follower.follow(player, dt: dt, footstep: player.footstep(behind: inParty ? 18 : 36), canStand: standable, beside: inParty)
             follower.zPosition = -follower.position.y
             follower.settle()
         }
         // Your friends line up behind you; those waiting for you turn to watch you come.
-        var leader: Walker = follower ?? player
-        var place = follower == nil ? 1 : 2
+        var leader: Walker = inParty ? player : follower ?? player
+        var place = inParty || follower == nil ? 1 : 2
         for ally in allies {
             if ally.waiting == nil {
                 let behind = CGFloat(place) * 36

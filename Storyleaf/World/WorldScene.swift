@@ -2289,9 +2289,12 @@ final class WorldScene: SKScene {
         // wall. Where their places beside you are blocked, they line up in your footsteps.
         player.markFootstep()
         let standable: (CGPoint) -> Bool = { self.canStand(at: $0) }
-        follower?.follow(player, dt: dt, footstep: player.footstep(behind: 36), canStand: standable)
-        var leader: Walker = follower ?? player
-        var place = follower == nil ? 1 : 2
+        // In a party (friends walking with you, or a party you've joined) your companion walks at your
+        // side, as theirs do at theirs (playtesting 2026-10-24); on your own, behind you.
+        let inParty = session.joinedParty != nil || allies.contains { $0.waiting == nil }
+        follower?.follow(player, dt: dt, footstep: player.footstep(behind: inParty ? 18 : 36), canStand: standable, beside: inParty)
+        var leader: Walker = inParty ? player : follower ?? player
+        var place = inParty || follower == nil ? 1 : 2
         for ally in allies {
             if ally.waiting == nil {
                 let behind = CGFloat(place) * 36
