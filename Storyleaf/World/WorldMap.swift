@@ -1820,9 +1820,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
         }
     }
 
-    /// Sets down the map's own buildings (a 3×2 footprint above the anchor, like the shops) where
-    /// maps.json puts them. One that would stand on a road, water, the town fence, a terrace's wall,
-    /// an NPC or another building (maps.json put some right on a street) moves to the nearest plot
+    /// Sets down the map's own buildings (a 3×2 footprint above the anchor, like the shops, or its own
+    /// `size`) where maps.json puts them. One that would stand on a road, water, the town fence, a
+    /// terrace's wall, an NPC or another building (maps.json put some right on a street) moves to the nearest plot
     /// that's clear, ring by ring, up to 8 cells away. A terrace's paved top is fine to build on.
     /// Out on the road, like in town: no tree or bush on an NPC's spot or in front of it (down the
     /// screen, toward you), where it would hide them. A boss is big, and the trees around it tall,
@@ -1869,9 +1869,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
     private func placeOwnBuildings() {
         let npcs = Set((def.npcs ?? []).filter { $0.summit == nil }.map { offset($0.x, $0.y) })
         let fence = Set(fenceCells)
-        func fits(_ anchor: GridPoint) -> Bool {
-            for dc in -1...1 {
-                for dr in 0...1 {
+        func fits(_ anchor: GridPoint, _ footprint: (columns: ClosedRange<Int>, rows: ClosedRange<Int>)) -> Bool {
+            for dc in footprint.columns {
+                for dr in footprint.rows {
                     let cell = GridPoint(col: anchor.col + dc, row: anchor.row + dr)
                     guard contains(cell), [.ground, .accent].contains(ground[cell.row][cell.col]),
                           !occupied.contains(cell), !fence.contains(cell), !npcs.contains(cell) else { return false }
@@ -1881,12 +1881,13 @@ nonisolated final class WorldMap: @unchecked Sendable {
         }
         for building in def.buildings ?? [] {
             let wanted = offset(building.x, building.y)
+            let footprint = building.footprint
             var plot: GridPoint?
             search: for radius in 0...8 {
                 for dr in -radius...radius {
                     for dc in -radius...radius where max(abs(dc), abs(dr)) == radius {
                         let candidate = GridPoint(col: wanted.col + dc, row: wanted.row + dr)
-                        if fits(candidate) {
+                        if fits(candidate, footprint) {
                             plot = candidate
                             break search
                         }
@@ -1894,8 +1895,8 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 }
             }
             guard let plot else { continue }
-            for dc in -1...1 {
-                for dr in 0...1 { occupy(GridPoint(col: plot.col + dc, row: plot.row + dr), blocking: true) }
+            for dc in footprint.columns {
+                for dr in footprint.rows { occupy(GridPoint(col: plot.col + dc, row: plot.row + dr), blocking: true) }
             }
             buildings.append((building.art, plot))
         }
@@ -2692,21 +2693,30 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// A bridge where the river crosses a road (`crossing`, the road's cells it covered): three
     /// lanes wide, straight over the river whichever way the tiles run across it more squarely
     /// (`line`, along its middle, says which way it runs there), and the road on either bank bent
-    /// to meet it squarely. False if it can't reach land in every lane.
+    /// to meet it squarely. Where it doesn't fit (the road only clips the water, as at the edge of
+    /// the pool round a river's spring), a few cells up or down the river from there. False if it
+    /// fits nowhere near.
     private func bridge(over crossing: [GridPoint], along line: [CGPoint]) -> Bool {
         guard !crossing.isEmpty, !line.isEmpty else { return false }
         let middle = CGPoint(x: crossing.map { CGFloat($0.col) + 0.5 }.reduce(0, +) / CGFloat(crossing.count),
                              y: crossing.map { CGFloat($0.row) + 0.5 }.reduce(0, +) / CGFloat(crossing.count))
         let nearest = line.indices.min { line[$0].distance(to: middle) < line[$1].distance(to: middle) } ?? 0
-        let from = line[max(0, nearest - 4)], to = line[min(line.count - 1, nearest + 4)]
-        // A river running east is crossed going north.
-        guard let bridge = span(.road, at: middle, northward: abs(to.x - from.x) >= abs(to.y - from.y), lanes: 3) else { return false }
-        meetRoad(bridge)
-        return true
+        for shift in [0, 2, -2, 4, -4, 6, -6] {
+            let index = nearest + shift
+            guard line.indices.contains(index) else { continue }
+            let from = line[max(0, index - 4)], to = line[min(line.count - 1, index + 4)]
+            // A river running east is crossed going north.
+            guard let bridge = span(.road, at: shift == 0 ? middle : line[index], northward: abs(to.x - from.x) >= abs(to.y - from.y),
+                                    lanes: 3) else { continue }
+            meetRoad(bridge)
+            return true
+        }
+        return false
     }
 
     /// A bridge `lanes` wide over the water from bank to bank, its lanes centred on `middle`,
-    /// laid (`lay`); nil if any lane doesn't reach land within 14 cells.
+    /// laid (`lay`); nil if any lane doesn't reach land within 14 cells, or has the water under it
+    /// for less than half its length.
     private func span(_ kind: Bridge.Kind, at middle: CGPoint, northward: Bool, lanes: Int) -> Bridge? {
         let first = Int(((northward ? middle.x : middle.y) - CGFloat(lanes) / 2).rounded())
         let origin = Int((northward ? middle.y : middle.x).rounded(.down))
@@ -2721,6 +2731,16 @@ nonisolated final class WorldMap: @unchecked Sendable {
         while start > origin - 16, water(start - 1) { start -= 1 }
         while end < origin + 16, water(end + 1) { end += 1 }
         guard end - start <= 14 else { return nil }
+        // Every lane over the water, not one of them with the rest of the deck on the bank: where
+        // Briarmere's road clipped the pool round its river's spring, its bridge lay along the pool's
+        // edge, over the snow (playtesting 2026-10-24).
+        for lane in first..<(first + lanes) {
+            let wet = (start...end).filter { along in
+                let cell = probe.cell(lane: lane, along: along)
+                return contains(cell) && ground[cell.row][cell.col] == .water
+            }.count
+            guard wet * 2 >= end - start + 1 else { return nil }
+        }
         for lane in first..<(first + lanes) {
             for along in [start - 1, end + 1] {
                 let cell = probe.cell(lane: lane, along: along)

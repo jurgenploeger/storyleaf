@@ -1123,14 +1123,23 @@ the Wishing Seal, which stays the Monster Book's last reward.
   - Us (since 0.4.12, playtesting 2026-10-12: "near the temple keeper and other guilds there should
     actually be something like a temple or building"): whoever works somewhere has it at their back, a
     step right and two rows behind them (maps.json `buildings`), so they stand at its door.
-    - Briarmere's Temple Keeper keeps a lakeside shrine: the stone arch with Liora's statue behind it.
+    - Briarmere's Temple Keeper keeps a lakeside shrine (`lake_shrine`, drawn in code by tools/building_art.py, 2026-10-24):
+      a little snowbound temple of pale stone on three steps, Liora's statue between its columns, a silver bell in its
+      pediment. It had been RD's town gate arch with her statue behind it, which read as a gateway, not a temple.
     - Ambrose the Wise has a tower, Hermit Orrin a mushroom hut, the Old Swan Keeper and Little Pig
       cottages, Mother Sheep a windmill, and Dozywick some houses.
-    - In Meadowbrook the Arcane Circle has its own tower beside the guild hall, which the Warrior
-      Guild and the Wildfolk Lodge share. The other towns' healers and shops stand at an inn's and a
-      shop's door, and Prismhaven's toymaker at a toy shop's.
-    - All existing art: new sprites (a real temple, a warrior hall, a lodge) were priced at $0.06 each
-      and turned down for now (2026-10-12).
+    - In Meadowbrook each guild has its own: the Warrior Guild a grand stone hall between two crenellated
+      towers with red banners, spears and a training dummy (`warrior_guild`), the Wildfolk Lodge a great log
+      lodge with antlers on its gable, a porch, a stable wing and a totem (`wildfolk_lodge`, Ranger Pip moved
+      across the lane to it), both drawn bigger than a house and standing on 5 × 3 cells; the Arcane Circle
+      RD's wizard tower. The
+      other towns' healers and shops stand at an inn's and a shop's door, and Prismhaven's toymaker at a toy
+      shop's.
+    - New sprites for them were priced at $0.06 each in RD and turned down (2026-10-12); since 2026-10-24
+      they're drawn in code by tools/building_art.py and held to docs/pixel-style.md's acceptance check:
+      the two guilds, Briarmere's shrine, a bell tower for Valley of Fear's Bell-Ringer and a gem workshop
+      for Crystal Mountain's Gemcutter (both had stood at the wizard tower), and Shrine-Keeper Ondine
+      moved from a wizard tower to the Tidewater Shrine's own water shrine.
   - Us (since 0.7.23, playtesting 2026-10-17: "in every map, create little villages or communities with
     characters and their own stories or quests, similar to runescape"): each land out in the fields has a
     village of its own a little way off its roads, the way RuneScape's lands have their hamlets. Two quest

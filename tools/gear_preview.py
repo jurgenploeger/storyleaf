@@ -1069,22 +1069,23 @@ def dressed(race, body, style, armour=None, worn=(), skin=None):
     # it (nape_*), the beard on top, or a hide cloak's hood, painted in its colour (`hood`).
     headwear = next((item for item in worn if item["type"] == "head" and item.get("headgear")), None)
     kind = (headwear or {}).get("headgear")
-    under, top, top_rules = [], [f"locks_{body}", f"hair_{style}_{body}"], [None, None]
+    under, back, top, top_rules = [], [], [f"locks_{body}", f"hair_{style}_{body}"], [None, None]
     if kind == "hood":
         top = [f"locks_{body}", f"hood_{body}"]
     elif kind:
-        under = [f"nape_{style}_{body}"]
+        # The nape under the head, and its back view over it: from behind, hair below the helmet.
+        under, back = [f"nape_{style}_{body}"], [f"napeback_{style}_{body}"]
         top, top_rules = [f"hat_{kind}_{race}", f"locks_{body}"], [tone + (headwear.get("tint") or []), None]
-    under, top = [array(load(n)) for n in under], [array(load(n)) for n in top]
+    under, back, top = [array(load(n)) for n in under], [array(load(n)) for n in back], [array(load(n)) for n in top]
     top_out = [pp.recolor(t, r) if r else t for t, r in zip(top, top_rules)]
     if sheet and armour.get("bareHead"):
         # A sheet with its head cut off (tools/wear_art.py BARE_HEADED): the hero's own head under
         # what's on it, the skin tone on the head, the armour's tint on the sheet.
         worn_sheet, head = array(load(sheet)), array(load(f"head_{body}"))
-        base = stacked(under + [worn_sheet, head] + top)
+        base = stacked(under + [worn_sheet, head] + back + top)
         sheet_rules = tone + (armour.get("tint") or [])
         out = stacked(under + [pp.recolor(worn_sheet, sheet_rules) if sheet_rules else worn_sheet,
-                               pp.recolor(head, tone) if tone else head] + top_out)
+                               pp.recolor(head, tone) if tone else head] + back + top_out)
         skeleton = f"body_{race}"
     elif sheet:
         nape, worn_sheet = array(load(f"nape_{style}_{body}")), array(load(sheet))
@@ -1094,10 +1095,10 @@ def dressed(race, body, style, armour=None, worn=(), skin=None):
         skeleton = f"body_{race}"
     else:
         bald = array(load(f"body_{body}"))
-        base = stacked(under + [bald] + top)
+        base = stacked(under + [bald] + back + top)
         # The skin tone and the armour's colours on the body only (GameSession.bodyRules).
         rules = tone + ((armour or {}).get("recolor") or [])
-        out = stacked(under + [pp.recolor(bald, rules) if rules else bald] + top_out)
+        out = stacked(under + [pp.recolor(bald, rules) if rules else bald] + back + top_out)
         if armour:
             out = apply(base, out, armour.get("wear"), armour.get("accent"), pattern=armour.get("pattern"))
         skeleton = f"body_{body}"

@@ -108,7 +108,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   round cottage, a teapot house, a garden cottage, and weapon, armour, tailor, flower, tea and book shops; and
   buildings that belong to a land: a pavilion tent, a bazaar stall and an onion-domed house for the deserts, a
   yurt for the steppe, a tree house, an acorn cottage, a bluebell house and a crystal cottage for Starfall
-  Isle's Glimmerbough (maps.json `buildings`). Walls
+  Isle's Glimmerbough (maps.json `buildings`); and Briarmere's lakeside shrine to Liora (`lake_shrine`), the Warrior Guild's hall and the Wildfolk Lodge,
+  a bell tower and a gem workshop. Not all one size: a grand building (`grand(160)`, the two guild halls) is
+  drawn on a bigger canvas, and maps.json gives it the room (building `size`, its footprint in cells). Walls
   and roofs are surfaces with a building material's pattern at the sprite's pixels (stone blocks, plaster,
   planks, clay tiles, thatch, slate); each is drawn in a 96-pixel frame's coordinates and scaled about its
   foot to fill it as RD's do (`fit`). Registered in art/assets.json with no `request`, placed by maps.json's
@@ -160,7 +162,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   in magenta that GearOverlay paints in the armour's colours). The game stacks them (`GameSession.layers`) and
   dyes every shade of the locks and hair (appearance.json `hairLayer`), never the body. Armour with a walk sheet
   of its own goes over `nape_<style>_<body>` (the hair from a fifth of the way down the head), so long hair
-  shows below the helmet; one that leaves the head bare (items.json `bareHead`, wear_art.py `BARE_HEADED`: every
+  shows below the helmet, and from behind `napeback_<style>_<body>` (its back view on the head) goes over the
+  bare head, so hair, not scalp, shows under a helmet; one that leaves the head bare (items.json `bareHead`, wear_art.py `BARE_HEADED`: every
   armour sheet, as the hat slot is what goes on the head) is cut off at the neck, the hero's `head_<body>`, locks and hair over it, and what's cut off is its hat
   (`hat_<kind>_<race>`, a hat item of its own: items.json `headgear`, the armour's `headpiece`). `TOWNSFOLK` sheets no hero wears are split too (`dwarf_npc`: the old bearded dwarf,
   his own mop as `hair_dwarf_npc`, a mouth drawn into his beard by `tools/character_art.py mouth`). The bald head is painted only inside the sprite as drawn (`_scalp`), so a

@@ -84,7 +84,9 @@ for race in classes["races"]:
     bodies = [(race["id"], race.get("art", "player_walk"))] + [
         (f"{race['id']}_{gender}", sheet) for gender, sheet in (race.get("sheets") or {}).items()]
     for body, sheet in bodies:
-        layers = [f"body_{body}", f"locks_{body}", f"hood_{body}", f"helmet_{body}"] + [f"hair_{style}_{body}" for style in every_style]
+        # Under a helmet: the hair below it (nape_) and its back view over the head (napeback_).
+        layers = [f"body_{body}", f"locks_{body}", f"hood_{body}", f"helmet_{body}"] + [
+            f"{kind}_{style}_{body}" for style in every_style for kind in ("hair", "nape", "napeback")]
         for layer in layers:
             check((ROOT / "art" / "sprites" / f"{layer}.png").exists(),
                   f"race {race['id']} → art/sprites/{layer}.png is missing (python3 tools/hero_layers.py)")
@@ -511,6 +513,11 @@ for map_def in maps.values():
     props += [b["art"] for b in map_def.get("buildings", [])] + [d["art"] for d in map_def.get("decor", [])]
     for art_id in tiles + props:
         check(art_id in art, f"map {map_def['id']} → unknown art {art_id}")
+    # A building's footprint (WorldMap.placeOwnBuildings): [across, back], a few cells each.
+    for b in map_def.get("buildings", []):
+        size = b.get("size", [3, 2])
+        check(isinstance(size, list) and len(size) == 2 and all(isinstance(v, int) and 1 <= v <= 8 for v in size),
+              f"map {map_def['id']} → building {b['art']}: size must be [across, back], 1 to 8 cells each")
     # A town's own gate (TownFence.place): a sprite drawn by tools/gate_art.py, laid out as the town gate is.
     if "gate" in town:
         gate = town["gate"]

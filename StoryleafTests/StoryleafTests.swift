@@ -782,11 +782,15 @@ struct ContentTests {
             #expect(map.buildings.count == (def.buildings ?? []).count, "map \(def.id) lost a building")
             // The map's own buildings and the shops along the streets: on plain ground or a terrace's
             // paved top, never on a road, and never on each other.
-            let houses = map.buildings.map { ($0.art, $0.anchor) } + map.lots.map { ($0.art, $0.anchor) }
+            // A building of its own takes its own footprint (`MapDef.Building.size`), a shop the 3 × 2.
+            let own = (def.buildings ?? []).map(\.footprint)
+            var houses: [(String, GridPoint, (columns: ClosedRange<Int>, rows: ClosedRange<Int>))] =
+                map.buildings.enumerated().map { ($0.element.art, $0.element.anchor, own[$0.offset]) }
+            houses += map.lots.map { ($0.art, $0.anchor, (columns: -1...1, rows: 0...1)) }
             var taken: Set<GridPoint> = []
-            for (art, anchor) in houses {
-                for dc in -1...1 {
-                    for dr in 0...1 {
+            for (art, anchor, footprint) in houses {
+                for dc in footprint.columns {
+                    for dr in footprint.rows {
                         let cell = GridPoint(col: anchor.col + dc, row: anchor.row + dr)
                         let ground = map.ground[cell.row][cell.col]
                         #expect(ground == .ground || ground == .accent, "map \(def.id): \(art) stands on \(ground) at \(cell)")
