@@ -1045,6 +1045,7 @@
         ]
       },
       "town": {
+        "gate": "gate_meadowbrook",
         "size": [
           80,
           60
@@ -4135,6 +4136,7 @@
         ]
       },
       "town": {
+        "gate": "gate_prismhaven",
         "size": [
           86,
           66
@@ -7081,6 +7083,7 @@
         ]
       },
       "town": {
+        "gate": "gate_ingothold",
         "size": [
           80,
           62
@@ -11796,6 +11799,7 @@
         ]
       },
       "town": {
+        "gate": "gate_larkspur",
         "size": [
           70,
           54

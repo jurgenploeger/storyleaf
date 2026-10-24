@@ -51,8 +51,8 @@ enum TownFence {
             }
         }
 
-        // Gates: the two ends of each gap where a road runs through, joined by an arch.
-        guard let arch = cropped(art.sprite("town_gate").texture.cgImage()) else { return }
+        // Gates: the two ends of each gap where a road runs through, joined by its arch (the town's own).
+        guard let arch = cropped(art.sprite(map.def.town?.gate ?? "town_gate").texture.cgImage()) else { return }
         var done: Set<GridPoint> = []
         for cell in cells where !done.contains(cell) {
             let links = [(1, 0), (0, 1), (-1, 0), (0, -1)].filter { has($0.0, $0.1, cell) }

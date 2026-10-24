@@ -2035,6 +2035,22 @@
       }
     },
     {
+      "id": "gate_meadowbrook",
+      "kind": "building"
+    },
+    {
+      "id": "gate_prismhaven",
+      "kind": "building"
+    },
+    {
+      "id": "gate_ingothold",
+      "kind": "building"
+    },
+    {
+      "id": "gate_larkspur",
+      "kind": "building"
+    },
+    {
       "id": "adobe_house",
       "kind": "building",
       "request": {

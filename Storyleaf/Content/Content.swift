@@ -820,6 +820,9 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let size: [Int]?
         /// What its wall is: "stone" a city's, with towers; else a village's picket fence.
         let walls: String?
+        /// Its own gate over the roads through its wall (art id, `tools/gate_art.py`); else the town gate
+        /// quests' gates across borders have.
+        let gate: String?
         /// Straight streets as [x1, y1, x2, y2] offsets from the centre.
         let streets: [[Int]]?
         /// Radius of the cobbled plaza in the middle.

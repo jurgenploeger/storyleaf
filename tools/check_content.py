@@ -511,6 +511,11 @@ for map_def in maps.values():
     props += [b["art"] for b in map_def.get("buildings", [])] + [d["art"] for d in map_def.get("decor", [])]
     for art_id in tiles + props:
         check(art_id in art, f"map {map_def['id']} → unknown art {art_id}")
+    # A town's own gate (TownFence.place): a sprite drawn by tools/gate_art.py, laid out as the town gate is.
+    if "gate" in town:
+        gate = town["gate"]
+        check(gate in art and (ROOT / "art" / "sprites" / f"{gate}.png").exists(),
+              f"map {map_def['id']} → its gate {gate} has no sprite (python3 tools/gate_art.py)")
     for npc in map_def.get("npcs", []):
         check(npc["art"] in art, f"npc {npc['id']} → unknown art {npc['art']}")
         # A boss's lair (LandPlanner.planLair): pieces round it, its way in to the south kept clear.

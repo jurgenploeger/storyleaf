@@ -141,6 +141,14 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   lining the way in; `lairSign`, a warning by its trail near where it starts. Its ground is kept for it before
   hills, lakes or trees (`WorldMap.reserveLair`, `isFreeForLair`). Bosses stand at a land's edge or coast at a
   trail's end, on a summit, or in a cave; `check_content.py` keeps the way in clear.
+- `tools/city_wall_art.py`: a city's stone wall and round towers (`city_wall`, `city_tower`, placed by
+  `TownFence.place` for town `walls: "stone"`), drawn as the town gate's rubble is, graded with the map's palette.
+  The wall is one cell's stretch that tiles side to side. `--sheet out.png` previews them.
+- `tools/gate_art.py`: each town's own gate over its roads (maps.json town `gate`: Meadowbrook's thatched
+  lychgate, Prismhaven's crystal keystone, Ingothold's gold and red cloth, Larkspur's bluebird); quests'
+  gates across borders keep RD's `town_gate`. Each is laid out as `town_gate` is (`TownFence.widened` spans a
+  wide road by its parts: pillars, the lintel at rows 2 to 11 repeated from x 14 to 25, what hangs in the
+  middle); the tool checks that. `--sheet out.png` shows each as drawn and widened.
 - `tools/critter_art.py`: the critters (`ambience.critters`) and the birds crossing the sky, as PNGs
   (`art/sprites/critter_<name>.png`, loaded by `CritterArt.drawn`; one missing is drawn in Swift as before): the
   same shapes and sizes as `Critters.swift`, lit from the top left and outlined in a deep shade of each part.
