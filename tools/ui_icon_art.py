@@ -88,14 +88,31 @@ def draw_sword(ic):
     ic.flare(0.84, 0.14, 0.16, GOLD, strength=0.8)
 
 
+def sparkle_points(cx, cy, r, bulk=0.62, n=120):
+    """A four-pointed sparkle with curved sides, full in the middle (the ✨ shape): a superellipse
+    |x|^p + |y|^p = r^p, its sides bowing in more the smaller `bulk` (p) is."""
+    out = []
+    for k in range(n):
+        t = 2 * math.pi * k / n
+        c, s_ = math.cos(t), math.sin(t)
+        out.append((cx + r * math.copysign(abs(c) ** (2 / bulk), c), cy + r * math.copysign(abs(s_) ** (2 / bulk), s_)))
+    return out
+
+
+# The sparkles' gold, a shade deeper at its rim than the skills' light, so it holds its shape on a
+# cream button.
+AMBER = light("#c26a06", "#f2a30d", "#ffd640", "#fff8d0")
+
+
 def draw_sparkles(ic):
-    # Skills: three stars of light, gold, sky and rose.
-    ic.flare(0.4, 0.56, 0.36, GOLD, strength=1.0)
-    ic.body(ic.poly(star_points(0.4, 0.56, 0.24, 0.06, 4), blur=0.003), GOLD, 0.38, 0.54, 0.22, shadow=True)
-    ic.flare(0.74, 0.24, 0.2, CYAN, strength=0.9)
-    ic.body(ic.poly(star_points(0.74, 0.24, 0.13, 0.035, 4), blur=0.002), CYAN, 0.73, 0.23, 0.12)
-    ic.flare(0.76, 0.76, 0.16, LIGHTS["dark"], strength=0.7)
-    ic.body(ic.poly(star_points(0.76, 0.76, 0.1, 0.03, 4), blur=0.002), PINK, 0.75, 0.75, 0.1)
+    # Skills: three sparkles of light, gold, sky and rose, full-bodied with curved sides (playtesting
+    # 2026-10-24: thin four-pointed stars had no body and washed out on the buttons).
+    ic.flare(0.4, 0.56, 0.4, GOLD, strength=0.9)
+    ic.body(ic.poly(sparkle_points(0.4, 0.56, 0.34), blur=0.003), AMBER, 0.36, 0.5, 0.3)
+    ic.flare(0.76, 0.22, 0.2, CYAN, strength=0.8)
+    ic.body(ic.poly(sparkle_points(0.76, 0.22, 0.17), blur=0.002), BLUE, 0.74, 0.2, 0.15)
+    ic.flare(0.78, 0.78, 0.16, LIGHTS["dark"], strength=0.6)
+    ic.body(ic.poly(sparkle_points(0.78, 0.78, 0.13), blur=0.002), PINK, 0.76, 0.76, 0.12)
 
 
 def draw_backpack(ic):
