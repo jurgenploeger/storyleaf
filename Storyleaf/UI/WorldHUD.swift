@@ -33,16 +33,13 @@ struct WorldHUD: View {
                 }
                 CalendarPlate(session: session)
                     .allowsHitTesting(false)
-                // A land's name as you walk in, under the panels on both sides, across the middle.
-                if let name = session.landBanner {
-                    LandBanner(name: name)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 10)
-                        .allowsHitTesting(false)
-                        .transition(.opacity)
-                }
+                // What just happened, top centre under the panels on both sides (walking into a land
+                // too: its toast, no banner of its own; playtesting 2026-10-24).
+                GameToasts(lines: session.log)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 10)
+                    .allowsHitTesting(false)
             }
-            .animation(.easeInOut(duration: 0.6), value: session.landBanner)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
             VStack(alignment: .trailing, spacing: 6) {
@@ -59,8 +56,6 @@ struct WorldHUD: View {
                 )
                 .coachTarget(.minimap)
                 SavedBadge(lastSaved: session.lastSaved)
-                GameToasts(lines: session.log)
-                    .allowsHitTesting(false)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
 
@@ -446,31 +441,11 @@ private struct CalendarPlate: View {
     }
 }
 
-/// Fairyland Online's yellow system messages, fading after a few seconds. The game's announcements stand
-/// out on banners of their own.
-/// A land's name, big and gold on a dark plate, as you walk into it.
-private struct LandBanner: View {
-    let name: String
-
-    var body: some View {
-        Text(name)
-            .font(HUDStyle.mono(18))
-            .foregroundStyle(HUDStyle.gold)
-            .shadow(color: .black, radius: 0, x: 1, y: 1)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 6)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(HUDStyle.ink.opacity(0.75))
-                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(HUDStyle.gold.opacity(0.75), lineWidth: 1))
-            )
-    }
-}
-
-/// What just happened (EXP and gold won, an item found, a quest's step, the game's announcements):
-/// small black toasts under the minimap, each for a few seconds, three at most, newest last; then
-/// they live in the chat (`GameSession.post`; playtesting 2026-10-24: Fairyland Online's yellow lines
-/// piled up in the top-left corner).
+/// What just happened (EXP and gold won, an item found, a quest's step, the land you walk into, the
+/// game's announcements): toasts in the battle's style (`ToastLabel`), top centre, each for a few
+/// seconds, three at most, newest last; then they live in the chat (`GameSession.post`; playtesting
+/// 2026-10-24: Fairyland Online's yellow lines piled up in the top-left corner, then black pills with
+/// icons down the right, unlike the battle's).
 private struct GameToasts: View {
     let lines: [GameSession.LogLine]
     /// How long each shows.
@@ -479,32 +454,16 @@ private struct GameToasts: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 0.5)) { context in
             let showing = Array(lines.filter { context.date.timeIntervalSince($0.time) < Self.shown }.suffix(3))
-            VStack(alignment: .trailing, spacing: 4) {
+            VStack(spacing: 4) {
                 ForEach(showing) { line in
-                    toast(line)
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                    ToastLabel(text: line.text)
+                        .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
             .animation(.spring(response: 0.35, dampingFraction: 0.85), value: showing.map(\.id))
         }
-        // Clear of the top-left column (`TopLeft.width`) on the narrowest phones: a long one wraps.
-        .frame(maxWidth: 160, alignment: .trailing)
-    }
-
-    private func toast(_ line: GameSession.LogLine) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            IconImage(ChatLineView.icon(of: line.kind), size: 11)
-                .foregroundStyle(ChatLineView.color(of: line.kind))
-            Text(line.text)
-                .font(HUDStyle.font(11))
-                .foregroundStyle(line.kind == .announcement ? HUDStyle.gold : .white)
-                .lineLimit(3)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(RoundedRectangle(cornerRadius: 12).fill(.black.opacity(0.82)))
-        .shadow(color: .black.opacity(0.3), radius: 3, y: 1)
+        // As wide as the battle's line runs at most: a long one wraps to two.
+        .frame(maxWidth: 300)
     }
 }
 

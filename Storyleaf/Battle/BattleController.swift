@@ -1101,7 +1101,7 @@ final class BattleController {
                               exp: rewardEXP, gold: rewardGold, loot: found, levelsGained: levelsGained,
                               others: othersLevelled, story: outcome == .victory ? story : nil, newCards: newCards)
         let won = outcome == .victory || outcome == .fled
-        // The log gets it all in words; the result card shows the pay as icons.
+        // The chat gets it all in words; the result card shows the pay as icons, so no toasts.
         var logged = lines
         var pay: [String] = []
         if rewardEXP > 0 { pay.append(L("+{exp} EXP", ["exp": rewardEXP])) }
@@ -1111,7 +1111,7 @@ final class BattleController {
             let name = session.content.item(item.id)?.name ?? item.id
             logged.append(item.count > 1 ? L("Found {item} ×{count}!", ["item": name, "count": item.count]) : L("Found {item}!", ["item": name]))
         }
-        for line in logged { session.post(line, won ? .reward : .battle) }
+        for line in logged { session.post(line, won ? .reward : .battle, toast: false) }
         MusicPlayer.shared.play(won ? "victory" : nil)
         if outcome == .defeat { SoundEffects.shared.play(.lose) }
         guard newLevel != nil || !othersLevelled.isEmpty else {

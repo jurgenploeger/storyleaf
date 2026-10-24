@@ -52,9 +52,6 @@ final class GameSession {
     var data: SaveData
     /// Name of the map the player is on, for the HUD.
     var mapName = ""
-    /// A land's name for a few seconds after you walk into it, shown under the HUD's top panels
-    /// (`WorldHUD`), where it can't end up behind them.
-    var landBanner: String?
     /// NPC close enough to talk to, for the HUD's Talk button.
     var nearbyNPC: String?
     /// The tile the hero stands on, for the minimap.
@@ -160,9 +157,13 @@ final class GameSession {
     /// Something that just happened (`LogLine`): a toast on the map for a few seconds (`WorldHUD`),
     /// then kept in the chat (playtesting 2026-10-24: it piled up in the top-left corner). Seen as it
     /// toasts, so it doesn't count as unread; an announcement is in the chat already (`announce`).
-    func post(_ text: String, _ kind: LogLine.Kind = .system) {
-        log.append(LogLine(text: text, kind: kind))
-        if log.count > 12 { log.removeFirst(log.count - 12) }
+    /// `toast: false` for what a window has just shown (a battle's pay, on its result card): only
+    /// the chat keeps it (playtesting 2026-10-24).
+    func post(_ text: String, _ kind: LogLine.Kind = .system, toast: Bool = true) {
+        if toast {
+            log.append(LogLine(text: text, kind: kind))
+            if log.count > 12 { log.removeFirst(log.count - 12) }
+        }
         guard kind != .announcement else { return }
         chat.append(ChatLine(speaker: "", text: text, kind: .notice, tone: kind))
         if chat.count > 80 { chat.removeFirst(chat.count - 80) }

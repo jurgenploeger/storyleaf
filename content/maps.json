@@ -5021,7 +5021,7 @@
             "shadow": true
           },
           {
-            "art": "pine_sapling",
+            "art": "snow_sapling",
             "count": 471,
             "blocking": true,
             "cluster": 6,
@@ -16046,7 +16046,7 @@
             "shadow": true
           },
           {
-            "art": "pine_sapling",
+            "art": "snow_sapling",
             "count": 250,
             "blocking": true,
             "cluster": 6,

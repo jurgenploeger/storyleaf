@@ -3038,11 +3038,16 @@ struct RulesTests {
         #expect(session.chat.last?.kind == .notice)
         #expect(session.chat.last?.tone == .reward)
         #expect(session.unreadChat == 0)
+        #expect(session.log.last?.text == "+120 EXP  +40 gold")
+        // A battle's pay, shown on its result card, goes to the chat without a toast.
+        session.post("Found Copper Gauntlets!", .reward, toast: false)
+        #expect(session.chat.last?.text == "Found Copper Gauntlets!")
+        #expect(session.log.last?.text == "+120 EXP  +40 gold")
         session.announce("Dawn breaks over Storyleaf.")
         // An announcement is in the chat once, not again as a notice.
         #expect(session.chat.filter { $0.text == "Dawn breaks over Storyleaf." }.count == 1)
         session.startChat(on: "Ingothold")
-        #expect(session.chat.map(\.kind) == [.notice, .announcement, .system])
+        #expect(session.chat.map(\.kind) == [.notice, .notice, .announcement, .system])
     }
 
     @Test func aRareSightingMakesItTurnUpMoreOften() throws {
@@ -3099,7 +3104,8 @@ struct RulesTests {
     /// Armour with a walk sheet of its own leaves the head bare (playtesting 2026-10-21: "any armor
     /// that shows a hat should have that as a hat item"): a woman in plate keeps her own head and
     /// hair. Its helm, a hat of its own, goes over her hairstyle from a fifth of the way down the head
-    /// (`nape_*`), dyed her colour, so a ponytail still shows below it.
+    /// (`nape_*`), dyed her colour, so a ponytail still shows below it; from behind its back view on
+    /// the head (`napeback_*`) covers the scalp under the helm.
     @Test func armourSheetsKeepTheHerosHair() throws {
         let content = Content.shared
         let plate = try #require(content.item("iron_plate"))
@@ -3111,8 +3117,10 @@ struct RulesTests {
         let bare = GameSession.layers(race: race, look: look, armor: plate)
         #expect(bare.map(\.id) == [sheet, "head_human_female", "locks_human_female", "hair_\(style)_human_female"])
         let helmed = GameSession.layers(race: race, look: look, armor: plate, hat: helm)
-        #expect(helmed.map(\.id) == ["nape_\(style)_human_female", sheet, "head_human_female", "hat_iron_plate_human", "locks_human_female"])
+        #expect(helmed.map(\.id) == ["nape_\(style)_human_female", sheet, "head_human_female", "napeback_\(style)_human_female",
+                                     "hat_iron_plate_human", "locks_human_female"])
         #expect(helmed.first?.recolor?.isEmpty == false)
+        #expect(helmed[3].recolor?.isEmpty == false)
         for layer in bare + helmed { #expect(ArtLibrary.shared.artImage(layer.id) != nil, "art/sprites/\(layer.id).png is missing") }
         // Every armour that drew something on the head has a hat for it, whose art is there for every race.
         for armour in content.items where armour.type == .armor && (armour.sheets != nil || armour.wear == "cloak") {

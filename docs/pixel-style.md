@@ -210,6 +210,12 @@ Snow is RD's own colours (`scenery_art.SNOW`, from its `snow_tree`): white, pale
 outlined in a deep blue-grey. A near-white base on a ramp turns grey, so it's drawn in a key colour and laid
 on these after (`snow_palette`). Snow lies in soft clumps, never in a strip along an edge.
 
+On a snow land anything without snow on it reads dark (playtesting 2026-10-24: "these small dark trees
+don't look so nice"): the land's palette pushes every dark shade toward deep blue, and on pale snow a
+plant's stems and outline come out a navy splat. Give a cold land's plants snow of their own, in RD's
+whites as its snow pine has them (`scenery_art.snow_conifer`, `snow_sapling`), or a recolour that lifts
+their dark shades first (`frost_fern`: a rule for the darks, `maxValue` 0.45, before the rest).
+
 ### Buildings
 
 RD's buildings have a band set of their own (`--kind building`, the 29 RD drew): a 96-pixel house holds

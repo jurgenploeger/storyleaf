@@ -72,17 +72,9 @@ struct BattleView: View {
         .allowsHitTesting(false)
     }
 
-    /// One slim line of what just happened, or two when it's long.
+    /// One slim line of what just happened, or two when it's long: a toast, as on the map.
     private var logLine: some View {
-        Text(controller.message)
-            .font(HUDStyle.font(12))
-            .foregroundStyle(HUDStyle.cream)
-            .multilineTextAlignment(.center)
-            .lineLimit(2)
-            .minimumScaleFactor(0.75)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 6)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(HUDStyle.ink.opacity(0.78)))
+        ToastLabel(text: controller.message)
     }
 
     /// The commands bottom right; over a list or while picking a target, the time left to choose
