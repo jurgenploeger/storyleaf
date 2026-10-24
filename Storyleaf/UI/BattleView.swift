@@ -327,7 +327,8 @@ private struct CommandPad: View {
 
     private var pad: some View {
         let (main, column, more) = sections
-        let shown = showMore ? more + Self.paceIDs : column
+        // While More's open its panel takes their place.
+        let shown = showMore ? [] : column
         return ThumbArc {
             if let main {
                 button(main, size: mainSize)
@@ -337,22 +338,14 @@ private struct CommandPad: View {
             // Left of the big button first, then up and to the left, then on round a wider arc
             // (slot 3, straight up, is More's).
             ForEach(Array(shown.enumerated()), id: \.element) { index, id in
-                Group {
-                    if Self.paceIDs.contains(id) {
-                        paceButton(id)
-                    } else {
-                        button(id, size: buttonSize)
-                    }
-                }
-                .layoutValue(key: ArcSlot.self, value: index < 2 ? index + 1 : index + 2)
-                .transition(.scale(scale: 0.2).combined(with: .opacity))
+                button(id, size: buttonSize)
+                    .layoutValue(key: ArcSlot.self, value: index < 2 ? index + 1 : index + 2)
+                    .transition(.scale(scale: 0.2).combined(with: .opacity))
             }
-            // More sits straight above the big button, always in the same spot.
-            RoundCommandButton(title: showMore ? L("Close") : L("More"), icon: showMore ? .close : .more, size: buttonSize,
-                               tint: .quiet, onHold: arrange) {
-                showMore.toggle()
-            }
-            .layoutValue(key: ArcSlot.self, value: 3)
+            // More sits straight above the big button, always in the same spot, and opens there.
+            MoreMenu(controller: controller, commands: more + Self.paceIDs, open: $showMore, size: buttonSize,
+                     onPick: perform, onHold: arrange)
+                .layoutValue(key: ArcSlot.self, value: 3)
         }
         .padding(.leading, 14)
         .animation(.spring(response: 0.38, dampingFraction: 0.72), value: showMore)
@@ -363,24 +356,6 @@ private struct CommandPad: View {
     private func arrange() {
         showMore = false
         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { editing = controller.session.battleButtons }
-    }
-
-    /// Auto and the fight's pace (1× or 2×), lit while on and kept for the next fights (Settings
-    /// has them too). Auto is faded where it can't play (a boss, a duel, monsters too strong for
-    /// it) and says why when tapped.
-    private func paceButton(_ id: String) -> some View {
-        let isAuto = id == "auto"
-        let fast = controller.speed > 1
-        let on = isAuto ? controller.isAuto : fast
-        return RoundCommandButton(title: isAuto ? L("Auto") : L("Pace"), icon: isAuto ? .paw : .wind, size: buttonSize,
-                                  tint: on ? .lit : .normal, text: isAuto ? L("AUTO") : (fast ? "2×" : "1×")) {
-            SoundEffects.shared.play(.tap, volume: 0.7)
-            if isAuto { controller.toggleAuto() } else { controller.toggleSpeed() }
-        }
-        .opacity(isAuto && !controller.isAuto && !controller.canAuto ? 0.5 : 1)
-        .accessibilityLabel(isAuto
-                            ? (controller.isAuto ? L("Auto is on. Tap to choose yourself.") : L("Auto: fight on your own."))
-                            : (fast ? L("Battle speed: double. Tap for normal.") : L("Battle speed: normal. Tap for double.")))
     }
 
     // MARK: Rearranging
@@ -533,6 +508,132 @@ private struct CommandPad: View {
         case "capture": controller.capture()
         default: break
         }
+    }
+}
+
+/// More, straight above the big button: a round button that, tapped, grows up and to the left into a
+/// panel listing what waits behind it (the commands put there, then Auto and the fight's pace), its
+/// dots turning into a cross that closes it, as the map's menu does (playtesting 2026-10-24: it
+/// scattered more round buttons over the arc). It takes only the button's room. Holding it
+/// rearranges the buttons.
+private struct MoreMenu: View {
+    let controller: BattleController
+    let commands: [String]
+    @Binding var open: Bool
+    let size: CGFloat
+    let onPick: (String) -> Void
+    let onHold: () -> Void
+
+    private static let width: CGFloat = 176
+    private static let spring = Animation.spring(response: 0.34, dampingFraction: 0.78)
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 0) {
+            if open {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(Array(commands.enumerated()), id: \.element) { index, id in
+                        row(id)
+                            // One after another up from the button as it opens.
+                            .transition(.asymmetric(
+                                insertion: .offset(y: 14).combined(with: .opacity)
+                                    .animation(Self.spring.delay(Double(commands.count - 1 - index) * 0.035)),
+                                removal: .opacity.animation(.easeOut(duration: 0.12))))
+                    }
+                }
+                .padding(.top, 8)
+                .padding(.horizontal, 4)
+            }
+            PressButton(action: {
+                SoundEffects.shared.play(.tap, volume: 0.7)
+                open.toggle()
+            }, onHold: onHold) {
+                Group {
+                    if open {
+                        IconImage(.close, size: size * 0.4)
+                    } else {
+                        IconImage(.more, size: size * 0.56)
+                            .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
+                    }
+                }
+                .foregroundStyle(.white)
+                .frame(width: size, height: size)
+            }
+            .accessibilityLabel(open ? L("Close") : L("More"))
+        }
+        .frame(width: open ? Self.width : size, alignment: .trailing)
+        .background(
+            RoundedRectangle(cornerRadius: open ? 16 : size / 2, style: .continuous)
+                .fill(LinearGradient(colors: HUDStyle.tile, startPoint: .top, endPoint: .bottom))
+                .overlay(RoundedRectangle(cornerRadius: open ? 16 : size / 2, style: .continuous)
+                    .strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
+                .overlay(alignment: .bottomTrailing) {
+                    // The button's gloss; none on the cross.
+                    Ellipse().fill(.white.opacity(open ? 0 : 0.35))
+                        .frame(width: size * 0.5, height: size * 0.2)
+                        .padding(.bottom, size * 0.7)
+                        .padding(.trailing, size * 0.25)
+                }
+        )
+        .shadow(color: .black.opacity(0.4), radius: 4, x: 0, y: 4)
+        .overlay(alignment: .bottomTrailing) {
+            if !open {
+                Text(L("More"))
+                    .font(HUDStyle.font(10))
+                    .foregroundStyle(HUDStyle.cream)
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
+                    .fixedSize()
+                    .frame(width: size)
+                    .offset(y: 15)
+            }
+        }
+        .animation(Self.spring, value: open)
+        .frame(width: size, height: size, alignment: .bottomTrailing)
+    }
+
+    private func row(_ id: String) -> some View {
+        let isAuto = id == "auto", isPace = id == "pace"
+        let fast = controller.speed > 1
+        let info = BattleCommand(id)
+        let healing = id == "items" && controller.needsHealing
+        return Button {
+            SoundEffects.shared.play(.tap, volume: 0.7)
+            if isPace {
+                // The pace stays open to see it change.
+                controller.toggleSpeed()
+            } else {
+                open = false
+                if isAuto { controller.toggleAuto() } else { onPick(id) }
+            }
+        } label: {
+            HStack(spacing: 9) {
+                IconImage(isAuto ? .paw : isPace ? .wind : healing ? .heartPlus : info.icon, size: 24)
+                Text(isAuto ? L("Auto") : isPace ? L("Pace") : info.title)
+                    .font(HUDStyle.font(13))
+                    .foregroundStyle(healing ? HUDStyle.green : id == "capture" ? HUDStyle.gold : .white)
+                    .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Spacer(minLength: 0)
+                if isPace {
+                    Text(fast ? "2×" : "1×")
+                        .font(HUDStyle.font(13))
+                        .foregroundStyle(fast ? HUDStyle.gold : HUDStyle.cream)
+                } else if isAuto, controller.isAuto {
+                    IconImage(.check, size: 14).foregroundStyle(HUDStyle.gold)
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressScaleStyle())
+        // Auto is faded where it can't play (a boss, a duel, monsters too strong for it) and says why
+        // when tapped.
+        .opacity(isAuto && !controller.isAuto && !controller.canAuto ? 0.5 : 1)
+        .accessibilityLabel(isAuto
+                            ? (controller.isAuto ? L("Auto is on. Tap to choose yourself.") : L("Auto: fight on your own."))
+                            : isPace ? (fast ? L("Battle speed: double. Tap for normal.") : L("Battle speed: normal. Tap for double."))
+                            : info.title)
     }
 }
 
@@ -822,10 +923,13 @@ struct RoundCommandButton: View {
         case .primary: [Color(red: 1, green: 0.62, blue: 0.45), Color(red: 0.9, green: 0.3, blue: 0.3)]
         case .special, .lit: [Color(red: 1, green: 0.92, blue: 0.55), Color(red: 0.98, green: 0.68, blue: 0.2)]
         case .heal: [Color(red: 0.8, green: 1, blue: 0.75), Color(red: 0.3, green: 0.78, blue: 0.4)]
-        case .normal: [.white, HUDStyle.cream, Color(red: 0.86, green: 0.78, blue: 0.64)]
-        case .quiet: [Color(red: 0.42, green: 0.36, blue: 0.56), HUDStyle.ink]
+        case .normal, .quiet: HUDStyle.tile
         }
     }
+
+    /// The HUD's own glossy blue, top to bottom, in its bevel (`FLIconButton`): the everyday
+    /// commands and More, not cream (playtesting 2026-10-24: "the light yellow doesn't work").
+    private var isBlue: Bool { tint == .normal || tint == .quiet }
 
     /// Buttons that want attention pulse with a coloured glow.
     private var glow: Color? {
@@ -836,11 +940,27 @@ struct RoundCommandButton: View {
         }
     }
 
+    /// A light button (gold, green), its icon on a pale ground.
+    private var isLight: Bool {
+        switch tint {
+        case .special, .heal, .lit: true
+        case .primary, .normal, .quiet: false
+        }
+    }
+
     private var foreground: Color {
         switch tint {
-        case .primary, .quiet: .white
-        case .normal, .special, .heal, .lit: HUDStyle.ink
+        case .primary, .normal, .quiet: .white
+        case .special, .heal, .lit: HUDStyle.ink
         }
+    }
+
+    /// Under an icon: on the blue, the HUD buttons' hard dark blue edge; on a light button a crisp
+    /// warm shadow (a soft dark rim round it looked muddy there).
+    private var iconShadow: (color: Color, radius: CGFloat) {
+        if isBlue { return (HUDStyle.frameDark, 0) }
+        if isLight { return (Color(red: 0.43, green: 0.28, blue: 0.16).opacity(0.4), 0.4) }
+        return (.clear, 0)
     }
 
     var body: some View {
@@ -853,7 +973,10 @@ struct RoundCommandButton: View {
                         .minimumScaleFactor(0.6)
                         .padding(.horizontal, 4)
                 } else {
-                    IconImage(icon, size: size * 0.4)
+                    // Big: drawn as light, the icons washed out on the cream buttons at two fifths
+                    // of them (playtesting 2026-10-24).
+                    IconImage(icon, size: size * 0.56)
+                        .shadow(color: iconShadow.color, radius: iconShadow.radius, x: isBlue ? 1 : 0, y: 1)
                 }
                 if size >= 80 {
                     Text(title).font(HUDStyle.font(12))
@@ -863,8 +986,10 @@ struct RoundCommandButton: View {
             .frame(width: size, height: size)
             .background(
                 Circle()
-                    .fill(RadialGradient(colors: colors, center: UnitPoint(x: 0.35, y: 0.3), startRadius: 1, endRadius: size * 0.75))
-                    .overlay(Circle().strokeBorder(.white.opacity(tint == .quiet ? 0.35 : 0.75), lineWidth: 2))
+                    .fill(isBlue ? AnyShapeStyle(LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom))
+                                 : AnyShapeStyle(RadialGradient(colors: colors, center: UnitPoint(x: 0.35, y: 0.3), startRadius: 1, endRadius: size * 0.75)))
+                    .overlay(Circle().strokeBorder(isBlue ? AnyShapeStyle(HUDStyle.bevel) : AnyShapeStyle(Color.white.opacity(0.75)),
+                                                   lineWidth: isBlue ? 2.5 : 2))
                     .overlay(
                         Ellipse().fill(.white.opacity(0.35))
                             .frame(width: size * 0.5, height: size * 0.2)

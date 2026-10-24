@@ -88,14 +88,34 @@ def draw_sword(ic):
     ic.flare(0.84, 0.14, 0.16, GOLD, strength=0.8)
 
 
+def sparkle_points(cx, cy, r, bulk=0.62, n=120):
+    """A four-pointed sparkle with curved sides, full in the middle (the ✨ shape): a superellipse
+    |x|^p + |y|^p = r^p, its sides bowing in more the smaller `bulk` (p) is."""
+    out = []
+    for k in range(n):
+        t = 2 * math.pi * k / n
+        c, s_ = math.cos(t), math.sin(t)
+        out.append((cx + r * math.copysign(abs(c) ** (2 / bulk), c), cy + r * math.copysign(abs(s_) ** (2 / bulk), s_)))
+    return out
+
+
+# The sparkles' gold, a shade deeper at its rim than the skills' light, so it holds its shape on a
+# cream button.
+AMBER = light("#c26a06", "#f2a30d", "#ffd640", "#fff8d0")
+
+
 def draw_sparkles(ic):
-    # Skills: three stars of light, gold, sky and rose.
-    ic.flare(0.4, 0.56, 0.36, GOLD, strength=1.0)
-    ic.body(ic.poly(star_points(0.4, 0.56, 0.24, 0.06, 4), blur=0.003), GOLD, 0.38, 0.54, 0.22, shadow=True)
-    ic.flare(0.74, 0.24, 0.2, CYAN, strength=0.9)
-    ic.body(ic.poly(star_points(0.74, 0.24, 0.13, 0.035, 4), blur=0.002), CYAN, 0.73, 0.23, 0.12)
-    ic.flare(0.76, 0.76, 0.16, LIGHTS["dark"], strength=0.7)
-    ic.body(ic.poly(star_points(0.76, 0.76, 0.1, 0.03, 4), blur=0.002), PINK, 0.75, 0.75, 0.1)
+    # Skills: three sparkles of light, gold, sky and rose, full-bodied with curved sides (playtesting
+    # 2026-10-24: thin four-pointed stars had no body and washed out on the buttons).
+    # The big one in the middle, the small ones across it from each other on the diagonal, so it sits
+    # centred on its button (off to the left with both small ones on the right, it didn't).
+    ic.flare(0.5, 0.5, 0.4, GOLD, strength=0.9)
+    ic.body(ic.poly(sparkle_points(0.5, 0.5, 0.32), blur=0.003), AMBER, 0.46, 0.44, 0.28)
+    # Mint, not sky blue: on the blue buttons a blue one vanished.
+    ic.flare(0.8, 0.2, 0.18, GREEN, strength=0.7)
+    ic.body(ic.poly(sparkle_points(0.8, 0.2, 0.15), blur=0.002), GREEN, 0.78, 0.18, 0.13)
+    ic.flare(0.2, 0.8, 0.16, LIGHTS["dark"], strength=0.6)
+    ic.body(ic.poly(sparkle_points(0.2, 0.8, 0.13), blur=0.002), PINK, 0.18, 0.78, 0.12)
 
 
 def draw_backpack(ic):
@@ -109,17 +129,19 @@ def draw_backpack(ic):
 
 
 def draw_shield(ic):
-    # Defend: a blue shield, its rim lit, a gold star on it.
-    ic.glow(0.5, 0.5, 0.42, BLUE[1], 0.35)
-    shield(ic, BLUE, 0.5, 0.52, 1.2)
+    # Defend: a red shield, its rim lit, a gold star on it. Red, not blue: on the blue buttons a blue
+    # shield vanished (playtesting 2026-10-24).
+    ic.glow(0.5, 0.5, 0.42, RED[1], 0.3)
+    shield(ic, RED, 0.5, 0.52, 1.2)
     ic.body(ic.poly(star_points(0.5, 0.48, 0.16, 0.065), blur=0.002), GOLD, 0.48, 0.44, 0.16, shadow=False)
     ic.flare(0.32, 0.24, 0.14, GOLD, strength=0.6)
 
 
 def draw_wind(ic):
     # Run: a winged boot, streaks of wind behind it.
+    # White streaks: cyan ones dulled on the blue buttons.
     for k, y in enumerate((0.5, 0.64, 0.78)):
-        ic.trail([(0.04 + 0.04 * k, y), (0.2, y), (0.34, y)], 0.05, CYAN, 0.9)
+        ic.trail([(0.04 + 0.04 * k, y), (0.2, y), (0.34, y)], 0.05, CREAM, 0.9)
     boot = [(0.46, 0.18), (0.66, 0.18), (0.66, 0.6), (0.92, 0.68), (0.94, 0.86), (0.4, 0.86), (0.42, 0.6)]
     ic.body(ic.poly(boot, blur=0.002), LEATHER, 0.5, 0.3, 0.45)
     ic.body(rect(ic, 0.43, 0.16, 0.69, 0.26, 0.03), LEATHER, 0.5, 0.18, 0.2)
