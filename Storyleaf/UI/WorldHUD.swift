@@ -1,11 +1,14 @@
 import SwiftUI
 
-/// On-map HUD in Fairyland Online's style: round faces with HP/MP for you, your companion and
-/// your party, and the calendar plate top-left, a framed minimap top-right, the system log, joystick bottom-left and
-/// a glossy toolbar bottom-right. While you're talking to someone (or any window is open over the map)
-/// the controls step aside, so nothing peeks out from behind the conversation.
+/// On-map HUD in Fairyland Online's style: round faces with HP/MP for you (and your EXP), your
+/// companion and your party, and the calendar plate top-left, a framed minimap top-right with what
+/// just happened toasting under it, joystick bottom-left, and Chat and the menu bottom-right (one
+/// button that opens into the menu's pages). While you're talking to someone (or any window is open
+/// over the map) the controls step aside, so nothing peeks out from behind the conversation.
 struct WorldHUD: View {
     let coordinator: GameCoordinator
+    /// The menu button opened into its list of pages (`GameMenu`).
+    @State private var menuOpen = DebugLaunch.opensHUDMenu
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     private var bottomGap: (joystick: CGFloat, buttons: CGFloat) { onItsSide ? (8, 8) : (10, 14) }
     /// On a phone on its side the bottom controls sit down in the home indicator's strip, a few
@@ -29,8 +32,6 @@ struct WorldHUD: View {
                     JoinedPartyPlate(leader: leader, count: joined.members.count) { coordinator.leaveJoinedParty() }
                 }
                 CalendarPlate(session: session)
-                    .allowsHitTesting(false)
-                SystemLog(lines: session.log)
                     .allowsHitTesting(false)
                 // A land's name as you walk in, under the panels on both sides, across the middle.
                 if let name = session.landBanner {
@@ -57,19 +58,18 @@ struct WorldHUD: View {
                     onOpen: { coordinator.open(.worldMap) }
                 )
                 .coachTarget(.minimap)
-                HStack(spacing: 6) {
-                    FLIconButton(icon: .settings, label: L("Settings"), size: 40) {
-                        coordinator.open(.menu(.settings))
-                    }
-                    FLIconButton(icon: .talk, label: L("Chat"), size: 40, badge: session.unreadChat > 0) {
-                        coordinator.open(.chat)
-                    }
-                    .coachTarget(.chat)
-                }
-                .stepsAside(controlsHidden)
                 SavedBadge(lastSaved: session.lastSaved)
+                GameToasts(lines: session.log)
+                    .allowsHitTesting(false)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+
+            // While the menu's open, a tap anywhere else closes it.
+            if menuOpen {
+                Color.black.opacity(0.001)
+                    .ignoresSafeArea()
+                    .onTapGesture { menuOpen = false }
+            }
 
             JoystickView(input: coordinator.input)
                 .coachTarget(.joystick)
@@ -105,16 +105,21 @@ struct WorldHUD: View {
                     AdventurerCard(coordinator: coordinator, adventurer: adventurer)
                         .transition(.scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity))
                 }
-                HStack(spacing: 7) {
-                    // Settings has its own button up top, next to Chat. Friends is a tab of the menu
-                    // only: a fifth button here would run into the joystick on a phone held upright.
-                    ForEach(MenuTab.allCases.filter { $0 != .settings && $0 != .friends }) { tab in
-                        FLIconButton(icon: tab.icon, label: tab.title, badge: badge(for: tab)) {
-                            coordinator.open(.menu(tab))
-                        }
+                // Chat, then the menu: one button that opens into its pages (playtesting 2026-10-24:
+                // a row of four buttons, Chat and Settings up by the minimap). Friends stays a tab of
+                // the menu window.
+                HStack(alignment: .bottom, spacing: 7) {
+                    FLIconButton(icon: .talk, label: L("Chat"), badge: session.unreadChat > 0) {
+                        menuOpen = false
+                        coordinator.open(.chat)
                     }
+                    .coachTarget(.chat)
+                    GameMenu(items: [.character, .companions, .bag, .quests, .settings], open: $menuOpen,
+                             badge: { badge(for: $0) }) { tab in
+                        coordinator.open(.menu(tab))
+                    }
+                    .coachTarget(.toolbar)
                 }
-                .coachTarget(.toolbar)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
             .padding(.bottom, bottomGap.buttons)
@@ -125,6 +130,7 @@ struct WorldHUD: View {
         }
         .padding(.horizontal, 8)
         .padding(.top, 4)
+        .onChange(of: controlsHidden) { if controlsHidden { menuOpen = false } }
     }
 
     private func badge(for tab: MenuTab) -> Bool {
@@ -166,6 +172,9 @@ private struct StatusCluster: View {
                             glowing: session.canChooseClass || session.canSpendSkillPoint) {
                     TaggedBar(tag: L("H"), value: hero.hp, maximum: stats.hp, color: HUDStyle.hp)
                     TaggedBar(tag: L("M"), value: hero.mp, maximum: stats.mp, color: HUDStyle.mp)
+                    // EXP to the next level, thin under the bars (playtesting 2026-10-24: it had a
+                    // row of its own under the calendar).
+                    ExpBar(value: hero.exp, maximum: GameSession.expToNext(level: hero.level))
                 }
             }
             .buttonStyle(.plain)
@@ -401,7 +410,7 @@ private struct JoinedPartyPlate: View {
     }
 }
 
-/// The tan calendar plate with a sun or moon, and the EXP bar underneath.
+/// The tan calendar plate with a sun or moon, the date and your gold.
 private struct CalendarPlate: View {
     let session: GameSession
     /// With night and day switched off in Settings, the sun shines on the plate around the clock.
@@ -411,7 +420,6 @@ private struct CalendarPlate: View {
         TimelineView(.periodic(from: .now, by: 5)) { context in
             let moment = GameClock.moment(at: context.date, since: session.data.startedAt)
             let daytime = moment.isDaytime || !dayAndNight
-            let hero = session.data.hero
             VStack(spacing: 3) {
                 HStack(spacing: 5) {
                     IconImage(daytime ? .sun : .moon, size: 14)
@@ -432,11 +440,6 @@ private struct CalendarPlate: View {
                 .padding(.horizontal, 7)
                 .padding(.vertical, 3)
                 .background(HUDStyle.plateBackground)
-                HStack(spacing: 3) {
-                    Text(L("EXP")).font(HUDStyle.mono(8)).foregroundStyle(.white)
-                    StatBar(label: "", value: hero.exp, maximum: GameSession.expToNext(level: hero.level), color: HUDStyle.exp, height: 7, showsNumbers: false)
-                }
-                .padding(.horizontal, 4)
             }
             .frame(width: TopLeft.width)
         }
@@ -464,60 +467,187 @@ private struct LandBanner: View {
     }
 }
 
-private struct SystemLog: View {
+/// What just happened (EXP and gold won, an item found, a quest's step, the game's announcements):
+/// small black toasts under the minimap, each for a few seconds, three at most, newest last; then
+/// they live in the chat (`GameSession.post`; playtesting 2026-10-24: Fairyland Online's yellow lines
+/// piled up in the top-left corner).
+private struct GameToasts: View {
     let lines: [GameSession.LogLine]
+    /// How long each shows.
+    private static let shown: TimeInterval = 3.5
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { context in
-            VStack(alignment: .leading, spacing: 1) {
-                ForEach(lines.filter { context.date.timeIntervalSince($0.time) < 12 }.suffix(4)) { line in
-                    row(line)
-                        .transition(.opacity)
+        TimelineView(.periodic(from: .now, by: 0.5)) { context in
+            let showing = Array(lines.filter { context.date.timeIntervalSince($0.time) < Self.shown }.suffix(3))
+            VStack(alignment: .trailing, spacing: 4) {
+                ForEach(showing) { line in
+                    toast(line)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
-            .frame(width: TopLeft.width, alignment: .leading)
-            .animation(.easeOut(duration: 0.3), value: lines.count)
+            .animation(.spring(response: 0.35, dampingFraction: 0.85), value: showing.map(\.id))
         }
+        // Clear of the top-left column (`TopLeft.width`) on the narrowest phones: a long one wraps.
+        .frame(maxWidth: 160, alignment: .trailing)
     }
 
-    @ViewBuilder
-    private func row(_ line: GameSession.LogLine) -> some View {
-        switch line.kind {
-        case .announcement:
-            HStack(alignment: .top, spacing: 5) {
-                IconImage(.sparkles, size: 12)
-                Text(line.text)
-                    .font(HUDStyle.mono(10))
-                    .lineLimit(3)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            // As wide as the panels above it.
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .foregroundStyle(HUDStyle.gold)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 4)
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(HUDStyle.ink.opacity(0.8))
-                    .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(HUDStyle.gold.opacity(0.75), lineWidth: 1))
-            )
-            .padding(.vertical, 1)
-        case .system, .quest, .battle, .reward:
+    private func toast(_ line: GameSession.LogLine) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            IconImage(ChatLineView.icon(of: line.kind), size: 11)
+                .foregroundStyle(ChatLineView.color(of: line.kind))
             Text(line.text)
-                .font(HUDStyle.mono(10))
-                .foregroundStyle(color(for: line.kind))
-                .shadow(color: .black, radius: 0, x: 1, y: 1)
+                .font(HUDStyle.font(11))
+                .foregroundStyle(line.kind == .announcement ? HUDStyle.gold : .white)
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(RoundedRectangle(cornerRadius: 12).fill(.black.opacity(0.82)))
+        .shadow(color: .black.opacity(0.3), radius: 3, y: 1)
+    }
+}
+
+/// EXP toward the next level: a thin bar under the hero's HP and MP, as long as theirs.
+private struct ExpBar: View {
+    let value: Int
+    let maximum: Int
+
+    var body: some View {
+        HStack(spacing: 3) {
+            StatBar(label: "", value: value, maximum: maximum, color: HUDStyle.exp, height: 5, showsNumbers: false)
+            // Where the H and M tags stand beside their bars.
+            Color.clear.frame(width: 14, height: 5)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L("EXP"))
+        .accessibilityValue("\(value) / \(maximum)")
+    }
+}
+
+/// The menu: one button with three lines that, tapped, grows into a panel listing the menu's pages
+/// (Hero, Companion, Inventory, Quests, Settings), its lines turning into a cross that closes it.
+/// A gold dot on the button while any page has something new, and on that page's row.
+private struct GameMenu: View {
+    let items: [MenuTab]
+    @Binding var open: Bool
+    let badge: (MenuTab) -> Bool
+    let onPick: (MenuTab) -> Void
+
+    private static let button: CGFloat = 46
+    private static let width: CGFloat = 178
+    private static let spring = Animation.spring(response: 0.34, dampingFraction: 0.78)
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 0) {
+            if open {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(Array(items.enumerated()), id: \.element) { index, tab in
+                        row(tab)
+                            // One after another up from the button as it opens.
+                            .transition(.asymmetric(
+                                insertion: .offset(y: 14).combined(with: .opacity)
+                                    .animation(Self.spring.delay(Double(items.count - 1 - index) * 0.035)),
+                                removal: .opacity.animation(.easeOut(duration: 0.12))))
+                    }
+                }
+                .padding(.top, 8)
+                .padding(.horizontal, 4)
+            }
+            Button {
+                SoundEffects.shared.play(.tap, volume: 0.7)
+                open.toggle()
+            } label: {
+                MenuGlyph(open: open)
+                    .frame(width: Self.button, height: Self.button)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(PressScaleStyle())
+            .accessibilityLabel(open ? L("Close menu") : L("Open menu"))
+        }
+        .frame(width: open ? Self.width : Self.button, alignment: .trailing)
+        .background(
+            RoundedRectangle(cornerRadius: open ? 14 : 9)
+                .fill(LinearGradient(colors: HUDStyle.tile, startPoint: .top, endPoint: .bottom))
+                .overlay(RoundedRectangle(cornerRadius: open ? 14 : 9).strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
+                .overlay(alignment: .bottom) {
+                    // The button's gloss, on its own square at the bottom.
+                    RoundedRectangle(cornerRadius: 6).fill(.white.opacity(open ? 0.12 : 0.35))
+                        .frame(width: Self.button - 8, height: Self.button * 0.3)
+                        .padding(.bottom, Self.button * 0.62)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .padding(.trailing, 4)
+                }
+        )
+        .overlay(alignment: .topTrailing) {
+            if !open && items.contains(where: badge) {
+                Circle().fill(HUDStyle.gold).frame(width: 12, height: 12)
+                    .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
+                    .offset(x: 3, y: -3)
+            }
+        }
+        .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 2)
+        .animation(Self.spring, value: open)
     }
 
-    private func color(for kind: GameSession.LogLine.Kind) -> Color {
-        switch kind {
-        case .system: HUDStyle.nameYellow
-        case .quest: Color(red: 0.55, green: 0.95, blue: 1)
-        case .battle: .white
-        case .reward: HUDStyle.green
-        case .announcement: HUDStyle.gold
+    private func row(_ tab: MenuTab) -> some View {
+        Button {
+            SoundEffects.shared.play(.tap, volume: 0.7)
+            open = false
+            onPick(tab)
+        } label: {
+            HStack(spacing: 9) {
+                IconImage(tab.icon, size: 24)
+                Text(title(tab))
+                    .font(HUDStyle.font(13))
+                    .foregroundStyle(.white)
+                    .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Spacer(minLength: 0)
+                if badge(tab) {
+                    Circle().fill(HUDStyle.gold).frame(width: 10, height: 10)
+                        .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.08)))
+            .contentShape(Rectangle())
         }
+        .buttonStyle(PressScaleStyle())
+    }
+
+    /// The menu's names for its pages.
+    private func title(_ tab: MenuTab) -> String {
+        switch tab {
+        case .character: L("Hero")
+        case .companions: L("Companion")
+        case .bag: L("Inventory")
+        case .quests, .settings, .friends: tab.title
+        }
+    }
+}
+
+/// Three white lines, turning into a cross when the menu's open: the top and bottom lines meet in the
+/// middle and turn, the middle one shrinks away.
+private struct MenuGlyph: View {
+    let open: Bool
+
+    var body: some View {
+        ZStack {
+            line.offset(y: open ? 0 : -7).rotationEffect(.degrees(open ? 45 : 0))
+            line.scaleEffect(x: open ? 0.1 : 1).opacity(open ? 0 : 1)
+            line.offset(y: open ? 0 : 7).rotationEffect(.degrees(open ? -45 : 0))
+        }
+        .frame(width: 24, height: 24)
+    }
+
+    private var line: some View {
+        Capsule()
+            .fill(.white)
+            .frame(width: 22, height: 3.5)
+            .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
     }
 }
 

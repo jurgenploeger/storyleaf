@@ -676,6 +676,12 @@ seal_shop         | newgame,level=40,npc=bluebird_shop                        | 
 # the date beside it on one line.
 hud_gold_k        | newgame,gold=45678,weather=clear,hour=12                  | 8
 hud_gold_m        | newgame,level=125,gold=1457603,weather=clear,hour=22      | 8
+# The HUD (playtesting 2026-10-24): Chat and the menu button bottom-right, the menu opened into its
+# pages, EXP under the hero's bars, and what just happened toasting under the minimap, then in the chat.
+hud_menu          | newgame,level=40,class=fighter,weather=clear,hour=12,hudmenu | 8
+hud_menu_land     | newgame,level=40,class=fighter,weather=clear,hour=12,hudmenu,landscape | 8
+hud_toasts        | newgame,level=40,class=fighter,weather=clear,hour=12,notices | 12
+chat_notices      | newgame,level=40,class=fighter,weather=clear,hour=12,notices,chat | 16
 # Settings with footsteps switched off (the darker switch). `quiet` leaves them off, so this runs last.
 settings_quiet | newgame,menu=settings,weather=clear,quiet | 8
 # Each land's own homes (Retro Diffusion, 2026-10-22): standing just in front of one, at noon.

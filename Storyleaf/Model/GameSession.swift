@@ -105,14 +105,17 @@ final class GameSession {
     /// game's announcements, which stay.
     struct ChatLine: Identifiable {
         /// `announcement`: the game's own notice of what's happening where and when
-        /// (content/announcements.json).
-        enum Kind { case you, adventurer, villager, npc, system, announcement }
+        /// (content/announcements.json). `notice`: what just happened to you (`post`: EXP won, an
+        /// item found, a quest's step), shown a moment as a toast first, its `tone` its log line's.
+        enum Kind { case you, adventurer, villager, npc, system, announcement, notice }
         let id = UUID()
         let speaker: String
         let text: String
         let kind: Kind
         /// BOT, next to the speaker's name.
         var badge: PlayerBadge? = nil
+        /// A notice's kind of news (`LogLine.Kind`), for its colour.
+        var tone: LogLine.Kind? = nil
         let time = Date()
     }
 
@@ -123,7 +126,7 @@ final class GameSession {
         // Adventurers are computer-run for now, and say so.
         let badge: PlayerBadge? = switch kind {
         case .adventurer: .bot
-        case .you, .villager, .npc, .system, .announcement: nil
+        case .you, .villager, .npc, .system, .announcement, .notice: nil
         }
         chat.append(ChatLine(speaker: speaker, text: text, kind: kind, badge: badge))
         if chat.count > 80 { chat.removeFirst(chat.count - 80) }
@@ -131,7 +134,8 @@ final class GameSession {
     }
 
     func startChat(on mapName: String) {
-        let kept = chat.filter { $0.kind == .announcement }.suffix(10)
+        // The game's notices and what's happened to you lately stay; what people said starts over.
+        let kept = chat.filter { $0.kind == .announcement || $0.kind == .notice }.suffix(20)
         chat = Array(kept) + [ChatLine(speaker: "", text: L("You entered {map}.", ["map": mapName]), kind: .system)]
         unreadChat = 0
     }
@@ -153,9 +157,15 @@ final class GameSession {
 
     @ObservationIgnored var sighting: Sighting?
 
+    /// Something that just happened (`LogLine`): a toast on the map for a few seconds (`WorldHUD`),
+    /// then kept in the chat (playtesting 2026-10-24: it piled up in the top-left corner). Seen as it
+    /// toasts, so it doesn't count as unread; an announcement is in the chat already (`announce`).
     func post(_ text: String, _ kind: LogLine.Kind = .system) {
         log.append(LogLine(text: text, kind: kind))
         if log.count > 12 { log.removeFirst(log.count - 12) }
+        guard kind != .announcement else { return }
+        chat.append(ChatLine(speaker: "", text: text, kind: .notice, tone: kind))
+        if chat.count > 80 { chat.removeFirst(chat.count - 80) }
     }
     /// Last known position on the current map (saved with the game).
     @ObservationIgnored var playerPosition: CGPoint?

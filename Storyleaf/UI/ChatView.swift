@@ -74,7 +74,7 @@ struct ChatView: View {
     }
 }
 
-private struct ChatLineView: View {
+struct ChatLineView: View {
     let line: GameSession.ChatLine
 
     private var color: Color {
@@ -85,6 +85,29 @@ private struct ChatLineView: View {
         case .npc: HUDStyle.green
         case .system: HUDStyle.dim
         case .announcement: HUDStyle.gold
+        case .notice: ChatLineView.color(of: line.tone ?? .system)
+        }
+    }
+
+    /// A notice's colour, by its kind of news: as the HUD's toasts mark it (`WorldHUD`).
+    static func color(of tone: GameSession.LogLine.Kind) -> Color {
+        switch tone {
+        case .system: HUDStyle.nameYellow
+        case .quest: Color(red: 0.55, green: 0.95, blue: 1)
+        case .battle: .white
+        case .reward: HUDStyle.green
+        case .announcement: HUDStyle.gold
+        }
+    }
+
+    /// A notice's mark, by its kind of news.
+    static func icon(of tone: GameSession.LogLine.Kind) -> GameIcon {
+        switch tone {
+        case .system: .sparkles
+        case .quest: .star
+        case .battle: .sword
+        case .reward: .gift
+        case .announcement: .sparkles
         }
     }
 
@@ -115,6 +138,17 @@ private struct ChatLineView: View {
             )
             .accessibilityElement(children: .combine)
             .accessibilityLabel(L("Announcement: {text}", ["text": line.text]))
+        case .notice:
+            // What happened to you lately, toasted on the map first.
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                IconImage(ChatLineView.icon(of: line.tone ?? .system), size: 11)
+                    .foregroundStyle(color)
+                Text(line.text)
+                    .font(HUDStyle.font(11))
+                    .foregroundStyle(color)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         case .you, .adventurer, .villager, .npc:
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 if let badge = line.badge {

@@ -3025,6 +3025,22 @@ struct RulesTests {
         #expect(session.log.contains { $0.kind == .announcement })
     }
 
+    /// What happens to you toasts on the map, then lives in the chat (`GameSession.post`; playtesting
+    /// 2026-10-24): seen as it toasted, so not unread, and kept from map to map like announcements.
+    @Test func noticesLiveInTheChat() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.startChat(on: "Meadowbrook")
+        session.post("+120 EXP  +40 gold", .reward)
+        #expect(session.chat.last?.kind == .notice)
+        #expect(session.chat.last?.tone == .reward)
+        #expect(session.unreadChat == 0)
+        session.announce("Dawn breaks over Storyleaf.")
+        // An announcement is in the chat once, not again as a notice.
+        #expect(session.chat.filter { $0.text == "Dawn breaks over Storyleaf." }.count == 1)
+        session.startChat(on: "Ingothold")
+        #expect(session.chat.map(\.kind) == [.notice, .announcement, .system])
+    }
+
     @Test func aRareSightingMakesItTurnUpMoreOften() throws {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         let meadow = try #require(Content.shared.map("sunny_meadow"))
