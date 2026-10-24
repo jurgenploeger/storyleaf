@@ -554,7 +554,6 @@ private struct MoreMenu: View {
                         IconImage(.close, size: size * 0.4)
                     } else {
                         IconImage(.more, size: size * 0.56)
-                            .shadow(color: HUDStyle.ink.opacity(0.55), radius: 1.5)
                     }
                 }
                 .foregroundStyle(.white)
@@ -940,6 +939,14 @@ struct RoundCommandButton: View {
         }
     }
 
+    /// A light button (cream, gold, green), its icon on a pale ground.
+    private var isLight: Bool {
+        switch tint {
+        case .normal, .special, .heal, .lit: true
+        case .primary, .quiet: false
+        }
+    }
+
     private var foreground: Color {
         switch tint {
         case .primary, .quiet: .white
@@ -957,10 +964,12 @@ struct RoundCommandButton: View {
                         .minimumScaleFactor(0.6)
                         .padding(.horizontal, 4)
                 } else {
-                    // Big, on a soft dark rim: drawn as light, the icons washed out on the cream
-                    // buttons at two fifths of them (playtesting 2026-10-24).
+                    // Big: drawn as light, the icons washed out on the cream buttons at two fifths
+                    // of them (playtesting 2026-10-24). On a light button a crisp warm shadow just
+                    // under it; a soft dark rim round it looked muddy there.
                     IconImage(icon, size: size * 0.56)
-                        .shadow(color: HUDStyle.ink.opacity(0.55), radius: 1.5)
+                        .shadow(color: isLight ? Color(red: 0.43, green: 0.28, blue: 0.16).opacity(0.4) : .clear,
+                                radius: 0.4, x: 0, y: 1)
                 }
                 if size >= 80 {
                     Text(title).font(HUDStyle.font(12))
