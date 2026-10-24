@@ -82,6 +82,8 @@ struct Combatant: Identifiable {
     var wave = 1
     /// A companion: the fighter it came with, who it stands behind.
     var ownerID: Int?
+    /// The monster kind of a companion that isn't wild (a rival's), for a Seal Stone to keep.
+    var species: String?
     /// A friend without a companion: the Seal Stones they carry to catch one with.
     var sealStones = 0
     /// Sealed: who threw the stone that held it (you, or a friend it goes home with).
@@ -153,7 +155,7 @@ struct Combatant: Identifiable {
     var speciesID: String? {
         switch source {
         case .wild(let id): id
-        default: nil
+        default: species
         }
     }
 
@@ -297,7 +299,8 @@ final class BattleEngine {
     /// below 20%; players asked for more). The weaker it is the better your odds; tougher,
     /// higher-level monsters and long fights make it harder. A stronger `stone` multiplies the odds
     /// by its `sealPower` and lifts their ceiling (75% for a plain Seal Stone, up to 95%); a sure one
-    /// (the Wishing Seal) never fails. Nothing seals a boss. `thrower`: a friend throwing their own
+    /// (the Wishing Seal) never fails. Nothing seals a boss. A rival's companion in a duel can be sealed
+    /// like a wild one (playtesting 2026-10-24); the rival can't. `thrower`: a friend throwing their own
     /// stone, with their level and their class's knack for it (you when nil).
     func captureStatus(of id: Int, with stone: ItemDef? = nil, by thrower: Combatant? = nil) -> CaptureStatus {
         guard let target = combatant(id), target.isAlive, target.side == .enemies, target.captureRate > 0 else { return .impossible }
