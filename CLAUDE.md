@@ -101,10 +101,7 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `tools/scenery_art.py`: trees and bushes drawn in code with `pixel_kit` (docs/pixel-style.md), one species
   each where every tree had been a recolour of RD's `tree` and every bush of its `berry_bush`: a cherry, a
   gnarled dark tree, an autumn oak, a maple, a birch, a frosted bare tree, a willow, a jacaranda, candy trees,
-  and ten bushes (a fir sapling, a tumbleweed, a bramble...); and RD's own round `tree`, apple, dead, snowy
-  pine and snow-laden trees, berry and frozen bushes, toadstool, stump and log, drawn again to match (their
-  `derive`d kin follow). RD's small flowers, ferns, reeds, rocks, palm and thorn bush stay RD's: the kit's
-  shading greyed them. Each writes its own PNG, which wins over the
+  and ten bushes (a fir sapling, a tumbleweed, a bramble...). Each writes its own PNG, which wins over the
   asset's `derive`; its `big_` twin, derived from it, follows. `--sheet out.png` previews them.
 - `tools/building_art.py`: town houses and shops drawn in code with `pixel_kit`, so the towns don't build only
   with RD's few buildings and their recolours: a thatched and a timber-framed cottage, a stone townhouse, a
@@ -197,6 +194,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   `python3 tools/check_content.py`. Keep Swift edits small and careful: the Screenshots workflow compiles
   them on a `claude/**` branch, and `.github/workflows/testflight.yml` after a push to `main` (Xcode Cloud
   isn't used: its GitHub app was uninstalled on 2026-10-23).
+- **Never redraw Retro Diffusion's art in code** (the user, 2026-10-24: "that's actually really good"). Every
+  asset with a `request` in art/assets.json is RD's and stays as it is, and so does what's `derive`d from it.
+  Draw in code only what RD never made, or what it got wrong and the user asked to have fixed.
 - **Retro Diffusion costs money.** Always run `python3 tools/rd.py generate <ids> --dry-run` (free) and get
   the user's OK before generating. Paid runs are logged in `art/spend-log.jsonl`. Never commit `.env` or the
   API key (`RETRO_DIFFUSION_API_KEY`).
