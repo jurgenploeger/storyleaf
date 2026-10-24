@@ -449,7 +449,7 @@ struct WorldAtlas: View {
     }
 
     /// A colour for a land not drawn yet, from its ground.
-    private static func tint(of map: MapDef) -> (r: CGFloat, g: CGFloat, b: CGFloat) {
+    static func tint(of map: MapDef) -> (r: CGFloat, g: CGFloat, b: CGFloat) {
         let ground = map.theme.ground
         if map.fence == true { return (0.98, 0.78, 0.45) }
         if ground.contains("snow") { return (0.9, 0.95, 1) }

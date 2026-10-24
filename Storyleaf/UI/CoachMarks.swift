@@ -43,15 +43,15 @@ private struct CoachStep {
 
     static var all: [CoachStep] { [
         CoachStep(target: .status, icon: .heart, title: L("Health and magic"),
-                  text: L("H is your health and M your magic. The round badge shows your level. Once you have a companion, its face and bars show under yours.")),
+                  text: L("H is your health and M your magic; the thin bar under them is your EXP. The round badge shows your level. Once you have a companion, its face and bars show under yours.")),
         CoachStep(target: .joystick, icon: .tap, title: L("Walking"),
                   text: L("Drag the stick to walk, or tap the ground and your hero walks there.")),
         CoachStep(target: .minimap, icon: .map, title: L("Where you are"),
                   text: L("The minimap shows what's around you. Tap it for the world map.")),
         CoachStep(target: .toolbar, icon: .backpack, title: L("Your adventure"),
-                  text: L("Your character, companions, bag and quests. A gold dot means there's something new.")),
+                  text: L("Tap the menu for your hero, companion, inventory, quests and settings. A gold dot means there's something new.")),
         CoachStep(target: .chat, icon: .talk, title: L("Other adventurers"),
-                  text: L("Adventurers wander Storyleaf too. Read what they say and chat back here.")),
+                  text: L("Adventurers wander Storyleaf too. Read what they say and chat back here. What you win and find shows for a moment, then waits here too.")),
         CoachStep(target: nil, icon: .star, title: L("Your first quest"),
                   text: L("Walk up to someone with a gold ! and tap Talk. New adventurers start with Elder Oak in Meadowbrook.")),
     ] }

@@ -177,6 +177,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// The middles of a cave's galleries and tunnels, kept clear of scenery so they stay open.
     private var passages: Set<GridPoint> = []
     private var occupied: Set<GridPoint> = []
+    /// The ground round each boss with a lair, kept before the hills, lakes and scenery are set down
+    /// (`reserveLair`), for its lair alone (`isFreeForLair`): a cell leaves it once anything takes it.
+    private var lairGround: Set<GridPoint> = []
     /// The cells you can't walk on: ways round them are looked for over this itself (`route`).
     /// GameplayKit's walk graph did it before, and keeping that up to date was nearly all of a land's
     /// layout (taking the sea's and the next lands' cells out of it: Smiling Forest's 88 s of 94 in a
@@ -300,7 +303,7 @@ nonisolated final class WorldMap: @unchecked Sendable {
         // Each summit's top is the middle of its round, where it rises highest.
         let lobes: [Hill.Lobe] = self.hills.flatMap { $0.lobes }.sorted { $0.peak > $1.peak }
         summits = lobes.map { lobe in CGPoint(x: lobe.x, y: lobe.y) }
-        for npc in def.npcs ?? [] where npc.summit != nil { keepInView(spot(of: npc), wide: npc.role == .boss) }
+        for npc in def.npcs ?? [] where npc.summit != nil { keepInView(npc) }
         // The ranges where roads lead into caves join the hills after them, so the hills keep their
         // places in the list.
         for range in ranges {
@@ -681,7 +684,23 @@ nonisolated final class WorldMap: @unchecked Sendable {
     func occupy(_ cell: GridPoint, blocking: Bool) {
         guard contains(cell) else { return }
         occupied.insert(cell)
+        lairGround.remove(cell)
         if blocking { blocked.insert(cell) }
+    }
+
+    /// Whether a boss's lair may set something down in `cell` (`LandPlanner.planLair`): as for any
+    /// scenery, but on the ground kept for lairs too (`reserveLair`).
+    func isFreeForLair(_ cell: GridPoint, blocking: Bool) -> Bool {
+        guard lairGround.contains(cell) else { return isFreeForScenery(cell, blocking: blocking) }
+        occupied.remove(cell)
+        defer { occupied.insert(cell) }
+        return isFreeForScenery(cell, blocking: blocking)
+    }
+
+    /// How far round a boss its lair's ground reaches (`reserveLair`), in cells: past its ring and its
+    /// hand-placed pieces (7 cells out at most, check_content.py).
+    static func lairReach(of npc: NPCDef) -> Double {
+        max(7.5, Double(max(3, npc.lairRing?.radius ?? 6)) + 1.5)
     }
 
     /// Whether scenery may go in `cell`: free, off roads and water, clear of the centre and
@@ -1810,8 +1829,32 @@ nonisolated final class WorldMap: @unchecked Sendable {
     /// so it gets a wider clearing. You can still walk there.
     private func keepNPCsInView() {
         // Those up on a summit once the hills are raised.
-        for npc in def.npcs ?? [] where npc.summit == nil {
-            keepInView(npc.at == nil ? offset(npc.x, npc.y) : spot(of: npc), wide: npc.role == .boss)
+        for npc in def.npcs ?? [] where npc.summit == nil { keepInView(npc) }
+    }
+
+    /// Keeps the ground round an NPC (`keepInView(_:wide:)`), or all round a boss with a lair, for it
+    /// (`reserveLair`).
+    private func keepInView(_ npc: NPCDef) {
+        let cell = npc.summit == nil && npc.at == nil ? offset(npc.x, npc.y) : spot(of: npc)
+        if npc.role == .boss, npc.lair != nil {
+            reserveLair(around: cell, reach: Self.lairReach(of: npc))
+        } else {
+            keepInView(cell, wide: npc.role == .boss)
+        }
+    }
+
+    /// Keeps the ground round a boss for its lair (`lairGround`), all that nothing's taken yet, so no
+    /// hill, lake or tree takes it first. (Kept as scenery round it was, `keepInView`, it was taken
+    /// from the lair too: a third of each lair's pieces were never set down, playtesting 2026-10-24.)
+    private func reserveLair(around spot: GridPoint, reach: Double) {
+        let cells = Int(reach.rounded(.up))
+        for dr in -cells...cells {
+            for dc in -cells...cells where hypot(Double(dc), Double(dr)) <= reach {
+                let cell = GridPoint(col: spot.col + dc, row: spot.row + dr)
+                guard contains(cell), !occupied.contains(cell) else { continue }
+                occupied.insert(cell)
+                lairGround.insert(cell)
+            }
         }
     }
 

@@ -269,16 +269,24 @@ treasure_card    | newgame,class=fighter,level=100,menu=bag,bag=oxhide_mail,insp
 treasure_bag     | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king+rat_king+puss_in_boots+crystal_hearts,menu=bag | 8
 treasure_post    | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king | 8
 treasure_offer   | newgame,class=fighter,level=72,map=sleepy_town,npc=thomas | 8
-# Bosses in their lairs (maps.json `lair`, LandPlanner.planLair; playtesting 2026-10-23: they stood
-# about on open ground), from a few cells off.
-lair_dragon  | newgame,level=80,map=genie_desert,at=27_13,weather=clear,hour=12 | 8
-lair_morvane | newgame,level=130,map=secret_plain,at=0_15,weather=clear,hour=12 | 8
-lair_wolf    | newgame,level=95,map=snow_white_forest,at=18_22,weather=clear,hour=12 | 8
+# Bosses in their lairs (maps.json `lair`, `lairRing`, `lairApproach`, LandPlanner.planLair; playtesting
+# 2026-10-23: they stood about on open ground; 2026-10-24: a sign post and an empty space), from the end of
+# their trail, at their land's edge, on a summit or in a cave; and the wolf's sign where its trail starts.
+lair_oak     | newgame,level=30,map=smiling_forest,at=-66_-37,weather=clear,hour=12 | 8
+lair_wolf    | newgame,level=95,map=snow_white_forest,at=24_47,weather=clear,hour=12 | 8
+lair_wolf_sign | newgame,level=95,map=snow_white_forest,at=2_5,weather=clear,hour=12 | 8
+lair_wisp    | newgame,level=50,map=valley_of_fear,at=74_3,weather=clear,hour=12 | 8
+lair_dragon  | newgame,level=80,map=genie_desert,at=74_46,weather=clear,hour=12 | 8
+lair_morvane | newgame,level=130,map=secret_plain,at=-13_34,weather=clear,hour=12 | 8
+lair_tide    | newgame,level=170,map=water_temple,at=-37_6,weather=clear,hour=12 | 8
+lair_emerald | newgame,level=200,map=emerald_road,at=47_5,weather=clear,hour=12 | 8
+lair_rock    | newgame,level=90,map=sleepy_town,summit=0,weather=clear,hour=12 | 8
+lair_wolf_peak | newgame,level=40,map=wolf_lair,summit=0,weather=clear,hour=12 | 8
 lair_rat     | newgame,level=60,map=rat_cavern,at=32_15 | 8
 skills       | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,menu=character,sub=skills | 8
 skills_learn | newgame,level=20,class=mage,menu=character,sub=skills             | 8
-boss_oak     | newgame,level=28,map=smiling_forest,at=-7_-11,npc=oak_grove    | 15
-boss_emerald | newgame,level=190,map=emerald_road,at=-2_18                   | 10
+boss_oak     | newgame,level=28,map=smiling_forest,at=-66_-36,npc=oak_grove   | 15
+boss_emerald | newgame,level=190,map=emerald_road,at=48_5                    | 10
 boss_fight   | newgame,level=60,class=fighter,map=rat_cavern,boss=rat_throne | 25
 boss_wave    | newgame,level=60,class=fighter,map=rat_cavern,boss=rat_throne,wave=3 | 25
 boss_fight_emerald | newgame,level=200,class=fighter,map=emerald_road,boss=emerald_gate | 25
@@ -618,7 +626,7 @@ smith_ingot       | newgame,level=90,class=fighter,map=goldburg,npc=goldburg_smi
 smith_ingot_de    | newgame,level=90,class=fighter,map=goldburg,npc=goldburg_smith,lang=de | 8
 healer_land       | newgame,level=30,hp=0.5,npc=healer,landscape | 8
 guild_land        | newgame,level=10,npc=guild_warrior,landscape | 8
-boss_oak_land     | newgame,level=28,map=smiling_forest,at=-7_-11,npc=oak_grove,landscape | 15
+boss_oak_land     | newgame,level=28,map=smiling_forest,at=-66_-36,npc=oak_grove,landscape | 15
 talk_npc_land     | newgame,level=43,class=fighter,pet=pineapple,friends=2,map=lotus_land,npc=thumbelina,landscape | 15
 profile_hero_land | newgame,level=30,class=fighter,equip=iron_axe+leather_vest,pet=pineapple,profile=hero,landscape | 8
 profile_friend_land | newgame,level=43,class=fighter,pet=pineapple,friends=4,unfold,profile=friend,landscape | 8
@@ -668,6 +676,12 @@ seal_shop         | newgame,level=40,npc=bluebird_shop                        | 
 # the date beside it on one line.
 hud_gold_k        | newgame,gold=45678,weather=clear,hour=12                  | 8
 hud_gold_m        | newgame,level=125,gold=1457603,weather=clear,hour=22      | 8
+# The HUD (playtesting 2026-10-24): Chat and the menu button bottom-right, the menu opened into its
+# pages, EXP under the hero's bars, and what just happened toasting under the minimap, then in the chat.
+hud_menu          | newgame,level=40,class=fighter,weather=clear,hour=12,hudmenu | 8
+hud_menu_land     | newgame,level=40,class=fighter,weather=clear,hour=12,hudmenu,landscape | 8
+hud_toasts        | newgame,level=40,class=fighter,weather=clear,hour=12,notices | 12
+chat_notices      | newgame,level=40,class=fighter,weather=clear,hour=12,notices,chat | 16
 # Settings with footsteps switched off (the darker switch). `quiet` leaves them off, so this runs last.
 settings_quiet | newgame,menu=settings,weather=clear,quiet | 8
 # Each land's own homes (Retro Diffusion, 2026-10-22): standing just in front of one, at noon.

@@ -1182,7 +1182,14 @@ included; the translations were made with AI and haven't had a native speaker's 
   their element. FO lets physical attacks carry one (Arms fusion).
 - Boss lairs (2026-10-23, maps.json `lair`): no source says how FO staged its field bosses, so their lairs
   follow what similar games do (a place of its own round the boss, a way in marked by braziers, a warning on
-  the approach, something tall to find it by), not FO. Our own design.
+  the approach, something tall to find it by), not FO. Our own design. 2026-10-24 (playtesting: a sign
+  post and an empty space, the boss in the open): each stands where a boss would, as RuneScape's do (the
+  Kalphite Queen and the Giant Mole underground, the King Black Dragon past the Wilderness's edge, Barrows'
+  crypts on a mound): at its land's far edge or on the coast at a trail's end, on a hilltop, or in a cave;
+  ringed by its land's own scenery (`lairRing`: dead trees round the wolf's den, a stone circle on the
+  wolf leader's peak, pillars round a ruin), its way in lined with what tells its story (`lairApproach`:
+  felled stumps to the angry oak, bones to the wolf, a drunk dragon's barrels), a warning where its
+  trail starts (`lairSign`).
 - Finishing `new_friend` lets you walk to all 30 maps (frog_swamp → goldburg_lake → goldburg), so the other
   quest gates can be walked round.
 

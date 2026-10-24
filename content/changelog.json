@@ -2,6 +2,18 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.7.78",
+      "date": "2026-10-24",
+      "title": "A cleaner screen",
+      "notes": [
+        "One menu button opens into Hero, Companion, Inventory, Quests and Settings, with Chat right beside it.",
+        "Your EXP bar sits under your health and magic, and what you win and find pops up for a moment, then waits in the chat.",
+        "Every boss waits in a lair worth finding: at its land's edge, on a hilltop or in a cave, ringed by dead trees, standing stones or broken pillars, with a warning where its trail begins.",
+        "Skill icons glow like the spells they cast, and now so do the icons on every button. Your skills are tiles: tap one to see it and raise it a level.",
+        "How to play shows the world as it really lies, and its Towns and Quests tips light up in the right order."
+      ]
+    },
+    {
       "version": "0.7.75",
       "date": "2026-10-23",
       "title": "Skills that keep growing",

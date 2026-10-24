@@ -110,6 +110,9 @@ import SpriteKit
 ///   clean          no frame counter in the corner (App Store screenshots; tools/store_slides.py crops
 ///                  off the Dynamic Island the simulator draws in)
 ///   nohud          the map without its HUD (App Store slides of the world)
+///   hudmenu        the HUD's menu button opened into its list of pages
+///   notices        once the map is up, three of the game's notices toast under the minimap, again
+///                  every few seconds (so a still catches them; they pile up in the chat too)
 ///   zoom=<z>       the map opens zoomed as if pinched (0.85 to 2.2; 2 = twice as close)
 ///   walk=dx_dy     once the map is up, the hero walks a loop that way (walk=1_0: east, a step up, west,
 ///                  a step down) over and over, with no fights, so a still catches them mid-stride
@@ -180,6 +183,8 @@ enum DebugLaunch {
     static var hidesFrameCounter: Bool { isFilming || flags["clean"] != nil }
     /// `nohud`: the map on its own, without the HUD over it (App Store slides of the world).
     static var hidesHUD: Bool { flags["nohud"] != nil }
+    /// `hudmenu`: the HUD's menu opened into its pages (`WorldHUD`'s `GameMenu`).
+    static var opensHUDMenu: Bool { flags["hudmenu"] != nil }
     static var opensMonsterBook: Bool { flags["book"] != nil }
     /// `page=<monster>`: with book, the Monster Book opens at that monster's page.
     static var bookPage: String? { flags["page"] }
@@ -841,6 +846,22 @@ enum DebugLaunch {
                         }
                     }
                     return
+                }
+            }
+        }
+        // `notices`: once the map is on screen, three notices toast under the minimap, over and over.
+        if flags["notices"] != nil {
+            Task {
+                while !(coordinator.isReady && coordinator.mapScene.view != nil) {
+                    try? await Task.sleep(for: .milliseconds(500))
+                }
+                while true {
+                    coordinator.session.post("+6389 EXP  +2699 gold", .reward)
+                    try? await Task.sleep(for: .milliseconds(300))
+                    coordinator.session.post("Found Copper Gauntlets!", .reward)
+                    try? await Task.sleep(for: .milliseconds(300))
+                    coordinator.session.post("Quest updated: Sleepy Stars (2/5)", .quest)
+                    try? await Task.sleep(for: .seconds(3))
                 }
             }
         }

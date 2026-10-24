@@ -217,8 +217,10 @@ private struct HowToPlayPage: View {
         Tip(icon: .sword, title: L("Battle"), text: L("Monsters jump out as you explore the wild. Battles take turns: attack, cast a skill or use an item.")),
         Tip(icon: .paw, title: L("Companions"), text: L("Throw a Seal Stone at a monster to befriend it: the weaker it is, the likelier it works. Keep up to five.")),
         Tip(icon: .star, title: L("Grow"), text: L("Every level gives a skill point. At level {level}, visit a guild master in town to become a Fighter, Mage or Beast Tamer.", ["level": Content.shared.classChoiceLevel])),
-        Tip(icon: .star, title: L("Quests"), text: L("Villagers with a gold ! have work for you. Quests reward you and open the roads to new places.")),
+        // Towns before Quests, as the reel shows them: the square as you walk in, then Elder Oak's
+        // quest (playtesting 2026-10-24: the other way round, they lit in the wrong order).
         Tip(icon: .heart, title: L("Towns"), text: L("Shops, healers and checkpoints wait in town. Your progress saves by itself.")),
+        Tip(icon: .star, title: L("Quests"), text: L("Villagers with a gold ! have work for you. Quests reward you and open the roads to new places.")),
     ]
 
     var body: some View {
@@ -250,7 +252,7 @@ private struct HowToPlayPage: View {
                     )
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        reel.play(clip: StoryScene.Clip.showing(tip: index).rawValue)
+                        reel.play(clip: StoryScene.Clip.showing(tip: index).rawValue, lighting: index)
                     }
                 }
             }
@@ -282,143 +284,139 @@ private struct WorldPage: View {
     }
 }
 
-/// Every map laid out by its roads: each exit puts the next map one step north, south, east or
-/// west of the one it leaves, starting from the first map.
+/// The continent as it really lies (playtesting 2026-10-24: the page showed a made-up grid of the
+/// roads, not the world): each land's own map where it is (`WorldOverview`, as the world map in the
+/// game draws it), its shape in a colour from its ground until that's drawn, the sea all round, turned
+/// like the game's view so north points up-left. The towns are named, the bosses' lands carry a
+/// sword, and where you start a gold dot.
 struct IntroAtlas: View {
-    struct Place: Identifiable {
-        let id: String
-        let name: String
-        let col: Int
-        let row: Int
-        let isTown: Bool
-        let hasBoss: Bool
-        let ground: UIImage
-    }
-
     /// The place to mark with a gold dot.
     let highlight: String?
-    private let places: [Place]
-    private let roads: [(from: String, to: String)]
-    private let cols: ClosedRange<Int>
-    private let rows: ClosedRange<Int>
-    private static let rowHeight: CGFloat = 46
+    @State private var picture: CGImage?
+    private let overview = WorldOverview.shared
+
+    /// A land on the continent, its box's south-west cell there and its middle.
+    private struct Land: Identifiable {
+        let def: MapDef
+        let origin: GridPoint
+        let middle: GridPoint
+        var id: String { def.id }
+    }
+
+    private let lands: [Land]
+    /// The continent's cells, with a little sea round it: its south-west cell and how many it spans.
+    private let low: GridPoint
+    private let columns: Int
+    private let rows: Int
 
     init(highlight: String?, content: Content = .shared) {
         self.highlight = highlight
-        var spots: [String: (col: Int, row: Int)] = [content.startMap: (0, 0)]
-        var taken: Set<[Int]> = [[0, 0]]
-        var queue = [content.startMap]
-        var roads: [(from: String, to: String)] = []
-        var seen: Set<String> = []
-        while !queue.isEmpty {
-            let id = queue.removeFirst()
-            guard let map = content.map(id), let here = spots[id] else { continue }
-            for exit in map.exits where content.map(exit.to) != nil {
-                if seen.insert([id, exit.to].sorted().joined(separator: "|")).inserted {
-                    roads.append((from: id, to: exit.to))
-                }
-                guard spots[exit.to] == nil else { continue }
-                let step: (col: Int, row: Int) = switch exit.edge {
-                case .north: (0, -1)
-                case .south: (0, 1)
-                case .east: (1, 0)
-                case .west: (-1, 0)
-                }
-                var spot = (col: here.col + step.col, row: here.row + step.row)
-                // Two roads can point at the same square: carry on in the same direction until one is free.
-                while taken.contains([spot.col, spot.row]) {
-                    spot = (spot.col + step.col, spot.row + step.row)
-                }
-                spots[exit.to] = spot
-                taken.insert([spot.col, spot.row])
-                queue.append(exit.to)
-            }
+        let lands = content.maps.compactMap { def -> Land? in
+            guard let origin = content.world[def.id] else { return nil }
+            let middle = content.regions[def.id]?.middle ?? GridPoint(col: def.width / 2, row: def.height / 2)
+            return Land(def: def, origin: origin, middle: GridPoint(col: origin.col + middle.col, row: origin.row + middle.row))
         }
-        places = content.maps.compactMap { map in
-            guard let spot = spots[map.id] else { return nil }
-            let ground = UIImage(cgImage: ArtLibrary.shared.tileTexture(map.theme.ground).cgImage())
-            return Place(
-                id: map.id, name: map.name, col: spot.col, row: spot.row,
-                isTown: map.town != nil, hasBoss: map.npcs?.contains { $0.role == .boss } ?? false, ground: ground
-            )
-        }
-        self.roads = roads
-        let columns = places.map(\.col), lines = places.map(\.row)
-        cols = (columns.min() ?? 0)...(columns.max() ?? 0)
-        rows = (lines.min() ?? 0)...(lines.max() ?? 0)
+        self.lands = lands
+        let sea = 10
+        low = GridPoint(col: (lands.map(\.origin.col).min() ?? 0) - sea, row: (lands.map(\.origin.row).min() ?? 0) - sea)
+        columns = (lands.map { $0.origin.col + $0.def.width }.max() ?? 0) + sea - low.col
+        rows = (lands.map { $0.origin.row + $0.def.height }.max() ?? 0) + sea - low.row
     }
 
     var body: some View {
         GeometryReader { proxy in
-            let byID = Dictionary(uniqueKeysWithValues: places.map { ($0.id, $0) })
-            let cell = CGSize(width: proxy.size.width / CGFloat(cols.count), height: proxy.size.height / CGFloat(rows.count))
-            ZStack {
-                Path { path in
-                    for road in roads {
-                        guard let a = byID[road.from], let b = byID[road.to] else { continue }
-                        path.move(to: center(of: a, cell: cell))
-                        path.addLine(to: center(of: b, cell: cell))
+            // The whole continent across the page: turned, it's as wide as its columns and rows
+            // together, and half that tall.
+            let scale = proxy.size.width / CGFloat(max(1, columns + rows))
+            ZStack(alignment: .topLeading) {
+                Color.clear
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .overlay(alignment: .topLeading) {
+                        if let picture {
+                            Image(decorative: picture, scale: 1)
+                                .interpolation(.none)
+                                .resizable()
+                                .frame(width: CGFloat(columns), height: CGFloat(rows))
+                                .transformEffect(CGAffineTransform(a: scale, b: -scale / 2, c: scale, d: scale / 2,
+                                                                   tx: 0, ty: scale * CGFloat(columns) / 2))
+                        }
                     }
-                }
-                .stroke(HUDStyle.plate.opacity(0.75), style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [6, 5]))
-
-                ForEach(places) { place in
-                    PlaceBadge(place: place, isStart: place.id == highlight, width: cell.width)
-                        .position(center(of: place, cell: cell))
+                ForEach(lands) { land in
+                    mark(for: land)
+                        .position(point(of: land.middle, scale: scale))
                 }
             }
         }
-        .frame(height: CGFloat(rows.count) * Self.rowHeight)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(L("World map of {count} places, starting in {map}", ["count": places.count, "map": places.first { $0.id == highlight }?.name ?? "Meadowbrook"]))
+        .aspectRatio(2, contentMode: .fit)
+        .background(Color(red: Double(WorldMap.seaColor.r) / 255, green: Double(WorldMap.seaColor.g) / 255, blue: Double(WorldMap.seaColor.b) / 255))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(HUDStyle.bevel.opacity(0.6), lineWidth: 1.5))
+        .onAppear { overview.prepare() }
+        // Drawn again as each land's own map comes in.
+        .task(id: overview.images.count) { picture = compose() }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L("World map of {count} places, starting in {map}", ["count": lands.count, "map": lands.first { $0.id == highlight }?.def.name ?? "Meadowbrook"]))
     }
 
-    private func center(of place: Place, cell: CGSize) -> CGPoint {
-        CGPoint(
-            x: (CGFloat(place.col - cols.lowerBound) + 0.5) * cell.width,
-            y: (CGFloat(place.row - rows.lowerBound) + 0.5) * cell.height
-        )
+    /// Where a cell of the continent shows: its place in the picture (columns east, rows north to
+    /// south), turned and squashed like the world (`WorldAtlas`).
+    private func point(of cell: GridPoint, scale: CGFloat) -> CGPoint {
+        let u = CGFloat(cell.col - low.col) + 0.5, v = CGFloat(rows - (cell.row - low.row)) - 0.5
+        return CGPoint(x: scale * (u + v), y: scale * (v - u) / 2 + scale * CGFloat(columns) / 2)
     }
-}
 
-private struct PlaceBadge: View {
-    let place: IntroAtlas.Place
-    let isStart: Bool
-    let width: CGFloat
-
-    var body: some View {
-        VStack(spacing: 2) {
-            Image(uiImage: place.ground)
-                .interpolation(.none)
-                .resizable()
-                .frame(width: 22, height: 22)
-                .clipShape(RoundedRectangle(cornerRadius: place.isTown ? 4 : 11))
-                .overlay(
-                    RoundedRectangle(cornerRadius: place.isTown ? 4 : 11)
-                        .strokeBorder(place.isTown ? HUDStyle.gold : HUDStyle.cream.opacity(0.8), lineWidth: 2)
-                )
-                .overlay(alignment: .topTrailing) {
-                    if place.hasBoss {
-                        IconImage(.sword, size: 10)
-                            .foregroundStyle(HUDStyle.hp)
-                            .padding(2)
-                            .background(Circle().fill(HUDStyle.ink))
-                            .offset(x: 6, y: -6)
-                    }
+    /// A town's name under a gold square, a boss's sword, where you start a gold dot and its name.
+    @ViewBuilder
+    private func mark(for land: Land) -> some View {
+        let start = land.id == highlight
+        let boss = land.def.npcs?.contains { $0.role == .boss } ?? false
+        if start || land.def.town != nil {
+            VStack(spacing: 1) {
+                if start {
+                    Circle().fill(HUDStyle.gold).frame(width: 9, height: 9)
+                        .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
+                } else {
+                    RoundedRectangle(cornerRadius: 2).fill(HUDStyle.ink.opacity(0.5)).frame(width: 8, height: 8)
+                        .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(HUDStyle.gold, lineWidth: 1.5))
                 }
-                .overlay(alignment: .topLeading) {
-                    if isStart {
-                        Circle().fill(HUDStyle.gold).frame(width: 10, height: 10)
-                            .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
-                            .offset(x: -5, y: -5)
-                    }
-                }
-            Text(place.name)
-                .font(HUDStyle.font(9))
-                .foregroundStyle(isStart ? HUDStyle.gold : HUDStyle.cream)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .frame(maxWidth: max(40, width - 4))
+                Text(land.def.name)
+                    .font(HUDStyle.font(8))
+                    .foregroundStyle(start ? HUDStyle.gold : HUDStyle.cream)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .shadow(color: HUDStyle.ink, radius: 0, x: 1, y: 1)
+            }
+        } else if boss {
+            IconImage(.sword, size: 9)
+                .foregroundStyle(HUDStyle.hp)
+                .padding(2)
+                .background(Circle().fill(HUDStyle.ink.opacity(0.85)))
         }
+    }
+
+    /// The continent in one picture, a pixel a cell, north up: the sea, and each land's own map (its
+    /// shape in a colour from its ground, until that's drawn), as `WorldAtlas` draws it.
+    private func compose() -> CGImage? {
+        guard columns > 0, rows > 0,
+              let context = CGContext(data: nil, width: columns, height: rows, bitsPerComponent: 8, bytesPerRow: columns * 4,
+                                      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        context.interpolationQuality = .none
+        let sea = WorldMap.seaColor
+        context.setFillColor(red: CGFloat(sea.r) / 255, green: CGFloat(sea.g) / 255, blue: CGFloat(sea.b) / 255, alpha: 1)
+        context.fill(CGRect(x: 0, y: 0, width: columns, height: rows))
+        for land in lands {
+            let def = land.def
+            let rect = CGRect(x: land.origin.col - low.col, y: land.origin.row - low.row, width: def.width, height: def.height)
+            if let image = overview.images[def.id] {
+                context.draw(image, in: rect)
+            } else {
+                let tint = WorldAtlas.tint(of: def)
+                if let shape = WorldScene.silhouette(of: def, color: PixelColor(r: UInt8(tint.r * 255), g: UInt8(tint.g * 255), b: UInt8(tint.b * 255))) {
+                    context.draw(shape, in: rect)
+                }
+            }
+        }
+        return context.makeImage()
     }
 }

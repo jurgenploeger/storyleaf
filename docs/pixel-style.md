@@ -290,6 +290,8 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   reported; the kit tuned on RD's armour (above); whips redrawn hanging, as held.
 - **UI icons (2026-10-23):** finished by the kit as the items are: 17 of 20 pass (2 did as drawn); three
   stay flat (`ui_icon_art.KEEP_FLAT`), as the finish ran their small parts together at button size.
+  **2026-10-24: not pixel art any more,** drawn as light like the skill icons (playtesting: "can we use the
+  same style from the skill visuals for icons in the UI?").
 - **Skill icons (2026-10-23): not pixel art.** Finished by the kit they passed 34 of 41, but read as
   objects, not as the spells they cast (playtesting: "more like their animations, with flares and
   glows"). `tools/skill_art.py` now draws each as light (glows, flares, sparks, trails in its element's

@@ -3025,6 +3025,22 @@ struct RulesTests {
         #expect(session.log.contains { $0.kind == .announcement })
     }
 
+    /// What happens to you toasts on the map, then lives in the chat (`GameSession.post`; playtesting
+    /// 2026-10-24): seen as it toasted, so not unread, and kept from map to map like announcements.
+    @Test func noticesLiveInTheChat() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.startChat(on: "Meadowbrook")
+        session.post("+120 EXP  +40 gold", .reward)
+        #expect(session.chat.last?.kind == .notice)
+        #expect(session.chat.last?.tone == .reward)
+        #expect(session.unreadChat == 0)
+        session.announce("Dawn breaks over Storyleaf.")
+        // An announcement is in the chat once, not again as a notice.
+        #expect(session.chat.filter { $0.text == "Dawn breaks over Storyleaf." }.count == 1)
+        session.startChat(on: "Ingothold")
+        #expect(session.chat.map(\.kind) == [.notice, .announcement, .system])
+    }
+
     @Test func aRareSightingMakesItTurnUpMoreOften() throws {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         let meadow = try #require(Content.shared.map("sunny_meadow"))
@@ -3934,6 +3950,19 @@ struct LandPlanTests {
                 // A cave's chamber leaves less room than open ground, and a summit's top less again.
                 let least = min(npc.summit == nil ? 4 : 2, npc.lair?.count ?? 0)
                 #expect(near.count >= least, "\(npc.id): only \(near.count) of its lair's \(npc.lair?.count ?? 0) pieces set down")
+                // Ringed (`lairRing`; playtesting 2026-10-24: a lair was a few pieces and an empty space): out on
+                // open ground most of the way round it; a summit's top or a cave's chamber has less room.
+                if let ring = npc.lairRing, npc.summit == nil, def.theme.cave == nil {
+                    let kinds = Set(ring.tall + ring.low)
+                    let reach = (ring.radius ?? 6) + 1
+                    let ringed = plan.localProps.filter { kinds.contains($0.art) && max(abs($0.cell.col - boss.col), abs($0.cell.row - boss.row)) <= reach }
+                    #expect(ringed.count >= 10, "\(npc.id): only \(ringed.count) of its ring set down")
+                }
+                // Its warning stands by its trail, near where that starts, far from the lair itself.
+                if let sign = npc.lairSign {
+                    #expect(plan.localProps.contains { $0.art == sign && max(abs($0.cell.col - boss.col), abs($0.cell.row - boss.row)) > 12 },
+                            "\(npc.id): no \(sign) by its trail")
+                }
                 // Never walled in: from beside it you can walk to a road (the way you came), or a good way
                 // over the land; or, where its own land holds less (the Emerald Dragon stands in a pocket
                 // of it you reach from the land next door), its lair cuts off no more than a few cells

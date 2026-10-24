@@ -232,14 +232,15 @@ final class StoryScene: SKScene {
         case walk, battle, seal, victory, town
 
         /// The tips on the How to play page it shows (IntroView), by their place there, in the
-        /// order it shows them: the town is Towns first, then Quests when Elder Oak speaks.
+        /// order it shows them: the town is Towns first, then Quests when Elder Oak speaks (in that
+        /// order on the page too).
         var tips: [Int] {
             switch self {
             case .walk: [0]
             case .battle: [1]
             case .seal: [2]
             case .victory: [3]
-            case .town: [5, 4]
+            case .town: [4, 5]
             }
         }
 
@@ -693,8 +694,9 @@ final class StoryScene: SKScene {
     // MARK: - How to play
 
     /// Plays the reel from `clip` on (0 walk, 1 battle, 2 seal, 3 victory, 4 town), round and round.
-    /// The How to play page calls it when a tip is tapped.
-    func play(clip index: Int) {
+    /// The How to play page calls it when a tip is tapped, `lighting` that tip from the start (the
+    /// town part lit Towns first, so tapping Quests seemed to do nothing but play the town).
+    func play(clip index: Int, lighting tip: Int? = nil) {
         let count = Clip.allCases.count
         let clip = Clip(rawValue: ((index % count) + count) % count) ?? .walk
         guard kind == .reel, built else {
@@ -705,7 +707,7 @@ final class StoryScene: SKScene {
         battleStage.removeAllActions()
         hud.clear()
         hud.clip = clip.rawValue
-        hud.tip = clip.tips[0]
+        hud.tip = tip.flatMap { clip.tips.contains($0) ? $0 : nil } ?? clip.tips[0]
         let part: SKAction = switch clip {
         case .walk: walkClip()
         case .battle: battleClip()

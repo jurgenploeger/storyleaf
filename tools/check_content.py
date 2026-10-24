@@ -525,6 +525,26 @@ for map_def in maps.values():
                       f"{where} → {piece.get('art')} at {x}, {y}: within 7 cells of the boss, not on it")
                 check(not (x == 0 and -4 <= y < 0) or piece.get("blocking") is False,
                       f"{where} → {piece.get('art')} at {x}, {y} blocks the way in (straight south of the boss)")
+        # What rings it, lines its way in and warns by its trail (LandPlanner.planLair): a lair's alone.
+        for key in ("lairRing", "lairApproach", "lairSign"):
+            check(key not in npc or "lair" in npc, f"npc {npc['id']} → {key} without a lair")
+        if "lairRing" in npc:
+            ring = npc["lairRing"]
+            where = f"npc {npc['id']} lairRing"
+            check(isinstance(ring, dict) and set(ring) <= {"tall", "low", "radius"} and "tall" in ring and "low" in ring,
+                  f"{where} → tall, low and maybe radius")
+            for art_id in ring.get("tall", []) + ring.get("low", []):
+                check(art_id in art, f"{where} → unknown art {art_id}")
+            check(ring.get("tall") or ring.get("low"), f"{where} → nothing in it")
+            radius = ring.get("radius", 6)
+            check(isinstance(radius, int) and not isinstance(radius, bool) and 3 <= radius <= 8, f"{where} → radius must be 3 to 8")
+        for art_id in npc.get("lairApproach", []):
+            check(art_id in art, f"npc {npc['id']} lairApproach → unknown art {art_id}")
+        if "lairSign" in npc:
+            check(npc["lairSign"] in art, f"npc {npc['id']} lairSign → unknown art {npc['lairSign']}")
+            check(any(max(abs(t["to"][0] - npc["x"]), abs(t["to"][1] - npc["y"])) <= 8 for t in map_def.get("trails", []))
+                  and npc.get("summit") is None and not npc.get("at"),
+                  f"npc {npc['id']} lairSign → it stands by a trail to the boss (one ending within 8 cells of it)")
         check(npc["role"] in ("healer", "shop", "quests", "guild", "chest", "boss", "smith", "weaver", "stairs", "barber", "waystone"), f"npc {npc['id']} → unknown role {npc['role']}")
         # A waystone (`NPCRole.waystone`): out in a wild land on the continent (you arrive in front of
         # it, `WorldMap.waystoneArrival`), one to a land, woken by a quest someone in that land gives.
