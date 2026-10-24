@@ -20,10 +20,27 @@ import pathlib
 import sys
 
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from skill_art import LIGHTS, N, OUT, SPRITES, Icon, heart_shape, paw, rgb, shield  # noqa: E402
+
+
+class UIIcon(Icon):
+    """The skills' `Icon`, its solid shapes without their coloured glow and on a smaller, softer
+    shadow: on a light button (the title screen's cream ones) the glow read as a smudge round them.
+    The sparks and flares keep theirs."""
+
+    def body(self, mask, light, cx, cy, r, rim=True, shadow=True):
+        deep, main, bright, core = light
+        if shadow:
+            self.over(np.zeros(3), self._soft(mask, 0.012) * 0.32)
+        field = self.radial(cx, cy, r, core, deep, power=0.8)
+        inner = np.hypot(self.x - cx, self.y - cy) < r * 0.55
+        field = np.where(inner[..., None], self.radial(cx, cy, r * 0.55, core, bright, power=1.2), field)
+        self.over(field, mask)
+        if rim:
+            self.add(bright, np.clip(mask - Icon._erode(mask), 0, 1) * 0.5)
 
 
 def light(*hexes):
@@ -250,13 +267,25 @@ def draw_arrow_down(ic):
 DRAWINGS = {name[len("draw_"):].replace("_", "-"): fn for name, fn in list(globals().items()) if name.startswith("draw_") and callable(fn)}
 
 
+# How far a glow or a shadow may reach past what's solid in an icon, in parts of its width: a thin soft
+# rim. (Left to spread, the skills' glows and shadows filled the icon's square, and on the title
+# screen's cream buttons it showed as a smudge cut off square: playtesting 2026-10-24.)
+HALO = 0.035
+
+
 def render(name):
-    """The icon at 128 pixels, on nothing: its glow fades out into the button under it."""
-    ic = Icon(None)
+    """The icon at 128 pixels, on nothing: its glows and shadow a thin soft rim round its shapes, so
+    it sits on any button, light or dark, with nothing cut off at its edges."""
+    ic = UIIcon(None)
     DRAWINGS[name](ic)
-    # Faded out over the last few pixels to the edge, so no glow stops short there in a square.
+    # What's solid (the shapes, the sparks' cores), and a soft band round it the glows may fill.
+    solid = Image.fromarray((ic.a > 0.6).astype(np.uint8) * 255)
+    reach = int(HALO * N)
+    room = solid.filter(ImageFilter.MaxFilter(2 * (reach // 2) + 1)).filter(ImageFilter.GaussianBlur(reach / 2))
+    a = np.minimum(ic.a, np.asarray(room, float) / 255)
+    # And faded out over the last few pixels to the edge, where a shape runs close to it.
     edge = np.maximum(np.abs(ic.x - 0.5), np.abs(ic.y - 0.5))
-    a = ic.a * np.clip((0.5 - edge) / 0.07, 0, 1)
+    a = a * np.clip((0.5 - edge) / 0.025, 0, 1)
     rgba = np.dstack([np.clip(ic.rgb, 0, 1) * a[..., None], a])            # premultiplied
     img = Image.fromarray((rgba * 255).round().astype(np.uint8), "RGBa")
     return img.resize((OUT, OUT), Image.LANCZOS).convert("RGBA")

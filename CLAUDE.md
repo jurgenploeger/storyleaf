@@ -117,8 +117,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   geodes): each pixel's brightness laid on a ramp of crystal colours, as a `derive` can't tint the grey tiles.
   Rerun it after editing a ramp; `--sheet out.png` previews them.
 - `tools/ui_icon_art.py`: the UI's button icons (`art/sprites/ui_<GameIcon>.png`), drawn as light in the skill
-  icons' style with `skill_art.Icon` (glossy shapes, glows, flares, a soft shadow), at 128 pixels on no backdrop,
-  faded out at the edge: `IconImage` shows them smoothed from 18 pt up (battle buttons, the HUD's buttons, the
+  icons' style with `skill_art.Icon` (glossy shapes, flares, a soft shadow; `UIIcon` drops the shapes' coloured
+  glow), at 128 pixels on no backdrop, every glow and shadow kept to a thin rim round the shapes (`HALO`), so
+  nothing smudges or gets cut off on a light button: `IconImage` shows them smoothed from 18 pt up (battle buttons, the HUD's buttons, the
   menu's tabs) and keeps Iconaut's vector icons for small inline glyphs. `--sheet out.png` previews them on the
   game's button colours.
 - `tools/water_art.py`: the same for the water: `sea.png` (16 × 16 cells that tile as a whole; the continent gives each
