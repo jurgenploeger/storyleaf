@@ -1374,7 +1374,7 @@ def star_observatory(b):
     wx0, wx1 = 54, 80                                                             # the wing, beside it
     wtop = box(b, wx0, wx1, 18, stone, pattern="rubble", depth=0.6)
     footing(b, wx0, wx1, colour="#857e98", depth=0.6)
-    eaves_roof(b, wx0, wx1, wtop, slate, "shingles", rise=12, over=3, wall=stone, wall_pattern="rubble")
+    eaves_roof(b, wx0, wx1, wtop, slate, "shingles", rise=12, over=3, depth=0.6, wall=stone, wall_pattern="rubble")
     window(b, wx0 + 8, wtop + 9, w=6, h=7, glass="#ffe6a0", frame="#4a3a5e", deep=True)
     window(b, wx1 - 8, wtop + 9, w=6, h=7, glass="#ffe6a0", frame="#4a3a5e", deep=True)
     x0, x1 = 18, 54
