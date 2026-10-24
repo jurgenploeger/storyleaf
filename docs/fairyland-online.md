@@ -1128,9 +1128,11 @@ the Wishing Seal, which stays the Monster Book's last reward.
       pediment. It had been RD's town gate arch with her statue behind it, which read as a gateway, not a temple.
     - Ambrose the Wise has a tower, Hermit Orrin a mushroom hut, the Old Swan Keeper and Little Pig
       cottages, Mother Sheep a windmill, and Dozywick some houses.
-    - In Meadowbrook each guild has its own: the Warrior Guild a stone hall with red banners, spears and a
-      training dummy (`warrior_guild`), the Wildfolk Lodge a log lodge with antlers over its door and a pen
-      (`wildfolk_lodge`, Ranger Pip moved across the lane to it), the Arcane Circle RD's wizard tower. The
+    - In Meadowbrook each guild has its own: the Warrior Guild a grand stone hall between two crenellated
+      towers with red banners, spears and a training dummy (`warrior_guild`), the Wildfolk Lodge a great log
+      lodge with antlers on its gable, a porch, a stable wing and a totem (`wildfolk_lodge`, Ranger Pip moved
+      across the lane to it), both drawn bigger than a house and standing on 5 × 3 cells; the Arcane Circle
+      RD's wizard tower. The
       other towns' healers and shops stand at an inn's and a shop's door, and Prismhaven's toymaker at a toy
       shop's.
     - New sprites for them were priced at $0.06 each in RD and turned down (2026-10-12); since 2026-10-24

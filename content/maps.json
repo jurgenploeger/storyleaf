@@ -556,13 +556,15 @@
         },
         {
           "art": "warrior_guild",
-          "x": -8,
-          "y": -4
+          "x": -7,
+          "y": -4,
+          "size": [5, 3]
         },
         {
           "art": "wildfolk_lodge",
-          "x": -14,
-          "y": -4
+          "x": -16,
+          "y": -4,
+          "size": [5, 3]
         },
         {
           "art": "magic_tower",
@@ -806,8 +808,8 @@
         },
         {
           "art": "house_green",
-          "x": -20,
-          "y": -5
+          "x": -21,
+          "y": -3
         },
         {
           "art": "house_purple",
@@ -969,7 +971,7 @@
           "role": "guild",
           "classId": "fighter",
           "art": "npc_warrior",
-          "x": -9,
+          "x": -8,
           "y": -6,
           "greeting": "The Warrior Guild wants strong arms and brave hearts."
         },
@@ -989,7 +991,7 @@
           "role": "guild",
           "classId": "tamer",
           "art": "npc_journeyman",
-          "x": -15,
+          "x": -17,
           "y": -6,
           "greeting": "The Wildfolk Lodge! We befriend beasts, not beat them. Well, mostly."
         },

@@ -763,6 +763,16 @@ nonisolated struct MapDef: Decodable, Identifiable, Sendable {
         let art: String
         let x: Int
         let y: Int
+        /// The cells it stands on, [across, back]: centred on its column and back from its row
+        /// (`WorldMap.placeOwnBuildings`). A house's 3 × 2 when not given; a grand one (a guild hall,
+        /// drawn bigger) takes more.
+        let size: [Int]?
+
+        /// Its footprint's columns either side of its own, and its rows back from it.
+        var footprint: (columns: ClosedRange<Int>, rows: ClosedRange<Int>) {
+            let across = max(1, size?.first ?? 3), back = max(1, size?.last ?? 2)
+            return (-(across / 2)...((across - 1) / 2), 0...(back - 1))
+        }
     }
 
     nonisolated struct Encounters: Decodable, Sendable {

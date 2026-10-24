@@ -521,7 +521,7 @@ place_shrine   | newgame,level=140,map=rosen_lake,at=2_0,hour=10,weather=clear |
 place_tower    | newgame,level=60,map=goldburg_lake,at=2_0,hour=10,weather=clear | 8
 place_hermit   | newgame,level=55,map=puppet_hill,at=2_-6,hour=10,weather=clear | 8
 place_dozywick_land | newgame,level=75,map=sleepy_town,at=2_0,hour=10,weather=clear,landscape | 8
-place_guilds   | newgame,map=meadowbrook,at=-9_-10 | 8
+place_guilds   | newgame,map=meadowbrook,at=-10_-11 | 8
 place_bell_tower | newgame,level=44,map=valley_of_fear,at=-15_-10,weather=clear,hour=12 | 8
 place_gem_workshop | newgame,level=82,map=crystal_mountain,at=-20_-1,weather=clear,hour=12 | 8
 place_water_shrine | newgame,level=164,map=water_temple,at=-23_-4,weather=clear,hour=12 | 8

@@ -187,15 +187,19 @@ class Build:
     96-pixel frame's coordinates, then (`fit`) scaled about its foot to fill the frame as RD's do; the
     materials' patterns stay at the sprite's own pixels, so a bigger house has more blocks, not bigger."""
 
-    def __init__(self, k=1.0, cx=SIZE / 2, organic=0.0):
-        self.s = Sprite(SIZE)
+    def __init__(self, k=1.0, cx=SIZE / 2, organic=0.0, size=SIZE):
+        # Its canvas, `size` pixels square: a house's 96, a grand building's more (its drawing, in the
+        # 96-pixel frame's coordinates, scaled up to fill it; its materials stay at the sprite's pixels).
+        self.size = size
+        self.foot = GROUND + size - SIZE
+        self.s = Sprite(size)
         self.s.light, self.s.rim = LIGHT, "lower"
         self.k, self.cx = k, cx
         # How far its edges wander off the ruler, in pixels (0: drawn straight; `bend`).
         self.organic = organic
 
     def t(self, points, closed=True):
-        pts = [(SIZE / 2 + (x - self.cx) * self.k, GROUND + (y - GROUND) * self.k) for x, y in points]
+        pts = [(self.size / 2 + (x - self.cx) * self.k, self.foot + (y - GROUND) * self.k) for x, y in points]
         return self.bend(pts, closed) if self.organic and len(pts) > 1 else pts
 
     def bend(self, pts, closed):
@@ -227,11 +231,12 @@ class Build:
         `eave` pixels at its top lie in the shadow of the roof over it, `foot` pixels at its bottom in
         the ground's."""
         m = self._mask(points) if mask is None else mask
-        region = m.reshape(SIZE, SS, SIZE, SS).mean(axis=(1, 3)) >= 0.5
+        n = self.size
+        region = m.reshape(n, SS, n, SS).mean(axis=(1, 3)) >= 0.5
         if not region.any():
             return
         ys, xs = np.nonzero(region)
-        yy, xx = np.mgrid[0:SIZE, 0:SIZE]
+        yy, xx = np.mgrid[0:n, 0:n]
         (ux, uy), (vx, vy) = axes
         det = ux * vy - uy * vx
         px, py = xx + 0.5, yy + 0.5
@@ -278,7 +283,9 @@ class Build:
     def render(self):
         img = self.s.render(outline="tinted")
         size = int((np.asarray(img)[..., 3] > 0).sum())
-        return limit_palette(img, max(16, min(PALETTE, int(size * DENSITY / 100))))
+        # The palette's cap grows with the canvas: a grand building's 160 pixels hold nearly three houses.
+        cap = int(PALETTE * (self.size / SIZE) ** 2)
+        return limit_palette(img, max(16, min(cap, int(size * DENSITY / 100))))
 
 
 def box(b, x0, x1, height, wall, side=None, pattern="plaster", side_pattern=None, ground=GROUND, depth=1.0):
@@ -1046,79 +1053,137 @@ def lake_shrine(b):
     return b
 
 
+def grand(size):
+    """Marks a drawing as a grand building, drawn on a `size`-pixel canvas (a house's is 96): a guild hall
+    that should stand over the town's cottages. maps.json gives it the room (its building's `size`)."""
+    def mark(draw):
+        draw.size = size
+        return draw
+    return mark
+
+
+def crenels(b, x0, x1, top, colour, every=4.0):
+    """Battlements along a tower's or a wall's top: merlons `every` pixels with gaps between."""
+    x = x0
+    while x + every * 0.6 <= x1 + 0.01:
+        b.rect(x, top - 3.5, x + every * 0.6, top + 0.5, colour, texture=0.04)
+        x += every
+
+
+def pennant(b, x, top, colour, length=9):
+    """A pennant on a pole standing up from `top` at `x`, flying to the right."""
+    b.stroke([(x, top), (x, top - 12)], 1.0, "#5a4a3e")
+    b.poly([(x, top - 12), (x + length, top - 10), (x, top - 7.5)], colour, texture=0.02)
+
+
 @by_hand
+@grand(160)
 def warrior_guild(b):
-    """The Warrior Guild's hall, Captain Brann's: a squat hall of rough stone under a big red shingle roof,
-    a broad double door with the guild's shield on crossed swords over it, red banners down the wall either
-    side, a rack of spears by one end and a straw training dummy before the other, on a patch of grass with
-    a path to the door."""
-    x0, x1 = 24, 60
+    """The Warrior Guild's hall, Captain Brann's, the grandest thing in Meadowbrook: a tall hall of rough
+    stone, two storeys under a steep red gable with the guild's shield on crossed swords in it, flanked
+    by two crenellated towers flying red pennants, a great arched double door in a stone surround up two
+    steps, tall arched windows and red banners, a rack of spears and a training dummy on its forecourt."""
+    stone, red = "#b4aca4", "#b8443a"
+    grounds(b, 8, 86, path=47)
+    b.surface([(36, GROUND + 4), (58, GROUND + 4), (55, GROUND - 1), (39, GROUND - 1)], "#b8b0a4", "rubble", tone=0.1)
+    for x0, x1 in ((8, 24), (70, 86)):                                          # the towers, behind the hall
+        top = box(b, x0, x1, 48, stone, pattern="rubble", depth=0.5)
+        crenels(b, x0 - 0.5, x1 + 0.5, top, stone)
+        b.rect((x0 + x1) / 2 - 0.8, top + 12, (x0 + x1) / 2 + 0.8, top + 19, "#2a2630", texture=0.0)
+        b.rect((x0 + x1) / 2 - 0.8, top + 28, (x0 + x1) / 2 + 0.8, top + 34, "#2a2630", texture=0.0)
+        pennant(b, (x0 + x1) / 2, top - 3.5, red)
+    x0, x1 = 24, 70
     cx = (x0 + x1) / 2
-    grounds(b, x0, x1, path=cx)
-    top = box(b, x0, x1, 22, "#b4aca4", pattern="rubble", depth=0.7)
-    footing(b, x0, x1, colour="#7e7872", depth=0.7)
-    eaves_roof(b, x0, x1, top, "#b8443a", "shingles", rise=26, over=6, depth=0.7, wall="#b4aca4", wall_pattern="rubble")
-    door(b, cx, w=12, h=15, colour="#6a3e24", frame="#4a3a34")
-    b.stroke([(cx, GROUND - 1), (cx, GROUND - 13)], 0.8, "#3a2418")
-    for a, c in (((cx - 6.5, top + 11), (cx + 6.5, top + 1)), ((cx + 6.5, top + 11), (cx - 6.5, top + 1))):
-        b.stroke([a, c], 1.6, "#d8dee8")
-    b.poly([(cx - 5, top + 1.5), (cx + 5, top + 1.5), (cx + 5, top + 6.5), (cx, top + 11.5), (cx - 5, top + 6.5)], "#b8302c",
+    top = box(b, x0, x1, 32, stone, pattern="rubble", depth=0.6)
+    footing(b, x0, x1, colour="#7e7872", depth=0.6)
+    gable(b, x0, x1, top, stone, "rubble", rise=26)
+    gable_roof(b, x0, x1, top, red, "shingles", rise=26, over=5, depth=0.6)
+    for a, c in (((cx - 8, top - 4), (cx + 8, top - 18)), ((cx + 8, top - 4), (cx - 8, top - 18))):
+        b.stroke([a, c], 1.8, "#d8dee8")                                         # the crest: swords and shield
+    b.poly([(cx - 6, top - 17), (cx + 6, top - 17), (cx + 6, top - 10), (cx, top - 3.5), (cx - 6, top - 10)], "#b8302c",
            texture=0.0)
-    b.stroke([(cx, top + 2.5), (cx, top + 10)], 1.1, "#e8c050")
-    b.stroke([(cx - 3.8, top + 5.5), (cx + 3.8, top + 5.5)], 1.1, "#e8c050")
-    for x in (x0 + 6, x1 - 6):
-        b.poly([(x - 3.2, top + 2), (x + 3.2, top + 2), (x + 3.2, top + 15), (x, top + 18), (x - 3.2, top + 15)], "#b8302c",
+    b.stroke([(cx, top - 16), (cx, top - 5.5)], 1.2, "#e8c050")
+    b.stroke([(cx - 4.5, top - 12.5), (cx + 4.5, top - 12.5)], 1.2, "#e8c050")
+    b.rect(x0 - 1, top + 13, x1 + 1, top + 15, "#c8c0b4", texture=0.03)          # a string course between storeys
+    for x in (x0 + 8, x1 - 8):                                                    # tall arched windows upstairs
+        window(b, x, top + 7, w=6, h=9, frame="#5a4a40", arched=True)
+    arc = [(cx + 11 * math.cos(a), GROUND - 22 + 11 - 11 * math.sin(a)) for a in np.linspace(0, math.pi, 13)]
+    b.poly([(cx + 11, GROUND - 2)] + arc + [(cx - 11, GROUND - 2)], "#c8c0b4", texture=0.04)    # the stone surround
+    door(b, cx, w=16, h=20, colour="#6a3e24", frame="#4a3a34", ground=GROUND - 2)
+    b.stroke([(cx, GROUND - 3), (cx, GROUND - 18)], 0.9, "#3a2418")
+    for k, (a_, c_) in enumerate(((cx - 13, cx + 13), (cx - 15, cx + 15))):         # two steps up to it
+        b.rect(a_, GROUND - 2 + k * 2, c_, GROUND + k * 2, "#9a948c", texture=0.04)
+    for x in (x0 + 7, x1 - 7):                                                    # banners down the walls
+        b.poly([(x - 3.5, top + 17), (x + 3.5, top + 17), (x + 3.5, top + 30), (x, top + 33), (x - 3.5, top + 30)], "#b8302c",
                texture=0.03)
-        b.stroke([(x - 4.2, top + 2), (x + 4.2, top + 2)], 1.4, "#e8c050")
-        b.ellipse(x, top + 8.5, 1.8, 1.8, "#e8c050", gloss=0.5)
-    for x in (13, 16.5, 20):
-        b.stroke([(x, GROUND), (x, GROUND - 24)], 1.4, "#8a5a2a")
-        b.poly([(x - 1.6, GROUND - 24), (x + 1.6, GROUND - 24), (x, GROUND - 29)], "#d8dee8", texture=0.0)
-    b.stroke([(11, GROUND - 11), (22, GROUND - 11)], 1.8, "#6a4a2e")
-    dx = 73
-    b.stroke([(dx, GROUND + 1), (dx, GROUND - 19)], 1.8, "#6a4a2e")
-    b.stroke([(dx - 6.5, GROUND - 15), (dx + 6.5, GROUND - 15)], 1.6, "#6a4a2e")
-    b.ellipse(dx, GROUND - 11, 4.6, 6.4, "#d8b860", texture=0.06)
-    b.stroke([(dx - 4.4, GROUND - 10), (dx + 4.4, GROUND - 10)], 0.9, "#8a6a30")
-    b.ellipse(dx, GROUND - 20.5, 3.2, 3.2, "#d8b860")
+        b.stroke([(x - 4.5, top + 17), (x + 4.5, top + 17)], 1.4, "#e8c050")
+        b.ellipse(x, top + 23, 1.9, 1.9, "#e8c050", gloss=0.5)
+    for x in (13, 16, 19):                                                        # a rack of spears
+        b.stroke([(x, GROUND + 2), (x, GROUND - 20)], 1.3, "#8a5a2a")
+        b.poly([(x - 1.5, GROUND - 20), (x + 1.5, GROUND - 20), (x, GROUND - 24.5)], "#d8dee8", texture=0.0)
+    b.stroke([(11, GROUND - 8), (21, GROUND - 8)], 1.6, "#6a4a2e")
+    dx = 80                                                                       # the training dummy
+    b.stroke([(dx, GROUND + 3), (dx, GROUND - 15)], 1.6, "#6a4a2e")
+    b.stroke([(dx - 5.5, GROUND - 11), (dx + 5.5, GROUND - 11)], 1.4, "#6a4a2e")
+    b.ellipse(dx, GROUND - 8, 3.8, 5.4, "#d8b860", texture=0.06)
+    b.ellipse(dx, GROUND - 16, 2.7, 2.7, "#d8b860")
     return b
 
 
 @by_hand
+@grand(160)
 def wildfolk_lodge(b):
-    """The Wildfolk Lodge, the tamers' guild, Ranger Pip's: a low lodge of round logs under a deep mossy
-    shingle roof, a pair of antlers on its gable, a paw-print sign, a little pen beside it with a hay
-    bale, and a birdhouse on a post, on a patch of grass with a path to the door."""
-    x0, x1 = 26, 56
-    log = "#b88250"
+    """The Wildfolk Lodge, the tamers' guild, Ranger Pip's: a great lodge of round logs under a steep mossy
+    roof, a great pair of antlers on its gable over a round window with a paw on it, a porch on log posts
+    before its door, a stable wing on its side with hay in its door, a carved totem of beasts beside it and
+    a little pen, on a patch of grass with a path to the porch."""
+    log, moss = "#b88250", "#6a8a3e"
+    grounds(b, 10, 86, path=38)
+    wx0, wx1 = 58, 82                                                             # the stable wing, behind
+    wtop = box(b, wx0, wx1, 16, log, pattern="planks", depth=0.6)
+    gable_roof(b, wx0, wx1, wtop, moss, "shingles", rise=13, over=3, depth=0.6)
+    gable(b, wx0, wx1, wtop, log, "planks", rise=13)
+    b.rect(wx0 + 7, GROUND - 13, wx1 - 7, GROUND, "#5a3a22", texture=0.0)
+    b.surface([(wx0 + 8, GROUND), (wx1 - 8, GROUND), (wx1 - 8, GROUND - 12), (wx0 + 8, GROUND - 12)], "#8a5a34", "boards")
+    b.ellipse((wx0 + wx1) / 2, GROUND - 2, 4.5, 2.4, "#e0c060", texture=0.06)
+    x0, x1 = 18, 58
     cx = (x0 + x1) / 2
-    grounds(b, x0 - 4, x1 + 4, path=cx)
-    top = box(b, x0, x1, 19, log, pattern="planks", depth=0.7)
-    for y in np.arange(top + 2, GROUND - 2, 3):
-        b.ellipse(x0, y, 1.9, 1.5, "#d8a46a", profile="flat")
-        b.ellipse(x1 + 0.5, y, 1.9, 1.5, "#d8a46a", profile="flat")
-    footing(b, x0, x1, colour="#857e74", depth=0.7)
-    gable(b, x0, x1, top, log, "planks", rise=22)
-    gable_roof(b, x0, x1, top, "#6a8a3e", "shingles", rise=24, over=6, depth=0.7)
-    door(b, cx, w=10, h=14, colour="#6a4426", frame="#4a3020")
+    top = box(b, x0, x1, 24, log, pattern="planks", depth=0.6)
+    for y in np.arange(top + 2, GROUND - 2, 3):                                   # the logs' ends at its corners
+        b.ellipse(x0, y, 2.0, 1.6, "#d8a46a", profile="flat")
+        b.ellipse(x1 + 0.5, y, 2.0, 1.6, "#d8a46a", profile="flat")
+    footing(b, x0, x1, colour="#857e74", depth=0.6)
+    gable(b, x0, x1, top, log, "planks", rise=32)
+    gable_roof(b, x0, x1, top, moss, "shingles", rise=32, over=6, depth=0.6)
+    b.ellipse(cx, top - 11, 5.5, 5.5, "#7a5232", texture=0.03)                    # the round window, a paw on it
+    b.ellipse(cx, top - 11, 4.2, 4.2, "#ffd27a", texture=0.0, profile="flat")
+    paw_emblem(b, cx, top - 11)
     antler = "#efe2c4"
-    for side in (-1, 1):
-        b.stroke([(cx + side * 1.4, top - 7), (cx + side * 6.5, top - 12), (cx + side * 7.5, top - 16.5)], 1.3, antler)
-        b.stroke([(cx + side * 4.4, top - 10.5), (cx + side * 4, top - 14.5)], 1.1, antler)
-        b.stroke([(cx + side * 6.5, top - 12), (cx + side * 10, top - 13)], 1.1, antler)
-    b.ellipse(cx, top - 7, 2.2, 1.9, "#8a6a4a")
-    window(b, x0 + 6.5, top + 8, w=6, h=6, frame="#4a3020")
-    window(b, x1 - 6.5, top + 8, w=6, h=6, frame="#4a3020", box="#f0c040")
-    sign(b, x1 + DX * 0.7 - 1, top + 2, paw_emblem, board="#c8945a")
-    for x in (64, 70, 76):
-        b.stroke([(x, GROUND + 3), (x, GROUND - 5)], 1.4, "#7a5232")
-    for y in (GROUND, GROUND - 3.5):
-        b.stroke([(63, y), (77, y)], 1.1, "#9a6a3e")
-    b.ellipse(70, GROUND - 1, 4.2, 3.0, "#e0c060", texture=0.06)
-    b.stroke([(17, GROUND + 1), (17, GROUND - 17)], 1.4, "#6a4a2e")
-    b.ellipse(17, GROUND - 21, 3.8, 3.6, "#c8945a", texture=0.03)
-    b.poly([(12, GROUND - 22.5), (17, GROUND - 28), (22, GROUND - 22.5)], "#6a8a3e", texture=0.02)
-    b.ellipse(17, GROUND - 20.5, 1.2, 1.2, "#2a1e18", profile="flat")
+    for side in (-1, 1):                                                          # the great antlers over it
+        b.stroke([(cx + side * 2, top - 22), (cx + side * 9, top - 28), (cx + side * 11, top - 35)], 1.6, antler)
+        b.stroke([(cx + side * 5.5, top - 25), (cx + side * 5, top - 31)], 1.3, antler)
+        b.stroke([(cx + side * 9, top - 28), (cx + side * 14, top - 30)], 1.3, antler)
+        b.stroke([(cx + side * 10.5, top - 32), (cx + side * 15, top - 35)], 1.2, antler)
+    b.ellipse(cx, top - 22, 2.8, 2.4, "#8a6a4a")
+    window(b, x0 + 7, top + 9, w=6, h=7, frame="#4a3020", box="#f0c040")
+    window(b, x1 - 7, top + 9, w=6, h=7, frame="#4a3020", box="#e05a7a")
+    door(b, cx, w=11, h=15, colour="#6a4426", frame="#4a3020")
+    for x in (cx - 10, cx + 10):                                                  # the porch on log posts
+        b.stroke([(x, GROUND), (x, GROUND - 19)], 2.2, "#9a6a3e")
+    b.poly([(cx - 13, GROUND - 18), (cx + 13, GROUND - 18), (cx + 11, GROUND - 24), (cx - 11, GROUND - 24)], moss, texture=0.03)
+    sign(b, cx + 12, GROUND - 17, paw_emblem, board="#c8945a")
+    totem = [("#8a5a34", "#e8c050"), ("#5a7aa8", "#f0f0e8"), ("#a8483a", "#f0f0e8")]  # a totem: owl, wolf, bear
+    for k, (wood, eye) in enumerate(totem):
+        y = GROUND - 7 - k * 7
+        b.rect(7, y - 6.5, 15, y, wood, texture=0.03)
+        for ex in (9.3, 12.7):
+            b.ellipse(ex, y - 4, 1.0, 1.0, eye, profile="flat")
+        b.rect(9.5, y - 2.2, 12.5, y - 1.2, "#2a1e18", texture=0.0)
+    b.poly([(4, GROUND - 26), (11, GROUND - 23), (18, GROUND - 26), (11, GROUND - 21)], "#e8c050", texture=0.02)   # its wings
+    for x in (68, 74, 80, 86):                                                    # the pen
+        b.stroke([(x, GROUND + 4), (x, GROUND - 3)], 1.3, "#7a5232")
+    for y in (GROUND + 1.5, GROUND - 1.5):
+        b.stroke([(67, y), (87, y)], 1.0, "#9a6a3e")
     return b
 
 
@@ -1210,12 +1275,13 @@ BUILDINGS = {
 def fit(draw, width=76, height=76):
     """`draw` (a function of a Build) redrawn scaled about its foot so it fills `width` × `height` of the
     frame, centred, as RD's buildings fill theirs (about 70 to 80 pixels each way)."""
-    organic = getattr(draw, "organic", 0.0)
+    organic, size = getattr(draw, "organic", 0.0), getattr(draw, "size", SIZE)
     first = Build(organic=organic)
     draw(first)
     left, top, right, bottom = first.extent()
-    k = min(width / (right - left), height / (GROUND - top), 1.6)
-    b = Build(k, (left + right) / 2, organic)
+    grow = size / SIZE
+    k = min(width * grow / (right - left), height * grow / (GROUND - top), 1.6 * grow)
+    b = Build(k, (left + right) / 2, organic, size)
     draw(b)
     return b
 
@@ -1236,11 +1302,12 @@ def main(argv):
     if sheet:
         tiles_ = [Image.open(SPRITES / "house.png").convert("RGBA"), Image.open(SPRITES / "item_shop.png").convert("RGBA")]
         tiles_ += list(out.values())
-        c = SIZE * 2
+        c = 2 * max(img.width for img in tiles_)          # each at 2×, a grand building as big beside the rest
         cols = 5
         board = Image.new("RGBA", (c * cols, c * math.ceil(len(tiles_) / cols)), (106, 150, 86, 255))
         for n, img in enumerate(tiles_):
-            board.alpha_composite(img.resize((c, c), Image.NEAREST), ((n % cols) * c, (n // cols) * c))
+            big = img.resize((img.width * 2, img.height * 2), Image.NEAREST)
+            board.alpha_composite(big, ((n % cols) * c + (c - big.width) // 2, (n // cols) * c + c - big.height))
         board.save(sheet)
         print(f"sheet in {sheet}")
 

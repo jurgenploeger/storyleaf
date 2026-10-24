@@ -1820,9 +1820,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
         }
     }
 
-    /// Sets down the map's own buildings (a 3×2 footprint above the anchor, like the shops) where
-    /// maps.json puts them. One that would stand on a road, water, the town fence, a terrace's wall,
-    /// an NPC or another building (maps.json put some right on a street) moves to the nearest plot
+    /// Sets down the map's own buildings (a 3×2 footprint above the anchor, like the shops, or its own
+    /// `size`) where maps.json puts them. One that would stand on a road, water, the town fence, a
+    /// terrace's wall, an NPC or another building (maps.json put some right on a street) moves to the nearest plot
     /// that's clear, ring by ring, up to 8 cells away. A terrace's paved top is fine to build on.
     /// Out on the road, like in town: no tree or bush on an NPC's spot or in front of it (down the
     /// screen, toward you), where it would hide them. A boss is big, and the trees around it tall,
@@ -1869,9 +1869,9 @@ nonisolated final class WorldMap: @unchecked Sendable {
     private func placeOwnBuildings() {
         let npcs = Set((def.npcs ?? []).filter { $0.summit == nil }.map { offset($0.x, $0.y) })
         let fence = Set(fenceCells)
-        func fits(_ anchor: GridPoint) -> Bool {
-            for dc in -1...1 {
-                for dr in 0...1 {
+        func fits(_ anchor: GridPoint, _ footprint: (columns: ClosedRange<Int>, rows: ClosedRange<Int>)) -> Bool {
+            for dc in footprint.columns {
+                for dr in footprint.rows {
                     let cell = GridPoint(col: anchor.col + dc, row: anchor.row + dr)
                     guard contains(cell), [.ground, .accent].contains(ground[cell.row][cell.col]),
                           !occupied.contains(cell), !fence.contains(cell), !npcs.contains(cell) else { return false }
@@ -1881,12 +1881,13 @@ nonisolated final class WorldMap: @unchecked Sendable {
         }
         for building in def.buildings ?? [] {
             let wanted = offset(building.x, building.y)
+            let footprint = building.footprint
             var plot: GridPoint?
             search: for radius in 0...8 {
                 for dr in -radius...radius {
                     for dc in -radius...radius where max(abs(dc), abs(dr)) == radius {
                         let candidate = GridPoint(col: wanted.col + dc, row: wanted.row + dr)
-                        if fits(candidate) {
+                        if fits(candidate, footprint) {
                             plot = candidate
                             break search
                         }
@@ -1894,8 +1895,8 @@ nonisolated final class WorldMap: @unchecked Sendable {
                 }
             }
             guard let plot else { continue }
-            for dc in -1...1 {
-                for dr in 0...1 { occupy(GridPoint(col: plot.col + dc, row: plot.row + dr), blocking: true) }
+            for dc in footprint.columns {
+                for dr in footprint.rows { occupy(GridPoint(col: plot.col + dc, row: plot.row + dr), blocking: true) }
             }
             buildings.append((building.art, plot))
         }

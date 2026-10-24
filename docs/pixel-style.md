@@ -250,6 +250,14 @@ side wall going back, and a hard footing line on nothing. RD's:
 - **On its own ground.** RD stands a house on a rounded patch of grass, earth or snow a little wider than
   its walls, with tufts round its edge, a few stones and a path to the door (`grounds`).
 
+- **Not one size.** RD drew every building on one 96-pixel canvas, so a guild hall came out the size of a
+  cottage (the user, 2026-10-24: "the guilds need to be larger and more grandiose; I feel like we're stuck
+  to one size of block"). A grand building is drawn on a bigger canvas (`building_art.grand(160)`: the same
+  96-pixel frame's drawing scaled up to fill it, its stones and shingles still at the sprite's pixels, its
+  palette cap grown with its area) and given the room on the map (maps.json building `size`, its footprint
+  in cells, `MapDef.Building.footprint`; a house's is 3 × 2, the guild halls' 5 × 3). Give it more than
+  more of the same: towers, a second storey, a porch or a wing, a crest, a forecourt.
+
 The five drawn so (`lake_shrine`, `warrior_guild`, `wildfolk_lodge`, `bell_tower`, `gem_workshop`) score
 0.13 to 0.22 on `straight_edges` and under 0.02 on `grid_lines`. The houses and shops drawn before
 (2026-10-23) predate the two criteria and most fail `straight_edges` (0.1 to 0.74): redraw one with
