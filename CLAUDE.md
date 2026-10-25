@@ -36,7 +36,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   and shape (`regions`, rivers in it), and `check_content.py` checks it (everything set down by hand on
   its land and clear of the rivers, roads meeting, nothing cut off by a river). Rerun it after changing exits or
   anything set down by hand; `--preview out.png` draws it. The game lays the rivers where they're painted, a bridge
-  wherever a road crosses one (`WorldMap.layRivers`); the land slopes down to the sea and into the lakes
+  wherever a road crosses one (`WorldMap.layRivers`) along a row or column, so the tool runs each river straight along the other
+  where a road crosses it (`SQUARE_REACH`; aslant, its bridge crossed it askew); the land slopes down to the sea and into the lakes
   (`WorldMap.shore`, drawn sunk by `HillArt`, darker the lower it lies; the sea paler in the shallows, `ContinentScene.shallows`). `Storyleaf/World/Region.swift` is a land's shape; `Continent.swift` reads
   them: neighbours where shapes touch, open and walled borders (a border opens along its length once a road you can
   take joins the two lands, so none skips a quest), and the sea all round, each cell drawn by the nearest land
