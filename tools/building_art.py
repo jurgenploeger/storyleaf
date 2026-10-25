@@ -937,23 +937,6 @@ def tree_house(b):
     b.ellipse(66, 54, 1.8, 2.2, "#ffd06a", profile="flat")                                  # a lantern
 
 
-def acorn_cottage(b):
-    """A cottage in an acorn: a brown nut for walls with a scaly cap for its roof and a twig on top."""
-    cx = 48
-    b.surface([(cx + 24 * math.cos(a), 60 + 27 * math.sin(a) * (0.9 if a > 0 else 1)) for a in np.linspace(0, math.pi, 21)]
-              + [(cx - 24, 52), (cx + 24, 52)], "#c8844a", "boards", slope=(-0.01, 0.0))
-    cap = [(cx + 28 * math.cos(a), 52 - 22 * math.sin(a)) for a in np.linspace(0, math.pi, 21)]
-    cap += [(cx - 28, 55), (cx + 28, 55)][::-1]
-    b.surface(cap, "#8a6a3a", "tiles", slope=(-0.012, 0.006))
-    b.stroke([(cx + 1, 31), (cx + 4, 24), (cx + 9, 21)], 2.6, "#6a4a2e")
-    b.ellipse(cx + 12, 21, 4, 2.2, "#6aa84a")                                                # a leaf on the twig
-    door(b, cx - 4, w=10, h=17, colour="#6a8a3a")
-    window(b, cx + 12, 66, w=7, h=7, arched=True)
-    b.ellipse(cx - 12, 43, 3.2, 3.2, "#5a3a24")
-    b.ellipse(cx - 12, 43, 2.2, 2.2, "#ffd27a", profile="flat")
-    flowers(b, cx + 18, cx + 26, GROUND - 1, ["#f8d84a", "#b88ae0"], seed=5)
-
-
 def bluebell_house(b):
     """A house in a bluebell: the flower's bell standing on the ground, flaring to a scalloped rim, its
     stalk arching up over it from behind; a door under the rim, leaves at its foot."""
@@ -1020,6 +1003,72 @@ def grounds(b, x0, x1, colour="#6a9a40", stone="#9a948a", path=None, earth="#c8a
     for k in range(3):
         t = rng.uniform(0.3, math.pi - 0.3)
         b.ellipse(cx + (rx - 3) * math.cos(t) * rng.choice([-1, 1]), GROUND + 2 + 2.5 * math.sin(t), 1.6, 1.1, stone)
+
+
+@by_hand
+def acorn_cottage(b):
+    """A cottage in an acorn, modelled as RD would (2026-10-25, the user: the first "looks too 2
+    dimensional"): the nut an egg shaded round, its staves curving with it, its foot curving into its
+    patch of ground; the cap a dome of scales, lit on top, its rolled rim curving down in front and
+    throwing its shadow on the nut; a twig and a leaf on top, a little stovepipe and a round dormer in
+    the cap, a deep arched door and a round window, its shadow on the grass."""
+    cx, nut, cap = 48, "#c07a42", "#9a7a4a"
+    top, rim = 42, 47
+    grounds(b, 14, 80, colour="#6a9a40", path=cx - 5)
+    ground_shadow(b, 36, 62, 26)
+
+    def porthole(x, y, rx, ry):
+        """A round window set deep: its wooden frame, warm lamplit glass with a cross of bars, the
+        frame's shadow along its top inside."""
+        b.ellipse(x, y, rx + 1.6, ry + 1.5, "#5a3a24", texture=0.02)
+        # Lamplight a deep amber, held at one bright tone: a pale yellow on the ramp came out tan and
+        # merged into the cap's colours when the palette was cut down.
+        b.poly(oval(x, y, rx, ry, 0, 2 * math.pi, 21), "#ffb830", texture=0.0, profile="flat", tone=0.72)
+        b.poly(oval(x, y, rx, ry, math.pi * 1.15, math.pi * 1.85) + oval(x, y + 1.2, rx * 0.9, ry * 0.75, math.pi * 1.85, math.pi * 1.15),
+               "#b06a20", texture=0.0, profile="flat", tone=0.5)
+        b.rect(x - 0.45, y - ry + 1, x + 0.45, y + ry, "#5a3a24", texture=0.0)
+        b.rect(x - rx, y - 0.45, x + rx, y + 0.45, "#5a3a24", texture=0.0)
+
+    def half(t):
+        """The nut's half-width from its top (0) to its foot (1): an egg, widest a third of the way down."""
+        return 26 * math.sqrt(max(0.0, 1 - ((t - 0.3) / 0.85) ** 2))
+
+    foot_r = half(1.0)
+    ts = np.linspace(0, 1, 15)
+    left = [(cx - half(t), top + t * (GROUND - top)) for t in ts]
+    right = [(cx + half(t), top + t * (GROUND - top)) for t in ts[::-1]]
+    body = left + oval(cx, GROUND, foot_r, foot_r * TILT, math.pi, 0)[1:-1] + right
+    b.surface(body, nut, "plaster", curve=1.2, slope=(-0.004, -0.009), foot=7, gloss=0.25)
+    # Its staves, curving round it as it rounds (the middle ones straight, the outer ones bowed).
+    for k in (-0.78, -0.45, -0.12, 0.22, 0.55, 0.85):
+        pts = [(cx + k * half(t), top + t * (GROUND - top) + 3.2 * TILT * math.sqrt(max(0.0, 1 - k * k)) * t)
+               for t in np.linspace(0.12, 0.97, 9)]
+        b.stroke(pts, 0.8, shade(nut, 0.78 if k > 0 else 0.86))
+    # The cap's shadow on the nut, under its rim: a band curving with it.
+    r0 = half((rim - top) / (GROUND - top)) + 1
+    b.poly(oval(cx, rim + 5.5, r0, r0 * TILT, math.pi, 0) + oval(cx, rim + 1, r0, r0 * TILT, 0, math.pi), shade(nut, 0.5),
+           texture=0.0, profile="flat")
+    # The cap: a dome of scales, lit on top, darker down to its rim.
+    R, rise = 30, 23
+    b.surface(oval(cx, rim, R, R * TILT, 0, math.pi) + oval(cx, rim, R, rise, math.pi, 2 * math.pi, 25)[1:-1], cap, "shingles",
+              curve=1.0, slope=(-0.004, -0.012))
+    b.stroke(oval(cx, rim + 0.5, R + 0.5, R * TILT + 0.3, 0.05, math.pi - 0.05, 23), 3.2, shade(cap, 0.92))   # the rolled rim
+    porthole(cx - 13, rim - 11, 3.8, 3.4)                                         # a dormer in the cap
+    # A little stovepipe out of the cap, made, so straight.
+    px = cx + 15
+    b.poly([(px - 2, rim - 8), (px + 2, rim - 8), (px + 2, rim - 22), (px - 2, rim - 22)], "#6e6a78", texture=0.0, profile="cylinder",
+           straight=True)
+    b.poly([(px - 3.2, rim - 22), (px + 3.2, rim - 22), (px + 2.4, rim - 25), (px - 2.4, rim - 25)], "#5a5664", texture=0.0,
+           profile="cylinder", straight=True)
+    # The twig on top, and its leaf.
+    peak = rim - rise
+    b.stroke([(cx + 1, peak + 3), (cx + 2, peak - 3), (cx + 6, peak - 8)], 3.0, "#6a4a2e")
+    b.poly([(cx + 6, peak - 8), (cx + 11, peak - 12.5), (cx + 17, peak - 11), (cx + 12, peak - 7.5)], "#6aa84a", texture=0.02)
+    b.stroke([(cx + 6.5, peak - 8.2), (cx + 15, peak - 10.8)], 0.7, "#4e8a3a")
+    door(b, cx - 5, w=11, h=18, colour="#6a8a3a", frame="#5a3a24", ground=GROUND + 3, deep=True)
+    porthole(cx + 10, 63, 4.6, 4.8)
+    flowers(b, cx + 16, cx + 26, GROUND + 2, ["#f8d84a", "#b88ae0"], seed=5)
+    flowers(b, cx - 26, cx - 18, GROUND + 1.5, ["#f0a0c8", "#f8d84a"], seed=8)
 
 
 @by_hand
