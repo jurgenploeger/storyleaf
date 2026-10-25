@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The logo (Logo.png): TALES OF over FABELIA, in the style of the logo the user pointed to (Neopets' "Tales
+"""The logo (Logo.png): TALES OF over DORLUNE, in the style of the logo the user pointed to (Neopets' "Tales
 of Dacardia"): chunky capitals in Luckiest Guy (tools/fonts/, Apache 2.0), set tight so their outlines run
 into one, each letter tipped a few degrees one way or the other and lifted or dropped a little, so the word
 bounces; TALES OF a little over half the world's name's size, a small gap above it. All gold, each line in
@@ -33,7 +33,7 @@ FONT = ROOT / "tools/fonts/LuckiestGuy-Regular.ttf"
 # letter tips (degrees) and lifts, the gap between TALES OF and the name, the outline round the letters, how
 # deep the block shadow drops, and the light rim along their tops. Letters are drawn left to right, each in
 # a thin outline of its own (`SEAM`), so ones that touch stay apart.
-LINES = [("TALES OF", 0.6), ("FABELIA", 1.0)]
+LINES = [("TALES OF", 0.6), ("DORLUNE", 1.0)]
 PX = 230
 TRACK, TIP, LIFT = -0.02, 3.0, 0.035
 # A small gap, wider than the letters lift, so the two lines never touch; their outlines still join.

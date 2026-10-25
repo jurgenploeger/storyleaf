@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tales of Fabelia's social media assets, made from the game's own art: the app icon's drawing for the
+"""Tales of Dorlune's social media assets, made from the game's own art: the app icon's drawing for the
 profile pictures, the logo (Logo.png, `logo_art.py`) for the logo files, and the HUD-free landscape screenshot
 scenes (`store_land_*` in tools/screenshots.txt, from CI's `screenshots` branch) behind the logo on
 every cover and banner.

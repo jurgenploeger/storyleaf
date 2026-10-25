@@ -2,14 +2,14 @@
   "_about": "The game's own notices in the chat and the message log, set apart from what people say: what's happening where and when. `every` is the range of real seconds between notices while you play. `dawn` and `dusk` play when the calendar's hour turns 6 or 18 (an in-game hour is a real minute). `arrival` plays when you come to a map (by map id), and `bossNearby` when it has a boss you've never beaten ({boss}, {map}). `community` tells what other adventurers have been up to: {bot} is one of them (tagged BOT), {level} a level, {boss} a boss and {rare} a rare monster, {map} where (the boss's or the rare's map), {item} a weapon. A `sighting` really does make a map's rare monster turn up `boost` times as often there for `minutes` real minutes ({monster}, {map}, {minutes}), favouring maps near your level; `chance` is how often a notice is one.",
   "every": [120, 300],
   "dawn": [
-    "Dawn breaks over Fabelia. Good morning, adventurers!",
-    "The sun is up over Fabelia. A fine day for an adventure!",
-    "Morning comes to Fabelia, and the shops open their shutters."
+    "Dawn breaks over Dorlune. Good morning, adventurers!",
+    "The sun is up over Dorlune. A fine day for an adventure!",
+    "Morning comes to Dorlune, and the shops open their shutters."
   ],
   "dusk": [
-    "Night falls over Fabelia. Sweet dreams, or happy hunting!",
-    "The sun sets over Fabelia, and the lamps come on in town.",
-    "Evening comes to Fabelia. The moon is out!"
+    "Night falls over Dorlune. Sweet dreams, or happy hunting!",
+    "The sun sets over Dorlune, and the lamps come on in town.",
+    "Evening comes to Dorlune. The moon is out!"
   ],
   "arrival": {
     "goldburg": ["Ingothold's market is open! Traders fill the main square: walk up to one to see what they're selling."],

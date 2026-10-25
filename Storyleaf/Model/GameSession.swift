@@ -477,7 +477,7 @@ final class GameSession {
             data.hero.exp = 0
         }
         restoreHero()
-        post(L("Rebirth is gone from Fabelia: you're back at level {level}, where your rebirth began.", ["level": data.hero.level]), .reward)
+        post(L("Rebirth is gone from Dorlune: you're back at level {level}, where your rebirth began.", ["level": data.hero.level]), .reward)
         checkTitles(quietly: true)
         save()
     }

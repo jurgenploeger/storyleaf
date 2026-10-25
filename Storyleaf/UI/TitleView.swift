@@ -141,7 +141,7 @@ struct TitleView: View {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         guard let raw = try? Data(contentsOf: url), let game = try? SaveStore.imported(raw) else {
-            importNote = L("That file isn't a Tales of Fabelia backup.")
+            importNote = L("That file isn't a Tales of Dorlune backup.")
             return
         }
         SaveStore.save(game)
@@ -227,7 +227,7 @@ struct TitleView: View {
             .scaledToFit()
             .raysAnchor(Brand.raysInLogo)
             .frame(maxWidth: 360, maxHeight: wide ? 190 : 260)
-            .accessibilityLabel(L("Tales of Fabelia"))
+            .accessibilityLabel(L("Tales of Dorlune"))
     }
 
     /// Your games, one at a time, or before the first one, a hero waiting to be made.
