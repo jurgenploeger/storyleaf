@@ -303,6 +303,13 @@ workshop): give one these when it's next touched. What lifts it (`tools/building
   or a tube bent with them looks wavy (2026-10-24): draw it `straight=True` (`poly`, `stroke`), shaded
   round as a cylinder.
 
+The acorn cottage (Glimmerbough) was redrawn so (2026-10-25, the user: "pretty bad and looks too 2
+dimensional"): flat fills in a brick-like grid, no ground under it, `form_relief` 0.010. Now its nut is an
+egg shaded round (`curve`), its staves bowing with it, its foot curving into a patch of grass, and its cap
+a dome of `shingles` with a rolled rim that throws a curved shadow on the nut: 0.020, every band passed.
+Its round windows are lamplit amber held at one tone: a pale yellow glass on its ramp came out tan, and
+the palette cut (`limit_palette`) merged it into the cap.
+
 The three landmarks (`emerald_spire`, `star_observatory`, `moonwell`) went from 0.015, 0.015 and 0.019 to
 0.017, 0.023 (redrawn as a drum) and 0.022 with these. `fit` measured a drawing on the 96-pixel frame, so one taller than it
 (the spire) was cut off and measured short; one that reaches the frame's edge is now measured again on a
