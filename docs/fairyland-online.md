@@ -677,7 +677,12 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   (tools/building_art.py `bank`) with a banker (NPC role `bank`, a coin on the minimap and the world map)
   stands in Meadowbrook, Prismhaven, Ingothold, Larkspur and Glimmerbough; what's in it, coins too, is never
   lost. Beaten by monsters you lose what you carry, coins and all; beaten in a duel, what you wear too
-  (`loseBelongings`). What a quest you're on needs stays with you (`questKeepsakes`). A game begun before
+  (`loseBelongings`). What a quest you're on needs stays with you (`questKeepsakes`). What's lost is left
+  where you fell (asked for in playtesting 2026-10-25: "anything that was lost will be shown on the map
+  and for other players to grab"), RuneScape's way: a pile (`LostPile`, tools/prop_art.py `lost_pile`)
+  on the ground, the minimap and the world map, yours alone for 5 minutes, then anyone's: an adventurer
+  passing picks it up some minutes later (5 on average, rolled as it's dropped), and it's gone after 20
+  at most (`GameSession+LostPiles.swift`). Walk up to it and Pick up takes what the bag has room for. A game begun before
   0.8.0 had its bag and coins moved into the bank once, on first load (`stockBankOnce`).
 - The weapon in hand (`GearArt.pose`, since 0.4.8, asked for in playtesting 2026-10-12: "when they're wearing a
   weapon, it should look good"): the item's own art, held at the hand as each walk frame has it (beside the

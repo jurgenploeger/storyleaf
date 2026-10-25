@@ -5,7 +5,8 @@ import Foundation
 /// one slot however many you carry, the coins one more. What doesn't fit is left behind (`addItem`,
 /// `gainGold`). The bank, at a banker in each town and in Glimmerbough, holds everything else, coins too,
 /// and nothing there is ever lost. What you carry is: beaten by monsters you lose the bag (coins and all),
-/// beaten in a duel your gear too (`loseBelongings`); what a quest you're on needs stays with you.
+/// beaten in a duel your gear too (`loseBelongings`), left where you fell for a while
+/// (`GameSession+LostPiles`); what a quest you're on needs stays with you.
 extension GameSession {
     static let bagSlots = 50
 
@@ -119,14 +120,17 @@ extension GameSession {
     }
 
     /// Lost a fight: everything you carry is gone, coins and all, but what a quest you're on needs;
-    /// beaten by another adventurer (a duel), what you wear too. The bank keeps what's in it. Returns
-    /// what it cost, for the battle log.
+    /// beaten by another adventurer (a duel), what you wear too. It's left where you fell
+    /// (`dropPile`), for you to come back for before someone else picks it up. The bank keeps what's
+    /// in it. Returns what it cost, for the battle log.
     @discardableResult
     func loseBelongings(worn: Bool) -> [String] {
         let keep = questKeepsakes
         var lost: [String] = []
+        var dropped: [String: Int] = [:]
         for (id, amount) in data.inventory where amount > 0 && !keep.contains(id) {
             data.inventory[id] = nil
+            dropped[id, default: 0] += amount
             lost.append(amount > 1 ? "\(content.item(id)?.name ?? id) ×\(amount)" : content.item(id)?.name ?? id)
         }
         let gold = data.gold
@@ -135,18 +139,23 @@ extension GameSession {
             for slot in ItemType.equipmentSlots {
                 guard let id = data.hero.equipment[slot] else { continue }
                 data.hero.equipment[slot] = nil
+                dropped[id, default: 0] += 1
                 lost.append(content.item(id)?.name ?? id)
             }
             clampHero()
             applyLook()
         }
+        dropPile(items: dropped, gold: gold)
         var lines: [String] = []
         if gold > 0 { lines.append(L("You lost the {gold} gold you carried.", ["gold": gold])) }
         if !lost.isEmpty {
             lines.append(worn ? L("You lost everything you carried and wore: {items}.", ["items": lost.sorted().joined(separator: ", ")])
                               : L("You lost everything you carried: {items}.", ["items": lost.sorted().joined(separator: ", ")]))
         }
-        if !lines.isEmpty { lines.append(L("What's in the bank is safe.")) }
+        if !lines.isEmpty {
+            lines.append(L("It's all left where you fell: go back for it before someone else picks it up."))
+            lines.append(L("What's in the bank is safe."))
+        }
         return lines
     }
 

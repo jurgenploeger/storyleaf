@@ -54,6 +54,8 @@ final class GameSession {
     var mapName = ""
     /// NPC close enough to talk to, for the HUD's Talk button.
     var nearbyNPC: String?
+    /// What you lost, lying near enough to pick up (`LostPile`), for the HUD's Pick up button.
+    var nearbyPile: UUID?
     /// The tile the hero stands on, for the minimap.
     var mapCell = GridPoint(col: 0, row: 0)
     /// Everyone else on this map, as dots on the minimap.
@@ -80,7 +82,8 @@ final class GameSession {
     /// for you, or one to hand in), the healer, the shop, the smith, the weaver, a guild, a chest
     /// still to open, a boss still to beat, and a cave's stairs down or up.
     struct MinimapMark: Hashable {
-        enum Kind { case quest, questNew, questReady, healer, shop, smith, weaver, barber, bank, guild, chest, boss, stairsDown, stairsUp, waystone }
+        /// `lost`: what you lost when you fell, where it lies (`LostPile`).
+        enum Kind { case quest, questNew, questReady, healer, shop, smith, weaver, barber, bank, guild, chest, boss, stairsDown, stairsUp, waystone, lost }
         let cell: GridPoint
         let kind: Kind
     }

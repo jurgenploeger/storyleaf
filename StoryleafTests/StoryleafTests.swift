@@ -1767,8 +1767,33 @@ struct RulesTests {
         // The elder's gifts belong to his quest: kept.
         #expect(session.count(of: "pet_egg") == 1 && session.count(of: "wooden_sword") == 1)
         #expect(session.data.hero.equipment.armor == "cloth_tunic")
+        // It lies where you fell, and you can pick it all back up.
+        let pile = try #require(session.lostPiles.first)
+        #expect(pile.mapID == session.data.mapID && pile.items["potion"] == 3 && pile.items["ether"] == 1 && pile.gold == 30)
+        #expect(pile.items["pet_egg"] == nil)
+        #expect(!GameSession.isOpen(pile, at: pile.droppedAt.addingTimeInterval(60)))
+        #expect(pile.takenAt > pile.droppedAt.addingTimeInterval(GameSession.pileYoursAlone - 1))
+        #expect(pile.takenAt <= pile.droppedAt.addingTimeInterval(GameSession.pileLasts))
+        #expect(session.pickUp(pile.id))
+        #expect(session.count(of: "potion") == 3 && session.count(of: "ether") == 1 && session.data.gold == 30)
+        #expect(session.lostPiles.isEmpty)
         session.loseBelongings(worn: true)
         #expect(session.data.hero.equipment.armor == nil)
+        // Beaten in a duel, what you wore lies there too; once its time is up, someone else has it.
+        let worn = try #require(session.lostPiles.first)
+        #expect(worn.items["cloth_tunic"] == 1 && worn.items["potion"] == 3)
+        session.watchPiles(now: worn.takenAt.addingTimeInterval(-1))
+        #expect(session.lostPiles.count == 1)
+        session.watchPiles(now: worn.takenAt)
+        #expect(session.lostPiles.isEmpty)
+        // A full bag picks up what fits and leaves the rest.
+        session.dropPile(items: ["potion": 2, "ether": 1], gold: 5)
+        for n in 0..<GameSession.bagSlots { session.data.inventory["filler_\(n)"] = 1 }
+        session.data.inventory["filler_0"] = nil
+        session.data.inventory["potion"] = 1
+        let full = try #require(session.lostPiles.first)
+        #expect(session.pickUp(full.id))
+        #expect(session.count(of: "potion") == 3 && session.lostPiles.first?.items["ether"] == 1)
     }
 
     /// A game begun before the bank starts with its bag and coins in it, once; what a quest needs stays.

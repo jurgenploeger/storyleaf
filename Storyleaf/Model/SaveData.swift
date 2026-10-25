@@ -189,6 +189,9 @@ nonisolated struct SaveData: Codable, Sendable {
     var bank: [String: Int]?
     var bankGold: Int?
     var bankStocked: Bool?
+    /// What you lost in fights you lost, lying where you fell till you pick it up or someone else
+    /// does (`GameSession.lostPiles`).
+    var lostPiles: [LostPile]?
 }
 
 /// A day's bounties (the Quests tab): a few small jobs, new each calendar day.
@@ -278,6 +281,20 @@ nonisolated struct Checkpoint: Codable, Equatable, Sendable {
 }
 
 /// Somewhere on a map: a point on it, or a checkpoint's spot (an entrance, or a town's square).
+/// What you lost in a fight you lost, left on the ground where you fell (`GameSession.dropPile`).
+nonisolated struct LostPile: Codable, Equatable, Sendable, Identifiable {
+    var id: UUID
+    var mapID: String
+    /// Where on the map, in scene points like `Spot.position`; nil: the map's middle.
+    var position: [Double]?
+    var items: [String: Int]
+    var gold: Int
+    var droppedAt: Date
+    /// When it's gone: picked up by an adventurer passing, or just gone, at the latest
+    /// `GameSession.pileLasts` after it was dropped. Rolled as it's dropped.
+    var takenAt: Date
+}
+
 nonisolated struct Spot: Codable, Equatable, Sendable {
     var mapID: String
     /// Where on the map, in scene points like `SaveData.position`; nil: `entry`'s spot.

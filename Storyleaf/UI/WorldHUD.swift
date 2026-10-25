@@ -99,6 +99,15 @@ struct WorldHUD: View {
                     }
                     .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
                     .transition(.scale(scale: 0.7, anchor: .bottomTrailing).combined(with: .opacity))
+                } else if session.nearbyPile != nil {
+                    // What you lost when you fell, lying here (`LostPile`).
+                    Button {
+                        coordinator.pickUpPile()
+                    } label: {
+                        Label(L("Pick up your things"), icon: .backpack)
+                    }
+                    .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
+                    .transition(.scale(scale: 0.7, anchor: .bottomTrailing).combined(with: .opacity))
                 } else if let adventurer = session.nearbyAdventurer {
                     AdventurerCard(coordinator: coordinator, adventurer: adventurer)
                         .transition(.scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity))
@@ -124,6 +133,7 @@ struct WorldHUD: View {
             .ignoresSafeArea(.container, edges: bottomEdge)
             .animation(.spring(response: 0.3, dampingFraction: 0.75), value: session.nearbyNPC)
             .animation(.spring(response: 0.3, dampingFraction: 0.75), value: session.nearbyAdventurer?.id)
+            .animation(.spring(response: 0.3, dampingFraction: 0.75), value: session.nearbyPile)
             .stepsAside(controlsHidden)
         }
         .padding(.horizontal, 8)
@@ -782,6 +792,8 @@ struct MinimapIcon: View {
         case .stairsDown: glyph(.arrowDown)
         case .stairsUp: glyph(.arrowUp)
         case .waystone: glyph(.sparkles)
+        // What you lost when you fell: a bag, on red.
+        case .lost: glyph(.backpack)
         }
     }
 
@@ -812,6 +824,7 @@ struct MinimapIcon: View {
         // A portal's own bright cyan: in the quest givers' blue it read as one of them (playtesting
         // 2026-10-23).
         case .waystone: Color(red: 0.05, green: 0.8, blue: 0.95)
+        case .lost: Color(red: 0.9, green: 0.3, blue: 0.14)
         }
     }
 }

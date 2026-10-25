@@ -9141,6 +9141,10 @@
       }
     },
     {
+      "id": "lost_pile",
+      "kind": "prop"
+    },
+    {
       "id": "waystone",
       "kind": "prop",
       "request": {

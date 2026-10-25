@@ -96,7 +96,7 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   as a two-sided arch) or none was made for (the harbors' `ship`, built in 3D and projected as the game's view is,
   then lit and finished as the buildings are and held to their bands, `form_relief` too;
   `cave_ladder`, the way down to a cave's deeper level, and `cave_rope`, the way back up, `depth` and NPC role
-  `stairs` in maps.json; `waystone`, NPC role `waystone`, a standing stone out in a wild land that a quest
+  `stairs` in maps.json; `lost_pile`, what you lost when you fell, lying where you fell (`LostPile`); `waystone`, NPC role `waystone`, a standing stone out in a wild land that a quest
   wakes, then a stop for travel like the towns: `GameSession.travelDestinations`).
   Rerun it after editing a drawing; `--sheet out.png` previews them.
 - `tools/scenery_art.py`: trees and bushes drawn in code with `pixel_kit` (docs/pixel-style.md), one species

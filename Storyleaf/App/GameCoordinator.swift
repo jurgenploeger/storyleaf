@@ -483,6 +483,13 @@ final class GameCoordinator {
         session.nearbyAdventurer = nil
     }
 
+    /// Picks up what you lost when you fell, lying where you stand (`GameSession.pickUp`).
+    func pickUpPile() {
+        guard let id = session.nearbyPile else { return }
+        session.pickUp(id)
+        session.save()
+    }
+
     /// Leaves the party you've joined, of your own accord.
     func leaveJoinedParty() {
         guard let leader = session.leaveJoinedParty(.wandered) else { return }
