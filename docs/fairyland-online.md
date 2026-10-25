@@ -949,8 +949,8 @@ well water for Mungo's camel tonic (58), Bastian's coffee for the dwarfs' kettle
 rose for Blanche (136). The same day added six elite quests, long hunts or rare monsters for about twice
 a land's usual pay (The Werewolf Pack, 20 Werewolves, 27; The Amber Werewolf, 46; Violet in the Dunes,
 72; No More Nightmares, 30 Dream Phantoms, 86; The Lion in the Frost, 155; Shadow Apes on the Road, 25
-Mint Shadow Apes, 196), and a difficulty on every quest, shown as a pill with pips in the Quests list and
-by its giver, and a "Hardest" sort (`QuestDifficulty`, RuneScape's Novice to Grandmaster in four:
+Mint Shadow Apes, 196), and a difficulty on every quest, shown as a pill with pips in the Quests list (only
+there since 0.7.89, playtesting 2026-10-25; by its giver too before), and a "Hardest" sort (`QuestDifficulty`, RuneScape's Novice to Grandmaster in four:
 Easy, Normal, Hard, Elite). A quest says its own (`difficulty`, 1 to 4; the elite ones do); otherwise
 `GameSession.difficulty(of:)` works it out: a boss or 12 or more monsters is Hard, 8 or more, something
 made by hand, a scarce drop or 5 or more things to bring is Normal, and the rest (an errand, a level, a

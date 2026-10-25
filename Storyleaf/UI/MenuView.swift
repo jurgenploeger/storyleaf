@@ -1451,7 +1451,10 @@ struct QuestRow: View {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     QuestNumber(number: session.questNumber(quest))
                     Text(quest.title).font(HUDStyle.font(13))
-                    DifficultyBadge(difficulty: session.difficulty(of: quest))
+                    // How hard it is, in the Quests list only (playtesting 2026-10-25), not as its giver offers it.
+                    if showsGiver {
+                        DifficultyBadge(difficulty: session.difficulty(of: quest))
+                    }
                     Spacer()
                     switch session.status(of: quest) {
                     case .active where quest.objective.type == .deliver:
