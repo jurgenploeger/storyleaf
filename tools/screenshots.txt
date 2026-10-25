@@ -132,6 +132,9 @@ dusk         | newgame,map=sunny_meadow,hour=18,weather=clear | 15
 rain         | newgame,map=sunny_meadow,hour=12,weather=rain  | 15
 storm_night  | newgame,map=frog_swamp,hour=23,weather=storm   | 15
 fog          | newgame,map=twilight_woods,hour=8,weather=fog  | 15
+# Larkspur at 4 a.m.: its pale lavender haze and tint darkened by the night like the rest, not a
+# bright veil over it (playtesting 2026-10-25: "kinda misty").
+night_larkspur | newgame,level=60,map=bluebird,hour=4,weather=clear | 10
 snowfall     | newgame,map=snow_white_forest,hour=14,weather=snow | 15
 battle_timer | newgame,level=44,class=fighter,learn=bash+first_aid+power_strike+whirlwind,map=rat_cavern,battle=2,turntimer=40 | 15
 battle_auto  | newgame,level=60,class=fighter,pet=pineapple,friends=2,map=sunny_meadow,battle=3,auto,fast | 1
