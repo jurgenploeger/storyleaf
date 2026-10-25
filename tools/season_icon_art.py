@@ -1,18 +1,31 @@
 #!/usr/bin/env python3
 """The seasonal app icons, Halloween, Christmas and Easter, that the game switches to while each festive
-season runs (`SeasonalIcon` in Storyleaf/App, the seasons' dates in content/rewards.json `festive`). The
+season runs (`SeasonalIcon` in Storyleaf/App, the seasons' dates in content/rewards.json `seasons`). The
 same picked drawing as the app icon (tools/app_icon_art.py `SOURCE`), cropped a little looser so a hat
 fits on the hero's head (`BOX`, 128 pixels at 8×), with only the scenery changed and something festive
 on him:
 
-  Halloween  a purple night under a big moon, autumn leaves, bats, jack-o'-lanterns, a witch's hat
-  Christmas  a pale winter sky, snow on the trees and the ground, fairy lights, falling snow, a Santa hat
-  Easter     a fresh spring meadow, blossom, flowers and painted eggs, bunny ears
+  Halloween  a purple night, a moon, autumn leaves, bats, a jack-o'-lantern, a witch's hat
+  Christmas  a pale winter sky, snow on the trees and the ground, snowflakes, a Santa hat
+  Easter     a bright spring sky, fresh leaves and blossom, flowers and painted eggs, bunny ears
 
-The hero is left as drawn (`HERO`, his outline in the drawing's pixels). Every background pixel is sorted
-by its colour (sky, leaves, blossom, branches, grass, outline) and its shade laid on the season's ramp for
-that class in hard steps, as pixel art shades; what's added is drawn in the same pixels with a dark
-outline. Written as AppIcon-<Season>.appiconset, one 1024 image each (iOS shows it in every appearance).
+Held to docs/pixel-style.md and docs/sprite-acceptance.md:
+
+- **The drawing's own clusters stay.** The scenery is Retro Diffusion's, so it's recoloured, never redrawn:
+  each class of colour (sky, leaves, blossom, branches, grass) is a small ramp in the drawing (one to nine
+  colours), and each of its colours is swapped for the one of the same rank on the season's ramp, which
+  turns its shadows away from yellow and its lights toward it. The light and texture are RD's.
+- **Tinted outlines on the scenery:** its dark pixels take a deep shade of what they round, never black.
+- **Snow lies where the light does,** on the lit tops of the leaves' clusters, in RD's snow colours
+  (scenery_art.SNOW); never a strip along an edge or single pixels as noise.
+- **The hats and props are drawn with pixel_kit:** lit from the top left, a few hue-shifted shades with
+  texture, a contact shadow, and the dark outline characters and their gear have.
+- **A hat sits as a head piece does:** its band on the head's widest row above the eyes (y 72 here, the
+  scalp's top at 53 and the eyes at 96), a little wider than the scalp, the hair above it hidden.
+- **Nothing in the corners** iOS rounds off (about 29 of the drawing's pixels), so every prop shows.
+
+The hero is left as drawn (`HERO`, his outline in the drawing's pixels). Written as
+AppIcon-<Season>.appiconset, one 1024 image each (iOS shows it in every appearance).
 
     python3 tools/season_icon_art.py                    # writes the three icon sets
     python3 tools/season_icon_art.py --preview out.png  # all three at Home Screen sizes, beside the icon
@@ -29,13 +42,15 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 import app_icon_art
+from pixel_kit import Material, Sprite
+from scenery_art import SNOW
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "Storyleaf/Resources/Assets.xcassets"
 
 BOX = (44, 40, 172, 168)
 SCALE = 8
-# The hero and his sword, in the drawing's pixels: nothing inside is regraded.
+# The hero and his sword, in the drawing's pixels: nothing inside is recoloured.
 HERO = [(55, 44), (64, 43), (72, 60), (79, 78), (85, 98), (89, 110), (93, 108), (96, 100), (94, 90), (87, 84),
         (84, 76), (90, 66), (98, 56), (108, 51), (122, 51), (136, 53), (146, 59), (151, 70), (153, 84), (151, 98),
         (149, 106), (151, 112), (152, 124), (150, 132), (155, 140), (153, 150), (146, 156), (145, 168), (97, 168),
@@ -43,37 +58,44 @@ HERO = [(55, 44), (64, 43), (72, 60), (79, 78), (85, 98), (89, 110), (93, 108), 
         (79, 117), (71, 96), (62, 72), (55, 50)]
 # Below this row the green is the meadow, above it the trees' leaves.
 GROUND = 147
-INK = (24, 14, 18)
+SKY, LEAVES, BLOSSOM, BRANCHES, GRASS, DARK = 1, 2, 3, 4, 5, 6
 
 
-def rgb(*c):
-    return np.array(c, dtype=float) / 255
+def hexrgb(code: str) -> np.ndarray:
+    code = code.lstrip("#")
+    return np.array([int(code[i:i + 2], 16) for i in (0, 2, 4)], dtype=float) / 255
 
 
+def ramp(dark: str, light: str, n: int) -> list:
+    """`n` shades from `dark` to `light`, the hue turning the short way between them (so a ramp whose
+    shadow sits away from yellow and its light toward it keeps doing so), in hard steps."""
+    h0, s0, v0 = colorsys.rgb_to_hsv(*hexrgb(dark))
+    h1, s1, v1 = colorsys.rgb_to_hsv(*hexrgb(light))
+    dh = (h1 - h0 + 0.5) % 1 - 0.5
+    out = []
+    for i in range(n):
+        t = i / max(1, n - 1)
+        out.append(np.array(colorsys.hsv_to_rgb((h0 + dh * t) % 1, s0 + (s1 - s0) * t, v0 + (v1 - v0) * t)))
+    return out
+
+
+# Each season: for every class, the dark and light ends of its ramp (shadows turned away from yellow,
+# lights toward it), and the sky in three bands down the icon.
 SEASONS = {
     "Halloween": {
-        "sky": [rgb(46, 26, 78), rgb(74, 36, 96), rgb(120, 52, 96), rgb(196, 92, 60)],
-        "leaves": [rgb(70, 24, 20), rgb(136, 48, 22), rgb(200, 94, 30), rgb(240, 152, 46)],
-        "blossom": [rgb(36, 18, 50), rgb(66, 30, 82), rgb(102, 48, 112), rgb(142, 78, 142)],
-        "branches": [rgb(28, 18, 22), rgb(52, 32, 32), rgb(80, 52, 44)],
-        "grass": [rgb(40, 40, 22), rgb(70, 66, 28), rgb(108, 94, 36), rgb(150, 122, 46)],
-        "outline": rgb(20, 12, 24),
+        "sky": [("#26163f", "#3a2257"), ("#4a2462", "#62307a"), ("#8a3a5e", "#b4544e")],
+        LEAVES: ("#4a1430", "#ffb84a"), BLOSSOM: ("#1a0e2e", "#a45cae"),
+        BRANCHES: ("#2e1a26", "#4a2c30"), GRASS: ("#24221a", "#b8923a"),
     },
     "Christmas": {
-        "sky": [rgb(146, 184, 226), rgb(172, 204, 236), rgb(198, 222, 244), rgb(220, 236, 250)],
-        "leaves": [rgb(14, 44, 38), rgb(24, 74, 56), rgb(44, 108, 72), rgb(80, 146, 92)],
-        "blossom": [rgb(140, 160, 196), rgb(184, 202, 228), rgb(222, 232, 247), rgb(248, 251, 255)],
-        "branches": [rgb(30, 22, 28), rgb(56, 40, 44), rgb(86, 66, 66)],
-        "grass": [rgb(146, 166, 204), rgb(186, 204, 232), rgb(220, 231, 247), rgb(248, 251, 255)],
-        "outline": rgb(22, 20, 36),
+        "sky": [("#86a8d4", "#9cbade"), ("#a8c4e4", "#bcd2ec"), ("#c8dcf0", "#dce9f6")],
+        LEAVES: ("#0c2a2e", "#3e8a5c"), BLOSSOM: (SNOW[0], SNOW[4]),
+        BRANCHES: ("#2a2232", "#4a3c48"), GRASS: (SNOW[1], SNOW[4]),
     },
     "Easter": {
-        "sky": [rgb(112, 192, 248), rgb(146, 212, 252), rgb(184, 228, 254), rgb(218, 242, 255)],
-        "leaves": [rgb(36, 94, 46), rgb(72, 148, 58), rgb(126, 194, 78), rgb(186, 226, 118)],
-        "blossom": [rgb(150, 70, 120), rgb(212, 110, 160), rgb(244, 160, 198), rgb(255, 214, 232)],
-        "branches": [rgb(46, 28, 26), rgb(82, 52, 40), rgb(122, 82, 58)],
-        "grass": [rgb(48, 116, 46), rgb(88, 166, 58), rgb(146, 206, 86), rgb(198, 234, 136)],
-        "outline": rgb(24, 20, 24),
+        "sky": [("#62b4f0", "#78c4f6"), ("#8cd0f8", "#a4dcfa"), ("#bce8fc", "#d6f2ff")],
+        LEAVES: ("#1e5a3a", "#d4f07a"), BLOSSOM: ("#7a2a62", "#ffe2ee"),
+        BRANCHES: ("#4a2a2a", "#8a5a3e"), GRASS: ("#1e6a3a", "#dcf28a"),
     },
 }
 
@@ -85,243 +107,229 @@ def hero_mask() -> np.ndarray:
     return np.asarray(image) > 0
 
 
-def classes(rgb_: np.ndarray) -> np.ndarray:
-    """Each pixel's class: 0 keep, 1 sky, 2 leaves, 3 blossom, 4 branches, 5 grass, 6 outline."""
-    hsv = np.array([[colorsys.rgb_to_hsv(*p) for p in row] for row in rgb_])
+def classes(rgb: np.ndarray) -> np.ndarray:
+    """Each pixel's class: 0 keep, SKY, LEAVES, BLOSSOM, BRANCHES, GRASS or DARK (outline and deep shade)."""
+    hsv = np.array([[colorsys.rgb_to_hsv(*p) for p in row] for row in rgb])
     hue, sat, val = hsv[..., 0] * 360, hsv[..., 1], hsv[..., 2]
-    rows = np.arange(rgb_.shape[0])[:, None] + BOX[1]
-    out = np.zeros(rgb_.shape[:2], int)
-    out[app_icon_art.sky_mask(rgb_)] = 1
+    rows = np.arange(rgb.shape[0])[:, None] + BOX[1]
+    out = np.zeros(rgb.shape[:2], int)
+    out[app_icon_art.sky_mask(rgb)] = SKY
     green = (hue > 60) & (hue < 170) & (sat > 0.18) & (val > 0.18)
-    out[green & (rows < GROUND)] = 2
-    out[green & (rows >= GROUND)] = 5
-    out[((hue > 270) | (hue < 8)) & (sat > 0.15) & (val > 0.2) & ~green] = 3
-    brown = (hue >= 8) & (hue < 45) & (sat > 0.15) & (val > 0.15) & (val < 0.62)
-    out[brown] = 4
-    out[val <= 0.18] = 6
-    # Yellow flowers in the grass stay grass.
-    out[(hue >= 45) & (hue <= 60) & (rows >= GROUND)] = 5
+    out[green & (rows < GROUND)] = LEAVES
+    out[green & (rows >= GROUND)] = GRASS
+    out[((hue > 270) | (hue < 8)) & (sat > 0.15) & (val > 0.2) & ~green] = BLOSSOM
+    out[(hue >= 8) & (hue < 45) & (sat > 0.15) & (val > 0.15) & (val < 0.62)] = BRANCHES
+    out[val <= 0.18] = DARK
+    out[(hue >= 45) & (hue <= 60) & (rows >= GROUND)] = GRASS
+    out[hero_mask()] = 0
     return out
 
 
-def ramp(luma: np.ndarray, colours: list, low: float, high: float) -> np.ndarray:
-    """Each shade, in hard steps, on `colours` from dark to light."""
-    steps = np.clip(((luma - low) / max(high - low, 1e-6) * len(colours)).astype(int), 0, len(colours) - 1)
-    return np.array(colours)[steps]
+def luma(c) -> float:
+    return float(np.dot(c, [0.299, 0.587, 0.114]))
 
 
-def regrade(rgb_: np.ndarray, season: dict) -> np.ndarray:
-    out = rgb_.copy()
-    luma = rgb_ @ np.array([0.299, 0.587, 0.114])
-    kind = classes(rgb_)
-    kind[hero_mask()] = 0
-    rows = np.arange(rgb_.shape[0])
-    for code, name in ((2, "leaves"), (3, "blossom"), (4, "branches"), (5, "grass")):
+def recolour(rgb: np.ndarray, kind: np.ndarray, season: dict) -> tuple:
+    """RD's colours swapped class by class, rank for rank, onto the season's ramps; the sky in its bands;
+    the dark pixels a deep shade of the class they round. Returns the image and each class's new ramp."""
+    out = rgb.copy()
+    key = (rgb * 255 + 0.5).astype(int)
+    ramps = {}
+    for code in (LEAVES, BLOSSOM, BRANCHES, GRASS):
         where = kind == code
-        if where.any():
-            lo, hi = np.percentile(luma[where], [3, 97])
-            out[where] = ramp(luma[where], season[name], lo, hi)[:]
-    # The sky in bands down the icon, a step lighter where the day sky was lighter.
-    sky = kind == 1
-    band = np.minimum((rows * len(season["sky"])) // len(rows), len(season["sky"]) - 1)
-    sky_colour = np.array(season["sky"])[band][:, None, :].repeat(rgb_.shape[1], axis=1)
-    out[sky] = sky_colour[sky]
-    out[kind == 6] = season["outline"]
-    return out, kind
+        colours = sorted({tuple(c) for c in key[where]}, key=lambda c: luma(np.array(c)))
+        if not colours:
+            continue
+        ramps[code] = ramp(*season[code], max(2, len(colours)))
+        swap = {c: ramps[code][round(i * (len(ramps[code]) - 1) / max(1, len(colours) - 1))] for i, c in enumerate(colours)}
+        for y, x in np.argwhere(where):
+            out[y, x] = swap[tuple(key[y, x])]
+    # The sky: a band per third of the icon, its lighter shade where RD's sky was lighter.
+    sky = kind == SKY
+    lights = sorted({tuple(c) for c in key[sky]}, key=lambda c: luma(np.array(c)))
+    for y, x in np.argwhere(sky):
+        band = season["sky"][min(2, y * 3 // rgb.shape[0])]
+        out[y, x] = hexrgb(band[1] if tuple(key[y, x]) == lights[-1] and len(lights) > 1 else band[0])
+    # The dark pixels: the deepest shade of the class most round them, darker still.
+    h, w = kind.shape
+    for y, x in np.argwhere(kind == DARK):
+        near = kind[max(0, y - 2):y + 3, max(0, x - 2):x + 3].ravel()
+        near = near[(near != DARK) & (near != 0) & (near != SKY)]
+        code = np.bincount(near).argmax() if len(near) else LEAVES
+        deep = ramps.get(code, ramps.get(LEAVES))[0]
+        out[y, x] = deep * 0.72
+    return out, ramps
 
 
-OVER = 4
-
-
-def part(draw_fn) -> np.ndarray:
-    """A shape in the drawing's pixels: `draw_fn` draws it on an ImageDraw in the drawing's coordinates
-    (a smooth shape, drawn OVER times as big), and each pixel is in when it's mostly covered."""
-    w, h = BOX[2] - BOX[0], BOX[3] - BOX[1]
-    image = Image.new("L", (w * OVER, h * OVER))
-
-    class Scaled:
-        def __init__(self, draw):
-            self.draw = draw
-
-        def polygon(self, points, **kw):
-            self.draw.polygon([((x - BOX[0]) * OVER, (y - BOX[1]) * OVER) for x, y in points], fill=255)
-
-        def ellipse(self, box, **kw):
-            x0, y0, x1, y1 = box
-            self.draw.ellipse([(x0 - BOX[0]) * OVER, (y0 - BOX[1]) * OVER, (x1 - BOX[0]) * OVER, (y1 - BOX[1]) * OVER], fill=255)
-
-    draw_fn(Scaled(ImageDraw.Draw(image)))
-    small = image.resize((w, h), Image.BOX)
-    return np.asarray(small) >= 128
-
-
-def shift(mask: np.ndarray, dx: int, dy: int) -> np.ndarray:
-    out = np.zeros_like(mask)
-    h, w = mask.shape
-    out[max(dy, 0):h + min(dy, 0), max(dx, 0):w + min(dx, 0)] = mask[max(-dy, 0):h + min(-dy, 0), max(-dx, 0):w + min(-dx, 0)]
-    return out
-
-
-def paint(out, parts, ink) -> None:
-    """Shaded parts, each (mask, base, light, dark): lit on its top-left edge, shaded on its bottom-right, in
-    hard steps, then one dark outline round them all. Later parts go over earlier ones."""
-    union = np.zeros(out.shape[:2], bool)
-    for mask, base, light, dark in parts:
-        out[mask] = base
-        out[mask & ~shift(mask, 1, 1)] = light
-        out[mask & ~shift(mask, -2, -2)] = dark
-        union |= mask
-    ring = (shift(union, 1, 0) | shift(union, -1, 0) | shift(union, 0, 1) | shift(union, 0, -1)) & ~union
-    out[ring] = ink
-
-
-def sprite(out, rows: list[str], palette: dict, x0: int, y0: int, only=None) -> None:
-    """A sprite in characters, '.' clear, at the drawing's (x0, y0). `only` limits it to where that's True."""
-    for dy, row in enumerate(rows):
-        for dx, ch in enumerate(row):
-            if ch == ".":
+def place(out: np.ndarray, sprite: Image.Image, x: int, y: int, behind: np.ndarray = None) -> None:
+    """A rendered sprite with its top left at the drawing's (x, y); where `behind` is True it doesn't cover."""
+    art = np.asarray(sprite.convert("RGBA"), dtype=float) / 255
+    for dy in range(art.shape[0]):
+        for dx in range(art.shape[1]):
+            if art[dy, dx, 3] < 0.5:
                 continue
-            x, y = x0 + dx - BOX[0], y0 + dy - BOX[1]
-            if 0 <= x < out.shape[1] and 0 <= y < out.shape[0] and (only is None or only[y, x]):
-                out[y, x] = palette[ch]
+            ox, oy = x + dx - BOX[0], y + dy - BOX[1]
+            if 0 <= ox < out.shape[1] and 0 <= oy < out.shape[0] and (behind is None or not behind[oy, ox]):
+                out[oy, ox] = art[dy, dx, :3]
 
 
-PUMPKIN = ["....kgk.....",
-           "....kgk.....",
-           ".kkkkkkkkkk.",
-           "kkoOoOOoOokk",
-           "kOoOyyOyyOok",
-           "kOoOykOyOOok",
-           "kOoOOOOOoOok",
-           "kOoyyyyyyOok",
-           "kOooykykyook",
-           "kkoOoOOoOokk",
-           ".kkkkkkkkkk."]
+def shadow(out, kind, x0, x1, y, depth=0.62) -> None:
+    """A contact shadow on the ground under something set on it: a flat oval, the ground's shades darker."""
+    for x in range(x0, x1 + 1):
+        for dy in (0, 1):
+            ox, oy = x - BOX[0], y + dy - BOX[1]
+            inset = (x - x0 < 2 or x1 - x < 2) and dy == 1
+            if 0 <= ox < out.shape[1] and 0 <= oy < out.shape[0] and kind[oy, ox] in (GRASS, DARK) and not inset:
+                out[oy, ox] = out[oy, ox] * depth
+
+
+def pixels(out, kind, points, colours, allowed) -> None:
+    """Small marks (a flower, a snowflake, a bat) at the drawing's points, only on `allowed` classes."""
+    for (x, y), colour in zip(points, colours):
+        ox, oy = x - BOX[0], y - BOX[1]
+        if 0 <= ox < out.shape[1] and 0 <= oy < out.shape[0] and kind[oy, ox] in allowed:
+            out[oy, ox] = colour
+
+
+# --- the hats --------------------------------------------------------------------------------------------
+# Each is drawn so its band's middle lands on the head's widest row above the eyes, (120, 72).
+
+def witch_hat() -> tuple:
+    s = Sprite(84, 48)
+    purple = Material("#5a3a8c", shades=5, texture=0.05)
+    s.ellipse(42, 40, 40, 6.5, purple)
+    s.poly([(17, 40), (22, 28), (27, 16), (30, 6), (28, 0), (37, 4), (44, 14), (58, 30), (66, 40)], purple)
+    s.poly([(18, 37), (65, 37), (63, 31), (20, 31)], Material("#e8a838", shades=4, texture=0.03, gloss=0.4), profile="cylinder")
+    return s.render(), (78, 32)
+
+
+def santa_hat() -> tuple:
+    s = Sprite(86, 50)
+    fur = Material("#f2f0f6", shades=4, texture=0.12, grain=1.0)
+    s.poly([(12, 36), (16, 22), (26, 12), (40, 6), (54, 8), (66, 16), (74, 26), (80, 38), (78, 44), (72, 34),
+            (66, 26), (66, 36)], Material("#cc2e3e", shades=5, texture=0.05))
+    s.ellipse(40, 38, 36, 7, fur)
+    s.ellipse(78, 43, 6.5, 6.5, fur)
+    return s.render(), (79, 33)
+
+
+def bunny_ears() -> tuple:
+    """Bunny ears leaning well out to the sides, so they show in the icon above the crown, on a pink band."""
+    s = Sprite(76, 46)
+    white = Material("#f4f0f8", shades=4, texture=0.04)
+    pink = Material("#ff9cc0", shades=4, texture=0.03)
+    s.ellipse(20, 22, 6.5, 15, white, rot=-38)
+    s.ellipse(56, 22, 6.5, 15, white, rot=38)
+    s.ellipse(20, 22.5, 2.8, 10, pink, rot=-38, profile="flat")
+    s.ellipse(56, 22.5, 2.8, 10, pink, rot=38, profile="flat")
+    s.stroke([(9, 44), (17, 36), (29, 32), (47, 32), (59, 36), (67, 44)], 5, pink)
+    return s.render(), (82, 26)
+
+
+# --- the props -------------------------------------------------------------------------------------------
+
+def pumpkin() -> Image.Image:
+    s = Sprite(20, 17)
+    orange = Material("#e8781e", shades=5, texture=0.05)
+    s.ellipse(5.5, 11, 5, 5.5, orange)
+    s.ellipse(14.5, 11, 5, 5.5, orange)
+    s.ellipse(10, 10.5, 6, 6, orange)
+    s.stroke([(10, 5), (11, 1.5)], 2.6, Material("#5c7a2a", shades=3, texture=0.02))
+    img = s.render()
+    glow, deep = (255, 228, 120, 255), (255, 168, 52, 255)
+    for x, y, c in [(6, 9, glow), (7, 9, glow), (7, 10, deep), (12, 9, glow), (13, 9, glow), (12, 10, deep),
+                    (6, 13, deep), (7, 13, glow), (8, 13, glow), (9, 14, glow), (10, 13, glow), (11, 14, glow),
+                    (12, 13, glow), (13, 13, deep)]:
+        img.putpixel((x, y), c)
+    return img
+
+
+def egg(base: str, stripe: str) -> Image.Image:
+    s = Sprite(11, 13)
+    s.ellipse(5.5, 6.8, 4.3, 5.8, Material(base, shades=4, texture=0.03, gloss=0.3))
+    s.ellipse(5.5, 7.4, 4.0, 1.3, Material(stripe, shades=3, texture=0.0), profile="flat")
+    return s.render()
+
+
+def moon() -> Image.Image:
+    s = Sprite(17, 17)
+    s.ellipse(8.5, 8.5, 7.5, 7.5, Material("#f6e2a2", shades=4, texture=0.1, grain=2.0))
+    s.ellipse(6, 7, 1.8, 1.6, Material("#d4b46e", shades=2, texture=0.0), profile="flat")
+    s.ellipse(10.5, 11, 1.6, 1.4, Material("#d4b46e", shades=2, texture=0.0), profile="flat")
+    return s.render(outline="tinted")
+
+
 BAT = ["k.......k",
-       "kk.k.k.kk",
+       "kkk.k.kkk",
        ".kkkkkkk.",
        "..kk.kk.."]
-EGG = ["..kkk..",
-       ".kAAAk.",
-       "kAAAAAk",
-       "kBBBBBk",
-       "kAAAAAk",
-       "kCCCCCk",
-       "kAAAAAk",
-       ".kAAAk.",
-       "..kkk.."]
 
 
-def scatter(out, kind, code, colours, count, seed):
-    rng = np.random.default_rng(seed)
-    where = np.argwhere(kind == code)
-    for y, x in where[rng.choice(len(where), size=min(count, len(where)), replace=False)]:
-        out[y, x] = colours[rng.integers(len(colours))]
+def bat(out, kind, x, y, colour) -> None:
+    for dy, row in enumerate(BAT):
+        for dx, ch in enumerate(row):
+            if ch == "k":
+                pixels(out, kind, [(x + dx, y + dy)], [colour], (SKY, BLOSSOM, LEAVES))
 
 
-def halloween(out, kind):
-    ink = SEASONS["Halloween"]["outline"]
-    sky = kind == 1
-    # A big moon low in the sky to the left, behind the leaves.
-    moon = part(lambda d: d.ellipse((47, 109, 66, 128)))
-    craters = part(lambda d: (d.ellipse((52, 114, 56, 118)), d.ellipse((58, 120, 62, 124))))
-    out[moon & sky] = rgb(255, 236, 168)
-    out[craters & moon & sky] = rgb(236, 206, 132)
-    out[moon & ~shift(moon, -2, 0) & sky] = rgb(236, 206, 132)
-    for x, y in ((70, 106), (86, 46), (52, 104), (152, 98)):
-        sprite(out, BAT, {"k": ink}, x, y, only=sky | (kind == 3))
-    pumpkin = {"k": ink, "o": rgb(214, 104, 24), "O": rgb(244, 146, 40), "y": rgb(255, 226, 96), "g": rgb(70, 110, 40)}
-    sprite(out, PUMPKIN, pumpkin, 60, 151)
-    sprite(out, PUMPKIN, pumpkin, 150, 154)
-    scatter(out, kind, 5, [rgb(214, 96, 30), rgb(240, 160, 48), rgb(170, 52, 30)], 40, 31)
-    # A witch's hat on the hair: a wide brim, a tall cone bent back at the tip, a gold band.
-    cone = part(lambda d: d.polygon([(100, 67), (108, 53), (113, 41), (114, 33), (122, 39), (131, 51), (140, 67)]))
-    band = cone & part(lambda d: d.polygon([(96, 61), (146, 61), (146, 67), (96, 67)]))
-    brim = part(lambda d: d.ellipse((80, 63, 160, 76)))
-    purple, light, dark = rgb(70, 44, 104), rgb(110, 76, 150), rgb(42, 24, 66)
-    paint(out, [(cone, purple, light, dark), (band, rgb(244, 176, 52), rgb(255, 224, 120), rgb(196, 120, 30)),
-                (brim, purple, light, dark)], ink)
+def plus(x, y):
+    return [(x, y), (x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
 
 
-def christmas(out, kind):
-    snow = rgb(248, 251, 255)
-    shade = rgb(206, 220, 242)
-    h, w = kind.shape
-    # Snow on the tops of the leaves and branches: where the pixel above is sky or the outline.
-    for y in range(1, h):
-        for x in range(w):
-            if kind[y, x] in (2, 4) and kind[y - 1, x] in (1, 6):
-                out[y, x] = snow
-                if y + 1 < h and kind[y + 1, x] == kind[y, x]:
-                    out[y + 1, x] = shade
-    scatter(out, kind, 2, [rgb(255, 84, 84), rgb(255, 214, 90), rgb(110, 180, 255), rgb(140, 240, 140)], 26, 12)
-    for code in (1, 3, 4):
-        scatter(out, kind, code, [snow], 14, 40 + code)
-    # A Santa hat over the hair: the red cap flopping to the right, a white fur band, a pompom.
-    cap = part(lambda d: d.polygon([(90, 69), (96, 57), (108, 49), (122, 47), (136, 50), (148, 57), (156, 67),
-                                    (160, 77), (154, 75), (146, 65), (148, 71)]))
-    fur = part(lambda d: d.ellipse((84, 63, 152, 77)))
-    pom = part(lambda d: d.ellipse((150, 71, 164, 85)))
-    red, light, dark = rgb(214, 40, 50), rgb(246, 96, 92), rgb(150, 20, 36)
-    white, wlight, wdark = rgb(244, 246, 252), rgb(255, 255, 255), rgb(196, 206, 228)
-    paint(out, [(cap, red, light, dark), (fur, white, wlight, wdark), (pom, white, wlight, wdark)], INK)
+# --- the seasons -----------------------------------------------------------------------------------------
+
+def halloween(out, kind, ramps):
+    place(out, moon(), 82, 40, behind=kind == 0)
+    deep = hexrgb("#1a0c26")
+    for x, y in ((52, 112), (66, 121), (156, 97)):
+        bat(out, kind, x, y, deep)
+    shadow(out, kind, 70, 90, 166)
+    place(out, pumpkin(), 70, 150)
+    small = pumpkin().resize((14, 12), Image.NEAREST)
+    shadow(out, kind, 148, 161, 166)
+    place(out, small, 148, 155)
+    sprite, at = witch_hat()
+    place(out, sprite, *at)
 
 
-def easter(out, kind):
-    # Fluffy clouds in the sky gaps.
-    sky = kind == 1
-    clouds = part(lambda d: [d.ellipse(b) for b in ((86, 44, 102, 54), (94, 40, 110, 52), (44, 108, 62, 118), (52, 104, 70, 116), (150, 96, 166, 106))])
-    out[clouds & sky] = rgb(255, 255, 255)
-    out[clouds & sky & ~shift(clouds, 0, -2)] = rgb(214, 232, 250)
-    # Blossom among the leaves, and flowers all over the meadow.
-    scatter(out, kind, 2, [rgb(255, 196, 222), rgb(255, 238, 246), rgb(244, 150, 196)], 70, 9)
-    scatter(out, kind, 5, [rgb(255, 255, 255), rgb(255, 228, 90), rgb(255, 170, 210), rgb(200, 170, 255)], 60, 7)
-    eggs = [
-        ({"k": INK, "A": rgb(255, 196, 220), "B": rgb(120, 200, 255), "C": rgb(255, 230, 110)}, 60, 152),
-        ({"k": INK, "A": rgb(186, 240, 170), "B": rgb(255, 150, 190), "C": rgb(190, 160, 255)}, 68, 157),
-        ({"k": INK, "A": rgb(255, 232, 150), "B": rgb(150, 130, 255), "C": rgb(255, 150, 150)}, 149, 155),
-        ({"k": INK, "A": rgb(170, 220, 255), "B": rgb(255, 200, 100), "C": rgb(180, 236, 160)}, 157, 152),
-    ]
-    for palette, x, y in eggs:
-        sprite(out, EGG, palette, x, y)
-    # Bunny ears on a pink band over the hair, tilted apart, rising out of the top of the icon.
-    def ear(cx, tilt):
-        import math
-        points = []
-        for i in range(24):
-            a = 2 * math.pi * i / 24
-            x, y = 5.5 * math.cos(a), 17 * math.sin(a)
-            r = math.radians(tilt)
-            points.append((cx + x * math.cos(r) - y * math.sin(r), 42 + x * math.sin(r) + y * math.cos(r)))
-        return points
+def christmas(out, kind, ramps):
+    snow = [hexrgb(c) for c in SNOW]
+    # Snow on the lit tops of the leaves' clusters: their lightest colour turns to snow, the next to its shadow.
+    leaves = ramps[LEAVES]
+    for y, x in np.argwhere(kind == LEAVES):
+        c = out[y, x]
+        if np.allclose(c, leaves[-1]):
+            out[y, x] = snow[4]
+        elif len(leaves) > 2 and np.allclose(c, leaves[-2]):
+            out[y, x] = snow[2]
+    flakes = [(90, 46), (62, 108), (54, 124), (160, 96), (74, 126), (160, 126)]
+    for x, y in flakes:
+        pixels(out, kind, plus(x, y), [snow[4]] * 5, (SKY, BLOSSOM, LEAVES, BRANCHES))
+    sprite, at = santa_hat()
+    place(out, sprite, *at)
 
-    def inner(cx, tilt):
-        import math
-        points = []
-        for i in range(24):
-            a = 2 * math.pi * i / 24
-            x, y = 2.5 * math.cos(a), 12 * math.sin(a)
-            r = math.radians(tilt)
-            points.append((cx + x * math.cos(r) - y * math.sin(r), 44 + x * math.sin(r) + y * math.cos(r)))
-        return points
 
-    left, right = part(lambda d: d.polygon(ear(108, -14))), part(lambda d: d.polygon(ear(134, 14)))
-    left_in, right_in = part(lambda d: d.polygon(inner(108, -14))), part(lambda d: d.polygon(inner(134, 14)))
-    band = part(lambda d: d.polygon([(94, 66), (102, 58), (114, 54), (128, 54), (140, 58), (148, 66), (146, 69), (138, 62), (128, 58), (114, 58), (104, 62), (97, 69)]))
-    white, wlight, wdark = rgb(248, 246, 252), rgb(255, 255, 255), rgb(206, 200, 222)
-    pink, plight, pdark = rgb(255, 160, 196), rgb(255, 206, 226), rgb(222, 106, 150)
-    paint(out, [(left, white, wlight, wdark), (right, white, wlight, wdark), (band, pink, plight, pdark)], INK)
-    out[left_in] = pink
-    out[right_in] = pink
+def easter(out, kind, ramps):
+    # Flowers in the meadow: a cross of petals round a gold centre, clear of the eggs.
+    petals = [hexrgb("#ffffff"), hexrgb("#ffd6ea"), hexrgb("#e6d4ff")]
+    for i, (x, y) in enumerate([(52, 150), (95, 160), (158, 150), (66, 162)]):
+        pixels(out, kind, plus(x, y), [hexrgb("#ffc83a")] + [petals[i % 3]] * 4, (GRASS, DARK))
+    for (base, stripe), x, y in ((("#ff9cc4", "#7cc8ff"), 69, 153), (("#9ce08a", "#ffd25a"), 79, 156),
+                                 (("#b8a4ff", "#ff9c9c"), 149, 154)):
+        shadow(out, kind, x + 1, x + 9, y + 12)
+        place(out, egg(base, stripe), x, y)
+    sprite, at = bunny_ears()
+    place(out, sprite, *at)
 
 
 DRAW = {"Halloween": halloween, "Christmas": christmas, "Easter": easter}
 
 
 def icon(season: str) -> Image.Image:
-    rgb_ = app_icon_art.crop(BOX)
-    out, kind = regrade(rgb_, SEASONS[season])
-    DRAW[season](out, kind)
+    rgb = app_icon_art.crop(BOX)
+    kind = classes(rgb)
+    out, ramps = recolour(rgb, kind, SEASONS[season])
+    DRAW[season](out, kind, ramps)
     big = np.repeat(np.repeat(out, SCALE, axis=0), SCALE, axis=1)
     return Image.fromarray((np.clip(big, 0, 1) * 255 + 0.5).astype(np.uint8), "RGB")
 

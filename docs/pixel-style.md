@@ -477,6 +477,14 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 
 ## Learned
 
+- **2026-10-25 (the seasonal app icons, `tools/season_icon_art.py`):** the first round regraded RD's scenery
+  by brightness percentile onto each season's ramp, scattered snow, lights and flowers as single pixels, ran
+  snow along every top edge, and drew the hats as flat fills with a rim all round. The user: "they don't
+  really look good". Held to these rules instead: RD's scenery has only a few colours a class (one to nine),
+  so swap each for the one of the same rank on a hue-shifted ramp, which keeps its clusters and light exactly;
+  its dark pixels a deep shade of what they round; snow on the lit colour of the leaves' clusters (RD's
+  `SNOW`), never per pixel; hats and props drawn with `pixel_kit` (lit, textured, outlined), each hat's band
+  on the head's widest row (sprite-acceptance.md, *Head pieces*); and nothing in the corners iOS rounds off.
 - **2026-10-25 (the ship):** `form_relief` is light per pixel, so a sprite twice a house's size needs
   as much change across areas twice as wide: the ship's deck and hull, lit by their normals alone, were
   flat at the 9 × 9 scale (0.010) and held it at 0.015. What lifted it: boards and strakes each a tone of
