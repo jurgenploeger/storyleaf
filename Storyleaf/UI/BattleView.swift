@@ -21,6 +21,15 @@ struct BattleView: View {
                 .padding(.horizontal, 8)
                 .padding(.top, 4)
 
+            if controller.phase == .command {
+                LockInStrip(controller: controller)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    .padding(.leading, 14)
+                    .padding(.bottom, 18)
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+            }
+
             commandArea
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                 .padding(.trailing, 14)
@@ -68,6 +77,10 @@ struct BattleView: View {
             if controller.waveCount > 1 {
                 WaveTracker(wave: controller.wave, total: controller.waveCount)
             }
+            if let boss = controller.boss {
+                BossBar(boss: boss)
+                    .transition(.opacity)
+            }
         }
         .allowsHitTesting(false)
     }
@@ -104,39 +117,31 @@ struct BattleView: View {
                     .transition(.scale(scale: 0.6, anchor: .bottomTrailing).combined(with: .opacity))
             }
         case .skills where controller.choosingForCompanion:
-            ChoiceCard(title: L("{companion}'s skills", ["companion": controller.companion?.name ?? L("Companion")]), icon: .paw, onBack: controller.back) {
+            ChoiceCard(title: L("{companion}'s skills", ["companion": controller.companion?.name ?? L("Companion")]), icon: .paw, onBack: controller.back, tall: true) {
                 if controller.companionSkills.isEmpty {
                     EmptyNote(L("No skills yet."))
                 }
-                ForEach(controller.companionSkills) { skill in
-                    let price = controller.companionCost(of: skill)
-                    ChoiceRow(action: { controller.useSkill(skill) }, enabled: (controller.companion?.mp ?? 0) >= price) {
-                        SkillIcon(skill: skill, size: 26)
-                        Text(skill.name).lineLimit(1).minimumScaleFactor(0.75)
-                        Text(L("Lv{level}", ["level": controller.companionLevel(of: skill)])).font(HUDStyle.mono(10)).foregroundStyle(HUDStyle.frameDark).fixedSize()
-                        if let element = skill.element { ElementBadge(element: element) }
-                        Spacer()
-                        Text(L("{cost} MP", ["cost": price])).foregroundStyle(HUDStyle.mp)
+                SkillTiles {
+                    ForEach(controller.companionSkills) { skill in
+                        let price = controller.companionCost(of: skill)
+                        SkillTileButton(skill: skill, level: controller.companionLevel(of: skill), cost: price,
+                                        affordable: (controller.companion?.mp ?? 0) >= price) { controller.useSkill(skill) }
                     }
                 }
             }
             .transition(.scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity))
         case .skills:
-            ChoiceCard(title: L("Skills"), icon: .sparkles, onBack: controller.back) {
+            ChoiceCard(title: L("Skills"), icon: .sparkles, onBack: controller.back, tall: true) {
                 if controller.skills.isEmpty {
                     EmptyNote(controller.skills.isEmpty && !controller.session.learnableSkills.isEmpty
                               ? L("No skills yet.\nLearn one in the Character menu.")
                               : controller.session.skillHint)
                 }
-                ForEach(controller.skills) { skill in
-                    let affordable = (controller.hero?.mp ?? 0) >= controller.cost(of: skill)
-                    ChoiceRow(action: { controller.useSkill(skill) }, enabled: affordable) {
-                        SkillIcon(skill: skill, size: 26)
-                        Text(skill.name).lineLimit(1).minimumScaleFactor(0.75)
-                        Text(L("Lv{level}", ["level": controller.level(of: skill)])).font(HUDStyle.mono(10)).foregroundStyle(HUDStyle.frameDark).fixedSize()
-                        if let element = skill.element { ElementBadge(element: element) }
-                        Spacer()
-                        Text(L("{cost} MP", ["cost": controller.cost(of: skill)])).foregroundStyle(HUDStyle.mp)
+                SkillTiles {
+                    ForEach(controller.skills) { skill in
+                        let price = controller.cost(of: skill)
+                        SkillTileButton(skill: skill, level: controller.level(of: skill), cost: price,
+                                        affordable: (controller.hero?.mp ?? 0) >= price) { controller.useSkill(skill) }
                     }
                 }
             }
@@ -226,6 +231,91 @@ private struct WaveTracker: View {
         .background(Capsule().fill(HUDStyle.ink.opacity(0.8)))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(wave == total ? L("Boss wave, the last of {total}", ["total": total]) : L("Wave {wave} of {total}", ["wave": wave, "total": total]))
+    }
+}
+
+/// The boss's HP along the top while it's on the field: its name in gold and its level over a long
+/// red bar that drains with every blow (its own plate under its feet is as small as its wave's).
+private struct BossBar: View {
+    let boss: Combatant
+
+    var body: some View {
+        let level = L("Lv{level}", ["level": boss.level])
+        VStack(spacing: 3) {
+            HStack(spacing: 6) {
+                Text(boss.name)
+                    .font(HUDStyle.font(12))
+                    .foregroundStyle(HUDStyle.gold)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Text(level)
+                    .font(HUDStyle.mono(10))
+                    .foregroundStyle(HUDStyle.cream)
+                    .fixedSize()
+            }
+            GlossyBar(fraction: CGFloat(boss.hpFraction), color: HUDStyle.hp, height: 9)
+                .animation(.easeOut(duration: 0.35), value: boss.hpFraction)
+        }
+        .frame(width: 240)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 5)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(HUDStyle.ink.opacity(0.85))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(HUDStyle.gold.opacity(0.7), lineWidth: 1.5))
+        )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(boss.name), \(level), \(L("HP")) \(Int((boss.hpFraction * 100).rounded()))%")
+    }
+}
+
+/// While you choose, your party's faces bottom left, each ticked once that one has locked in their
+/// move: your friends one by one as the time to choose runs (`BattleController.lockIns`), you when
+/// you've chosen. Your side acts in the order it chose, as in Fairyland Online, so the ticks show who
+/// you'd go before. Only with friends at your side.
+private struct LockInStrip: View {
+    let controller: BattleController
+
+    var body: some View {
+        if let lockIns = controller.lockIns {
+            TimelineView(.periodic(from: lockIns.since, by: 0.25)) { context in
+                HStack(spacing: 5) {
+                    ForEach(controller.choosers) { fighter in
+                        face(fighter, ready: fighter.isHero
+                             ? controller.choosingForCompanion
+                             : lockIns.friends[fighter.id].map { context.date >= lockIns.since.addingTimeInterval($0 * lockIns.window) } ?? false)
+                    }
+                }
+            }
+        }
+    }
+
+    private func face(_ fighter: Combatant, ready: Bool) -> some View {
+        Image(uiImage: ArtLibrary.shared.face(fighter.art))
+            .interpolation(.none)
+            .resizable()
+            .scaledToFit()
+            .padding(3)
+            .frame(width: 32, height: 32)
+            .background(Circle().fill(RadialGradient(colors: [HUDStyle.portrait, HUDStyle.portraitRim],
+                                                     center: UnitPoint(x: 0.4, y: 0.35), startRadius: 1, endRadius: 22)))
+            .clipShape(Circle())
+            .overlay(Circle().strokeBorder(ready ? AnyShapeStyle(HUDStyle.gold) : AnyShapeStyle(HUDStyle.bevel), lineWidth: 2))
+            .overlay(alignment: .bottomTrailing) {
+                if ready {
+                    IconImage(.check, size: 9)
+                        .foregroundStyle(.white)
+                        .frame(width: 15, height: 15)
+                        .background(Circle().fill(Color(red: 0.25, green: 0.7, blue: 0.35)).overlay(Circle().strokeBorder(.white, lineWidth: 1.2)))
+                        .offset(x: 3, y: 3)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .opacity(ready ? 1 : 0.75)
+            .shadow(color: .black.opacity(0.35), radius: 2, y: 2)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: ready)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(ready ? "\(fighter.name), \(L("Ready"))" : fighter.name)
     }
 }
 
@@ -1064,8 +1154,11 @@ private struct ChoiceCard<Content: View>: View {
     let title: String
     let icon: GameIcon
     let onBack: () -> Void
+    /// Taller upright, for the skills' tiles: three rows of them.
+    var tall = false
     @ViewBuilder let content: () -> Content
     @State private var contentHeight: CGFloat = 0
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -1076,11 +1169,75 @@ private struct ChoiceCard<Content: View>: View {
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
             }
             .scrollBounceBehavior(.basedOnSize)
-            .frame(height: min(max(contentHeight, 1), 220))
+            .frame(height: min(max(contentHeight, 1), tall && verticalSizeClass != .compact ? 330 : 220))
             .padding(12)
         }
         .frame(width: 300)
         .gameWindow()
+    }
+}
+
+/// The skills as tiles, four to a row, as a game's skill bar shows them.
+private struct SkillTiles<Tiles: View>: View {
+    @ViewBuilder let tiles: () -> Tiles
+
+    var body: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 6, content: tiles)
+    }
+}
+
+/// A skill as a tile: its icon with its level and element in the corners, its name under it and
+/// what it costs, greyed out when there isn't the MP for it (a tap still says so).
+private struct SkillTileButton: View {
+    let skill: SkillDef
+    let level: Int
+    let cost: Int
+    let affordable: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 3) {
+                SkillIcon(skill: skill, size: 44)
+                    .overlay(alignment: .topTrailing) {
+                        if let element = skill.element {
+                            ElementIcon(element: element, size: 14)
+                                .offset(x: 3, y: -3)
+                        }
+                    }
+                    .overlay(alignment: .bottomLeading) {
+                        Text(L("Lv{level}", ["level": level]))
+                            .font(HUDStyle.mono(8))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                            .fixedSize()
+                            .padding(.horizontal, 3)
+                            .frame(minHeight: 13)
+                            .background(Capsule().fill(HUDStyle.frameDark).overlay(Capsule().strokeBorder(HUDStyle.bevel, lineWidth: 1)))
+                            .offset(x: -3, y: 3)
+                    }
+                    .padding(.top, 2)
+                Text(skill.name)
+                    .font(HUDStyle.font(10))
+                    .foregroundStyle(HUDStyle.ink)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+                    .multilineTextAlignment(.center)
+                    .frame(height: 26, alignment: .top)
+                Text(L("{cost} MP", ["cost": cost]))
+                    .font(HUDStyle.mono(9))
+                    .foregroundStyle(HUDStyle.mp)
+                    .lineLimit(1)
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 2)
+            .frame(maxWidth: .infinity)
+            .background(RoundedRectangle(cornerRadius: 10).fill(affordable ? HUDStyle.cream : HUDStyle.dim))
+            .saturation(affordable ? 1 : 0)
+            .opacity(affordable ? 1 : 0.6)
+        }
+        .buttonStyle(RoundPressStyle())
+        .accessibilityElement(children: .combine)
     }
 }
 

@@ -302,6 +302,7 @@ boss_oak     | newgame,level=28,map=smiling_forest,at=-66_-36,npc=oak_grove   | 
 boss_emerald | newgame,level=190,map=emerald_road,at=30_-25                   | 10
 boss_fight   | newgame,level=60,class=fighter,map=rat_cavern,boss=rat_throne | 25
 boss_wave    | newgame,level=60,class=fighter,map=rat_cavern,boss=rat_throne,wave=3 | 25
+boss_wave_land | newgame,level=60,class=fighter,map=rat_cavern,boss=rat_throne,wave=3,landscape | 25
 boss_fight_emerald | newgame,level=200,class=fighter,map=emerald_road,boss=emerald_gate | 25
 boss_fight_tide | newgame,level=170,class=fighter,map=water_temple,boss=temple_depths | 25
 boss_fight_morvane | newgame,level=125,class=fighter,map=secret_plain,boss=treasure_of_queen | 25
@@ -312,6 +313,9 @@ battle_companion | newgame,level=30,class=tamer,pet=pineapple,map=sunny_meadow,b
 battle_afflict | newgame,level=30,class=mage,map=sunny_meadow,battle=3,afflict | 15
 party_full   | newgame,level=43,class=fighter,pet=pineapple,friends=4,map=twilight_woods | 15
 battle_party | newgame,level=43,class=fighter,pet=pineapple,friends=4,map=sunny_meadow,battle=3 | 15
+# Your party's faces bottom left while you choose, each ticked as that one locks in their move: with
+# 40 seconds to choose, some of your friends have and some haven't yet.
+battle_lockin | newgame,level=43,class=fighter,pet=pineapple,friends=4,map=sunny_meadow,battle=3,turntimer=40 | 15
 battle_crowd | newgame,level=43,class=fighter,pet=pineapple,friends=4,map=sunny_meadow,battle=5 | 15
 party_menu   | newgame,level=43,class=fighter,pet=pineapple,friends=4,menu=friends | 8
 # A fourth friend joins through their card's buttons (debug invite=n), in town and in a cave.
@@ -548,18 +552,24 @@ levelup      | newgame,level=9,levelup,map=sunny_meadow,battle=1,win           |
 levelup_landscape | newgame,level=9,levelup,map=sunny_meadow,battle=1,win,landscape | 30
 duel_spoils  | newgame,level=30,map=valley_of_fear,duel,win              | 30
 # Spell effects, frozen mid-cast (fxstop: seconds into the cast; the battle runs at 3% speed till then).
-fx_stone     | newgame,level=60,class=mage,map=sunny_meadow,battle=3,cast=stone_spike:1,fxstop=0.36 | 38
-fx_stone_top | newgame,level=60,class=mage,map=sunny_meadow,battle=3,cast=stone_spike:9,fxstop=0.92 | 56
+fx_stone     | newgame,level=60,class=mage,map=sunny_meadow,battle=3,cast=stone_spike:1,fxstop=0.58 | 42
+fx_stone_top | newgame,level=60,class=mage,map=sunny_meadow,battle=3,cast=stone_spike:9,fxstop=1.14 | 60
 fx_fire      | newgame,level=60,class=mage,map=sunny_meadow,battle=3,cast=fire_bolt:7,fxstop=0.95   | 58
-fx_leaves    | newgame,level=60,class=mage,map=sunny_meadow,battle=3,cast=leaf_storm:5,fxstop=0.8   | 52
+fx_leaves    | newgame,level=60,class=mage,map=sunny_meadow,battle=3,cast=leaf_storm:5,fxstop=1.2   | 64
 fx_water     | newgame,level=60,class=mage,map=sunny_meadow,battle=3,cast=bubble:5,fxstop=0.88      | 55
 fx_mythic    | newgame,level=160,class=mage,map=sunny_meadow,battle=3,cast=fire_bolt:40,fxstop=1.7 | 60
 fx_legendary | newgame,level=200,class=mage,map=sunny_meadow,battle=3,cast=fire_bolt:50,fxstop=1.7 | 60
 # Special attacks land in a flare (SkillFlares.swift), frozen just after the blow lands.
 fx_flare_fire   | newgame,level=60,class=mage,map=sunny_meadow,battle=3,cast=fire_bolt:7,fxstop=1.0     | 60
-fx_flare_leaves | newgame,level=60,class=mage,map=sunny_meadow,battle=3,cast=leaf_storm:9,fxstop=1.12   | 62
+fx_flare_leaves | newgame,level=60,class=mage,map=sunny_meadow,battle=3,cast=leaf_storm:9,fxstop=1.52   | 74
 fx_flare_strike | newgame,level=60,class=fighter,map=sunny_meadow,battle=3,cast=power_strike:9,fxstop=0.8 | 50
-fx_flare_whirl  | newgame,level=60,class=fighter,map=sunny_meadow,battle=3,cast=whirlwind:9,fxstop=1.08  | 60
+fx_flare_whirl  | newgame,level=60,class=fighter,map=sunny_meadow,battle=3,cast=whirlwind:9,fxstop=1.26  | 66
+# The top skills' grand strokes (skills.json `grand`): Power Strike's and Whirlwind's crescent of light
+# sweeping through the foes as the blow lands, Leaf Storm's pillars falling onto them, over the rune
+# circles a skill that reaches a whole side opens under everyone it will reach.
+fx_crescent       | newgame,level=60,class=fighter,map=sunny_meadow,battle=3,cast=power_strike:9,fxstop=0.86 | 52
+fx_crescent_whirl | newgame,level=60,class=fighter,map=sunny_meadow,battle=3,cast=whirlwind:9,fxstop=1.32   | 66
+fx_pillar         | newgame,level=60,class=mage,map=sunny_meadow,battle=3,cast=leaf_storm:9,fxstop=0.92    | 56
 # Whirlwind's pirouette, frozen a quarter of the way in: the hero turned round on the spot, not tipped over.
 whirl_spin      | newgame,level=20,class=fighter,map=sunny_meadow,battle=3,cast=whirlwind:1,fxstop=0.15 | 20
 party_folded | newgame,level=43,class=fighter,pet=pineapple,friends=2,map=twilight_woods | 15

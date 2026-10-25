@@ -248,6 +248,9 @@ final class BattleEngine {
     private var sealTarget: Int?
     /// The skill you use this round: friends steer clear of echoing it (`adventurerAction`).
     private var heroSkill: String?
+    /// When each friend locks in their move this round, rolled as the time to choose begins
+    /// (`rollLockIns`) so the battle can show it; rolled in `resolveRound` when nobody asked.
+    private var lockIns: [Int: Double]?
     /// A boss fight comes in waves: the waves still to come, each stepping in once the one on the
     /// field is beaten. The last brings the boss.
     private var waves: [[Combatant]]
@@ -293,6 +296,19 @@ final class BattleEngine {
 
     func alive(on side: BattleSide) -> [Combatant] {
         combatants.filter { $0.side == side && $0.isAlive }
+    }
+
+    /// When each friend standing at your side locks in their move this round (0 as the time to
+    /// choose begins, 1 at the bell), rolled now and kept for `resolveRound`, so the battle can show
+    /// them choosing.
+    func rollLockIns() -> [Int: Double] {
+        let yourSide = hero?.side ?? .party
+        var rolled: [Int: Double] = [:]
+        for fighter in combatants where fighter.isAlive && fighter.side == yourSide && fighter.ownerID == nil && !fighter.isHero {
+            rolled[fighter.id] = Double.random(in: 0..<1, using: &rng)
+        }
+        lockIns = rolled
+        return rolled
     }
 
     /// Sealing: any wild monster on the field, at any HP (Fairyland Online wanted the last one standing,
@@ -396,8 +412,10 @@ final class BattleEngine {
         let standing = combatants.filter(\.isAlive)
         let yourSide = hero?.side ?? .party
         var lockedIn: [(id: Int, at: Double)] = []
+        let rolled = lockIns ?? [:]
+        lockIns = nil
         for fighter in standing where fighter.side == yourSide && fighter.ownerID == nil {
-            let at = fighter.isHero ? heroChoseAt : Double.random(in: 0..<1, using: &rng)
+            let at = fighter.isHero ? heroChoseAt : rolled[fighter.id] ?? Double.random(in: 0..<1, using: &rng)
             lockedIn.append((fighter.id, at))
         }
         var order: [Int] = []

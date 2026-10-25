@@ -418,6 +418,32 @@ final class BattleController {
     @ObservationIgnored private var choosingSince: Date?
     @ObservationIgnored private var heroChoseAt: Double = 0
 
+    /// This round's time to choose with friends at your side: when it began, how long it runs (the
+    /// turn clock's, ten seconds without one) and when each friend locks in their move, a share of
+    /// it (`BattleEngine.rollLockIns`), so the party's faces can tick off as they do. Nil without
+    /// friends, or without a scene (tests roll them as the round plays, as ever).
+    private(set) var lockIns: (since: Date, window: TimeInterval, friends: [Int: Double])?
+
+    private func rollLockIns() {
+        let friends: [Int: Double] = scene == nil ? [:] : engine.rollLockIns()
+        if friends.isEmpty {
+            lockIns = nil
+        } else {
+            lockIns = (since: choosingSince ?? Date(), window: Self.turnSeconds ?? 10, friends: friends)
+        }
+    }
+
+    /// The people on your side who choose a move each round, you first, then your friends (their
+    /// companions follow them, so they have no face of their own here).
+    var choosers: [Combatant] { party.filter { $0.ownerID == nil && $0.isAlive } }
+
+    /// The boss on the field, standing or beaten.
+    var boss: Combatant? { enemiesOnField.first(where: Self.isBoss) }
+
+    static func isBoss(_ fighter: Combatant) -> Bool {
+        fighter.speciesID.flatMap { Content.shared.monster($0)?.boss } == true
+    }
+
     /// Its skills, for the Skills list on its turn.
     var companionSkills: [SkillDef] { companion?.skills.compactMap { session.content.skill($0) } ?? [] }
     func companionLevel(of skill: SkillDef) -> Int { companion?.skillLevel(skill.id) ?? 1 }
@@ -737,6 +763,7 @@ final class BattleController {
     private func resolve(_ heroAction: BattleAction, orders: [Int: BattleAction]) {
         heroChoice = nil
         choosingSince = nil
+        lockIns = nil
         phase = .animating
         let events = engine.resolveRound(heroAction: heroAction, orders: orders, heroChoseAt: heroChoseAt)
         heroChoseAt = 0
@@ -777,7 +804,10 @@ final class BattleController {
 
     /// Starts the clock for a turn: each new one, and the first once the battle is on screen.
     func startTurnClock() {
-        if !choosingForCompanion, choosingSince == nil, isChoosing { choosingSince = Date() }
+        if !choosingForCompanion, choosingSince == nil, isChoosing {
+            choosingSince = Date()
+            rollLockIns()
+        }
         guard let seconds = Self.turnSeconds, isChoosing, turnClock == nil, heldTime == nil else { return }
         if holds.isEmpty {
             runTurnClock(seconds)
