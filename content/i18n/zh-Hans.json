@@ -778,7 +778,7 @@
     "That file isn't a Talewild backup.": "这个文件不是Talewild的备份。",
     "{hero}, level {level}, is back!": "{level}级的{hero}回来了！",
     "You already have this game.": "这个存档已经存在了。",
-    "Talewild, a cozy pixel adventure": "Talewild，温馨的像素冒险",
+    "Talewild": "Talewild",
     "Continue: {hero}, Lv {level}": "继续：{hero}，Lv {level}",
     "New game": "新游戏",
     "What's new": "更新内容",
@@ -839,8 +839,8 @@
     "In {name}'s party": "在{name}的队伍里",
     "{count} of them, and you": "他们{count}人，加上你",
     "Leave party": "退出队伍",
-    "Close menu": "关闭菜单",
     "Open menu": "打开菜单",
+    "Close menu": "关闭菜单",
     "Open map": "打开地图",
     "Closed": "未开通",
     "Your things": "你的东西",
@@ -924,6 +924,7 @@
     "Storyleaf is now Talewild": "Storyleaf 更名为 Talewild",
     "The game has a new name: Talewild. The land Liora bound from the world's fairy tales is called Talewild too.": "游戏有了新名字：Talewild。女神莉奥拉用世界上的童话汇聚而成的土地，也叫作Talewild。",
     "Your hero, saves and progress are just as you left them.": "你的英雄、存档和进度都和你离开时一模一样。",
+    "A new logo to go with the name: Tale over Wild, with a sword between them.": "与新名字相配的新标志：Tale 在上，Wild 在下，中间横着一把剑。",
     "The bank": "银行",
     "A bank in every town and in Glimmerbough: leave your gold and things with the banker, and they're safe whatever happens.": "每座城镇和微光枝都开了银行：把金币和物品交给银行职员，无论发生什么都很安全。",
     "Your bag holds 50 kinds of thing, your coins one of them. What doesn't fit is left behind.": "背包能装50种东西，金币也算一种。装不下的只能留下。",
@@ -3591,10 +3592,6 @@
     "Bounty Hunter": "赏金猎人",
     "Town Favourite": "小镇红人",
     "Faithful": "常客",
-    "Old Friend": "老朋友",
-    "Hide minimap": "隐藏小地图",
-    "Show minimap": "显示小地图",
-    "Turn music off": "关闭音乐",
-    "Turn music on": "开启音乐"
+    "Old Friend": "老朋友"
   }
 }

@@ -213,9 +213,9 @@ struct TitleView: View {
         Image("Logo")
             .resizable()
             .scaledToFit()
-            .raysAnchor(Brand.leafInLogo)
-            .frame(maxWidth: 440)
-            .accessibilityLabel(L("Talewild, a cozy pixel adventure"))
+            .raysAnchor(Brand.raysInLogo)
+            .frame(maxWidth: 360, maxHeight: wide ? 190 : 260)
+            .accessibilityLabel(L("Talewild"))
     }
 
     /// Your games, one at a time, or before the first one, a hero waiting to be made.

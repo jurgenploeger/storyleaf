@@ -778,7 +778,7 @@
     "That file isn't a Talewild backup.": "Этот файл — не резервная копия Talewild.",
     "{hero}, level {level}, is back!": "{hero}, уровень {level}, снова в игре!",
     "You already have this game.": "Эта игра у тебя уже есть.",
-    "Talewild, a cozy pixel adventure": "Talewild — уютное пиксельное приключение",
+    "Talewild": "Talewild",
     "Continue: {hero}, Lv {level}": "Продолжить: {hero}, ур. {level}",
     "New game": "Новая игра",
     "What's new": "Что нового",
@@ -839,8 +839,8 @@
     "In {name}'s party": "В команде {name}",
     "{count} of them, and you": "Их {count}, и ты",
     "Leave party": "Выйти из команды",
-    "Close menu": "Закрыть меню",
     "Open menu": "Открыть меню",
+    "Close menu": "Закрыть меню",
     "Open map": "Открыть карту",
     "Closed": "Закрыто",
     "Your things": "Твои вещи",
@@ -924,6 +924,7 @@
     "Storyleaf is now Talewild": "Storyleaf теперь Talewild",
     "The game has a new name: Talewild. The land Liora bound from the world's fairy tales is called Talewild too.": "У игры новое имя: Talewild. Страна, которую Лиора собрала из сказок всего мира, теперь тоже называется Talewild.",
     "Your hero, saves and progress are just as you left them.": "Твой герой, сохранения и прогресс остались такими же, как ты их оставил.",
+    "A new logo to go with the name: Tale over Wild, with a sword between them.": "Новый логотип под стать имени: Tale над Wild и меч между ними.",
     "The bank": "Банк",
     "A bank in every town and in Glimmerbough: leave your gold and things with the banker, and they're safe whatever happens.": "Банк в каждом городе и в Глиммербоу: оставь золото и вещи у банкира, и они будут в сохранности, что бы ни случилось.",
     "Your bag holds 50 kinds of thing, your coins one of them. What doesn't fit is left behind.": "В сумке помещается 50 видов вещей, и монеты — один из них. Что не влезает, остаётся лежать.",
@@ -3591,10 +3592,6 @@
     "Bounty Hunter": "Охотник за наградами",
     "Town Favourite": "Любимец города",
     "Faithful": "Верный",
-    "Old Friend": "Старый друг",
-    "Hide minimap": "Скрыть мини-карту",
-    "Show minimap": "Показать мини-карту",
-    "Turn music off": "Выключить музыку",
-    "Turn music on": "Включить музыку"
+    "Old Friend": "Старый друг"
   }
 }

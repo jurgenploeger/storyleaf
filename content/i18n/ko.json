@@ -778,7 +778,7 @@
     "That file isn't a Talewild backup.": "그 파일은 Talewild 백업이 아니에요.",
     "{hero}, level {level}, is back!": "레벨 {level} {hero}이(가) 돌아왔어요!",
     "You already have this game.": "이미 있는 게임이에요.",
-    "Talewild, a cozy pixel adventure": "Talewild, 포근한 픽셀 모험",
+    "Talewild": "Talewild",
     "Continue: {hero}, Lv {level}": "이어하기: {hero}, Lv {level}",
     "New game": "새 게임",
     "What's new": "새로운 소식",
@@ -839,8 +839,8 @@
     "In {name}'s party": "{name}의 파티",
     "{count} of them, and you": "{count}명과 당신",
     "Leave party": "파티 나가기",
-    "Close menu": "메뉴 닫기",
     "Open menu": "메뉴 열기",
+    "Close menu": "메뉴 닫기",
     "Open map": "지도 열기",
     "Closed": "닫힘",
     "Your things": "내 물건",
@@ -924,6 +924,7 @@
     "Storyleaf is now Talewild": "Storyleaf가 Talewild가 되었어요",
     "The game has a new name: Talewild. The land Liora bound from the world's fairy tales is called Talewild too.": "게임 이름이 새로 바뀌었어요: Talewild. 리오라가 세상의 동화로 엮은 땅의 이름도 Talewild예요.",
     "Your hero, saves and progress are just as you left them.": "영웅도, 저장 데이터도, 진행 상황도 그대로 남아 있어요.",
+    "A new logo to go with the name: Tale over Wild, with a sword between them.": "이름에 맞춘 새 로고: Wild 위에 Tale, 그 사이에 검이 있어요.",
     "The bank": "은행",
     "A bank in every town and in Glimmerbough: leave your gold and things with the banker, and they're safe whatever happens.": "모든 마을과 글리머보우에 은행이 생겼어요. 골드와 물건을 은행원에게 맡기면 무슨 일이 있어도 안전해요.",
     "Your bag holds 50 kinds of thing, your coins one of them. What doesn't fit is left behind.": "가방에는 50종류까지 들어가고, 동전도 그중 하나예요. 들어가지 않는 건 두고 가게 돼요.",
@@ -3591,10 +3592,6 @@
     "Bounty Hunter": "현상금 사냥꾼",
     "Town Favourite": "마을의 인기인",
     "Faithful": "단골",
-    "Old Friend": "오랜 친구",
-    "Hide minimap": "미니맵 숨기기",
-    "Show minimap": "미니맵 보이기",
-    "Turn music off": "음악 끄기",
-    "Turn music on": "음악 켜기"
+    "Old Friend": "오랜 친구"
   }
 }

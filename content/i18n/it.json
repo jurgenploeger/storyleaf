@@ -778,7 +778,7 @@
     "That file isn't a Talewild backup.": "Questo file non è un backup di Talewild.",
     "{hero}, level {level}, is back!": "{hero}, livello {level}, è tornato!",
     "You already have this game.": "Hai già questa partita.",
-    "Talewild, a cozy pixel adventure": "Talewild, un'accogliente avventura in pixel",
+    "Talewild": "Talewild",
     "Continue: {hero}, Lv {level}": "Continua: {hero}, Liv {level}",
     "New game": "Nuova partita",
     "What's new": "Novità",
@@ -839,8 +839,8 @@
     "In {name}'s party": "Nel gruppo di {name}",
     "{count} of them, and you": "{count} di loro, e tu",
     "Leave party": "Lascia il gruppo",
-    "Close menu": "Chiudi menu",
     "Open menu": "Apri menu",
+    "Close menu": "Chiudi menu",
     "Open map": "Apri mappa",
     "Closed": "Chiuso",
     "Your things": "Le tue cose",
@@ -924,6 +924,7 @@
     "Storyleaf is now Talewild": "Storyleaf ora si chiama Talewild",
     "The game has a new name: Talewild. The land Liora bound from the world's fairy tales is called Talewild too.": "Il gioco ha un nuovo nome: Talewild. Anche la terra che Liora ha creato con le fiabe del mondo si chiama Talewild.",
     "Your hero, saves and progress are just as you left them.": "Il tuo eroe, i salvataggi e i progressi sono proprio come li hai lasciati.",
+    "A new logo to go with the name: Tale over Wild, with a sword between them.": "Un logo nuovo per il nuovo nome: Tale sopra Wild, con una spada in mezzo.",
     "The bank": "La banca",
     "A bank in every town and in Glimmerbough: leave your gold and things with the banker, and they're safe whatever happens.": "Una banca in ogni città e a Glimmerbough: lascia oro e oggetti al banchiere, e saranno al sicuro qualunque cosa accada.",
     "Your bag holds 50 kinds of thing, your coins one of them. What doesn't fit is left behind.": "La tua borsa contiene 50 tipi di cose, e le monete sono una di queste. Ciò che non entra resta indietro.",
@@ -3591,10 +3592,6 @@
     "Bounty Hunter": "Cacciatore di Taglie",
     "Town Favourite": "Beniamino del Paese",
     "Faithful": "Fedele",
-    "Old Friend": "Vecchio Amico",
-    "Hide minimap": "Nascondi minimappa",
-    "Show minimap": "Mostra minimappa",
-    "Turn music off": "Disattiva la musica",
-    "Turn music on": "Attiva la musica"
+    "Old Friend": "Vecchio Amico"
   }
 }

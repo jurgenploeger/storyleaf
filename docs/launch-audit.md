@@ -157,8 +157,8 @@ engine's formulas, and the CI screenshots. Every finding here was checked agains
     Say "Release" and confirm.
 14. **Rare soft-lock.** With five companions the starter egg can't hatch and there's no release button, which
     blocks Hope of Meadowbrook (a hatch quest) and the Elder's quests after it.
-15. **The English tagline is part of the logo** ("a cozy pixel adventure" in `Logo.png`), shown in every
-    language. It's already a translated string: draw it as text under the art.
+15. ~~**The English tagline is part of the logo**~~ Done in 0.8.1: the Talewild logo has no tagline, just the
+    wordmark (Tale over Wild, a sword between them), the same in every language.
 16. **The music synth runs all the time**, muted or not (*est.* a few % of a core for the whole session). Stop the
     engine while muted or at volume 0.
 
