@@ -5,9 +5,9 @@ same picked drawing as the app icon (tools/app_icon_art.py `SOURCE`), cropped a 
 fits on the hero's head (`BOX`, 128 pixels at 8×), with only the scenery changed and something festive
 on him:
 
-  Halloween  a purple night, a moon, autumn leaves, bats, a jack-o'-lantern, a witch's hat
+  Halloween  a purple night, a crescent moon, autumn leaves, bats, jack-o'-lanterns, a witch's hat
   Christmas  a pale winter sky, snow on the trees and the ground, snowflakes, a Santa hat
-  Easter     a bright spring sky, fresh leaves and blossom, flowers and painted eggs, bunny ears
+  Easter     a bright spring sky, fresh leaves and blossom, flowers and painted eggs, bunny ears (no band)
 
 Held to docs/pixel-style.md and docs/sprite-acceptance.md:
 
@@ -24,11 +24,14 @@ Held to docs/pixel-style.md and docs/sprite-acceptance.md:
   scalp's top at 53 and the eyes at 96), a little wider than the scalp, the hair above it hidden.
 - **Nothing in the corners** iOS rounds off (about 29 of the drawing's pixels), so every prop shows.
 
-The hero is left as drawn (`HERO`, his outline in the drawing's pixels). Written as
-AppIcon-<Season>.appiconset, one 1024 image each (iOS shows it in every appearance).
+The hero is left as drawn (`HERO` roughs him out, `hero_mask` cuts him on his own outline, hair and all).
+Each also comes at night for Dark Mode (`at_night`, as tools/app_icon_art.py's dark icon: the season's
+night sky, moonlight on the hero, and its lights: the moon's halo and the pumpkins' glow, fairy lights in
+the snowy trees, fireflies in the spring meadow) and in its greys for Tinted. Written as
+AppIcon-<Season>.appiconset, light, dark and tinted, as AppIcon is.
 
     python3 tools/season_icon_art.py                    # writes the three icon sets
-    python3 tools/season_icon_art.py --preview out.png  # all three at Home Screen sizes, beside the icon
+    python3 tools/season_icon_art.py --preview out.png  # all three by day and at night, beside the icon
 
 Needs pillow + numpy.
 """
@@ -105,9 +108,10 @@ def hero_mask() -> np.ndarray:
     """The hero exactly, outline and all. `HERO` only roughs him out: the background is flooded in from
     outside it through everything but dark pixels, as far as a band 5 pixels inside it, so it stops at his
     own outline (and where that has a gap, leaks a few pixels at most); his gold (the sword's lit edge,
-    which has no dark line) is never background, and sky never his. Then his outline is the dark pixels
-    within 2 of what's left. Cut from the polygon alone, his outline came out half his and half the
-    scenery's, recoloured, and looked chewed."""
+    which has no dark line) and his hair's oranges and reds (the lock flicked out to the left and the
+    deep red hair behind it, too thin for the band, and the sword's orange edge) are never background,
+    and sky never his. Then his outline is the dark pixels within 2 of what's left. Cut from the polygon
+    alone, his outline came out half his and half the scenery's, recoloured, and looked chewed."""
     w, h = BOX[2] - BOX[0], BOX[3] - BOX[1]
     image = Image.new("L", (w, h))
     ImageDraw.Draw(image).polygon([(x - BOX[0], y - BOX[1]) for x, y in HERO], fill=255)
@@ -118,12 +122,18 @@ def hero_mask() -> np.ndarray:
     outer = ndimage.binary_dilation(rough, four, iterations=5)
     inner = ndimage.binary_erosion(rough, four, iterations=5)
     gold = app_icon_art.is_gold(rgb) & outer
+    hsv = np.array([[colorsys.rgb_to_hsv(*p) for p in row] for row in rgb])
+    hue, sat, val = hsv[..., 0] * 360, hsv[..., 1], hsv[..., 2]
+    gold |= ((hue < 40) | (hue > 350)) & (sat > 0.55) & (val > 0.3) & outer
     sky = app_icon_art.sky_mask(rgb)
     seeds = (~outer & ~dark) | sky
     back = ndimage.binary_propagation(seeds, structure=four, mask=(~dark & ~inner & ~gold) | sky)
     light = ~dark & ~back & outer
     near = ndimage.distance_transform_cdt(~light, metric="chessboard") <= 2
-    return ndimage.binary_fill_holes(light | (dark & near & outer)) & ~sky
+    hero = ndimage.binary_fill_holes(light | (dark & near & outer)) & ~sky
+    # Only the hero himself: a bit of bush or a few tree pixels cut off from him go back to the scenery.
+    parts, count = ndimage.label(hero, np.ones((3, 3)))
+    return parts == 1 + np.argmax(ndimage.sum(hero, parts, range(1, count + 1)))
 
 
 def classes(rgb: np.ndarray) -> np.ndarray:
@@ -180,9 +190,11 @@ def recolour(rgb: np.ndarray, kind: np.ndarray, season: dict) -> tuple:
     return out, ramps
 
 
-def place(out: np.ndarray, sprite: Image.Image, x: int, y: int, behind: np.ndarray = None) -> None:
-    """A rendered sprite with its top left at the drawing's (x, y); where `behind` is True it doesn't cover."""
+def place(out: np.ndarray, sprite: Image.Image, x: int, y: int, behind: np.ndarray = None) -> np.ndarray:
+    """A rendered sprite with its top left at the drawing's (x, y); where `behind` is True it doesn't cover.
+    Returns where it went."""
     art = np.asarray(sprite.convert("RGBA"), dtype=float) / 255
+    covered = np.zeros(out.shape[:2], bool)
     for dy in range(art.shape[0]):
         for dx in range(art.shape[1]):
             if art[dy, dx, 3] < 0.5:
@@ -190,6 +202,8 @@ def place(out: np.ndarray, sprite: Image.Image, x: int, y: int, behind: np.ndarr
             ox, oy = x + dx - BOX[0], y + dy - BOX[1]
             if 0 <= ox < out.shape[1] and 0 <= oy < out.shape[0] and (behind is None or not behind[oy, ox]):
                 out[oy, ox] = art[dy, dx, :3]
+                covered[oy, ox] = True
+    return covered
 
 
 def hat(out: np.ndarray, sprite: Image.Image, x: int, y: int) -> None:
@@ -282,17 +296,24 @@ def santa_hat() -> tuple:
 
 
 def bunny_ears() -> tuple:
-    """Bunny ears on a pink band worn over the hair, a little back from the brow, the ears standing up and
-    leaning a little apart."""
-    s = Sprite(70, 50)
+    """Just the ears, no band: two ears growing out of the hair, a little back from the brow, standing up
+    and leaning a little apart, short enough that the whole ear shows inside the icon. Their feet go into
+    the hair: over its top few rows, behind the rest (`tuck`)."""
+    s = Sprite(44, 30)
     white = Material("#f4f0f8", shades=4, texture=0.04)
     pink = Material("#ff9cc0", shades=4, texture=0.03)
-    s.ellipse(22, 22, 6.5, 16, white, rot=-20)
-    s.ellipse(48, 22, 6.5, 16, white, rot=20)
-    s.ellipse(22, 23, 2.8, 11, pink, rot=-20, profile="flat")
-    s.ellipse(48, 23, 2.8, 11, pink, rot=20, profile="flat")
-    s.stroke([(4, 48), (12, 40), (24, 36), (46, 36), (58, 40), (66, 48)], 5, pink)
-    return s.render(), (85, 26)
+    s.ellipse(11, 14, 4.8, 10.5, white, rot=-16)
+    s.ellipse(33, 14, 4.8, 10.5, white, rot=16)
+    s.ellipse(11, 15, 2.0, 7, pink, rot=-16, profile="flat")
+    s.ellipse(33, 15, 2.0, 7, pink, rot=16, profile="flat")
+    return s.render(), (99, 38)
+
+
+def tuck(kind: np.ndarray, depth: int = 3) -> np.ndarray:
+    """The hero below the top `depth` rows of each column: what ears growing out of the hair go behind."""
+    hero = kind == 0
+    top = np.where(hero.any(axis=0), hero.argmax(axis=0), hero.shape[0])
+    return hero & (np.arange(hero.shape[0])[:, None] >= top + depth)
 
 
 # --- the props -------------------------------------------------------------------------------------------
@@ -321,10 +342,11 @@ def egg(base: str, stripe: str) -> Image.Image:
 
 
 def moon() -> Image.Image:
+    """A crescent moon, horns to the right. A full one with two craters read as a face with two eyes."""
     s = Sprite(17, 17)
-    s.ellipse(8.5, 8.5, 7.5, 7.5, Material("#f6e2a2", shades=4, texture=0.1, grain=2.0))
-    s.ellipse(6, 7, 1.8, 1.6, Material("#d4b46e", shades=2, texture=0.0), profile="flat")
-    s.ellipse(10.5, 11, 1.6, 1.4, Material("#d4b46e", shades=2, texture=0.0), profile="flat")
+    x, y = s._grid()
+    crescent = ((x - 8.5) ** 2 + (y - 8.5) ** 2 <= 7.5 ** 2) & ((x - 12.2) ** 2 + (y - 6.6) ** 2 > 6.4 ** 2)
+    s.mask(crescent, Material("#f6e2a2", shades=4, texture=0.08, grain=2.0))
     return s.render(outline="tinted")
 
 
@@ -346,9 +368,11 @@ def plus(x, y):
 
 
 # --- the seasons -----------------------------------------------------------------------------------------
+# Each draws its props on the recoloured scene and returns what in it gives light (the moon, the pumpkins'
+# faces), which the dark icon leaves bright.
 
 def halloween(out, kind, ramps):
-    place(out, moon(), 82, 40, behind=kind == 0)
+    lit = place(out, moon(), 82, 40, behind=kind == 0)
     deep = hexrgb("#1a0c26")
     for x, y in ((52, 112), (66, 121), (156, 97)):
         bat(out, kind, x, y, deep)
@@ -359,6 +383,8 @@ def halloween(out, kind, ramps):
     place(out, small, 148, 155)
     sprite, at = witch_hat()
     hat(out, sprite, *at)
+    faces = [np.array(c[:3]) / 255 for c in ((255, 228, 120), (255, 168, 52))]
+    return lit | np.any([np.all(np.abs(out - c) < 1e-6, axis=2) for c in faces], axis=0)
 
 
 def christmas(out, kind, ramps):
@@ -376,6 +402,7 @@ def christmas(out, kind, ramps):
         pixels(out, kind, plus(x, y), [snow[4]] * 5, (SKY, BLOSSOM, LEAVES, BRANCHES))
     sprite, at = santa_hat()
     hat(out, sprite, *at)
+    return np.zeros(kind.shape, bool)
 
 
 def easter(out, kind, ramps):
@@ -388,36 +415,157 @@ def easter(out, kind, ramps):
         shadow(out, kind, x + 1, x + 9, y + 12)
         place(out, egg(base, stripe), x, y)
     sprite, at = bunny_ears()
-    place(out, sprite, *at)
+    place(out, sprite, *at, behind=tuck(kind))
+    return np.zeros(kind.shape, bool)
 
 
 DRAW = {"Halloween": halloween, "Christmas": christmas, "Easter": easter}
 
+# --- at night --------------------------------------------------------------------------------------------
+# The dark icons (iOS 18's Dark Mode Home Screen), made as the app icon's dark one is (app_icon_art.dusk):
+# the season's sky at night in three bands, the rest darker and cooler, moonlight on the hero's face, his
+# gold still warm, pale things (snow, the ears) catching the moon, and the season's lights in hard steps.
 
-def icon(season: str) -> Image.Image:
+NIGHTS = {
+    "Halloween": [("#120a22", "#1a0f30"), ("#221238", "#2c1846"), ("#3e1636", "#4e1e40")],
+    "Christmas": [("#0c1634", "#122044"), ("#142650", "#1a305e"), ("#1c3a62", "#244872")],
+    "Easter": [("#2b1f61", "#352872"), ("#122154", "#1a2c66"), ("#0a3340", "#10404e")],
+}
+WARM, EMBER = (1.0, 0.86, 0.5), (1.0, 0.6, 0.2)
+FAIRY = [(1.0, 0.84, 0.36), (1.0, 0.42, 0.38), (0.5, 0.86, 1.0), (1.0, 0.84, 0.36)]
+
+
+def cornered(ox: int, oy: int, size: int = 128, r: int = 29) -> bool:
+    """True where iOS rounds the icon's corner off."""
+    cx, cy = min(max(ox, r), size - 1 - r), min(max(oy, r), size - 1 - r)
+    return (ox - cx) ** 2 + (oy - cy) ** 2 > r * r
+
+
+def spark(out, x, y, colour, size=1) -> None:
+    """A light: a bright pixel, a step of glow on each side and a fainter one on the diagonals (a firefly,
+    a fairy light); `size` 0 is the pixel alone (a star)."""
+    def put(px, py, mix):
+        ox, oy = px - BOX[0], py - BOX[1]
+        if 0 <= ox < out.shape[1] and 0 <= oy < out.shape[0]:
+            out[oy, ox] = out[oy, ox] * (1 - mix) + np.array(colour) * mix
+    if size:
+        for dx, dy in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+            put(x + dx, y + dy, 0.3)
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            put(x + dx, y + dy, 0.6)
+    put(x, y, 1.0)
+
+
+def halo(out, keep, x, y, colour, radius) -> None:
+    """Light thrown round something bright, in two hard steps, on all but `keep`."""
+    ys, xs = np.mgrid[0:out.shape[0], 0:out.shape[1]]
+    far = np.hypot(xs - (x - BOX[0]), ys - (y - BOX[1]))
+    for reach, mix in ((radius, 0.14), (radius * 0.55, 0.16)):
+        ring = (far <= reach) & ~keep
+        out[ring] = out[ring] * (1 - mix) + np.array(colour) * mix
+
+
+def spots(kind, cover, allowed, count, seed, gap=9) -> list:
+    """`count` places on `allowed` classes, none on a prop or in a rounded corner, at least `gap` apart,
+    the same every run."""
+    rng = np.random.default_rng(seed)
+    ys, xs = np.nonzero(np.isin(kind, allowed) & ~cover)
+    chosen = []
+    for i in rng.permutation(len(xs)):
+        ox, oy = xs[i], ys[i]
+        if cornered(ox, oy) or ox < 3 or oy < 3 or ox > 124 or oy > 124:
+            continue
+        if all((ox - a) ** 2 + (oy - b) ** 2 >= gap * gap for a, b in chosen):
+            chosen.append((ox, oy))
+        if len(chosen) == count:
+            break
+    return [(a + BOX[0], b + BOX[1]) for a, b in chosen]
+
+
+def at_night(season, rgb, kind, day, out, lit) -> np.ndarray:
+    h, w = kind.shape
+    ys, xs = np.mgrid[0:h, 0:w]
+    # The sky, where it still shows: each day band's colour to the night's, its light shade to the light.
+    sky = np.zeros((h, w), bool)
+    night = out.copy()
+    for band, (dark, light) in enumerate(SEASONS[season]["sky"]):
+        rows = np.minimum(ys * 3 // h, 2) == band
+        for shade, to in ((dark, NIGHTS[season][band][0]), (light, NIGHTS[season][band][1])):
+            hit = rows & (kind == SKY) & np.all(np.abs(out - hexrgb(shade)) < 1e-6, axis=2)
+            night[hit], sky = hexrgb(to), sky | hit
+    # The rest by moonlight, brightest on the face and in three steps out from it.
+    fx, fy = app_icon_art.FACE[0] - BOX[0], app_icon_art.FACE[1] - BOX[1]
+    near = np.exp(-(((xs - fx) ** 2 + (ys - fy) ** 2) / (2 * (w * 0.32) ** 2)))[..., None]
+    near = np.round(near * 2) / 2
+    cool, warm = np.array([0.62, 0.68, 0.92]), np.array([0.95, 0.86, 0.78])
+    tone = cool * (1 - 0.6 * near) + warm * (0.6 * near)
+    rest = out * tone * (0.42 + 0.48 * near)
+    # Pale things catch the moon: snow, fur, the ears stay a pale moonlit blue.
+    luma = out @ np.array([0.299, 0.587, 0.114])
+    pale = (luma > 0.78) & (out.max(axis=2) - out.min(axis=2) < 0.2)
+    rest = np.where(pale[..., None], out * np.array([0.66, 0.74, 0.96]) * 0.86, rest)
+    gold = app_icon_art.is_gold(rgb) & (kind == 0) & np.all(np.abs(out - rgb) < 1e-6, axis=2)
+    rest = np.where(gold[..., None], out * np.array([0.92, 0.82, 0.62]), rest)
+    night = np.where((sky | lit)[..., None], night, rest)
+    night[lit] = out[lit]
+    keep = (kind == 0) | lit
+    cover = np.any(np.abs(out - day) > 1e-6, axis=2)
+    if season == "Halloween":
+        halo(night, keep | ~sky, 90, 48, WARM, 13)
+        for x, y, r in ((80, 160, 12), (155, 161, 9)):
+            halo(night, keep, x, y, EMBER, r)
+        night[lit] = out[lit]
+        for x, y in spots(kind, cover | ~sky, (SKY,), 6, 31):
+            spark(night, x, y, (0.95, 0.9, 1.0), 0)
+    elif season == "Christmas":
+        for x, y in spots(kind, cover | ~sky, (SKY,), 6, 7):
+            spark(night, x, y, (0.95, 0.96, 1.0), 0)
+        for i, (x, y) in enumerate(spots(kind, cover, (LEAVES, BLOSSOM), 9, 12, gap=12)):
+            spark(night, x, y, FAIRY[i % len(FAIRY)])
+    else:
+        for x, y in spots(kind, cover | ~sky, (SKY,), 5, 3):
+            spark(night, x, y, (0.95, 0.96, 1.0), 0)
+        for x, y in spots(kind, cover, (LEAVES, BLOSSOM, GRASS, BRANCHES), 9, 5, gap=13):
+            spark(night, x, y, app_icon_art.FIREFLY)
+    return night
+
+
+def icon(season: str) -> tuple:
+    """The season's icon by day and at night, and the night's greys for the tinted icon."""
     rgb = app_icon_art.crop(BOX)
     kind = classes(rgb)
-    out, ramps = recolour(rgb, kind, SEASONS[season])
-    DRAW[season](out, kind, ramps)
-    big = np.repeat(np.repeat(out, SCALE, axis=0), SCALE, axis=1)
+    day, ramps = recolour(rgb, kind, SEASONS[season])
+    out = day.copy()
+    lit = DRAW[season](out, kind, ramps)
+    dark = at_night(season, rgb, kind, day, out, lit)
+    return tuple(scale(image) for image in (out, dark, app_icon_art.tint(dark)))
+
+
+def scale(rgb: np.ndarray) -> Image.Image:
+    big = np.repeat(np.repeat(rgb, SCALE, axis=0), SCALE, axis=1)
     return Image.fromarray((np.clip(big, 0, 1) * 255 + 0.5).astype(np.uint8), "RGB")
 
 
-def write(season: str, image: Image.Image) -> Path:
+def write(season: str, images: tuple) -> Path:
+    """The icon set: by day (every iOS), at night (Dark Mode, iOS 18) and in greys (Tinted), as AppIcon's."""
     folder = ASSETS / f"AppIcon-{season}.appiconset"
     folder.mkdir(exist_ok=True)
-    name = f"AppIcon-{season}.png"
-    image.save(folder / name, optimize=True)
-    (folder / "Contents.json").write_text(json.dumps({
-        "images": [{"filename": name, "idiom": "universal", "platform": "ios", "size": "1024x1024"}],
-        "info": {"author": "xcode", "version": 1},
-    }, indent=2) + "\n")
-    return folder / name
+    entries = []
+    for image, suffix, look in zip(images, ("", "-Dark", "-Tinted"), (None, "dark", "tinted")):
+        name = f"AppIcon-{season}{suffix}.png"
+        image.save(folder / name, optimize=True)
+        entry = {"filename": name, "idiom": "universal", "platform": "ios", "size": "1024x1024"}
+        if look:
+            entry = {"appearances": [{"appearance": "luminosity", "value": look}], **entry}
+        entries.append(entry)
+    (folder / "Contents.json").write_text(json.dumps({"images": entries, "info": {"author": "xcode", "version": 1}},
+                                                     indent=2) + "\n")
+    return folder
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--preview", type=Path, help="write all three at Home Screen sizes here, beside the app icon")
+    parser.add_argument("--preview", type=Path, help="write each by day and at night at Home Screen sizes here, beside the app icon")
     args = parser.parse_args()
     made = {}
     for season in SEASONS:
@@ -425,15 +573,19 @@ def main() -> None:
         print(f"wrote {write(season, made[season]).relative_to(ROOT)}")
     if args.preview:
         sizes = [300, 120, 60]
-        rows = [Image.open(app_icon_art.LIGHT).convert("RGB")] + list(made.values())
-        sheet = Image.new("RGB", (sum(sizes) + 10 * (len(sizes) + 1), len(rows) * 320), (242, 242, 247))
+        rows = [Image.open(app_icon_art.LIGHT).convert("RGB"), Image.open(app_icon_art.DARK).convert("RGB")]
+        rows += [image for day, dark, _ in made.values() for image in (day, dark)]
+        half = sum(sizes) + 10 * (len(sizes) + 1)
+        sheet = Image.new("RGB", (2 * half, (len(rows) // 2) * 320), (242, 242, 247))
         for index, image in enumerate(rows):
-            x = 10
+            x = 10 + (index % 2) * half
+            if index % 2:
+                sheet.paste((28, 28, 30), (half, (index // 2) * 320, 2 * half, (index // 2 + 1) * 320))
             for side in sizes:
-                sheet.paste(app_icon_art.rounded(image, side), (x, 10 + index * 320))
+                sheet.paste(app_icon_art.rounded(image, side), (x, 10 + (index // 2) * 320))
                 x += side + 10
         sheet.save(args.preview)
-        print(f"preview in {args.preview}: the app icon, then {', '.join(made)}")
+        print(f"preview in {args.preview}: the app icon, then {', '.join(made)}; by day left, at night right")
 
 
 if __name__ == "__main__":

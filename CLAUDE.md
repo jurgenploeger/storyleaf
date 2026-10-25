@@ -87,7 +87,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `tools/season_icon_art.py`: the festive seasons' app icons (AppIcon-Halloween, -Christmas, -Easter), from the
   app icon's drawing cropped a little looser (`BOX`) so a hat fits: the hero as drawn (`HERO`), RD's scenery
   recoloured class by class, each colour onto the same rank of a hue-shifted seasonal ramp (its clusters kept),
-  snow on the leaves' lit clusters, and hats and props drawn with `pixel_kit`, a hat's band on the head's widest row.
+  snow on the leaves' lit clusters, and hats and props drawn with `pixel_kit`, a hat's band on the head's widest row;
+  each light, dark (its night, lit by the season's lights, `at_night`) and tinted, as the app icon is.
   The game switches to one while its season runs (`SeasonalIcon`, rewards.json `seasons`; never in tests or debug launches).
 - `tools/logo_art.py`: the logo (`Logo.png`), TALEWILD in capitals in Open Sans ExtraBold at its semi-condensed
   width (`tools/fonts/`, the titles' face in the pixel RPGs the user pointed to), all gold in one smooth gradient,

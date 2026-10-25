@@ -490,6 +490,12 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   scenery. The hero is cut by flooding the background in through everything but dark pixels, up to his own
   outline, and his outline is the dark within 2 pixels of him (`hero_mask`). A witch's hat bends: hollow sides
   and a tip hooked over, drawn low enough that the hook shows in the frame. Hair above a brim is cleared.
+  Then: "the mask cuts part of the hair", "the bunny ears should just be the ears, not the band", "the moon
+  looks like it has 2 eyes". A flood held back only by dark outlines runs straight through a lock too thin
+  for the band (the flick out to the left, the deep red hair behind it): the hair's own oranges and reds,
+  like the gold, are never background, and only the biggest piece is the hero. Ears grow out of the hair:
+  over its top three rows, behind the rest, short enough to show whole. A full moon with two craters is a
+  face; a crescent isn't. Each icon has a night, made as the app icon's dark one is.
 - **2026-10-25 (the ship):** `form_relief` is light per pixel, so a sprite twice a house's size needs
   as much change across areas twice as wide: the ship's deck and hull, lit by their normals alone, were
   flat at the 9 × 9 scale (0.010) and held it at 0.015. What lifted it: boards and strakes each a tone of
