@@ -159,6 +159,7 @@
     "Elite": "菁英",
     "{name} [BOT]": "{name} [BOT]",
     "{year}/{month}/{day}/{hour}hr": "{year}/{month}/{day} {hour}時",
+    "Your bag holds 50 things now, every one a slot: {count} went to the bank.": "背包現在最多裝50件物品，每件佔一格：{count}件已存入銀行。",
     "Your bag is full: {gold} gold left behind.": "背包滿了：{gold}金幣只能留下。",
     "Your bag is full. Put something in the bank first.": "背包滿了。先把東西存進銀行吧。",
     "You lost the {gold} gold you carried.": "你身上的{gold}金幣丟了。",

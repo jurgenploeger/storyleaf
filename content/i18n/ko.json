@@ -159,6 +159,7 @@
     "Elite": "엘리트",
     "{name} [BOT]": "{name} [BOT]",
     "{year}/{month}/{day}/{hour}hr": "{year}년 {month}월 {day}일 {hour}시",
+    "Your bag holds 50 things now, every one a slot: {count} went to the bank.": "이제 가방에는 50개까지 들어가요. 하나가 한 칸을 차지해요. {count}개는 은행으로 보냈어요.",
     "Your bag is full: {gold} gold left behind.": "가방이 가득 찼어요: {gold} 골드를 두고 왔어요.",
     "Your bag is full. Put something in the bank first.": "가방이 가득 찼어요. 먼저 은행에 맡기세요.",
     "You lost the {gold} gold you carried.": "가지고 있던 {gold} 골드를 잃었어요.",

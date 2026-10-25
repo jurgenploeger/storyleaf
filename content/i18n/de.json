@@ -159,6 +159,7 @@
     "Elite": "Elite",
     "{name} [BOT]": "{name} [BOT]",
     "{year}/{month}/{day}/{hour}hr": "{day}.{month}.{year}, {hour} Uhr",
+    "Your bag holds 50 things now, every one a slot: {count} went to the bank.": "Deine Tasche fasst jetzt 50 Dinge, jedes belegt einen Platz: {count} kamen auf die Bank.",
     "Your bag is full: {gold} gold left behind.": "Deine Tasche ist voll: {gold} Gold bleiben zurück.",
     "Your bag is full. Put something in the bank first.": "Deine Tasche ist voll. Bring zuerst etwas zur Bank.",
     "You lost the {gold} gold you carried.": "Du hast die {gold} Gold verloren, die du dabeihattest.",

@@ -159,6 +159,7 @@
     "Elite": "Элита",
     "{name} [BOT]": "{name} [BOT]",
     "{year}/{month}/{day}/{hour}hr": "{day}.{month}.{year}, {hour} ч",
+    "Your bag holds 50 things now, every one a slot: {count} went to the bank.": "Теперь в сумке помещается 50 вещей, каждая занимает ячейку: {count} отправлено в банк.",
     "Your bag is full: {gold} gold left behind.": "Сумка полна: {gold} золота остаётся лежать.",
     "Your bag is full. Put something in the bank first.": "Сумка полна. Сначала положи что-нибудь в банк.",
     "You lost the {gold} gold you carried.": "Ты потерял {gold} золота, что было при тебе.",
