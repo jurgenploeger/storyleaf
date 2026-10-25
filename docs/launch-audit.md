@@ -1,6 +1,6 @@
 # Launch audit (2026-10-06, at 0.3.60)
 
-What stands between Storyleaf and the App Store, what's broken or off-balance, and what would bring players
+What stands between Talewild and the App Store, what's broken or off-balance, and what would bring players
 back. Six read-throughs of the code and content (battle, saves and app lifecycle, world and performance, UI with
 accessibility and translation, content and balance, App Store readiness), Python battle simulations that copy the
 engine's formulas, and the CI screenshots. Every finding here was checked against the code; numbers marked
@@ -57,12 +57,16 @@ engine's formulas, and the CI screenshots. Every finding here was checked agains
    references (the Drunk Dragon and its hangover quest) are 13+ too. Don't choose Made for Kids.
 5. **Where it's sold.** Untick China mainland (games need an NPPA approval number) and Vietnam (games must be
    licensed there). Declare your EU trader status (DSA) in App Store Connect.
+6. **The name: Talewild** (since 0.8.0). Set it as the app's name (and a subtitle) in App Store Connect, the new
+   wordmark in `Logo.png` (the store slides draw it too), and search TALEWILD on the USPTO and EUIPO registers.
+   talewild.app and the social handles are free (docs/fairyland-online.md → Names); the privacy policy and
+   support pages above can live there.
 
 ### Strongly recommended
 
 - **Ship as 1.0.0 with a launch changelog.** The title screen's "What's new" lists 60+ pre-release entries (crash
   fixes, playtests), which reads like a beta (2.2).
-- **Say the adventurers are computer-run.** The first-play tour says "Adventurers wander Storyleaf too. Read what
+- **Say the adventurers are computer-run.** The first-play tour says "Adventurers wander Talewild too. Read what
   they say and chat back here." (`CoachMarks.swift`) without saying they're bots. Mention it there and in the
   review notes, and keep chat shots out of the listing, so nothing reads as real players' content (1.2).
 - **Iconaut's MIT notice.** MIT asks for its copyright and permission notice in copies; Settings only says
@@ -81,7 +85,7 @@ engine's formulas, and the CI screenshots. Every finding here was checked agains
 
 ### Review notes (ready to paste)
 
-> Storyleaf is a single-player RPG that runs entirely offline: no accounts, no network connections, no ads, no
+> Talewild is a single-player RPG that runs entirely offline: no accounts, no network connections, no ads, no
 > in-app purchases, no tracking and no data collection. Everyone else in the world is computer-controlled:
 > villagers, traders and the adventurers marked BOT, who wander, post pre-written chat lines, can be befriended
 > to join your party, and may challenge you to duels in danger zones. There are no other human players. The chat

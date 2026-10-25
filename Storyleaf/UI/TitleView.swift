@@ -139,7 +139,7 @@ struct TitleView: View {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         guard let raw = try? Data(contentsOf: url), let game = try? SaveStore.imported(raw) else {
-            importNote = L("That file isn't a Storyleaf backup.")
+            importNote = L("That file isn't a Talewild backup.")
             return
         }
         SaveStore.save(game)
@@ -215,7 +215,7 @@ struct TitleView: View {
             .scaledToFit()
             .raysAnchor(Brand.leafInLogo)
             .frame(maxWidth: 440)
-            .accessibilityLabel(L("Storyleaf, a cozy pixel adventure"))
+            .accessibilityLabel(L("Talewild, a cozy pixel adventure"))
     }
 
     /// Your games, one at a time, or before the first one, a hero waiting to be made.

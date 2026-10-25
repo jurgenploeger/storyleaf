@@ -213,7 +213,7 @@ struct SettingsView: View {
             }
 
             section(L("About"), icon: .star) {
-                Text(L("Storyleaf {version}", ["version": Self.version]))
+                Text(L("Talewild {version}", ["version": Self.version]))
                 Text(L("Art made with Retro Diffusion, icons by Iconaut (MIT). Music and sound effects are synthesized in the game."))
                     .font(HUDStyle.font(10))
                     .foregroundStyle(HUDStyle.dim)

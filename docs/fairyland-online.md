@@ -14,9 +14,10 @@ environment couldn't open the pages themselves, so a session that can should re-
 
 ## Names
 
-**Us** (since 0.3.50): the game is called **Storyleaf** for players (the App Store name, the logo and
-every in-game line), and since 2026-10-22 in the code, project and repo too (only the bundle ID and the save files keep
-"Fairyland"). The goddess Liora binds the world's tales
+**Us** (since 0.8.0, 2026-10-25): the game is called **Talewild** for players (the App Store name, the logo and
+every in-game line), and so is the land. It was Storyleaf from 0.3.50, and the code, project and repo still are
+(renamed from Fairyland on 2026-10-22) until a follow-up renames them; only the bundle ID and the save files keep
+"Fairyland" for good. The goddess Liora binds the world's tales
 into one book, and its pages are the land. Names taken from FO were replaced with our own, and this file
 keeps the FO names when it describes the original:
 
@@ -48,6 +49,21 @@ are in the Figma file). Ruled out for clashing with an
 existing game or mark: Fablemoor (FABLEMOON), Leafbound, Fairhollow, Wispwood, Thimblewood, Pixiehaven, Faeland,
 Pixel Tales (an existing App Store app), and any "Tales of …" title (Bandai Namco's Tales series, which also has
 Tales of the Heroes and Tales of Legendia).
+
+**Name check (2026-10-25), the rename to Talewild:** wanted a name whose `.app` domain and social handles are
+free. This environment couldn't reach domain registries or social sites, so names were screened by web search
+(no app, game, brand or channel under the name); the user confirmed talewild.app and the handles by hand.
+Before launch: reserve Talewild in App Store Connect, and search TALEWILD on the USPTO and EUIPO registers.
+- **Talewild**: chosen. Nothing found under the name.
+- Also clear: Pagewild, Inkmeadow, Dandelore, Lanternvale, Briarbell, Talewick, Talebrook, Talemere,
+  Pagemere, Inkwild, Pagebloom, Fablefern, Petalore, Talehaven, Leaflore.
+- **Taleland is taken now** (it was clear on 2026-10-06): the iOS app *TaleLand - Talk to Tale*
+  (apps.apple.com id6749757166), a Google Play *TaleLand* of AI fairy tales for children
+  (com.talelandapp.taleland), and Roblox's *Taleland Railway* games (taleland-railway.fandom.com).
+- Ruled out too: Talebloom (a *TaleBloom Kids* YouTube channel), Taleweave (Nexon's MMORPG *TalesWeaver*,
+  and several Taleweaver products), Talewood (reads as the *Tanglewood* games), Taleshire (reads as *Tales
+  of the Shire*), Fablewild (*Fablewood: Farm Adventure* on mobile, and Xbox's *Fable*), Lorewild (the
+  *Wilderlore* books).
 
 ## Tales of Mysteria (2026)
 
@@ -989,7 +1005,7 @@ of a player with two or more 99s are trimmed), and a quest point cape once every
 cape for each of the 27 lands with monsters, once every monster living there (its wilds and its bosses,
 as the Monster Book lists homes) is beaten, in that land's colours; and six for the world: the Monster
 Book (every monster beaten), cards (every card), quests (every quest), bosses (every boss), lands (every
-land visited) and the Storyleaf Cape (every other cape) (rewards.json `prizes`). Free, worn in a slot of
+land visited) and the Talewild Cape (every other cape) (rewards.json `prizes`). Free, worn in a slot of
 their own (so they never cost you your armour) and drawn on your back (`GearOverlay.drape`: from behind
 hung from the shoulders with a diamond emblem and a trimmed hem, the hair over it; from the front and
 side past your outline), a small bonus to stats; never sold or dropped, and woven again if lost. No
@@ -1101,7 +1117,7 @@ the Wishing Seal, which stays the Monster Book's last reward.
     afternoon, where half its glow was on screen and washed out the middle of the map (left of the screen
     half again as bright at 16hr in the screenshots, 2026-10-12); since 0.4.8 it stays in the corner. Whether FO's light moved
     with its clock isn't in any source we've found; this is ours. Clouds don't soften the shadows yet.
-  - Our setting is called Storyleaf in every in-game text (Fairyland until 0.3.50; see Names). In FO the
+  - Our setting is called Talewild in every in-game text (Fairyland until 0.3.50, Storyleaf until 0.8.0; see Names). In FO the
     continent itself is Mysteria (above), which is also the relaunch's name.
 - **Bots, moderators and announcements:** ours, asked for in playtesting (2026-10-04). FO's chat channels,
   GM notices and player stalls (players selling under a sign in town) aren't in any source reachable from a

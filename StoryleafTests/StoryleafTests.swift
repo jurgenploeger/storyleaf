@@ -3079,7 +3079,7 @@ struct RulesTests {
     @Test func announcementsFollowYouFromMapToMap() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         session.startChat(on: "Meadowbrook")
-        session.announce("Dawn breaks over Storyleaf.")
+        session.announce("Dawn breaks over Talewild.")
         session.postChat("lol", from: "Momo", kind: .adventurer)
         session.startChat(on: "Ingothold")
         // The game's own notices stay; the map's own chatter starts over.
@@ -3101,9 +3101,9 @@ struct RulesTests {
         session.post("Found Copper Gauntlets!", .reward, toast: false)
         #expect(session.chat.last?.text == "Found Copper Gauntlets!")
         #expect(session.log.last?.text == "+120 EXP  +40 gold")
-        session.announce("Dawn breaks over Storyleaf.")
+        session.announce("Dawn breaks over Talewild.")
         // An announcement is in the chat once, not again as a notice.
-        #expect(session.chat.filter { $0.text == "Dawn breaks over Storyleaf." }.count == 1)
+        #expect(session.chat.filter { $0.text == "Dawn breaks over Talewild." }.count == 1)
         session.startChat(on: "Ingothold")
         #expect(session.chat.map(\.kind) == [.notice, .notice, .announcement, .system])
     }

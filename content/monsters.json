@@ -3386,7 +3386,7 @@
       "name": "Emerald Dragon",
       "art": "boss_emerald_dragon",
       "element": "wood",
-      "lore": "The legendary dragon at the end of the Emerald Road, the greatest challenge in Storyleaf.",
+      "lore": "The legendary dragon at the end of the Emerald Road, the greatest challenge in Talewild.",
       "base": {
         "hp": 416,
         "mp": 87,
