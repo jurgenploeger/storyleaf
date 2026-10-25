@@ -62,6 +62,8 @@ HERO = [(55, 44), (64, 43), (72, 60), (79, 78), (85, 98), (89, 110), (93, 108), 
         (79, 117), (71, 96), (62, 72), (55, 50)]
 # Below this row the green is the meadow, above it the trees' leaves.
 GROUND = 147
+# The tunic's hem: below it the hero is legs and boots, and green is the grass.
+HEM = 159
 SKY, LEAVES, BLOSSOM, BRANCHES, GRASS, DARK = 1, 2, 3, 4, 5, 6
 
 
@@ -111,7 +113,8 @@ def hero_mask() -> np.ndarray:
     which has no dark line) and his hair's oranges and reds (the lock flicked out to the left and the
     deep red hair behind it, too thin for the band, and the sword's orange edge) are never background,
     and sky never his. Then his outline is the dark pixels within 2 of what's left. Cut from the polygon
-    alone, his outline came out half his and half the scenery's, recoloured, and looked chewed."""
+    alone, his outline came out half his and half the scenery's, recoloured, and looked chewed. The grass
+    between his legs is flooded in from the icon's bottom edge, where the legs run off it."""
     w, h = BOX[2] - BOX[0], BOX[3] - BOX[1]
     image = Image.new("L", (w, h))
     ImageDraw.Draw(image).polygon([(x - BOX[0], y - BOX[1]) for x, y in HERO], fill=255)
@@ -126,11 +129,17 @@ def hero_mask() -> np.ndarray:
     hue, sat, val = hsv[..., 0] * 360, hsv[..., 1], hsv[..., 2]
     gold |= ((hue < 40) | (hue > 350)) & (sat > 0.55) & (val > 0.3) & outer
     sky = app_icon_art.sky_mask(rgb)
-    seeds = (~outer & ~dark) | sky
+    # Also the grass showing between his legs, where they run off the bottom: the polygon spans the gap.
+    green = (hue > 60) & (hue < 170) & (sat > 0.18)
+    foot = np.zeros_like(dark)
+    foot[-1] = green[-1] & ~dark[-1]
+    seeds = (~outer & ~dark) | sky | foot
     back = ndimage.binary_propagation(seeds, structure=four, mask=(~dark & ~inner & ~gold) | sky)
     light = ~dark & ~back & outer
     near = ndimage.distance_transform_cdt(~light, metric="chessboard") <= 2
     hero = ndimage.binary_fill_holes(light | (dark & near & outer)) & ~sky
+    # Below his tunic's hem (HEM) nothing of his is green: what is, is grass.
+    hero &= ~(green & (np.arange(h)[:, None] + BOX[1] >= HEM))
     # Only the hero himself: a bit of bush or a few tree pixels cut off from him go back to the scenery.
     parts, count = ndimage.label(hero, np.ones((3, 3)))
     return parts == 1 + np.argmax(ndimage.sum(hero, parts, range(1, count + 1)))
@@ -206,7 +215,7 @@ def place(out: np.ndarray, sprite: Image.Image, x: int, y: int, behind: np.ndarr
     return covered
 
 
-def hat(out: np.ndarray, sprite: Image.Image, x: int, y: int) -> None:
+def hat(out: np.ndarray, sprite: Image.Image, x: int, y: int) -> np.ndarray:
     """A hat put on: first the hair above its brim or band is cleared (sprite-acceptance.md, *Head pieces*:
     no hair poking up round it), each hair pixel taking the colour of the nearest scenery in its row, then
     the hat itself."""
@@ -229,7 +238,7 @@ def hat(out: np.ndarray, sprite: Image.Image, x: int, y: int) -> None:
                     else:
                         continue
                     break
-    place(out, sprite, x, y)
+    return place(out, sprite, x, y)
 
 
 def shadow(out, kind, x0, x1, y, depth=0.62) -> None:
@@ -292,29 +301,32 @@ def santa_hat() -> tuple:
             (66, 26), (66, 36)], Material("#cc2e3e", shades=5, texture=0.05))
     s.ellipse(40, 38, 36, 7, fur)
     s.ellipse(78, 43, 6.5, 6.5, fur)
-    return s.render(), (79, 33)
+    return s.render(), (79, 37)
 
 
 def bunny_ears() -> tuple:
-    """Just the ears, no band: two ears growing out of the hair, a little back from the brow, standing up
-    and leaning a little apart, short enough that the whole ear shows inside the icon. Their feet go into
-    the hair: over its top few rows, behind the rest (`tuck`)."""
+    """Just the ears, no band: two ears standing on the top of the head, in front of the hair, a little
+    back from the brow, leaning a little apart, short enough that the whole ear shows inside the icon.
+    Each casts a small shadow on the hair round its foot (`ear_shadow`)."""
     s = Sprite(44, 30)
     white = Material("#f4f0f8", shades=4, texture=0.04)
     pink = Material("#ff9cc0", shades=4, texture=0.03)
-    s.ellipse(11, 14, 4.8, 10.5, white, rot=-16)
-    s.ellipse(33, 14, 4.8, 10.5, white, rot=16)
-    s.ellipse(11, 15, 2.0, 7, pink, rot=-16, profile="flat")
-    s.ellipse(33, 15, 2.0, 7, pink, rot=16, profile="flat")
-    return s.render(), (99, 38)
+    s.ellipse(11, 14, 4.8, 11.5, white, rot=-14)
+    s.ellipse(33, 14, 4.8, 11.5, white, rot=14)
+    s.ellipse(11, 15, 2.0, 7.5, pink, rot=-14, profile="flat")
+    s.ellipse(33, 15, 2.0, 7.5, pink, rot=14, profile="flat")
+    return s.render(), (99, 44)
 
 
-def tuck(kind: np.ndarray, depth: int = 3) -> np.ndarray:
-    """The hero below the top `depth` rows of each column: what ears growing out of the hair go behind."""
+def ear_shadow(out: np.ndarray, kind: np.ndarray, covered: np.ndarray) -> None:
+    """The ears' contact shadow: the hair just below and beside each ear's foot a step darker."""
     hero = kind == 0
-    top = np.where(hero.any(axis=0), hero.argmax(axis=0), hero.shape[0])
-    return hero & (np.arange(hero.shape[0])[:, None] >= top + depth)
-
+    below = np.zeros_like(covered)
+    for col in np.flatnonzero(covered.any(axis=0)):
+        bottom = np.flatnonzero(covered[:, col]).max()
+        below[bottom + 1:bottom + 3, max(0, col - 1):col + 2] = True
+    shade = below & hero & ~covered
+    out[shade] = out[shade] * 0.72
 
 # --- the props -------------------------------------------------------------------------------------------
 
@@ -369,7 +381,7 @@ def plus(x, y):
 
 # --- the seasons -----------------------------------------------------------------------------------------
 # Each draws its props on the recoloured scene and returns what in it gives light (the moon, the pumpkins'
-# faces), which the dark icon leaves bright.
+# faces), which the dark icon leaves bright, and what the hero wears, which it lights as his face is lit.
 
 def halloween(out, kind, ramps):
     lit = place(out, moon(), 82, 40, behind=kind == 0)
@@ -382,9 +394,9 @@ def halloween(out, kind, ramps):
     shadow(out, kind, 148, 161, 166)
     place(out, small, 148, 155)
     sprite, at = witch_hat()
-    hat(out, sprite, *at)
+    worn = hat(out, sprite, *at)
     faces = [np.array(c[:3]) / 255 for c in ((255, 228, 120), (255, 168, 52))]
-    return lit | np.any([np.all(np.abs(out - c) < 1e-6, axis=2) for c in faces], axis=0)
+    return lit | np.any([np.all(np.abs(out - c) < 1e-6, axis=2) for c in faces], axis=0), worn
 
 
 def christmas(out, kind, ramps):
@@ -401,8 +413,7 @@ def christmas(out, kind, ramps):
     for x, y in flakes:
         pixels(out, kind, plus(x, y), [snow[4]] * 5, (SKY, BLOSSOM, LEAVES, BRANCHES))
     sprite, at = santa_hat()
-    hat(out, sprite, *at)
-    return np.zeros(kind.shape, bool)
+    return np.zeros(kind.shape, bool), hat(out, sprite, *at)
 
 
 def easter(out, kind, ramps):
@@ -415,8 +426,9 @@ def easter(out, kind, ramps):
         shadow(out, kind, x + 1, x + 9, y + 12)
         place(out, egg(base, stripe), x, y)
     sprite, at = bunny_ears()
-    place(out, sprite, *at, behind=tuck(kind))
-    return np.zeros(kind.shape, bool)
+    worn = place(out, sprite, *at)
+    ear_shadow(out, kind, worn)
+    return np.zeros(kind.shape, bool), worn
 
 
 DRAW = {"Halloween": halloween, "Christmas": christmas, "Easter": easter}
@@ -482,7 +494,7 @@ def spots(kind, cover, allowed, count, seed, gap=9) -> list:
     return [(a + BOX[0], b + BOX[1]) for a, b in chosen]
 
 
-def at_night(season, rgb, kind, day, out, lit) -> np.ndarray:
+def at_night(season, rgb, kind, day, out, lit, worn) -> np.ndarray:
     h, w = kind.shape
     ys, xs = np.mgrid[0:h, 0:w]
     # The sky, where it still shows: each day band's colour to the night's, its light shade to the light.
@@ -506,6 +518,8 @@ def at_night(season, rgb, kind, day, out, lit) -> np.ndarray:
     rest = np.where(pale[..., None], out * np.array([0.66, 0.74, 0.96]) * 0.86, rest)
     gold = app_icon_art.is_gold(rgb) & (kind == 0) & np.all(np.abs(out - rgb) < 1e-6, axis=2)
     rest = np.where(gold[..., None], out * np.array([0.92, 0.82, 0.62]), rest)
+    # What he wears catches the light as his face does, a little brighter than his hair, so it still reads.
+    rest = np.where(worn[..., None], out * np.array([0.9, 0.86, 0.92]), rest)
     night = np.where((sky | lit)[..., None], night, rest)
     night[lit] = out[lit]
     keep = (kind == 0) | lit
@@ -536,8 +550,8 @@ def icon(season: str) -> tuple:
     kind = classes(rgb)
     day, ramps = recolour(rgb, kind, SEASONS[season])
     out = day.copy()
-    lit = DRAW[season](out, kind, ramps)
-    dark = at_night(season, rgb, kind, day, out, lit)
+    lit, worn = DRAW[season](out, kind, ramps)
+    dark = at_night(season, rgb, kind, day, out, lit, worn)
     return tuple(scale(image) for image in (out, dark, app_icon_art.tint(dark)))
 
 

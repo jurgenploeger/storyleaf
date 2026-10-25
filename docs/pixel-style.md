@@ -496,6 +496,12 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   like the gold, are never background, and only the biggest piece is the hero. Ears grow out of the hair:
   over its top three rows, behind the rest, short enough to show whole. A full moon with two craters is a
   face; a crescent isn't. Each icon has a night, made as the app icon's dark one is.
+  Then: "the Santa hat should sit a bit lower", "the bunny ears should sit lower and come from the front of the
+  head", "the mask lets some green of the grass through between the legs", "in dark mode the hats should be
+  more lit". Ears half hidden behind the hair read as growing from behind the head: they stand on it, in
+  front, with a contact shadow on the hair round their feet. The polygon spans the gap between the legs, so
+  the flood can't reach it: it's seeded from the bottom edge too, and below the tunic's hem green is grass.
+  At night what he wears is lit as his face is, a little brighter than his hair.
 - **2026-10-25 (the ship):** `form_relief` is light per pixel, so a sprite twice a house's size needs
   as much change across areas twice as wide: the ship's deck and hull, lit by their normals alone, were
   flat at the 9 × 9 scale (0.010) and held it at 0.015. What lifted it: boards and strakes each a tone of
