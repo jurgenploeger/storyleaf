@@ -513,6 +513,11 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   forward", "the Santa hat's body looks too bulky". An ear is one tapering curve (`sweep`), narrow at its
   foot and widest below the bend, its tip falling forward and out; a folded flap drawn as a shape of its own
   read as a white block. The witch's crown may run off the top so long as its hook comes back into frame.
+  Then: "the witch and Santa hat should have a bit more shadow, so it's clearer where the curve sits".
+  pixel_kit's dome rounds a shape only near its edge, and under its near-frontal light a big shape is one
+  flat colour in the middle. Cloth hats curve all the way over: each run across the shape a half cylinder
+  (`rounded`: a cone or cap side to side, a brim or band top to bottom), smoothed along it so a row a pixel
+  wider doesn't light as a ridge.
 - **2026-10-25 (the ship):** `form_relief` is light per pixel, so a sprite twice a house's size needs
   as much change across areas twice as wide: the ship's deck and hull, lit by their normals alone, were
   flat at the 9 × 9 scale (0.010) and held it at 0.015. What lifted it: boards and strakes each a tone of

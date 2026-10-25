@@ -275,6 +275,30 @@ def pixels(out, kind, points, colours, allowed) -> None:
 # --- the hats --------------------------------------------------------------------------------------------
 # Each is drawn so its band's middle lands on the head's widest row above the eyes, (120, 72).
 
+def rounded(sprite: Sprite, points: list, mat: Material, across: str, depth: float = 0.9) -> None:
+    """A shape whose surface curves as a cloth one does: each run of it across `across` ("x", side to side,
+    for a cone or a cap; "y", top to bottom, for a brim or a band) a half cylinder, so the light turns all
+    the way over it and its shadow side shows where it curves. pixel_kit's own dome only rounds a shape near
+    its edge, which left a big hat one flat colour under the near-frontal light."""
+    sprite.poly(points, mat)
+    mask = sprite.shapes.pop()[0]
+    height = np.zeros(mask.shape)
+    lines = mask if across == "x" else mask.T
+    out = height if across == "x" else height.T
+    for row in range(lines.shape[0]):
+        on = np.flatnonzero(lines[row])
+        if not len(on):
+            continue
+        # Each run of the row on its own (a hook beside its crown is a second run).
+        for run in np.split(on, np.flatnonzero(np.diff(on) > 1) + 1):
+            mid, half = (run[0] + run[-1]) / 2, max(1.0, (run[-1] - run[0] + 1) / 2)
+            t = (run - mid) / half
+            out[row, run] = np.sqrt(np.clip(1 - t * t, 0, 1)) * half * depth
+    # Smoothed along the shape, so a run a pixel wider than the one beside it doesn't light as a ridge.
+    height = ndimage.gaussian_filter1d(height, sigma=6.0, axis=0 if across == "x" else 1) * mask
+    sprite.mask(mask, mat, height=height)
+
+
 def sweep(p: list, half, steps: int = 16) -> tuple:
     """The two sides of a tapering shape along a cubic curve through `p` (four points): `half(t)` is its half
     width at t from 0 to 1. Returns the left side and the right side, base to tip."""
@@ -300,7 +324,7 @@ def witch_hat() -> tuple:
     shape: up its sides, then along a tapering curve (`sweep`)."""
     s = Sprite(92, 60)
     purple = Material("#5a3a8c", shades=5, texture=0.05)
-    s.poly([(x, y + 8) for x, y in brim()], purple)
+    rounded(s, [(x, y + 8) for x, y in brim()], purple, "y")
     def cone_width(t):
         # Wide at the band, tapering slowly, and rounded off at the tip rather than coming to a point.
         end = math.sqrt(max(0.0, 1 - ((t - 0.86) / 0.14) ** 2)) if t > 0.86 else 1.0
@@ -308,7 +332,7 @@ def witch_hat() -> tuple:
 
     left, right = sweep([(42, 35), (40, 12), (56, 8), (75, 29)], cone_width, steps=32)
     cone = [(18, 46), (22, 42), (26, 38), (29, 36)] + left + right[::-1] + [(55, 36), (59, 39), (63, 43), (67, 46)]
-    s.poly(cone, purple)
+    rounded(s, cone, purple, "x")
     s.poly([(17, 46), (68, 46), (66, 42), (19, 42)], Material("#e8a838", shades=4, texture=0.03, gloss=0.4), profile="cylinder")
     return s.render(), (78, 22)
 
@@ -334,8 +358,8 @@ def santa_hat() -> tuple:
     curves round the head (lower over the brow than at the sides), its edges in tufts, not a smooth oval."""
     s = Sprite(86, 52)
     fur = Material("#f2f0f6", shades=4, texture=0.12, grain=1.0)
-    s.poly([(16, 36), (19, 26), (27, 18), (39, 14), (51, 14), (62, 18), (71, 25), (78, 33), (81, 41), (73, 42),
-            (67, 35), (62, 37)], Material("#cc2e3e", shades=5, texture=0.05))
+    rounded(s, [(16, 36), (19, 26), (27, 18), (39, 14), (51, 14), (62, 18), (71, 25), (78, 33), (81, 41),
+                (73, 42), (67, 35), (62, 37)], Material("#cc2e3e", shades=5, texture=0.05), "x")
     top, bottom = [], []
     for i in range(37):
         u = i / 18 - 1
@@ -345,7 +369,7 @@ def santa_hat() -> tuple:
         half = 5.6 * math.sqrt(max(0.0, 1 - u ** 6)) + tuft
         top.append((x, mid - half))
         bottom.append((x, mid + half))
-    s.poly(top + bottom[::-1], fur)
+    rounded(s, top + bottom[::-1], fur, "y")
     s.ellipse(78, 45, 7, 7, fur)
     return s.render(), (79, 35)
 
