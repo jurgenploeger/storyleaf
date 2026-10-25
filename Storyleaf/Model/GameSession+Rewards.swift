@@ -157,6 +157,11 @@ extension GameSession {
     @discardableResult
     func takeCape(_ prize: RewardsDef.Prize) -> Bool {
         guard hasEarned(prize), !hasCape(prize), let item = content.item(prize.item) else { return false }
+        // Woven only into a bag with room: it waits for you otherwise.
+        guard hasRoom(for: [item.id]) else {
+            post(L("Your bag is full. Put something in the bank first."), .system)
+            return false
+        }
         addItem(item.id)
         capeReady = !capesWaiting.isEmpty
         post(L("Received {items}.", ["items": item.name]), .reward)
@@ -226,10 +231,10 @@ extension GameSession {
         let met = data.monsterBook?.count ?? 0
         for milestone in bookMilestones where met >= milestone.count && !(data.bookRewards ?? []).contains(milestone.count) {
             data.bookRewards = (data.bookRewards ?? []) + [milestone.count]
-            data.gold += milestone.reward.gold
-            for id in milestone.reward.items ?? [] { addItem(id) }
+            gainGold(milestone.reward.gold)
+            let got = (milestone.reward.items ?? []).filter { addItem($0) }
             post(L("Monster Book: {count} kinds of monster met! +{gold} gold", ["count": milestone.count, "gold": milestone.reward.gold]), .reward)
-            if let list = itemList(milestone.reward.items ?? []) {
+            if let list = itemList(got) {
                 post(L("Received {items}.", ["items": list]), .reward)
             }
             SoundEffects.shared.play(.chest)
@@ -284,9 +289,9 @@ extension GameSession {
         let place = (data.giftDays ?? 0) % gifts.count
         let gift = gifts[place]
         let gold = (gift.goldPerLevel ?? 0) * data.hero.level
-        data.gold += gold
-        var items = gift.items ?? []
-        for id in items { addItem(id) }
+        // What doesn't fit in the bag is left behind.
+        let paid = gainGold(gold) ? gold : 0
+        var items = (gift.items ?? []).filter { addItem($0) }
         let festive = seasonGift(on: date)
         if let festive { items.append(festive.hat) }
         data.giftDay = Self.dayKey(date)
@@ -294,7 +299,7 @@ extension GameSession {
         SoundEffects.shared.play(.chest)
         checkTitles()
         save()
-        return DailyGift(day: place + 1, days: gifts.count, gold: gold, items: items, greeting: festive?.greeting)
+        return DailyGift(day: place + 1, days: gifts.count, gold: paid, items: items, greeting: festive?.greeting)
     }
 
     // MARK: - Festive seasons
@@ -357,8 +362,10 @@ extension GameSession {
         guard let festive = Self.season(on: date), !(data.seasonGifts ?? []).contains(festive.key) else { return nil }
         let missing = festive.season.hats.filter { !owns($0) }
         guard let hat = (missing.isEmpty ? festive.season.hats : missing).randomElement() else { return nil }
-        data.seasonGifts = (data.seasonGifts ?? []) + [festive.key]
+        // Not into a full bag: the season's gift waits for a day with room.
+        guard hasRoom(for: [hat]) else { return nil }
         addItem(hat)
+        data.seasonGifts = (data.seasonGifts ?? []) + [festive.key]
         return (hat, festive.season.greeting)
     }
 
@@ -488,8 +495,8 @@ extension GameSession {
         board.bounties[index].claimed = true
         data.bounties = board
         data.bountiesDone = (data.bountiesDone ?? 0) + 1
-        data.gold += bounty.gold
-        var lines = [L("+{gold} gold", ["gold": bounty.gold]), L("+{exp} EXP", ["exp": bounty.exp])]
+        var lines = gainGold(bounty.gold) ? [L("+{gold} gold", ["gold": bounty.gold])] : []
+        lines.append(L("+{exp} EXP", ["exp": bounty.exp]))
         if gainHeroEXP(bounty.exp) > 0 { lines.append(L("Level up! You're now level {level}.", ["level": data.hero.level])) }
         SoundEffects.shared.play(.coins)
         checkTitles()
@@ -513,8 +520,7 @@ extension GameSession {
         let exp = max(1, Int((Double(Self.expToNext(level: data.hero.level)) * bonus.exp).rounded()))
         var lines = [L("+{exp} EXP", ["exp": exp])]
         if gainHeroEXP(exp) > 0 { lines.append(L("Level up! You're now level {level}.", ["level": data.hero.level])) }
-        for id in bonus.items ?? [] {
-            addItem(id)
+        for id in bonus.items ?? [] where addItem(id) {
             lines.append(L("Got {item}", ["item": content.item(id)?.name ?? id]))
         }
         SoundEffects.shared.play(.questDone)

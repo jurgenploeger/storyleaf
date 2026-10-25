@@ -1085,8 +1085,13 @@ private struct BagTab: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label(L("{gold} gold", ["gold": session.data.gold]), icon: .coins)
-                    .foregroundStyle(HUDStyle.gold)
+                // How full the bag is: 50 slots, a kind of item each, the coins one (`GameSession+Bank`).
+                let full = session.bagSlotsFree == 0
+                Label(L("Bag {used}/{slots}", ["used": session.bagSlotsUsed, "slots": GameSession.bagSlots]), icon: .backpack)
+                    .foregroundStyle(full ? HUDStyle.orange : HUDStyle.gold)
+                if full {
+                    Text(L("Full: bank something")).foregroundStyle(HUDStyle.orange)
+                }
                 Spacer()
                 if let note { Text(note).foregroundStyle(HUDStyle.green) }
             }
@@ -1109,7 +1114,8 @@ private struct BagTab: View {
                 if items.isEmpty {
                     Text(L("No potions. Trader Bo in Meadowbrook sells them.")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
                 }
-                grid(items)
+                // The coins you carry in the first slot, as RuneScape's pack has them.
+                grid(items, coins: narrowed ? 0 : session.data.gold)
             }
 
             if shows(.gear), !(narrowed && gear.isEmpty) {
@@ -1173,8 +1179,13 @@ private struct BagTab: View {
 
     /// One slot per kind of item, its count in the corner from two up, and the upgrade arrow on gear
     /// better than what you wear.
-    private func grid(_ items: [ItemDef], usable: @escaping (ItemDef) -> Bool = { _ in true }) -> some View {
+    private func grid(_ items: [ItemDef], coins: Int = 0, usable: @escaping (ItemDef) -> Bool = { _ in true }) -> some View {
         LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
+            if coins > 0 {
+                CoinsTile(amount: coins, size: Self.slot)
+                    .padding(.top, 5)
+                    .padding(.trailing, 5)
+            }
             ForEach(items) { item in
                 Button {
                     onInspect(item)

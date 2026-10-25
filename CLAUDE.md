@@ -138,6 +138,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   and the glossy marks by the HP bars, drawn smooth at 3×: poison's drop and the arrows for lowered and raised
   stats). `--sheet out.png` writes a contact sheet. Spells are light, not sprites:
   `Storyleaf/Battle/ElementEffects.swift` layers soft glows in each element's colours (`ElementLight`).
+- `tools/coin_art.py`: the coins in the Bag (`item_coins_1` to `_4`, a bigger pile the more you carry,
+  `CoinsTile`), drawn with `pixel_kit` as item icons are. The bag holds 50 slots (`GameSession+Bank.swift`); the
+  rest goes in a bank (`tools/building_art.py` `bank`, NPC role `bank`), the only place nothing is lost.
 - `tools/lair_art.py`: the pieces of the bosses' lairs no sprite had (a standing stone, a brazier, a gold hoard, a
   warning post, the Rat King's junk throne, a heap of bones, a hunter's torn tent, a broken pillar), drawn with
   `pixel_kit` and scored as scenery. A boss's lair is maps.json `lair` on the boss: pieces round it, its way in to

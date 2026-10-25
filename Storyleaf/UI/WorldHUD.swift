@@ -408,7 +408,7 @@ private struct JoinedPartyPlate: View {
     }
 }
 
-/// The tan calendar plate with a sun or moon, the date and your gold.
+/// The tan calendar plate with a sun or moon and the date.
 private struct CalendarPlate: View {
     let session: GameSession
     /// With night and day switched off in Settings, the sun shines on the plate around the clock.
@@ -426,14 +426,8 @@ private struct CalendarPlate: View {
                         .font(HUDStyle.mono(10))
                         .foregroundStyle(HUDStyle.plateDark)
                     Spacer(minLength: 0)
-                    IconImage(.coins, size: 14)
-                        .foregroundStyle(HUDStyle.coin)
-                        .shadow(color: HUDStyle.plateDark, radius: 0, x: 1, y: 1)
-                    // Short from 10,000 up (1.45M), so the date beside it keeps to one line.
-                    Text(HUDStyle.short(session.data.gold))
-                        .font(HUDStyle.mono(10))
-                        .foregroundStyle(HUDStyle.plateDark)
-                        .accessibilityLabel(L("{gold} gold", ["gold": session.data.gold]))
+                    // No gold here any more (2026-10-25): the coins you carry are in the bag, in a
+                    // slot of their own, and the rest in the bank.
                 }
                 .padding(.horizontal, 7)
                 .padding(.vertical, 3)
@@ -780,6 +774,8 @@ struct MinimapIcon: View {
         case .smith: glyph(.hammer)
         case .weaver: glyph(.shieldStar)
         case .barber: glyph(.palette)
+        // RuneScape's bank: coins on gold.
+        case .bank: glyph(.coins)
         case .guild: glyph(.shield)
         case .chest: glyph(.gift)
         case .boss: glyph(.sword)
@@ -808,6 +804,7 @@ struct MinimapIcon: View {
         case .smith: Color(red: 0.5, green: 0.52, blue: 0.6)
         case .weaver: Color(red: 0.78, green: 0.36, blue: 0.62)
         case .barber: Color(red: 0.2, green: 0.62, blue: 0.66)
+        case .bank: Color(red: 0.86, green: 0.62, blue: 0.1)
         case .guild: Color(red: 0.58, green: 0.4, blue: 0.86)
         case .chest: Color(red: 0.74, green: 0.47, blue: 0.2)
         case .boss: Color(red: 0.62, green: 0.1, blue: 0.16)

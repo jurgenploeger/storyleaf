@@ -1720,6 +1720,74 @@ struct RulesTests {
         #expect(session.status(of: Content.shared.quest("new_friend")!) == .available)
     }
 
+    /// The bag holds 50 slots, a kind of item each however many, the coins one more; what doesn't fit
+    /// is left behind (playtesting 2026-10-25).
+    @Test func theBagHoldsFiftySlots() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        // A new game: its potions and its coins.
+        #expect(session.bagSlotsUsed == 2)
+        let others = Content.shared.items.map(\.id).filter { $0 != "potion" }
+        for id in others.prefix(GameSession.bagSlots - 2) { #expect(session.addItem(id)) }
+        #expect(session.bagSlotsFree == 0)
+        #expect(!session.addItem(others[GameSession.bagSlots - 2]))
+        #expect(session.count(of: others[GameSession.bagSlots - 2]) == 0)
+        // A kind you carry still stacks, and coins on coins.
+        #expect(session.addItem("potion", 5) && session.count(of: "potion") == 8)
+        #expect(session.gainGold(10) && session.data.gold == 40)
+        // A quest's own things go in regardless.
+        #expect(session.addItem(others[GameSession.bagSlots - 2], force: true))
+    }
+
+    /// The bank keeps what you put in it, coins too, and gives it back while the bag has room.
+    @Test func theBankKeepsThings() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.deposit("potion")
+        #expect(session.count(of: "potion") == 0 && session.banked("potion") == 3)
+        session.depositGold(20)
+        #expect(session.data.gold == 10 && session.bankGold == 20)
+        #expect(session.withdraw("potion") && session.count(of: "potion") == 3 && session.banked("potion") == 0)
+        session.addItem("seal_stone", 2)
+        session.depositAll()
+        #expect(session.bagSlotsUsed == 0 && session.banked("seal_stone") == 2 && session.bankGold == 30)
+        #expect(session.withdrawGold(30) && session.data.gold == 30 && session.bankGold == 0)
+    }
+
+    /// Beaten by monsters you lose what you carry, coins too; beaten in a duel what you wear as well.
+    /// The bank, and what a quest you're on needs, stay.
+    @Test func aDefeatCostsWhatYouCarry() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let quest = try #require(Content.shared.quest("hope_of_meadowbrook"))
+        session.acceptQuest(quest.id)
+        session.addItem("seal_stone", 3)
+        session.deposit("seal_stone")
+        session.addItem("ether")
+        session.loseBelongings(worn: false)
+        #expect(session.count(of: "potion") == 0 && session.count(of: "ether") == 0 && session.data.gold == 0)
+        #expect(session.banked("seal_stone") == 3)
+        // The elder's gifts belong to his quest: kept.
+        #expect(session.count(of: "pet_egg") == 1 && session.count(of: "wooden_sword") == 1)
+        #expect(session.data.hero.equipment.armor == "cloth_tunic")
+        session.loseBelongings(worn: true)
+        #expect(session.data.hero.equipment.armor == nil)
+    }
+
+    /// A game begun before the bank starts with its bag and coins in it, once; what a quest needs stays.
+    @Test func olderGamesStartWithTheirBagInTheBank() throws {
+        let fresh = GameSession.newGame(name: "Test", raceID: "human")
+        #expect(fresh.count(of: "potion") == 3 && fresh.data.gold == 30 && fresh.bank.isEmpty)
+        var data = fresh.data
+        data.bankStocked = nil
+        data.inventory["iron_axe"] = 2
+        data.quests["hope_of_meadowbrook"] = QuestProgress(state: .active, count: 0)
+        data.inventory["pet_egg"] = 1
+        let loaded = GameSession(data: data)
+        #expect(loaded.count(of: "potion") == 0 && loaded.banked("potion") == 3 && loaded.banked("iron_axe") == 2)
+        #expect(loaded.data.gold == 0 && loaded.bankGold == 30)
+        #expect(loaded.count(of: "pet_egg") == 1)
+        let again = GameSession(data: loaded.data)
+        #expect(again.banked("potion") == 3 && again.bankGold == 30)
+    }
+
     /// A quest giver gives one quest at a time (playtesting 2026-10-25): while you're on one of theirs,
     /// they offer no other and show no "!", and they talk about the one you're on; handed in, the next.
     @Test func oneQuestAtATimeFromAGiver() throws {

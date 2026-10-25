@@ -668,6 +668,17 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   worth more to the hero's class (`GameSession.gearValue`): each bonus weighted by the class's growth in that
   stat next to a novice's, and by how big that stat's numbers run. The Bag and the slot's list have search,
   sort (best for you, level, name, price, how many) and filters (the Bag's kinds; only what you can wear).
+- The bag and the bank (ours, since 0.8.0, asked for in playtesting 2026-10-25: "I want to add a bank to the
+  game [...] so the item limit is 50 items you can hold"), as RuneScape has them; whether Fairyland Online had
+  a warehouse isn't verified here. The bag holds 50 slots: each kind of item one slot however many you carry,
+  the coins one more (`GameSession.bagSlots`). What doesn't fit is left behind, loot and rewards too (the
+  playtester's choice); a chest stays shut till there's room. The coins are a slot in the Bag with a pile
+  that grows with them (`CoinsTile`, tools/coin_art.py), RuneScape's way, not a count on the HUD. A bank
+  (tools/building_art.py `bank`) with a banker (NPC role `bank`, a coin on the minimap and the world map)
+  stands in Meadowbrook, Prismhaven, Ingothold, Larkspur and Glimmerbough; what's in it, coins too, is never
+  lost. Beaten by monsters you lose what you carry, coins and all; beaten in a duel, what you wear too
+  (`loseBelongings`). What a quest you're on needs stays with you (`questKeepsakes`). A game begun before
+  0.8.0 had its bag and coins moved into the bank once, on first load (`stockBankOnce`).
 - The weapon in hand (`GearArt.pose`, since 0.4.8, asked for in playtesting 2026-10-12: "when they're wearing a
   weapon, it should look good"): the item's own art, held at the hand as each walk frame has it (beside the
   body, at the side facing you or away or the near hand walking sideways, and part way down that frame's own

@@ -547,9 +547,10 @@ final class GameCoordinator {
             session.post(L("The {chest} is empty. Come back later.", ["chest": chest.name.midSentence]))
         } else if session.openChest(chest) != nil {
             session.save()
-        } else {
+        } else if !session.canOpen(chest) {
             session.post(L("The ribbon is tied tight. Maybe someone in town knows who it's for."))
         }
+        // (Else the bag was full: `openChest` said so, and it stays shut till there's room.)
     }
 
     /// A waystone (`NPCRole.waystone`): once its quest has woken it, anywhere you can travel to,

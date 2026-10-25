@@ -1071,6 +1071,48 @@ def acorn_cottage(b):
     flowers(b, cx - 26, cx - 18, GROUND + 1.5, ["#f0a0c8", "#f8d84a"], seed=8)
 
 
+def coin_emblem(b, cx, cy):
+    """A gold coin stamped with a star: the bank's sign (RuneScape's bank wears coins)."""
+    b.ellipse(cx, cy, 4.2, 4.2, "#b8862a", texture=0.0)
+    b.ellipse(cx - 0.3, cy - 0.3, 3.4, 3.4, "#f0c040", texture=0.0, gloss=0.6)
+    b.poly([(cx + 1.6 * math.cos(math.pi / 2 + k * math.pi / 5) * (1 if k % 2 == 0 else 0.45),
+             cy - 1.6 * math.sin(math.pi / 2 + k * math.pi / 5) * (1 if k % 2 == 0 else 0.45)) for k in range(10)],
+           "#a8742a", texture=0.0, profile="flat")
+
+
+@by_hand
+def bank(b):
+    """The bank (playtesting 2026-10-25: "Add a bank visual to towns"), where a banker keeps what you
+    don't carry: a solid house of honey-coloured stone on a broad step, a portico of four columns under
+    a deep red-tiled pediment with a gold coin in its round, a deep door, barred windows set back, a
+    coin on a sign by the door, on its own patch of ground with a path."""
+    stone, cream, tiles, gold = "#dcb47a", "#f2e6c8", "#b4503e", "#e8b840"
+    grounds(b, 18, 70, path=44)
+    ground_shadow(b, 22, 66, 56)
+    floor = steps(b, ((20, 68),), stone, rise=4, depth=0.6)
+    top = box(b, 24, 64, 30, stone, pattern="rubble", ground=floor, depth=0.6)
+    # The hall behind the columns, in the portico's shadow, its door set deep and a window each side.
+    b.rect(26, top + 4, 62, floor, shade(stone, 0.78), texture=0.0, profile="flat", tone=0.45)
+    door(b, 44, w=10, h=17, colour="#6a4428", frame="#a07a44", ground=floor, deep=True)
+    for x in (32.5, 55.5):
+        window(b, x, top + 15, w=6, h=9, frame="#8a6438", glass="#ffd27a", arched=True, deep=True)
+        b.stroke([(x, top + 11.5), (x, top + 19)], 0.6, "#4a3a36", straight=True)
+    # Four columns, each with its base and capital, shaded round.
+    for x in (25, 35, 49, 59):
+        b.poly([(x, floor - 1.5), (x + 4.5, floor - 1.5), (x + 4.5, top + 4), (x, top + 4)], cream, texture=0.03,
+               profile="cylinder", straight=True)
+        b.rect(x - 1.2, floor - 2.5, x + 5.7, floor, stone, texture=0.03)
+        b.rect(x - 1.2, top + 2, x + 5.7, top + 5, stone, texture=0.03)
+    # The entablature, standing out with its shadow under it, a gold band along it.
+    ledge(b, 21, 67, top - 3, cream, shade(stone, 0.7), h=5)
+    b.stroke([(21, top - 0.5), (67, top - 0.5)], 0.9, gold)
+    gable(b, 21, 67, top - 3, cream, "rubble", rise=18)
+    gable_roof(b, 21, 67, top - 3, tiles, "tiles", rise=18, over=4, depth=0.6)
+    coin_emblem(b, 44, top - 10.5)
+    sign(b, 63, top + 8, coin_emblem, board="#6a4428")
+    return b
+
+
 @by_hand
 def lake_shrine(b):
     """Liora's shrine on Briarmere's shore, the Temple Keeper's, all that's left above the ice of the
@@ -1569,6 +1611,7 @@ BUILDINGS = {
     "bluebell_house": bluebell_house,
     "crystal_cottage": crystal_cottage,
     "lake_shrine": lake_shrine,
+    "bank": bank,
     "warrior_guild": warrior_guild,
     "wildfolk_lodge": wildfolk_lodge,
     "bell_tower": bell_tower,

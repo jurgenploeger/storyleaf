@@ -247,7 +247,7 @@ struct WorldAtlas: View {
     /// news first, a boss, then the town's services.
     private var badges: [Mark] {
         guard scale >= Self.badgeScale else { return [] }
-        let order: [GameSession.MinimapMark.Kind] = [.questReady, .questNew, .boss, .healer, .shop, .smith, .weaver,
+        let order: [GameSession.MinimapMark.Kind] = [.questReady, .questNew, .boss, .healer, .bank, .shop, .smith, .weaver,
                                                      .barber, .guild, .waystone, .quest, .chest]
         var found: [Mark] = []
         for land in lands where session.hasVisited(land.def.id) {
