@@ -19,6 +19,9 @@ struct WorldHUD: View {
 
     private var session: GameSession { coordinator.session }
     private var controlsHidden: Bool { coordinator.overlay != nil }
+    /// In a party you've joined it leads you: the joystick and what you'd walk up to (someone to
+    /// talk to, your things, an adventurer) step aside till you leave it.
+    private var following: Bool { session.joinedParty != nil }
     /// One of the menu's windows is open: it grew out of the open menu, which stays open under it
     /// to shrink back into.
     private var menuWindowOpen: Bool {
@@ -71,7 +74,7 @@ struct WorldHUD: View {
 
             JoystickView(input: coordinator.input)
                 .coachTarget(.joystick)
-                .stepsAside(controlsHidden)
+                .stepsAside(controlsHidden || following)
                 // As far in from the edge as every other control (the HUD's own 8 points; playtesting
                 // 2026-10-17: it sat twice as far in as the toolbar opposite).
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
@@ -99,7 +102,7 @@ struct WorldHUD: View {
                     }
                     .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
                     .transition(.scale(scale: 0.7, anchor: .bottomTrailing).combined(with: .opacity))
-                    .stepsAside(controlsHidden)
+                    .stepsAside(controlsHidden || following)
                 } else if session.nearbyPile != nil {
                     // What you lost when you fell, lying here (`LostPile`).
                     Button {
@@ -109,11 +112,11 @@ struct WorldHUD: View {
                     }
                     .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
                     .transition(.scale(scale: 0.7, anchor: .bottomTrailing).combined(with: .opacity))
-                    .stepsAside(controlsHidden)
+                    .stepsAside(controlsHidden || following)
                 } else if let adventurer = session.nearbyAdventurer {
                     AdventurerCard(coordinator: coordinator, adventurer: adventurer)
                         .transition(.scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity))
-                        .stepsAside(controlsHidden)
+                        .stepsAside(controlsHidden || following)
                 }
                 // Chat, then the menu: one button that opens into its pages (playtesting 2026-10-24:
                 // a row of four buttons, Chat and Settings up by the minimap), each a window of its own
@@ -413,8 +416,13 @@ private struct JoinedPartyPlate: View {
             .lineLimit(1)
             .minimumScaleFactor(0.8)
             Spacer(minLength: 0)
-            Button(L("Leave party"), action: leave)
-                .buttonStyle(PixelButtonStyle(compact: true))
+            // On one line: the words beside it give way instead.
+            Button(action: leave) {
+                Text(L("Leave party"))
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+            .buttonStyle(PixelButtonStyle(compact: true))
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 5)

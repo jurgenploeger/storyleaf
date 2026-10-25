@@ -420,9 +420,13 @@ final class ContinentScene: SKScene {
         let dt = lastUpdate == 0 ? 0 : min(currentTime - lastUpdate, 1.0 / 8)
         lastUpdate = currentTime
         let stick = input.move
+        // In a party you've joined you go where it goes: the stick and taps do nothing till you
+        // leave it (the HUD's Leave party).
+        let following = session.joinedParty != nil
+        if following { player.path = [] }
         if isInputLocked {
             player.setWalking(false)
-        } else if stick.length > 0.15 {
+        } else if stick.length > 0.15, !following {
             player.path = []
             talkTarget = nil
             let step = stick * (walkSpeed * CGFloat(dt))
@@ -522,8 +526,9 @@ final class ContinentScene: SKScene {
     /// Tapping someone of a land's walks you up to talk to them; a passer-by turns to you and shows
     /// who they are; the ground walks you there, the shortest way within reach (`World.path`), to the
     /// very spot if you can stand on it.
+    /// Nothing while you follow a party you've joined: it leads you (`update`).
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard !isInputLocked, let point = touches.first?.location(in: layer) else { return }
+        guard !isInputLocked, session.joinedParty == nil, let point = touches.first?.location(in: layer) else { return }
         for land in lands.values {
             guard let npc = land.stage.npc(tappedAt: point) else { continue }
             talkTarget = (land.def.id, npc.def.id)
