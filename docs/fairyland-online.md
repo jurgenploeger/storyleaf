@@ -14,8 +14,8 @@ environment couldn't open the pages themselves, so a session that can should re-
 
 ## Names
 
-**Us** (since 0.8.7, 2026-10-25): the game is called **Tales of Avalune** for players (the App Store name and the
-logo; the Home Screen, where a longer name is cut short, shows Avalune), and the land is **Avalune** in every
+**Us** (since 0.8.7, 2026-10-25): the game is called **Tales of Fabelia** for players (the App Store name and the
+logo; the Home Screen, where a longer name is cut short, shows Fabelia), and the land is **Fabelia** in every
 in-game line. It was Talewild from 0.8.1 to 0.8.6, Storyleaf from 0.3.50, and the code, project and repo still are
 (renamed from Fairyland on 2026-10-22) until a follow-up renames them; only the bundle ID and the save files keep
 "Fairyland" for good. The goddess Liora binds the world's tales
@@ -51,7 +51,20 @@ existing game or mark: Fablemoor (FABLEMOON), Leafbound, Fairhollow, Wispwood, T
 Pixel Tales (an existing App Store app), and any "Tales of …" title (Bandai Namco's Tales series, which also has
 Tales of the Heroes and Tales of Legendia).
 
-**Name check (2026-10-25), the rename to Tales of Avalune:** the user wanted "Tales of …" and a made-up,
+**Name check (2026-10-25), the rename to Tales of Fabelia:** the user first took Avalune (below), then wanted
+the name to end in -ia, like Neopets' *Tales of Dacardia* (World of Neopia, iOS and Android, 2024), which shows
+another publisher already using "Tales of X-ia" beside Bandai Namco. Kept clear of -eria/-iria (Mysteria, FO's
+own relaunch; Vesperia, Zestiria) and of names near an existing one. Screened by web search only.
+- **Fabelia** (fuh-BEL-ee-uh; *Fabel* is "fable" in German, Dutch and Danish): chosen. Nothing found under the
+  name; near only Fablies (a kids' app) and Fabelab (a kids' brand). It shares "-elia" with Bandai's unused
+  Orfellia, and Portuguese and Spanish ears may faintly hear *favela*. Before launch: reserve Tales of Fabelia in
+  App Store Connect and search it (and FABELIA) on the USPTO, EUIPO and J-PlatPat registers, classes 9 and 41.
+- Also clear: Faelunia, Celandia, Talunia, Fernavia, Clovania (echoes Castlevania), Fayrelia, Bramblia.
+- Ruled out: Avalunia (one letter from *Avalonia Online RPG* on the App Store, and the .NET framework), Lioria
+  (*Tales of Liria*, and our goddess Liora), Elunia (WoW's Elune), Avandria (D&D's Avandra, Critical Role's
+  Exandria), Emerlia (reads as Emilia), Lunavia (*Lunavania* on Steam).
+
+**Name check (2026-10-25), the rename to Tales of Avalune** (replaced by Fabelia the same day): the user wanted "Tales of …" and a made-up,
 pronounceable name for the world (their example: Emerit). Screened by web search only (USPTO, EUIPO, J-PlatPat and
 the App Store weren't reachable from here). The pattern: Bandai Namco registers each of its titles as TALES OF + a
 word (TALES OF VESPERIA, US Reg. 3607384) and files names ahead; no stand-alone TALES OF mark or action against
@@ -1159,7 +1172,7 @@ the Wishing Seal, which stays the Monster Book's last reward.
     afternoon, where half its glow was on screen and washed out the middle of the map (left of the screen
     half again as bright at 16hr in the screenshots, 2026-10-12); since 0.4.8 it stays in the corner. Whether FO's light moved
     with its clock isn't in any source we've found; this is ours. Clouds don't soften the shadows yet.
-  - Our setting is called Avalune in every in-game text (Fairyland until 0.3.50, Storyleaf until 0.8.1, Talewild until 0.8.7; see Names). In FO the
+  - Our setting is called Fabelia in every in-game text (Fairyland until 0.3.50, Storyleaf until 0.8.1, Talewild until 0.8.7; see Names). In FO the
     continent itself is Mysteria (above), which is also the relaunch's name.
 - **Bots, moderators and announcements:** ours, asked for in playtesting (2026-10-04). FO's chat channels,
   GM notices and player stalls (players selling under a sign in town) aren't in any source reachable from a

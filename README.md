@@ -1,7 +1,7 @@
-# Tales of Avalune
+# Tales of Fabelia
 
 A cozy 2.5D pixel-art RPG for iPhone (portrait and landscape), inspired by Fairyland Online (2007).
-The bundle ID (`com.jurgenploeger.fairyland`) and the save files keep the game's first name, Fairyland; players know the game as Tales of Avalune (since 0.8.7; Talewild from 0.8.1), set in the land of Avalune, and the code and project are still called Storyleaf.
+The bundle ID (`com.jurgenploeger.fairyland`) and the save files keep the game's first name, Fairyland; players know the game as Tales of Fabelia (since 0.8.7; Talewild from 0.8.1), set in the land of Fabelia, and the code and project are still called Storyleaf.
 Built with SwiftUI + SpriteKit. Art is generated with [Retro Diffusion](https://www.retrodiffusion.ai).
 
 ## What's in the game

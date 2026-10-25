@@ -110,7 +110,7 @@ struct SettingsView: View {
                 }
 
                 section(L("About"), icon: .star) {
-                    Text(L("Tales of Avalune {version}", ["version": Self.version]))
+                    Text(L("Tales of Fabelia {version}", ["version": Self.version]))
                     Text(L("Art made with Retro Diffusion, icons by Iconaut (MIT). Music and sound effects are synthesized in the game."))
                         .font(HUDStyle.font(10))
                         .foregroundStyle(HUDStyle.dim)

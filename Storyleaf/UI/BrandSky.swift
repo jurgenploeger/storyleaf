@@ -42,9 +42,9 @@ struct RaysAnchor: PreferenceKey {
 }
 
 extension Brand {
-    /// Where the sky's light sits in the logo image (the middle of AVALUNE, under the smaller TALES OF),
+    /// Where the sky's light sits in the logo image (the middle of FABELIA, under the smaller TALES OF),
     /// as a share of its size.
-    static let raysInLogo = UnitPoint(x: 0.5, y: 0.64)
+    static let raysInLogo = UnitPoint(x: 0.5, y: 0.63)
 }
 
 extension View {

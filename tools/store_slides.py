@@ -2,8 +2,8 @@
 """App Store slides from the landscape store scenes (`store_land_*` in tools/screenshots.txt).
 
 Each slide is a screenshot with a caption in the logo's style (tools/logo_art.py): the title in capitals in
-Open Sans ExtraBold, semi-condensed, its gold gradient on every line, in the logo's dark outline with a hard
-shadow under it; under it, a dark plate for the tag,
+Luckiest Guy, its gold gradient on every line, in the logo's thick dark outline with a block shadow under it;
+under it, a dark plate for the tag, in Open Sans ExtraBold, semi-condensed (easier to read small),
 exported at both iPhone sizes App Store Connect takes, as PNG with
 no alpha channel (it refuses screenshots that have one):
   2622×1206  iPhone with Dynamic Island (medium display), the required one
@@ -25,6 +25,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent
 FONT = TOOLS / "fonts" / "OpenSans-SemiCondensedExtraBold.ttf"
+TITLE_FONT = TOOLS / "fonts" / "LuckiestGuy-Regular.ttf"
 LOGO = ROOT / "Storyleaf" / "Resources" / "Assets.xcassets" / "Logo.imageset" / "Logo.png"
 
 # The base size the layout is measured in, and the sizes exported.
@@ -34,13 +35,13 @@ SIZES = [(2622, 1206), (2868, 1320)]
 # The logo's colours (tools/logo_art.py): its ink, for the outline and the hard shadow under it, and its
 # gold for the titles; the tag's words are cream on a plate of the ink.
 INK = (34, 22, 14)
-GOLD = [(0.0, (255, 243, 176)), (0.45, (255, 205, 74)), (1.0, (232, 134, 28))]
+GOLD = [(0.0, (255, 246, 190)), (0.42, (255, 208, 74)), (1.0, (226, 124, 22))]
 CREAM = (255, 248, 222)
 PLATE = (34, 22, 14)
 
 
-def font(size):
-    return ImageFont.truetype(str(FONT), max(8, round(size)))
+def font(size, path=FONT):
+    return ImageFont.truetype(str(path), max(8, round(size)))
 
 
 def solid(size, color, mask, alpha=1.0):
@@ -74,11 +75,11 @@ def golden(letters):
 
 
 def lettering(canvas, text, at, size, align):
-    """The logo's lettering: a hard shadow, the dark outline, then the letters in its gold, in capitals.
+    """The logo's lettering: a block shadow, the dark outline, then the letters in its gold, in capitals.
     `at` is the top-left (or top-centre/right, by `align`) of the text block."""
     text = text.upper()
-    face = font(size)
-    stroke = max(2, round(size * 0.06))
+    face = font(size, TITLE_FONT)
+    stroke = max(2, round(size * 0.075))
     spacing = round(size * -0.08)
     probe = ImageDraw.Draw(Image.new("L", canvas.size))
     box = probe.multiline_textbbox((0, 0), text, font=face, spacing=spacing, align=align, stroke_width=stroke)
@@ -92,7 +93,8 @@ def lettering(canvas, text, at, size, align):
                                              spacing=spacing, align=align, stroke_width=stroke_width, stroke_fill=255)
         return layer
 
-    canvas.alpha_composite(solid(canvas.size, INK, mask(stroke, (0, round(size * 0.06)))))
+    for step in range(1, round(size * 0.07) + 1, max(1, round(size * 0.01))):
+        canvas.alpha_composite(solid(canvas.size, INK, mask(stroke, (0, step))))
     canvas.alpha_composite(solid(canvas.size, INK, mask(stroke)))
     canvas.alpha_composite(golden(mask(0)))
     return (origin[0] + box[0], origin[1] + box[1], origin[0] + box[2], origin[1] + box[3])
@@ -172,8 +174,8 @@ def slide(shot, spec, size):
 
     # Measure the block (title over its pill) to stand it on the bottom margin, or hang it from the top one.
     probe = ImageDraw.Draw(Image.new("L", (1, 1)))
-    face = font(title_size)
-    stroke = max(2, round(title_size * 0.06))
+    face = font(title_size, TITLE_FONT)
+    stroke = max(2, round(title_size * 0.075))
     box = probe.multiline_textbbox((0, 0), spec["title"].upper(), font=face, spacing=round(title_size * -0.08), align=align, stroke_width=stroke)
     title_height = box[3] - box[1] + title_size * 0.12
     gap = 26 * scale
