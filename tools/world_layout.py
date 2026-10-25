@@ -29,7 +29,8 @@ meandering a little (`RIVER_WOBBLE`) and widening as they go, some from one land
 one with a `lake` ends in a lake of its own that wide instead, where it has no way to the sea.
 They keep clear of towns, the roads' crossings, the middles and everything set down by hand; a road
 or trail crossing one gets a bridge in the game, so it has to cross squarely, where the river's
-narrow and away from the sea; and bits of land a river cuts off with no road over go under water if
+narrow and away from the sea, and the river runs straight along a row or a column there (the game
+lays its bridges along the other); and bits of land a river cuts off with no road over go under water if
 they're small (`SLIVER`), else it's a problem to fix in the course.
 
 Each land's map is the box round its shape, its middle at the land's middle (maps.json `width`
@@ -133,7 +134,18 @@ RIVER_GATE_ROAD = 8
 # Where a road crosses a river (a bridge, `WorldMap.bridge(over:along:)`): at least this square on
 # (the cosine of the angle between them, at most), no wider than this, and this far from the sea
 # (whose shore slopes down to it), the road's border crossing and its hub.
-BRIDGE_SQUARE = 0.6
+# The river runs square to its bridge (`SQUARE_REACH`), and the game sways its roads and bends them to
+# meet the bridge (`WorldMap.meetRoad`), so the road need only come in at a good slant across it.
+BRIDGE_SQUARE = 0.8
+# The game lays a bridge along a column or a row, whichever crosses the river more squarely, so the
+# river has to run along the other there, at most this many degrees off it (over 4 cells either way,
+# as the game measures it): where it ran aslant, its bridge crossed it askew (playtesting 2026-10-25,
+# Frog Swamp's road to Sunny Meadow, 33 degrees off).
+BRIDGE_AXIS = 12
+# So it does: where a road crosses a river, the river runs straight along a row or a column (the one
+# nearer its own way there) this many cells either way, easing back into its course over as many again;
+# room for the game's road to sway (`WorldMap.carve`, up to 6 cells) and still cross where it's straight.
+SQUARE_REACH = 8
 BRIDGE_WIDEST = 8.0
 BRIDGE_SEA = 10
 BRIDGE_END = 10
@@ -655,11 +667,12 @@ def _catmull(p0, p1, p2, p3, t):
                  for a, b, c, d in zip(p0, p1, p2, p3))
 
 
-def river_line(river, number):
+def river_line(river, number, straights=()):
     """A river's middle from its spring to the sea, a point every quarter cell: (x, y, how wide it
     is there, how far along it is in cells). Through its `course` (world cells) on a smooth curve,
     meandering a little off it (`RIVER_WOBBLE`, not at its ends), widening from the first of its
-    `width` to the second."""
+    `width` to the second. `straights`: where it runs straight along a row or column instead, round
+    a road's crossing (`squared`): how far along, the spot it runs through, and whether eastward."""
     course = [tuple(map(float, p)) for p in river["course"]]
     points = []
     for n in range(len(course) - 1):
@@ -683,8 +696,43 @@ def river_line(river, number):
         ease = min(1.0, s / 12, (total - s) / 12)
         drift = sum((_value(s, number * 41.3, every, seed) * 2 - 1) * far for every, far, seed in RIVER_WOBBLE) * ease
         width = narrow + (wide - narrow) * s / total
-        line.append((x + side[0] * drift, y + side[1] * drift, width, s))
+        x, y = x + side[0] * drift, y + side[1] * drift
+        for at, sx, sy, eastward in straights:
+            off = abs(s - at)
+            if off >= 2 * SQUARE_REACH:
+                continue
+            t = min(1.0, (2 * SQUARE_REACH - off) / SQUARE_REACH)
+            pull = t * t * (3 - 2 * t)
+            if eastward:
+                y += (sy - y) * pull
+            else:
+                x += (sx - x) * pull
+        line.append((x, y, width, s))
     return line
+
+
+def squared(line, roads):
+    """Where the roads (`roads`, each its points every half cell) cross a river (`line`, from
+    `river_line`), the river's `straights` there: how far along it, the spot, and whether it runs
+    more east than north there (over 4 cells either way)."""
+    import numpy as np
+    points = np.array([(x, y) for x, y, _, _ in line])
+    radius = np.array([width / 2 + SPRING * max(0.0, 1 - s / 6) for _, _, width, s in line])
+    found = []
+    for samples in roads:
+        gaps = np.sqrt(((points[None, :, :] - np.array(samples)[:, None, :]) ** 2).sum(axis=2))
+        nearest = gaps.argmin(axis=1)
+        wet = list(gaps[np.arange(len(samples)), nearest] <= radius[nearest]) + [False]
+        start = None
+        for n, w in enumerate(wet):
+            if w and start is None:
+                start = n
+            elif not w and start is not None:
+                k = int(nearest[(start + n - 1) // 2])
+                (ax, ay), (bx, by) = points[max(0, k - 16)], points[min(len(points) - 1, k + 16)]
+                found.append((line[k][3], float(points[k][0]), float(points[k][1]), abs(bx - ax) >= abs(by - ay)))
+                start = None
+    return found
 
 
 def road_lines(land_id, land, middle, crossings, routes, intos=None):
@@ -747,9 +795,12 @@ def rivers(canvas, world_rivers, design, lands, grids, found, routes):
             x, y, w, h = town_box(lands[land_id], design[land_id]["at"])
             r, c = canvas.index(x, y)
             towns[r:r + h, c:c + w] = True
+    crossed = [along(stops) for land_id in ids
+               for _, stops in road_lines(land_id, lands[land_id], design[land_id]["at"], found[land_id], routes[land_id])]
     for number, river in enumerate(world_rivers):
         name = river.get("name", f"river {number}")
         line = river_line(river, number)
+        line = river_line(river, number, squared(line, crossed))
         x0, y0 = line[0][:2]
         x1, y1 = line[-1][:2]
         if canvas.get(int(math.floor(x0)), int(math.floor(y0))) < 0:
@@ -799,6 +850,11 @@ def rivers(canvas, world_rivers, design, lands, grids, found, routes):
     sea_distance = ndimage.distance_transform_edt(ground)
     bridges = np.zeros_like(under)
     middles = [(p[0], p[1], p[2]) for river in lines for p in river["points"]]
+    # Each point's river's first and last point in `middles`.
+    ends, first = [], 0
+    for river in lines:
+        ends += [(first, first + len(river["points"]) - 1)] * len(river["points"])
+        first += len(river["points"])
     tree = np.array([(x, y) for x, y, _ in middles])
 
     def wet(x, y):
@@ -836,6 +892,12 @@ def rivers(canvas, world_rivers, design, lands, grids, found, routes):
                 spot = f"{what} crosses a river at {[round(x), round(y)]}"
                 if cosine > BRIDGE_SQUARE:
                     problems.append(f"{spot} askew")
+                low, high = ends[nearest]
+                (sx, sy), (ex, ey) = middles[max(low, nearest - 16)][:2], middles[min(high, nearest + 16)][:2]
+                slant = math.degrees(math.atan2(ey - sy, ex - sx)) % 90
+                slant = min(slant, 90 - slant)
+                if slant > BRIDGE_AXIS:
+                    problems.append(f"{spot} where it runs {slant:.0f} degrees off the grid")
                 if width > BRIDGE_WIDEST:
                     problems.append(f"{spot} where it's {width:.1f} wide")
                 r, c = canvas.index(int(x), int(y))
