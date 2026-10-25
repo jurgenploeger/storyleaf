@@ -23,7 +23,6 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 import app_icon_art
-import logo_art
 import store_slides
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -87,9 +86,9 @@ def vignette(canvas: Image.Image, strength: float = 0.28) -> None:
 
 
 def place_logo(canvas: Image.Image, logo: Image.Image, width_share: float, middle: tuple[float, float]) -> None:
-    """The logo at about `width_share` of the canvas's width, its pixels scaled by a whole number."""
-    scale = max(1, round(canvas.width * width_share / logo.width))
-    art = logo.resize((logo.width * scale, logo.height * scale), Image.NEAREST)
+    """The logo `width_share` of the canvas's width, its middle at `middle`."""
+    width = round(canvas.width * width_share)
+    art = logo.resize((width, round(logo.height * width / logo.width)), Image.LANCZOS)
     canvas.alpha_composite(art, (round(canvas.width * middle[0] - art.width / 2), round(canvas.height * middle[1] - art.height / 2)))
 
 
@@ -110,12 +109,12 @@ def main() -> None:
     args = parser.parse_args()
 
     OUT.mkdir(parents=True, exist_ok=True)
-    logo = logo_art.logo()
+    logo = Image.open(LOGO).convert("RGBA")
     made = {}
 
     made["profile_1080"] = profile(1080)
     made["discord_server_icon_512"] = profile(512)
-    made["logo_transparent"] = Image.open(LOGO).convert("RGBA")
+    made["logo_transparent"] = logo
     for name, stops in [("logo_on_sky_1080", SKY), ("logo_on_forest_1080", FOREST)]:
         square = gradient((1080, 1080), stops)
         place_logo(square, logo, 0.82, (0.5, 0.5))
