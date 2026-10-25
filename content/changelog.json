@@ -2,8 +2,8 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
-      "version": "0.7.87",
-      "date": "2026-10-24",
+      "version": "0.7.88",
+      "date": "2026-10-25",
       "title": "A cleaner screen",
       "notes": [
         "One menu button opens into Hero, Companion, Inventory, Quests and Settings, with Chat right beside it.",

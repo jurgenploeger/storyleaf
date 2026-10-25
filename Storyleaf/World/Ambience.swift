@@ -330,13 +330,20 @@ final class Ambience {
     // MARK: Butterflies
 
     private static func butterfly(at point: CGPoint, rng: inout SeededRandom) -> SKNode {
-        let colors: [UInt32] = [0xF8BBD0, 0xFFF59D, 0xB3E5FC, 0xE1BEE7, 0xFFCC80]
-        let color = PixelColor(colors[Int.random(in: 0..<colors.count, using: &rng)])
-        let frames = [SoftTextures.butterfly(color: color, open: true), SoftTextures.butterfly(color: color, open: false)]
-        let sprite = SKSpriteNode(texture: frames[0], size: CGSize(width: 21, height: 15))
+        let colors: [(name: String, hex: UInt32)] = [("pink", 0xF8BBD0), ("yellow", 0xFFF59D), ("blue", 0xB3E5FC),
+                                                     ("lilac", 0xE1BEE7), ("orange", 0xFFCC80)]
+        let pick = colors[Int.random(in: 0..<colors.count, using: &rng)]
+        let color = PixelColor(pick.hex)
+        // As tools/critter_art.py draws it (lit, outlined, a pixel to a pixel like the critters), flapping
+        // open, half, closed and back; else as drawn here, 7 × 5, shown three times as big.
+        let frames = ["open", "half", "closed", "half"].map { pose in
+            CritterArt.drawn("butterfly_\(pick.name)_\(pose)", SoftTextures.butterfly(color: color, open: pose == "open"))
+        }
+        let drawn = frames[0].size().width > 7
+        let sprite = SKSpriteNode(texture: frames[0], size: drawn ? frames[0].size() : CGSize(width: 21, height: 15))
         sprite.position = point
         sprite.zPosition = 25_000
-        sprite.run(.repeatForever(.animate(with: frames, timePerFrame: 0.11)))
+        sprite.run(.repeatForever(.animate(with: frames, timePerFrame: drawn ? 0.06 : 0.11)))
 
         // A lazy loop that always returns home, so butterflies never drift off the map.
         var moves: [SKAction] = []

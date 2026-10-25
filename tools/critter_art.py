@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""The critters (`ambience.critters`: bunnies, frogs, songbirds...) and the birds crossing the sky, in the
-game's pixel style (docs/pixel-style.md): each drawing `Storyleaf/World/Critters.swift` made pixel by
-pixel, flat, in one near-black outline, redrawn here with tools/pixel_kit.py as the same shapes at the
-same size, lit from the top left (a lighter edge there, a hue-shifted shade at the bottom right), outlined
-in a deep shade of each part instead of one near-black.
+"""The critters (`ambience.critters`: bunnies, frogs, songbirds...), the birds crossing the sky and the
+butterflies (`ambience.butterflies`), in the game's pixel style (docs/pixel-style.md): each drawing
+`Storyleaf/World/Critters.swift` made pixel by pixel, flat, in one near-black outline, redrawn here with
+tools/pixel_kit.py as the same shapes at the same size, lit from the top left (a lighter edge there, a
+hue-shifted shade at the bottom right), outlined in a deep shade of each part instead of one near-black.
+The butterflies are drawn anew at the critters' size (`Ambience.swift` drew them 7 × 5, three times as big).
 
     python3 tools/critter_art.py                 # all → art/sprites/critter_<name>.png
     python3 tools/critter_art.py --sheet out.png # a contact sheet at 6×
 
-`CritterArt.drawn` loads them by name (`bunny_brown_sit`, `songbird_robin_peck`, `flock_gulls_up`...);
-one that's missing is drawn as before, in code. Each faces right, one pixel of room round the drawing
-for its outline.
+`CritterArt.drawn` loads them by name (`bunny_brown_sit`, `songbird_robin_peck`, `flock_gulls_up`,
+`butterfly_pink_open`...); one that's missing is drawn as before, in code. Each faces right, one pixel of
+room round the drawing for its outline.
 """
 
 import colorsys
@@ -455,6 +456,53 @@ def flock(kind, up):
     return c
 
 
+def butterfly(colour, pose):
+    """A butterfly (`ambience.butterflies`, `Ambience.butterfly`) seen from above as it flutters: wings
+    spread (`open`), raised (`half`, seen narrower) or folded up over its back (`closed`); forewings in
+    its colour with a deeper tip and a pale spot, a notch at the side, hindwings a shade deeper tapering
+    to the tail, a dark body with antennae. Drawn at the critters' size, a pixel to a pixel: the one
+    drawn in Swift was 7 × 5, shown three times as big, its pixels three times everyone else's."""
+    wing = rgb_of(colour)
+    hind, tip, spot = hexc_of(shade(wing, 0.88)), hexc_of(shade(wing, 0.72)), hexc_of(shade(wing, 1.14))
+    wing = hexc(colour)
+    body = 0x4A3426
+    c = Critter(13, 10)
+    # The left wings, row by row (y, first x, last x), mirrored round the body's column (x 6).
+    rows = {
+        "open": ([(1, 1, 4), (2, 0, 5), (3, 0, 5), (4, 1, 5), (5, 3, 5)], [(6, 2, 5), (7, 1, 5), (8, 2, 4), (9, 3, 4)],
+                 [(1, 1, 2), (2, 0, 0)], (2, 3)),
+        "half": ([(1, 2, 4), (2, 2, 5), (3, 2, 5), (4, 3, 5), (5, 4, 5)], [(6, 3, 5), (7, 3, 5), (8, 4, 5)],
+                 [(1, 2, 2), (2, 2, 2)], (3, 3)),
+        "closed": ([(0, 5, 5), (1, 4, 5), (2, 4, 5), (3, 4, 5), (4, 5, 5), (5, 5, 5)], [(6, 5, 5)], [(0, 5, 5)], None),
+    }[pose]
+    fore, back, tips, mark = rows
+    for colour_, spans in ((wing, fore), (hind, back), (tip, tips)):
+        for y, x0, x1 in spans:
+            c.rect(x0, y, x1 - x0 + 1, 1, colour_)
+            c.rect(12 - x1, y, x1 - x0 + 1, 1, colour_)
+    c.rect(6, 2, 1, 7, body)
+    if mark:
+        c.dot(mark[0], mark[1], spot)
+        c.dot(12 - mark[0], mark[1], spot)
+    # The antennae, a pixel each, after the outline so they stay fine.
+    for x, y in ((5, 0), (7, 0), (6, 1)):
+        c.dot(x, y, body)
+    return c
+
+
+def rgb_of(c):
+    c = hexc(c)
+    return [int(c[k:k + 2], 16) for k in (1, 3, 5)]
+
+
+def hexc_of(c):
+    return "#%02x%02x%02x" % tuple(c)
+
+
+# The butterflies' colours, as `Ambience.butterfly` picks them.
+# Its yellow a touch warmer than the Swift drawing's lemon, whose shades turned green.
+WINGS = {"pink": 0xF8BBD0, "yellow": 0xFFEEA0, "blue": 0xB3E5FC, "lilac": 0xE1BEE7, "orange": 0xFFCC80}
+
 COATS = {"brown": (0xB98A62, 0xE2C29F, 0x7D5A3F), "cream": (0xEDDCC2, 0xFFF6E8, 0xB8A386),
          "grey": (0xA9A9B0, 0xD8D8DE, 0x707078), "white": (0xF4F4F4, 0xFFFFFF, 0xC0C0C8)}
 PLUMES = {"robin": (0x8A6248, 0xE8834A, 0x6B4A36), "bluebird": (0x4F7FC8, 0xE8A06A, 0x3A5E9A),
@@ -481,6 +529,9 @@ def drawings():
     for kind, fn in (("spider", spider), ("rat", rat), ("scorpion", scorpion), ("lizard", lizard), ("mouse", mouse),
                      ("wisp", wisp)):
         out[f"{kind}_a"], out[f"{kind}_b"] = (lambda f=fn: f(False)), (lambda f=fn: f(True))
+    for name, colour in WINGS.items():
+        for pose in ("open", "half", "closed"):
+            out[f"butterfly_{name}_{pose}"] = lambda c=colour, p=pose: butterfly(c, p)
     for kind in ("gulls", "bats", "songbirds"):
         out[f"flock_{kind}_up"], out[f"flock_{kind}_down"] = (lambda k=kind: flock(k, True)), (lambda k=kind: flock(k, False))
     return out
