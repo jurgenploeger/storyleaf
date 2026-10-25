@@ -87,6 +87,10 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `tools/store_slides.py`: App Store slides from the landscape `store_land_*` screenshot scenes: captions in the
   logo's style (`tools/store_slides.json`, font in `tools/fonts/`), cropped clear of the Dynamic Island the
   simulator draws in, exported at 2622×1206 and 2868×1320 with no alpha.
+- `tools/social_art.py`: the social media assets in `marketing/social/` (profile pictures from the icon's
+  drawing round the hero's face; logo files; covers and banners for X, Bluesky, Facebook, YouTube, Discord,
+  Instagram and the talewild.app link preview, from the HUD-free `store_land_*` scenes with the logo in each
+  platform's safe area, `SPECS`). `--shots DIR` takes the scenes fetched from CI's `screenshots` branch.
 - `tools/weapon_art.py`: weapons from Retro Diffusion: a picked 64-pixel drawing (`PICKED`, from `art-variants/`)
   shrunk to the icon and the held sprite at the drawn weapons' size, outlined afresh; `item_art.py` leaves those
   alone. `tools/gear_preview.py --weapons out.png <ids>` shows weapons in hand on every body, direction and armour.
