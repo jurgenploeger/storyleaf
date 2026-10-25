@@ -85,14 +85,15 @@ struct MenuView: View {
 }
 
 extension MenuView {
-    /// The window's page: its tabs along the top, the round close button at their end, and what's
-    /// on the tab you're on.
+    /// The window's page: its tabs along the top (the round close button over the window's corner,
+    /// `morphing`), and what's on the tab you're on.
     private var page: some View {
         VStack(spacing: 0) {
             HStack(spacing: 4) {
                 tabs
                 Spacer(minLength: 4)
-                OrangeCloseButton(action: close)
+                // The close button's room: it sits over the window's corner (`morphing`).
+                Color.clear.frame(width: OrangeCloseButton.room, height: 34)
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
@@ -144,6 +145,11 @@ extension MenuView {
                 HUDStyle.frame(shape)
                     .frame(width: size.width, height: size.height)
                     .allowsHitTesting(false)
+                // The close button over the window's corner, as on every window (playtesting 2026-10-25),
+                // where the open menu has its own: it grows and shrinks with the window.
+                OrangeCloseButton(action: close)
+                    .offset(x: OrangeCloseButton.overhang, y: -OrangeCloseButton.overhang)
+                    .frame(width: size.width, height: size.height, alignment: .topTrailing)
             }
             .frame(width: full.width, height: full.height, alignment: .bottomTrailing)
         }

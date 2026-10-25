@@ -519,23 +519,26 @@ private struct GameMenu: View {
         .frame(width: Self.button, height: Self.button, alignment: .bottomTrailing)
     }
 
-    /// The open menu: its windows, one after another, and the close button over the top one's end.
+    /// The open menu: its windows, one after another, and the close button over its top right
+    /// corner, as on every window (playtesting 2026-10-25).
     private var panel: some View {
-        VStack(alignment: .trailing, spacing: 0) {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(items) { row($0) }
+        }
+        .padding(.bottom, 6)
+        .padding(.horizontal, 4)
+        // Clear of the close button.
+        .padding(.top, 16)
+        .frame(width: MenuMorph.width)
+        .background(Self.surface(RoundedRectangle(cornerRadius: MenuMorph.radius)))
+        .overlay(alignment: .topTrailing) {
             OrangeCloseButton {
                 SoundEffects.shared.play(.tap, volume: 0.7)
                 open = false
             }
             .accessibilityLabel(L("Close menu"))
-            VStack(alignment: .leading, spacing: 2) {
-                ForEach(items) { row($0) }
-            }
-            .padding(.bottom, 6)
+            .offset(x: OrangeCloseButton.overhang, y: -OrangeCloseButton.overhang)
         }
-        .padding(.horizontal, 4)
-        .padding(.top, 2)
-        .frame(width: MenuMorph.width)
-        .background(Self.surface(RoundedRectangle(cornerRadius: MenuMorph.radius)))
         // Its size, for the window to grow out of.
         .onGeometryChange(for: CGSize.self) { $0.size } action: { MenuMorph.from = $0 }
     }
