@@ -179,7 +179,7 @@ struct MonsterBook: View {
 
 /// A monster's card (Fairyland Online's card collection): the monster on its element's colours in a
 /// gold frame, a star in the corner for a rare one or a boss, its name along the bottom. Face down
-/// (`found` false), the card's back: Storyleaf's leaf in gold on forest green.
+/// (`found` false), the card's back: the brand's leaf in gold on midnight.
 struct MonsterCardFace: View {
     let monster: MonsterDef
     var width: CGFloat = 64

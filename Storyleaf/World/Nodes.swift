@@ -520,7 +520,7 @@ enum Effects {
     static let tapMarkerZ: CGFloat = 21_000
 
     /// Fairyland Online's destination marker: a swirl on the ground, in Storyleaf's colours and drawn
-    /// like the logo's letters: a pale leaf-green line over a forest-green outline. On every
+    /// like the logo's letters: a pale gold line over a midnight outline. On every
     /// map one of the two stands out: the outline on sand, snow and candy, the line on grass,
     /// caves and dark woods. Over everything that stands (`tapMarkerZ`).
     static func tapMarker(at point: CGPoint, z: CGFloat = Effects.tapMarkerZ, in parent: SKNode) {

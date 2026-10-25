@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Shown while a map is being built: the logo over the title's sky, and a leaf-green bar filling up.
+/// Shown while a map is being built: the logo over the title's sky, and a gold bar filling up.
 struct LoadingCurtain: View {
     /// 0...1: how far the map build has got.
     var progress: Double = 0
@@ -28,8 +28,8 @@ struct LoadingCurtain: View {
     }
 }
 
-/// Shown briefly when travelling to another map, in Storyleaf's colours like the game's own
-/// loading: the title's sky, a leaf-green swirl turning, the destination's name on a cream pill
+/// Shown briefly when travelling to another map, in the brand's colours like the game's own
+/// loading: the title's sky, a gold swirl turning, the destination's name on a cream pill
 /// outlined like the logo's tagline, and the same bar.
 struct MapLoadingCard: View {
     let mapName: String
