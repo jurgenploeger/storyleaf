@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""The app icon's dark and tinted versions, made from the light one (AppIcon.png), so the icon on
-the Home Screen follows the phone's look (iOS 18 and later; older ones show the light icon).
+"""The app icon, light, dark and tinted (iOS 18 and later; older ones show the light icon), from
+one picked Retro Diffusion drawing: the game's own hero (player_walk) with a golden sword before
+the apple and blossom trees, built from the game's sprites and redrawn by RD
+(art-variants/app_icon_sprite/, docs/sprite-acceptance.md → Retro Diffusion).
 
-Dark: the leaf-book stays as it is and its sky turns to night: lavender, sky blue and mint
-become deep indigo, navy and teal, the rays fainter, the clouds moonlit, and the white sparkles
-stay bright as stars. Tinted: the dark icon in greys, which iOS colours with the tint chosen.
+Light: the drawing cropped in on the hero, head to hips (`CROP`), so he reads on a small Home
+Screen icon, scaled by a whole number (`SCALE`, nearest neighbour) and its edge pixels repeated
+out to 1024. Dark: the same scene at dusk, its sky the night `StoryleafSky` draws in Dark Mode,
+the rest darkened and cooled, moonlight on the hero's face keeping him brighter than the trees.
+Tinted: the dark icon in greys, its contrast stretched, which iOS colours with the tint chosen.
+Every grade is worked out on the drawing's own pixels before scaling, so the pixels stay crisp.
 
-The leaf-book is everything inside its dark outline (the forest green round the leaf and the
-book, the deep red round the ribbon): flood-filled from the corner, whatever the fill doesn't
-reach is the book. Rerun after changing AppIcon.png; `--preview out.png` shows all three side
-by side. Needs pillow + numpy.
+Rerun after changing the source or the crop; `--preview out.png` shows all three at Home Screen
+sizes, beside the looser crop (`ALT_CROP`). Needs pillow + numpy.
 """
 
 import argparse
@@ -25,28 +28,38 @@ LIGHT = ICONSET / "AppIcon.png"
 DARK = ICONSET / "AppIcon-Dark.png"
 TINTED = ICONSET / "AppIcon-Tinted.png"
 
-# The night sky, top to bottom, where the day's lavender, sky blue and mint were.
+SOURCE = ROOT / "art-variants/app_icon_sprite/20261025-103956_rd_pro_2.png"
+# The hero from his hair to his hips, the sword's tip just inside the top left (the drawing is
+# 192 pixels; the hero spans x 62 to 156, y 50 to 182). 112 × 9 = 1008, the rest repeated edge.
+CROP, SCALE = (56, 44, 168, 156), 9
+# Head to knees, filling 1024 exactly: shown in the preview only.
+ALT_CROP, ALT_SCALE = (48, 40, 176, 168), 8
+SIZE = 1024
+# Where the moonlight falls in the crop: the hero's face.
+FACE = (59, 56)
+
+# The night sky, top to bottom, where the day's blue was.
 NIGHT = [(0.17, 0.12, 0.38), (0.07, 0.13, 0.33), (0.04, 0.2, 0.25)]
 
 
-def book_mask(rgb: np.ndarray) -> np.ndarray:
-    """True on the leaf-book: what a flood fill from the corner over everything lighter than its
-    outline doesn't reach."""
-    luma = rgb @ np.array([0.299, 0.587, 0.114])
-    # A copy: Pillow doesn't flood-fill an image still sharing numpy's memory.
-    walls = Image.fromarray(np.where(luma < 0.36, 0, 255).astype(np.uint8)).copy()
-    ImageDraw.floodfill(walls, (0, 0), 128)
-    return np.asarray(walls) != 128
+def crop(box: tuple[int, int, int, int]) -> np.ndarray:
+    """The source cut to `box`, as floats 0 to 1."""
+    return np.asarray(Image.open(SOURCE).convert("RGB").crop(box), dtype=float) / 255
 
 
-def cloud_mask(rgb: np.ndarray) -> np.ndarray:
-    """True on the clouds: the near-white banks a flood fill reaches from the bottom edge."""
-    near_white = Image.fromarray(np.where(rgb.min(axis=2) > 0.88, 255, 0).astype(np.uint8)).copy()
-    height, width = near_white.height, near_white.width
-    for x in range(width):
-        if near_white.getpixel((x, height - 1)) == 255:
-            ImageDraw.floodfill(near_white, (x, height - 1), 128)
-    return np.asarray(near_white) == 128
+def scaled(rgb: np.ndarray, scale: int) -> Image.Image:
+    """Each pixel `scale` times as big, the edge pixels repeated out to SIZE."""
+    big = np.repeat(np.repeat(rgb, scale, axis=0), scale, axis=1)
+    pad = SIZE - big.shape[0]
+    big = np.pad(big, ((pad // 2, pad - pad // 2), (pad // 2, pad - pad // 2), (0, 0)), mode="edge")
+    return Image.fromarray((np.clip(big, 0, 1) * 255 + 0.5).astype(np.uint8), "RGB")
+
+
+def sky_mask(rgb: np.ndarray) -> np.ndarray:
+    """True on the day sky between the leaves: pale, light blue."""
+    hsv = np.array([[colorsys.rgb_to_hsv(*p) for p in row] for row in rgb])
+    hue, sat, val = hsv[..., 0] * 360, hsv[..., 1], hsv[..., 2]
+    return (hue > 180) & (hue < 220) & (sat > 0.12) & (sat < 0.6) & (val > 0.75)
 
 
 def night_gradient(height: int) -> np.ndarray:
@@ -58,59 +71,64 @@ def night_gradient(height: int) -> np.ndarray:
     return stops[low] * (1 - frac) + stops[low + 1] * frac
 
 
-def darken(rgb: np.ndarray) -> np.ndarray:
+def dusk(rgb: np.ndarray) -> np.ndarray:
+    """The scene at dusk: the sky turned to night, the rest darker and cooler, moonlight on the hero."""
     height, width, _ = rgb.shape
-    sky = night_gradient(height)[:, None, :].repeat(width, axis=1)
-    # How far each pixel is from the day sky's pastel towards white: 0 on the plain sky, more on
-    # a ray, near 1 on a cloud or a sparkle. The day sky's saturation is about a quarter.
-    sat = rgb.max(axis=2) - rgb.min(axis=2)
-    light = np.clip(1 - sat / 0.26, 0, 1)[..., None]
-    # Rays and clouds: the night lit up a little, towards a cool moonlight.
-    moon = np.array([0.55, 0.62, 0.8])
-    out = sky + (moon - sky) * (light ** 2) * 0.5
-    # The clouds, shaded by how bright they are (their saturation is mostly dither, which drew stripes).
-    clouds = cloud_mask(rgb)
-    luma = (rgb @ np.array([0.299, 0.587, 0.114]))[..., None]
-    lit = sky + (moon - sky) * (0.38 + np.clip((luma - 0.9) / 0.1, 0, 1) * 0.14)
-    out = np.where(clouds[..., None], lit, out)
-    # Sparkles (pure white, their soft edges nearly) stay bright: stars. Not the clouds, as
-    # white at their tops.
-    star = np.clip((rgb.min(axis=2) - 0.955) / 0.045, 0, 1)
-    star = np.where(clouds, 0, star)[..., None]
-    return out + (1 - out) * star
+    luma = rgb @ np.array([0.299, 0.587, 0.114])
+    # The sky keeps its pixels' shading, laid on the night's colour for its row.
+    night = night_gradient(height)[:, None, :].repeat(width, axis=1)
+    sky = night * (0.8 + 0.4 * (luma[..., None] - 0.8) / 0.2)
+    # Moonlight: brightest on the face, falling off to the trees at the edges.
+    ys, xs = np.mgrid[0:height, 0:width]
+    near = np.exp(-(((xs - FACE[0]) ** 2 + (ys - FACE[1]) ** 2) / (2 * (width * 0.32) ** 2)))[..., None]
+    cool = np.array([0.62, 0.68, 0.92])
+    rest = rgb * cool * (0.42 + 0.48 * near)
+    return np.where(sky_mask(rgb)[..., None], sky, rest)
 
 
-def dark_icon(light: Image.Image) -> Image.Image:
-    rgb = np.asarray(light.convert("RGB"), dtype=float) / 255
-    book = book_mask(rgb)[..., None]
-    out = np.where(book, rgb, darken(rgb))
-    return Image.fromarray((np.clip(out, 0, 1) * 255 + 0.5).astype(np.uint8), "RGB")
+def tint(rgb: np.ndarray) -> np.ndarray:
+    """Greys for iOS to tint: the dark icon's light, stretched to fill the range."""
+    luma = rgb @ np.array([0.299, 0.587, 0.114])
+    low, high = np.percentile(luma, [2, 98])
+    grey = np.clip((luma - low) / max(high - low, 1e-6), 0, 1)
+    return np.repeat(grey[..., None], 3, axis=2)
 
 
-def tinted_icon(dark: Image.Image) -> Image.Image:
-    """Greys for iOS to tint: the book bright, the night sky near black."""
-    return dark.convert("L").convert("RGB")
+def rounded(image: Image.Image, side: int) -> Image.Image:
+    """`image` at `side` pixels, its corners rounded as the Home Screen draws it."""
+    small = image.resize((side, side), Image.LANCZOS)
+    mask = Image.new("L", (side, side), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, side - 1, side - 1], radius=round(side * 0.225), fill=255)
+    tile = Image.new("RGB", (side, side), (242, 242, 247))
+    tile.paste(small, (0, 0), mask)
+    return tile
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--preview", type=Path, help="write the light, dark and tinted icons side by side here")
+    parser.add_argument("--preview", type=Path, help="write the icons at Home Screen sizes here")
     args = parser.parse_args()
 
-    light = Image.open(LIGHT)
-    dark = dark_icon(light)
-    tinted = tinted_icon(dark)
+    rgb = crop(CROP)
+    night = dusk(rgb)
+    light, dark, tinted = scaled(rgb, SCALE), scaled(night, SCALE), scaled(tint(night), SCALE)
+    light.save(LIGHT, optimize=True)
     dark.save(DARK, optimize=True)
     tinted.save(TINTED, optimize=True)
-    print(f"wrote {DARK.relative_to(ROOT)} and {TINTED.relative_to(ROOT)}")
+    print(f"wrote {LIGHT.relative_to(ROOT)}, {DARK.relative_to(ROOT)} and {TINTED.relative_to(ROOT)}")
 
     if args.preview:
-        side = 384
-        sheet = Image.new("RGB", (side * 3 + 40, side + 20), (40, 40, 40))
-        for index, image in enumerate([light.convert("RGB"), dark, tinted]):
-            sheet.paste(image.resize((side, side), Image.LANCZOS), (10 + index * (side + 10), 10))
+        alt = scaled(crop(ALT_CROP), ALT_SCALE)
+        sizes = [300, 180, 120, 60]
+        row = sum(sizes) + 10 * (len(sizes) + 1)
+        sheet = Image.new("RGB", (row, 4 * 320), (242, 242, 247))
+        for index, image in enumerate([light, dark, tinted, alt]):
+            x = 10
+            for side in sizes:
+                sheet.paste(rounded(image, side), (x, 10 + index * 320))
+                x += side + 10
         sheet.save(args.preview)
-        print(f"preview in {args.preview}")
+        print(f"preview in {args.preview}: light, dark, tinted, then the looser crop")
 
 
 if __name__ == "__main__":
