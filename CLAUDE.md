@@ -84,6 +84,10 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   sprites and redrawn by RD), cropped in close on him, hair to knees over a band of meadow (`CROP`), and scaled by a whole
   number; dark is the scene at dusk under the night `StoryleafSky` draws, lit by its gold, fireflies, sparkles
   and stars (`light_up`), in hard steps; tinted its greys. `--preview` shows Home Screen sizes.
+- `tools/season_icon_art.py`: the festive seasons' app icons (AppIcon-Halloween, -Christmas, -Easter), from the
+  app icon's drawing cropped a little looser (`BOX`) so a hat fits: the hero as drawn (`HERO`), the scenery
+  regraded by colour class onto each season's ramps in hard steps, props and a hat drawn in its pixels. The game
+  switches to one while its season runs (`SeasonalIcon`, rewards.json `seasons`; never in tests or debug launches).
 - `tools/logo_art.py`: the logo (`Logo.png`), TALEWILD in capitals in Open Sans ExtraBold at its semi-condensed
   width (`tools/fonts/`, the titles' face in the pixel RPGs the user pointed to), all gold in one smooth gradient,
   in a dark outline with a hard shadow. One colour, no bands, no emblem, tagline or rays.
