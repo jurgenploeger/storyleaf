@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Tales of Dorlune's own colours, the logo's and the app icon's exactly (the Figma brand guidelines list
 /// them, page 03 Colour): the logo's gold, and midnight (the night sky's navy) for lettering and
-/// outlines where dark green was until 0.8.10. The title and loading screens wear them; the game's
+/// outlines where dark green was until 0.8.11. The title and loading screens wear them; the game's
 /// windows keep Fairyland's look (`HUDStyle`).
 enum Brand {
     /// The logo's gold, top to bottom: the loading bar's fill and the travel swirl.

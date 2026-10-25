@@ -14,9 +14,9 @@ environment couldn't open the pages themselves, so a session that can should re-
 
 ## Names
 
-**Us** (since 0.8.10, 2026-10-25): the game is called **Tales of Dorlune** for players (the App Store name and the
+**Us** (since 0.8.11, 2026-10-25): the game is called **Tales of Dorlune** for players (the App Store name and the
 logo; the Home Screen, where a longer name is cut short, shows Dorlune), and the land is **Dorlune** in every
-in-game line. It was Talewild from 0.8.1 to 0.8.9, Storyleaf from 0.3.50, and the code, project and repo still are
+in-game line. It was Talewild from 0.8.1 to 0.8.10, Storyleaf from 0.3.50, and the code, project and repo still are
 (renamed from Fairyland on 2026-10-22) until a follow-up renames them; only the bundle ID and the save files keep
 "Fairyland" for good. The goddess Liora binds the world's tales
 into one book, and its pages are the land. Names taken from FO were replaced with our own, and this file
@@ -1194,7 +1194,7 @@ the Wishing Seal, which stays the Monster Book's last reward.
     afternoon, where half its glow was on screen and washed out the middle of the map (left of the screen
     half again as bright at 16hr in the screenshots, 2026-10-12); since 0.4.8 it stays in the corner. Whether FO's light moved
     with its clock isn't in any source we've found; this is ours. Clouds don't soften the shadows yet.
-  - Our setting is called Dorlune in every in-game text (Fairyland until 0.3.50, Storyleaf until 0.8.1, Talewild until 0.8.9; see Names). In FO the
+  - Our setting is called Dorlune in every in-game text (Fairyland until 0.3.50, Storyleaf until 0.8.1, Talewild until 0.8.10; see Names). In FO the
     continent itself is Mysteria (above), which is also the relaunch's name.
 - **Bots, moderators and announcements:** ours, asked for in playtesting (2026-10-04). FO's chat channels,
   GM notices and player stalls (players selling under a sign in town) aren't in any source reachable from a
