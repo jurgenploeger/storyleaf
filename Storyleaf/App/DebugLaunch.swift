@@ -183,7 +183,7 @@ enum DebugLaunch {
     static var isFilming: Bool { flags["demo"] != nil }
     /// `clean`: no frame counter in the corner either, for App Store screenshots.
     static var hidesFrameCounter: Bool { isFilming || flags["clean"] != nil }
-    /// `nohud`: the map on its own, without the HUD over it (App Store slides of the world).
+    /// `nohud`: the map on its own, without the HUD over it or the passers-by's speech bubbles (App Store slides of the world).
     static var hidesHUD: Bool { flags["nohud"] != nil }
     /// `hudmenu`: the HUD's menu opened into its pages (`WorldHUD`'s `GameMenu`).
     static var opensHUDMenu: Bool { flags["hudmenu"] != nil }
