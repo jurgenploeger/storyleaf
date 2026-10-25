@@ -32,7 +32,7 @@ enum Brand {
     static let skyText = Color.adaptive(light: HUDStyle.ink, dark: HUDStyle.cream)
 }
 
-/// Where the sun rays fan out from: the middle of the word in the logo (Logo.png, drawn by
+/// Where the sky's soft light sits: the middle of the word in the logo (Logo.png, drawn by
 /// tools/logo_art.py), or whatever else a screen puts in its middle (the travel card's swirl). Published with `raysAnchor`, read by `storyleafSky`.
 struct RaysAnchor: PreferenceKey {
     static var defaultValue: Anchor<CGPoint>? { nil }
@@ -42,17 +42,17 @@ struct RaysAnchor: PreferenceKey {
 }
 
 extension Brand {
-    /// Where the rays fan out from in the logo image (the middle of the word), as a share of its size.
+    /// Where the sky's light sits in the logo image (the middle of the word), as a share of its size.
     static let raysInLogo = UnitPoint(x: 0.5, y: 0.5)
 }
 
 extension View {
-    /// Marks this view's `point` (the leaf, for the logo) as where the sky's rays fan out from.
+    /// Marks this view's `point` (the middle of the word, for the logo) as where the sky's light sits.
     func raysAnchor(_ point: UnitPoint = .center) -> some View {
         anchorPreference(key: RaysAnchor.self, value: .unitPoint(point)) { $0 }
     }
 
-    /// The Storyleaf sky behind this screen, its rays fanning out from exactly where `raysAnchor`
+    /// The Storyleaf sky behind this screen, its light exactly where `raysAnchor`
     /// marks, wherever that lands on this phone and however the screen moves it (scrolling, a
     /// phone on its side); from `fallback` (a share of the screen) where nothing marks it.
     func storyleafSky(fallback: UnitPoint) -> some View {
@@ -71,12 +71,12 @@ extension View {
     }
 }
 
-/// The sky the app icon's leaf floats in, behind the title and loading screens: lavender at the
-/// top through sky blue to mint, soft sun rays fanning out from behind the logo, and clouds
-/// along the bottom. In Dark Mode it's the dark icon's night: indigo through navy to teal, the
-/// rays faint, the clouds moonlit and a scatter of stars.
+/// The sky behind the title and loading screens: lavender at the top through sky blue to mint, a
+/// soft light behind the logo, and clouds along the bottom. No sun rays: fanned out round the
+/// logo they looked cheap. In Dark Mode it's the dark icon's night: indigo through navy to teal,
+/// the light faint, the clouds moonlit and a scatter of stars.
 struct StoryleafSky: View {
-    /// Where the rays fan out from, as a share of the screen: behind the logo.
+    /// Where the soft light sits, as a share of the screen: behind the logo.
     var raysFrom = UnitPoint(x: 0.5, y: 0.3)
     @Environment(\.colorScheme) private var colorScheme
 
@@ -103,9 +103,9 @@ struct StoryleafSky: View {
                 LinearGradient(colors: night ? [Brand.nightTop, Brand.night, Brand.nightBottom] : [Brand.lavender, Brand.sky, Brand.mint],
                                startPoint: .top, endPoint: .bottom)
 
-                SunRays(center: raysFrom)
-                    .fill(RadialGradient(colors: [.white.opacity(night ? 0.1 : 0.3), .white.opacity(0)], center: raysFrom,
-                                         startRadius: 0, endRadius: max(proxy.size.width, proxy.size.height) * 0.7))
+                Rectangle()
+                    .fill(RadialGradient(colors: [.white.opacity(night ? 0.08 : 0.28), .white.opacity(0)], center: raysFrom,
+                                         startRadius: 0, endRadius: side * 0.6))
 
                 if night {
                     ForEach(Self.stars.indices, id: \.self) { index in
@@ -130,28 +130,5 @@ struct StoryleafSky: View {
         }
         .ignoresSafeArea()
         .accessibilityHidden(true)
-    }
-}
-
-/// Rays fanning out from `center` (a share of the rect) past its corners: every other wedge of
-/// `count`, like the sun behind the icon's leaf.
-nonisolated struct SunRays: Shape {
-    var center: UnitPoint
-    var count = 16
-
-    func path(in rect: CGRect) -> Path {
-        let origin = CGPoint(x: rect.minX + rect.width * center.x, y: rect.minY + rect.height * center.y)
-        let reach = hypot(rect.width, rect.height)
-        let step = 2 * Double.pi / Double(count)
-        var path = Path()
-        for index in 0..<count {
-            let start = Double(index) * step
-            let end = start + step / 2
-            path.move(to: origin)
-            path.addLine(to: CGPoint(x: origin.x + cos(start) * reach, y: origin.y + sin(start) * reach))
-            path.addLine(to: CGPoint(x: origin.x + cos(end) * reach, y: origin.y + sin(end) * reach))
-            path.closeSubpath()
-        }
-        return path
     }
 }

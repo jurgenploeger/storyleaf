@@ -1,8 +1,8 @@
 {
-  "_about": "App Store slides in carousel order (tools/store_slides.py): the landscape scene from tools/screenshots.txt, its caption (title, and a tag in the cream pill), where the caption sits (top|bottom-left|center|right), its title `size` (128 unless set), and the logo on the first. Keep claims true: no other players, no prices.",
+  "_about": "App Store slides in carousel order (tools/store_slides.py): the landscape scene from tools/screenshots.txt, its caption (title, and a tag on a dark plate), where the caption sits (top|bottom-left|center|right), its title `size` (128 unless set), and the logo on the first. Keep claims true: no other players, no prices.",
   "slides": [
     {"shot": "store_land_explore", "title": "Fairy tales need a hero", "tag": "Explore 30 lands from the old stories", "at": "bottom-center",
-     "logo": {"at": "top-left", "width": 600}},
+     "logo": {"at": "top-left", "width": 760}},
     {"shot": "store_land_battle", "title": "Battle side by side", "tag": "Spells, friends and companions", "at": "bottom-left"},
     {"shot": "store_land_seal", "title": "Make monsters\nyour friends", "tag": "Weaken them, then throw a Seal Stone", "at": "bottom-left"},
     {"shot": "store_land_boss", "title": "Set the stories right", "tag": "14 bosses out of the fairy tales", "at": "bottom-left"},

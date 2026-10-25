@@ -112,8 +112,8 @@ struct TitleView: View {
                 languageButton
             }
         }
-        // The app icon's sky, its rays fanning out from behind the logo's leaf wherever the logo is
-        // (the story pages have none: there, near the top).
+        // The sky, its soft light behind the logo wherever the logo is (the story pages have
+        // none: there, near the top).
         .storyleafSky(fallback: UnitPoint(x: 0.5, y: 0.18))
         .onAppear {
             MusicPlayer.shared.play("title")

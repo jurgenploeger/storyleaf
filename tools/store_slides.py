@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """App Store slides from the landscape store scenes (`store_land_*` in tools/screenshots.txt).
 
-Each slide is a screenshot with a caption in the logo's style (green letters in a dark outline, and a cream
-pill under them like the logo's tagline), exported at both iPhone sizes App Store Connect takes, as PNG with
+Each slide is a screenshot with a caption in the logo's style (tools/logo_art.py: cream letters in its dark
+outline, a hard shadow under them and the faces in hard bands; under it, a dark plate for the tag),
+exported at both iPhone sizes App Store Connect takes, as PNG with
 no alpha channel (it refuses screenshots that have one):
   2622×1206  iPhone with Dynamic Island (medium display), the required one
   2868×1320  iPhone with Dynamic Island (large display), so the 6.5" set isn't needed
@@ -29,27 +30,16 @@ LOGO = ROOT / "Storyleaf" / "Resources" / "Assets.xcassets" / "Logo.imageset" / 
 BASE = (2622, 1206)
 SIZES = [(2622, 1206), (2868, 1320)]
 
-# The logo's colours: its letters' gradient, their outline and the darker edge under it, and the tagline pill.
-LEAF_TOP = (221, 248, 190)
-LEAF_BOTTOM = (67, 163, 93)
-OUTLINE = (23, 76, 59)
-DEPTH = (9, 44, 34)
-CREAM = (254, 237, 207)
+# The logo's colours (tools/logo_art.py): its ink, for the outline and the hard shadow under it, and the
+# caption's face in two hard bands of cream, so the logo keeps its gold and green to itself.
+INK = (34, 22, 14)
+CREAM = (255, 248, 222)
+CREAM_LOW = (246, 226, 180)
+PLATE = (34, 22, 14)
 
 
 def font(size):
     return ImageFont.truetype(str(FONT), max(8, round(size)))
-
-
-def gradient(size, top, bottom, box):
-    """A vertical gradient from `top` to `bottom` across the rows of `box`, flat above and below it."""
-    width, height = size
-    column = Image.new("RGBA", (1, height))
-    y0, y1 = box[1], max(box[1] + 1, box[3])
-    for y in range(height):
-        t = min(1, max(0, (y - y0) / (y1 - y0)))
-        column.putpixel((0, y), tuple(round(a + (b - a) * t) for a, b in zip(top, bottom)) + (255,))
-    return column.resize((width, height))
 
 
 def solid(size, color, mask, alpha=1.0):
@@ -58,9 +48,27 @@ def solid(size, color, mask, alpha=1.0):
     return layer
 
 
+def bands(letters, top_share=0.55):
+    """The face in two hard bands on every line of `letters` (a mask): cream above, warmer below."""
+    rows = [y for y in range(letters.height) if letters.crop((0, y, letters.width, y + 1)).getbbox()]
+    face = Image.new("RGBA", letters.size, CREAM + (255,))
+    draw = ImageDraw.Draw(face)
+    runs, start = [], None
+    for index, y in enumerate(rows):
+        if start is None:
+            start = y
+        if index + 1 == len(rows) or rows[index + 1] != y + 1:
+            runs.append((start, y + 1))
+            start = None
+    for y0, y1 in runs:
+        draw.rectangle((0, y0 + round((y1 - y0) * top_share), letters.width, y1), fill=CREAM_LOW + (255,))
+    face.putalpha(letters)
+    return face
+
+
 def lettering(canvas, text, at, size, align):
-    """The logo's lettering: a soft shadow, a dark edge under the outline, the outline, then the letters'
-    green gradient. `at` is the top-left (or top-centre/right, by `align`) of the text block."""
+    """The logo's lettering: a hard shadow, the dark outline, then the letters in hard bands of cream.
+    `at` is the top-left (or top-centre/right, by `align`) of the text block."""
     face = font(size)
     stroke = max(2, round(size * 0.1))
     spacing = round(size * -0.08)
@@ -76,35 +84,26 @@ def lettering(canvas, text, at, size, align):
                                              spacing=spacing, align=align, stroke_width=stroke_width, stroke_fill=255)
         return layer
 
-    depth = round(size * 0.07)
-    shadow = mask(stroke, (0, depth + round(size * 0.05))).filter(ImageFilter.GaussianBlur(size * 0.12))
-    canvas.alpha_composite(solid(canvas.size, (0, 0, 0), shadow, 0.45))
-    canvas.alpha_composite(solid(canvas.size, DEPTH, mask(stroke, (0, depth))))
-    canvas.alpha_composite(solid(canvas.size, OUTLINE, mask(stroke)))
-    letters = mask(0)
-    inner = ImageDraw.Draw(Image.new("L", canvas.size)).multiline_textbbox(origin, text, font=face, spacing=spacing, align=align)
-    fill = gradient(canvas.size, LEAF_TOP, LEAF_BOTTOM, inner)
-    fill.putalpha(letters)
-    canvas.alpha_composite(fill)
+    canvas.alpha_composite(solid(canvas.size, INK, mask(stroke, (0, round(size * 0.07)))))
+    canvas.alpha_composite(solid(canvas.size, INK, mask(stroke)))
+    canvas.alpha_composite(bands(mask(0)))
     return (origin[0] + box[0], origin[1] + box[1], origin[0] + box[2], origin[1] + box[3])
 
 
 def pill(canvas, text, at, size, align):
-    """The logo's tagline pill: dark green words on cream, in a dark green rim. Returns its box."""
+    """The tag: cream words on a dark plate in the logo's ink, with no blur or rim. Returns its box."""
     face = font(size)
     probe = ImageDraw.Draw(Image.new("L", (1, 1)))
     box = probe.textbbox((0, 0), text, font=face)
-    pad_x, pad_y, rim = size * 0.62, size * 0.32, max(2, round(size * 0.12))
+    pad_x, pad_y = size * 0.62, size * 0.32
     width = box[2] - box[0] + 2 * pad_x
     height = box[3] - box[1] + 2 * pad_y
     left = {"left": at[0], "center": at[0] - width / 2, "right": at[0] - width}[align]
     rect = (left, at[1], left + width, at[1] + height)
-    shade = Image.new("L", canvas.size, 0)
-    ImageDraw.Draw(shade).rounded_rectangle((rect[0], rect[1] + size * 0.18, rect[2], rect[3] + size * 0.18), radius=height / 2, fill=255)
-    canvas.alpha_composite(solid(canvas.size, (0, 0, 0), shade.filter(ImageFilter.GaussianBlur(size * 0.2)), 0.35))
-    draw = ImageDraw.Draw(canvas)
-    draw.rounded_rectangle(rect, radius=height / 2, fill=CREAM + (255,), outline=OUTLINE + (255,), width=rim)
-    draw.text((left + pad_x - box[0], at[1] + pad_y - box[1]), text, font=face, fill=OUTLINE + (255,))
+    plate = Image.new("L", canvas.size, 0)
+    ImageDraw.Draw(plate).rounded_rectangle(rect, radius=size * 0.3, fill=255)
+    canvas.alpha_composite(solid(canvas.size, PLATE, plate, 0.86))
+    ImageDraw.Draw(canvas).text((left + pad_x - box[0], at[1] + pad_y - box[1]), text, font=face, fill=CREAM + (255,))
     return rect
 
 

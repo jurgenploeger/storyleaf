@@ -20,7 +20,7 @@ struct LoadingCurtain: View {
             }
             .padding(.horizontal, 40)
         }
-        // The rays fan out from behind the logo.
+        // The sky's soft light sits behind the logo.
         .storyleafSky(fallback: UnitPoint(x: 0.5, y: 0.44))
         .onAppear {
             withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { spin = true }
@@ -46,7 +46,7 @@ struct MapLoadingCard: View {
                                         style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
                 }
                 .frame(width: 70, height: 70)
-                // The rays fan out from behind the swirl (its centre stays put as it turns).
+                // The sky's soft light sits behind the swirl (its centre stays put as it turns).
                 .raysAnchor()
                 .rotationEffect(.degrees(spin ? 360 : 0))
                 Text(mapName)
