@@ -196,6 +196,9 @@ nonisolated struct SkillDef: Decodable, Identifiable, Sendable {
     let description: String?
     /// Battle effect: slash | whirlwind | fire | stone | leaves | water | heal | holy | wild | needles | bounce | bite
     let animation: String?
+    /// The top skills' grand stroke on top of their own look: "crescent", a crescent of light sweeping
+    /// through the foes as the blow lands, or "pillar", a beam falling from the top of the screen.
+    let grand: String?
     /// A GameIcon name for menus.
     let icon: String?
     /// Its pixel-art icon (art/sprites/skill_<id>.png, drawn by tools/skill_art.py).

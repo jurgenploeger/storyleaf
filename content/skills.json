@@ -35,7 +35,8 @@
       "power": 2.4,
       "target": "enemy",
       "description": "A crushing blow.",
-      "animation": "slash"
+      "animation": "slash",
+      "grand": "crescent"
     },
     {
       "id": "whirlwind",
@@ -47,7 +48,8 @@
       "power": 1.2,
       "target": "allEnemies",
       "description": "Spin and hit every foe.",
-      "animation": "whirlwind"
+      "animation": "whirlwind",
+      "grand": "crescent"
     },
     {
       "id": "fire_bolt",
@@ -75,7 +77,8 @@
       "power": 2.4,
       "target": "enemy",
       "description": "Earth magic. Dams water.",
-      "animation": "stone"
+      "animation": "stone",
+      "grand": "pillar"
     },
     {
       "id": "leaf_storm",
@@ -88,7 +91,8 @@
       "power": 1.5,
       "target": "allEnemies",
       "description": "Wood magic on every foe. Breaks earth.",
-      "animation": "leaves"
+      "animation": "leaves",
+      "grand": "pillar"
     },
     {
       "id": "blessing",
@@ -100,7 +104,8 @@
       "power": 1.0,
       "target": "allAllies",
       "description": "Healing water washes over the whole party.",
-      "animation": "rain"
+      "animation": "rain",
+      "grand": "pillar"
     },
     {
       "id": "recovery",
@@ -257,7 +262,8 @@
       "power": 1.3,
       "target": "allEnemies",
       "description": "Call the wild to strike every foe.",
-      "animation": "wild"
+      "animation": "wild",
+      "grand": "crescent"
     },
     {
       "id": "mend_beast",
@@ -269,7 +275,8 @@
       "power": 2.0,
       "target": "ally",
       "description": "A strong heal, perfect for companions.",
-      "animation": "paw"
+      "animation": "paw",
+      "grand": "pillar"
     },
     {
       "id": "nibble",

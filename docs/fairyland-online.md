@@ -722,7 +722,15 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   its own, every companion right after whoever it came with. Then the monsters, shuffled every round and
   weighted by SPD (each draws u^(1/SPD), the highest first; twice the SPD goes first two rounds in three).
   Our decision, 2026-10-10, at the playtester's request; before that the whole field was shuffled by SPD
-  (2026-10-09), and before that it was SPD + a random 0–3.
+  (2026-10-09), and before that it was SPD + a random 0–3. Since 0.8.7 each friend's moment is rolled as
+  the time to choose begins (`BattleEngine.rollLockIns`), so the party's faces bottom left tick off as
+  they lock in.
+- The battle's look, not FO's, borrowed from Pixel Squad (Zitga, 2024) on 2026-10-25 at the user's
+  request (0.8.7): a boss drawn at 3× (everyone else 2×), stepping out in front of its wave with its name
+  across the field and its HP in a long bar along the top; names hidden under the fighters till you hold
+  one (a crowd's piled up), a pick landing when you let go; your side's ground circles blue; skills as
+  tiles in battle; a rune circle under everyone an area skill will reach; and the top skills' grand stroke
+  (skills.json `grand`: a crescent of light, or a pillar of it from the top of the screen).
 - Nothing misses and nothing dodges.
 - Crits are a flat 8% for ×1.5, physical only.
 
