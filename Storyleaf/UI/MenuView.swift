@@ -27,6 +27,11 @@ struct MenuView: View {
     /// A tap on something in the Bag: its card, over the menu. Debug `inspect=<item>` opens one
     /// (unless it's for the gear grid, `change=`).
     @State private var inspecting: ItemDef? = DebugLaunch.changingSlot == nil ? DebugLaunch.inspectedItem.flatMap { Content.shared.item($0) } : nil
+    /// Grown out of the open menu to its full size; false while it grows, and as it shrinks back
+    /// into the menu to close (`MenuMorph`).
+    @State private var grown = false
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(session: GameSession, window: MenuTab, onClose: @escaping () -> Void, onQuitToTitle: (() -> Void)? = nil) {
         self.session = session
@@ -37,46 +42,11 @@ struct MenuView: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.5)
+            Color.black.opacity(grown ? 0.5 : 0)
                 .ignoresSafeArea()
-                .onTapGesture(perform: onClose)
+                .onTapGesture(perform: close)
 
-            VStack(spacing: 0) {
-                HStack(spacing: 4) {
-                    tabs
-                    Spacer(minLength: 4)
-                    OrangeCloseButton(action: onClose)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(HUDStyle.titleGloss.overlay(alignment: .bottom) { HUDStyle.titleEdge })
-
-                ScrollView {
-                    Group {
-                        switch window {
-                        case .character:
-                            CharacterTab(session: session, page: $characterPage) { slot in
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { changing = slot }
-                            }
-                        case .companions: CompanionsTab(session: session, page: $companionsPage)
-                        case .friends: FriendsTab(session: session)
-                        case .bag:
-                            BagTab(session: session, note: $bagNote, hatchRequest: $hatchRequest,
-                                   onInspect: { item in withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { inspecting = item } })
-                        case .quests: QuestsTab(session: session, page: $questsPage)
-                        case .settings: SettingsView(session: session, onQuitToTitle: onQuitToTitle)
-                        }
-                    }
-                    .padding(14)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                // Debug `bottom`: opens at the end of the page (screenshots of the skills).
-                .defaultScrollAnchor(DebugLaunch.opensMenuAtBottom ? .bottom : nil)
-            }
-            .id(localizer.language)
-            .frame(maxWidth: 760)
-            .gameWindow()
-            .padding(10)
+            morphing
 
             if let slot = changing {
                 // Fades in; only its window scales (popIn), so its backdrop always fills the screen.
@@ -114,6 +84,90 @@ struct MenuView: View {
 }
 
 extension MenuView {
+    /// The window's page: its tabs along the top, the round close button at their end, and what's
+    /// on the tab you're on.
+    private var page: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 4) {
+                tabs
+                Spacer(minLength: 4)
+                OrangeCloseButton(action: close)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(HUDStyle.titleGloss.overlay(alignment: .bottom) { HUDStyle.titleEdge })
+
+            ScrollView {
+                Group {
+                    switch window {
+                    case .character:
+                        CharacterTab(session: session, page: $characterPage) { slot in
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { changing = slot }
+                        }
+                    case .companions: CompanionsTab(session: session, page: $companionsPage)
+                    case .friends: FriendsTab(session: session)
+                    case .bag:
+                        BagTab(session: session, note: $bagNote, hatchRequest: $hatchRequest,
+                               onInspect: { item in withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { inspecting = item } })
+                    case .quests: QuestsTab(session: session, page: $questsPage)
+                    case .settings: SettingsView(session: session, onQuitToTitle: onQuitToTitle)
+                    }
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            // Debug `bottom`: opens at the end of the page (screenshots of the skills).
+            .defaultScrollAnchor(DebugLaunch.opensMenuAtBottom ? .bottom : nil)
+        }
+        .id(localizer.language)
+    }
+
+    /// The window growing out of the open menu, its bottom right corner the menu's, to as near the
+    /// screen's edges as the menu keeps (playtesting 2026-10-25): its glass and frame grow, the page
+    /// fades in inside them. Closing, it shrinks back into the menu and fades into it. With Reduce
+    /// Motion it's just there.
+    private var morphing: some View {
+        let onItsSide = verticalSizeClass == .compact
+        return GeometryReader { area in
+            let full = area.size
+            let size = grown ? full : CGSize(width: min(MenuMorph.from.width, full.width), height: min(MenuMorph.from.height, full.height))
+            let shape = RoundedRectangle(cornerRadius: grown ? HUDStyle.windowRadius : MenuMorph.radius)
+            ZStack(alignment: .bottomTrailing) {
+                shape.fill(HUDStyle.glass)
+                    .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)
+                    .frame(width: size.width, height: size.height)
+                page
+                    .frame(width: full.width, height: full.height)
+                    .mask(alignment: .bottomTrailing) { shape.frame(width: size.width, height: size.height) }
+                    .animation(grown ? .easeOut(duration: 0.22).delay(0.08) : .easeOut(duration: 0.1)) { $0.opacity(grown ? 1 : 0) }
+                HUDStyle.frame(shape)
+                    .frame(width: size.width, height: size.height)
+                    .allowsHitTesting(false)
+            }
+            .frame(width: full.width, height: full.height, alignment: .bottomTrailing)
+        }
+        // Into the menu as it closes: still there most of the way, gone as it reaches it.
+        .animation(grown ? .easeOut(duration: 0.12) : .easeIn(duration: 0.3)) { $0.opacity(grown ? 1 : 0) }
+        .padding(.horizontal, MenuMorph.side)
+        .padding(.top, MenuMorph.side)
+        .padding(.bottom, MenuMorph.bottom(onItsSide: onItsSide))
+        .ignoresSafeArea(.container, edges: MenuMorph.bottomEdge(onItsSide: onItsSide))
+        .onAppear {
+            if reduceMotion {
+                grown = true
+            } else {
+                withAnimation(MenuMorph.spring) { grown = true }
+            }
+        }
+    }
+
+    /// Shrinks back into the menu, then closes.
+    private func close() {
+        guard grown else { return }
+        guard !reduceMotion else { return onClose() }
+        withAnimation(MenuMorph.spring) { grown = false } completion: { onClose() }
+    }
+
     /// The window's tabs: its pages, or its own name alone when it has just the one.
     @ViewBuilder
     private var tabs: some View {

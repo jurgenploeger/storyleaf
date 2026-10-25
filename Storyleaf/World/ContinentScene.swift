@@ -194,8 +194,6 @@ final class ContinentScene: SKScene {
     private let rejoinRange: CGFloat = 64
     /// The land whose crowd leads you about, in the party you've joined (`GameSession.joinedParty`).
     private var hostLand: String?
-    /// Time played since the last look round, for how long others stay in a party with you.
-    private var partyClock: TimeInterval = 0
     /// Set while a window or a battle is up (`MapScene`).
     var isInputLocked = false
     /// Debug launches walking you about (`crossing`): no battles on the way.
@@ -445,7 +443,6 @@ final class ContinentScene: SKScene {
             player.zPosition = -player.position.y
         }
         if !isInputLocked {
-            partyClock += dt
             checkCell()
             checkTalkTarget()
         }
@@ -948,15 +945,14 @@ final class ContinentScene: SKScene {
 
     /// Keeps the party you've joined in step (`GameSession.joinedParty`): the crowd its leader's in
     /// leads you, and who walks with them is who's in it. You've left it once you're far from whoever
-    /// leads it, or they're nowhere about. Time passes for the friends at your side and for it: whoever
-    /// heads off says goodbye (`sayGoodbyes`).
+    /// leads it, or they're nowhere about. Whoever's time with you is up heads off and says goodbye
+    /// (`sayGoodbyes`).
     private func keepUpWithParties() {
         if !isInputLocked {
-            let gone = session.passPartyTime(partyClock)
+            let gone = session.passPartyTime()
             goodbyes += gone.left.map(\.id)
             if let leader = gone.headedOff { goodbyes.append(leader.id) }
         }
-        partyClock = 0
         if let leader = session.joinedParty?.leader {
             if hostLand == nil {
                 for (id, land) in lands where land.stage.crowd?.lead(you: leader.id) == true {
