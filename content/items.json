@@ -7657,6 +7657,10 @@
         "fighter"
       ],
       "level": 10,
+      "recipe": {
+        "bronze_ingot": 5,
+        "amber": 1
+      },
       "description": "A fighter's plate armour in warm copper, from helm to greaves.",
       "wear": "plate",
       "sheets": {
@@ -7858,6 +7862,11 @@
         "mage"
       ],
       "level": 10,
+      "recipe": {
+        "sheepskin": 4,
+        "amber": 1,
+        "bronze_ingot": 1
+      },
       "description": "A mage's robe in warm copper, stitched with glowing runes.",
       "wear": "robe",
       "pattern": "runes",
@@ -7948,6 +7957,11 @@
         "tamer"
       ],
       "level": 10,
+      "recipe": {
+        "cowhide": 3,
+        "sheepskin": 2,
+        "bronze_ingot": 1
+      },
       "description": "A tamer's hooded cloak of warm copper hide, lined with fur.",
       "wear": "cloak",
       "pattern": "fur",
@@ -8050,6 +8064,11 @@
         "fighter"
       ],
       "level": 25,
+      "recipe": {
+        "iron_ingot": 4,
+        "copper_ingot": 2,
+        "cats_eye": 1
+      },
       "description": "A fighter's plate armour in bright silver, from helm to greaves.",
       "wear": "plate",
       "sheets": {
@@ -8251,6 +8270,12 @@
         "mage"
       ],
       "level": 25,
+      "recipe": {
+        "sheepskin": 4,
+        "cats_eye": 1,
+        "amber": 1,
+        "copper_ingot": 1
+      },
       "description": "A mage's robe in bright silver, stitched with glowing runes.",
       "wear": "robe",
       "pattern": "runes",
@@ -8341,6 +8366,11 @@
         "tamer"
       ],
       "level": 25,
+      "recipe": {
+        "cowhide": 4,
+        "sheepskin": 2,
+        "iron_ingot": 1
+      },
       "description": "A tamer's hooded cloak of bright silver hide, lined with fur.",
       "wear": "cloak",
       "pattern": "fur",
@@ -8443,6 +8473,11 @@
         "fighter"
       ],
       "level": 45,
+      "recipe": {
+        "steel_ingot": 5,
+        "gold_ingot": 2,
+        "azurite": 1
+      },
       "description": "A fighter's plate armour in black onyx, from helm to greaves.",
       "wear": "plate",
       "sheets": {
@@ -8644,6 +8679,12 @@
         "mage"
       ],
       "level": 45,
+      "recipe": {
+        "cowhide": 4,
+        "azurite": 1,
+        "emerald": 1,
+        "gold_ingot": 1
+      },
       "description": "A mage's robe in black onyx, stitched with glowing runes.",
       "wear": "robe",
       "pattern": "runes",
@@ -8734,6 +8775,11 @@
         "tamer"
       ],
       "level": 45,
+      "recipe": {
+        "deer_hide": 5,
+        "cowhide": 2,
+        "steel_ingot": 1
+      },
       "description": "A tamer's hooded cloak of black onyx hide, lined with fur.",
       "wear": "cloak",
       "pattern": "fur",
@@ -8838,6 +8884,11 @@
         "fighter"
       ],
       "level": 60,
+      "recipe": {
+        "alloy_steel": 5,
+        "steel_ingot": 3,
+        "agate": 1
+      },
       "description": "A fighter's plate armour in deep sapphire blue, from helm to greaves.",
       "wear": "plate",
       "sheets": {
@@ -9039,6 +9090,12 @@
         "mage"
       ],
       "level": 60,
+      "recipe": {
+        "marten_fur": 4,
+        "agate": 1,
+        "topaz": 1,
+        "steel_ingot": 1
+      },
       "description": "A mage's robe in deep sapphire blue, stitched with glowing runes.",
       "wear": "robe",
       "pattern": "runes",
@@ -9129,6 +9186,11 @@
         "tamer"
       ],
       "level": 60,
+      "recipe": {
+        "crocodile_hide": 5,
+        "marten_fur": 2,
+        "alloy_steel": 1
+      },
       "description": "A tamer's hooded cloak of deep sapphire blue hide, lined with fur.",
       "wear": "cloak",
       "pattern": "fur",
@@ -9233,6 +9295,11 @@
         "fighter"
       ],
       "level": 80,
+      "recipe": {
+        "tungsten_alloy": 6,
+        "titanium_alloy": 3,
+        "chalcedony": 1
+      },
       "description": "A fighter's plate armour in jade green, from helm to greaves.",
       "wear": "plate",
       "sheets": {
@@ -9434,6 +9501,12 @@
         "mage"
       ],
       "level": 80,
+      "recipe": {
+        "crocodile_hide": 5,
+        "chalcedony": 1,
+        "diamond": 2,
+        "titanium_alloy": 1
+      },
       "description": "A mage's robe in jade green, stitched with glowing runes.",
       "wear": "robe",
       "pattern": "runes",
@@ -9524,6 +9597,11 @@
         "tamer"
       ],
       "level": 80,
+      "recipe": {
+        "dragon_scale": 5,
+        "crocodile_hide": 3,
+        "tungsten_alloy": 1
+      },
       "description": "A tamer's hooded cloak of jade green hide, lined with fur.",
       "wear": "cloak",
       "pattern": "fur",
@@ -9628,6 +9706,11 @@
         "fighter"
       ],
       "level": 100,
+      "recipe": {
+        "dragon_steel": 5,
+        "tungsten_alloy": 3,
+        "dragon_pearl": 1
+      },
       "description": "A fighter's plate armour in sea-blue aquamarine, from helm to greaves.",
       "wear": "plate",
       "sheets": {
@@ -9829,6 +9912,12 @@
         "mage"
       ],
       "level": 100,
+      "recipe": {
+        "crocodile_hide": 6,
+        "dragon_pearl": 1,
+        "chalcedony": 2,
+        "tungsten_alloy": 1
+      },
       "description": "A mage's robe in sea-blue aquamarine, stitched with glowing runes.",
       "wear": "robe",
       "pattern": "runes",
@@ -9919,6 +10008,11 @@
         "tamer"
       ],
       "level": 100,
+      "recipe": {
+        "dragon_scale": 6,
+        "crocodile_hide": 3,
+        "dragon_steel": 1
+      },
       "description": "A tamer's hooded cloak of sea-blue aquamarine hide, lined with fur.",
       "wear": "cloak",
       "pattern": "fur",
@@ -10023,6 +10117,12 @@
         "fighter"
       ],
       "level": 125,
+      "recipe": {
+        "dragon_steel": 6,
+        "tungsten_alloy": 4,
+        "dragon_pearl": 1,
+        "chalcedony": 1
+      },
       "description": "A fighter's plate armour in ruby red, from helm to greaves.",
       "wear": "plate",
       "sheets": {
@@ -10224,6 +10324,12 @@
         "mage"
       ],
       "level": 125,
+      "recipe": {
+        "crocodile_hide": 7,
+        "dragon_pearl": 2,
+        "chalcedony": 2,
+        "tungsten_alloy": 1
+      },
       "description": "A mage's robe in ruby red, stitched with glowing runes.",
       "wear": "robe",
       "pattern": "runes",
@@ -10314,6 +10420,11 @@
         "tamer"
       ],
       "level": 125,
+      "recipe": {
+        "dragon_scale": 7,
+        "crocodile_hide": 4,
+        "dragon_steel": 2
+      },
       "description": "A tamer's hooded cloak of ruby red hide, lined with fur.",
       "wear": "cloak",
       "pattern": "fur",
@@ -10418,6 +10529,11 @@
         "fighter"
       ],
       "level": 150,
+      "recipe": {
+        "dragon_steel": 7,
+        "tungsten_alloy": 5,
+        "dragon_pearl": 2
+      },
       "description": "A fighter's plate armour in amethyst violet, from helm to greaves.",
       "wear": "plate",
       "sheets": {
@@ -10619,6 +10735,12 @@
         "mage"
       ],
       "level": 150,
+      "recipe": {
+        "crocodile_hide": 8,
+        "dragon_pearl": 2,
+        "chalcedony": 3,
+        "tungsten_alloy": 2
+      },
       "description": "A mage's robe in amethyst violet, stitched with glowing runes.",
       "wear": "robe",
       "pattern": "runes",
@@ -10709,6 +10831,12 @@
         "tamer"
       ],
       "level": 150,
+      "recipe": {
+        "dragon_scale": 8,
+        "crocodile_hide": 4,
+        "dragon_steel": 2,
+        "dragon_pearl": 1
+      },
       "description": "A tamer's hooded cloak of amethyst violet hide, lined with fur.",
       "wear": "cloak",
       "pattern": "fur",
@@ -10813,6 +10941,11 @@
         "fighter"
       ],
       "level": 175,
+      "recipe": {
+        "dragon_steel": 8,
+        "tungsten_alloy": 6,
+        "dragon_pearl": 3
+      },
       "description": "A fighter's plate armour in golden topaz, from helm to greaves.",
       "wear": "plate",
       "sheets": {
@@ -11014,6 +11147,12 @@
         "mage"
       ],
       "level": 175,
+      "recipe": {
+        "crocodile_hide": 9,
+        "dragon_pearl": 3,
+        "chalcedony": 3,
+        "tungsten_alloy": 2
+      },
       "description": "A mage's robe in golden topaz, stitched with glowing runes.",
       "wear": "robe",
       "pattern": "runes",
@@ -11104,6 +11243,12 @@
         "tamer"
       ],
       "level": 175,
+      "recipe": {
+        "dragon_scale": 9,
+        "crocodile_hide": 5,
+        "dragon_steel": 3,
+        "dragon_pearl": 1
+      },
       "description": "A tamer's hooded cloak of golden topaz hide, lined with fur.",
       "wear": "cloak",
       "pattern": "fur",

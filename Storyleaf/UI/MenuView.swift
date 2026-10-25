@@ -1235,7 +1235,7 @@ private struct BagTab: View {
             if shows(.materials), !(narrowed && materials.isEmpty) {
                 SectionTitle(text: L("Materials"))
                 if materials.isEmpty {
-                    Text(L("Monsters drop wood, metal, gems and hides. A town smith forges them into weapons."))
+                    Text(L("Monsters drop wood, metal, gems and hides. A town smith forges them into weapons and armor, to wear or to sell."))
                         .font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
                 }
                 grid(materials)
