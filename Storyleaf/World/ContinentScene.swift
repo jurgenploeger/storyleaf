@@ -1612,6 +1612,10 @@ final class ContinentScene: SKScene {
         let standing = Self.cell(at: player.position)
         if store.land(at: standing)?.id == id, !store.isWalkable(standing), let open = store.nearestWalkable(to: standing, within: 48) {
             move(to: Self.center(of: open))
+        } else if store.land(at: standing)?.id == id, let pocket = store.pocket(around: standing),
+                  let open = store.nearestOpen(to: standing, outside: pocket) {
+            // Shut in where you stand (scenery laid out anew round an old save): out to open ground.
+            move(to: Self.center(of: open))
         } else if let end = player.path.last, player.path.contains(where: { !store.isWalkable(Self.cell(at: $0)) }) {
             walk(to: end, marked: false)
         }

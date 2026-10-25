@@ -207,6 +207,39 @@ nonisolated final class World: @unchecked Sendable {
         return nil
     }
 
+    /// The ground you can walk to from `cell` (stepping along, not across corners), if it's a pocket of
+    /// fewer than `limit` cells shut in by what's round it; nil where the ground runs on further (or
+    /// `cell` isn't walkable). Scenery laid out anew can close a ring round where an old save stood
+    /// (playtesting 2026-10-20: trapped among big trees in the Snow White Forest after an update).
+    func pocket(around cell: GridPoint, limit: Int = 400) -> Set<GridPoint>? {
+        guard isWalkable(cell) else { return nil }
+        var reached: Set<GridPoint> = [cell]
+        var queue = [cell]
+        while let at = queue.popLast() {
+            for (dc, dr) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                let next = GridPoint(col: at.col + dc, row: at.row + dr)
+                guard isWalkable(next), reached.insert(next).inserted else { continue }
+                if reached.count >= limit { return nil }
+                queue.append(next)
+            }
+        }
+        return reached
+    }
+
+    /// The nearest walkable cell to `cell` that isn't shut in (`pocket`), outside `pocket` itself,
+    /// within `reach` cells, nearest ring first.
+    func nearestOpen(to cell: GridPoint, outside pocket: Set<GridPoint>, within reach: Int = 48) -> GridPoint? {
+        for radius in 1...max(1, reach) {
+            for dr in -radius...radius {
+                for dc in -radius...radius where max(abs(dr), abs(dc)) == radius {
+                    let candidate = GridPoint(col: cell.col + dc, row: cell.row + dr)
+                    if !pocket.contains(candidate), isWalkable(candidate), self.pocket(around: candidate) == nil { return candidate }
+                }
+            }
+        }
+        return nil
+    }
+
     /// The shortest way from one world cell to another over cells you can walk on, within `reach`
     /// cells of the start either way: the cells after `start`, `goal` last; empty if there's none
     /// in reach (or `start` is `goal`). A* over the store in a window round you, rather than a graph
