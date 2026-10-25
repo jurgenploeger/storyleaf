@@ -38,6 +38,29 @@ extension GameSession {
         data.lostPiles = Array((lostPiles + [pile]).suffix(Self.maxPiles))
     }
 
+    /// Drops `amount` of a kind you carry at your feet (playtesting 2026-10-25: "I should be able to drop
+    /// items"), RuneScape's way: onto the pile you're standing by, else a new one, lying there as what
+    /// you lose when you fall does, yours to pick back up for a while, then anyone's, then gone. Not
+    /// what a quest you're on needs (`questKeepsakes`). False when there's none to drop.
+    @discardableResult
+    func drop(_ id: String, _ amount: Int, now: Date = Date()) -> Bool {
+        let held = count(of: id)
+        let amount = min(amount, held)
+        guard amount > 0, !questKeepsakes.contains(id) else { return false }
+        data.inventory[id] = held > amount ? held - amount : nil
+        if held == amount, data.forTrade != nil { data.forTrade = forTrade.map(\.id) }
+        if let near = nearbyPile, var piles = data.lostPiles, let index = piles.firstIndex(where: { $0.id == near }) {
+            piles[index].items[id, default: 0] += amount
+            data.lostPiles = piles
+        } else {
+            dropPile(items: [id: amount], gold: 0, now: now)
+        }
+        let name = content.item(id)?.name ?? id
+        post(L("You dropped {item}.", ["item": amount > 1 ? "\(name) ×\(amount)" : name]))
+        SoundEffects.shared.play(.equip)
+        return true
+    }
+
     /// Takes away the piles whose time is up, and says so: picked up by an adventurer, or gone.
     func watchPiles(now: Date = Date()) {
         let gone = lostPiles.filter { $0.takenAt <= now }

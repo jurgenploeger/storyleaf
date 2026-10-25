@@ -280,6 +280,8 @@ quest_little_crab | newgame,class=fighter,level=125,map=hachoo_island,npc=little
 # Quest treasures: gear only a quest gives. Its card (gold frame, where it comes from), the treasures
 # a save that finished those quests gets by post, in the Bag and on the map, and one on offer.
 treasure_card    | newgame,class=fighter,level=100,menu=bag,bag=oxhide_mail,inspect=oxhide_mail | 8
+# A potion's card in the Bag: Drop and Drop all under it.
+drop_card        | newgame,menu=bag,bag=potion+potion,inspect=potion | 8
 treasure_bag     | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king+rat_king+puss_in_boots+crystal_hearts,menu=bag | 8
 treasure_post    | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king | 8
 treasure_offer   | newgame,class=fighter,level=72,map=sleepy_town,npc=thomas | 8

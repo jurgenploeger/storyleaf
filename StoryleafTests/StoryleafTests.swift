@@ -1877,6 +1877,24 @@ struct RulesTests {
         #expect(session.count(of: "potion") == 1 && session.lostPiles.first?.items["potion"] == 1)
     }
 
+    /// Dropping lays things at your feet, onto the pile you're standing by, to pick back up; never what a
+    /// quest you're on needs (playtesting 2026-10-25: "I should be able to drop items").
+    @Test func droppingLeavesAPileAtYourFeet() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        #expect(session.drop("potion", 1) && session.count(of: "potion") == 2)
+        let pile = try #require(session.lostPiles.first)
+        #expect(pile.items["potion"] == 1 && pile.mapID == session.data.mapID)
+        // Standing by it, more go on the same pile; no more than you carry.
+        session.nearbyPile = pile.id
+        #expect(session.drop("potion", 5) && session.count(of: "potion") == 0)
+        #expect(session.lostPiles.count == 1 && session.lostPiles.first?.items["potion"] == 3)
+        #expect(!session.drop("potion", 1))
+        // What a quest you're on needs stays in the bag.
+        session.acceptQuest("hope_of_meadowbrook")
+        #expect(session.count(of: "pet_egg") == 1 && !session.drop("pet_egg", 1) && session.count(of: "pet_egg") == 1)
+        #expect(session.pickUp(pile.id) && session.count(of: "potion") == 3)
+    }
+
     /// A game begun before the bank starts with its bag and coins in it, once; what a quest needs stays.
     @Test func olderGamesStartWithTheirBagInTheBank() throws {
         let fresh = GameSession.newGame(name: "Test", raceID: "human")
