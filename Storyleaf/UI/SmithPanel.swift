@@ -1,6 +1,8 @@
 import SwiftUI
 
-/// A town blacksmith: pick a weapon line, see what each recipe needs, and forge it.
+/// A town blacksmith: pick a weapon line or armour, see what each recipe needs, and forge it. Armour
+/// (playtesting 2026-10-25: "I should be able to create armor with metals I have found") is the
+/// metal and gem sets, plate, robe and hide: forged from what monsters drop, worn, sold or traded.
 struct SmithPanel: View {
     let session: GameSession
     @Binding var reply: String?
@@ -9,7 +11,8 @@ struct SmithPanel: View {
     @State private var line: String?
 
     private struct WeaponLine: Identifiable {
-        /// Weapons are drawn in the hero's hand by their icon, so it also names the line.
+        /// Weapons are drawn in the hero's hand by their icon, so it also names the line; armour's is
+        /// `armor`, every kind of it.
         let icon: String
         let name: String
         var id: String { icon }
@@ -18,7 +21,12 @@ struct SmithPanel: View {
     private static var lines: [WeaponLine] { [
         WeaponLine(icon: "sword", name: L("Swords")), WeaponLine(icon: "axe", name: L("Axes")),
         WeaponLine(icon: "wand", name: L("Staffs")), WeaponLine(icon: "paw", name: L("Whips")),
+        WeaponLine(icon: "armor", name: L("Armor")),
     ] }
+
+    private static func belongs(_ item: ItemDef, to line: String) -> Bool {
+        line == "armor" ? item.type == .armor : item.type == .weapon && item.icon == line
+    }
 
     /// Starts on the line the hero's class fights with.
     private var defaultLine: String {
@@ -33,7 +41,7 @@ struct SmithPanel: View {
         let chosen = line ?? defaultLine
         let level = session.data.hero.level
         // Around the hero's level: a little behind (to catch up) and a little ahead (to aim for).
-        let shown = session.recipes.filter { $0.icon == chosen && ($0.level ?? 1) >= level - 15 && ($0.level ?? 1) <= level + 10 }
+        let shown = session.recipes.filter { Self.belongs($0, to: chosen) && ($0.level ?? 1) >= level - 15 && ($0.level ?? 1) <= level + 10 }
         VStack(alignment: .leading, spacing: 8) {
             // The weapon lines in a row when they fit, two by two when they don't (a narrow panel, longer
             // names), each name on one line.
@@ -77,7 +85,7 @@ private struct SmithRecipeRow: View {
         let ready = session.canCraft(item)
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 10) {
-                // Tap the weapon for everything about it (who can use it, how it compares with yours).
+                // Tap it for everything about it (who can use it, how it compares with yours).
                 Button { info = item } label: {
                     HStack(alignment: .top, spacing: 10) {
                         ItemIcon(item: item, size: 36)

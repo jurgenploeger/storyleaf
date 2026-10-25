@@ -500,6 +500,21 @@ final class GameCoordinator {
         session.nearbyAdventurer = nil
     }
 
+    /// Answers an adventurer's offer for what you've put up for trade (`GameSession.pendingBid`):
+    /// sold, or not; either way they say so.
+    func answerBid(_ accept: Bool) {
+        guard let bid = session.pendingBid else { return }
+        let line: String
+        if accept {
+            line = session.acceptBid() ? L("Just what I needed, thanks!") : L("Looks like you don't have that any more.")
+        } else {
+            session.declineBid()
+            line = [L("Fair enough. Maybe next time!"), L("No worries, I'll look elsewhere.")].randomElement() ?? L("Fair enough. Maybe next time!")
+        }
+        mapScene.adventurerSays(line, bid.buyer.id)
+        session.save()
+    }
+
     /// Picks up what you lost when you fell, lying where you stand (`GameSession.pickUp`).
     func pickUpPile() {
         guard let id = session.nearbyPile else { return }

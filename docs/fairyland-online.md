@@ -896,7 +896,11 @@ Full Heal.
 - Mining needs a Pickaxe and yields coal, copper, bronze, crystal and amethyst ore, among others. Ore feeds
   Metal Working and Gem Cutting, which make equipment.
 
-**Us:** monsters drop wood, metal, hide and gems, and three town smiths forge weapons from them. There's no
+**Us:** monsters drop wood, metal, hide and gems, and three town smiths forge weapons from them, and since
+0.8.2 armour too (playtesting 2026-10-25: "I should be able to create armor with metals I have found [...]
+so I can trade it and earn coins"): the metal and gem sets, copper to topaz, as plate, robe and hide, each
+from the metals, gems and hides that drop round its level (the smith shows those from 15 levels below you to
+10 above). Sold, a piece fetches half its price, far more than its materials would. There's no
 gathering and no crafting level, and forging always works. Monsters also drop equipment from up to their own
 level (6% a monster at your level, up to 16% above it, 2% well below; rares 35%, bosses always), mostly for
 your class (`GameSession.equipmentDrop`), never a boss's own rare drop or a quest treasure.
@@ -1083,6 +1087,9 @@ the Wishing Seal, which stays the Monster Book's last reward.
   the clock on. Whether FO's maps visibly darkened at night or had weather isn't in any source reachable from a
   cloud session (a 2026-10-04 web search found nothing); asked for in playtesting (2026-10-04). Check the ToM
   wiki.
+  - Where the date shows: FO kept its calendar line on screen; ours sat on a plate under the faces top-left
+    until 0.8.4, and is now on the map's "you are here" row with your coordinates (`MapOverlay`;
+    playtesting 2026-10-25: "Remove the day/time bar in the top left and incorporate that in the map modal").
   - Us (since 0.3.44): `Sky` multiplies each map by the hour's light (warm at dawn and dusk, deep blue from
     about 19:30 to 04:30) and fades the sun's flare and sunbeams with it. On the continent the land's air
     (butterflies, clouds' shadows, drifting particles, the sparkles over fairy rings and fountains) hung
@@ -1131,6 +1138,13 @@ the Wishing Seal, which stays the Monster Book's last reward.
     rare sightings that really raise a rare monster's odds on its map for 20 minutes.
   - Goldburg's square has market traders under signs, selling their real deals of the day
     (`crowd.traders`). `botDensity` in content/crowd.json thins out every map's bots.
+  - Your own wares (since 0.8.3, asked for in playtesting 2026-10-25: "I should be able to set items up for
+    trade, and then when a bot goes up to me, they can trade with me and then I can decide if I accept the
+    offer or decline"), something like FO's player stalls: put up to 8 kinds of thing up for trade from the
+    Bag (a coin on its slot), and every half minute to minute and a half an adventurer on their own nearby
+    walks over (`Crowd.seekBuyer`) and offers for one of them, from 0.8 to 2 times what a shop pays
+    (`GameSession+TradeList`): accept or decline. And trading with an adventurer, they want one thing of
+    each of up to three kinds you carry (gear, potions, materials...), not materials first as before.
   - Us (since 0.4.12, asked for in playtesting 2026-10-12: "characters walking/standing around that give the
     place more character and a story"): every map has locals (maps.json `locals`, `MapDef.Local`), two or
     three out in the fields and one in each cave and town, and two more in each village (below), 109 in all.

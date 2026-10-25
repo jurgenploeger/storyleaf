@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// On-map HUD in Fairyland Online's style: round faces with HP/MP for you (and your EXP), your
-/// companion and your party, and the calendar plate top-left, a framed minimap top-right with what
+/// companion and your party top-left (the date is on the map, `MapOverlay`), a framed minimap top-right with what
 /// just happened toasting under it, joystick bottom-left, and Chat and the menu bottom-right (one
 /// button that opens into the menu's pages). While you're talking to someone (or any window is open
 /// over the map) the controls step aside, so nothing peeks out from behind the conversation.
@@ -36,8 +36,6 @@ struct WorldHUD: View {
                 if let joined = session.joinedParty, let leader = joined.leader {
                     JoinedPartyPlate(leader: leader, count: joined.members.count) { coordinator.leaveJoinedParty() }
                 }
-                CalendarPlate(session: session)
-                    .allowsHitTesting(false)
                 // What just happened, top centre under the panels on both sides (walking into a land
                 // too: its toast, no banner of its own; playtesting 2026-10-24).
                 // The autosave's "Saved" under them, in the same style.
@@ -425,36 +423,6 @@ private struct JoinedPartyPlate: View {
     }
 }
 
-/// The tan calendar plate with a sun or moon and the date.
-private struct CalendarPlate: View {
-    let session: GameSession
-    /// With night and day switched off in Settings, the sun shines on the plate around the clock.
-    @AppStorage(GameSettings.dayAndNightKey) private var dayAndNight = true
-
-    var body: some View {
-        TimelineView(.periodic(from: .now, by: 5)) { context in
-            let moment = GameClock.moment(at: context.date, since: session.data.startedAt)
-            let daytime = moment.isDaytime || !dayAndNight
-            VStack(spacing: 3) {
-                HStack(spacing: 5) {
-                    IconImage(daytime ? .sun : .moon, size: 14)
-                        .foregroundStyle(daytime ? HUDStyle.orange : Color(red: 0.35, green: 0.35, blue: 0.75))
-                    Text(moment.text)
-                        .font(HUDStyle.mono(10))
-                        .foregroundStyle(HUDStyle.plateDark)
-                    Spacer(minLength: 0)
-                    // No gold here any more (2026-10-25): the coins you carry are in the bag, in a
-                    // slot of their own, and the rest in the bank.
-                }
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
-                .background(HUDStyle.plateBackground)
-            }
-            .frame(width: TopLeft.width)
-        }
-    }
-}
-
 /// What just happened (EXP and gold won, an item found, a quest's step, the land you walk into, the
 /// game's announcements): toasts in the battle's style (`ToastLabel`), top centre, each for a few
 /// seconds, three at most, newest last; then they live in the chat (`GameSession.post`; playtesting
@@ -551,23 +519,26 @@ private struct GameMenu: View {
         .frame(width: Self.button, height: Self.button, alignment: .bottomTrailing)
     }
 
-    /// The open menu: its windows, one after another, and the close button over the top one's end.
+    /// The open menu: its windows, one after another, and the close button over its top right
+    /// corner, as on every window (playtesting 2026-10-25).
     private var panel: some View {
-        VStack(alignment: .trailing, spacing: 0) {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(items) { row($0) }
+        }
+        .padding(.bottom, 6)
+        .padding(.horizontal, 4)
+        // Clear of the close button.
+        .padding(.top, 16)
+        .frame(width: MenuMorph.width)
+        .background(Self.surface(RoundedRectangle(cornerRadius: MenuMorph.radius)))
+        .overlay(alignment: .topTrailing) {
             OrangeCloseButton {
                 SoundEffects.shared.play(.tap, volume: 0.7)
                 open = false
             }
             .accessibilityLabel(L("Close menu"))
-            VStack(alignment: .leading, spacing: 2) {
-                ForEach(items) { row($0) }
-            }
-            .padding(.bottom, 6)
+            .offset(x: OrangeCloseButton.overhang, y: -OrangeCloseButton.overhang)
         }
-        .padding(.horizontal, 4)
-        .padding(.top, 2)
-        .frame(width: MenuMorph.width)
-        .background(Self.surface(RoundedRectangle(cornerRadius: MenuMorph.radius)))
         // Its size, for the window to grow out of.
         .onGeometryChange(for: CGSize.self) { $0.size } action: { MenuMorph.from = $0 }
     }
@@ -705,7 +676,7 @@ private struct MinimapWindow: View {
         .clipShape(Circle())
         .overlay(Circle().strokeBorder(HUDStyle.bevel, lineWidth: 3))
         .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)
-        // The compass on the rim at the top right, its needle turned to north on the turned map.
+        // The compass on the rim at the top right, its needle pointing north on the turned map.
         .overlay(alignment: .topTrailing) {
             MinimapCompass(north: northAngle)
                 .offset(x: 4, y: -4)
@@ -747,9 +718,11 @@ private struct MinimapWindow: View {
     }
 }
 
-/// The minimap's compass: a small round in the HUD buttons' blue, a needle through it with its north
-/// end red and a gold N at its tip, turned `north` degrees clockwise from straight up to point where
-/// north lies on the map.
+/// The minimap's compass: a pin in the close buttons' orange (`OrangeCloseButton`; playtesting
+/// 2026-10-25), a needle through it with its north end white and an N at its tip, turned `north`
+/// degrees clockwise from straight up to point where north lies on the map. The world doesn't turn
+/// (its art is drawn from one side only), so neither does the needle: north is always up and to the
+/// left, as the map is.
 private struct MinimapCompass: View {
     let north: Double
     private let size: CGFloat = 32
@@ -757,19 +730,20 @@ private struct MinimapCompass: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(LinearGradient(colors: HUDStyle.tile, startPoint: .top, endPoint: .bottom))
-                .overlay(Circle().strokeBorder(HUDStyle.bevel, lineWidth: 2))
+                .fill(RadialGradient(colors: [HUDStyle.closeLight, HUDStyle.orange, HUDStyle.closeDeep], center: UnitPoint(x: 0.35, y: 0.3),
+                                     startRadius: 1, endRadius: size / 2))
+                .overlay(Circle().strokeBorder(.white.opacity(0.8), lineWidth: 1.5))
             ZStack {
-                // The needle: red to the north, white to the south.
+                // The needle: white to the north, the button's deep orange to the south.
                 VStack(spacing: 0) {
-                    Triangle().fill(Color(red: 0.92, green: 0.28, blue: 0.26)).frame(width: 6, height: 7)
-                    Triangle().fill(.white).frame(width: 6, height: 7).rotationEffect(.degrees(180))
+                    Triangle().fill(.white).frame(width: 6, height: 7)
+                    Triangle().fill(HUDStyle.closeDeep).frame(width: 6, height: 7).rotationEffect(.degrees(180))
                 }
-                .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
+                .shadow(color: HUDStyle.closeDeep.opacity(0.6), radius: 0, x: 1, y: 1)
                 Text(L("N"))
                     .font(HUDStyle.font(8))
-                    .foregroundStyle(HUDStyle.gold)
-                    .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
+                    .foregroundStyle(.white)
+                    .shadow(color: HUDStyle.closeDeep, radius: 0, x: 1, y: 1)
                     .rotationEffect(.degrees(-north))
                     .offset(y: -size * 0.37)
             }

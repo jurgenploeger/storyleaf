@@ -108,6 +108,14 @@ final class Crowd {
     var onChallenge: ((Adventurer) -> Void)?
     /// Whether a troublemaker dares take you on (`GameSession.dares`): the weaker ones leave you be.
     var dares: ((Adventurer) -> Bool)?
+    /// Whether you've something up for trade and nothing's in the way (`GameSession.awaitsBuyer`):
+    /// now and then an adventurer about walks over to buy (`seekBuyer`).
+    var hasWares: (() -> Bool)?
+    /// An adventurer has walked up to you to make an offer for what you've put up for trade.
+    var onOffer: ((Adventurer) -> Void)?
+    /// Whoever's on their way over to buy, and how long till the next sets off.
+    private var buyer: Member?
+    private var nextBuyer: TimeInterval = .random(in: 12...25)
 
     private let map: WorldMap
     private var members: [Member] = []
@@ -402,6 +410,7 @@ final class Crowd {
 
     func update(dt: TimeInterval, player: CGPoint) {
         self.player = player
+        seekBuyer(dt: dt)
         let standable: (CGPoint) -> Bool = { [map] in map.isWalkable(map.rawCell(at: $0)) }
         // A group is as near you as the nearest of them: their names show together, and they all
         // stop and turn to you as you walk up to any of them.
@@ -489,6 +498,55 @@ final class Crowd {
                 pet.zPosition = -pet.position.y
             }
         }
+    }
+
+    /// While you've something up for trade (`hasWares`), now and then an adventurer on their own, not
+    /// far off, walks over, and once beside you makes an offer (`onOffer`). One at a time, a half
+    /// minute to a minute and a half apart.
+    private func seekBuyer(dt: TimeInterval) {
+        guard hasWares?() == true else {
+            buyer = nil
+            return
+        }
+        if let member = buyer {
+            let walker = member.walker
+            guard members.contains(where: { $0 === member }) else {
+                buyer = nil
+                return
+            }
+            if walker.position.distance(to: player) < 100 {
+                // Beside you (adventurers stop on their own once they're this near): the offer.
+                walker.path = []
+                walker.setWalking(false)
+                walker.face(Direction(player - walker.position, current: walker.facing))
+                member.wait = 6
+                buyer = nil
+                nextBuyer = .random(in: 30...90, using: &rng)
+                if let profile = member.profile { onOffer?(profile) }
+            } else if (walker.path.last?.distance(to: player) ?? .infinity) > 80 {
+                // After you as you move.
+                walker.path = map.path(from: walker.position, to: player)
+                if walker.path.isEmpty { buyer = nil }
+            }
+            return
+        }
+        nextBuyer -= dt
+        guard nextBuyer <= 0 else { return }
+        nextBuyer = .random(in: 8...16, using: &rng)
+        let near = members.filter { member in
+            guard let profile = member.profile, !profile.hostile, !member.trades, member.ahead == nil, !member.leads,
+                  member !== host else { return false }
+            let distance = member.walker.position.distance(to: player)
+            return distance > 120 && distance < 480
+        }
+        guard let member = near.randomElement(using: &rng) else { return }
+        member.walker.path = map.path(from: member.walker.position, to: player)
+        guard !member.walker.path.isEmpty else { return }
+        // Walking over, not off somewhere else when they next stop to think.
+        member.wait = 30
+        buyer = member
+        speak([L("Ooh, what are you selling?"), L("Hold on, I'll take a look!"), L("Anything good for sale?")].randomElement() ?? L("Anything good for sale?"),
+              by: member, bubble: true)
     }
 
     /// Whoever leads the group `member` walks in (them, if they lead or walk alone).

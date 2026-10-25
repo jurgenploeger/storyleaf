@@ -197,6 +197,8 @@ nonisolated struct SaveData: Codable, Sendable {
     /// What you lost in fights you lost, lying where you fell till you pick it up or someone else
     /// does (`GameSession.lostPiles`).
     var lostPiles: [LostPile]?
+    /// What you've put up for trade, by id (`GameSession.forTrade`).
+    var forTrade: [String]?
 }
 
 /// A day's bounties (the Quests tab): a few small jobs, new each calendar day.
