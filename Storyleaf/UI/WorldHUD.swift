@@ -705,7 +705,7 @@ private struct MinimapWindow: View {
         .clipShape(Circle())
         .overlay(Circle().strokeBorder(HUDStyle.bevel, lineWidth: 3))
         .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)
-        // The compass on the rim at the top right, its needle turned to north on the turned map.
+        // The compass on the rim at the top right, its needle pointing north on the turned map.
         .overlay(alignment: .topTrailing) {
             MinimapCompass(north: northAngle)
                 .offset(x: 4, y: -4)
@@ -747,9 +747,11 @@ private struct MinimapWindow: View {
     }
 }
 
-/// The minimap's compass: a small round in the HUD buttons' blue, a needle through it with its north
-/// end red and a gold N at its tip, turned `north` degrees clockwise from straight up to point where
-/// north lies on the map.
+/// The minimap's compass: a pin in the close buttons' orange (`OrangeCloseButton`; playtesting
+/// 2026-10-25), a needle through it with its north end white and an N at its tip, turned `north`
+/// degrees clockwise from straight up to point where north lies on the map. The world doesn't turn
+/// (its art is drawn from one side only), so neither does the needle: north is always up and to the
+/// left, as the map is.
 private struct MinimapCompass: View {
     let north: Double
     private let size: CGFloat = 32
@@ -757,19 +759,20 @@ private struct MinimapCompass: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(LinearGradient(colors: HUDStyle.tile, startPoint: .top, endPoint: .bottom))
-                .overlay(Circle().strokeBorder(HUDStyle.bevel, lineWidth: 2))
+                .fill(RadialGradient(colors: [HUDStyle.closeLight, HUDStyle.orange, HUDStyle.closeDeep], center: UnitPoint(x: 0.35, y: 0.3),
+                                     startRadius: 1, endRadius: size / 2))
+                .overlay(Circle().strokeBorder(.white.opacity(0.8), lineWidth: 1.5))
             ZStack {
-                // The needle: red to the north, white to the south.
+                // The needle: white to the north, the button's deep orange to the south.
                 VStack(spacing: 0) {
-                    Triangle().fill(Color(red: 0.92, green: 0.28, blue: 0.26)).frame(width: 6, height: 7)
-                    Triangle().fill(.white).frame(width: 6, height: 7).rotationEffect(.degrees(180))
+                    Triangle().fill(.white).frame(width: 6, height: 7)
+                    Triangle().fill(HUDStyle.closeDeep).frame(width: 6, height: 7).rotationEffect(.degrees(180))
                 }
-                .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
+                .shadow(color: HUDStyle.closeDeep.opacity(0.6), radius: 0, x: 1, y: 1)
                 Text(L("N"))
                     .font(HUDStyle.font(8))
-                    .foregroundStyle(HUDStyle.gold)
-                    .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
+                    .foregroundStyle(.white)
+                    .shadow(color: HUDStyle.closeDeep, radius: 0, x: 1, y: 1)
                     .rotationEffect(.degrees(-north))
                     .offset(y: -size * 0.37)
             }
