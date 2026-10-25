@@ -15,6 +15,8 @@ struct ItemInfoCard: View {
     var action: Action? = nil
     /// From the Bag, when there's nothing to do with it there: why (only in battle, no companions).
     var note: String? = nil
+    /// From the Bag: put it up for trade, or take it off (`GameSession+TradeList`).
+    var trading: Action? = nil
 
     struct Action {
         let title: String
@@ -23,7 +25,7 @@ struct ItemInfoCard: View {
         let run: () -> Void
     }
 
-    private var choosing: Bool { onEquip != nil || onUnequip != nil || action != nil || note != nil }
+    private var choosing: Bool { onEquip != nil || onUnequip != nil || action != nil || note != nil || trading != nil }
 
     private var isGear: Bool { ItemType.equipmentSlots.contains(item.type) }
 
@@ -133,6 +135,14 @@ struct ItemInfoCard: View {
             }
             if let note {
                 Text(note).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+            }
+            if let trading {
+                Button(action: trading.run) {
+                    Label(trading.title, icon: trading.icon ?? .coins)
+                }
+                .buttonStyle(PixelButtonStyle(compact: true))
+                .disabled(!trading.enabled)
+                .opacity(trading.enabled ? 1 : 0.5)
             }
             HStack(spacing: 10) {
                 Spacer(minLength: 0)

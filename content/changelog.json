@@ -2,7 +2,7 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
-      "version": "0.8.1",
+      "version": "0.8.5",
       "date": "2026-10-25",
       "title": "Storyleaf is now Talewild",
       "notes": [
@@ -12,14 +12,14 @@
       ]
     },
     {
-      "version": "0.8.0",
+      "version": "0.8.4",
       "date": "2026-10-25",
       "title": "The bank",
       "notes": [
         "A bank in every town and in Glimmerbough: leave your gold and things with the banker, and they're safe whatever happens.",
-        "Your bag holds 50 kinds of thing, your coins one of them. What doesn't fit is left behind.",
+        "Your bag holds 50 kinds of thing, your coins one of them, in a pile that grows. What doesn't fit is left behind.",
         "Lose a fight and what you carry, coins and all, is left where you fell (in a duel, what you wear too): get back to it before someone else picks it up.",
-        "Your coins sit in your bag now, in a pile that grows, and no longer up by the date.",
+        "Smiths forge armor now too. Put anything up for trade and adventurers walk over with offers to accept or decline.",
         "Already playing? Everything you carried is waiting for you in the bank."
       ]
     },

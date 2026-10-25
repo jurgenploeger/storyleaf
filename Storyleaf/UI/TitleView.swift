@@ -17,6 +17,8 @@ struct TitleView: View {
     /// What's new's page (0 is the newest): turning it scrolls back up to the panel's top.
     @State private var changelogPage = 0
     @State private var showingSettings = DebugLaunch.titlePage == "settings"
+    /// The Settings window's tab (`SettingsPage`).
+    @State private var settingsPage: SettingsPage = .general
     @State private var showingLanguages = DebugLaunch.titlePage == "languages"
     /// Its language: switching rebuilds the screen's text in place.
     @State private var localizer = Localizer.shared
@@ -164,12 +166,21 @@ struct TitleView: View {
             ChangelogPanel(page: $changelogPage) { showingChangelog = false }
         } else if showingSettings {
             VStack(alignment: .leading, spacing: 0) {
-                FLTitleBar(title: L("Settings"), icon: .settings, onClose: { showingSettings = false })
+                // Its pages as tabs along the top, as in the game's Settings window; the close button
+                // over the corner.
+                HStack(spacing: 4) {
+                    PageTabs(page: $settingsPage, title: { $0.title }, icon: { $0.icon })
+                    Spacer(minLength: 4)
+                    Color.clear.frame(width: OrangeCloseButton.room, height: 34)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(HUDStyle.titleGloss.overlay(alignment: .bottom) { HUDStyle.titleEdge })
                 VStack(alignment: .leading, spacing: 12) {
                     SettingsView(onImportBackup: {
                         showingSettings = false
                         importing = true
-                    })
+                    }, page: settingsPage)
                     Button {
                         showingSettings = false
                     } label: {
@@ -181,6 +192,7 @@ struct TitleView: View {
             }
             .frame(maxWidth: 640)
             .gameWindow()
+            .windowCloseButton { showingSettings = false }
         } else {
             // Your game, and how to start. The round buttons wait at the bottom of the screen
             // (on a phone on its side, under the logo).

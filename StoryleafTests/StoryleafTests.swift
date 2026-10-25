@@ -1690,6 +1690,44 @@ struct RulesTests {
             // Adventurers pay more than the shop does.
             #expect(buy.price > GameSession.sellPrice(of: buy.item))
         }
+        // What they'd buy is each of a different kind, not just materials.
+        let wants = offers.filter { $0.kind == .theyBuy }.map(\.item.type)
+        #expect(Set(wants).count == wants.count)
+    }
+
+    /// Put something up for trade, and an adventurer who walks up makes an offer for it: take it, or
+    /// leave it (playtesting 2026-10-25).
+    @Test func offersForWhatYouPutUpForTrade() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let buyer = Adventurer(name: "Mimi", raceID: "elf", classID: "mage", level: 10, look: .standard)
+        let potion = try #require(Content.shared.item("potion"))
+        #expect(!session.awaitsBuyer)
+        session.receiveBid(from: buyer)
+        #expect(session.pendingBid == nil)
+        session.putUpForTrade("potion")
+        #expect(session.isForTrade("potion") && session.awaitsBuyer)
+        session.putUpForTrade("not_an_item")
+        #expect(session.forTrade.map(\.id) == ["potion"])
+        // Their offer, from a little under what a shop pays to twice that.
+        session.receiveBid(from: buyer, roll: 0.99)
+        let bid = try #require(session.pendingBid)
+        #expect(bid.item.id == "potion" && bid.buyer.name == "Mimi")
+        #expect(bid.price > GameSession.sellPrice(of: potion) && bid.price <= GameSession.sellPrice(of: potion) * 2)
+        #expect(!session.awaitsBuyer)
+        let potions = session.count(of: "potion"), gold = session.data.gold
+        #expect(session.acceptBid())
+        #expect(session.count(of: "potion") == potions - 1 && session.data.gold == gold + bid.price && session.pendingBid == nil)
+        // Turned down, nothing changes.
+        session.receiveBid(from: buyer, roll: 0)
+        session.declineBid()
+        #expect(session.pendingBid == nil && session.count(of: "potion") == potions - 1)
+        // Sold out, it's off the list.
+        session.data.inventory["potion"] = 1
+        session.receiveBid(from: buyer)
+        #expect(session.acceptBid())
+        #expect(session.forTrade.isEmpty && !session.awaitsBuyer)
+        session.takeOffTrade("potion")
+        #expect(session.data.forTrade?.isEmpty == true)
     }
 
     @Test func battleButtonsKeepYourOrder() {

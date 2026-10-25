@@ -233,8 +233,11 @@ struct FLTitleBar: View {
             if let icon { IconImage(icon, size: 16) }
             Text(title).lineLimit(1)
             Spacer(minLength: 4)
-            OrangeCloseButton(action: onClose)
+            // The close button sits over the window's corner (`gameWindow`; playtesting 2026-10-25:
+            // "Put all the close buttons overlayed top right of the modals"): its room kept clear here.
+            Color.clear.frame(width: OrangeCloseButton.room, height: 34)
         }
+        .preference(key: WindowCloseKey.self, value: WindowCloseKey.Action(run: onClose))
         .font(HUDStyle.font(14))
         .foregroundStyle(.white)
         .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
@@ -267,18 +270,39 @@ struct OrangeCloseButton: View {
         .contentShape(Rectangle())
         .accessibilityLabel(L("Close"))
     }
+
+    /// How far out past a window's top-right corner the button sits, both ways: its round hangs 4
+    /// points over the frame, as the compass does over the minimap's.
+    static let overhang: CGFloat = 9
+    /// The room it covers inside the window along the top edge, to keep a title or tabs clear of.
+    static let room: CGFloat = 26
 }
 
 extension View {
-    /// The orange close button in a window's top-right corner, just where a title bar puts it,
-    /// for windows without one: every window closes the same way. Keep the window's own top line
-    /// clear of the corner.
+    /// The orange close button over a window's top-right corner, hanging a little past it (playtesting
+    /// 2026-10-25: "Put all the close buttons overlayed top right of the modals"): every window closes
+    /// the same way, those with a title bar too (`gameWindow`). Keep the window's own top line clear
+    /// of the corner (`OrangeCloseButton.room`).
     func windowCloseButton(_ action: @escaping () -> Void) -> some View {
         overlay(alignment: .topTrailing) {
             OrangeCloseButton(action: action)
-                .padding(.top, 5)
-                .padding(.trailing, 6)
+                .offset(x: OrangeCloseButton.overhang, y: -OrangeCloseButton.overhang)
         }
+    }
+}
+
+/// A title bar's close action (`FLTitleBar`), for its window to draw the close button over its corner
+/// (`gameWindow`): the title bar sits inside the window's clip, where a button hanging past the
+/// corner would be cut off.
+struct WindowCloseKey: PreferenceKey {
+    struct Action {
+        let run: () -> Void
+    }
+
+    static var defaultValue: Action? { nil }
+
+    static func reduce(value: inout Action?, nextValue: () -> Action?) {
+        value = value ?? nextValue()
     }
 }
 
@@ -634,6 +658,15 @@ extension View {
         clipShape(shape)
             .background(shape.fill(HUDStyle.glass).shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2))
             .overlay(HUDStyle.frame(shape))
+            // Its title bar's close button, over the corner; the window's own, not passed on to one
+            // it sits in.
+            .overlayPreferenceValue(WindowCloseKey.self, alignment: .topTrailing) { close in
+                if let close {
+                    OrangeCloseButton(action: close.run)
+                        .offset(x: OrangeCloseButton.overhang, y: -OrangeCloseButton.overhang)
+                }
+            }
+            .transformPreference(WindowCloseKey.self) { $0 = nil }
     }
 
     func gameWindow() -> some View {

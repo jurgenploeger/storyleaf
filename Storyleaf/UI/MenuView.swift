@@ -22,6 +22,7 @@ struct MenuView: View {
     @State private var characterPage: CharacterPage = DebugLaunch.subTab.flatMap(CharacterPage.init(rawValue:)) ?? .hero
     @State private var companionsPage: CompanionsPage = DebugLaunch.opensMonsterBook ? .book : .companions
     @State private var questsPage: QuestsPage = DebugLaunch.subTab.flatMap(QuestsPage.init(rawValue:)) ?? .quests
+    @State private var settingsPage: SettingsPage = DebugLaunch.subTab.flatMap(SettingsPage.init(rawValue:)) ?? .general
     /// An egg to hatch, chosen on its card: the Bag plays the hatching.
     @State private var hatchRequest: ItemDef?
     /// A tap on something in the Bag: its card, over the menu. Debug `inspect=<item>` opens one
@@ -74,7 +75,8 @@ struct MenuView: View {
                 let equip: (() -> Void)? = wearable ? { session.equip(item.id); close() } : nil
                 ItemInfoCard(session: session, item: item, onClose: close, onEquip: equip,
                              action: fromBag ? bagAction(for: item, close: close) : nil,
-                             note: fromBag ? bagNote(for: item) : nil)
+                             note: fromBag ? bagNote(for: item) : nil,
+                             trading: fromBag ? trading(for: item) : nil)
                 .transition(.opacity)
                 .zIndex(1)
             }
@@ -84,14 +86,15 @@ struct MenuView: View {
 }
 
 extension MenuView {
-    /// The window's page: its tabs along the top, the round close button at their end, and what's
-    /// on the tab you're on.
+    /// The window's page: its tabs along the top (the round close button over the window's corner,
+    /// `morphing`), and what's on the tab you're on.
     private var page: some View {
         VStack(spacing: 0) {
             HStack(spacing: 4) {
                 tabs
                 Spacer(minLength: 4)
-                OrangeCloseButton(action: close)
+                // The close button's room: it sits over the window's corner (`morphing`).
+                Color.clear.frame(width: OrangeCloseButton.room, height: 34)
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
@@ -110,7 +113,7 @@ extension MenuView {
                         BagTab(session: session, note: $bagNote, hatchRequest: $hatchRequest,
                                onInspect: { item in withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { inspecting = item } })
                     case .quests: QuestsTab(session: session, page: $questsPage)
-                    case .settings: SettingsView(session: session, onQuitToTitle: onQuitToTitle)
+                    case .settings: SettingsView(session: session, onQuitToTitle: onQuitToTitle, page: settingsPage)
                     }
                 }
                 .padding(14)
@@ -143,6 +146,11 @@ extension MenuView {
                 HUDStyle.frame(shape)
                     .frame(width: size.width, height: size.height)
                     .allowsHitTesting(false)
+                // The close button over the window's corner, as on every window (playtesting 2026-10-25),
+                // where the open menu has its own: it grows and shrinks with the window.
+                OrangeCloseButton(action: close)
+                    .offset(x: OrangeCloseButton.overhang, y: -OrangeCloseButton.overhang)
+                    .frame(width: size.width, height: size.height, alignment: .topTrailing)
             }
             .frame(width: full.width, height: full.height, alignment: .bottomTrailing)
         }
@@ -193,7 +201,9 @@ extension MenuView {
                     (session.data.bounties?.bounties ?? []).contains { $0.isDone && !$0.claimed } || session.canClaimBountyBonus
                 }
             }
-        case .friends, .bag, .settings:
+        case .settings:
+            PageTabs(page: $settingsPage, title: { $0.title }, icon: { $0.icon })
+        case .friends, .bag:
             Label(window.menuTitle, icon: window.icon, size: 20)
                 .labelStyle(TabLabelStyle(selected: true))
                 .accessibilityAddTraits(.isHeader)
@@ -230,6 +240,18 @@ extension MenuView {
         return nil
     }
 
+    /// Putting it up for trade, or taking it off: adventurers about then come over with offers
+    /// (`GameSession+TradeList`).
+    func trading(for item: ItemDef) -> ItemInfoCard.Action? {
+        if session.isForTrade(item.id) {
+            return ItemInfoCard.Action(title: L("Take off trade"), icon: .coins) { session.takeOffTrade(item.id) }
+        }
+        guard session.canPutUpForTrade(item) else { return nil }
+        return ItemInfoCard.Action(title: L("Put up for trade"), icon: .coins, enabled: session.forTrade.count < GameSession.maxForTrade) {
+            session.putUpForTrade(item.id)
+        }
+    }
+
     /// Why an item in the Bag has nothing to do there.
     func bagNote(for item: ItemDef) -> String? {
         if item.capture == true { return L("For battle") }
@@ -244,7 +266,7 @@ extension MenuView {
 /// name (playtesting 2026-10-25: the ones you weren't on showed only an icon). One you're not on wears
 /// the HUD's gold dot when something there waits for you (`waiting`). The pages are a nonisolated
 /// enum (its raw value is the debug name, `sub=skills`).
-private struct PageTabs<Page: Hashable & CaseIterable>: View {
+struct PageTabs<Page: Hashable & CaseIterable>: View {
     @Binding var page: Page
     let title: (Page) -> String
     let icon: (Page) -> GameIcon
@@ -314,7 +336,7 @@ private struct HowItWorks: View {
     }
 }
 
-private struct TabLabelStyle: LabelStyle {
+struct TabLabelStyle: LabelStyle {
     let selected: Bool
 
     func makeBody(configuration: Configuration) -> some View {
@@ -1197,6 +1219,11 @@ private struct BagTab: View {
                 if full {
                     Text(L("Full: bank something")).foregroundStyle(HUDStyle.orange)
                 }
+                // What's up for trade (the coin on its slot): adventurers about come over with offers.
+                if !session.forTrade.isEmpty {
+                    Label(L("{count} for trade", ["count": session.forTrade.count]), icon: .coins)
+                        .foregroundStyle(HUDStyle.gold)
+                }
                 Spacer()
                 if let note { Text(note).foregroundStyle(HUDStyle.green) }
             }
@@ -1235,7 +1262,7 @@ private struct BagTab: View {
             if shows(.materials), !(narrowed && materials.isEmpty) {
                 SectionTitle(text: L("Materials"))
                 if materials.isEmpty {
-                    Text(L("Monsters drop wood, metal, gems and hides. A town smith forges them into weapons."))
+                    Text(L("Monsters drop wood, metal, gems and hides. A town smith forges them into weapons and armor, to wear or to sell."))
                         .font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
                 }
                 grid(materials)
@@ -1297,6 +1324,14 @@ private struct BagTab: View {
                 } label: {
                     ItemIcon(item: item, size: Self.slot, count: session.count(of: item.id), upgrade: session.isUpgrade(item))
                         .opacity(usable(item) ? 1 : 0.45)
+                        .overlay(alignment: .bottomLeading) {
+                            if session.isForTrade(item.id) {
+                                IconImage(.coins, size: 11)
+                                    .padding(2)
+                                    .background(Circle().fill(HUDStyle.ink.opacity(0.75)))
+                                    .accessibilityLabel(L("For trade"))
+                            }
+                        }
                         .padding(.top, 5)
                         .padding(.trailing, 5)
                 }

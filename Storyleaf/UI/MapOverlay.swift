@@ -54,9 +54,10 @@ struct MapOverlay: View {
         }
     }
 
-    /// Where you are: the land's name and your coordinates on its plate, as the minimap's title bar
-    /// showed them before it was made round (playtesting 2026-10-25: "Only when you tap on the mini map
-    /// you see the coordinates").
+    /// Where you are: the land's name, and on their plates the date and time and your coordinates, as
+    /// the minimap's title bar and the HUD's calendar plate showed them before (playtesting 2026-10-25:
+    /// "Only when you tap on the mini map you see the coordinates"; "Remove the day/time bar in the top
+    /// left and incorporate that in the map modal").
     private var here: some View {
         HStack(spacing: 8) {
             IconImage(.map, size: 14).foregroundStyle(HUDStyle.gold)
@@ -64,7 +65,9 @@ struct MapOverlay: View {
                 .font(HUDStyle.font(12))
                 .foregroundStyle(HUDStyle.cream)
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
             Spacer(minLength: 4)
+            GameDatePlate(session: session)
             Text(verbatim: "\(session.mapCell.col) : \(rows - 1 - session.mapCell.row)")
                 .font(HUDStyle.mono(11))
                 .foregroundStyle(HUDStyle.plateDark)
@@ -176,5 +179,31 @@ struct CaveMap: View {
         let y = (CGFloat(picture.rows) / 2 - CGFloat(other.row) - 0.5) * zoom
         let half = CGFloat(0.5).squareRoot()
         return CGSize(width: (x + y) * half, height: (y - x) * half * 0.5)
+    }
+}
+
+/// The date and time on the game's calendar on a tan plate, with a sun by day and a moon by night
+/// (`GameClock`): on the map's "you are here" row, where the HUD's calendar plate went.
+private struct GameDatePlate: View {
+    let session: GameSession
+    /// With night and day switched off in Settings, the sun shines on the plate around the clock.
+    @AppStorage(GameSettings.dayAndNightKey) private var dayAndNight = true
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 5)) { context in
+            let moment = GameClock.moment(at: context.date, since: session.data.startedAt)
+            let daytime = moment.isDaytime || !dayAndNight
+            HStack(spacing: 4) {
+                IconImage(daytime ? .sun : .moon, size: 12)
+                    .foregroundStyle(daytime ? HUDStyle.orange : Color(red: 0.35, green: 0.35, blue: 0.75))
+                Text(moment.text)
+                    .font(HUDStyle.mono(11))
+                    .foregroundStyle(HUDStyle.plateDark)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(HUDStyle.plateBackground)
+        }
     }
 }

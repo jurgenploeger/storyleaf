@@ -53,6 +53,9 @@ final class GameSession {
     var nearbyNPC: String?
     /// What you lost, lying near enough to pick up (`LostPile`), for the HUD's Pick up button.
     var nearbyPile: UUID?
+    /// An adventurer's offer for something you've put up for trade, waiting for your answer
+    /// (`GameSession+TradeList`).
+    var pendingBid: Bid?
     /// The tile the hero stands on, for the minimap.
     var mapCell = GridPoint(col: 0, row: 0)
     /// Everyone else on this map, as dots on the minimap.
@@ -1468,9 +1471,12 @@ final class GameSession {
             let id = "\(adventurer.id)|\(day)|\(kind == .theyBuy ? "buy" : "sell")|\(item.id)"
             return done.contains(id) ? nil : TradeOffer(kind: kind, item: item, price: price, id: id)
         }
-        // They want a couple of your things, materials first, and pay half again what a shop would.
-        let yours = sellableItems.filter { $0.type == .material } + sellableItems.filter { $0.type != .material }
-        let wanted = Array(yours.prefix(6).shuffled(using: &rng).prefix(2))
+        // They want a few of your things, each of a different kind (gear, potions, materials...; playtesting
+        // 2026-10-25: "they should buy a lot of different items, currently they only buy materials"), and
+        // pay half again what a shop would.
+        let byKind = Dictionary(grouping: sellableItems, by: \.type)
+        let kinds = byKind.keys.sorted { $0.rawValue < $1.rawValue }.shuffled(using: &rng)
+        let wanted = kinds.prefix(3).compactMap { byKind[$0]?.randomElement(using: &rng) }
         // And they carry a few things around their level.
         let level = adventurer.level
         let goods = content.items.filter { item in
@@ -1478,7 +1484,7 @@ final class GameSession {
                 && (item.type == .consumable || item.type == .material || abs((item.level ?? 1) - level) <= 12)
         }
         let carried = Array(goods.shuffled(using: &rng).prefix(3))
-        return wanted.compactMap { offer(.theyBuy, $0, max(1, Self.sellPrice(of: $0) * 3 / 2)) }
+        return wanted.compactMap { offer(.theyBuy, $0, max(Self.sellPrice(of: $0) + 1, Self.sellPrice(of: $0) * 3 / 2)) }
             + carried.compactMap { offer(.theySell, $0, max(1, $0.price * 11 / 10)) }
     }
 
