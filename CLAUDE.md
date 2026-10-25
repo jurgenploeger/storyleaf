@@ -84,11 +84,11 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   sprites and redrawn by RD), cropped in close on him, hair to knees over a band of meadow (`CROP`), and scaled by a whole
   number; dark is the scene at dusk under the night `StoryleafSky` draws, lit by its gold, fireflies, sparkles
   and stars (`light_up`), in hard steps; tinted its greys. `--preview` shows Home Screen sizes.
-- `tools/logo_art.py`: the logo (`Logo.png`), the one word Talewild in Lilita One (the store slides' face,
-  `tools/fonts/`) with a leaf for the dot of its i: "Tale" gold and "wild" green in one dark outline with a
-  hard shadow, faces in hard bands; the type's edges smooth (cut into pixels it read as ugly). No emblem, tagline or rays.
+- `tools/logo_art.py`: the logo (`Logo.png`), TALEWILD in capitals in Open Sans ExtraBold at its semi-condensed
+  width (`tools/fonts/`, the titles' face in the pixel RPGs the user pointed to), all gold in one smooth gradient,
+  in a dark outline with a hard shadow. One colour, no bands, no emblem, tagline or rays.
 - `tools/store_slides.py`: App Store slides from the landscape `store_land_*` screenshot scenes: captions in the
-  logo's style, cream in its dark outline and hard shadow, a tag on a dark plate (`tools/store_slides.json`, font in `tools/fonts/`), cropped clear of the Dynamic Island the
+  logo's style, the title in its face and gold, in capitals, in its dark outline and hard shadow, a tag on a dark plate (`tools/store_slides.json`, font in `tools/fonts/`), cropped clear of the Dynamic Island the
   simulator draws in, exported at 2622×1206 and 2868×1320 with no alpha.
 - `tools/social_art.py`: the social media assets in `marketing/social/` (profile pictures from the icon's
   drawing round the hero's face; logo files; covers and banners for X, Bluesky, Facebook, YouTube, Discord,

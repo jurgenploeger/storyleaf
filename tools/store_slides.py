@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """App Store slides from the landscape store scenes (`store_land_*` in tools/screenshots.txt).
 
-Each slide is a screenshot with a caption in the logo's style (tools/logo_art.py: cream letters in its dark
-outline, a hard shadow under them and the faces in hard bands; under it, a dark plate for the tag),
+Each slide is a screenshot with a caption in the logo's style (tools/logo_art.py): the title in capitals in
+Open Sans ExtraBold, semi-condensed, its gold gradient on every line, in the logo's dark outline with a hard
+shadow under it; under it, a dark plate for the tag,
 exported at both iPhone sizes App Store Connect takes, as PNG with
 no alpha channel (it refuses screenshots that have one):
   2622×1206  iPhone with Dynamic Island (medium display), the required one
@@ -23,18 +24,18 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent
-FONT = TOOLS / "fonts" / "LilitaOne-Regular.ttf"
+FONT = TOOLS / "fonts" / "OpenSans-SemiCondensedExtraBold.ttf"
 LOGO = ROOT / "Storyleaf" / "Resources" / "Assets.xcassets" / "Logo.imageset" / "Logo.png"
 
 # The base size the layout is measured in, and the sizes exported.
 BASE = (2622, 1206)
 SIZES = [(2622, 1206), (2868, 1320)]
 
-# The logo's colours (tools/logo_art.py): its ink, for the outline and the hard shadow under it, and the
-# caption's face in two hard bands of cream, so the logo keeps its gold and green to itself.
+# The logo's colours (tools/logo_art.py): its ink, for the outline and the hard shadow under it, and its
+# gold for the titles; the tag's words are cream on a plate of the ink.
 INK = (34, 22, 14)
+GOLD = [(0.0, (255, 243, 176)), (0.45, (255, 205, 74)), (1.0, (232, 134, 28))]
 CREAM = (255, 248, 222)
-CREAM_LOW = (246, 226, 180)
 PLATE = (34, 22, 14)
 
 
@@ -48,11 +49,9 @@ def solid(size, color, mask, alpha=1.0):
     return layer
 
 
-def bands(letters, top_share=0.55):
-    """The face in two hard bands on every line of `letters` (a mask): cream above, warmer below."""
+def golden(letters):
+    """The title's face: the logo's gold, top to bottom of every line of `letters` (a mask)."""
     rows = [y for y in range(letters.height) if letters.crop((0, y, letters.width, y + 1)).getbbox()]
-    face = Image.new("RGBA", letters.size, CREAM + (255,))
-    draw = ImageDraw.Draw(face)
     runs, start = [], None
     for index, y in enumerate(rows):
         if start is None:
@@ -60,17 +59,26 @@ def bands(letters, top_share=0.55):
         if index + 1 == len(rows) or rows[index + 1] != y + 1:
             runs.append((start, y + 1))
             start = None
+    column = Image.new("RGBA", (1, letters.height), GOLD[0][1] + (255,))
     for y0, y1 in runs:
-        draw.rectangle((0, y0 + round((y1 - y0) * top_share), letters.width, y1), fill=CREAM_LOW + (255,))
+        for y in range(y0, y1):
+            t = (y - y0) / max(1, y1 - y0 - 1)
+            for (a, ca), (b, cb) in zip(GOLD, GOLD[1:]):
+                if a <= t <= b:
+                    f = (t - a) / (b - a)
+                    column.putpixel((0, y), tuple(round(p + (q - p) * f) for p, q in zip(ca, cb)) + (255,))
+                    break
+    face = column.resize(letters.size)
     face.putalpha(letters)
     return face
 
 
 def lettering(canvas, text, at, size, align):
-    """The logo's lettering: a hard shadow, the dark outline, then the letters in hard bands of cream.
+    """The logo's lettering: a hard shadow, the dark outline, then the letters in its gold, in capitals.
     `at` is the top-left (or top-centre/right, by `align`) of the text block."""
+    text = text.upper()
     face = font(size)
-    stroke = max(2, round(size * 0.1))
+    stroke = max(2, round(size * 0.06))
     spacing = round(size * -0.08)
     probe = ImageDraw.Draw(Image.new("L", canvas.size))
     box = probe.multiline_textbbox((0, 0), text, font=face, spacing=spacing, align=align, stroke_width=stroke)
@@ -84,9 +92,9 @@ def lettering(canvas, text, at, size, align):
                                              spacing=spacing, align=align, stroke_width=stroke_width, stroke_fill=255)
         return layer
 
-    canvas.alpha_composite(solid(canvas.size, INK, mask(stroke, (0, round(size * 0.07)))))
+    canvas.alpha_composite(solid(canvas.size, INK, mask(stroke, (0, round(size * 0.06)))))
     canvas.alpha_composite(solid(canvas.size, INK, mask(stroke)))
-    canvas.alpha_composite(bands(mask(0)))
+    canvas.alpha_composite(golden(mask(0)))
     return (origin[0] + box[0], origin[1] + box[1], origin[0] + box[2], origin[1] + box[3])
 
 
@@ -165,8 +173,8 @@ def slide(shot, spec, size):
     # Measure the block (title over its pill) to stand it on the bottom margin, or hang it from the top one.
     probe = ImageDraw.Draw(Image.new("L", (1, 1)))
     face = font(title_size)
-    stroke = max(2, round(title_size * 0.1))
-    box = probe.multiline_textbbox((0, 0), spec["title"], font=face, spacing=round(title_size * -0.08), align=align, stroke_width=stroke)
+    stroke = max(2, round(title_size * 0.06))
+    box = probe.multiline_textbbox((0, 0), spec["title"].upper(), font=face, spacing=round(title_size * -0.08), align=align, stroke_width=stroke)
     title_height = box[3] - box[1] + title_size * 0.12
     gap = 26 * scale
     tag_height = tag_size * 1.0 + 2 * tag_size * 0.32 if spec.get("tag") else 0
