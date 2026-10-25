@@ -190,12 +190,12 @@ final class ContinentScene: SKScene {
         var waiting: Spot?
     }
     private var allies: [Ally] = []
+    /// What you lost when you fell, lying where you fell (`refreshPiles`).
+    private var pileNodes: [UUID: Walker] = [:]
     /// How close you come to a friend waiting for you before they set off with you again.
     private let rejoinRange: CGFloat = 64
     /// The land whose crowd leads you about, in the party you've joined (`GameSession.joinedParty`).
     private var hostLand: String?
-    /// Time played since the last look round, for how long others stay in a party with you.
-    private var partyClock: TimeInterval = 0
     /// Set while a window or a battle is up (`MapScene`).
     var isInputLocked = false
     /// Debug launches walking you about (`crossing`): no battles on the way.
@@ -445,7 +445,6 @@ final class ContinentScene: SKScene {
             player.zPosition = -player.position.y
         }
         if !isInputLocked {
-            partyClock += dt
             checkCell()
             checkTalkTarget()
         }
@@ -942,21 +941,61 @@ final class ContinentScene: SKScene {
         return local + land.shift
     }
 
+    // MARK: What you lost
+
+    /// What you lost when you fell (`LostPile`), lying where you fell once its land's laid out, and
+    /// the HUD's Pick up button while you stand by it (`GameSession.nearbyPile`). Picked up, or taken
+    /// by someone else, it goes in a puff of smoke.
+    private func refreshPiles() {
+        session.watchPiles()
+        let piles = session.lostPiles
+        for (id, node) in pileNodes where !piles.contains(where: { $0.id == id && lands[$0.mapID] != nil }) {
+            if !piles.contains(where: { $0.id == id }) { SkillEffects.smoke(at: node.position, in: layer) }
+            node.removeFromParent()
+            pileNodes[id] = nil
+        }
+        for pile in piles where pileNodes[pile.id] == nil {
+            guard let at = point(of: pile) else { continue }
+            let node = Walker(cycle: art.walkCycle("lost_pile"), label: L("Your things"))
+            node.position = at
+            node.zPosition = -at.y
+            layer.addChild(node)
+            node.settle()
+            pileNodes[pile.id] = node
+        }
+        let near = pileNodes.map { (id: $0.key, distance: $0.value.position.distance(to: player.position)) }
+            .filter { $0.distance <= GameSession.pickUpReach }
+            .min { $0.distance < $1.distance }?.id
+        if session.nearbyPile != near { session.nearbyPile = near }
+    }
+
+    /// Where a pile lies on the continent: where you fell on its land, on ground you can stand on.
+    /// None till that land's laid out.
+    private func point(of pile: LostPile) -> CGPoint? {
+        guard let land = lands[pile.mapID] else { return nil }
+        let map = land.map
+        var local = map.center(of: map.center)
+        if let position = pile.position, position.count == 2 { local = CGPoint(x: position[0], y: position[1]) }
+        if !map.isWalkable(map.rawCell(at: local)), let open = map.nearestWalkable(to: map.cell(at: local)) {
+            local = map.center(of: open)
+        }
+        return local + land.shift
+    }
+
     /// Who's heading off on their own after a while in a party with you (`GameSession.passPartyTime`),
     /// to say goodbye once they're back among the crowd.
     private var goodbyes: [UUID] = []
 
     /// Keeps the party you've joined in step (`GameSession.joinedParty`): the crowd its leader's in
     /// leads you, and who walks with them is who's in it. You've left it once you're far from whoever
-    /// leads it, or they're nowhere about. Time passes for the friends at your side and for it: whoever
-    /// heads off says goodbye (`sayGoodbyes`).
+    /// leads it, or they're nowhere about. Whoever's time with you is up heads off and says goodbye
+    /// (`sayGoodbyes`).
     private func keepUpWithParties() {
         if !isInputLocked {
-            let gone = session.passPartyTime(partyClock)
+            let gone = session.passPartyTime()
             goodbyes += gone.left.map(\.id)
             if let leader = gone.headedOff { goodbyes.append(leader.id) }
         }
-        partyClock = 0
         if let leader = session.joinedParty?.leader {
             if hostLand == nil {
                 for (id, land) in lands where land.stage.crowd?.lead(you: leader.id) == true {
@@ -1399,13 +1438,17 @@ final class ContinentScene: SKScene {
         keepUpWithParties()
         refreshAllies()
         sayGoodbyes()
+        refreshPiles()
         // The minimap's people and their jobs, in the land you're in.
         if let here, let stage = lands[here.id]?.stage {
             let party = allies.map { GameSession.MinimapDot(cell: stage.map.cell(at: stage.local($0.node.position)), kind: .party) }
             let joined = Set(session.joinedParty?.members.map(\.id) ?? [])
             let dots = stage.minimapDots(friends: Set(session.friends.map(\.id)), party: joined) + party
             if session.minimapDots != dots { session.minimapDots = dots }
-            let marks = stage.minimapMarks()
+            let lost = pileNodes.sorted { $0.key.uuidString < $1.key.uuidString }
+                .filter { pile in session.lostPiles.contains { $0.id == pile.key && $0.mapID == here.id } }
+                .map { GameSession.MinimapMark(cell: stage.map.cell(at: stage.local($0.value.position)), kind: .lost) }
+            let marks = stage.minimapMarks() + lost
             if session.minimapMarks != marks { session.minimapMarks = marks }
         }
         // The lands' people: their quest marks, townsfolk watching you pass, and who's near enough to

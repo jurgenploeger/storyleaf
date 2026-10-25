@@ -14,7 +14,7 @@ environment couldn't open the pages themselves, so a session that can should re-
 
 ## Names
 
-**Us** (since 0.8.0, 2026-10-25): the game is called **Talewild** for players (the App Store name, the logo and
+**Us** (since 0.8.1, 2026-10-25): the game is called **Talewild** for players (the App Store name, the logo and
 every in-game line), and so is the land. It was Storyleaf from 0.3.50, and the code, project and repo still are
 (renamed from Fairyland on 2026-10-22) until a follow-up renames them; only the bundle ID and the save files keep
 "Fairyland" for good. The goddess Liora binds the world's tales
@@ -684,6 +684,22 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   worth more to the hero's class (`GameSession.gearValue`): each bonus weighted by the class's growth in that
   stat next to a novice's, and by how big that stat's numbers run. The Bag and the slot's list have search,
   sort (best for you, level, name, price, how many) and filters (the Bag's kinds; only what you can wear).
+- The bag and the bank (ours, since 0.8.0, asked for in playtesting 2026-10-25: "I want to add a bank to the
+  game [...] so the item limit is 50 items you can hold"), as RuneScape has them; whether Fairyland Online had
+  a warehouse isn't verified here. The bag holds 50 slots: each kind of item one slot however many you carry,
+  the coins one more (`GameSession.bagSlots`). What doesn't fit is left behind, loot and rewards too (the
+  playtester's choice); a chest stays shut till there's room. The coins are a slot in the Bag with a pile
+  that grows with them (`CoinsTile`, tools/coin_art.py), RuneScape's way, not a count on the HUD. A bank
+  (tools/building_art.py `bank`) with a banker (NPC role `bank`, a coin on the minimap and the world map)
+  stands in Meadowbrook, Prismhaven, Ingothold, Larkspur and Glimmerbough; what's in it, coins too, is never
+  lost. Beaten by monsters you lose what you carry, coins and all; beaten in a duel, what you wear too
+  (`loseBelongings`). What a quest you're on needs stays with you (`questKeepsakes`). What's lost is left
+  where you fell (asked for in playtesting 2026-10-25: "anything that was lost will be shown on the map
+  and for other players to grab"), RuneScape's way: a pile (`LostPile`, tools/prop_art.py `lost_pile`)
+  on the ground, the minimap and the world map, yours alone for 5 minutes, then anyone's: an adventurer
+  passing picks it up some minutes later (5 on average, rolled as it's dropped), and it's gone after 20
+  at most (`GameSession+LostPiles.swift`). Walk up to it and Pick up takes what the bag has room for. A game begun before
+  0.8.0 had its bag and coins moved into the bank once, on first load (`stockBankOnce`).
 - The weapon in hand (`GearArt.pose`, since 0.4.8, asked for in playtesting 2026-10-12: "when they're wearing a
   weapon, it should look good"): the item's own art, held at the hand as each walk frame has it (beside the
   body, at the side facing you or away or the near hand walking sideways, and part way down that frame's own
@@ -1053,8 +1069,11 @@ the Wishing Seal, which stays the Monster Book's last reward.
     minutes (`GameSession.askAlong`). Ask whoever leads a group and you can join it with room for you and
     your party's friends, five in all (`askToJoin`): you walk at the back of their line as they lead you
     about (`Crowd.lead(you:)`) and they fight beside you; you leave once you're far from whoever leads, or
-    from the plate under your party. Anyone in a party with you heads off after `stayMinutes` of play
-    (`passPartyTime`), and among themselves adventurers leave their group or join one near them every
+    from the plate under your party. Anyone in a party with you heads off after `stayMinutes` on the
+    clock (`passPartyTime`), and a friend who did won't come along again for half an hour
+    (`restAfterStay`), so you meet others (since 0.7.92, playtesting 2026-10-25: "members who joined my
+    party are staying forever"; counted only while walking about, the time stood still through every
+    fight and started afresh at every launch, so nobody ever left). Among themselves adventurers leave their group or join one near them every
     `groupMinutes` (`Crowd.mingle`).
   - Past five, the battle line splits: people in front, companions in a row behind.
   - Without a friend (since 0.3.83), you and your companion stand side by side in one line, as a
@@ -1117,7 +1136,7 @@ the Wishing Seal, which stays the Monster Book's last reward.
     afternoon, where half its glow was on screen and washed out the middle of the map (left of the screen
     half again as bright at 16hr in the screenshots, 2026-10-12); since 0.4.8 it stays in the corner. Whether FO's light moved
     with its clock isn't in any source we've found; this is ours. Clouds don't soften the shadows yet.
-  - Our setting is called Talewild in every in-game text (Fairyland until 0.3.50, Storyleaf until 0.8.0; see Names). In FO the
+  - Our setting is called Talewild in every in-game text (Fairyland until 0.3.50, Storyleaf until 0.8.1; see Names). In FO the
     continent itself is Mysteria (above), which is also the relaunch's name.
 - **Bots, moderators and announcements:** ours, asked for in playtesting (2026-10-04). FO's chat channels,
   GM notices and player stalls (players selling under a sign in town) aren't in any source reachable from a

@@ -57,7 +57,7 @@ engine's formulas, and the CI screenshots. Every finding here was checked agains
    references (the Drunk Dragon and its hangover quest) are 13+ too. Don't choose Made for Kids.
 5. **Where it's sold.** Untick China mainland (games need an NPPA approval number) and Vietnam (games must be
    licensed there). Declare your EU trader status (DSA) in App Store Connect.
-6. **The name: Talewild** (since 0.8.0). Set it as the app's name (and a subtitle) in App Store Connect, the new
+6. **The name: Talewild** (since 0.8.1). Set it as the app's name (and a subtitle) in App Store Connect, the new
    wordmark in `Logo.png` (the store slides draw it too), and search TALEWILD on the USPTO and EUIPO registers.
    talewild.app and the social handles are free (docs/fairyland-online.md → Names); the privacy policy and
    support pages above can live there.

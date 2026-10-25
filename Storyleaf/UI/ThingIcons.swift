@@ -87,6 +87,34 @@ struct ItemIcon: View {
     }
 }
 
+/// The coins you carry, in their slot of the bag as RuneScape's pack shows them (playtesting
+/// 2026-10-25): a pile that grows with the amount (`item_coins_1` to `_4`, tools/coin_art.py), the amount
+/// in its top-left corner, yellow under 100,000, white under 10 million, green from there.
+struct CoinsTile: View {
+    let amount: Int
+    var size: CGFloat = 32
+
+    /// The pile for an amount: one coin, a few, a stack, a heap.
+    static func art(for amount: Int) -> String {
+        "item_coins_" + (amount < 5 ? "1" : amount < 100 ? "2" : amount < 10_000 ? "3" : "4")
+    }
+
+    var body: some View {
+        IconTile(icon: .coins, tint: Color(red: 0.62, green: 0.48, blue: 0.24), size: size,
+                 picture: ArtLibrary.shared.artImage(Self.art(for: amount)))
+            .overlay(alignment: .topLeading) {
+                Text(HUDStyle.short(amount))
+                    .font(HUDStyle.mono(max(9, size * 0.2)))
+                    .foregroundStyle(amount < 100_000 ? Color(red: 1, green: 0.95, blue: 0.2) : amount < 10_000_000 ? .white : Color(red: 0.3, green: 1, blue: 0.45))
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
+                    .padding(.leading, size * 0.08)
+                    .padding(.top, size * 0.04)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(L("{gold} gold", ["gold": amount]))
+    }
+}
+
 /// Something better to wear: a gold arrow pointing up, on a badge like `CountBadge`.
 struct UpgradeBadge: View {
     var size: CGFloat = 17

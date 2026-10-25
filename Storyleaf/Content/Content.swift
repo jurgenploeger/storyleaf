@@ -458,7 +458,8 @@ nonisolated enum NPCRole: String, Decodable, Sendable {
     /// `waystone`: out in a wild land, asleep till its quest (`NPCDef.quest`) is done; then it's
     /// somewhere Bridge of Light and Homeward Feathers can take you, and touching it takes you to
     /// any town or waystone you can go to, free.
-    case healer, shop, quests, guild, chest, boss, smith, weaver, stairs, barber, waystone
+    /// `bank`: keeps what you don't carry, coins too, safe from what a defeat costs (`GameSession+Bank`).
+    case healer, shop, quests, guild, chest, boss, smith, weaver, stairs, barber, waystone, bank
 
     /// A thing rather than a person (a chest, stairs, a waystone): it stands still, never looks
     /// round, and does what it does straight from the map, with no conversation.
@@ -1007,7 +1008,8 @@ nonisolated struct CrowdOptions: Decodable, Sendable {
     /// (`GameSession.askAlong`, `askToJoin`).
     let acceptChance: Double?
     /// How long an adventurer stays in a party with you, yours or theirs you joined, before heading
-    /// off on their own: minutes of play [fewest, most] (`GameSession.stayLength`).
+    /// off on their own: minutes [fewest, most] on the clock, fights and time away too
+    /// (`GameSession.stayLength`).
     let stayMinutes: [Double]?
     /// How long an adventurer keeps to how they travel among the crowd, alone or in a group, before
     /// they leave their group or join one near them: minutes [fewest, most] (`Crowd`).

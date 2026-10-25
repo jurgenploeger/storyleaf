@@ -247,7 +247,7 @@ struct WorldAtlas: View {
     /// news first, a boss, then the town's services.
     private var badges: [Mark] {
         guard scale >= Self.badgeScale else { return [] }
-        let order: [GameSession.MinimapMark.Kind] = [.questReady, .questNew, .boss, .healer, .shop, .smith, .weaver,
+        let order: [GameSession.MinimapMark.Kind] = [.lost, .questReady, .questNew, .boss, .healer, .bank, .shop, .smith, .weaver,
                                                      .barber, .guild, .waystone, .quest, .chest]
         var found: [Mark] = []
         for land in lands where session.hasVisited(land.def.id) {
@@ -257,6 +257,15 @@ struct WorldAtlas: View {
                 found.append(Mark(id: "badge \(land.def.id) \(npc.id)", kind: .badge, place: land.def.id,
                                   cell: GridPoint(col: land.origin.col + spot.col, row: land.origin.row + spot.row), badge: kind))
             }
+        }
+        // What you lost when you fell, where it lies (`LostPile`), in whichever land.
+        for pile in session.lostPiles {
+            guard let land = lands.first(where: { $0.def.id == pile.mapID }), let position = pile.position, position.count == 2 else { continue }
+            let grid = WorldMap.unproject(CGPoint(x: position[0], y: position[1]))
+            found.append(Mark(id: "lost \(pile.id)", kind: .badge, place: pile.mapID,
+                              cell: GridPoint(col: land.origin.col + Int((grid.x / WorldMap.tileSize).rounded(.down)),
+                                              row: land.origin.row + Int((grid.y / WorldMap.tileSize).rounded(.down))),
+                              badge: .lost))
         }
         found.sort { (order.firstIndex(of: $0.badge ?? .chest) ?? 0) < (order.firstIndex(of: $1.badge ?? .chest) ?? 0) }
         var kept: [(mark: Mark, at: CGPoint)] = []

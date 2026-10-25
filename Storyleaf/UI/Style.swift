@@ -319,19 +319,21 @@ struct FLIconButton: View {
             .foregroundStyle(.white)
             .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
             .frame(width: size, height: size)
+            // Round (playtesting 2026-10-25), like the minimap and the menu button beside it, on the
+            // map and in battle alike; the gloss an oval across its top.
             .background(
-                RoundedRectangle(cornerRadius: 9)
+                Circle()
                     .fill(LinearGradient(colors: HUDStyle.tile, startPoint: .top, endPoint: .bottom))
-                    .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
+                    .overlay(Circle().strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
                     .overlay(alignment: .top) {
-                        RoundedRectangle(cornerRadius: 6).fill(.white.opacity(0.35)).frame(height: size * 0.3).padding(4)
+                        Ellipse().fill(.white.opacity(0.35)).frame(width: size * 0.62, height: size * 0.28).padding(.top, 4)
                     }
             )
             .overlay(alignment: .topTrailing) {
+                // On the rim, where the round's corner would be.
                 if badge {
                     Circle().fill(HUDStyle.gold).frame(width: 12, height: 12)
                         .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
-                        .offset(x: 3, y: -3)
                 }
             }
             .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 2)

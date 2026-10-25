@@ -2,7 +2,7 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
-      "version": "0.8.0",
+      "version": "0.8.1",
       "date": "2026-10-25",
       "title": "Storyleaf is now Talewild",
       "notes": [
@@ -11,11 +11,23 @@
       ]
     },
     {
-      "version": "0.7.89",
+      "version": "0.8.0",
+      "date": "2026-10-25",
+      "title": "The bank",
+      "notes": [
+        "A bank in every town and in Glimmerbough: leave your gold and things with the banker, and they're safe whatever happens.",
+        "Your bag holds 50 kinds of thing, your coins one of them. What doesn't fit is left behind.",
+        "Lose a fight and what you carry, coins and all, is left where you fell (in a duel, what you wear too): get back to it before someone else picks it up.",
+        "Your coins sit in your bag now, in a pile that grows, and no longer up by the date.",
+        "Already playing? Everything you carried is waiting for you in the bank."
+      ]
+    },
+    {
+      "version": "0.7.92",
       "date": "2026-10-25",
       "title": "A cleaner screen",
       "notes": [
-        "One menu button opens into Hero, Companion, Inventory, Quests and Settings, with Chat right beside it.",
+        "One menu button opens into Hero, Companion, Friends, Inventory, Quests and Settings, each a window that grows out of it, with Chat right beside it.",
         "Your EXP bar sits under your health and magic, and what you win and find pops up for a moment, then waits in the chat.",
         "Every boss waits in a lair worth finding: at its land's edge, on a hilltop or in a cave, ringed by dead trees, standing stones or broken pillars, with a warning where its trail begins.",
         "Skill icons glow like the spells they cast, and now so do the icons on every button. Your skills are tiles: tap one to see it and raise it a level.",
