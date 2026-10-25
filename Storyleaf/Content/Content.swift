@@ -458,7 +458,8 @@ nonisolated enum NPCRole: String, Decodable, Sendable {
     /// `waystone`: out in a wild land, asleep till its quest (`NPCDef.quest`) is done; then it's
     /// somewhere Bridge of Light and Homeward Feathers can take you, and touching it takes you to
     /// any town or waystone you can go to, free.
-    case healer, shop, quests, guild, chest, boss, smith, weaver, stairs, barber, waystone
+    /// `bank`: keeps what you don't carry, coins too, safe from what a defeat costs (`GameSession+Bank`).
+    case healer, shop, quests, guild, chest, boss, smith, weaver, stairs, barber, waystone, bank
 
     /// A thing rather than a person (a chest, stairs, a waystone): it stands still, never looks
     /// round, and does what it does straight from the map, with no conversation.

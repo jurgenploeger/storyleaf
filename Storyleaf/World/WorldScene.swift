@@ -79,6 +79,8 @@ final class WorldScene: SKScene {
         var waiting: Spot?
     }
     private var allies: [Ally] = []
+    /// What you lost when you fell on this map, lying where you fell (`refreshPiles`).
+    private var pileNodes: [UUID: Walker] = [:]
     /// How close you come to a friend waiting for you before they set off with you again.
     private let rejoinRange: CGFloat = 64
     /// Roads that stay closed until a quest is done: the barricade nodes and the cells they block.
@@ -1647,12 +1649,16 @@ final class WorldScene: SKScene {
     /// still to open and a boss still to beat. On a dark map, only where you've been.
     private func minimapMarks() -> [GameSession.MinimapMark] {
         let seen = seenCells()
-        return npcs.compactMap { npc -> GameSession.MinimapMark? in
+        let people = npcs.compactMap { npc -> GameSession.MinimapMark? in
             let cell = map.cell(at: npc.node.position)
             guard !npc.node.isHidden, seen(cell) else { return nil }
             guard let kind = session.minimapKind(for: npc.def) else { return nil }
             return GameSession.MinimapMark(cell: cell, kind: kind)
         }
+        // What you lost, where it lies.
+        let lost = pileNodes.sorted { $0.key.uuidString < $1.key.uuidString }
+            .map { GameSession.MinimapMark(cell: map.cell(at: $0.value.position), kind: .lost) }
+        return people + lost
     }
 
     /// Whether the minimap shows only what you've seen (`GameSession.isFogged`). From the map, not
@@ -1912,6 +1918,34 @@ final class WorldScene: SKScene {
             return .pet(pet.id)
         }
         return crowd?.adventurer(at: point).map { .adventurer($0) }
+    }
+
+    /// What you lost when you fell on this map (`LostPile`, `ContinentScene.refreshPiles`), lying
+    /// where you fell, and the HUD's Pick up button while you stand by it. Picked up, or taken by
+    /// someone else, it goes in a puff of smoke.
+    private func refreshPiles() {
+        session.watchPiles()
+        let piles = session.piles(on: def.id)
+        for (id, node) in pileNodes where !piles.contains(where: { $0.id == id }) {
+            SkillEffects.smoke(at: node.position, in: world)
+            node.removeFromParent()
+            pileNodes[id] = nil
+        }
+        for pile in piles where pileNodes[pile.id] == nil {
+            var at = map.center(of: map.center)
+            if let position = pile.position, position.count == 2 { at = CGPoint(x: position[0], y: position[1]) }
+            if !canStand(at: at), let open = map.nearestWalkable(to: map.cell(at: at)) { at = map.center(of: open) }
+            let node = Walker(cycle: art.walkCycle("lost_pile"), label: L("Your things"))
+            node.position = at
+            node.zPosition = -at.y
+            world.addChild(node)
+            node.settle()
+            pileNodes[pile.id] = node
+        }
+        let near = pileNodes.map { (id: $0.key, distance: $0.value.position.distance(to: player.position)) }
+            .filter { $0.distance <= GameSession.pickUpReach }
+            .min { $0.distance < $1.distance }?.id
+        if session.nearbyPile != near { session.nearbyPile = near }
     }
 
     /// Keeps the party on this map in sync with who's in it: friends at your side walk behind you,
@@ -2325,6 +2359,7 @@ final class WorldScene: SKScene {
             // Those heading off say goodbye, from among the crowd (a friend who left your party has
             // just rejoined it).
             for id in goodbyes { adventurerSays(GameSession.goodbyes.randomElement() ?? L("See you around!"), id) }
+            refreshPiles()
             let nearby = crowd?.adventurer(near: player.position, within: 80)
             if session.nearbyAdventurer?.id != nearby?.id { session.nearbyAdventurer = nearby }
             let group = nearby.flatMap { crowd?.group(of: $0.id) } ?? []

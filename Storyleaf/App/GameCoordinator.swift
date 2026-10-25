@@ -500,6 +500,13 @@ final class GameCoordinator {
         session.nearbyAdventurer = nil
     }
 
+    /// Picks up what you lost when you fell, lying where you stand (`GameSession.pickUp`).
+    func pickUpPile() {
+        guard let id = session.nearbyPile else { return }
+        session.pickUp(id)
+        session.save()
+    }
+
     /// Leaves the party you've joined, of your own accord.
     func leaveJoinedParty() {
         guard let leader = session.leaveJoinedParty(.wandered) else { return }
@@ -564,9 +571,10 @@ final class GameCoordinator {
             session.post(L("The {chest} is empty. Come back later.", ["chest": chest.name.midSentence]))
         } else if session.openChest(chest) != nil {
             session.save()
-        } else {
+        } else if !session.canOpen(chest) {
             session.post(L("The ribbon is tied tight. Maybe someone in town knows who it's for."))
         }
+        // (Else the bag was full: `openChest` said so, and it stays shut till there's room.)
     }
 
     /// A waystone (`NPCRole.waystone`): once its quest has woken it, anywhere you can travel to,

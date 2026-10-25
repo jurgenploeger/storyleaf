@@ -1039,7 +1039,9 @@ final class BattleController {
             let runaway = engine.combatants.first { $0.hasFled }?.name ?? L("The monster")
             finish(.fled, lines: [L("{name} ran away!", ["name": runaway])] + concludeVictory() + afterTheFight())
         case .defeat:
-            finish(.defeat, lines: [L("{hero} fainted…", ["hero": hero?.name ?? L("You")])] + handOverSealed() + afterTheFight())
+            // Lost: what you carried is gone, and beaten in a duel, what you wore too (`loseBelongings`).
+            let lost = session.loseBelongings(worn: rival != nil)
+            finish(.defeat, lines: [L("{hero} fainted…", ["hero": hero?.name ?? L("You")])] + handOverSealed() + lost + afterTheFight())
         case .escaped:
             syncParty()
             finish(.escaped, lines: [L("You got away safely.")] + handOverSealed() + afterTheFight())
@@ -1237,8 +1239,8 @@ final class BattleController {
             session.record(.defeat, target: id)
             session.beatMonster(id, level: foe.level)
         }
-        session.data.gold += gold
-        rewardGold = gold
+        // Into the bag, if there's a slot for the coins (`GameSession.gainGold`).
+        rewardGold = session.gainGold(gold) ? gold : 0
 
         if heroIsDown {
             // Out cold, you learn nothing from it, like a fainted companion. The spoils are shared.
@@ -1290,16 +1292,15 @@ final class BattleController {
 
         lines += handOverSealed()
 
-        if Double.random(in: 0..<1) < 0.25 {
-            session.addItem("potion")
+        // Whatever doesn't fit in the bag is left behind (`GameSession.addItem`), so only what does is found.
+        if Double.random(in: 0..<1) < 0.25, session.addItem("potion") {
             loot["potion", default: 0] += 1
         }
 
         // Now and then a Homeward Feather for the way back to town; a boss always leaves one.
         let bossBeaten = engine.combatants.contains { $0.side == .enemies && $0.speciesID.flatMap { content.monster($0) }?.boss == true }
         if Double.random(in: 0..<1) < GameSession.featherDropChance(boss: bossBeaten),
-           content.item(GameSession.featherID) != nil {
-            session.addItem(GameSession.featherID)
+           content.item(GameSession.featherID) != nil, session.addItem(GameSession.featherID) {
             loot[GameSession.featherID, default: 0] += 1
         }
 
@@ -1310,8 +1311,7 @@ final class BattleController {
             return true
         }
         if let toughest = wildFoes.map(\.level).max(),
-           let seal = session.sealDrop(gap: toughest - levelBefore, boss: bossBeaten) {
-            session.addItem(seal.id)
+           let seal = session.sealDrop(gap: toughest - levelBefore, boss: bossBeaten), session.addItem(seal.id) {
             loot[seal.id, default: 0] += 1
             lines.append(L("A hard-won {item}!", ["item": seal.name]))
         }
@@ -1321,8 +1321,7 @@ final class BattleController {
             guard case .wild = foe.source, let id = foe.speciesID else { continue }
             let isBoss = content.monster(id)?.boss == true
             for _ in 0..<(isBoss ? 3 : 1) where isBoss || Double.random(in: 0..<1) < 0.35 {
-                guard let material = session.materialDrop(level: foe.level) else { continue }
-                session.addItem(material.id)
+                guard let material = session.materialDrop(level: foe.level), session.addItem(material.id) else { continue }
                 loot[material.id, default: 0] += 1
             }
         }
@@ -1342,9 +1341,9 @@ final class BattleController {
                                                          rare: foe.isRare, boss: isBoss)
             guard Double.random(in: 0..<1) < chance,
                   let gear = session.equipmentDrop(level: foe.level, best: foe.isRare || isBoss) else { continue }
-            session.addItem(gear.id)
-            loot[gear.id, default: 0] += 1
             gearFound += 1
+            guard session.addItem(gear.id) else { continue }
+            loot[gear.id, default: 0] += 1
             lines.append(L("{name} dropped {item}!", ["name": foe.name, "item": gear.name]))
         }
 
@@ -1359,8 +1358,7 @@ final class BattleController {
         }
 
         // A festive season's treat now and then, or once in a long while one of its hats.
-        if !wildFoes.isEmpty, let treat = session.seasonDrop() {
-            session.addItem(treat.id)
+        if !wildFoes.isEmpty, let treat = session.seasonDrop(), session.addItem(treat.id) {
             loot[treat.id, default: 0] += 1
             lines.append(L("A festive find: {item}!", ["item": treat.name]))
         }

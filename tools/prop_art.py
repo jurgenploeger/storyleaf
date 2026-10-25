@@ -617,6 +617,46 @@ def draw_waystone():
     return c
 
 
+def draw_lost_pile():
+    """What you lost when you fell, left where you fell (`LostPile`, `GameSession.loseBelongings`): a
+    burlap sack slumped on its side, its neck open and its tie loose, coins spilled out of it, a red
+    potion and a sword lying by it. Drawn with tools/pixel_kit.py as the lairs' pieces are (lit from
+    the top left, hue-shifted ramps, a tinted outline) and scored as scenery."""
+    from pixel_kit import Material, Sprite
+
+    burlap = Material("#b08a52", shades=5, texture=0.09, grain=1.0)
+    tie = Material("#8a5a2c", shades=4, texture=0.03)
+    gold = Material("#f2c444", shades=5, texture=0.02, gloss=0.6)
+    rim = Material("#b07a1c", shades=4, texture=0.02)
+    glass = Material("#d83a3a", shades=5, texture=0.0, gloss=0.8)
+    cork = Material("#9a7046", shades=3, texture=0.04)
+    steel = Material("#c4ccd8", shades=5, texture=0.02, gloss=0.6)
+    hilt = Material("#7a4a26", shades=4, texture=0.03)
+    s = Sprite(40, 32)
+    # The little sword behind, lying back to front.
+    s.stroke([(9, 13.5), (22, 6)], 2.6, steel)
+    s.stroke([(7.5, 11), (10.5, 16)], 1.6, hilt)
+    s.stroke([(4.5, 16.5), (8.5, 14.2)], 1.8, hilt)
+    # The sack: a fat body, its neck to the right, open.
+    s.ellipse(16, 21, 10.5, 7.5, burlap)
+    s.poly([(23, 16), (30, 13.5), (32, 18), (25, 24)], burlap, bulge=0.7)
+    s.ellipse(31, 16, 2.6, 3.2, tie, profile="flat", rot=-25)
+    s.stroke([(24, 17.5), (26, 21.5)], 1.4, tie)
+    # Coins spilled from its mouth: back to front, the nearer over the farther.
+    for cx, cy in ((34, 20), (29.5, 24.5), (35.5, 25.5), (31.5, 28.5)):
+        s.ellipse(cx, cy + 1.1, 3.4, 2.0, rim, profile="flat")
+        s.ellipse(cx, cy, 3.4, 2.0, gold)
+    # A red potion in front of the sack.
+    s.ellipse(11, 27, 3.4, 3.1, glass)
+    s.poly([(10, 21.5), (12, 21.5), (12, 24.5), (10, 24.5)], glass, bulge=0.5)
+    s.poly([(9.7, 20), (12.3, 20), (12.3, 21.8), (9.7, 21.8)], cork, profile="flat")
+    image = s.render(outline="tinted")
+    canvas = Canvas(image.width, image.height)
+    canvas.px = [[image.getpixel((x, y)) if image.getpixel((x, y))[3] else None for x in range(image.width)]
+                 for y in range(image.height)]
+    return canvas
+
+
 def frange(start, stop, step):
     """From `start` to `stop` (inclusive) in steps of `step`."""
     count = int(round((stop - start) / step))
@@ -650,6 +690,7 @@ DRAWINGS = {
     "candy_cane": draw_candy_cane,
     "cave_ladder": draw_cave_ladder,
     "cave_rope": draw_cave_rope,
+    "lost_pile": draw_lost_pile,
     "ship": draw_ship,
     "waystone": draw_waystone,
 }

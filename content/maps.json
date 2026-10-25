@@ -558,13 +558,19 @@
           "art": "warrior_guild",
           "x": -7,
           "y": -4,
-          "size": [5, 3]
+          "size": [
+            5,
+            3
+          ]
         },
         {
           "art": "wildfolk_lodge",
           "x": -16,
           "y": -4,
-          "size": [5, 3]
+          "size": [
+            5,
+            3
+          ]
         },
         {
           "art": "magic_tower",
@@ -582,7 +588,7 @@
           "y": 8
         },
         {
-          "art": "house",
+          "art": "bank",
           "x": 14,
           "y": 8
         },
@@ -907,6 +913,15 @@
           "y": -6,
           "price": 1000,
           "greeting": "A trim, a curl or a whole new colour? Sit yourself down and I'll have you looking like a hero in no time."
+        },
+        {
+          "id": "meadow_banker",
+          "name": "Banker Penny",
+          "role": "bank",
+          "art": "npc_banker",
+          "x": 14,
+          "y": 6,
+          "greeting": "Coins, gear, keepsakes: whatever you leave with me stays safe, whatever befalls you out there."
         },
         {
           "id": "shop",
@@ -3603,7 +3618,18 @@
         }
       ],
       "trails": [
-        {"to": [-66, -37], "via": [[-35, -28]]}
+        {
+          "to": [
+            -66,
+            -37
+          ],
+          "via": [
+            [
+              -35,
+              -28
+            ]
+          ]
+        }
       ],
       "npcs": [
         {
@@ -3626,20 +3652,81 @@
           "monster": "grumpy_oak",
           "level": 28,
           "lair": [
-            {"art": "tree_stump", "x": -4, "y": 0},
-            {"art": "thorn_bush", "x": -3, "y": 3},
-            {"art": "fallen_log", "x": 0, "y": 4},
-            {"art": "thorn_bush", "x": 3, "y": 3},
-            {"art": "tree_stump", "x": 4, "y": 0},
-            {"art": "big_hollow_tree", "x": 0, "y": 6},
-            {"art": "mushroom", "x": -2, "y": 1, "blocking": false},
-            {"art": "dead_bush", "x": 2, "y": 2, "blocking": false},
-            {"art": "toadstool", "x": -1, "y": -2, "blocking": false},
-            {"art": "tree_stump", "x": -2, "y": -3},
-            {"art": "tree_stump", "x": 2, "y": -3}
+            {
+              "art": "tree_stump",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "thorn_bush",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "fallen_log",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "thorn_bush",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "tree_stump",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "big_hollow_tree",
+              "x": 0,
+              "y": 6
+            },
+            {
+              "art": "mushroom",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "dead_bush",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "toadstool",
+              "x": -1,
+              "y": -2,
+              "blocking": false
+            },
+            {
+              "art": "tree_stump",
+              "x": -2,
+              "y": -3
+            },
+            {
+              "art": "tree_stump",
+              "x": 2,
+              "y": -3
+            }
           ],
-          "lairRing": {"tall": ["big_dark_tree", "big_hollow_tree", "dark_tree"], "low": ["thorn_bush", "tree_stump", "dead_bush"]},
-          "lairApproach": ["tree_stump", "fallen_log"],
+          "lairRing": {
+            "tall": [
+              "big_dark_tree",
+              "big_hollow_tree",
+              "dark_tree"
+            ],
+            "low": [
+              "thorn_bush",
+              "tree_stump",
+              "dead_bush"
+            ]
+          },
+          "lairApproach": [
+            "tree_stump",
+            "fallen_log"
+          ],
           "lairSign": "warning_post",
           "victory": {
             "title": "The Forest Smiles Again",
@@ -4380,7 +4467,7 @@
           "y": 7
         },
         {
-          "art": "house_purple",
+          "art": "bank",
           "x": -18,
           "y": 6
         },
@@ -4666,6 +4753,15 @@
           "y": 4,
           "price": 1000,
           "greeting": "Every colour of the rainbow, right here in Prismhaven! Which one will your hair be today?"
+        },
+        {
+          "id": "rainbow_banker",
+          "name": "Banker Opal",
+          "role": "bank",
+          "art": "npc_banker",
+          "x": -18,
+          "y": 4,
+          "greeting": "Prismhaven's vaults have never lost a coin. Leave what you don't need to carry with me."
         },
         {
           "id": "rainbow_shop",
@@ -5214,21 +5310,86 @@
           "monster": "big_bad_wolf",
           "level": 92,
           "lair": [
-            {"art": "ice_boulder", "x": -4, "y": 0},
-            {"art": "frozen_bush", "x": -3, "y": 3},
-            {"art": "fallen_log", "x": 0, "y": 4},
-            {"art": "ice_rock", "x": 3, "y": 3},
-            {"art": "ice_boulder", "x": 4, "y": 0},
-            {"art": "big_dead_tree", "x": 0, "y": 6},
-            {"art": "bone_pile", "x": -2, "y": 2},
-            {"art": "skull_bones", "x": -2, "y": 1, "blocking": false},
-            {"art": "small_skull", "x": 2, "y": 2, "blocking": false},
-            {"art": "small_skull", "x": -1, "y": -2, "blocking": false},
-            {"art": "torn_tent", "x": -3, "y": -3},
-            {"art": "bone_pile", "x": 3, "y": -2}
+            {
+              "art": "ice_boulder",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "frozen_bush",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "fallen_log",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "ice_rock",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "ice_boulder",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "big_dead_tree",
+              "x": 0,
+              "y": 6
+            },
+            {
+              "art": "bone_pile",
+              "x": -2,
+              "y": 2
+            },
+            {
+              "art": "skull_bones",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "small_skull",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "small_skull",
+              "x": -1,
+              "y": -2,
+              "blocking": false
+            },
+            {
+              "art": "torn_tent",
+              "x": -3,
+              "y": -3
+            },
+            {
+              "art": "bone_pile",
+              "x": 3,
+              "y": -2
+            }
           ],
-          "lairRing": {"tall": ["big_snow_pine", "big_dead_tree", "big_frost_pine"], "low": ["ice_boulder", "ice_rock", "frozen_bush"]},
-          "lairApproach": ["bone_pile", "skull_bones"],
+          "lairRing": {
+            "tall": [
+              "big_snow_pine",
+              "big_dead_tree",
+              "big_frost_pine"
+            ],
+            "low": [
+              "ice_boulder",
+              "ice_rock",
+              "frozen_bush"
+            ]
+          },
+          "lairApproach": [
+            "bone_pile",
+            "skull_bones"
+          ],
           "lairSign": "warning_post",
           "victory": {
             "title": "Nobody's Afraid Anymore",
@@ -5361,7 +5522,18 @@
         -9
       ],
       "trails": [
-        {"to": [24, 47], "via": [[12, 28]]}
+        {
+          "to": [
+            24,
+            47
+          ],
+          "via": [
+            [
+              12,
+              28
+            ]
+          ]
+        }
       ],
       "decor": [
         {
@@ -6272,7 +6444,18 @@
         0
       ],
       "trails": [
-        {"to": [74, 3], "via": [[36, -12]]}
+        {
+          "to": [
+            74,
+            3
+          ],
+          "via": [
+            [
+              36,
+              -12
+            ]
+          ]
+        }
       ],
       "npcs": [
         {
@@ -6295,20 +6478,80 @@
           "monster": "great_wisp",
           "level": 48,
           "lair": [
-            {"art": "tombstone", "x": -4, "y": 0},
-            {"art": "wisp_lantern", "x": -3, "y": 3},
-            {"art": "tombstone", "x": 0, "y": 4},
-            {"art": "wisp_lantern", "x": 3, "y": 3},
-            {"art": "tombstone", "x": 4, "y": 0},
-            {"art": "big_dead_tree", "x": 0, "y": 6},
-            {"art": "small_skull", "x": -2, "y": 1, "blocking": false},
-            {"art": "glow_mushroom", "x": 2, "y": 2, "blocking": false},
-            {"art": "skull_bones", "x": -1, "y": -2, "blocking": false},
-            {"art": "spooky_lantern", "x": -2, "y": -3},
-            {"art": "spooky_lantern", "x": 2, "y": -3}
+            {
+              "art": "tombstone",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "wisp_lantern",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "tombstone",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "wisp_lantern",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "tombstone",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "big_dead_tree",
+              "x": 0,
+              "y": 6
+            },
+            {
+              "art": "small_skull",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "glow_mushroom",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "skull_bones",
+              "x": -1,
+              "y": -2,
+              "blocking": false
+            },
+            {
+              "art": "spooky_lantern",
+              "x": -2,
+              "y": -3
+            },
+            {
+              "art": "spooky_lantern",
+              "x": 2,
+              "y": -3
+            }
           ],
-          "lairRing": {"tall": ["big_dead_tree", "dead_tree", "dark_tree"], "low": ["tombstone", "thorn_bush"]},
-          "lairApproach": ["spooky_lantern", "tombstone"],
+          "lairRing": {
+            "tall": [
+              "big_dead_tree",
+              "dead_tree",
+              "dark_tree"
+            ],
+            "low": [
+              "tombstone",
+              "thorn_bush"
+            ]
+          },
+          "lairApproach": [
+            "spooky_lantern",
+            "tombstone"
+          ],
           "lairSign": "warning_post",
           "victory": {
             "title": "The Light Goes Out",
@@ -6629,20 +6872,81 @@
           "monster": "rat_king",
           "level": 58,
           "lair": [
-            {"art": "barrels", "x": -4, "y": 0},
-            {"art": "wooden_crates", "x": -3, "y": 3},
-            {"art": "mine_cart", "x": 0, "y": 4},
-            {"art": "wooden_crates", "x": 3, "y": 3},
-            {"art": "barrels", "x": 4, "y": 0},
-            {"art": "junk_throne", "x": 0, "y": 2},
-            {"art": "small_skull", "x": -2, "y": 1, "blocking": false},
-            {"art": "skull_bones", "x": 2, "y": 2, "blocking": false},
-            {"art": "pebbles", "x": -1, "y": -2, "blocking": false},
-            {"art": "brazier", "x": -2, "y": -3},
-            {"art": "brazier", "x": 2, "y": -3},
-            {"art": "warning_post", "x": -3, "y": -6}
+            {
+              "art": "barrels",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "wooden_crates",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "mine_cart",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "wooden_crates",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "barrels",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "junk_throne",
+              "x": 0,
+              "y": 2
+            },
+            {
+              "art": "small_skull",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "skull_bones",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "pebbles",
+              "x": -1,
+              "y": -2,
+              "blocking": false
+            },
+            {
+              "art": "brazier",
+              "x": -2,
+              "y": -3
+            },
+            {
+              "art": "brazier",
+              "x": 2,
+              "y": -3
+            },
+            {
+              "art": "warning_post",
+              "x": -3,
+              "y": -6
+            }
           ],
-          "lairRing": {"tall": ["stalagmite"], "low": ["small_stalagmite", "barrels", "wooden_crates"], "radius": 5},
+          "lairRing": {
+            "tall": [
+              "stalagmite"
+            ],
+            "low": [
+              "small_stalagmite",
+              "barrels",
+              "wooden_crates"
+            ],
+            "radius": 5
+          },
           "victory": {
             "title": "The Rat King Falls",
             "story": [
@@ -7282,6 +7586,15 @@
           "greeting": "Even a dwarf needs a good cut now and then. I'll leave your beard be, unless you want it dyed to match."
         },
         {
+          "id": "goldburg_banker",
+          "name": "Banker Gunnar",
+          "role": "bank",
+          "art": "npc_banker",
+          "x": -8,
+          "y": 7,
+          "greeting": "Dwarven vaults, carved in solid rock. Your gold won't be safer anywhere in the world."
+        },
+        {
           "id": "goldburg_shop",
           "name": "Dwarven Forge",
           "role": "shop",
@@ -7425,7 +7738,7 @@
           "y": 11
         },
         {
-          "art": "adobe_house",
+          "art": "bank",
           "x": -8,
           "y": 9
         },
@@ -8008,20 +8321,81 @@
           "monster": "drunk_dragon",
           "level": 78,
           "lair": [
-            {"art": "oasis_palm", "x": -4, "y": 0},
-            {"art": "sand_ruin", "x": -3, "y": 3},
-            {"art": "oasis_palm", "x": 0, "y": 4},
-            {"art": "sandstone_boulder", "x": 3, "y": 3},
-            {"art": "oasis_palm", "x": 4, "y": 0},
-            {"art": "gold_hoard", "x": 0, "y": 2},
-            {"art": "barrels", "x": -2, "y": 1, "blocking": false},
-            {"art": "desert_pot", "x": 2, "y": 2, "blocking": false},
-            {"art": "skull_bones", "x": -1, "y": -2, "blocking": false},
-            {"art": "brazier", "x": -2, "y": -3},
-            {"art": "brazier", "x": 2, "y": -3}
+            {
+              "art": "oasis_palm",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "sand_ruin",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "oasis_palm",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "sandstone_boulder",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "oasis_palm",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "gold_hoard",
+              "x": 0,
+              "y": 2
+            },
+            {
+              "art": "barrels",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "desert_pot",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "skull_bones",
+              "x": -1,
+              "y": -2,
+              "blocking": false
+            },
+            {
+              "art": "brazier",
+              "x": -2,
+              "y": -3
+            },
+            {
+              "art": "brazier",
+              "x": 2,
+              "y": -3
+            }
           ],
-          "lairRing": {"tall": ["oasis_palm", "palm_tree", "sand_ruin"], "low": ["sandstone_boulder", "small_cactus", "desert_pot"]},
-          "lairApproach": ["barrels", "brazier"],
+          "lairRing": {
+            "tall": [
+              "oasis_palm",
+              "palm_tree",
+              "sand_ruin"
+            ],
+            "low": [
+              "sandstone_boulder",
+              "small_cactus",
+              "desert_pot"
+            ]
+          },
+          "lairApproach": [
+            "barrels",
+            "brazier"
+          ],
           "lairSign": "warning_post",
           "victory": {
             "title": "A Dragon Sobers Up",
@@ -8136,8 +8510,30 @@
         6
       ],
       "trails": [
-        {"to": [74, 46], "via": [[42, 28]]},
-        {"to": [-45, -39], "via": [[-18, -27]]}
+        {
+          "to": [
+            74,
+            46
+          ],
+          "via": [
+            [
+              42,
+              28
+            ]
+          ]
+        },
+        {
+          "to": [
+            -45,
+            -39
+          ],
+          "via": [
+            [
+              -18,
+              -27
+            ]
+          ]
+        }
       ],
       "buildings": [
         {
@@ -9134,18 +9530,68 @@
           "monster": "moon_rabbit_queen",
           "level": 105,
           "lair": [
-            {"art": "moon_lantern_post", "x": -4, "y": 0},
-            {"art": "moon_flower", "x": -3, "y": 3},
-            {"art": "statue", "x": 0, "y": 4},
-            {"art": "moon_flower", "x": 3, "y": 3},
-            {"art": "moon_lantern_post", "x": 4, "y": 0},
-            {"art": "mochi_stack", "x": 1, "y": 2},
-            {"art": "moon_flower", "x": -2, "y": 1, "blocking": false},
-            {"art": "mochi_stack", "x": 2, "y": 2, "blocking": false},
-            {"art": "moon_lantern_post", "x": -2, "y": -3},
-            {"art": "moon_lantern_post", "x": 2, "y": -3}
+            {
+              "art": "moon_lantern_post",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "moon_flower",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "statue",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "moon_flower",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "moon_lantern_post",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "mochi_stack",
+              "x": 1,
+              "y": 2
+            },
+            {
+              "art": "moon_flower",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "mochi_stack",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "moon_lantern_post",
+              "x": -2,
+              "y": -3
+            },
+            {
+              "art": "moon_lantern_post",
+              "x": 2,
+              "y": -3
+            }
           ],
-          "lairRing": {"tall": ["moon_lantern_post"], "low": ["moon_flower"], "radius": 5},
+          "lairRing": {
+            "tall": [
+              "moon_lantern_post"
+            ],
+            "low": [
+              "moon_flower"
+            ],
+            "radius": 5
+          },
           "victory": {
             "title": "The Queen Hops Home",
             "story": [
@@ -10107,20 +10553,81 @@
           "monster": "golden_grunt",
           "level": 20,
           "lair": [
-            {"art": "wooden_crates", "x": -4, "y": 0},
-            {"art": "mine_cart", "x": -3, "y": 3},
-            {"art": "treasure_chest", "x": 0, "y": 4},
-            {"art": "mine_beam", "x": 3, "y": 3},
-            {"art": "barrels", "x": 4, "y": 0},
-            {"art": "gold_hoard", "x": 0, "y": 2},
-            {"art": "gift_box_gold", "x": -2, "y": 1, "blocking": false},
-            {"art": "small_skull", "x": 2, "y": 2, "blocking": false},
-            {"art": "pebbles", "x": -1, "y": -2, "blocking": false},
-            {"art": "brazier", "x": -2, "y": -3},
-            {"art": "brazier", "x": 2, "y": -3},
-            {"art": "warning_post", "x": -3, "y": -6}
+            {
+              "art": "wooden_crates",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "mine_cart",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "treasure_chest",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "mine_beam",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "barrels",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "gold_hoard",
+              "x": 0,
+              "y": 2
+            },
+            {
+              "art": "gift_box_gold",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "small_skull",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "pebbles",
+              "x": -1,
+              "y": -2,
+              "blocking": false
+            },
+            {
+              "art": "brazier",
+              "x": -2,
+              "y": -3
+            },
+            {
+              "art": "brazier",
+              "x": 2,
+              "y": -3
+            },
+            {
+              "art": "warning_post",
+              "x": -3,
+              "y": -6
+            }
           ],
-          "lairRing": {"tall": ["mine_beam", "stalagmite"], "low": ["wooden_crates", "small_stalagmite"], "radius": 5},
+          "lairRing": {
+            "tall": [
+              "mine_beam",
+              "stalagmite"
+            ],
+            "low": [
+              "wooden_crates",
+              "small_stalagmite"
+            ],
+            "radius": 5
+          },
           "victory": {
             "title": "Fool's Gold",
             "story": [
@@ -11275,20 +11782,80 @@
           "monster": "wolf_leader",
           "level": 36,
           "lair": [
-            {"art": "standing_stone", "x": -4, "y": 0},
-            {"art": "boulder", "x": -3, "y": 3},
-            {"art": "standing_stone", "x": 0, "y": 4},
-            {"art": "boulder", "x": 3, "y": 3},
-            {"art": "standing_stone", "x": 4, "y": 0},
-            {"art": "big_dead_tree", "x": 0, "y": 6},
-            {"art": "skull_bones", "x": -2, "y": 1, "blocking": false},
-            {"art": "small_skull", "x": 2, "y": 2, "blocking": false},
-            {"art": "small_skull", "x": -1, "y": -2, "blocking": false},
-            {"art": "brazier", "x": -2, "y": -3},
-            {"art": "brazier", "x": 2, "y": -3},
-            {"art": "warning_post", "x": -3, "y": -6}
+            {
+              "art": "standing_stone",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "boulder",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "standing_stone",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "boulder",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "standing_stone",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "big_dead_tree",
+              "x": 0,
+              "y": 6
+            },
+            {
+              "art": "skull_bones",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "small_skull",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "small_skull",
+              "x": -1,
+              "y": -2,
+              "blocking": false
+            },
+            {
+              "art": "brazier",
+              "x": -2,
+              "y": -3
+            },
+            {
+              "art": "brazier",
+              "x": 2,
+              "y": -3
+            },
+            {
+              "art": "warning_post",
+              "x": -3,
+              "y": -6
+            }
           ],
-          "lairRing": {"tall": ["standing_stone"], "low": ["boulder", "small_boulder"], "radius": 5},
+          "lairRing": {
+            "tall": [
+              "standing_stone"
+            ],
+            "low": [
+              "boulder",
+              "small_boulder"
+            ],
+            "radius": 5
+          },
           "victory": {
             "title": "The Lambs Come Home",
             "story": [
@@ -11996,7 +12563,7 @@
           "y": 7
         },
         {
-          "art": "house_green",
+          "art": "bank",
           "x": -15,
           "y": 6
         },
@@ -12112,6 +12679,15 @@
           "y": -4,
           "price": 1000,
           "greeting": "The wind off the hills tousles everyone's hair. Let me set yours just the way you like it."
+        },
+        {
+          "id": "bluebird_banker",
+          "name": "Banker Wren",
+          "role": "bank",
+          "art": "npc_banker",
+          "x": -15,
+          "y": 4,
+          "greeting": "Travelling light? Leave the rest with me. It'll be here, safe and sound, when you come back."
         },
         {
           "id": "bluebird_shop",
@@ -13746,19 +14322,75 @@
           "monster": "puppet_king",
           "level": 62,
           "lair": [
-            {"art": "marionette", "x": -4, "y": 0},
-            {"art": "toy_blocks", "x": -3, "y": 3},
-            {"art": "marionette", "x": 0, "y": 4},
-            {"art": "jack_in_the_box", "x": 3, "y": 3},
-            {"art": "marionette", "x": 4, "y": 0},
-            {"art": "marionette", "x": -1, "y": 2},
-            {"art": "toy_blocks", "x": -2, "y": 1, "blocking": false},
-            {"art": "spooky_lantern", "x": 2, "y": 2, "blocking": false},
-            {"art": "spooky_lantern", "x": -2, "y": -3},
-            {"art": "spooky_lantern", "x": 2, "y": -3},
-            {"art": "warning_post", "x": -3, "y": -6}
+            {
+              "art": "marionette",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "toy_blocks",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "marionette",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "jack_in_the_box",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "marionette",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "marionette",
+              "x": -1,
+              "y": 2
+            },
+            {
+              "art": "toy_blocks",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "spooky_lantern",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "spooky_lantern",
+              "x": -2,
+              "y": -3
+            },
+            {
+              "art": "spooky_lantern",
+              "x": 2,
+              "y": -3
+            },
+            {
+              "art": "warning_post",
+              "x": -3,
+              "y": -6
+            }
           ],
-          "lairRing": {"tall": ["marionette", "spooky_lantern"], "low": ["toy_blocks", "jack_in_the_box"], "radius": 5},
+          "lairRing": {
+            "tall": [
+              "marionette",
+              "spooky_lantern"
+            ],
+            "low": [
+              "toy_blocks",
+              "jack_in_the_box"
+            ],
+            "radius": 5
+          },
           "victory": {
             "title": "The Strings Are Cut",
             "story": [
@@ -14742,20 +15374,81 @@
           "monster": "rock_monster",
           "level": 86,
           "lair": [
-            {"art": "boulder", "x": -4, "y": 0},
-            {"art": "red_rock", "x": -3, "y": 3},
-            {"art": "standing_stone", "x": 0, "y": 4},
-            {"art": "red_rock", "x": 3, "y": 3},
-            {"art": "boulder", "x": 4, "y": 0},
-            {"art": "standing_stone", "x": 0, "y": 6},
-            {"art": "pebbles", "x": -2, "y": 1, "blocking": false},
-            {"art": "small_boulder", "x": 2, "y": 2, "blocking": false},
-            {"art": "skull_bones", "x": -1, "y": -2, "blocking": false},
-            {"art": "brazier", "x": -2, "y": -3},
-            {"art": "brazier", "x": 2, "y": -3},
-            {"art": "warning_post", "x": -3, "y": -6}
+            {
+              "art": "boulder",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "red_rock",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "standing_stone",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "red_rock",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "boulder",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "standing_stone",
+              "x": 0,
+              "y": 6
+            },
+            {
+              "art": "pebbles",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "small_boulder",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "skull_bones",
+              "x": -1,
+              "y": -2,
+              "blocking": false
+            },
+            {
+              "art": "brazier",
+              "x": -2,
+              "y": -3
+            },
+            {
+              "art": "brazier",
+              "x": 2,
+              "y": -3
+            },
+            {
+              "art": "warning_post",
+              "x": -3,
+              "y": -6
+            }
           ],
-          "lairRing": {"tall": ["standing_stone", "boulder"], "low": ["red_rock", "small_boulder"], "radius": 5},
+          "lairRing": {
+            "tall": [
+              "standing_stone",
+              "boulder"
+            ],
+            "low": [
+              "red_rock",
+              "small_boulder"
+            ],
+            "radius": 5
+          },
           "victory": {
             "title": "Dozywick Wakes Up",
             "story": [
@@ -15220,7 +15913,18 @@
         }
       },
       "trails": [
-        {"to": [-13, 34], "via": [[-6, 20]]}
+        {
+          "to": [
+            -13,
+            34
+          ],
+          "via": [
+            [
+              -6,
+              20
+            ]
+          ]
+        }
       ],
       "npcs": [
         {
@@ -15234,19 +15938,74 @@
           "monster": "idreus",
           "level": 125,
           "lair": [
-            {"art": "standing_stone", "x": -4, "y": 0},
-            {"art": "standing_stone", "x": -3, "y": 3},
-            {"art": "standing_stone", "x": 0, "y": 4},
-            {"art": "standing_stone", "x": 3, "y": 3},
-            {"art": "standing_stone", "x": 4, "y": 0},
-            {"art": "statue", "x": 0, "y": 6},
-            {"art": "treasure_chest", "x": -2, "y": 1, "blocking": false},
-            {"art": "skull_bones", "x": 2, "y": 2, "blocking": false},
-            {"art": "brazier", "x": -2, "y": -3},
-            {"art": "brazier", "x": 2, "y": -3}
+            {
+              "art": "standing_stone",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "standing_stone",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "standing_stone",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "standing_stone",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "standing_stone",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "statue",
+              "x": 0,
+              "y": 6
+            },
+            {
+              "art": "treasure_chest",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "skull_bones",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "brazier",
+              "x": -2,
+              "y": -3
+            },
+            {
+              "art": "brazier",
+              "x": 2,
+              "y": -3
+            }
           ],
-          "lairRing": {"tall": ["broken_pillar", "wall_pillar", "standing_stone"], "low": ["sandstone_boulder", "sand_ruin"]},
-          "lairApproach": ["brazier", "broken_pillar"],
+          "lairRing": {
+            "tall": [
+              "broken_pillar",
+              "wall_pillar",
+              "standing_stone"
+            ],
+            "low": [
+              "sandstone_boulder",
+              "sand_ruin"
+            ]
+          },
+          "lairApproach": [
+            "brazier",
+            "broken_pillar"
+          ],
           "lairSign": "warning_post",
           "victory": {
             "title": "The Goddess's Treasure",
@@ -16667,7 +17426,18 @@
         }
       },
       "trails": [
-        {"to": [-37, 6], "via": [[-20, 4]]}
+        {
+          "to": [
+            -37,
+            6
+          ],
+          "via": [
+            [
+              -20,
+              4
+            ]
+          ]
+        }
       ],
       "npcs": [
         {
@@ -16681,20 +17451,79 @@
           "monster": "tide_dragon",
           "level": 170,
           "lair": [
-            {"art": "wall_pillar", "x": -4, "y": 0},
-            {"art": "coral", "x": -3, "y": 3},
-            {"art": "wall_pillar", "x": 0, "y": 4},
-            {"art": "coral", "x": 3, "y": 3},
-            {"art": "wall_pillar", "x": 4, "y": 0},
-            {"art": "statue", "x": 0, "y": 6},
-            {"art": "seashells", "x": -2, "y": 1, "blocking": false},
-            {"art": "seashells", "x": 2, "y": 2, "blocking": false},
-            {"art": "message_bottle", "x": -1, "y": -2, "blocking": false},
-            {"art": "brazier", "x": -2, "y": -3},
-            {"art": "brazier", "x": 2, "y": -3}
+            {
+              "art": "wall_pillar",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "coral",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "wall_pillar",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "coral",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "wall_pillar",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "statue",
+              "x": 0,
+              "y": 6
+            },
+            {
+              "art": "seashells",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "seashells",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "message_bottle",
+              "x": -1,
+              "y": -2,
+              "blocking": false
+            },
+            {
+              "art": "brazier",
+              "x": -2,
+              "y": -3
+            },
+            {
+              "art": "brazier",
+              "x": 2,
+              "y": -3
+            }
           ],
-          "lairRing": {"tall": ["wall_pillar", "broken_pillar"], "low": ["coral", "boulder"]},
-          "lairApproach": ["brazier", "broken_pillar"],
+          "lairRing": {
+            "tall": [
+              "wall_pillar",
+              "broken_pillar"
+            ],
+            "low": [
+              "coral",
+              "boulder"
+            ]
+          },
+          "lairApproach": [
+            "brazier",
+            "broken_pillar"
+          ],
           "lairSign": "warning_post",
           "victory": {
             "title": "The Tide Turns",
@@ -17030,20 +17859,81 @@
           "monster": "silver_lieutenant",
           "level": 185,
           "lair": [
-            {"art": "wall_pillar", "x": -4, "y": 0},
-            {"art": "tombstone", "x": -3, "y": 3},
-            {"art": "statue", "x": 0, "y": 4},
-            {"art": "tombstone", "x": 3, "y": 3},
-            {"art": "wall_pillar", "x": 4, "y": 0},
-            {"art": "brazier", "x": 0, "y": 2},
-            {"art": "skull_bones", "x": -2, "y": 1, "blocking": false},
-            {"art": "small_skull", "x": 2, "y": 2, "blocking": false},
-            {"art": "ore_vein", "x": -1, "y": -2, "blocking": false},
-            {"art": "brazier", "x": -2, "y": -3},
-            {"art": "brazier", "x": 2, "y": -3},
-            {"art": "warning_post", "x": -3, "y": -6}
+            {
+              "art": "wall_pillar",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "tombstone",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "statue",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "tombstone",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "wall_pillar",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "brazier",
+              "x": 0,
+              "y": 2
+            },
+            {
+              "art": "skull_bones",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "small_skull",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "ore_vein",
+              "x": -1,
+              "y": -2,
+              "blocking": false
+            },
+            {
+              "art": "brazier",
+              "x": -2,
+              "y": -3
+            },
+            {
+              "art": "brazier",
+              "x": 2,
+              "y": -3
+            },
+            {
+              "art": "warning_post",
+              "x": -3,
+              "y": -6
+            }
           ],
-          "lairRing": {"tall": ["wall_pillar", "stalagmite"], "low": ["tombstone", "small_stalagmite"], "radius": 5},
+          "lairRing": {
+            "tall": [
+              "wall_pillar",
+              "stalagmite"
+            ],
+            "low": [
+              "tombstone",
+              "small_stalagmite"
+            ],
+            "radius": 5
+          },
           "victory": {
             "title": "The Way Is Open",
             "story": [
@@ -17674,11 +18564,19 @@
           "art": "emerald_spire",
           "x": 1,
           "y": -26,
-          "size": [5, 3]
+          "size": [
+            5,
+            3
+          ]
         }
       ],
       "trails": [
-        {"to": [29, -24]}
+        {
+          "to": [
+            29,
+            -24
+          ]
+        }
       ],
       "npcs": [
         {
@@ -17701,20 +18599,80 @@
           "monster": "emerald_dragon",
           "level": 200,
           "lair": [
-            {"art": "wall_pillar", "x": -4, "y": 0},
-            {"art": "crystal_spire", "x": -3, "y": 3},
-            {"art": "statue", "x": 0, "y": 4},
-            {"art": "crystal_spire", "x": 3, "y": 3},
-            {"art": "wall_pillar", "x": 4, "y": 0},
-            {"art": "gold_hoard", "x": 0, "y": 2},
-            {"art": "skull_bones", "x": -2, "y": 1, "blocking": false},
-            {"art": "gold_hoard", "x": 2, "y": 2, "blocking": false},
-            {"art": "small_skull", "x": -1, "y": -2, "blocking": false},
-            {"art": "brazier", "x": -2, "y": -3},
-            {"art": "brazier", "x": 2, "y": -3}
+            {
+              "art": "wall_pillar",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "crystal_spire",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "statue",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "crystal_spire",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "wall_pillar",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "gold_hoard",
+              "x": 0,
+              "y": 2
+            },
+            {
+              "art": "skull_bones",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "gold_hoard",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "small_skull",
+              "x": -1,
+              "y": -2,
+              "blocking": false
+            },
+            {
+              "art": "brazier",
+              "x": -2,
+              "y": -3
+            },
+            {
+              "art": "brazier",
+              "x": 2,
+              "y": -3
+            }
           ],
-          "lairRing": {"tall": ["crystal_spire", "wall_pillar", "broken_pillar"], "low": ["crystal_shard", "small_crystal_spire"]},
-          "lairApproach": ["brazier", "statue"],
+          "lairRing": {
+            "tall": [
+              "crystal_spire",
+              "wall_pillar",
+              "broken_pillar"
+            ],
+            "low": [
+              "crystal_shard",
+              "small_crystal_spire"
+            ]
+          },
+          "lairApproach": [
+            "brazier",
+            "statue"
+          ],
           "lairSign": "warning_post",
           "victory": {
             "title": "The Emerald Gates",
@@ -18296,6 +19254,11 @@
           "y": -10
         },
         {
+          "art": "bank",
+          "x": -14,
+          "y": 4
+        },
+        {
           "art": "crystal_cottage",
           "x": -10,
           "y": -9
@@ -18304,13 +19267,19 @@
           "art": "star_observatory",
           "x": -1,
           "y": -15,
-          "size": [5, 3]
+          "size": [
+            5,
+            3
+          ]
         },
         {
           "art": "moonwell",
           "x": 13,
           "y": -7,
-          "size": [5, 3]
+          "size": [
+            5,
+            3
+          ]
         }
       ],
       "npcs": [
@@ -18349,6 +19318,15 @@
           ]
         },
         {
+          "id": "glimmer_banker",
+          "name": "Clover",
+          "role": "bank",
+          "art": "npc_banker",
+          "x": -14,
+          "y": 2,
+          "greeting": "Far from home, and carrying too much? Leave it with me, under the roots. Nothing gets lost here."
+        },
+        {
           "id": "pip_lamplighter",
           "name": "Pip the Lamplighter",
           "role": "quests",
@@ -18369,18 +19347,70 @@
           "monster": "fallen_star",
           "level": 150,
           "lair": [
-            {"art": "star_crystal", "x": -4, "y": 0},
-            {"art": "crystal_shard", "x": -3, "y": 3},
-            {"art": "crystal_spire", "x": 0, "y": 4},
-            {"art": "pink_shard", "x": 3, "y": 3},
-            {"art": "star_crystal", "x": 4, "y": 0},
-            {"art": "star_crystal", "x": 1, "y": 2},
-            {"art": "small_crystal_spire", "x": -2, "y": 1, "blocking": false},
-            {"art": "pink_shard", "x": 2, "y": 2, "blocking": false},
-            {"art": "wisp_lantern", "x": -2, "y": -3},
-            {"art": "wisp_lantern", "x": 2, "y": -3}
+            {
+              "art": "star_crystal",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "crystal_shard",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "crystal_spire",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "pink_shard",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "star_crystal",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "star_crystal",
+              "x": 1,
+              "y": 2
+            },
+            {
+              "art": "small_crystal_spire",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "pink_shard",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "wisp_lantern",
+              "x": -2,
+              "y": -3
+            },
+            {
+              "art": "wisp_lantern",
+              "x": 2,
+              "y": -3
+            }
           ],
-          "lairRing": {"tall": ["star_crystal", "crystal_spire"], "low": ["crystal_shard", "pink_shard"], "radius": 5},
+          "lairRing": {
+            "tall": [
+              "star_crystal",
+              "crystal_spire"
+            ],
+            "low": [
+              "crystal_shard",
+              "pink_shard"
+            ],
+            "radius": 5
+          },
           "victory": {
             "title": "A Star Goes Home",
             "story": [
@@ -19152,19 +20182,76 @@
           "monster": "prism_drake",
           "level": 180,
           "lair": [
-            {"art": "crystal_spire", "x": -4, "y": 0},
-            {"art": "crystal_geode", "x": -3, "y": 3},
-            {"art": "amethyst_spire", "x": 0, "y": 4},
-            {"art": "crystal_geode", "x": 3, "y": 3},
-            {"art": "crystal_spire", "x": 4, "y": 0},
-            {"art": "gold_hoard", "x": 0, "y": 2},
-            {"art": "star_crystal", "x": -2, "y": 1, "blocking": false},
-            {"art": "small_crystal_spire", "x": 2, "y": 2, "blocking": false},
-            {"art": "crystal_shard", "x": -1, "y": -2, "blocking": false},
-            {"art": "small_crystal_spire", "x": -2, "y": -3},
-            {"art": "small_crystal_spire", "x": 2, "y": -3}
+            {
+              "art": "crystal_spire",
+              "x": -4,
+              "y": 0
+            },
+            {
+              "art": "crystal_geode",
+              "x": -3,
+              "y": 3
+            },
+            {
+              "art": "amethyst_spire",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "art": "crystal_geode",
+              "x": 3,
+              "y": 3
+            },
+            {
+              "art": "crystal_spire",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "art": "gold_hoard",
+              "x": 0,
+              "y": 2
+            },
+            {
+              "art": "star_crystal",
+              "x": -2,
+              "y": 1,
+              "blocking": false
+            },
+            {
+              "art": "small_crystal_spire",
+              "x": 2,
+              "y": 2,
+              "blocking": false
+            },
+            {
+              "art": "crystal_shard",
+              "x": -1,
+              "y": -2,
+              "blocking": false
+            },
+            {
+              "art": "small_crystal_spire",
+              "x": -2,
+              "y": -3
+            },
+            {
+              "art": "small_crystal_spire",
+              "x": 2,
+              "y": -3
+            }
           ],
-          "lairRing": {"tall": ["crystal_spire", "amethyst_spire"], "low": ["small_crystal_spire", "crystal_shard"], "radius": 5},
+          "lairRing": {
+            "tall": [
+              "crystal_spire",
+              "amethyst_spire"
+            ],
+            "low": [
+              "small_crystal_spire",
+              "crystal_shard"
+            ],
+            "radius": 5
+          },
           "victory": {
             "title": "The Glimmerdeep Shines",
             "story": [

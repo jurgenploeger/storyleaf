@@ -557,7 +557,7 @@ for map_def in maps.values():
             check(any(max(abs(t["to"][0] - npc["x"]), abs(t["to"][1] - npc["y"])) <= 8 for t in map_def.get("trails", []))
                   and npc.get("summit") is None and not npc.get("at"),
                   f"npc {npc['id']} lairSign → it stands by a trail to the boss (one ending within 8 cells of it)")
-        check(npc["role"] in ("healer", "shop", "quests", "guild", "chest", "boss", "smith", "weaver", "stairs", "barber", "waystone"), f"npc {npc['id']} → unknown role {npc['role']}")
+        check(npc["role"] in ("healer", "shop", "quests", "guild", "chest", "boss", "smith", "weaver", "stairs", "barber", "waystone", "bank"), f"npc {npc['id']} → unknown role {npc['role']}")
         # A waystone (`NPCRole.waystone`): out in a wild land on the continent (you arrive in front of
         # it, `WorldMap.waystoneArrival`), one to a land, woken by a quest someone in that land gives.
         if npc["role"] == "waystone":

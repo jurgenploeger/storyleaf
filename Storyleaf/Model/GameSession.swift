@@ -51,6 +51,8 @@ final class GameSession {
     var mapName = ""
     /// NPC close enough to talk to, for the HUD's Talk button.
     var nearbyNPC: String?
+    /// What you lost, lying near enough to pick up (`LostPile`), for the HUD's Pick up button.
+    var nearbyPile: UUID?
     /// The tile the hero stands on, for the minimap.
     var mapCell = GridPoint(col: 0, row: 0)
     /// Everyone else on this map, as dots on the minimap.
@@ -77,7 +79,8 @@ final class GameSession {
     /// for you, or one to hand in), the healer, the shop, the smith, the weaver, a guild, a chest
     /// still to open, a boss still to beat, and a cave's stairs down or up.
     struct MinimapMark: Hashable {
-        enum Kind { case quest, questNew, questReady, healer, shop, smith, weaver, barber, guild, chest, boss, stairsDown, stairsUp, waystone }
+        /// `lost`: what you lost when you fell, where it lies (`LostPile`).
+        enum Kind { case quest, questNew, questReady, healer, shop, smith, weaver, barber, bank, guild, chest, boss, stairsDown, stairsUp, waystone, lost }
         let cell: GridPoint
         let kind: Kind
     }
@@ -187,6 +190,7 @@ final class GameSession {
             self.data.hero.bonusSkillPoints = legacy.count
         }
         Self.moveGearToItsSlot(&self.data)
+        stockBankOnce()
         deliverQuestTreasures()
         applyLook()
     }
@@ -199,9 +203,10 @@ final class GameSession {
         var sent: [ItemDef] = []
         for quest in content.quests where data.quests[quest.id]?.state == .completed {
             for id in quest.reward.items ?? [] where content.isQuestTreasure(id) && !given.contains(id) {
-                given.insert(id)
-                guard let item = content.item(id) else { continue }
+                // Not while the bag is full: it waits, and comes once there's room.
+                guard let item = content.item(id), hasRoom(for: [id]) else { continue }
                 addItem(id)
+                given.insert(id)
                 sent.append(item)
                 let giver = content.npc(quest.giver)?.name ?? quest.giver
                 post(L("{giver} sends you {item}, for “{quest}”.", ["giver": giver, "item": item.name, "quest": quest.title]), .reward)
@@ -240,6 +245,7 @@ final class GameSession {
         slotted.skillLevelsDoubled = true  // already on the 10-step skill scale
         slotted.levelsRescaled = true      // and on the 200-level scale (a debug level isn't stretched)
         slotted.giftDay = GameSession.dayKey()  // the first daily gift is tomorrow's: today has the story and the tour
+        slotted.bankStocked = true         // nothing to put in the bank: a new game starts with it
         let session = GameSession(data: slotted)
         session.restoreHero()
         // Like Fairyland Online, your first companion comes from an egg in the first quest.
@@ -497,11 +503,11 @@ final class GameSession {
         var given = 0
         for (id, count) in data.inventory where count > 0 {
             guard let hat = content.item(id)?.headpiece else { continue }
-            addItem(hat, count)
+            addItem(hat, count, force: true)
             given += count
         }
         if let hat = data.hero.equipment[.armor].flatMap(content.item)?.headpiece {
-            if data.hero.equipment[.head] == nil { data.hero.equipment[.head] = hat } else { addItem(hat) }
+            if data.hero.equipment[.head] == nil { data.hero.equipment[.head] = hat } else { addItem(hat, force: true) }
             given += 1
             applyLook()
         }
@@ -717,7 +723,7 @@ final class GameSession {
         restoreHero()
     }
 
-    private func clampHero() {
+    func clampHero() {
         let stats = heroStats
         data.hero.hp = min(data.hero.hp, stats.hp)
         data.hero.mp = min(data.hero.mp, stats.mp)
@@ -1243,8 +1249,12 @@ final class GameSession {
         } else {
             data.openedChests = (data.openedChests ?? []) + [chest.id]
         }
+        guard hasRoom(for: [found.id], gold: gold) else {
+            post(L("Your bag is full. Make room, then open the chest."), .system)
+            return nil
+        }
         addItem(found.id)
-        data.gold += gold
+        gainGold(gold)
         data.chestsOpenedAt = (data.chestsOpenedAt ?? [:]).merging([chest.id: Date()]) { $1 }
         SoundEffects.shared.play(.chest)
         record(.collect, target: "gift_box")
@@ -1281,8 +1291,18 @@ final class GameSession {
 
     func count(of id: String) -> Int { data.inventory[id] ?? 0 }
 
-    func addItem(_ id: String, _ amount: Int = 1) {
+    /// Into the bag, if it fits: a kind you carry stacks, a new one takes one of its 50 slots
+    /// (`GameSession+Bank`). False, and a note, when the bag is full: it's left behind. `force`: put
+    /// in whatever the bag holds (what an older save is owed, a quest's own things).
+    @discardableResult
+    func addItem(_ id: String, _ amount: Int = 1, force: Bool = false) -> Bool {
+        guard amount > 0 else { return true }
+        guard force || count(of: id) > 0 || bagSlotsFree > 0 else {
+            post(L("Your bag is full: {item} left behind.", ["item": content.item(id)?.name ?? id]), .reward)
+            return false
+        }
         data.inventory[id, default: 0] += amount
+        return true
     }
 
     @discardableResult
@@ -1364,7 +1384,13 @@ final class GameSession {
     var hasGearUpgrade: Bool { bagEquipment.contains { isUpgrade($0) } }
 
     func equip(_ id: String) {
-        guard let item = content.item(id), ItemType.equipmentSlots.contains(item.type), equipIssue(item) == nil, removeItem(id) else { return }
+        guard let item = content.item(id), ItemType.equipmentSlots.contains(item.type), equipIssue(item) == nil else { return }
+        // What it replaces goes in the bag: a slot for it, unless taking this one out frees one.
+        if let old = data.hero.equipment[item.type], count(of: old) == 0, count(of: id) > 1, bagSlotsFree == 0 {
+            post(L("Your bag is full. Put something in the bank first."), .system)
+            return
+        }
+        guard removeItem(id) else { return }
         SoundEffects.shared.play(.equip)
         if let old = data.hero.equipment[item.type] { addItem(old) }
         data.hero.equipment[item.type] = id
@@ -1373,8 +1399,7 @@ final class GameSession {
     }
 
     func unequip(_ slot: ItemType) {
-        guard let id = data.hero.equipment[slot] else { return }
-        addItem(id)
+        guard let id = data.hero.equipment[slot], addItem(id) else { return }
         data.hero.equipment[slot] = nil
         clampHero()
         applyLook()
@@ -1383,6 +1408,11 @@ final class GameSession {
     @discardableResult
     func buy(_ id: String) -> Bool {
         guard let item = content.item(id), data.gold >= item.price else { return false }
+        // Spending the last coins frees their slot.
+        guard count(of: id) > 0 || bagSlotsFree > 0 || data.gold == item.price else {
+            post(L("Your bag is full. Put something in the bank first."), .system)
+            return false
+        }
         data.gold -= item.price
         SoundEffects.shared.play(.coins)
         addItem(id)
@@ -1402,9 +1432,15 @@ final class GameSession {
     /// Sells one to a shop. Returns the gold paid, or nil if there was nothing to sell.
     @discardableResult
     func sell(_ id: String) -> Int? {
-        guard let item = content.item(id), item.price > 0, removeItem(id) else { return nil }
+        guard let item = content.item(id), item.price > 0 else { return nil }
+        // The coins need a slot, unless you carry some or this was the last of its kind.
+        guard data.gold > 0 || count(of: id) == 1 || bagSlotsFree > 0 else {
+            post(L("Your bag is full. Put something in the bank first."), .system)
+            return nil
+        }
+        guard removeItem(id) else { return nil }
         let paid = Self.sellPrice(of: item)
-        data.gold += paid
+        gainGold(paid)
         SoundEffects.shared.play(.coins)
         return paid
     }
@@ -1468,9 +1504,10 @@ final class GameSession {
     /// you) go into your bag, and those deals are gone. Returns what you got.
     func takeSpoils(from adventurer: Adventurer) -> [ItemDef] {
         let goods = tradeOffers(with: adventurer).filter { $0.kind == .theySell }
-        for offer in goods { addItem(offer.item.id) }
+        // What doesn't fit in the bag is left behind.
+        let taken = goods.filter { addItem($0.item.id) }
         data.tradesDone = Array((data.tradesDone ?? []).suffix(200)) + goods.map(\.id)
-        return goods.map(\.item)
+        return taken.map(\.item)
     }
 
     /// Makes a deal. Returns false if you can't (not enough gold, or the item's gone).
@@ -1479,10 +1516,11 @@ final class GameSession {
         guard !(data.tradesDone ?? []).contains(offer.id) else { return false }
         switch offer.kind {
         case .theyBuy:
-            guard removeItem(offer.item.id) else { return false }
-            data.gold += offer.price
+            guard data.gold > 0 || count(of: offer.item.id) == 1 || bagSlotsFree > 0, removeItem(offer.item.id) else { return false }
+            gainGold(offer.price)
         case .theySell:
-            guard data.gold >= offer.price else { return false }
+            guard data.gold >= offer.price,
+                  count(of: offer.item.id) > 0 || bagSlotsFree > 0 || data.gold == offer.price else { return false }
             data.gold -= offer.price
             addItem(offer.item.id)
         }
@@ -1525,6 +1563,11 @@ final class GameSession {
     @discardableResult
     func craft(_ id: String) -> Bool {
         guard let item = content.item(id), canCraft(item), let recipe = item.recipe else { return false }
+        // What's made needs a slot, unless it stacks or the materials free one.
+        guard count(of: id) > 0 || bagSlotsFree > 0 || recipe.contains(where: { count(of: $0.key) == $0.value }) else {
+            post(L("Your bag is full. Put something in the bank first."), .system)
+            return false
+        }
         for (material, needed) in recipe {
             data.inventory[material, default: 0] -= needed
             if data.inventory[material] == 0 { data.inventory[material] = nil }
@@ -1814,7 +1857,7 @@ final class GameSession {
         let who = content.npc(target)?.name ?? target
         let giver = content.npc(quest.giver)?.name ?? quest.giver
         if let back = quest.objective.returns, let item = content.item(back) {
-            addItem(back)
+            addItem(back, force: true)
             post(L("{name} gave you {item}. Take it back to {giver}.", ["name": who, "item": item.name, "giver": giver]), .quest)
         } else {
             post(L("Delivered to {name}. Go back to {giver}.", ["name": who, "giver": giver]), .quest)
@@ -1847,7 +1890,7 @@ final class GameSession {
         guard data.quests["hope_of_meadowbrook"]?.state == .active else { return }
         let boxes = [("gift_box_1", "wooden_sword"), ("gift_box_2", "novice_ring"), ("gift_box_3", "pet_egg")]
         for (box, item) in boxes where data.openedChests?.contains(box) != true {
-            addItem(item)
+            addItem(item, force: true)
             data.openedChests = (data.openedChests ?? []) + [box]
             if let name = content.item(item)?.name { post(L("Elder Oak left you a {item}.", ["item": name]), .reward) }
         }
@@ -1860,7 +1903,8 @@ final class GameSession {
         if let answer { data.eggSpecies = answer.egg }
         post(L("Quest accepted: {quest}", ["quest": quest.title]), .quest)
         let starters = quest.starterItems ?? []
-        for item in starters { addItem(item) }
+        // A quest's own things: they go in whatever the bag holds.
+        for item in starters { addItem(item, force: true) }
         // "Received 3 Seal Stones." / "Received Wooden Sword, Novice Ring and Pet Egg."
         if let list = itemList(starters) {
             post(L("Received {items}.", ["items": list]), .reward)
@@ -1876,8 +1920,7 @@ final class GameSession {
             for drop in quest.drops ?? [] where drop.from.contains(species) {
                 let enough = drop.upTo ?? goal(of: quest)
                 guard count(of: drop.item) < enough, let item = content.item(drop.item),
-                      Double.random(in: 0..<1) < drop.chance else { continue }
-                addItem(item.id)
+                      Double.random(in: 0..<1) < drop.chance, addItem(item.id) else { continue }
                 found.append(item)
             }
         }
@@ -1928,6 +1971,7 @@ final class GameSession {
         case .smith: return .smith
         case .weaver: return notice(for: npc.id) == nil ? .weaver : .questNew
         case .barber: return .barber
+        case .bank: return .bank
         case .guild: return .guild
         case .boss: return .boss
         case .stairs: return Content.shared.leadsDown(npc) ? .stairsDown : .stairsUp
@@ -1961,8 +2005,7 @@ final class GameSession {
         }
         let species = boss.monster.flatMap(content.monster)
         for drop in species?.drops ?? [] where Double.random(in: 0..<1) < drop.chance {
-            guard let item = content.item(drop.item) else { continue }
-            addItem(item.id)
+            guard let item = content.item(drop.item), addItem(item.id) else { continue }
             post(L("{monster} dropped {item}!", ["monster": species?.name ?? boss.name, "item": item.name]), .reward)
         }
         checkTitles()
@@ -2043,16 +2086,16 @@ final class GameSession {
         Haptics.success()
         post(L("Quest complete: {quest}", ["quest": quest.title]), .quest)
         var lines: [String] = []
-        if pay.gold > 0 {
-            data.gold += pay.gold
+        if pay.gold > 0, gainGold(pay.gold) {
             lines.append(L("+{gold} gold", ["gold": pay.gold]))
         }
         if pay.exp > 0 {
             lines.append(L("+{exp} EXP", ["exp": pay.exp]))
             if gainHeroEXP(pay.exp) > 0 { lines.append(L("Level up! You're now level {level}.", ["level": data.hero.level])) }
         }
-        for itemID in quest.reward.items ?? [] {
-            addItem(itemID)
+        // What doesn't fit is left behind; a quest's treasure waits instead, and comes once there's
+        // room (`deliverQuestTreasures`).
+        for itemID in quest.reward.items ?? [] where addItem(itemID) {
             lines.append(L("Got {item}", ["item": content.item(itemID)?.name ?? itemID]))
             if content.isQuestTreasure(itemID) { data.questTreasuresGiven = (data.questTreasuresGiven ?? []) + [itemID] }
         }
