@@ -218,7 +218,7 @@ struct MonsterCardFace: View {
                 }
                 .padding(width * 0.07)
             } else {
-                RoundedRectangle(cornerRadius: corner).fill(Brand.forest)
+                RoundedRectangle(cornerRadius: corner).fill(Brand.midnight)
                 RoundedRectangle(cornerRadius: corner * 0.7)
                     .strokeBorder(HUDStyle.gold.opacity(0.4), lineWidth: 1)
                     .padding(width * 0.08)

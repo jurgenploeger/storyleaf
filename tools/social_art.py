@@ -49,7 +49,7 @@ SPECS = [
 ]
 
 SKY = [(111, 192, 245), (169, 220, 250), (227, 245, 255)]
-FOREST = [(29, 74, 55), (15, 42, 32)]
+MIDNIGHT = [(27, 37, 80), (14, 21, 51)]
 
 
 def gradient(size: tuple[int, int], stops: list[tuple[int, int, int]]) -> Image.Image:
@@ -116,7 +116,7 @@ def main() -> None:
     made["profile_1080"] = profile(1080)
     made["discord_server_icon_512"] = profile(512)
     made["logo_transparent"] = logo
-    for name, stops in [("logo_on_sky_1080", SKY), ("logo_on_forest_1080", FOREST)]:
+    for name, stops in [("logo_on_sky_1080", SKY), ("logo_on_midnight_1080", MIDNIGHT)]:
         square = gradient((1080, 1080), stops)
         place_logo(square, logo, 0.82, (0.5, 0.5))
         made[name] = square

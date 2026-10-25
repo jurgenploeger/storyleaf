@@ -1,18 +1,19 @@
 import SwiftUI
 
-/// Storyleaf's own colours, the logo's and the app icon's exactly (the Figma brand guidelines list
-/// them, page 03 Colour). The title and loading screens wear them; the game's windows keep
-/// Storyleaf's look (`HUDStyle`).
+/// Tales of Dorlune's own colours, the logo's and the app icon's exactly (the Figma brand guidelines list
+/// them, page 03 Colour): the logo's gold, and midnight (the night sky's navy) for lettering and
+/// outlines where dark green was until 0.8.8. The title and loading screens wear them; the game's
+/// windows keep Fairyland's look (`HUDStyle`).
 enum Brand {
-    /// The wordmark's letters, top to bottom.
-    static let leafLight = Color(red: 0.929, green: 1, blue: 0.659)    // #EDFFA8
-    static let leaf = Color(red: 0.549, green: 0.898, blue: 0.42)      // #8CE56B
-    static let leafDeep = Color(red: 0.161, green: 0.659, blue: 0.451) // #29A873
-    /// Every outline: the letters', the leaf's and the tagline pill's.
-    static let forest = Color(red: 0.09, green: 0.302, blue: 0.231)    // #174D3B
-    /// The thicker edge under the letters and the pill.
-    static let depth = Color(red: 0.039, green: 0.188, blue: 0.141)    // #0A3024
-    /// The book's pages under the leaf, and the loading bar's track.
+    /// The logo's gold, top to bottom: the loading bar's fill and the travel swirl.
+    static let goldLight = Color(red: 1, green: 0.965, blue: 0.745)    // #FFF6BE
+    static let gold = Color(red: 1, green: 0.788, blue: 0.235)         // #FFC93C
+    static let goldDeep = Color(red: 0.886, green: 0.486, blue: 0.086) // #E27C16
+    /// Every outline and the lettering on cream: the name pill's, the bar's rim, the swirl's.
+    static let midnight = Color(red: 0.106, green: 0.145, blue: 0.314) // #1B2550
+    /// The thicker edge under the name pill.
+    static let midnightDeep = Color(red: 0.055, green: 0.082, blue: 0.2) // #0E1533
+    /// The name pill, and the loading bar's track.
     static let cream = Color(red: 1, green: 0.969, blue: 0.878)        // #FFF7E0
 
     /// The icon's sky, top to bottom.

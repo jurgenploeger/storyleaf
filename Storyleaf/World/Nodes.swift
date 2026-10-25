@@ -538,7 +538,7 @@ enum Effects {
             step == 0 ? spiral.move(to: p) : spiral.addLine(to: p)
         }
         let swirl = SKNode()
-        for (color, width) in [(UIColor(Brand.forest), CGFloat(5.5)), (UIColor(Brand.leafLight), CGFloat(2.5))] {
+        for (color, width) in [(UIColor(Brand.midnight), CGFloat(5.5)), (UIColor(Brand.goldLight), CGFloat(2.5))] {
             let line = SKShapeNode(path: spiral)
             line.strokeColor = color
             line.lineWidth = width

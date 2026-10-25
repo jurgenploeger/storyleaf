@@ -12,7 +12,7 @@ Drawn `SS` times as big, the outline measured from the letters' true edges (roun
 edges are smooth. The tilts and lifts come from a fixed seed, so every run draws the same logo.
 
     python3 tools/logo_art.py                    # writes Logo.png
-    python3 tools/logo_art.py --preview out.png  # on the sky, on the forest, and small
+    python3 tools/logo_art.py --preview out.png  # on the sky, on midnight, and small
 
 Needs pillow, numpy and scipy.
 """
@@ -51,7 +51,7 @@ INK = (34, 22, 14)
 GOLD = [(0.0, (255, 246, 190)), (0.42, (255, 208, 74)), (1.0, (226, 124, 22))]
 
 SKY = [(111, 192, 245), (169, 220, 250), (227, 245, 255)]
-FOREST = [(29, 74, 55), (15, 42, 32)]
+MIDNIGHT = [(27, 37, 80), (14, 21, 51)]
 
 
 def gold(height: int) -> np.ndarray:
@@ -164,7 +164,7 @@ def gradient(size: tuple[int, int], stops: list) -> Image.Image:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--preview", type=Path, help="write the logo on the sky, on the forest and small here")
+    parser.add_argument("--preview", type=Path, help="write the logo on the sky, on midnight and small here")
     args = parser.parse_args()
 
     art = logo()
@@ -173,7 +173,7 @@ def main() -> None:
 
     if args.preview:
         tiles = []
-        for stops in (SKY, FOREST):
+        for stops in (SKY, MIDNIGHT):
             tile = gradient((art.width + 120, art.height + 120), stops)
             tile.alpha_composite(art, (60, 60))
             tiles.append(tile)
