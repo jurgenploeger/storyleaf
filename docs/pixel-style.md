@@ -518,6 +518,11 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   flat colour in the middle. Cloth hats curve all the way over: each run across the shape a half cylinder
   (`rounded`: a cone or cap side to side, a brim or band top to bottom), smoothed along it so a row a pixel
   wider doesn't light as a ridge.
+- **2026-10-25 (the logo, `tools/logo_art.py`):** "the DO feel proportionally smaller than the rest of the
+  wordmark". Luckiest Guy draws its O and D short (the O 146 pixels to the R's and N's 165), and each letter
+  stood on its tipped bounding box's lowest corner, so a tipped one rode high. Every capital is now sized to
+  the H's height, a round one 3% over (`ROUND`, `OVERSHOOT`: round shapes look small at the same height), and
+  centred on the line before its lift.
 - **2026-10-25 (the tinted app icons, `app_icon_art.tint`):** the user, from a Home Screen in iOS's Clear
   look: "the clear and tinted app icons should have a bit more contrast, now it's washed out beside other app
   icons". Stretching the whole picture's greys evenly left it in the middle greys (median 0.2, most of it a

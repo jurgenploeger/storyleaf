@@ -42,6 +42,8 @@ OUTLINE, DEPTH, RIM = 0.075, 0.07, 0.03
 # The thin outline each letter keeps of its own where it overlaps the one before it.
 SEAM = 0.022
 SEED = 2
+# Round capitals, drawn a little taller than the flat ones so they look the same size.
+ROUND, OVERSHOOT = "OCGQS", 1.03
 SS = 3
 
 INK = (34, 22, 14)
@@ -75,22 +77,29 @@ def line(word: str, px: int, rng: np.random.Generator) -> list:
     """One line's capitals, `SS` times as big: each tipped the other way from the last, give or take, and
     lifted or dropped a little, set `TRACK` apart. Each its own mask on the line's canvas, left to right."""
     font = ImageFont.truetype(str(FONT), px * SS)
+    cap = font.getbbox("H")[3] - font.getbbox("H")[1]
     placed, x = [], 0.0
     for index, ch in enumerate(word):
         if ch == " ":
             x += px * SS * 0.28 + TRACK * px * SS
             continue
         angle = TIP * (1 if index % 2 else -1) + rng.uniform(-TIP / 2, TIP / 2)
-        shape = glyph(font, ch, angle)
+        # Every capital as tall as the H, a round one a touch taller (it would look short otherwise):
+        # Luckiest Guy draws its O and D small, and beside the R and N they read a size down.
+        top, bottom = font.getbbox(ch)[1], font.getbbox(ch)[3]
+        size = px * SS * cap / max(1, bottom - top) * (OVERSHOOT if ch in ROUND else 1.0)
+        shape = glyph(ImageFont.truetype(str(FONT), round(size)), ch, angle)
         placed.append((shape, x, rng.uniform(-LIFT, LIFT) * px * SS))
         x += shape.shape[1] + TRACK * px * SS
     tall = max(shape.shape[0] for shape, _, _ in placed)
     wide = max(int(left) + shape.shape[1] for shape, left, _ in placed)
-    base = int(tall * 1.1)
+    middle = int(tall * 0.6)
     masks = []
     for shape, left, lift in placed:
         canvas = np.zeros((int(tall * 1.2) + 4, wide + 4), bool)
-        y = int(base - shape.shape[0] + lift)
+        # Each letter centred on the line (then lifted or dropped): a tipped letter's corner hangs below
+        # its foot, and lining up the corners left the tipped ones riding high and looking small.
+        y = int(middle - shape.shape[0] / 2 + lift)
         canvas[y:y + shape.shape[0], int(left):int(left) + shape.shape[1]] = shape
         masks.append(canvas)
     union = np.any(masks, axis=0)
