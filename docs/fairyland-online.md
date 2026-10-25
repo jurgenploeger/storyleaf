@@ -1037,8 +1037,11 @@ the Wishing Seal, which stays the Monster Book's last reward.
     minutes (`GameSession.askAlong`). Ask whoever leads a group and you can join it with room for you and
     your party's friends, five in all (`askToJoin`): you walk at the back of their line as they lead you
     about (`Crowd.lead(you:)`) and they fight beside you; you leave once you're far from whoever leads, or
-    from the plate under your party. Anyone in a party with you heads off after `stayMinutes` of play
-    (`passPartyTime`), and among themselves adventurers leave their group or join one near them every
+    from the plate under your party. Anyone in a party with you heads off after `stayMinutes` on the
+    clock (`passPartyTime`), and a friend who did won't come along again for half an hour
+    (`restAfterStay`), so you meet others (since 0.7.92, playtesting 2026-10-25: "members who joined my
+    party are staying forever"; counted only while walking about, the time stood still through every
+    fight and started afresh at every launch, so nobody ever left). Among themselves adventurers leave their group or join one near them every
     `groupMinutes` (`Crowd.mingle`).
   - Past five, the battle line splits: people in front, companions in a row behind.
   - Without a friend (since 0.3.83), you and your companion stand side by side in one line, as a

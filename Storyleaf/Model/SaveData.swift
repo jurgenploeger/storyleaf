@@ -136,6 +136,11 @@ nonisolated struct SaveData: Codable, Sendable {
     /// Adventurers you've befriended, and which of them travel with you.
     var friends: [Adventurer]?
     var partyIDs: [UUID]?
+    /// When each friend in your party heads off on their own (by id; `GameSession.passPartyTime`): a
+    /// time on the clock, so it keeps through fights, windows and the game being closed.
+    var partyLeaves: [String: Date]?
+    /// Till when a friend who headed off won't come along again (by id): someone new for a while.
+    var partyRests: [String: Date]?
     /// Bosses you've ever beaten (their NPC ids). They're back for a rematch on your next visit
     /// (`GameSession.bossesBeatenHere`).
     var defeatedBosses: [String]?

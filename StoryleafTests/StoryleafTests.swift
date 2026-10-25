@@ -2699,16 +2699,22 @@ struct RulesTests {
         #expect(!session.partyIsFull)
         session.invite(momo.id)
         #expect(session.partyIsFull)
+        // When they'll head off is kept with the game, so a relaunch doesn't start it again.
+        #expect(session.data.partyLeaves?[momo.id.uuidString] != nil)
         #expect(session.fightersAtYourSide.map(\.name) == ["Momo", "Ash", "Bree", "Cole"])
         // Time passes: Momo heads off first, and won't come straight back; then their party does.
-        session.partyStays[momo.id] = 100
-        session.joinedStay = 200
-        #expect(session.passPartyTime(99).left.isEmpty)
-        let first = session.passPartyTime(2)
+        let start = Date()
+        session.data.partyLeaves = [momo.id.uuidString: start.addingTimeInterval(100)]
+        session.joinedUntil = start.addingTimeInterval(200)
+        #expect(session.passPartyTime(now: start.addingTimeInterval(99)).left.isEmpty)
+        let first = session.passPartyTime(now: start.addingTimeInterval(101))
         #expect(first.left.map(\.name) == ["Momo"] && first.headedOff == nil)
         #expect(session.partyMembers.isEmpty && session.isFriend(momo))
-        #expect(session.askAlong(momo.id, roll: 0)?.accepted == false)
-        #expect(session.passPartyTime(100).headedOff?.name == "Ash")
+        #expect(session.data.partyLeaves?[momo.id.uuidString] == nil)
+        #expect(session.askAlong(momo.id, roll: 0, now: start.addingTimeInterval(GameSession.declineFor + 102))?.accepted == false)
+        #expect(session.askAlong(momo.id, roll: 0, now: start.addingTimeInterval(GameSession.restAfterStay + 102))?.accepted == true)
+        session.leaveParty(momo.id)
+        #expect(session.passPartyTime(now: start.addingTimeInterval(201)).headedOff?.name == "Ash")
         #expect(session.joinedParty == nil && session.fightersAtYourSide.isEmpty)
         // A party of four has no room for you and a friend of yours.
         let four = group + [Adventurer(name: "Dot", raceID: "elf", classID: "mage", level: 22, look: .standard)]
