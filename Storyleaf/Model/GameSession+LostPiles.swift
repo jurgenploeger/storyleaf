@@ -31,7 +31,7 @@ extension GameSession {
     /// adventurer some while after it's anyone's, unless it's just gone first.
     func dropPile(items: [String: Int], gold: Int, now: Date = Date(), roll: Double = .random(in: 0..<1)) {
         guard !items.isEmpty || gold > 0 else { return }
-        let found = now.addingTimeInterval(Self.pileYoursAlone - Self.pileFoundIn * log(max(1e-6, 1 - roll)))
+        let found = now.addingTimeInterval(Self.pileYoursAlone - Self.pileFoundIn * Foundation.log(max(1e-6, 1 - roll)))
         let pile = LostPile(id: UUID(), mapID: data.mapID, position: playerPosition.map { [Double($0.x), Double($0.y)] },
                             items: items, gold: gold, droppedAt: now,
                             takenAt: min(found, now.addingTimeInterval(Self.pileLasts)))
