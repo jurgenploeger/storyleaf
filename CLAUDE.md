@@ -93,7 +93,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `tools/armour_art.py`: the same for every armour's icon, from one picked RD drawing per shape (`PICKED`, `rda_<shape>`),
   coloured as it's worn: the sheets' `MATERIAL` and the item's `tint` (a hide cloak its hood's), so icon and hero match.
 - `tools/prop_art.py`: the same for the few props a generated sprite got wrong (`candy_cane`, whose hook came out
-  as a two-sided arch) or none was made for (the harbors' `ship`, built in 3D and projected as the game's view is;
+  as a two-sided arch) or none was made for (the harbors' `ship`, built in 3D and projected as the game's view is,
+  then lit and finished as the buildings are and held to their bands, `form_relief` too;
   `cave_ladder`, the way down to a cave's deeper level, and `cave_rope`, the way back up, `depth` and NPC role
   `stairs` in maps.json; `waystone`, NPC role `waystone`, a standing stone out in a wild land that a quest
   wakes, then a stop for travel like the towns: `GameSession.travelDestinations`).
@@ -153,7 +154,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   gates across borders keep RD's `town_gate`. Each is laid out as `town_gate` is (`TownFence.widened` spans a
   wide road by its parts: pillars, the lintel at rows 2 to 11 repeated from x 14 to 25, what hangs in the
   middle); the tool checks that. `--sheet out.png` shows each as drawn and widened.
-- `tools/critter_art.py`: the critters (`ambience.critters`) and the birds crossing the sky, as PNGs
+- `tools/critter_art.py`: the critters (`ambience.critters`), the birds crossing the sky and the butterflies
+  (`ambience.butterflies`, flapping open, half and closed), as PNGs
   (`art/sprites/critter_<name>.png`, loaded by `CritterArt.drawn`; one missing is drawn in Swift as before): the
   same shapes and sizes as `Critters.swift`, lit from the top left and outlined in a deep shade of each part.
   Too small for pixel_kit's finish (it turned them muddy). `--sheet out.png` previews them.

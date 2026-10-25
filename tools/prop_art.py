@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Props drawn in code where a generated sprite came out wrong: writes art/sprites/<id>.png.
 
-Like tools/item_art.py: flat colours with a light and a dark shade and the game's dark outline, no
-image libraries needed. Edit a drawing below and rerun:
+Like tools/item_art.py: flat colours with a light and a dark shade and the game's dark outline. The
+ship, as big as a grand building, is finished as the buildings are instead (tools/pixel_kit.py, with
+pillow + numpy) and held to their bands: `pixel_style.py check --kind building art/sprites/ship.png`.
+Edit a drawing below and rerun:
 
     python3 tools/prop_art.py                   # all of them
     python3 tools/prop_art.py candy_cane        # just these
@@ -112,14 +114,32 @@ def draw_ship():
 
     Built in three dimensions in the game's own points (u along the hull to the bow, v across it to
     the north, z up from the water) and projected as `WorldMap.project` does, nearest surface first
-    a point at a time. The middle of its waterline is the middle of the picture, where the game sets
-    it on the sea (anchor 0.5, 0.5); mirrored, it lies along the north."""
+    a point at a time. Each point keeps which part it's on, its surface's normal and its place on
+    that surface; the parts are then lit and finished as the buildings are (tools/building_art.py,
+    docs/pixel-style.md: a hue-shifted ramp per material, planks and canvas at the sprite's own
+    pixels, every form modelled by the light from the top left and in front, a tinted outline, a
+    palette of RD's size), and scored with `pixel_style.py check --kind building`. The middle of its
+    waterline is the middle of the picture, where the game sets it on the sea (anchor 0.5, 0.5);
+    mirrored, it lies along the north."""
+    import numpy as np
+    from PIL import Image
+    import building_art
+    from pixel_kit import SS, Material, Sprite, limit_palette
+
     c = 0.5 ** 0.5
     half_length, beam = 110.0, 40.0
     mast_u, mast_top, yard_z, sail_low = 8.0, 150.0, 138.0, 62.0
-    light = (-0.55, 0.55, 1.0)
-    norm = math.sqrt(sum(a * a for a in light))
-    light = tuple(a / norm for a in light)
+
+    # The view and the light in the ship's own axes: toward you (down the screen and out of it),
+    # the screen's right and up; the light as the buildings' (from the top left and in front).
+    toward = np.array([-1.0, -1.0, c])
+    toward /= np.linalg.norm(toward)
+    right = np.array([1.0, -1.0, 0.0]) / 2 ** 0.5
+    up = np.cross(toward, right)
+    up = up if up[2] > 0 else -up
+    sl = building_art.LIGHT
+    light = sl[0] * right - sl[1] * up + sl[2] * toward
+    light /= np.linalg.norm(light)
 
     def sheer(u):
         """The deck's height over the water along the hull: low amidships, up to a raised stern."""
@@ -133,142 +153,178 @@ def draw_ship():
             return beam * math.sqrt(max(0.0, 1 - t ** 2.2))
         return beam * (1 - 0.28 * t ** 2)
 
-    points = {}
+    def lit(n, low=0.12, span=0.7):
+        """How lit a surface facing `n` is, 0 … 1: its normal turned toward you, light from the top left
+        and in front. A face turned away from it still sits `low` (the side you see most of is turned
+        from the light, and wants to read as its colour in shade, not black); canvas, lit through, higher."""
+        n = np.asarray(n, float)
+        n = n / (np.linalg.norm(n) or 1)
+        if n @ toward < 0:
+            n = -n
+        return float(low + span * np.clip((n @ light + 0.6) / 1.6, 0, 1))
 
-    def put(u, v, z, color, layer=0):
+    def normal(f, p, q, e=0.3):
+        """The normal of a surface f(p, q) -> (u, v, z), from its slopes."""
+        a = np.subtract(f(p + e, q), f(p - e, q))
+        b = np.subtract(f(p, q + e), f(p, q - e))
+        return np.cross(a, b)
+
+    points = {}
+    casters = []
+
+    def put(u, v, z, part, light_, a=0.0, d=0.0, layer=0):
         sx = (u - v) * c
         sy = -((u + v) * c * 0.5 + z)
         depth = (u + v) - c * z - layer * 1000
         key = (int(math.floor(sx)), int(math.floor(sy)))
         if key not in points or depth < points[key][0]:
-            points[key] = (depth, color)
+            points[key] = (depth, part, light_, a, d)
+        if part in ("sail", "jib", "band", "star", "spar"):
+            casters.append((u, v, z))
 
-    def shade(n, tones):
-        lit = sum(a * b for a, b in zip(n, light))
-        return tones[2] if lit > 0.45 else tones[0] if lit < -0.05 else tones[1]
-
-    wood = [hexc("5c3820"), hexc("8a5a30"), hexc("b37c45")]
-    seam = hexc("4a2c18")
-    paint = [hexc("1f5c70"), hexc("2f8296"), hexc("4fb0c0")]
-    gold = [hexc("b07a20"), hexc("e8b84a"), hexc("ffe08a")]
-    sail = [hexc("c9b48c"), hexc("e8dcc0"), hexc("fbf5e6")]
-    # The rigging in the outline's own ink, a pixel wide (the outline grows round anything else).
-    rope = OUTLINE
+    along = (1 + 0.25) ** 0.5 * c          # pixels on screen per point along the hull
     step = 0.45
-    # The near side of the hull, from the waterline up past the deck (its bulwark), planked.
-    u = -half_length
-    while u <= half_length:
-        top, wide = sheer(u) + 5, breadth(u)
-        low = wide * 0.82
-        z = 0.0
-        while z <= top:
-            t = z / top
-            v = -(low + (wide - low) * t)
-            n = (0.0, -1.0, 0.25)
-            if top - z < 3.2:
-                color = shade(n, gold)
-            elif top - z < 11:
-                color = shade(n, paint)
-            elif int(z) % 6 == 0:
-                color = seam
-            else:
-                color = shade(n, wood)
-            put(u, v, z, color)
-            z += step
-        u += step
-    # The far side's bulwark, seen from inside over the deck.
-    u = -half_length
-    while u <= half_length:
-        wide = breadth(u)
-        z = sheer(u)
-        while z <= sheer(u) + 5:
-            put(u, wide, z, shade((0.0, -1.0, 0.0), wood) if z < sheer(u) + 4 else gold[1])
-            z += step
-        u += step
-    # The stern, flat across, with its lit windows.
+
+    # The near side of the hull, from the waterline up past the deck (its bulwark): its sides round out
+    # from the waterline, turn in a little to the rail (the light catching that turn) and close in to
+    # the bow, so the light turns across it.
+    def side(u, z):
+        top = sheer(u) + 5
+        t = min(1.0, max(0.0, z / top))
+        return (u, -breadth(u) * (0.6 + 0.4 * math.sin(t * math.pi * 0.65) / math.sin(math.pi * 0.65)), z)
+
+    for u in frange(-half_length, half_length, step):
+        top = sheer(u) + 5
+        for z in frange(0.0, top, step):
+            n = normal(side, u, z)
+            if n[1] > 0:
+                n = -n
+            # The waterline in the hull's own shadow, the strakes under the rail and the wale in theirs.
+            wale = 12 + 3 * max(0.0, u / half_length) ** 2          # a smooth line, not stepping up at the stern
+            shadow = -0.1 * max(0.0, 1 - z / 9) - (0.22 if 3.2 <= top - z < 4.8 or wale - 2.5 <= z < wale else 0)
+            part = "rail" if top - z < 3.2 else "paint" if top - z < 11 else "hull"
+            su, sv, sz = side(u, z)
+            if wale <= z < wale + 2.4:
+                # The wale: a heavy strake standing out along the hull, its top lit, its face rounded.
+                part, sv = "wale", sv - 1.0
+                n = n + np.array([0.0, 0.0, 1.2 * (z - wale - 1.2)])
+            put(su, sv, sz, part, lit(n) + shadow, u * along, -z)
+    # The far side's bulwark, seen from inside over the deck, in the near rail's shadow at its foot.
+    for u in frange(-half_length, half_length, step):
+        wide, base = breadth(u), sheer(u)
+        for z in frange(base, base + 5, step):
+            part = "rail" if z > base + 4 else "hull"
+            put(u, wide, z, part, lit((0, -1, 0)) - 0.25 * (1 - (z - base) / 5), u * along, -z)
+    # The stern, its face rounded from the waterline up (lit as it leans back toward the rail), with its
+    # lit windows.
     stern = -half_length
-    v = -breadth(stern)
-    while v <= breadth(stern):
+    for v in frange(-breadth(stern), breadth(stern), step):
         top = sheer(stern) + 5
-        z = 0.0
-        while z <= top:
+        for z in frange(0.0, top, step):
             window = abs(v) < 26 and 21 < z < 29 and (int(v + 26) % 13) < 8
-            if window:
-                color = hexc("ffd86a") if z < 26 else hexc("fff2b0")
-            elif top - z < 3.2:
-                color = gold[2]
-            elif top - z < 11:
-                color = paint[2]
-            elif int(z) % 6 == 0:
-                color = seam
-            else:
-                color = wood[2]
-            put(stern - 0.5, v, z, color)
-            z += step
-        v += step
-    # The deck, planked along the hull.
-    u = -half_length
-    while u <= half_length:
-        wide = breadth(u)
-        v = -wide
-        while v <= wide:
-            color = seam if int(v + 100) % 8 == 0 else wood[2] if (int(u + 200) // 30 + int(v + 100) // 8) % 3 else wood[1]
-            put(u, v, sheer(u), color)
-            v += step
-        u += step
-    # A hatch amidships and a barrel by the mast.
-    for u in frange(-30, -6, step):
-        for v in frange(-12, 12, step):
-            put(u, v, sheer(u) + 3, seam if abs(v) > 10.5 or u < -28.5 or u > -7.5 else wood[0])
-    # The mast and its yard.
+            part = "window" if window else "rail" if top - z < 3.2 else "paint" if top - z < 11 else "hull"
+            # Each window set back: its frame's shadow along its top inside, a lit sill under it.
+            sill = abs(v) < 26 and 19.6 < z <= 21 and (int(v + 26) % 13) < 8
+            shade = (-0.3 if z > 27.4 else 0.25 if z >= 25 else 0) if window else 0.25 if sill else \
+                -0.22 if 3.2 <= top - z < 4.8 else -0.18 * max(0.0, 1 - z / 9)
+            put(stern - 0.5, v, z, part, (0.5 if window else lit((-1, 0, 1.2 * (z / top - 0.45)), 0.08, 0.6)) + shade, -v * along, -z)
+    # The mast and its yard, round.
     for z in frange(sheer(mast_u), mast_top, step):
         for angle in frange(0, 2 * math.pi, 0.2):
             n = (math.cos(angle), math.sin(angle), 0.0)
-            put(mast_u + 2.5 * n[0], 2.5 * n[1], z, shade(n, wood))
+            put(mast_u + 2.5 * n[0], 2.5 * n[1], z, "spar", lit(n), 0, -z)
     for v in frange(-52, 52, step):
         for angle in frange(0, 2 * math.pi, 0.3):
             n = (math.cos(angle), 0.0, math.sin(angle))
-            put(mast_u + 2 * n[0], v, yard_z + 2 * n[2], shade(n, wood))
-    # The square sail, billowing toward the bow, a gold star on it.
+            put(mast_u + 2 * n[0], v, yard_z + 2 * n[2], "spar", lit(n), v, 0)
+
+    # The square sail, billowing toward the bow, a gold star on it, a blue band along its foot; soft
+    # creases run down it toward its corners, where the sheets pull it (cloth has folds, not a flat sheen).
+    def sail_at(v, z):
+        across, rise = v / 48, (z - sail_low) / (yard_z - sail_low)
+        crease = 3.0 * math.sin(2 * math.pi * rise * 3.5 + 3 * abs(across)) * (0.3 + 0.7 * abs(across))
+        return (mast_u + 4 + (16 + crease) * (1 - across ** 2) * math.sin(math.pi * (0.15 + 0.85 * rise)), v, z)
+
     for z in frange(sail_low, yard_z - 1, step * 0.8):
         for v in frange(-48, 48, step * 0.8):
-            across, up = v / 48, (z - sail_low) / (yard_z - sail_low)
-            bulge = 16 * (1 - across ** 2) * math.sin(math.pi * (0.15 + 0.85 * up))
-            slope = -32 * across / 48 * math.sin(math.pi * (0.15 + 0.85 * up))
-            n = (-1.0, slope / 16, 0.15)
             star = in_star(v, z - (sail_low + yard_z) / 2 - 4, 30)
-            if star:
-                color = shade(n, [gold[0], gold[1], hexc("f2c64a")])
-            elif z - sail_low < 7:
-                color = shade(n, paint)
-            elif (z - sail_low) % 18 < 1:
-                color = sail[0]
-            else:
-                color = shade(n, sail)
-            put(mast_u + 4 + bulge, v, z, color)
-    # The jib, from the mast down to the bow.
+            part = "star" if star else "band" if z - sail_low < 7 else "sail"
+            # Its head in the yard's shadow, its edges curling away into shade.
+            put(*sail_at(v, z), part, lit(normal(sail_at, v, z), 0.3, 0.65) - 0.2 * max(0.0, 1 - (yard_z - z) / 6) - 0.3 * (v / 48) ** 4,
+                -v * along, -z)
+
+    # The jib, on the stay from the masthead down to the bowsprit, its belly out toward you, set clear
+    # ahead of the square sail's belly (set into it, its edge ran down the middle of the sail's star).
     bow = (half_length + 16, 0.0, sheer(half_length) + 6)
-    head, foot = (mast_u + 4, 0.0, mast_top - 16), (mast_u + 6, 0.0, sail_low - 14)
+    head, foot = (mast_u + 24, 0.0, mast_top - 32), (mast_u + 30, 0.0, sail_low - 12)
+
+    def jib_at(a, b):
+        return (head[0] + (bow[0] - head[0]) * a + (foot[0] - head[0]) * b,
+                -7 * math.sin(math.pi * min(1.0, a + b)) * (1 - b),
+                head[2] + (bow[2] - head[2]) * a + (foot[2] - head[2]) * b)
+
     for a in frange(0, 1, 0.004):
         for b in frange(0, 1 - a, 0.004):
-            u = head[0] + (bow[0] - head[0]) * a + (foot[0] - head[0]) * b
-            z = head[2] + (bow[2] - head[2]) * a + (foot[2] - head[2]) * b
-            belly = -7 * math.sin(math.pi * min(1.0, a + b)) * (1 - b)
-            put(u, belly, z, sail[2] if b < 0.5 else sail[1])
-    # A bowsprit out to the jib, the stays and the pennant at the top.
-    line(put, (half_length - 10, 0, sheer(half_length) + 2), bow, wood[1], 1.6)
-    line(put, (mast_u, 0, mast_top), (-half_length + 4, 0, sheer(-half_length) + 6), rope, 0.2)
-    line(put, (mast_u, 0, yard_z), (mast_u - 10, -breadth(mast_u - 10), sheer(mast_u - 10) + 5), rope, 0.2)
-    line(put, (mast_u, 0, yard_z), (mast_u - 10, breadth(mast_u - 10), sheer(mast_u - 10) + 5), rope, 0.2)
+            u, v, z = jib_at(a, b)
+            # Lit along its luff (the stay), turning into shade across it to its foot.
+            put(u, v, z, "jib", lit(normal(jib_at, a, b, 0.01), 0.38, 0.5) + 0.4 * (0.45 - b / max(1 - a, 0.01)), u * along, -z)
+    # The shadow the sails and the mast cast on the deck, toward the bow, away from the light.
+    shaded = set()
+    for u, v, z in casters:
+        drop = (z - sheer(u)) / light[2]
+        su, sv = u - light[0] * drop, v - light[1] * drop
+        if -half_length < su < half_length and abs(sv) < breadth(su):
+            shaded.add((round(su), round(sv)))
+    # The deck, planked along the hull, darker in under the bulwarks; cambered, falling away a little to
+    # each side from its middle, and turned as it rises to the bow and steps up to the stern's raised
+    # deck (that step's face dark, turned from the light).
+    for u in frange(-half_length, half_length, step):
+        wide, rise = breadth(u), sheer(u + 0.5) - sheer(u - 0.5)
+        for v in frange(-wide, wide, step):
+            under = max(0.0, 1 - (wide - abs(v)) / 14) ** 1.5 if wide > 4 else 0.0
+            shadow = 0.2 if (round(u), round(v)) in shaded else 0.0
+            put(u, v, sheer(u), "deck", lit((-rise, 0.35 * v / max(wide, 1), 1), 0.08, 0.6) - 0.35 * under - shadow, u * along, v * along)
+    # A hatch amidships: its coaming lit on top, its lid a step down.
+    for u in frange(-30, -6, step):
+        for v in frange(-12, 12, step):
+            rim = abs(v) > 10.5 or u < -28.5 or u > -7.5
+            put(u, v, sheer(u) + 3, "hatch", lit((0, 0, 1)) + (0.15 if rim else -0.2), u * along, v * along)
+    # On deck: two barrels forward of the mast and a crate aft, on the near side where you see them,
+    # each a form of its own, lit round.
+    for bu, bv in ((34.0, -13.0), (42.0, -20.0)):
+        base = sheer(bu)
+        for z in frange(base, base + 10, step):
+            k = (z - base) / 10
+            r = 4.0 + 0.9 * math.sin(math.pi * k)
+            hoop = abs(k - 0.2) < 0.05 or abs(k - 0.8) < 0.05
+            for angle in frange(0, 2 * math.pi, 0.12):
+                n = (math.cos(angle), math.sin(angle), -0.3 * math.cos(math.pi * k))
+                put(bu + r * n[0], bv + r * n[1], z, "iron" if hoop else "barrel", lit(n), angle * 3, -z)
+        for rr in frange(0, 4.0, step):
+            for angle in frange(0, 2 * math.pi, 0.5 / max(rr, 0.5)):
+                put(bu + rr * math.cos(angle), bv + rr * math.sin(angle), base + 10, "barrel",
+                    lit((0, 0, 1)) + 0.1 - (0.15 if rr > 3.2 else 0), rr * math.cos(angle), rr * math.sin(angle))
+    cu, cv, cs = -40.0, -22.0, 9.0
+    base = sheer(cu)
+    for p in frange(0, cs, step):
+        for q in frange(0, cs, step):
+            edge = 0.15 if min(p, q, cs - p, cs - q) < 1 else 0
+            put(cu + p, cv + q, base + cs, "crate", lit((0, 0, 1)) + 0.12 - edge, p, q)
+            put(cu + p, cv, base + q, "crate", lit((0, -1, 0)) - edge, p, -q)
+            put(cu, cv + q, base + p, "crate", lit((-1, 0, 0)) - edge, -q, -p)
+    # A bowsprit out to the jib, and the pennant at the top, rippling.
+    line(lambda u, v, z, part: put(u, v, z, part, lit((0, -1, 1))), (half_length - 10, 0, sheer(half_length) + 2), bow, "spar", 1.6)
     for t in frange(0, 1, 0.01):
         length = 26 * t
         wave = 2.5 * math.sin(t * 9)
+        slope = 2.5 * 9 / 26 * math.cos(t * 9)
         for z in frange(-4 * (1 - t), 4 * (1 - t), step):
-            put(mast_u - 2 - length, wave, mast_top + 2 + z, hexc("d83a4a") if t < 0.75 else hexc("ffd75a"))
+            put(mast_u - 2 - length, wave, mast_top + 2 + z, "pennant" if t < 0.75 else "tip", lit((slope, -1, 0)), length, -z)
     # A lantern over the stern.
     for z in frange(0, 9, step):
         for v in frange(-3, 3, step):
-            put(-half_length + 2, v, sheer(-half_length) + 9 + z, hexc("fff2b0") if 2 < z < 7 and abs(v) < 2 else hexc("3a2a20"))
+            glow = 2 < z < 7 and abs(v) < 2
+            put(-half_length + 2, v, sheer(-half_length) + 9 + z, "window" if glow else "iron", 0.75 if glow else lit((-1, -0.3, 0.2)))
     # The gangplank, from its near side down onto the pier (`WorldMap.pierHeight` over the water,
     # its far edge `LandStage.shipAcross` cells off), with cleats across it.
     deck_z = sheer(0) + 1
@@ -277,23 +333,125 @@ def draw_ship():
         z = deck_z + (6 - deck_z) * s
         for u in frange(-7, 7, step):
             cleat = int(s * 60) % 6 == 0
-            put(u, v, z + (1 if cleat else 0), wood[0] if cleat or abs(u) > 6 else wood[2], layer=1)
+            edge = abs(u) > 6
+            put(u, v, z + (1 if cleat else 0), "plank", lit((0, -0.5, 1)) + (0.2 if cleat else -0.25 if edge else 0), u, v, layer=1)
+
     xs = [k[0] for k in points]
     ys = [k[1] for k in points]
     half_w = max(-min(xs), max(xs)) + 2
     half_h = max(-min(ys), max(ys)) + 2
-    canvas = Canvas(2 * half_w, 2 * half_h)
-    for (x, y), (_, color) in points.items():
-        canvas.px[y + half_h][x + half_w] = color
-    canvas.outline()
-    # Foam where it sits in the water, under the outline.
+    W, H = 2 * half_w, 2 * half_h
+
+    # The parts, back to front (what lies on top casts its shadow down and to the right): base colour,
+    # pattern, texture, gloss.
+    parts = {
+        "hull": ("#8a5a30", "strakes", 0.03, 0.0),
+        "paint": ("#2f8296", "strakes", 0.02, 0.0),
+        "rail": ("#d9a63a", None, 0.0, 0.5),
+        "deck": ("#b37c45", "deck", 0.01, 0.0),
+        "hatch": ("#6e4524", "boards", 0.02, 0.0),
+        "plank": ("#a5713d", None, 0.03, 0.0),
+        "wale": ("#5c3a22", None, 0.02, 0.0),
+        "barrel": ("#a0683a", "boards", 0.02, 0.0),
+        "crate": ("#c09058", "boards", 0.02, 0.0),
+        "iron": ("#4a3a30", None, 0.0, 0.0),
+        "window": ("#ffd86a", None, 0.0, 0.0),
+        "sail": ("#e6d3a8", "canvas", 0.02, 0.0),
+        "band": ("#2f8296", "canvas", 0.02, 0.0),
+        "jib": ("#e6d3a8", None, 0.02, 0.0),
+        "star": ("#e8b84a", None, 0.02, 0.0),
+        "spar": ("#8a5a30", None, 0.02, 0.0),
+        "pennant": ("#d83a4a", None, 0.0, 0.0),
+        "tip": ("#ffd75a", None, 0.0, 0.0),
+    }
+    patterns = {
+        "strakes": lambda r, a, d: strakes(r, a, d, h=7, length=46, seed=21, lap=0.4, vary=0.4),
+        "deck": lambda r, a, d: strakes(r, a, d, h=6, length=38, seed=22, vary=0.45) * 0.85,
+        "boards": lambda r, a, d: building_art.planks(r, a, d, h=3, seed=23, vertical=True) * 0.6,
+        # Canvas: panels sewn top to bottom, a faint seam between each.
+        "canvas": lambda r, a, d: building_art.planks(r, a, d, h=9, seed=24, vertical=True) * 0.3,
+    }
+    part_of = np.full((H, W), "", object)
+    shade = np.zeros((H, W))
+    pa, pd = np.zeros((H, W)), np.zeros((H, W))
+    for (x, y), (_, part, value, a, d) in points.items():
+        part_of[y + half_h, x + half_w] = part
+        shade[y + half_h, x + half_w] = value
+        pa[y + half_h, x + half_w], pd[y + half_h, x + half_w] = a, d
+
+    s = Sprite(W, H)
+    s.light, s.rim = building_art.LIGHT, "lower"
+    # Flat ground under the kit's own light: what each part's light is measured from.
+    base = 0.05 + 0.55 * float(building_art.LIGHT[2]) ** 2
+    ones = np.ones((SS, SS))
+    coarse = np.random.default_rng(5).random((H // 5 + 2, W // 5 + 2))
+    steps_noise = (np.asarray(Image.fromarray((coarse * 255).astype(np.uint8)).resize(((W // 5 + 2) * 5, (H // 5 + 2) * 5), Image.BILINEAR),
+                              float)[:H, :W] / 255 - 0.5) * 0.5
+    for part, (colour, pattern, texture, gloss) in parts.items():
+        region = part_of == part
+        if not region.any():
+            continue
+        value = np.where(region, shade, 0.0)
+        if pattern:
+            value = value + np.where(region, patterns[pattern](region, pa, pd), 0.0)
+        # Onto the ramp's own steps here, each step's edge broken in soft clusters (less on the canvas,
+        # where they read as stains): left between two shades, the kit dithers a slow change of light (a
+        # sail's billow) into a field of checkerboard, which the craft (docs/pixel-style.md) warns is noise.
+        value = np.round(value * 6 + steps_noise * (0.4 if part in ("sail", "jib") else 1.0)) / 6
+        relief = 0.0 if part == "window" else 1.0
+        detail = value - (base if relief else 0.55)
+        mat = Material(colour, texture=texture * building_art.TEXTURE, shades=7, gloss=gloss, variety=3,
+                       shift=building_art.SHIFT, relief=relief)
+        s.mask(np.kron(region, ones).astype(bool), mat, height=np.zeros((H * SS, W * SS)), detail=np.kron(detail, ones))
+    img = s.render(outline="tinted")
+    size = int((np.asarray(img)[..., 3] > 0).sum())
+    img = np.array(limit_palette(img, int(size * 0.9 / 100)))
+
+    # The rigging in hemp, a pixel wide, over the finish (the stays from the masthead to the stern and
+    # down to each side), and foam where the hull sits in the water: opaque specks, broken.
+    rope = (92, 62, 40, 255)
+
+    def ink(u, v, z, colour):
+        x, y = int(math.floor((u - v) * c)) + half_w, int(math.floor(-((u + v) * c * 0.5 + z))) + half_h
+        if 0 <= y < H and 0 <= x < W:
+            img[y, x] = colour
+
+    for a, b in (((mast_u, 0, mast_top), (-half_length + 4, 0, sheer(-half_length) + 6)),
+                 ((mast_u, 0, yard_z), (mast_u - 10, -breadth(mast_u - 10), sheer(mast_u - 10) + 5)),
+                 ((mast_u, 0, yard_z), (mast_u - 10, breadth(mast_u - 10), sheer(mast_u - 10) + 5))):
+        for t in frange(0, 1, 0.3 / math.dist(a, b)):
+            ink(*[a[i] + (b[i] - a[i]) * t for i in range(3)], rope)
+    foam = [(232, 248, 255, 255), (178, 222, 236, 255)]
     for u in frange(-half_length, half_length + 8, 1.0):
-        wide = breadth(min(u, half_length)) * 0.82 + 2
-        for v in (-wide, -wide - 1.5):
+        wide = breadth(min(u, half_length)) * 0.6 + 2
+        for k, v in enumerate((-wide, -wide - 1.5)):
             x, y = int(math.floor((u - v) * c)) + half_w, int(math.floor(-((u + v) * c * 0.5))) + half_h
-            if 0 <= y < canvas.height and 0 <= x < canvas.width and canvas.px[y][x] is None:
-                canvas.px[y][x] = hexc("e8f8ff", 200 if v == -wide else 110)
+            if 0 <= y < H and 0 <= x < W and img[y, x, 3] == 0 and math.sin(u * 0.37) + 0.6 * math.sin(u * 1.3) > -0.4 + k:
+                img[y, x] = foam[k]
+    canvas = Canvas(W, H)
+    canvas.px = [[tuple(int(v) for v in img[y, x]) if img[y, x, 3] else None for x in range(W)] for y in range(H)]
     return canvas
+
+
+def strakes(region, a, d, h, length, seed, lap=0.0, vary=0.14):
+    """A hull's strakes or a deck's boards (light and shade, as tools/building_art.py's patterns): long
+    boards `h` pixels wide along `a`, a dark seam under each and its top edge lit, an end joint every
+    `length` pixels or so, staggered, and a little grain. A wall's planks (`building_art.planks`) are
+    short, and on a hull their joints stacked up like bricks. `lap`: each board overlaps the one under
+    it (clinker-built), lit along its top and turning into shadow down to its lapped edge. `vary`: how
+    far one board's tone differs from the next (old timber, each board weathered its own way)."""
+    import numpy as np
+    import building_art
+    A, D = building_art._grid(region, a, d)
+    board = D // h
+    rng = np.random.default_rng(seed)
+    offset = rng.integers(0, length, size=64)[board % 64]
+    tone = (rng.random(64)[board % 64] - 0.5) * vary
+    seam = D % h == h - 1
+    joint = (A + offset) % length == 0
+    grain = (np.sin(A * 0.31 + board * 2.3) > 0.92) * -0.1
+    turn = lap * (0.5 - (D % h) / max(h - 1, 1))
+    return np.where(seam | joint, -0.34, grain + tone + turn + np.where(D % h == 0, 0.08, 0.0))
 
 
 def draw_cave_ladder():

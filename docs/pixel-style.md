@@ -205,6 +205,13 @@ lighter, its bottom and right a shade darker and turned from yellow), a shade un
 colour lying on it, and an outline in a deep shade of each part (`tools/critter_art.py`). Reviewed by eye
 beside the old drawing: brighter or the same, never muddier.
 
+The butterflies (2026-10-25) were the last drawn in Swift: 7 × 5, flat, shown three times as big, so their
+pixels were three times everyone else's. They're drawn in `critter_art.py` at the critters' scale (15 × 12
+with the outline, a pixel to a pixel), as a butterfly reads from above: forewings with a deeper tip and a
+pale spot, a notch at the side, hindwings a shade deeper tapering to the tail, antennae a pixel each, and a
+flap of three frames (open, half, closed). Their lemon yellow turned green in shade (a hue just past
+yellow turns away from it the green way), so the yellow is a touch warmer. They pass the creature bands.
+
 ### Snow
 
 Snow is RD's own colours (`scenery_art.SNOW`, from its `snow_tree`): white, pale blue-green, blue-grey,
@@ -306,6 +313,34 @@ The five drawn so (`lake_shrine`, `warrior_guild`, `wildfolk_lodge`, `bell_tower
 (2026-10-23) predate the two criteria and most fail `straight_edges` (0.1 to 0.74): redraw one with
 `by_hand` when it's next touched.
 
+### The ship
+
+The ship moored at each harbor (`tools/prop_art.py`, `draw_ship`) is a prop, but a made thing as big as a
+grand building (202 × 328), so it's held to the building bands, `form_relief` and all, as well as the
+scenery ones (2026-10-25: "update the ship visual with our new acceptance criteria"). Drawn in flat
+three-tone fills with the items' near-black outline, it failed seven: `colour_density` 0.10, `flat` 0.34,
+`cluster_size` 14.9, `shades_per_ramp` 2, `outline_rel` 0.31, `form_relief` 0.013 and its see-through
+foam. Its build stays in 3D (the hull, deck, sails and rigging in the game's own points, projected as
+`WorldMap.project` does); now each point keeps its part, its surface's normal and its place on the
+surface, and the parts go through `pixel_kit` as the buildings' faces do:
+
+- **Lit by its normals,** under the buildings' light (top left and in front) turned into the ship's axes,
+  so its forms model themselves: the hull rounds out from the waterline and turns in to the rail, the
+  sail billows and creases toward its corners, the mast and yard are round, the deck turns as it rises
+  to the bow, the stern's face leans back into the light.
+- **Wood as RD draws it:** long strakes, clinker-built (each lit along its top and shaded down to its
+  lap), a wale standing out with its shadow under it, deck boards each weathered its own tone, end joints
+  far apart (a wall's planks stacked their joints up like bricks).
+- **Something on its deck:** two barrels and a crate, each lit round, and the sails' shadow across the
+  deck ahead of the mast.
+- **The kit's finish:** a hue-shifted ramp of seven shades per material, the light snapped to the ramp's
+  steps with each step's edge broken in soft clusters (left between two shades, the kit dithered the sail's
+  slow billow into a checkerboard), a tinted outline, and the palette capped at 0.9 colours per 100 pixels.
+  The rigging is hemp, a pixel wide, and the foam opaque specks.
+
+It passes both: the building bands with `form_relief` 0.016, `straight_edges` 0.14, `grid_lines` 0.01
+(soft 93%: its outline sits a touch light, `outline_value` 0.36), the scenery bands 100%.
+
 ## Restyle: how every item icon is finished
 
 `tools/item_art.py` designs each item in flat three-tone fills (shapes, colours, details) and
@@ -398,6 +433,15 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   5. Animation: walk cycles stay RD's for now (`sprite-acceptance.md`).
 
 ## Learned
+
+- **2026-10-25 (the ship):** `form_relief` is light per pixel, so a sprite twice a house's size needs
+  as much change across areas twice as wide: the ship's deck and hull, lit by their normals alone, were
+  flat at the 9 × 9 scale (0.010) and held it at 0.015. What lifted it: boards and strakes each a tone of
+  their own and lapped, a wale with its shadow, creases in the sail and its edges curling into shade,
+  things on deck. Two that didn't: a camber across the deck (the light has almost nothing across the ship)
+  and the sails' cast shadow (light from in front throws shadows behind things, mostly out of sight).
+  And build a rig as it would stand: the jib set into the square sail's belly ran its edge down the middle
+  of the sail's star.
 
 - **2026-10-24 (flat buildings):** The landmarks passed every band, by hand and grand, and still looked
   flat beside RD's. Side by side, RD's forms are modelled: towers round, ledges with shadows under them,
