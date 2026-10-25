@@ -41,9 +41,10 @@ GAP = 0.08
 OUTLINE, DEPTH, RIM = 0.075, 0.07, 0.03
 # The thin outline each letter keeps of its own where it overlaps the one before it.
 SEAM = 0.022
-SEED = 2
+# Picked so the name's first letters, D and O, ride level with the rest: lower, they read a size down.
+SEED = 9
 # Round capitals, drawn a little taller than the flat ones so they look the same size.
-ROUND, OVERSHOOT = "OCGQS", 1.03
+ROUND, OVERSHOOT = "OCGQS", 1.05
 SS = 3
 
 INK = (34, 22, 14)
