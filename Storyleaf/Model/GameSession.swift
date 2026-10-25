@@ -34,11 +34,8 @@ final class GameSession {
     var joinedParty: JoinedParty?
     /// Who said no to partying up lately, and till when they'd say no again (`askAlong`, `askToJoin`).
     @ObservationIgnored var declinedUntil: [UUID: Date] = [:]
-    /// How much longer each friend at your side stays in your party, in seconds of play
-    /// (`passPartyTime`): set as they join, or the first time it's counted.
-    @ObservationIgnored var partyStays: [UUID: TimeInterval] = [:]
-    /// How much longer the party you've joined keeps together with you, in seconds of play.
-    @ObservationIgnored var joinedStay: TimeInterval = 0
+    /// When the party you've joined heads off on its own (`passPartyTime`).
+    @ObservationIgnored var joinedUntil: Date = .distantFuture
     /// Whether the weaver has a cape for you (`capesWaiting`), as of the last time a milestone could
     /// have been met (`checkTitles`) or a cape was woven: the "!" over her, without working out every
     /// cape's progress each frame.
@@ -855,7 +852,9 @@ final class GameSession {
             data.friends?[index].checkpoint = saved
         }
         data.partyIDs = (data.partyIDs ?? []) + [id]
-        partyStays[id] = stayLength()
+        var leaves = data.partyLeaves ?? [:]
+        leaves[id.uuidString] = Date().addingTimeInterval(stayLength())
+        data.partyLeaves = leaves
         post(L("{name} joined your party!", ["name": friend.name]), .reward)
         save()
     }
@@ -863,7 +862,7 @@ final class GameSession {
     func leaveParty(_ id: UUID) {
         guard let friend = friends.first(where: { $0.id == id }) else { return }
         data.partyIDs?.removeAll { $0 == id }
-        partyStays[id] = nil
+        data.partyLeaves?[id.uuidString] = nil
         if let index = data.friends?.firstIndex(where: { $0.id == id }) {
             data.friends?[index].waitingAt = nil
         }

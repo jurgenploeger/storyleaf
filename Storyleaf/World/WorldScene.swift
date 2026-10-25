@@ -2354,7 +2354,7 @@ final class WorldScene: SKScene {
             refreshFollower()
             refreshHero()
             rejoinWaitingFriends()
-            let goodbyes = keepUpWithParties(0.4)
+            let goodbyes = keepUpWithParties()
             refreshAllies()
             // Those heading off say goodbye, from among the crowd (a friend who left your party has
             // just rejoined it).
@@ -2427,11 +2427,11 @@ final class WorldScene: SKScene {
 
     /// Keeps the party you've joined in step (`ContinentScene.keepUpWithParties`): this map's crowd
     /// leads you while its leader's here and you're near them, and who walks with them is who's in it.
-    /// Time passes for the friends at your side and for it: whoever heads off says goodbye.
-    private func keepUpWithParties(_ elapsed: TimeInterval) -> [UUID] {
+    /// Whoever's time with you is up heads off and says goodbye.
+    private func keepUpWithParties() -> [UUID] {
         var goodbyes: [UUID] = []
         if !isInputLocked {
-            let gone = session.passPartyTime(elapsed)
+            let gone = session.passPartyTime()
             goodbyes = gone.left.map(\.id)
             if let leader = gone.headedOff { goodbyes.append(leader.id) }
         }

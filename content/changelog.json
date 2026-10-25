@@ -14,11 +14,11 @@
       ]
     },
     {
-      "version": "0.7.89",
+      "version": "0.7.92",
       "date": "2026-10-25",
       "title": "A cleaner screen",
       "notes": [
-        "One menu button opens into Hero, Companion, Inventory, Quests and Settings, with Chat right beside it.",
+        "One menu button opens into Hero, Companion, Friends, Inventory, Quests and Settings, each a window that grows out of it, with Chat right beside it.",
         "Your EXP bar sits under your health and magic, and what you win and find pops up for a moment, then waits in the chat.",
         "Every boss waits in a lair worth finding: at its land's edge, on a hilltop or in a cave, ringed by dead trees, standing stones or broken pillars, with a warning where its trail begins.",
         "Skill icons glow like the spells they cast, and now so do the icons on every button. Your skills are tiles: tap one to see it and raise it a level.",

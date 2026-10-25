@@ -1008,7 +1008,8 @@ nonisolated struct CrowdOptions: Decodable, Sendable {
     /// (`GameSession.askAlong`, `askToJoin`).
     let acceptChance: Double?
     /// How long an adventurer stays in a party with you, yours or theirs you joined, before heading
-    /// off on their own: minutes of play [fewest, most] (`GameSession.stayLength`).
+    /// off on their own: minutes [fewest, most] on the clock, fights and time away too
+    /// (`GameSession.stayLength`).
     let stayMinutes: [Double]?
     /// How long an adventurer keeps to how they travel among the crowd, alone or in a group, before
     /// they leave their group or join one near them: minutes [fewest, most] (`Crowd`).

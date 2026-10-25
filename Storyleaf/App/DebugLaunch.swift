@@ -83,8 +83,8 @@ import SpriteKit
 ///   meet=n         once the map is on screen, the n nearest adventurers come over as strangers, so the
 ///                  nearest one's card shows Befriend, Trade (and Duel where duels are allowed)
 ///   quiet          footsteps switched off in Settings, and left off (so its screenshot runs last)
-///   menu=<tab>     open character | companions | bag | quests
-///   sub=<page>     a menu tab's smaller tab: skills | titles (menu=character), daily (menu=quests)
+///   menu=<tab>     open that menu window: character | companions | friends | bag | quests | settings
+///   sub=<page>     a menu window's tab: skills | titles (menu=character), daily (menu=quests)
 ///   profile=<who>  open someone's stats: hero | pet (with pet=) | friend (with friends=)
 ///   bottom         open the menu scrolled to the end
 ///   npc=<id>       open an NPC dialog

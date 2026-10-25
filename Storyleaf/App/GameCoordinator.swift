@@ -24,6 +24,16 @@ enum MenuTab: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Its name in the menu and on its window when it has no pages of its own.
+    var menuTitle: String {
+        switch self {
+        case .character: L("Hero")
+        case .companions: L("Companion")
+        case .bag: L("Inventory")
+        case .quests, .settings, .friends: title
+        }
+    }
+
     var icon: GameIcon {
         switch self {
         case .character: .user
@@ -166,6 +176,13 @@ final class GameCoordinator {
             return (picture, here.width, here.height)
         }
         return (world.minimapPicture(explored: version, overviews: overviews), world.def.width, world.def.height)
+    }
+
+    /// How many rows the land you're in has: your coordinates count them from its north edge, as
+    /// the minimap's plate did (the map window shows them now, `MapOverlay`).
+    var mapRows: Int {
+        if showsContinent, let here = continent?.here { return here.height }
+        return world.def.height
     }
 
     /// In a cave, its own map for the map window (playtesting 2026-10-17: the world map showed the

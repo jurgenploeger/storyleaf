@@ -1,11 +1,14 @@
 import SwiftUI
 
-/// Character, Companions, Friends, Bag, Quests and Settings in one tabbed panel.
+/// One of the menu's windows: Hero, Companions, Friends, Inventory, Quests or Settings, each on its own
+/// (playtesting 2026-10-25: "The menu items hero etc should become their own modal window"), its own
+/// pages its tabs (the Hero's Hero, Skills and Titles; the Companions' and the Monster Book...).
 struct MenuView: View {
     let session: GameSession
     let onClose: () -> Void
     var onQuitToTitle: (() -> Void)?
-    @State private var tab: MenuTab
+    /// Which of the menu's windows this is.
+    let window: MenuTab
     /// A language switch (in Settings) rebuilds the panel's text, staying on the same tab.
     @State private var localizer = Localizer.shared
     /// Use or Give in the Bag: who gets it, in a window over the menu.
@@ -14,8 +17,8 @@ struct MenuView: View {
     @State private var bagNote: String?
     /// Change on the Character tab: the grid of gear for that slot, in a window over the menu.
     @State private var changing: ItemType? = DebugLaunch.changingSlot
-    /// The smaller tabs' pages (Character, Companions and Quests have them), kept while the menu
-    /// is open. Debug `sub=<page>` opens one.
+    /// The window's pages (Character, Companions and Quests have more than one), its tabs. Debug
+    /// `sub=<page>` opens one.
     @State private var characterPage: CharacterPage = DebugLaunch.subTab.flatMap(CharacterPage.init(rawValue:)) ?? .hero
     @State private var companionsPage: CompanionsPage = DebugLaunch.opensMonsterBook ? .book : .companions
     @State private var questsPage: QuestsPage = DebugLaunch.subTab.flatMap(QuestsPage.init(rawValue:)) ?? .quests
@@ -24,64 +27,26 @@ struct MenuView: View {
     /// A tap on something in the Bag: its card, over the menu. Debug `inspect=<item>` opens one
     /// (unless it's for the gear grid, `change=`).
     @State private var inspecting: ItemDef? = DebugLaunch.changingSlot == nil ? DebugLaunch.inspectedItem.flatMap { Content.shared.item($0) } : nil
+    /// Grown out of the open menu to its full size; false while it grows, and as it shrinks back
+    /// into the menu to close (`MenuMorph`).
+    @State private var grown = false
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(session: GameSession, initialTab: MenuTab, onClose: @escaping () -> Void, onQuitToTitle: (() -> Void)? = nil) {
+    init(session: GameSession, window: MenuTab, onClose: @escaping () -> Void, onQuitToTitle: (() -> Void)? = nil) {
         self.session = session
         self.onClose = onClose
         self.onQuitToTitle = onQuitToTitle
-        _tab = State(initialValue: initialTab)
+        self.window = window
     }
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.5)
+            Color.black.opacity(grown ? 0.5 : 0)
                 .ignoresSafeArea()
-                .onTapGesture(perform: onClose)
+                .onTapGesture(perform: close)
 
-            VStack(spacing: 0) {
-                HStack(spacing: 4) {
-                    ForEach(MenuTab.allCases) { item in
-                        Button {
-                            if tab != item { SoundEffects.shared.play(.tap, volume: 0.7) }
-                            tab = item
-                        } label: {
-                            Label(item.title, icon: item.icon, size: 20)
-                                .labelStyle(TabLabelStyle(selected: item == tab))
-                        }
-                    }
-                    Spacer(minLength: 4)
-                    OrangeCloseButton(action: onClose)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(HUDStyle.titleGloss.overlay(alignment: .bottom) { HUDStyle.titleEdge })
-
-                ScrollView {
-                    Group {
-                        switch tab {
-                        case .character:
-                            CharacterTab(session: session, page: $characterPage) { slot in
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { changing = slot }
-                            }
-                        case .companions: CompanionsTab(session: session, page: $companionsPage)
-                        case .friends: FriendsTab(session: session)
-                        case .bag:
-                            BagTab(session: session, note: $bagNote, hatchRequest: $hatchRequest,
-                                   onInspect: { item in withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { inspecting = item } })
-                        case .quests: QuestsTab(session: session, page: $questsPage)
-                        case .settings: SettingsView(session: session, onQuitToTitle: onQuitToTitle)
-                        }
-                    }
-                    .padding(14)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                // Debug `bottom`: opens at the end of the page (screenshots of the skills).
-                .defaultScrollAnchor(DebugLaunch.opensMenuAtBottom ? .bottom : nil)
-            }
-            .id(localizer.language)
-            .frame(maxWidth: 760)
-            .gameWindow()
-            .padding(10)
+            morphing
 
             if let slot = changing {
                 // Fades in; only its window scales (popIn), so its backdrop always fills the screen.
@@ -104,7 +69,7 @@ struct MenuView: View {
             if let item = inspecting {
                 let close = { withAnimation(.easeOut(duration: 0.2)) { inspecting = nil } }
                 // From the Bag: what you can do with it there, on its card.
-                let fromBag = tab == .bag
+                let fromBag = window == .bag
                 let wearable = fromBag && ItemType.equipmentSlots.contains(item.type) && session.count(of: item.id) > 0
                 let equip: (() -> Void)? = wearable ? { session.equip(item.id); close() } : nil
                 ItemInfoCard(session: session, item: item, onClose: close, onEquip: equip,
@@ -119,6 +84,122 @@ struct MenuView: View {
 }
 
 extension MenuView {
+    /// The window's page: its tabs along the top, the round close button at their end, and what's
+    /// on the tab you're on.
+    private var page: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 4) {
+                tabs
+                Spacer(minLength: 4)
+                OrangeCloseButton(action: close)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(HUDStyle.titleGloss.overlay(alignment: .bottom) { HUDStyle.titleEdge })
+
+            ScrollView {
+                Group {
+                    switch window {
+                    case .character:
+                        CharacterTab(session: session, page: $characterPage) { slot in
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { changing = slot }
+                        }
+                    case .companions: CompanionsTab(session: session, page: $companionsPage)
+                    case .friends: FriendsTab(session: session)
+                    case .bag:
+                        BagTab(session: session, note: $bagNote, hatchRequest: $hatchRequest,
+                               onInspect: { item in withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { inspecting = item } })
+                    case .quests: QuestsTab(session: session, page: $questsPage)
+                    case .settings: SettingsView(session: session, onQuitToTitle: onQuitToTitle)
+                    }
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            // Debug `bottom`: opens at the end of the page (screenshots of the skills).
+            .defaultScrollAnchor(DebugLaunch.opensMenuAtBottom ? .bottom : nil)
+        }
+        .id(localizer.language)
+    }
+
+    /// The window growing out of the open menu, its bottom right corner the menu's, to as near the
+    /// screen's edges as the menu keeps (playtesting 2026-10-25): its glass and frame grow, the page
+    /// fades in inside them. Closing, it shrinks back into the menu and fades into it. With Reduce
+    /// Motion it's just there.
+    private var morphing: some View {
+        let onItsSide = verticalSizeClass == .compact
+        return GeometryReader { area in
+            let full = area.size
+            let size = grown ? full : CGSize(width: min(MenuMorph.from.width, full.width), height: min(MenuMorph.from.height, full.height))
+            let shape = RoundedRectangle(cornerRadius: grown ? HUDStyle.windowRadius : MenuMorph.radius)
+            ZStack(alignment: .bottomTrailing) {
+                shape.fill(HUDStyle.glass)
+                    .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)
+                    .frame(width: size.width, height: size.height)
+                page
+                    .frame(width: full.width, height: full.height)
+                    .mask(alignment: .bottomTrailing) { shape.frame(width: size.width, height: size.height) }
+                    .animation(grown ? .easeOut(duration: 0.22).delay(0.08) : .easeOut(duration: 0.1)) { $0.opacity(grown ? 1 : 0) }
+                HUDStyle.frame(shape)
+                    .frame(width: size.width, height: size.height)
+                    .allowsHitTesting(false)
+            }
+            .frame(width: full.width, height: full.height, alignment: .bottomTrailing)
+        }
+        // Into the menu as it closes: still there most of the way, gone as it reaches it.
+        .animation(grown ? .easeOut(duration: 0.12) : .easeIn(duration: 0.3)) { $0.opacity(grown ? 1 : 0) }
+        .padding(.horizontal, MenuMorph.side)
+        .padding(.top, MenuMorph.side)
+        .padding(.bottom, MenuMorph.bottom(onItsSide: onItsSide))
+        .ignoresSafeArea(.container, edges: MenuMorph.bottomEdge(onItsSide: onItsSide))
+        .onAppear {
+            if reduceMotion {
+                grown = true
+            } else {
+                withAnimation(MenuMorph.spring) { grown = true }
+            }
+        }
+    }
+
+    /// Shrinks back into the menu, then closes.
+    private func close() {
+        guard grown else { return }
+        guard !reduceMotion else { return onClose() }
+        withAnimation(MenuMorph.spring) { grown = false } completion: { onClose() }
+    }
+
+    /// The window's tabs: its pages, or its own name alone when it has just the one.
+    @ViewBuilder
+    private var tabs: some View {
+        switch window {
+        case .character:
+            // A path to choose (at a guild master) or better gear, or a skill point to spend.
+            PageTabs(page: $characterPage, title: { $0.title }, icon: { $0.icon }) { page in
+                switch page {
+                case .hero: session.canChooseClass || session.hasGearUpgrade
+                case .skills: session.canSpendSkillPoint
+                case .titles: false
+                }
+            }
+        case .companions:
+            PageTabs(page: $companionsPage, title: { $0.title }, icon: { $0.icon })
+        case .quests:
+            // A quest to report back on, or a bounty or the bonus to claim.
+            PageTabs(page: $questsPage, title: { $0.title }, icon: { $0.icon }) { page in
+                switch page {
+                case .quests:
+                    session.activeQuests.contains { session.status(of: $0) == .ready }
+                case .daily:
+                    (session.data.bounties?.bounties ?? []).contains { $0.isDone && !$0.claimed } || session.canClaimBountyBonus
+                }
+            }
+        case .friends, .bag, .settings:
+            Label(window.menuTitle, icon: window.icon, size: 20)
+                .labelStyle(TabLabelStyle(selected: true))
+                .accessibilityAddTraits(.isHeader)
+        }
+    }
+
     /// What an item in the Bag can do, on its card: drink it (or give it) to someone, give a toy to
     /// a companion, fly home on a feather, or hatch an egg.
     func bagAction(for item: ItemDef, close: @escaping () -> Void) -> ItemInfoCard.Action? {
@@ -157,51 +238,40 @@ extension MenuView {
     }
 }
 
-// MARK: - Smaller tabs
+// MARK: - Tabs
 
-/// A menu tab's smaller tabs, under the menu's own: gold for the one you're on, like the menu's.
-/// One you're not on wears the HUD's gold dot when something there waits for you (`waiting`).
-/// The pages are a nonisolated enum (its raw value is the debug name, `sub=skills`).
-private struct SubTabs<Page: Hashable & CaseIterable>: View {
+/// A window's tabs along its top: the one you're on in gold, every one with its icon and its full
+/// name (playtesting 2026-10-25: the ones you weren't on showed only an icon). One you're not on wears
+/// the HUD's gold dot when something there waits for you (`waiting`). The pages are a nonisolated
+/// enum (its raw value is the debug name, `sub=skills`).
+private struct PageTabs<Page: Hashable & CaseIterable>: View {
     @Binding var page: Page
     let title: (Page) -> String
     let icon: (Page) -> GameIcon
     var waiting: (Page) -> Bool = { _ in false }
 
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(Array(Page.allCases), id: \.self) { item in
-                let selected = item == page
-                let marked = !selected && waiting(item)
-                Button {
-                    guard !selected else { return }
-                    SoundEffects.shared.play(.tap, volume: 0.7)
-                    page = item
-                } label: {
-                    Label(title(item), icon: icon(item), size: 16)
-                        .font(HUDStyle.font(12))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                        .foregroundStyle(selected ? HUDStyle.ink : HUDStyle.cream)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
-                        .background(Capsule().fill(selected ? HUDStyle.gold : .white.opacity(0.06)))
-                        .overlay(alignment: .topTrailing) {
-                            if marked {
-                                Circle().fill(HUDStyle.gold).frame(width: 10, height: 10)
-                                    .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
-                                    .offset(x: -4, y: -2)
-                            }
+        ForEach(Array(Page.allCases), id: \.self) { item in
+            let selected = item == page
+            let marked = !selected && waiting(item)
+            Button {
+                guard !selected else { return }
+                SoundEffects.shared.play(.tap, volume: 0.7)
+                page = item
+            } label: {
+                Label(title(item), icon: icon(item), size: 20)
+                    .labelStyle(TabLabelStyle(selected: selected))
+                    .overlay(alignment: .topTrailing) {
+                        if marked {
+                            Circle().fill(HUDStyle.gold).frame(width: 10, height: 10)
+                                .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
+                                .offset(x: 2, y: -2)
                         }
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(selected ? .isSelected : [])
-                .accessibilityValue(marked ? L("Something to do") : "")
+                    }
             }
+            .accessibilityAddTraits(selected ? .isSelected : [])
+            .accessibilityValue(marked ? L("Something to do") : "")
         }
-        .padding(3)
-        .background(Capsule().fill(.black.opacity(0.2)))
     }
 }
 
@@ -246,17 +316,16 @@ private struct HowItWorks: View {
 
 private struct TabLabelStyle: LabelStyle {
     let selected: Bool
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 4) {
             configuration.icon
-            // Icons only in narrow portrait layouts.
-            if verticalSizeClass == .compact || selected { configuration.title }
+            configuration.title
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
         }
         .font(HUDStyle.font(12))
         .foregroundStyle(selected ? HUDStyle.ink : HUDStyle.cream)
-        // Six tabs and the close button fit across a phone held upright.
         .padding(.horizontal, 8)
         .padding(.vertical, 7)
         .background(Capsule().fill(selected ? HUDStyle.gold : .white.opacity(0.08)))
@@ -315,21 +384,11 @@ private struct CharacterTab: View {
         let stats = session.heroStats
         // Looks are chosen once, when the hero is made (LookEditor on the title screen).
         VStack(alignment: .leading, spacing: 14) {
-            SubTabs(page: $page, title: { $0.title }, icon: { $0.icon }) { waiting(on: $0) }
             switch page {
             case .hero: overview(hero: hero, stats: stats)
             case .skills: skills(hero: hero)
             case .titles: TitlesSection(session: session)
             }
-        }
-    }
-
-    /// A path to choose (at a guild master), or a skill point to spend.
-    private func waiting(on tab: CharacterPage) -> Bool {
-        switch tab {
-        case .hero: return session.canChooseClass || session.hasGearUpgrade
-        case .skills: return session.canSpendSkillPoint
-        case .titles: return false
         }
     }
 
@@ -501,19 +560,20 @@ private struct PaperDoll: View {
     /// Each slot and where it sits on the ring, in degrees clockwise from the right: an eighth of
     /// the way round apart (playtesting 2026-10-18: no wider gap under the hero's feet), the hat
     /// and cape either side of the top, the boots and accessory either side of the bottom.
-    private static let ring: [(slot: ItemType, angle: Double)] = [
+    static let ring: [(slot: ItemType, angle: Double)] = [
         (.head, 247.5), (.cape, 292.5), (.weapon, 337.5), (.gloves, 22.5), (.accessory, 67.5),
         (.boots, 112.5), (.armor, 157.5), (.necklace, 202.5),
     ]
     /// The ring's radius (to each slot's middle), and the room a slot takes.
-    private static let radius: CGFloat = 112
-    private static let slot = CGSize(width: 62, height: 66)
+    static let radius: CGFloat = 112
+    static let slot = CGSize(width: 62, height: 66)
+    /// From the hat and cape at the top of the ring down to the boots and the accessory.
+    static let high = radius * CGFloat(ring.map { -sin($0.angle * Double.pi / 180) }.max() ?? 1)
+    static let low = radius * CGFloat(ring.map { sin($0.angle * Double.pi / 180) }.max() ?? 1)
 
     var body: some View {
         let width = Self.radius * 2 + Self.slot.width
-        // From the hat and cape at the top of the ring down to the boots and the accessory.
-        let high = Self.radius * CGFloat(Self.ring.map { -sin($0.angle * Double.pi / 180) }.max() ?? 1)
-        let low = Self.radius * CGFloat(Self.ring.map { sin($0.angle * Double.pi / 180) }.max() ?? 1)
+        let high = Self.high, low = Self.low
         let height = high + low + Self.slot.height
         ZStack {
             // A faint ring through the slots, and the hero on a soft disc in the middle.
@@ -584,6 +644,49 @@ private struct DollSlot: View {
                              better.map { L("{item} in your bag is better", ["item": $0.name]) } ?? ""]
                             .filter { !$0.isEmpty }.joined(separator: ". "))
         .accessibilityHint(L("Change"))
+    }
+}
+
+/// The companion you bring along laid out as the hero is (playtesting 2026-10-25: the Hero and Companion
+/// pages "should become similar"): big on the same soft disc in the same faint ring, its skills in the
+/// ring's slots where the hero has their gear, the first pair either side of its head, the next under them.
+private struct CompanionDoll: View {
+    let session: GameSession
+    let pet: Pet
+    let skills: [SkillDef]
+
+    /// Where each skill sits on the ring, in the order the companion learnt them: on the hero's own
+    /// slots, in pairs either side.
+    private static let angles: [Double] = [202.5, 337.5, 157.5, 22.5, 247.5, 292.5, 112.5, 67.5]
+
+    var body: some View {
+        let radius = PaperDoll.radius, slot = PaperDoll.slot
+        let high = PaperDoll.high, low = PaperDoll.low
+        ZStack {
+            Circle()
+                .strokeBorder(.white.opacity(0.08), lineWidth: 2)
+                .frame(width: radius * 2, height: radius * 2)
+            SpriteImage(art: session.artID(for: pet), size: 128)
+                .background(Circle().fill(.white.opacity(0.06)))
+            ForEach(Array(skills.prefix(Self.angles.count).enumerated()), id: \.offset) { index, skill in
+                let angle = Self.angles[index] * Double.pi / 180
+                VStack(spacing: 3) {
+                    SkillIcon(skill: skill, size: 44)
+                    Text(skill.name)
+                        .font(HUDStyle.font(9))
+                        .foregroundStyle(HUDStyle.dim)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .frame(width: 58)
+                }
+                .frame(width: slot.width, height: slot.height)
+                .offset(x: radius * CGFloat(cos(angle)), y: radius * CGFloat(sin(angle)))
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .offset(y: (high - low) / 2)
+        .frame(width: radius * 2 + slot.width, height: high + low + slot.height)
+        .padding(.vertical, 4)
     }
 }
 
@@ -735,8 +838,6 @@ private struct CompanionsTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SubTabs(page: $page, title: { $0.title }, icon: { $0.icon })
-                .padding(.bottom, 4)
             switch page {
             case .companions: companions
             case .book: MonsterBook(session: session)
@@ -745,10 +846,11 @@ private struct CompanionsTab: View {
     }
 
     private var companions: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HowItWorks(L("Companions fight beside you and earn a share of battle EXP. Throw a Seal Stone at a wild monster with Capture to befriend it (up to {count}): any monster, at any HP, but the weaker it is, the better the odds. Each throw uses a stone up, and stronger stones hold more often. Trader Bo in Meadowbrook sells Seal Stones.", ["count": GameSession.maxPets]),
-                       open: session.data.pets.isEmpty)
+        let howItWorks = HowItWorks(L("Companions fight beside you and earn a share of battle EXP. Throw a Seal Stone at a wild monster with Capture to befriend it (up to {count}): any monster, at any HP, but the weaker it is, the better the odds. Each throw uses a stone up, and stronger stones hold more often. Trader Bo in Meadowbrook sells Seal Stones.", ["count": GameSession.maxPets]),
+                                    open: session.data.pets.isEmpty)
+        return VStack(alignment: .leading, spacing: 10) {
             if session.data.pets.isEmpty {
+                howItWorks
                 EmptyNote(L("No companions yet.\nElder Oak in Meadowbrook gives you an egg with the first quest: hatch it from your Bag."))
             }
             // The one you bring along first, laid out like your hero; the rest in cards below.
@@ -764,6 +866,10 @@ private struct CompanionsTab: View {
                 ForEach(others) { pet in
                     CompanionCard(session: session, pet: pet)
                 }
+            }
+            // The page opens on your companion, as the Hero page opens on your hero; how it works after.
+            if !session.data.pets.isEmpty {
+                howItWorks.padding(.top, 6)
             }
         }
     }
@@ -883,15 +989,14 @@ private struct CompanionCard: View {
         }
     }
 
-    /// Like the hero's overview: the companion big on its disc, its name with a pencil to rename
-    /// it, what it is (once it has a name of its own), whether it follows you, and what it can do;
-    /// its stats beside or under it. Tidied up after playtesting (2026-10-18): one line each, the
-    /// species not said twice, one status, the skills in chips.
+    /// Laid out as the hero's overview is (2026-10-25): the companion in its ring with its skills round
+    /// it (`CompanionDoll`, the hero's `PaperDoll`), its name with a pencil to rename it, what it is in
+    /// gold where the hero's race and class go (once it has a name of its own), whether it follows you;
+    /// its stats beside or under it.
     private func overview(species: MonsterDef?, stats: Stats, isActive: Bool) -> some View {
         AdaptiveStack(spacing: 18) {
-            VStack(spacing: 8) {
-                SpriteImage(art: session.artID(for: pet), size: 120)
-                    .background(Circle().fill(.white.opacity(0.06)))
+            VStack(spacing: 6) {
+                CompanionDoll(session: session, pet: pet, skills: species?.skills.compactMap { session.content.skill($0) } ?? [])
                 nameLine(species: species, size: 18)
                 if let kind = renamed(species) {
                     Text(kind)
@@ -901,7 +1006,7 @@ private struct CompanionCard: View {
                 status(isActive: isActive)
                 notes(stats: stats, isActive: isActive, hint: true)
                     .multilineTextAlignment(.center)
-                chips(species: species)
+                    .frame(width: 220)
             }
             .frame(minWidth: 250)
             .frame(maxWidth: .infinity)
@@ -1322,8 +1427,6 @@ private struct QuestsTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SubTabs(page: $page, title: { $0.title }, icon: { $0.icon }) { waiting(on: $0) }
-                .padding(.bottom, 4)
             switch page {
             case .quests:
                 questList
@@ -1428,17 +1531,6 @@ private struct QuestsTab: View {
                 .map { (quest: $0.element, place: $0.offset, value: value($0.element)) }
                 .sorted { $0.value != $1.value ? $0.value > $1.value : $0.place < $1.place }
                 .map { $0.quest }
-        }
-    }
-
-    /// A quest to report back on, or a bounty or the bonus to claim.
-    private func waiting(on tab: QuestsPage) -> Bool {
-        switch tab {
-        case .quests:
-            return session.activeQuests.contains { session.status(of: $0) == .ready }
-        case .daily:
-            let bounties = session.data.bounties?.bounties ?? []
-            return bounties.contains { $0.isDone && !$0.claimed } || session.canClaimBountyBonus
         }
     }
 }
