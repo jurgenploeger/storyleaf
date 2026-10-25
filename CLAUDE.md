@@ -83,7 +83,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   (`SOURCE`: the game's own hero with a golden sword before the apple and blossom trees, built from the
   sprites and redrawn by RD), cropped in close on him, hair to knees over a band of meadow (`CROP`), its flat sky graded from deep
   blue overhead to a pale haze in dithered bands (`day_sky`), and scaled by a whole number; dark is the scene at dusk under the night `StoryleafSky` draws, lit by its gold, fireflies, sparkles
-  and stars (`light_up`), in hard steps; tinted its greys. `--preview` shows Home Screen sizes.
+  and stars (`light_up`), in hard steps; tinted (iOS's Tinted and Clear looks) the hero bright, cut on his
+  outline, on a dim backdrop (`tint`), as the system's own icons are a light figure on a dark field. `--preview` shows Home Screen sizes.
 - `tools/season_icon_art.py`: the festive seasons' app icons (AppIcon-Halloween, -Christmas, -Easter), from the
   app icon's drawing cropped a little looser (`BOX`) so a hat fits: the hero as drawn (`HERO`), RD's scenery
   recoloured class by class, each colour onto the same rank of a hue-shifted seasonal ramp (its clusters kept),

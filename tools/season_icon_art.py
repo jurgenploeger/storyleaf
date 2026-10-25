@@ -58,7 +58,7 @@ SCALE = 8
 # The hero and his sword, in the drawing's pixels: nothing inside is recoloured.
 HERO = [(55, 44), (64, 43), (72, 60), (79, 78), (85, 98), (89, 110), (93, 108), (96, 100), (94, 90), (87, 84),
         (84, 76), (90, 66), (98, 56), (108, 51), (122, 51), (136, 53), (146, 59), (151, 70), (153, 84), (151, 98),
-        (149, 106), (151, 112), (152, 124), (150, 132), (155, 140), (154, 146), (149, 149), (142, 149), (141, 157), (140, 168), (97, 168),
+        (149, 106), (151, 112), (152, 124), (150, 132), (155, 140), (154, 146), (149, 149), (142, 149), (141, 157), (140, 200), (97, 200),
         (97, 157), (93, 155), (87, 153), (84, 144), (78, 141), (77, 131), (66, 131), (63, 124), (71, 118),
         (79, 117), (71, 96), (62, 72), (55, 50)]
 # Below this row the green is the meadow, above it the trees' leaves.
@@ -109,20 +109,21 @@ SEASONS = {
 }
 
 
-def hero_mask() -> np.ndarray:
+def hero_mask(box: tuple = BOX) -> np.ndarray:
     """The hero exactly, outline and all. `HERO` only roughs him out: the background is flooded in from
     outside it through everything but dark pixels, as far as a band 5 pixels inside it, so it stops at his
     own outline (and where that has a gap, leaks a few pixels at most); his gold (the sword's lit edge,
     which has no dark line) and his hair's oranges and reds (the lock flicked out to the left and the
     deep red hair behind it, too thin for the band, and the sword's orange edge) are never background,
     and sky never his. Then his outline is the dark pixels within 2 of what's left. Cut from the polygon
-    alone, his outline came out half his and half the scenery's, recoloured, and looked chewed. The grass
+    alone, his outline came out half his and half the scenery's, recoloured, and looked chewed. `box` is
+    the part of the drawing to cut him from (the app icon's `CROP` runs lower, to his knees). The grass
     between his legs is flooded in from the icon's bottom edge, where the legs run off it."""
-    w, h = BOX[2] - BOX[0], BOX[3] - BOX[1]
+    w, h = box[2] - box[0], box[3] - box[1]
     image = Image.new("L", (w, h))
-    ImageDraw.Draw(image).polygon([(x - BOX[0], y - BOX[1]) for x, y in HERO], fill=255)
+    ImageDraw.Draw(image).polygon([(x - box[0], y - box[1]) for x, y in HERO], fill=255)
     rough = np.asarray(image) > 0
-    rgb = app_icon_art.crop(BOX)
+    rgb = app_icon_art.crop(box)
     dark = rgb.max(axis=2) <= 0.2
     four = ndimage.generate_binary_structure(2, 1)
     outer = ndimage.binary_dilation(rough, four, iterations=5)
@@ -134,7 +135,7 @@ def hero_mask() -> np.ndarray:
     hue, sat, val = hsv[..., 0] * 360, hsv[..., 1], hsv[..., 2]
     hair = ((hue < 40) | (hue > 350)) & (sat > 0.55) & (val > 0.3) & outer
     # The deep red of his hair is also the apples' red: left of his hair (HAIR_LEFT), by the blade, it's apples.
-    apples = ((hue < 12) | (hue > 350)) & (np.arange(w)[None, :] + BOX[0] < HAIR_LEFT)
+    apples = ((hue < 12) | (hue > 350)) & (np.arange(w)[None, :] + box[0] < HAIR_LEFT)
     gold |= hair & ~apples
     sky = app_icon_art.sky_mask(rgb)
     # Also the grass showing between his legs, where they run off the bottom: the polygon spans the gap.
@@ -149,7 +150,7 @@ def hero_mask() -> np.ndarray:
     near = ndimage.distance_transform_cdt(~light, metric="chessboard") <= 2
     hero = ndimage.binary_fill_holes(light | (dark & near & outer)) & ~sky
     # Below his tunic's hem (HEM) nothing of his is green: what is, is grass.
-    below = np.arange(h)[:, None] + BOX[1] >= HEM
+    below = np.arange(h)[:, None] + box[1] >= HEM
     hero &= ~(green & below)
     # His boots are dark all through, not just at their outline: below the hem, the dark inside him is his.
     hero |= dark & below & ndimage.binary_erosion(rough, four, iterations=1, border_value=1) & ~back
@@ -633,7 +634,8 @@ def icon(season: str) -> tuple:
     out = day.copy()
     lit, worn = DRAW[season](out, kind, ramps)
     dark = at_night(season, rgb, kind, day, out, lit, worn)
-    return tuple(scale(image) for image in (out, dark, app_icon_art.tint(dark)))
+    tinted = app_icon_art.tint(dark, (kind == 0) | worn, out, lit)
+    return tuple(scale(image) for image in (out, dark, tinted))
 
 
 def scale(rgb: np.ndarray) -> Image.Image:

@@ -518,6 +518,12 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   flat colour in the middle. Cloth hats curve all the way over: each run across the shape a half cylinder
   (`rounded`: a cone or cap side to side, a brim or band top to bottom), smoothed along it so a row a pixel
   wider doesn't light as a ridge.
+- **2026-10-25 (the tinted app icons, `app_icon_art.tint`):** the user, from a Home Screen in iOS's Clear
+  look: "the clear and tinted app icons should have a bit more contrast, now it's washed out beside other app
+  icons". Stretching the whole picture's greys evenly left it in the middle greys (median 0.2, most of it a
+  busy scene); the system's own icons are a light figure on a dark field. The hero (cut on his own outline)
+  is stretched to the full range from his daylight colours, the scene pushed down to a dim backdrop with only
+  its small lights (and a season's moon) kept bright: a pale patch of snow or blossom kept bright read as noise.
 - **2026-10-25 (the ship):** `form_relief` is light per pixel, so a sprite twice a house's size needs
   as much change across areas twice as wide: the ship's deck and hull, lit by their normals alone, were
   flat at the 9 × 9 scale (0.010) and held it at 0.015. What lifted it: boards and strakes each a tone of
