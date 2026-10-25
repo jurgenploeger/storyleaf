@@ -50,12 +50,9 @@ struct WorldHUD: View {
                 let minimap = coordinator.minimap(explored: session.exploredVersion, overviews: WorldOverview.shared.images.count)
                 MinimapWindow(
                     picture: minimap.picture,
-                    name: session.mapName,
                     cell: session.mapCell,
                     dots: session.minimapDots,
                     marks: session.minimapMarks,
-                    columns: minimap.columns,
-                    rows: minimap.rows,
                     onOpen: { coordinator.open(.worldMap) }
                 )
                 .coachTarget(.minimap)
@@ -530,25 +527,26 @@ private struct GameMenu: View {
             .accessibilityLabel(open ? L("Close menu") : L("Open menu"))
         }
         .frame(width: open ? Self.width : Self.button, alignment: .trailing)
+        // Round while it's shut (playtesting 2026-10-25), like Chat beside it and the minimap; open,
+        // a panel with rounded corners growing up out of it.
         .background(
-            RoundedRectangle(cornerRadius: open ? 14 : 9)
+            RoundedRectangle(cornerRadius: open ? 18 : Self.button / 2)
                 .fill(LinearGradient(colors: HUDStyle.tile, startPoint: .top, endPoint: .bottom))
-                .overlay(RoundedRectangle(cornerRadius: open ? 14 : 9).strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
+                .overlay(RoundedRectangle(cornerRadius: open ? 18 : Self.button / 2).strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
                 .overlay(alignment: .bottom) {
-                    // The button's gloss, on its own square at the bottom; none on the cross that
-                    // closes the open menu.
-                    RoundedRectangle(cornerRadius: 6).fill(.white.opacity(open ? 0 : 0.35))
-                        .frame(width: Self.button - 8, height: Self.button * 0.3)
+                    // The button's gloss, an oval across the top of the round at the bottom; none on
+                    // the cross that closes the open menu.
+                    Ellipse().fill(.white.opacity(open ? 0 : 0.35))
+                        .frame(width: Self.button * 0.62, height: Self.button * 0.28)
                         .padding(.bottom, Self.button * 0.62)
+                        .frame(width: Self.button)
                         .frame(maxWidth: .infinity, alignment: .trailing)
-                        .padding(.trailing, 4)
                 }
         )
         .overlay(alignment: .topTrailing) {
             if !open && items.contains(where: badge) {
                 Circle().fill(HUDStyle.gold).frame(width: 12, height: 12)
                     .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
-                    .offset(x: 3, y: -3)
             }
         }
         .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 2)
@@ -607,121 +605,85 @@ private struct MenuGlyph: View {
     }
 }
 
-/// A framed minimap window around the hero, with Fairyland Online's coordinates on a plate in its corner.
-/// Tap for the full map.
+/// A round minimap around the hero, framed like the HUD's buttons, with a compass on its rim pointing
+/// north (playtesting 2026-10-25: round, a rounded compass at its top right, no title bar, its music and
+/// hide buttons gone; the music is in Settings). Tap for the full map, where the land's name and your
+/// coordinates are.
 private struct MinimapWindow: View {
     /// The land's map and what's round it (`WorldScene.minimapPicture`).
     let picture: WorldScene.MinimapPicture
-    let name: String
     let cell: GridPoint
     let dots: [GameSession.MinimapDot]
     let marks: [GameSession.MinimapMark]
-    let columns: Int
-    let rows: Int
     let onOpen: () -> Void
-    @AppStorage("minimapCollapsed") private var collapsed = false
 
-    private let width: CGFloat = 150
-    private let height: CGFloat = 100
+    private let size: CGFloat = 128
     private let zoom: CGFloat = 5
     /// The rotated map layer must be big enough to cover the window's corners.
     private let layer: CGFloat = 420
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 4) {
-                Text(name).font(HUDStyle.mono(10)).lineLimit(1)
-                Spacer(minLength: 2)
-                Button {
-                    MusicPlayer.shared.toggleMute()
-                } label: {
-                    IconImage(MusicPlayer.shared.isMuted ? .musicOff : .music, size: 16)
-                        .font(.system(size: 10, weight: .bold))
-                        .frame(width: 22, height: 20)
+        ZStack {
+            Color(red: 0.05, green: 0.12, blue: 0.22)
+            // Turned and squashed like the world, so "up" on the minimap is "up" on screen.
+            // The map rides in an overlay: an image bigger than the layer (maps over 84 tiles
+            // wide) must not resize or re-centre it, or the hero's cell drifts off the marker.
+            Color.clear
+                .frame(width: layer, height: layer)
+                .overlay(alignment: .topLeading) {
+                    Image(uiImage: picture.image)
+                        .interpolation(.none)
+                        .resizable()
+                        .frame(width: CGFloat(picture.columns) * zoom, height: CGFloat(picture.rows) * zoom)
+                        .offset(
+                            x: layer / 2 - (CGFloat(cell.col - picture.origin.col) + 0.5) * zoom,
+                            y: layer / 2 - (CGFloat(picture.rows - 1 - (cell.row - picture.origin.row)) + 0.5) * zoom
+                        )
                 }
-                .accessibilityLabel(MusicPlayer.shared.isMuted ? L("Turn music on") : L("Turn music off"))
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { collapsed.toggle() }
-                } label: {
-                    IconImage(collapsed ? .chevronDown : .close, size: 14)
-                        .font(.system(size: 9, weight: .black))
-                        .foregroundStyle(.white)
-                        .frame(width: 18, height: 18)
-                        .background(Circle().fill(HUDStyle.orange).overlay(Circle().strokeBorder(.white.opacity(0.8), lineWidth: 1)))
-                }
-                .accessibilityLabel(collapsed ? L("Show minimap") : L("Hide minimap"))
+                .rotationEffect(.degrees(-45))
+                .scaleEffect(x: 1, y: 0.5)
+            // Everyone else, round dots on top of the turned map (drawn in it, they'd be
+            // squashed flat): the folk who live here smaller.
+            ForEach(Array(dots.enumerated()), id: \.offset) { _, dot in
+                let size: CGFloat = dot.kind == .folk ? 4 : 5
+                Circle()
+                    .fill(color(of: dot.kind))
+                    .frame(width: size, height: size)
+                    .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1))
+                    .offset(offset(of: dot.cell))
             }
-            .foregroundStyle(.white)
-            .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
-            .padding(.leading, 8)
-            .padding(.trailing, 4)
-            .padding(.vertical, 3)
-            .background(LinearGradient(colors: [HUDStyle.frameLight, HUDStyle.frameMid, HUDStyle.frameDark], startPoint: .top, endPoint: .bottom))
-
-            if !collapsed {
-                ZStack {
-                    Color(red: 0.05, green: 0.12, blue: 0.22)
-                    // Turned and squashed like the world, so "up" on the minimap is "up" on screen.
-                    // The map rides in an overlay: an image bigger than the layer (maps over 84 tiles
-                    // wide) must not resize or re-centre it, or the hero's cell drifts off the marker.
-                    Color.clear
-                        .frame(width: layer, height: layer)
-                        .overlay(alignment: .topLeading) {
-                            Image(uiImage: picture.image)
-                                .interpolation(.none)
-                                .resizable()
-                                .frame(width: CGFloat(picture.columns) * zoom, height: CGFloat(picture.rows) * zoom)
-                                .offset(
-                                    x: layer / 2 - (CGFloat(cell.col - picture.origin.col) + 0.5) * zoom,
-                                    y: layer / 2 - (CGFloat(picture.rows - 1 - (cell.row - picture.origin.row)) + 0.5) * zoom
-                                )
-                        }
-                        .rotationEffect(.degrees(-45))
-                        .scaleEffect(x: 1, y: 0.5)
-                    // Everyone else, round dots on top of the turned map (drawn in it, they'd be
-                    // squashed flat): the folk who live here smaller.
-                    ForEach(Array(dots.enumerated()), id: \.offset) { _, dot in
-                        let size: CGFloat = dot.kind == .folk ? 4 : 5
-                        Circle()
-                            .fill(color(of: dot.kind))
-                            .frame(width: size, height: size)
-                            .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1))
-                            .offset(offset(of: dot.cell))
-                    }
-                    // Who does what, as icons over them.
-                    ForEach(Array(marks.enumerated()), id: \.offset) { _, mark in
-                        MinimapIcon(kind: mark.kind)
-                            .offset(offset(of: mark.cell))
-                    }
-                    Circle()
-                        .fill(HUDStyle.gold)
-                        .frame(width: 8, height: 8)
-                        .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
-                }
-                .frame(width: width, height: height)
-                .clipped()
-                // Where you stand, on a small plate tucked into the corner over the map.
-                .overlay(alignment: .bottomTrailing) {
-                    Text("\(cell.col) : \(rows - 1 - cell.row)")
-                        .font(HUDStyle.mono(9))
-                        .foregroundStyle(HUDStyle.plateDark)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 1)
-                        .background(HUDStyle.plateBackground)
-                        .padding(4)
-                        .allowsHitTesting(false)
-                }
-                .contentShape(Rectangle())
-                .onTapGesture(perform: onOpen)
-                .accessibilityLabel(L("Open map"))
-                .accessibilityAddTraits(.isButton)
+            // Who does what, as icons over them.
+            ForEach(Array(marks.enumerated()), id: \.offset) { _, mark in
+                MinimapIcon(kind: mark.kind)
+                    .offset(offset(of: mark.cell))
             }
+            Circle()
+                .fill(HUDStyle.gold)
+                .frame(width: 8, height: 8)
+                .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
         }
-        .frame(width: width)
-        .background(Color(red: 0.08, green: 0.2, blue: 0.4))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+        .overlay(Circle().strokeBorder(HUDStyle.bevel, lineWidth: 3))
         .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)
+        // The compass on the rim at the top right, its needle turned to north on the turned map.
+        .overlay(alignment: .topTrailing) {
+            MinimapCompass(north: northAngle)
+                .offset(x: 4, y: -4)
+                .allowsHitTesting(false)
+        }
+        .contentShape(Circle())
+        .onTapGesture(perform: onOpen)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L("Open map"))
+        .accessibilityAddTraits(.isButton)
+    }
+
+    /// Which way north lies on the minimap, in degrees clockwise from straight up: where a step north
+    /// (a row up) lands, turned and squashed as the map is, so the needle follows the map's turn.
+    private var northAngle: Double {
+        let step = offset(of: GridPoint(col: cell.col, row: cell.row + 1))
+        return atan2(Double(step.width), Double(-step.height)) * 180 / Double.pi
     }
 
     /// Where a cell lands in the window, from its centre (the hero): its distance on the map layer,
@@ -743,6 +705,52 @@ private struct MinimapWindow: View {
         case .adventurer: Color(uiColor: Crowd.adventurerColor)
         case .folk: Color(red: 1, green: 0.88, blue: 0.3)
         }
+    }
+}
+
+/// The minimap's compass: a small round in the HUD buttons' blue, a needle through it with its north
+/// end red and a gold N at its tip, turned `north` degrees clockwise from straight up to point where
+/// north lies on the map.
+private struct MinimapCompass: View {
+    let north: Double
+    private let size: CGFloat = 32
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(LinearGradient(colors: HUDStyle.tile, startPoint: .top, endPoint: .bottom))
+                .overlay(Circle().strokeBorder(HUDStyle.bevel, lineWidth: 2))
+            ZStack {
+                // The needle: red to the north, white to the south.
+                VStack(spacing: 0) {
+                    Triangle().fill(Color(red: 0.92, green: 0.28, blue: 0.26)).frame(width: 6, height: 7)
+                    Triangle().fill(.white).frame(width: 6, height: 7).rotationEffect(.degrees(180))
+                }
+                .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
+                Text(L("N"))
+                    .font(HUDStyle.font(8))
+                    .foregroundStyle(HUDStyle.gold)
+                    .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
+                    .rotationEffect(.degrees(-north))
+                    .offset(y: -size * 0.37)
+            }
+            .rotationEffect(.degrees(north))
+        }
+        .frame(width: size, height: size)
+        .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 1)
+        .accessibilityHidden(true)
+    }
+}
+
+/// A triangle pointing up, its base along the bottom.
+private struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
     }
 }
 

@@ -11,6 +11,9 @@ struct MapOverlay: View {
     var levels: [MapDef] = []
     /// Another level's map (`GameCoordinator.caveMap(of:)`).
     var loadLevel: @MainActor (MapDef) async -> CaveMap.Picture? = { _ in nil }
+    /// How many rows the land you're in has, to number your cell from its north edge
+    /// (`GameCoordinator.mapRows`).
+    var rows = 0
     let onClose: () -> Void
     @State private var showsWorld = false
     /// The level shown when it isn't the one you're on, and its map once it's drawn.
@@ -28,6 +31,7 @@ struct MapOverlay: View {
             VStack(spacing: 0) {
                 if let cave, !showsWorld {
                     FLTitleBar(title: level?.name ?? session.mapName, icon: .map, onClose: onClose)
+                    if level == nil { here }
                     if levels.count > 1 { levelChips }
                     if level != nil {
                         CaveMap(picture: levelPicture, cell: nil, marks: []) { showsWorld = true }
@@ -38,6 +42,7 @@ struct MapOverlay: View {
                     }
                 } else {
                     FLTitleBar(title: L("World map"), icon: .map, onClose: onClose)
+                    here
                     WorldAtlas(session: session)
                 }
             }
@@ -47,6 +52,30 @@ struct MapOverlay: View {
             .gameWindow()
             .padding(14)
         }
+    }
+
+    /// Where you are: the land's name and your coordinates on its plate, as the minimap's title bar
+    /// showed them before it was made round (playtesting 2026-10-25: "Only when you tap on the mini map
+    /// you see the coordinates").
+    private var here: some View {
+        HStack(spacing: 8) {
+            IconImage(.map, size: 14).foregroundStyle(HUDStyle.gold)
+            Text(session.mapName)
+                .font(HUDStyle.font(12))
+                .foregroundStyle(HUDStyle.cream)
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            Text(verbatim: "\(session.mapCell.col) : \(rows - 1 - session.mapCell.row)")
+                .font(HUDStyle.mono(11))
+                .foregroundStyle(HUDStyle.plateDark)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(HUDStyle.plateBackground)
+                .accessibilityLabel(L("Coordinates {x}, {y}", ["x": session.mapCell.col, "y": rows - 1 - session.mapCell.row]))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(Color(red: 0.03, green: 0.05, blue: 0.1))
     }
 
     /// One chip a level, gold for the one shown.

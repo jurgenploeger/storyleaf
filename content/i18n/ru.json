@@ -466,6 +466,7 @@
     "Travelling": "В пути",
     "{percent} percent": "{percent} процентов",
     "World map": "Карта мира",
+    "Coordinates {x}, {y}": "Координаты {x}, {y}",
     "Hatch": "Высидеть",
     "Use": "Использовать",
     "Give": "Отдать",
@@ -817,10 +818,6 @@
     "Leave party": "Выйти из команды",
     "Close menu": "Закрыть меню",
     "Open menu": "Открыть меню",
-    "Turn music on": "Включить музыку",
-    "Turn music off": "Выключить музыку",
-    "Show minimap": "Показать мини-карту",
-    "Hide minimap": "Скрыть мини-карту",
     "Open map": "Открыть карту",
     "Closed": "Закрыто",
     "There you are!": "Вот ты где!",
@@ -3551,6 +3548,10 @@
     "Bounty Hunter": "Охотник за наградами",
     "Town Favourite": "Любимец города",
     "Faithful": "Верный",
-    "Old Friend": "Старый друг"
+    "Old Friend": "Старый друг",
+    "Hide minimap": "Скрыть мини-карту",
+    "Show minimap": "Показать мини-карту",
+    "Turn music off": "Выключить музыку",
+    "Turn music on": "Включить музыку"
   }
 }

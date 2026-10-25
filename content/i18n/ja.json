@@ -466,6 +466,7 @@
     "Travelling": "移動中",
     "{percent} percent": "{percent}パーセント",
     "World map": "ワールドマップ",
+    "Coordinates {x}, {y}": "座標 {x}、{y}",
     "Hatch": "かえす",
     "Use": "使う",
     "Give": "あげる",
@@ -817,10 +818,6 @@
     "Leave party": "パーティをぬける",
     "Close menu": "メニューを閉じる",
     "Open menu": "メニューを開く",
-    "Turn music on": "音楽をオン",
-    "Turn music off": "音楽をオフ",
-    "Show minimap": "ミニマップを表示",
-    "Hide minimap": "ミニマップをかくす",
     "Open map": "マップをひらく",
     "Closed": "通行止め",
     "There you are!": "いたいた！",
@@ -3551,6 +3548,10 @@
     "Bounty Hunter": "賞金かせぎ",
     "Town Favourite": "町の人気者",
     "Faithful": "常連さん",
-    "Old Friend": "古なじみ"
+    "Old Friend": "古なじみ",
+    "Hide minimap": "ミニマップをかくす",
+    "Show minimap": "ミニマップを表示",
+    "Turn music off": "音楽をオフ",
+    "Turn music on": "音楽をオン"
   }
 }

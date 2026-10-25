@@ -466,6 +466,7 @@
     "Travelling": "이동 중",
     "{percent} percent": "{percent}퍼센트",
     "World map": "월드맵",
+    "Coordinates {x}, {y}": "좌표 {x}, {y}",
     "Hatch": "부화",
     "Use": "사용",
     "Give": "주기",
@@ -817,10 +818,6 @@
     "Leave party": "파티 나가기",
     "Close menu": "메뉴 닫기",
     "Open menu": "메뉴 열기",
-    "Turn music on": "음악 켜기",
-    "Turn music off": "음악 끄기",
-    "Show minimap": "미니맵 보이기",
-    "Hide minimap": "미니맵 숨기기",
     "Open map": "지도 열기",
     "Closed": "닫힘",
     "There you are!": "여기 있었구나!",
@@ -3551,6 +3548,10 @@
     "Bounty Hunter": "현상금 사냥꾼",
     "Town Favourite": "마을의 인기인",
     "Faithful": "단골",
-    "Old Friend": "오랜 친구"
+    "Old Friend": "오랜 친구",
+    "Hide minimap": "미니맵 숨기기",
+    "Show minimap": "미니맵 보이기",
+    "Turn music off": "음악 끄기",
+    "Turn music on": "음악 켜기"
   }
 }
