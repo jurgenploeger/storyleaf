@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// On-map HUD in Fairyland Online's style: round faces with HP/MP for you (and your EXP), your
-/// companion and your party, and the calendar plate top-left, a framed minimap top-right with what
+/// companion and your party top-left (the date is on the map, `MapOverlay`), a framed minimap top-right with what
 /// just happened toasting under it, joystick bottom-left, and Chat and the menu bottom-right (one
 /// button that opens into the menu's pages). While you're talking to someone (or any window is open
 /// over the map) the controls step aside, so nothing peeks out from behind the conversation.
@@ -36,8 +36,6 @@ struct WorldHUD: View {
                 if let joined = session.joinedParty, let leader = joined.leader {
                     JoinedPartyPlate(leader: leader, count: joined.members.count) { coordinator.leaveJoinedParty() }
                 }
-                CalendarPlate(session: session)
-                    .allowsHitTesting(false)
                 // What just happened, top centre under the panels on both sides (walking into a land
                 // too: its toast, no banner of its own; playtesting 2026-10-24).
                 // The autosave's "Saved" under them, in the same style.
@@ -422,36 +420,6 @@ private struct JoinedPartyPlate: View {
         .padding(.vertical, 5)
         .frame(width: TopLeft.width)
         .background(HUDStyle.panel)
-    }
-}
-
-/// The tan calendar plate with a sun or moon and the date.
-private struct CalendarPlate: View {
-    let session: GameSession
-    /// With night and day switched off in Settings, the sun shines on the plate around the clock.
-    @AppStorage(GameSettings.dayAndNightKey) private var dayAndNight = true
-
-    var body: some View {
-        TimelineView(.periodic(from: .now, by: 5)) { context in
-            let moment = GameClock.moment(at: context.date, since: session.data.startedAt)
-            let daytime = moment.isDaytime || !dayAndNight
-            VStack(spacing: 3) {
-                HStack(spacing: 5) {
-                    IconImage(daytime ? .sun : .moon, size: 14)
-                        .foregroundStyle(daytime ? HUDStyle.orange : Color(red: 0.35, green: 0.35, blue: 0.75))
-                    Text(moment.text)
-                        .font(HUDStyle.mono(10))
-                        .foregroundStyle(HUDStyle.plateDark)
-                    Spacer(minLength: 0)
-                    // No gold here any more (2026-10-25): the coins you carry are in the bag, in a
-                    // slot of their own, and the rest in the bank.
-                }
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
-                .background(HUDStyle.plateBackground)
-            }
-            .frame(width: TopLeft.width)
-        }
     }
 }
 
