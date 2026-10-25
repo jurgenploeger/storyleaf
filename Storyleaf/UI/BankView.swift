@@ -2,7 +2,7 @@ import SwiftUI
 
 /// A banker's bank (playtesting 2026-10-25: "I want to add a bank to the game"; then "the bank
 /// interface itself should be a bigger modal, just like the other modals"): after a word with the
-/// banker (`NPCDialogView`'s Open the bank), a window of its own like Trade's, the banker and what
+/// banker (`NPCDialogView`'s Open the bank), a window as big as a menu window's, the banker and what
 /// they say at the top, your bag and the bank under it. Nothing in the bank is lost to a defeat.
 struct BankView: View {
     let npc: NPCDef
@@ -32,9 +32,9 @@ struct BankView: View {
                     .padding(14)
                 }
             }
-            .frame(maxWidth: 560, maxHeight: 680)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .gameWindow()
-            .padding(14)
+            .menuWindowMargins()
         }
     }
 }

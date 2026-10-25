@@ -623,10 +623,9 @@ private struct MenuGlyph: View {
     }
 }
 
-/// A round minimap around the hero, framed like the HUD's buttons, with a compass on its rim pointing
-/// north (playtesting 2026-10-25: round, a rounded compass at its top right, no title bar, its music and
-/// hide buttons gone; the music is in Settings). Tap for the full map, where the land's name and your
-/// coordinates are.
+/// A round minimap around the hero, framed like the HUD's buttons (playtesting 2026-10-25: round, no
+/// title bar, its music and hide buttons gone; the music is in Settings; its compass moved, bigger, to
+/// the map's window, `MapCompass`). Tap for the full map, where the land's name and your coordinates are.
 private struct MinimapWindow: View {
     /// The land's map and what's round it (`WorldScene.minimapPicture`).
     let picture: WorldScene.MinimapPicture
@@ -684,24 +683,11 @@ private struct MinimapWindow: View {
         .clipShape(Circle())
         .overlay(Circle().strokeBorder(HUDStyle.bevel, lineWidth: 3))
         .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)
-        // The compass on the rim at the top right, its needle pointing north on the turned map.
-        .overlay(alignment: .topTrailing) {
-            MinimapCompass(north: northAngle)
-                .offset(x: 4, y: -4)
-                .allowsHitTesting(false)
-        }
         .contentShape(Circle())
         .onTapGesture(perform: onOpen)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(L("Open map"))
         .accessibilityAddTraits(.isButton)
-    }
-
-    /// Which way north lies on the minimap, in degrees clockwise from straight up: where a step north
-    /// (a row up) lands, turned and squashed as the map is, so the needle follows the map's turn.
-    private var northAngle: Double {
-        let step = offset(of: GridPoint(col: cell.col, row: cell.row + 1))
-        return atan2(Double(step.width), Double(-step.height)) * 180 / Double.pi
     }
 
     /// Where a cell lands in the window, from its centre (the hero): its distance on the map layer,
@@ -723,55 +709,6 @@ private struct MinimapWindow: View {
         case .adventurer: Color(uiColor: Crowd.adventurerColor)
         case .folk: Color(red: 1, green: 0.88, blue: 0.3)
         }
-    }
-}
-
-/// The minimap's compass: a pin in the close buttons' orange (`OrangeCloseButton`; playtesting
-/// 2026-10-25), a needle through it with its north end white and an N at its tip, turned `north`
-/// degrees clockwise from straight up to point where north lies on the map. The world doesn't turn
-/// (its art is drawn from one side only), so neither does the needle: north is always up and to the
-/// left, as the map is.
-private struct MinimapCompass: View {
-    let north: Double
-    private let size: CGFloat = 32
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(RadialGradient(colors: [HUDStyle.closeLight, HUDStyle.orange, HUDStyle.closeDeep], center: UnitPoint(x: 0.35, y: 0.3),
-                                     startRadius: 1, endRadius: size / 2))
-                .overlay(Circle().strokeBorder(.white.opacity(0.8), lineWidth: 1.5))
-            ZStack {
-                // The needle: white to the north, the button's deep orange to the south.
-                VStack(spacing: 0) {
-                    Triangle().fill(.white).frame(width: 6, height: 7)
-                    Triangle().fill(HUDStyle.closeDeep).frame(width: 6, height: 7).rotationEffect(.degrees(180))
-                }
-                .shadow(color: HUDStyle.closeDeep.opacity(0.6), radius: 0, x: 1, y: 1)
-                Text(L("N"))
-                    .font(HUDStyle.font(8))
-                    .foregroundStyle(.white)
-                    .shadow(color: HUDStyle.closeDeep, radius: 0, x: 1, y: 1)
-                    .rotationEffect(.degrees(-north))
-                    .offset(y: -size * 0.37)
-            }
-            .rotationEffect(.degrees(north))
-        }
-        .frame(width: size, height: size)
-        .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 1)
-        .accessibilityHidden(true)
-    }
-}
-
-/// A triangle pointing up, its base along the bottom.
-private struct Triangle: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.closeSubpath()
-        return path
     }
 }
 
