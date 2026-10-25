@@ -29,6 +29,28 @@ Every criterion holds on **all six bodies** (human, elf and dwarf, each gender),
 snow cloak, plate, dragon mail) and **every skin tone** (fair, rosy, tan, brown, deep). A fix that's right on
 one body and wrong on another isn't done.
 
+### Characters and creatures: the Pixel Heroes look (2026-10-25)
+
+The target for every new hero, townsperson, monster and boss, and for icon and store art of them
+(measurements and reasons in [pixel-style.md](pixel-style.md#the-target-pixel-heroes-2026-10-25)):
+
+- **A dark outline all round:** its median light at most 0.25, and at least half its pixels darker than
+  0.25. A deep shade of what it rounds (brown, navy, forest, plum), not pure black; a white or pale creature
+  gets one too.
+- **Dark lines inside** between parts (hair and face, cloth and body, limbs): at least a fifth of the
+  sprite's pixels darker than 0.2.
+- **Chibi:** the head about two fifths to half the height; big eyes with a catchlight from the front.
+- **Bright:** median saturation 0.45 or more, unless the subject is white, grey or black.
+- **The world's scale:** a hero or townsperson 27 to 44 pixels tall in a 48-pixel frame, monsters at their
+  kind's size (40 or 64): one art pixel to one of the world's, never mixed sizes side by side.
+- **A silhouette of its own:** told apart from the others by its outline alone (ears, hat, wings, weapon).
+- **Store and promo art only:** a white sticker rim two or three art pixels wide round each sprite.
+
+Existing sprites are Retro Diffusion's and stay as they are until regenerated (CLAUDE.md: never redraw RD's
+art in code). On 2026-10-25, 32 of the 65 creatures, bosses and townsfolk met the outline marks; the 33 that
+don't (pale outlines: the Comet Hare, the Wisp, the frost bear, the Prism Drake, the Big Bad Wolf and more)
+are the ones to regenerate first, with the user's OK on the cost.
+
 ### Walk sheets (heroes, armour with a sheet of its own)
 
 - 192 × 192, four 48 × 48 frames a row, rows facing up, right, down, left; transparent background, no stray
@@ -164,6 +186,11 @@ python3 tools/check_content.py
 
 ### Retro Diffusion
 
+- App icon heroes (2026-10-25, 24 options, $2.88, in `art-variants/app_icon_*`): `rd_pro__fantasy` at
+  192 × 192 ($0.72 for 4) draws a detailed scene, but "young adventurer hero" came out with grown-up,
+  realistic proportions: a portrait, not Pixel Heroes' chibi. `rd_plus__default` ($0.24 for 4) is softer and
+  sometimes rounds the corners itself, as if already an icon. Ask for "chibi, big head, big eyes, thick dark
+  outline" to get the target look.
 - `rd_animation__four_angle_walking` at 48 × 48 with `return_spritesheet` gives a 192 × 192 walk sheet in our
   layout, $0.07 each. `num_images` is ignored: one image a call.
 - Any prompt with "wizard" in it drew a beard, every time, even on a "kid". What worked: "cute chibi child
