@@ -1087,6 +1087,9 @@ the Wishing Seal, which stays the Monster Book's last reward.
   the clock on. Whether FO's maps visibly darkened at night or had weather isn't in any source reachable from a
   cloud session (a 2026-10-04 web search found nothing); asked for in playtesting (2026-10-04). Check the ToM
   wiki.
+  - Where the date shows: FO kept its calendar line on screen; ours sat on a plate under the faces top-left
+    until 0.8.4, and is now on the map's "you are here" row with your coordinates (`MapOverlay`;
+    playtesting 2026-10-25: "Remove the day/time bar in the top left and incorporate that in the map modal").
   - Us (since 0.3.44): `Sky` multiplies each map by the hour's light (warm at dawn and dusk, deep blue from
     about 19:30 to 04:30) and fades the sun's flare and sunbeams with it. On the continent the land's air
     (butterflies, clouds' shadows, drifting particles, the sparkles over fairy rings and fountains) hung
