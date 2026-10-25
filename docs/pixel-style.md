@@ -485,6 +485,11 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   its dark pixels a deep shade of what they round; snow on the lit colour of the leaves' clusters (RD's
   `SNOW`), never per pixel; hats and props drawn with `pixel_kit` (lit, textured, outlined), each hat's band
   on the head's widest row (sprite-acceptance.md, *Head pieces*); and nothing in the corners iOS rounds off.
+  Then (the user): "the outline around the hero is not cut correctly", "the witch hat is too straight and the
+  bunny ears should be lower". A hand-drawn polygon can't follow a pixel outline: half of it was recoloured as
+  scenery. The hero is cut by flooding the background in through everything but dark pixels, up to his own
+  outline, and his outline is the dark within 2 pixels of him (`hero_mask`). A witch's hat bends: hollow sides
+  and a tip hooked over, drawn low enough that the hook shows in the frame. Hair above a brim is cleared.
 - **2026-10-25 (the ship):** `form_relief` is light per pixel, so a sprite twice a house's size needs
   as much change across areas twice as wide: the ship's deck and hull, lit by their normals alone, were
   flat at the 9 × 9 scale (0.010) and held it at 0.015. What lifted it: boards and strakes each a tone of

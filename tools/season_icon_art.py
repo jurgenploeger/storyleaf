@@ -40,6 +40,7 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
+from scipy import ndimage
 
 import app_icon_art
 from pixel_kit import Material, Sprite
@@ -101,10 +102,28 @@ SEASONS = {
 
 
 def hero_mask() -> np.ndarray:
+    """The hero exactly, outline and all. `HERO` only roughs him out: the background is flooded in from
+    outside it through everything but dark pixels, as far as a band 5 pixels inside it, so it stops at his
+    own outline (and where that has a gap, leaks a few pixels at most); his gold (the sword's lit edge,
+    which has no dark line) is never background, and sky never his. Then his outline is the dark pixels
+    within 2 of what's left. Cut from the polygon alone, his outline came out half his and half the
+    scenery's, recoloured, and looked chewed."""
     w, h = BOX[2] - BOX[0], BOX[3] - BOX[1]
     image = Image.new("L", (w, h))
     ImageDraw.Draw(image).polygon([(x - BOX[0], y - BOX[1]) for x, y in HERO], fill=255)
-    return np.asarray(image) > 0
+    rough = np.asarray(image) > 0
+    rgb = app_icon_art.crop(BOX)
+    dark = rgb.max(axis=2) <= 0.2
+    four = ndimage.generate_binary_structure(2, 1)
+    outer = ndimage.binary_dilation(rough, four, iterations=5)
+    inner = ndimage.binary_erosion(rough, four, iterations=5)
+    gold = app_icon_art.is_gold(rgb) & outer
+    sky = app_icon_art.sky_mask(rgb)
+    seeds = (~outer & ~dark) | sky
+    back = ndimage.binary_propagation(seeds, structure=four, mask=(~dark & ~inner & ~gold) | sky)
+    light = ~dark & ~back & outer
+    near = ndimage.distance_transform_cdt(~light, metric="chessboard") <= 2
+    return ndimage.binary_fill_holes(light | (dark & near & outer)) & ~sky
 
 
 def classes(rgb: np.ndarray) -> np.ndarray:
@@ -173,6 +192,32 @@ def place(out: np.ndarray, sprite: Image.Image, x: int, y: int, behind: np.ndarr
                 out[oy, ox] = art[dy, dx, :3]
 
 
+def hat(out: np.ndarray, sprite: Image.Image, x: int, y: int) -> None:
+    """A hat put on: first the hair above its brim or band is cleared (sprite-acceptance.md, *Head pieces*:
+    no hair poking up round it), each hair pixel taking the colour of the nearest scenery in its row, then
+    the hat itself."""
+    alpha = np.asarray(sprite.convert("RGBA"))[..., 3] >= 128
+    cover = np.zeros(out.shape[:2], bool)
+    for dy, dx in np.argwhere(alpha):
+        oy, ox = y + dy - BOX[1], x + dx - BOX[0]
+        if 0 <= ox < out.shape[1] and 0 <= oy < out.shape[0]:
+            cover[oy, ox] = True
+    hero = hero_mask()
+    for col in np.flatnonzero(cover.any(axis=0)):
+        bottom = np.flatnonzero(cover[:, col]).max()
+        for row in range(bottom):
+            if hero[row, col] and not cover[row, col]:
+                for reach in range(1, out.shape[1]):
+                    for side in (col - reach, col + reach):
+                        if 0 <= side < out.shape[1] and not hero[row, side] and not cover[row, side]:
+                            out[row, col] = out[row, side]
+                            break
+                    else:
+                        continue
+                    break
+    place(out, sprite, x, y)
+
+
 def shadow(out, kind, x0, x1, y, depth=0.62) -> None:
     """A contact shadow on the ground under something set on it: a flat oval, the ground's shades darker."""
     for x in range(x0, x1 + 1):
@@ -195,12 +240,35 @@ def pixels(out, kind, points, colours, allowed) -> None:
 # Each is drawn so its band's middle lands on the head's widest row above the eyes, (120, 72).
 
 def witch_hat() -> tuple:
-    s = Sprite(84, 48)
+    """A witch's hat: a wide brim, a cone with hollow sides that bends over near the top, its tip hanging
+    off to the right, and a gold band. The cone is one shape: up its sides, then along a tapering curve."""
+    import math
+    s = Sprite(92, 50)
     purple = Material("#5a3a8c", shades=5, texture=0.05)
-    s.ellipse(42, 40, 40, 6.5, purple)
-    s.poly([(17, 40), (22, 28), (27, 16), (30, 6), (28, 0), (37, 4), (44, 14), (58, 30), (66, 40)], purple)
-    s.poly([(18, 37), (65, 37), (63, 31), (20, 31)], Material("#e8a838", shades=4, texture=0.03, gloss=0.4), profile="cylinder")
-    return s.render(), (78, 32)
+    s.ellipse(42, 42, 40, 6.5, purple, rot=-3)
+
+    def bend(t):
+        # A cubic curve from the cone's waist up and over to its tip.
+        p = [(42, 26), (40, 16), (52, 10), (68, 20)]
+        x = (1 - t) ** 3 * p[0][0] + 3 * (1 - t) ** 2 * t * p[1][0] + 3 * (1 - t) * t * t * p[2][0] + t ** 3 * p[3][0]
+        y = (1 - t) ** 3 * p[0][1] + 3 * (1 - t) ** 2 * t * p[1][1] + 3 * (1 - t) * t * t * p[2][1] + t ** 3 * p[3][1]
+        return x, y
+
+    steps = [i / 16 for i in range(17)]
+    left, right = [], []
+    for t in steps:
+        x, y = bend(t)
+        x2, y2 = bend(min(1, t + 0.02))
+        x1, y1 = bend(max(0, t - 0.02))
+        dx, dy = x2 - x1, y2 - y1
+        n = math.hypot(dx, dy) or 1
+        half = 9.0 * (1 - t) ** 1.2 + 1.0
+        left.append((x + dy / n * half, y - dx / n * half))
+        right.append((x - dy / n * half, y + dx / n * half))
+    cone = [(19, 42), (25, 35), (30, 30), (33, 27)] + left + right[::-1] + [(51, 27), (55, 31), (60, 36), (66, 42)]
+    s.poly(cone, purple)
+    s.poly([(20, 38), (65, 38), (63, 34), (22, 34)], Material("#e8a838", shades=4, texture=0.03, gloss=0.4), profile="cylinder")
+    return s.render(), (78, 30)
 
 
 def santa_hat() -> tuple:
@@ -214,16 +282,17 @@ def santa_hat() -> tuple:
 
 
 def bunny_ears() -> tuple:
-    """Bunny ears leaning well out to the sides, so they show in the icon above the crown, on a pink band."""
-    s = Sprite(76, 46)
+    """Bunny ears on a pink band worn over the hair, a little back from the brow, the ears standing up and
+    leaning a little apart."""
+    s = Sprite(70, 50)
     white = Material("#f4f0f8", shades=4, texture=0.04)
     pink = Material("#ff9cc0", shades=4, texture=0.03)
-    s.ellipse(20, 22, 6.5, 15, white, rot=-38)
-    s.ellipse(56, 22, 6.5, 15, white, rot=38)
-    s.ellipse(20, 22.5, 2.8, 10, pink, rot=-38, profile="flat")
-    s.ellipse(56, 22.5, 2.8, 10, pink, rot=38, profile="flat")
-    s.stroke([(9, 44), (17, 36), (29, 32), (47, 32), (59, 36), (67, 44)], 5, pink)
-    return s.render(), (82, 26)
+    s.ellipse(22, 22, 6.5, 16, white, rot=-20)
+    s.ellipse(48, 22, 6.5, 16, white, rot=20)
+    s.ellipse(22, 23, 2.8, 11, pink, rot=-20, profile="flat")
+    s.ellipse(48, 23, 2.8, 11, pink, rot=20, profile="flat")
+    s.stroke([(4, 48), (12, 40), (24, 36), (46, 36), (58, 40), (66, 48)], 5, pink)
+    return s.render(), (85, 26)
 
 
 # --- the props -------------------------------------------------------------------------------------------
@@ -289,7 +358,7 @@ def halloween(out, kind, ramps):
     shadow(out, kind, 148, 161, 166)
     place(out, small, 148, 155)
     sprite, at = witch_hat()
-    place(out, sprite, *at)
+    hat(out, sprite, *at)
 
 
 def christmas(out, kind, ramps):
@@ -306,7 +375,7 @@ def christmas(out, kind, ramps):
     for x, y in flakes:
         pixels(out, kind, plus(x, y), [snow[4]] * 5, (SKY, BLOSSOM, LEAVES, BRANCHES))
     sprite, at = santa_hat()
-    place(out, sprite, *at)
+    hat(out, sprite, *at)
 
 
 def easter(out, kind, ramps):
