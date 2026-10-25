@@ -896,7 +896,11 @@ Full Heal.
 - Mining needs a Pickaxe and yields coal, copper, bronze, crystal and amethyst ore, among others. Ore feeds
   Metal Working and Gem Cutting, which make equipment.
 
-**Us:** monsters drop wood, metal, hide and gems, and three town smiths forge weapons from them. There's no
+**Us:** monsters drop wood, metal, hide and gems, and three town smiths forge weapons from them, and since
+0.8.2 armour too (playtesting 2026-10-25: "I should be able to create armor with metals I have found [...]
+so I can trade it and earn coins"): the metal and gem sets, copper to topaz, as plate, robe and hide, each
+from the metals, gems and hides that drop round its level (the smith shows those from 15 levels below you to
+10 above). Sold, a piece fetches half its price, far more than its materials would. There's no
 gathering and no crafting level, and forging always works. Monsters also drop equipment from up to their own
 level (6% a monster at your level, up to 16% above it, 2% well below; rares 35%, bosses always), mostly for
 your class (`GameSession.equipmentDrop`), never a boss's own rare drop or a quest treasure.
