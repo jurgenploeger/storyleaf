@@ -63,6 +63,8 @@ HERO = [(55, 44), (64, 43), (72, 60), (79, 78), (85, 98), (89, 110), (93, 108), 
         (79, 117), (71, 96), (62, 72), (55, 50)]
 # Below this row the green is the meadow, above it the trees' leaves.
 GROUND = 147
+# The hair's leftmost column (the lock flicked out to the left): the reds left of it are the apple tree's.
+HAIR_LEFT = 82
 # The tunic's hem: below it the hero is legs and boots, and green is the grass.
 HEM = 159
 SKY, LEAVES, BLOSSOM, BRANCHES, GRASS, DARK = 1, 2, 3, 4, 5, 6
@@ -130,7 +132,10 @@ def hero_mask() -> np.ndarray:
     gold = app_icon_art.is_gold(rgb) & outer
     hsv = np.array([[colorsys.rgb_to_hsv(*p) for p in row] for row in rgb])
     hue, sat, val = hsv[..., 0] * 360, hsv[..., 1], hsv[..., 2]
-    gold |= ((hue < 40) | (hue > 350)) & (sat > 0.55) & (val > 0.3) & outer
+    hair = ((hue < 40) | (hue > 350)) & (sat > 0.55) & (val > 0.3) & outer
+    # The deep red of his hair is also the apples' red: left of his hair (HAIR_LEFT), by the blade, it's apples.
+    apples = ((hue < 12) | (hue > 350)) & (np.arange(w)[None, :] + BOX[0] < HAIR_LEFT)
+    gold |= hair & ~apples
     sky = app_icon_art.sky_mask(rgb)
     # Also the grass showing between his legs, where they run off the bottom: the polygon spans the gap.
     green = (hue > 60) & (hue < 170) & (sat > 0.18)

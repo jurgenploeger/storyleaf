@@ -2,7 +2,7 @@
 """The logo (Logo.png): TALES OF over FABELIA, in the style of the logo the user pointed to (Neopets' "Tales
 of Dacardia"): chunky capitals in Luckiest Guy (tools/fonts/, Apache 2.0), set tight so their outlines run
 into one, each letter tipped a few degrees one way or the other and lifted or dropped a little, so the word
-bounces; TALES OF a little over half the world's name's size, tucked into its top. All gold, each line in
+bounces; TALES OF a little over half the world's name's size, a small gap above it. All gold, each line in
 one smooth gradient from pale gold at the top to deep amber at the foot, a thin light rim along the letters'
 top edges, inside one thick dark outline that drops into a deep block shadow underneath. No second colour,
 no bands, no emblem, tagline or rays (the brand in the Figma file, 02 Logo; the titles on the store slides
@@ -30,13 +30,14 @@ FONT = ROOT / "tools/fonts/LuckiestGuy-Regular.ttf"
 
 # The lines, top to bottom: the words and their size as a share of the world's name's (`PX`, in Logo.png's
 # pixels). Then, as shares of `PX`: the space between letters (less than none: they touch), how far each
-# letter tips (degrees) and lifts, how far TALES OF tucks into the name, the outline round the letters, how
+# letter tips (degrees) and lifts, the gap between TALES OF and the name, the outline round the letters, how
 # deep the block shadow drops, and the light rim along their tops. Letters are drawn left to right, each in
 # a thin outline of its own (`SEAM`), so ones that touch stay apart.
 LINES = [("TALES OF", 0.6), ("FABELIA", 1.0)]
 PX = 230
 TRACK, TIP, LIFT = -0.02, 3.0, 0.035
-TUCK = 0.06
+# A small gap, wider than the letters lift, so the two lines never touch; their outlines still join.
+GAP = 0.08
 OUTLINE, DEPTH, RIM = 0.075, 0.07, 0.03
 # The thin outline each letter keeps of its own where it overlaps the one before it.
 SEAM = 0.022
@@ -101,7 +102,7 @@ def logo() -> Image.Image:
     rng = np.random.default_rng(SEED)
     lines = [line(word, round(PX * share), rng) for word, share in LINES]
     pad = int(PX * SS * 0.3)
-    gap = -int(PX * SS * TUCK)
+    gap = int(PX * SS * GAP)
     width = max(part[0].shape[1] for part in lines) + 2 * pad
     height = sum(part[0].shape[0] for part in lines) + gap * (len(lines) - 1) + 2 * pad
     # Every letter on the logo's canvas, top line first, each with its line's gradient.
