@@ -22,6 +22,7 @@ struct MenuView: View {
     @State private var characterPage: CharacterPage = DebugLaunch.subTab.flatMap(CharacterPage.init(rawValue:)) ?? .hero
     @State private var companionsPage: CompanionsPage = DebugLaunch.opensMonsterBook ? .book : .companions
     @State private var questsPage: QuestsPage = DebugLaunch.subTab.flatMap(QuestsPage.init(rawValue:)) ?? .quests
+    @State private var settingsPage: SettingsPage = DebugLaunch.subTab.flatMap(SettingsPage.init(rawValue:)) ?? .general
     /// An egg to hatch, chosen on its card: the Bag plays the hatching.
     @State private var hatchRequest: ItemDef?
     /// A tap on something in the Bag: its card, over the menu. Debug `inspect=<item>` opens one
@@ -112,7 +113,7 @@ extension MenuView {
                         BagTab(session: session, note: $bagNote, hatchRequest: $hatchRequest,
                                onInspect: { item in withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { inspecting = item } })
                     case .quests: QuestsTab(session: session, page: $questsPage)
-                    case .settings: SettingsView(session: session, onQuitToTitle: onQuitToTitle)
+                    case .settings: SettingsView(session: session, onQuitToTitle: onQuitToTitle, page: settingsPage)
                     }
                 }
                 .padding(14)
@@ -200,7 +201,9 @@ extension MenuView {
                     (session.data.bounties?.bounties ?? []).contains { $0.isDone && !$0.claimed } || session.canClaimBountyBonus
                 }
             }
-        case .friends, .bag, .settings:
+        case .settings:
+            PageTabs(page: $settingsPage, title: { $0.title }, icon: { $0.icon })
+        case .friends, .bag:
             Label(window.menuTitle, icon: window.icon, size: 20)
                 .labelStyle(TabLabelStyle(selected: true))
                 .accessibilityAddTraits(.isHeader)
@@ -263,7 +266,7 @@ extension MenuView {
 /// name (playtesting 2026-10-25: the ones you weren't on showed only an icon). One you're not on wears
 /// the HUD's gold dot when something there waits for you (`waiting`). The pages are a nonisolated
 /// enum (its raw value is the debug name, `sub=skills`).
-private struct PageTabs<Page: Hashable & CaseIterable>: View {
+struct PageTabs<Page: Hashable & CaseIterable>: View {
     @Binding var page: Page
     let title: (Page) -> String
     let icon: (Page) -> GameIcon
@@ -333,7 +336,7 @@ private struct HowItWorks: View {
     }
 }
 
-private struct TabLabelStyle: LabelStyle {
+struct TabLabelStyle: LabelStyle {
     let selected: Bool
 
     func makeBody(configuration: Configuration) -> some View {
