@@ -88,6 +88,7 @@ import SpriteKit
 ///   profile=<who>  open someone's stats: hero | pet (with pet=) | friend (with friends=)
 ///   bottom         open the menu scrolled to the end
 ///   npc=<id>       open an NPC dialog
+///   bank=<id>      open that banker's bank window
 ///   info=<item>    with npc=<a shop>: open that item's info card
 ///   worldmap       open the world map
 ///   visited=a+b    those lands visited (`all`: every one), for the world map
@@ -987,6 +988,10 @@ enum DebugLaunch {
         }
         if let npc = flags["npc"] {
             coordinator.open(.npc(npc))
+        }
+        // `bank=<banker>`: that banker's bank, its window open.
+        if let banker = flags["bank"] {
+            coordinator.open(.bank(banker))
         }
         if let who = flags["profile"] {
             let session = coordinator.session

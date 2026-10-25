@@ -46,7 +46,12 @@ struct GameView: View {
                                  onClose: coordinator.closeOverlay)
                 case .npc(let id):
                     if let npc = Content.shared.npc(id) {
-                        NPCDialogView(npc: npc, session: coordinator.session, onClose: coordinator.closeOverlay, onFight: coordinator.fightBoss)
+                        NPCDialogView(npc: npc, session: coordinator.session, onClose: coordinator.closeOverlay, onFight: coordinator.fightBoss,
+                                      onBank: coordinator.openBank)
+                    }
+                case .bank(let id):
+                    if let npc = Content.shared.npc(id) {
+                        BankView(npc: npc, session: coordinator.session, onClose: coordinator.closeOverlay)
                     }
                 case nil:
                     EmptyView()

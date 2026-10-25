@@ -52,6 +52,8 @@ final class GameCoordinator {
     enum Overlay: Equatable {
         case menu(MenuTab)
         case npc(String)
+        /// A banker's bank, in its own window after a word with them (`BankView`).
+        case bank(String)
         case worldMap
         case chat
         /// Swapping goods with an adventurer you're standing next to.
@@ -680,6 +682,11 @@ final class GameCoordinator {
         session.post(line, .quest)
         if sound { SoundEffects.shared.play(.whoosh) }
         go(to: map, entry: nil, waystone: waystone)
+    }
+
+    /// From a word with a banker to their bank's window.
+    func openBank(_ banker: NPCDef) {
+        open(.bank(banker.id))
     }
 
     func closeOverlay() {
