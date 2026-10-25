@@ -1581,6 +1581,16 @@ final class ContinentScene: SKScene {
             guard let self, stage?.isHere == true, !self.isInputLocked else { return }
             self.startDuel(with: rival)
         }
+        // What you've put up for trade: now and then someone in the land you're in walks over with
+        // an offer.
+        stage.crowd?.hasWares = { [weak self, weak stage] in
+            guard let self, stage?.isHere == true else { return false }
+            return !self.isInputLocked && self.session.awaitsBuyer
+        }
+        stage.crowd?.onOffer = { [weak self, weak stage] buyer in
+            guard let self, stage?.isHere == true, !self.isInputLocked else { return }
+            self.session.receiveBid(from: buyer)
+        }
         layer.addChild(stage.world)
         let land = Land(def: def, place: place, map: map, tiles: tiles, painters: painters, stage: stage)
         // Walked on as it's laid out from now, not as its shape has it (`World.walkable`): as its

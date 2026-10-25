@@ -1135,6 +1135,13 @@ the Wishing Seal, which stays the Monster Book's last reward.
     rare sightings that really raise a rare monster's odds on its map for 20 minutes.
   - Goldburg's square has market traders under signs, selling their real deals of the day
     (`crowd.traders`). `botDensity` in content/crowd.json thins out every map's bots.
+  - Your own wares (since 0.8.3, asked for in playtesting 2026-10-25: "I should be able to set items up for
+    trade, and then when a bot goes up to me, they can trade with me and then I can decide if I accept the
+    offer or decline"), something like FO's player stalls: put up to 8 kinds of thing up for trade from the
+    Bag (a coin on its slot), and every half minute to minute and a half an adventurer on their own nearby
+    walks over (`Crowd.seekBuyer`) and offers for one of them, from 0.8 to 2 times what a shop pays
+    (`GameSession+TradeList`): accept or decline. And trading with an adventurer, they want one thing of
+    each of up to three kinds you carry (gear, potions, materials...), not materials first as before.
   - Us (since 0.4.12, asked for in playtesting 2026-10-12: "characters walking/standing around that give the
     place more character and a story"): every map has locals (maps.json `locals`, `MapDef.Local`), two or
     three out in the fields and one in each cave and town, and two more in each village (below), 109 in all.
