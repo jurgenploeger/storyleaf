@@ -34,7 +34,7 @@ struct GameView: View {
                     MenuView(session: coordinator.session, window: tab, onClose: coordinator.closeOverlay, onQuitToTitle: coordinator.onQuitToTitle)
                 case .worldMap:
                     MapOverlay(session: coordinator.session, cave: coordinator.caveMap, levels: coordinator.caveLevels,
-                               loadLevel: coordinator.caveMap(of:), onClose: coordinator.closeOverlay)
+                               loadLevel: coordinator.caveMap(of:), rows: coordinator.mapRows, onClose: coordinator.closeOverlay)
                 case .trade(let adventurer):
                     TradeView(session: coordinator.session, adventurer: adventurer, onClose: coordinator.closeOverlay)
                 case .chat:

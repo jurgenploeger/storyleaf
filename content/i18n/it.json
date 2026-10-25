@@ -466,6 +466,7 @@
     "Travelling": "In viaggio",
     "{percent} percent": "{percent} percento",
     "World map": "Mappa del mondo",
+    "Coordinates {x}, {y}": "Coordinate {x}, {y}",
     "Hatch": "Schiudi",
     "Use": "Usa",
     "Give": "Dai",
@@ -817,10 +818,6 @@
     "Leave party": "Lascia il gruppo",
     "Close menu": "Chiudi menu",
     "Open menu": "Apri menu",
-    "Turn music on": "Attiva la musica",
-    "Turn music off": "Disattiva la musica",
-    "Show minimap": "Mostra minimappa",
-    "Hide minimap": "Nascondi minimappa",
     "Open map": "Apri mappa",
     "Closed": "Chiuso",
     "There you are!": "Eccoti qua!",
@@ -3551,6 +3548,10 @@
     "Bounty Hunter": "Cacciatore di Taglie",
     "Town Favourite": "Beniamino del Paese",
     "Faithful": "Fedele",
-    "Old Friend": "Vecchio Amico"
+    "Old Friend": "Vecchio Amico",
+    "Hide minimap": "Nascondi minimappa",
+    "Show minimap": "Mostra minimappa",
+    "Turn music off": "Disattiva la musica",
+    "Turn music on": "Attiva la musica"
   }
 }

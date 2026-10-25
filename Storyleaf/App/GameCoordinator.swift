@@ -178,6 +178,13 @@ final class GameCoordinator {
         return (world.minimapPicture(explored: version, overviews: overviews), world.def.width, world.def.height)
     }
 
+    /// How many rows the land you're in has: your coordinates count them from its north edge, as
+    /// the minimap's plate did (the map window shows them now, `MapOverlay`).
+    var mapRows: Int {
+        if showsContinent, let here = continent?.here { return here.height }
+        return world.def.height
+    }
+
     /// In a cave, its own map for the map window (playtesting 2026-10-17: the world map showed the
     /// sea round the island instead): the minimap's picture of it, only as far as you've explored on
     /// a dark one. Nil out on the continent, where the window shows the world.

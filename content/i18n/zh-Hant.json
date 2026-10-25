@@ -466,6 +466,7 @@
     "Travelling": "移動中",
     "{percent} percent": "百分之{percent}",
     "World map": "世界地圖",
+    "Coordinates {x}, {y}": "座標 {x}，{y}",
     "Hatch": "孵化",
     "Use": "使用",
     "Give": "送出",
@@ -817,10 +818,6 @@
     "Leave party": "退出隊伍",
     "Close menu": "關閉選單",
     "Open menu": "開啟選單",
-    "Turn music on": "開啟音樂",
-    "Turn music off": "關閉音樂",
-    "Show minimap": "顯示小地圖",
-    "Hide minimap": "隱藏小地圖",
     "Open map": "打開地圖",
     "Closed": "未開放",
     "There you are!": "原來你在這裡！",
@@ -3551,6 +3548,10 @@
     "Bounty Hunter": "賞金獵人",
     "Town Favourite": "小鎮紅人",
     "Faithful": "常客",
-    "Old Friend": "老朋友"
+    "Old Friend": "老朋友",
+    "Hide minimap": "隱藏小地圖",
+    "Show minimap": "顯示小地圖",
+    "Turn music off": "關閉音樂",
+    "Turn music on": "開啟音樂"
   }
 }
