@@ -502,6 +502,13 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   front, with a contact shadow on the hair round their feet. The polygon spans the gap between the legs, so
   the flood can't reach it: it's seeded from the bottom edge too, and below the tunic's hem green is grass.
   At night what he wears is lit as his face is, a little brighter than his hair.
+  Then: "don't cut parts of the boots and sword", "the hat bases look too oval, it should look more
+  natural", "the ears a bit taller, clipping them at the top is allowed", "a bit of grass at the right hand".
+  The band 5 pixels inside the polygon was eroded from the icon's edges too, so the flood ran into the boots
+  where the legs run off the bottom (erode from the polygon only); the boots are dark all through, so below
+  the hem the dark inside him is his. A brim is an arch (high over the brow, drooping at the sides, a tip
+  flicked up, thicker in front), a fur band a curve with tufted edges no wider than the head; an ellipse
+  reads as a stiff oval.
 - **2026-10-25 (the ship):** `form_relief` is light per pixel, so a sprite twice a house's size needs
   as much change across areas twice as wide: the ship's deck and hull, lit by their normals alone, were
   flat at the 9 × 9 scale (0.010) and held it at 0.015. What lifted it: boards and strakes each a tone of

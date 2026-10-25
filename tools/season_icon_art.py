@@ -38,6 +38,7 @@ Needs pillow + numpy.
 
 import argparse
 import colorsys
+import math
 import json
 from pathlib import Path
 
@@ -57,7 +58,7 @@ SCALE = 8
 # The hero and his sword, in the drawing's pixels: nothing inside is recoloured.
 HERO = [(55, 44), (64, 43), (72, 60), (79, 78), (85, 98), (89, 110), (93, 108), (96, 100), (94, 90), (87, 84),
         (84, 76), (90, 66), (98, 56), (108, 51), (122, 51), (136, 53), (146, 59), (151, 70), (153, 84), (151, 98),
-        (149, 106), (151, 112), (152, 124), (150, 132), (155, 140), (153, 150), (146, 156), (145, 168), (97, 168),
+        (149, 106), (151, 112), (152, 124), (150, 132), (155, 140), (154, 146), (149, 149), (142, 149), (141, 157), (140, 168), (97, 168),
         (97, 157), (93, 155), (87, 153), (84, 144), (78, 141), (77, 131), (66, 131), (63, 124), (71, 118),
         (79, 117), (71, 96), (62, 72), (55, 50)]
 # Below this row the green is the meadow, above it the trees' leaves.
@@ -123,7 +124,9 @@ def hero_mask() -> np.ndarray:
     dark = rgb.max(axis=2) <= 0.2
     four = ndimage.generate_binary_structure(2, 1)
     outer = ndimage.binary_dilation(rough, four, iterations=5)
-    inner = ndimage.binary_erosion(rough, four, iterations=5)
+    # He runs on past the icon's edges (the legs off its foot): erode from the polygon only, not from them,
+    # or the band at the edge would let the flood into his boots.
+    inner = ndimage.binary_erosion(rough, four, iterations=5, border_value=1)
     gold = app_icon_art.is_gold(rgb) & outer
     hsv = np.array([[colorsys.rgb_to_hsv(*p) for p in row] for row in rgb])
     hue, sat, val = hsv[..., 0] * 360, hsv[..., 1], hsv[..., 2]
@@ -134,12 +137,17 @@ def hero_mask() -> np.ndarray:
     foot = np.zeros_like(dark)
     foot[-1] = green[-1] & ~dark[-1]
     seeds = (~outer & ~dark) | sky | foot
-    back = ndimage.binary_propagation(seeds, structure=four, mask=(~dark & ~inner & ~gold) | sky)
+    back = ndimage.binary_propagation(seeds & ~foot, structure=four, mask=(~dark & ~inner & ~gold) | sky)
+    # The grass between his legs, flooded up from the bottom edge through green alone (not into his boots).
+    back |= ndimage.binary_propagation(foot, structure=four, mask=green & ~dark & ~gold)
     light = ~dark & ~back & outer
     near = ndimage.distance_transform_cdt(~light, metric="chessboard") <= 2
     hero = ndimage.binary_fill_holes(light | (dark & near & outer)) & ~sky
     # Below his tunic's hem (HEM) nothing of his is green: what is, is grass.
-    hero &= ~(green & (np.arange(h)[:, None] + BOX[1] >= HEM))
+    below = np.arange(h)[:, None] + BOX[1] >= HEM
+    hero &= ~(green & below)
+    # His boots are dark all through, not just at their outline: below the hem, the dark inside him is his.
+    hero |= dark & below & ndimage.binary_erosion(rough, four, iterations=1, border_value=1) & ~back
     # Only the hero himself: a bit of bush or a few tree pixels cut off from him go back to the scenery.
     parts, count = ndimage.label(hero, np.ones((3, 3)))
     return parts == 1 + np.argmax(ndimage.sum(hero, parts, range(1, count + 1)))
@@ -263,12 +271,11 @@ def pixels(out, kind, points, colours, allowed) -> None:
 # Each is drawn so its band's middle lands on the head's widest row above the eyes, (120, 72).
 
 def witch_hat() -> tuple:
-    """A witch's hat: a wide brim, a cone with hollow sides that bends over near the top, its tip hanging
+    """A witch's hat: a wide, soft brim (`brim`), a cone with hollow sides that bends over near the top, its tip hanging
     off to the right, and a gold band. The cone is one shape: up its sides, then along a tapering curve."""
-    import math
-    s = Sprite(92, 50)
+    s = Sprite(92, 52)
     purple = Material("#5a3a8c", shades=5, texture=0.05)
-    s.ellipse(42, 42, 40, 6.5, purple, rot=-3)
+    s.poly(brim(), purple)
 
     def bend(t):
         # A cubic curve from the cone's waist up and over to its tip.
@@ -288,34 +295,60 @@ def witch_hat() -> tuple:
         half = 9.0 * (1 - t) ** 1.2 + 1.0
         left.append((x + dy / n * half, y - dx / n * half))
         right.append((x - dy / n * half, y + dx / n * half))
-    cone = [(19, 42), (25, 35), (30, 30), (33, 27)] + left + right[::-1] + [(51, 27), (55, 31), (60, 36), (66, 42)]
+    cone = [(21, 38), (25, 35), (30, 30), (33, 27)] + left + right[::-1] + [(51, 27), (55, 31), (60, 36), (64, 38)]
     s.poly(cone, purple)
     s.poly([(20, 38), (65, 38), (63, 34), (22, 34)], Material("#e8a838", shades=4, texture=0.03, gloss=0.4), profile="cylinder")
     return s.render(), (78, 30)
 
 
+def brim() -> list:
+    """A witch's hat's brim as a soft felt one sits, not a stiff oval: an arch, high over the brow and
+    drooping over the ears, its right tip flicking back up, thin at the tips and thicker in front, where
+    its lip dips over the brow, the edge a little wavy."""
+    top, bottom = [], []
+    for i in range(41):
+        u = i / 20 - 1                              # -1 at the left tip, 1 at the right
+        x = 42 + 40 * u
+        middle = 39 + 5.5 * u * u - (5.0 * u ** 6 if u > 0 else 0) + 0.6 * math.sin(u * 8)
+        front = math.sqrt(max(0.0, 1 - u * u))
+        top.append((x, middle - 1.6 - 1.4 * front))
+        bottom.append((x, middle + 1.4 + 3.6 * front))
+    return top + bottom[::-1]
+
+
 def santa_hat() -> tuple:
-    s = Sprite(86, 50)
+    """A Santa hat: the red cap flopping over to the right, its bobble hanging, and a fluffy fur band that
+    curves round the head (lower over the brow than at the sides), its edges in tufts, not a smooth oval."""
+    s = Sprite(86, 52)
     fur = Material("#f2f0f6", shades=4, texture=0.12, grain=1.0)
     s.poly([(12, 36), (16, 22), (26, 12), (40, 6), (54, 8), (66, 16), (74, 26), (80, 38), (78, 44), (72, 34),
             (66, 26), (66, 36)], Material("#cc2e3e", shades=5, texture=0.05))
-    s.ellipse(40, 38, 36, 7, fur)
-    s.ellipse(78, 43, 6.5, 6.5, fur)
-    return s.render(), (79, 37)
+    top, bottom = [], []
+    for i in range(37):
+        u = i / 18 - 1
+        x = 41 + 32 * u
+        mid = 37 + 4.0 * (1 - u * u)                # the band's middle, lowest over the brow
+        tuft = 0.9 * abs(math.sin(u * 11))
+        half = 5.6 * math.sqrt(max(0.0, 1 - u ** 6)) + tuft
+        top.append((x, mid - half))
+        bottom.append((x, mid + half))
+    s.poly(top + bottom[::-1], fur)
+    s.ellipse(78, 44, 6.5, 6.5, fur)
+    return s.render(), (79, 35)
 
 
 def bunny_ears() -> tuple:
     """Just the ears, no band: two ears standing on the top of the head, in front of the hair, a little
-    back from the brow, leaning a little apart, short enough that the whole ear shows inside the icon.
+    back from the brow, leaning a little apart, tall enough that the icon's top edge clips their tips.
     Each casts a small shadow on the hair round its foot (`ear_shadow`)."""
-    s = Sprite(44, 30)
+    s = Sprite(48, 42)
     white = Material("#f4f0f8", shades=4, texture=0.04)
     pink = Material("#ff9cc0", shades=4, texture=0.03)
-    s.ellipse(11, 14, 4.8, 11.5, white, rot=-14)
-    s.ellipse(33, 14, 4.8, 11.5, white, rot=14)
-    s.ellipse(11, 15, 2.0, 7.5, pink, rot=-14, profile="flat")
-    s.ellipse(33, 15, 2.0, 7.5, pink, rot=14, profile="flat")
-    return s.render(), (99, 44)
+    s.ellipse(12, 22, 5.2, 16, white, rot=-14)
+    s.ellipse(36, 22, 5.2, 16, white, rot=14)
+    s.ellipse(12, 23, 2.2, 11, pink, rot=-14, profile="flat")
+    s.ellipse(36, 23, 2.2, 11, pink, rot=14, profile="flat")
+    return s.render(), (97, 31)
 
 
 def ear_shadow(out: np.ndarray, kind: np.ndarray, covered: np.ndarray) -> None:
