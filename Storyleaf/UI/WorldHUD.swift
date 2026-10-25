@@ -104,15 +104,15 @@ struct WorldHUD: View {
                         .transition(.scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity))
                 }
                 // Chat, then the menu: one button that opens into its pages (playtesting 2026-10-24:
-                // a row of four buttons, Chat and Settings up by the minimap). Friends stays a tab of
-                // the menu window.
+                // a row of four buttons, Chat and Settings up by the minimap), each a window of its own
+                // (2026-10-25), Friends too.
                 HStack(alignment: .bottom, spacing: 7) {
                     FLIconButton(icon: .talk, label: L("Chat"), badge: session.unreadChat > 0) {
                         menuOpen = false
                         coordinator.open(.chat)
                     }
                     .coachTarget(.chat)
-                    GameMenu(items: [.character, .companions, .bag, .quests, .settings], open: $menuOpen,
+                    GameMenu(items: [.character, .companions, .friends, .bag, .quests, .settings], open: $menuOpen,
                              badge: { badge(for: $0) }) { tab in
                         coordinator.open(.menu(tab))
                     }
@@ -564,7 +564,7 @@ private struct GameMenu: View {
         } label: {
             HStack(spacing: 9) {
                 IconImage(tab.icon, size: 24)
-                Text(title(tab))
+                Text(tab.menuTitle)
                     .font(HUDStyle.font(13))
                     .foregroundStyle(.white)
                     .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
@@ -583,15 +583,6 @@ private struct GameMenu: View {
         .buttonStyle(PressScaleStyle())
     }
 
-    /// The menu's names for its pages.
-    private func title(_ tab: MenuTab) -> String {
-        switch tab {
-        case .character: L("Hero")
-        case .companions: L("Companion")
-        case .bag: L("Inventory")
-        case .quests, .settings, .friends: tab.title
-        }
-    }
 }
 
 /// Three white lines, turning into a cross when the menu's open: the top and bottom lines meet in the
