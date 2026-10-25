@@ -62,25 +62,20 @@ def sky_mask(rgb: np.ndarray) -> np.ndarray:
     return (hue > 180) & (hue < 220) & (sat > 0.12) & (sat < 0.6) & (val > 0.75)
 
 
-def night_gradient(height: int) -> np.ndarray:
-    """The night's colour on each row, top to bottom."""
-    stops = np.array(NIGHT)
-    t = np.linspace(0, 1, height) * (len(stops) - 1)
-    low = np.minimum(t.astype(int), len(stops) - 2)
-    frac = (t - low)[:, None]
-    return stops[low] * (1 - frac) + stops[low + 1] * frac
-
-
 def dusk(rgb: np.ndarray) -> np.ndarray:
     """The scene at dusk: the sky turned to night, the rest darker and cooler, moonlight on the hero."""
     height, width, _ = rgb.shape
     luma = rgb @ np.array([0.299, 0.587, 0.114])
-    # The sky keeps its pixels' shading, laid on the night's colour for its row.
-    night = night_gradient(height)[:, None, :].repeat(width, axis=1)
-    sky = night * (0.8 + 0.4 * (luma[..., None] - 0.8) / 0.2)
-    # Moonlight: brightest on the face, falling off to the trees at the edges.
+    # In hard steps, as pixel art shades: a smooth grade gave every pixel a colour of its own
+    # (1,272 where the light icon has 26). The sky: the night's three colours in three bands
+    # down the icon, each pixel a step lighter or darker as its day shade was.
+    band = np.minimum((np.arange(height) * 3) // height, 2)
+    night = np.array(NIGHT)[band][:, None, :].repeat(width, axis=1)
+    sky = night * (1 + 0.2 * np.round(np.clip((luma[..., None] - 0.85) / 0.1, -1, 1)))
+    # Moonlight: brightest on the face, falling off to the trees at the edges, in three steps.
     ys, xs = np.mgrid[0:height, 0:width]
     near = np.exp(-(((xs - FACE[0]) ** 2 + (ys - FACE[1]) ** 2) / (2 * (width * 0.32) ** 2)))[..., None]
+    near = np.round(near * 2) / 2
     cool = np.array([0.62, 0.68, 0.92])
     rest = rgb * cool * (0.42 + 0.48 * near)
     return np.where(sky_mask(rgb)[..., None], sky, rest)
