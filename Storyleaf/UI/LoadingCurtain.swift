@@ -13,14 +13,14 @@ struct LoadingCurtain: View {
                 Image("Logo")
                     .resizable()
                     .scaledToFit()
-                    .raysAnchor(Brand.leafInLogo)
+                    .raysAnchor(Brand.raysInLogo)
                     .frame(maxWidth: 300)
                     .scaleEffect(spin ? 1.03 : 0.97)
                 LoadingBar.storyleaf(progress: progress, label: L("Loading"))
             }
             .padding(.horizontal, 40)
         }
-        // The rays fan out from behind the logo's leaf.
+        // The rays fan out from behind the logo.
         .storyleafSky(fallback: UnitPoint(x: 0.5, y: 0.44))
         .onAppear {
             withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { spin = true }

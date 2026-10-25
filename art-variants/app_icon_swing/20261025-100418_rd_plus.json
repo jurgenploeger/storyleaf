@@ -1,0 +1,20 @@
+{
+  "request": {
+    "prompt": "app icon, dynamic diagonal pose of a young adventurer girl with red hair and a green cape swinging a sword toward the viewer, giant ancient tree and bright fairy-tale forest behind, blue sky, vibrant colours, detailed pixel art",
+    "prompt_style": "rd_plus__default",
+    "width": 192,
+    "height": 192,
+    "num_images": 4
+  },
+  "result": {
+    "created_at": 1792922657,
+    "credit_cost": 8,
+    "balance_cost": 0.24,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 13.631,
+    "request_id": "2477d6ce-2812-4373-82c3-efd064f949b8",
+    "outputs_retained_until": 1793009027
+  }
+}

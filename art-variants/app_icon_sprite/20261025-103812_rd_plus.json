@@ -1,0 +1,22 @@
+{
+  "request": {
+    "prompt": "app icon, chibi young hero with ginger hair and a green tunic holding a golden sword, standing in a bright storybook forest with red apple trees and pink blossom trees, blue sky, thick dark outline, detailed pixel art",
+    "prompt_style": "rd_plus__default",
+    "width": 96,
+    "height": 96,
+    "num_images": 4,
+    "strength": 0.55,
+    "input_image": "source_C1_48.png, scaled by whole numbers"
+  },
+  "result": {
+    "created_at": 1792924691,
+    "credit_cost": 4,
+    "balance_cost": 0.24,
+    "output_urls": [],
+    "model": "rd_plus",
+    "remaining_credits": 0,
+    "remaining_balance": 12.431,
+    "request_id": "9ad4b0e8-b12f-4aca-9e01-c04a13fb449d",
+    "outputs_retained_until": 1793011067
+  }
+}

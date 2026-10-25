@@ -57,6 +57,40 @@ These are the rules the numbers measure. A sprite that keeps them looks like Sto
     instead of it (`light_masses`), and the whole house holds about 18 to 35 colours (`colour_density`
     capped as well as floored): every face its own seven shades made ours a hundred colours of grain.
 
+## The target: Pixel Heroes (2026-10-25)
+
+The user's reference for where the art should go is *Pixel Heroes: Tales of Emond* (HaoPlay): its heroes,
+its app icon and its logo ("I want to get closer to Pixel Heroes"). Its art was measured from the user's
+App Store screenshots (1206 × 2622, the hero lineup slide), each sprite sampled on its own pixel grid (an art
+pixel is about 3.5 screen pixels), with five of its sprites against ours. Screenshots are compressed, so
+read colour counts as rough; outlines and darkness hold up.
+
+| | outline light, median | edge pixels darker than 0.25 | inside darker than 0.2 | saturation, median |
+|---|---|---|---|---|
+| Pixel Heroes (5 heroes and creatures) | 0.15 to 0.25 | 50 to 66% | 28 to 44% | 0.46 to 0.53 |
+| our heroes' walk sheets (front) | 0.05 to 0.25 | 39 to 97% | 26 to 39% | 0.57 to 0.81 |
+| our creatures, bosses and townsfolk (65) | 0.12 to 0.67 | 32 of 65 meet both outline marks | 0 to 12% on the pale ones | – |
+
+(Light is luma, 0.3 R + 0.59 G + 0.11 B.) What it shows:
+
+- **The same scale as ours.** Its heroes stand about 36 to 44 art pixels tall, ours 27 to 39 in a 48-pixel
+  frame. Nothing needs redrawing bigger.
+- **Our heroes already have its outline;** many of our creatures don't. Pixel Heroes outlines everything,
+  creatures too, in a dark line (deep brown, navy, forest, never pure black), and draws dark lines inside as
+  well, between hair and face, cloth and body, one limb and the next: a third of its pixels are that dark.
+  33 of our 65 creatures, bosses and townsfolk have a pale, tinted outline instead (the Comet Hare 0.67, the
+  Wisp 0.66, the frost bear 0.64, the Prism Drake 0.60, the Big Bad Wolf 0.44), and next to its heroes they
+  look washed out. That tinted outline is what rule 7 above asks of creatures; for characters and creatures
+  the Pixel Heroes line replaces it (sprite-acceptance.md, *Characters and creatures*).
+- **Chibi, bright and clean.** Big heads (about two to two and a half heads tall), big eyes with a light
+  catchlight, saturated colour (a median around 0.5), shading in a few clean steps with crisp highlights,
+  and a silhouette you can tell from its neighbours' at a glance (ears, hats, wings, weapons).
+- **The white sticker outline is for marketing only.** On its store slides every sprite has a white rim two
+  or three art pixels wide over a soft background; in the game they don't.
+
+Scenery, buildings and item icons keep the rules above: Pixel Heroes' own trees and grass are soft and
+outlined lightly, so the characters stand out against them.
+
 ## What the craft says (sources)
 
 Read 2026-10-23, from search results (the network policy blocked fetching the pages themselves, so these

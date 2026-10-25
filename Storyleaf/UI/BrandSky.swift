@@ -32,9 +32,8 @@ enum Brand {
     static let skyText = Color.adaptive(light: HUDStyle.ink, dark: HUDStyle.cream)
 }
 
-/// Where the sun rays fan out from: the centre of the leaf over the logo's wordmark, measured in
-/// Logo.png (1200×560; the leaf's body is about x 517–680, y 24–210), or whatever else a screen
-/// puts in its middle (the travel card's swirl). Published with `raysAnchor`, read by `storyleafSky`.
+/// Where the sun rays fan out from: the middle of the word in the logo (Logo.png, drawn by
+/// tools/logo_art.py), or whatever else a screen puts in its middle (the travel card's swirl). Published with `raysAnchor`, read by `storyleafSky`.
 struct RaysAnchor: PreferenceKey {
     static var defaultValue: Anchor<CGPoint>? { nil }
     static func reduce(value: inout Anchor<CGPoint>?, nextValue: () -> Anchor<CGPoint>?) {
@@ -43,8 +42,8 @@ struct RaysAnchor: PreferenceKey {
 }
 
 extension Brand {
-    /// The leaf's centre in the logo image, as a share of its size.
-    static let leafInLogo = UnitPoint(x: 0.4987, y: 0.21)
+    /// Where the rays fan out from in the logo image (the middle of the word), as a share of its size.
+    static let raysInLogo = UnitPoint(x: 0.5, y: 0.5)
 }
 
 extension View {

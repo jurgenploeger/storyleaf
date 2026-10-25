@@ -1,0 +1,21 @@
+{
+  "request": {
+    "prompt": "app icon, young hero in a leaf-green tunic and brown leather armour holding a sword up, cape flowing, standing at the start of a winding path into a wild fairy-tale forest with mushrooms and flowers, golden morning light, vibrant colours, detailed pixel art",
+    "prompt_style": "rd_pro__fantasy",
+    "width": 192,
+    "height": 192,
+    "num_images": 4
+  },
+  "result": {
+    "created_at": 1792922728,
+    "credit_cost": 4,
+    "balance_cost": 0.72,
+    "output_urls": [],
+    "model": "rd_pro",
+    "remaining_credits": 0,
+    "remaining_balance": 12.911,
+    "request_id": "11f31f42-77c2-42fa-945e-b2e12c22ecf5",
+    "outputs_retained_until": 1793009059,
+    "output_url_expires_at": 1792923628
+  }
+}

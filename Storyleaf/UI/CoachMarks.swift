@@ -51,7 +51,7 @@ private struct CoachStep {
         CoachStep(target: .toolbar, icon: .backpack, title: L("Your adventure"),
                   text: L("Tap the menu for your hero, companion, friends, inventory, quests and settings. A gold dot means there's something new.")),
         CoachStep(target: .chat, icon: .talk, title: L("Other adventurers"),
-                  text: L("Adventurers wander Storyleaf too. Read what they say and chat back here. What you win and find shows for a moment, then waits here too.")),
+                  text: L("Adventurers wander Talewild too. Read what they say and chat back here. What you win and find shows for a moment, then waits here too.")),
         CoachStep(target: nil, icon: .star, title: L("Your first quest"),
                   text: L("Walk up to someone with a gold ! and tap Talk. New adventurers start with Elder Oak in Meadowbrook.")),
     ] }

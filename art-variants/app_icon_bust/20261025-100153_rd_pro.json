@@ -1,0 +1,21 @@
+{
+  "request": {
+    "prompt": "app icon, close-up portrait of a young fairy-tale adventurer hero, green hooded cloak, short brown hair, confident smile, sword resting on the shoulder, lush enchanted storybook forest behind with soft sunbeams, vibrant colours, detailed pixel art",
+    "prompt_style": "rd_pro__fantasy",
+    "width": 192,
+    "height": 192,
+    "num_images": 4
+  },
+  "result": {
+    "created_at": 1792922512,
+    "credit_cost": 4,
+    "balance_cost": 0.72,
+    "output_urls": [],
+    "model": "rd_pro",
+    "remaining_credits": 0,
+    "remaining_balance": 14.831,
+    "request_id": "8b9ce62b-f0ea-4d08-9bc7-ed9838c10c3e",
+    "outputs_retained_until": 1793008831,
+    "output_url_expires_at": 1792923412
+  }
+}
