@@ -2226,10 +2226,10 @@ final class WorldScene: SKScene {
     }
 
     /// You said something in the Chat window: a bubble over your head, and maybe an answer.
-    func heroSay(_ text: String) {
+    func heroSay(_ text: String, rude: Bool) {
         player.say(text)
         session.postChat(text, from: session.data.hero.name, kind: .you)
-        crowd?.reply(near: player.position)
+        crowd?.reply(near: player.position, scolding: rude)
     }
 
     /// Called by the HUD's Talk button. Not while a battle's starting (or anything else has the map).

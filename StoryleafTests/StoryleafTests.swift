@@ -1758,6 +1758,27 @@ struct RulesTests {
         #expect(session.status(of: Content.shared.quest("new_friend")!) == .available)
     }
 
+    /// The chat's filter stars out rude words however they're dressed up (capitals, stand-ins for
+    /// letters, letters held, scripts without spaces), and leaves harmless words that hold one
+    /// (playtesting 2026-10-25: "Have moderation in the game chat").
+    @Test func theChatFilterStarsOutRudeWords() {
+        let filter = ChatFilter(Content.shared.moderation)
+        #expect(filter.clean("what the fuck").text == "what the ****")
+        #expect(filter.clean("FUUUCKING hell").text == "********* hell")
+        #expect(filter.clean("you're an @ss").text == "you're an ***")
+        #expect(filter.clean("sh1t").text == "****")
+        #expect(filter.clean("Scheiße!").text == "*******!")
+        #expect(filter.clean("你他妈的").text == "你***")
+        #expect(filter.clean("씨발").rude)
+        #expect(filter.clean("shiiiit").rude)
+        let plain = filter.clean("Hello there!")
+        #expect(plain.text == "Hello there!" && !plain.rude)
+        for line in ["a class act", "the assassin", "Scunthorpe", "the cockpit", "a therapist", "Dickens", "grapes", "やくそく", "シネマ",
+                     "un cazo", "rappelle-toi", "妈妈的书", "불이 꺼져"] {
+            #expect(!filter.clean(line).rude, "\(line)")
+        }
+    }
+
     /// The bag holds 50 slots, every item one however many of a kind (playtesting 2026-10-25: "repeated
     /// items should count to the inventory"), the coins one; what doesn't fit is left behind.
     @Test func theBagHoldsFiftySlots() {

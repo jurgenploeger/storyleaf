@@ -700,7 +700,11 @@ final class GameCoordinator {
         mapScene.talkToNearby()
     }
 
+    /// What you type goes through the chat's filter first (`ChatFilter`): a rude word is starred out
+    /// in your bubble and the chat, a note says so, and someone nearby tells you off.
     func say(_ text: String) {
-        mapScene.heroSay(text)
+        let checked = ChatFilter.shared.clean(text)
+        mapScene.heroSay(checked.text, rude: checked.rude)
+        if checked.rude { session.post(L("Some words were starred out. Keep the chat friendly!"), .system) }
     }
 }

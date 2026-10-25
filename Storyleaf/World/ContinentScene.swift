@@ -708,10 +708,10 @@ final class ContinentScene: SKScene {
 
     /// You said something in the Chat window: a bubble over your head, and maybe an answer from
     /// someone about you.
-    func heroSay(_ text: String) {
+    func heroSay(_ text: String, rude: Bool) {
         player.say(text)
         session.postChat(text, from: session.data.hero.name, kind: .you)
-        if let here, let stage = lands[here.id]?.stage { stage.crowd?.reply(near: stage.local(player.position)) }
+        if let here, let stage = lands[here.id]?.stage { stage.crowd?.reply(near: stage.local(player.position), scolding: rude) }
     }
 
     /// An adventurer's answer (befriended, invited), in a bubble over them, wherever they are.
@@ -1121,7 +1121,7 @@ final class ContinentScene: SKScene {
         guard let quest = exit.requires.flatMap(content.quest) else { return }
         let giver = content.npc(quest.giver)?.name ?? quest.giver
         let line = L("The ship won't sail yet. Finish “{quest}” for {giver} first.", ["quest": quest.title, "giver": giver])
-        heroSay(line)
+        heroSay(line, rude: false)
         session.post(line, .quest)
     }
 
