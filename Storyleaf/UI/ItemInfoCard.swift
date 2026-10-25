@@ -17,6 +17,8 @@ struct ItemInfoCard: View {
     var note: String? = nil
     /// From the Bag: put it up for trade, or take it off (`GameSession+TradeList`).
     var trading: Action? = nil
+    /// From the Bag: drop one, or all you carry, at your feet (`GameSession.drop`).
+    var dropping: ((Int) -> Void)? = nil
 
     struct Action {
         let title: String
@@ -25,7 +27,7 @@ struct ItemInfoCard: View {
         let run: () -> Void
     }
 
-    private var choosing: Bool { onEquip != nil || onUnequip != nil || action != nil || note != nil || trading != nil }
+    private var choosing: Bool { onEquip != nil || onUnequip != nil || action != nil || note != nil || trading != nil || dropping != nil }
 
     private var isGear: Bool { ItemType.equipmentSlots.contains(item.type) }
 
@@ -143,6 +145,20 @@ struct ItemInfoCard: View {
                 .buttonStyle(PixelButtonStyle(compact: true))
                 .disabled(!trading.enabled)
                 .opacity(trading.enabled ? 1 : 0.5)
+            }
+            if let dropping {
+                let held = session.count(of: item.id)
+                HStack(spacing: 8) {
+                    Button { dropping(1) } label: {
+                        Label(L("Drop"), icon: .arrowDown)
+                    }
+                    if held > 1 {
+                        Button { dropping(held) } label: {
+                            Label(L("Drop all {count}", ["count": held]), icon: .arrowDown)
+                        }
+                    }
+                }
+                .buttonStyle(PixelButtonStyle(compact: true))
             }
             HStack(spacing: 10) {
                 Spacer(minLength: 0)
