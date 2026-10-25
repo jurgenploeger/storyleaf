@@ -49,7 +49,7 @@ private struct CoachStep {
         CoachStep(target: .minimap, icon: .map, title: L("Where you are"),
                   text: L("The minimap shows what's around you. Tap it for the world map.")),
         CoachStep(target: .toolbar, icon: .backpack, title: L("Your adventure"),
-                  text: L("Tap the menu for your hero, companion, inventory, quests and settings. A gold dot means there's something new.")),
+                  text: L("Tap the menu for your hero, companion, friends, inventory, quests and settings. A gold dot means there's something new.")),
         CoachStep(target: .chat, icon: .talk, title: L("Other adventurers"),
                   text: L("Adventurers wander Storyleaf too. Read what they say and chat back here. What you win and find shows for a moment, then waits here too.")),
         CoachStep(target: nil, icon: .star, title: L("Your first quest"),

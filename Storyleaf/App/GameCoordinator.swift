@@ -24,6 +24,16 @@ enum MenuTab: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Its name in the menu and on its window when it has no pages of its own.
+    var menuTitle: String {
+        switch self {
+        case .character: L("Hero")
+        case .companions: L("Companion")
+        case .bag: L("Inventory")
+        case .quests, .settings, .friends: title
+        }
+    }
+
     var icon: GameIcon {
         switch self {
         case .character: .user
