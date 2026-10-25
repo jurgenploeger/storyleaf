@@ -1718,6 +1718,21 @@ final class GameSession {
         content.quests.filter { $0.giver == giver && status(of: $0) != .locked }
     }
 
+    /// The one quest a giver talks to you about (playtesting 2026-10-25: "One should be completed
+    /// first with storytelling"): one you've done to hand in, else the one you're on for them, else
+    /// the next they have for you, in the game's order. Nil when they have nothing (`questGiverNote`).
+    func currentQuest(from giver: String) -> QuestDef? {
+        let theirs = quests(from: giver)
+        return theirs.first { status(of: $0) == .ready }
+            ?? theirs.first { data.quests[$0.id]?.state == .active }
+            ?? theirs.first { status(of: $0) == .available }
+    }
+
+    /// Whether you're on a quest for `giver`: they give you no other till it's handed in.
+    func isOnQuest(for giver: String) -> Bool {
+        content.quests.contains { $0.giver == giver && data.quests[$0.id]?.state == .active }
+    }
+
     /// What a quest giver with nothing for the hero says: why (a level to reach, someone else's
     /// quest to finish first, or nothing left at all), and once they're all done, who has work
     /// instead: the quest open to you now that suits your level best, or else the next to open.
@@ -1820,7 +1835,8 @@ final class GameSession {
         }
         let statuses = content.quests.filter { $0.giver == giver }.map { status(of: $0) }
         if statuses.contains(.ready) { return .ready }
-        if statuses.contains(.available) { return .available }
+        // One quest at a time: nothing new from them while you're on one of theirs.
+        if statuses.contains(.available) && !isOnQuest(for: giver) { return .available }
         return nil
     }
 
@@ -1839,7 +1855,7 @@ final class GameSession {
     }
 
     func acceptQuest(_ id: String, answer: QuestDef.Question.Answer? = nil) {
-        guard let quest = content.quest(id), status(of: quest) == .available else { return }
+        guard let quest = content.quest(id), status(of: quest) == .available, !isOnQuest(for: quest.giver) else { return }
         data.quests[id] = QuestProgress(state: .active, count: 0, taken: Date())
         SoundEffects.shared.play(.questAccept)
         if let answer { data.eggSpecies = answer.egg }

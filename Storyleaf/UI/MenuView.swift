@@ -1438,6 +1438,8 @@ struct QuestRow: View {
     /// Who asked and where they live (the Quests list; not while you're talking to them).
     /// In the list a tap also shows the reward in full.
     var showsGiver = false
+    /// Its story (not on the last page of a conversation with its giver, who's just told it).
+    var showsDescription = true
     @State private var expanded = false
 
     var body: some View {
@@ -1468,7 +1470,9 @@ struct QuestRow: View {
                         .font(HUDStyle.font(10))
                         .foregroundStyle(HUDStyle.gold.opacity(0.85))
                 }
-                Text(quest.description).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+                if showsDescription {
+                    Text(quest.description).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+                }
                 if showsGiver && expanded {
                     QuestRewardsView(session: session, quest: quest, earned: false)
                         .padding(.top, 4)
