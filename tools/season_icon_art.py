@@ -386,17 +386,25 @@ def bunny_ears() -> tuple:
     pink = Material("#ff9cc0", shades=4, texture=0.03)
 
     def width(t):
-        # Narrow at the foot, widest a little below the bend, rounding off toward the tip.
-        return 1.8 + 5.0 * math.sin(math.pi * (0.04 + 0.84 * t)) ** 0.75
+        # Narrow at the foot, widening up to the bend; the hanging flap stays full and ends in a round,
+        # oval tip (its last fifth a half ellipse) instead of a cut-off end.
+        if t < 0.5:
+            full = 1.8 + 4.8 * math.sin(math.pi / 2 * t / 0.5) ** 0.75
+        else:
+            full = 6.6 - 1.0 * (t - 0.5) / 0.5
+        cap = math.sqrt(max(0.0, 1 - ((t - 0.78) / 0.22) ** 2)) if t > 0.78 else 1.0
+        return full * cap
 
+    steps = 32
+    stand = slice(int(0.1 * steps), int(0.55 * steps) + 1)
     for x, flop in ((15, -1), (41, 1)):
         # One curve: up out of the hair, over at the top, and the tip hanging down forward and out.
         ear = [(x, 34), (x + 1 * flop, 14), (x + 5 * flop, 6), (x + 13 * flop, 26)]
-        left, right = sweep(ear, width, steps=20)
+        left, right = sweep(ear, width, steps=steps)
         s.poly(left + right[::-1], white)
         # The pink inside shows on the part that stands; past the bend it's the ear's white back.
-        inner_left, inner_right = sweep(ear, lambda t: width(t) * 0.45, steps=20)
-        s.poly(inner_left[2:11] + inner_right[2:11][::-1], pink, profile="flat")
+        inner_left, inner_right = sweep(ear, lambda t: width(t) * 0.45, steps=steps)
+        s.poly(inner_left[stand] + inner_right[stand][::-1], pink, profile="flat")
     return s.render(), (92, 33)
 
 
