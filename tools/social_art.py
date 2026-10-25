@@ -93,8 +93,9 @@ def place_logo(canvas: Image.Image, logo: Image.Image, width_share: float, middl
 
 
 def profile(side: int) -> Image.Image:
-    """The hero's face from the icon's drawing, scaled by whole pixels to fit `side`, its edges repeated out."""
-    rgb = app_icon_art.crop(PROFILE_CROP)
+    """The hero's face from the icon's drawing, its sky graded as the icon's is, scaled by whole pixels to fit
+    `side`, its edges repeated out."""
+    rgb = app_icon_art.day_sky(app_icon_art.crop(PROFILE_CROP), PROFILE_CROP)
     scale = side // rgb.shape[0]
     big = np.repeat(np.repeat(rgb, scale, axis=0), scale, axis=1)
     pad = side - big.shape[0]
