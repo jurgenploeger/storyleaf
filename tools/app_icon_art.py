@@ -4,7 +4,7 @@ one picked Retro Diffusion drawing: the game's own hero (player_walk) with a gol
 the apple and blossom trees, built from the game's sprites and redrawn by RD
 (art-variants/app_icon_sprite/, docs/sprite-acceptance.md → Retro Diffusion).
 
-Light: the drawing cropped in close on the hero, clipped by the edges (`CROP`), so he reads on a
+Light: the drawing cropped in close on the hero, hair to knees over a band of meadow (`CROP`), so he reads on a
 small Home Screen icon, scaled by a whole number (`SCALE`, nearest neighbour) and its edge pixels
 repeated out to 1024. Dark: the same scene at dusk, its sky the night `StoryleafSky` draws in Dark
 Mode, the rest darkened and cooled, moonlight on the hero's face keeping him brighter than the
@@ -30,22 +30,22 @@ DARK = ICONSET / "AppIcon-Dark.png"
 TINTED = ICONSET / "AppIcon-Tinted.png"
 
 SOURCE = ROOT / "art-variants/app_icon_sprite/20261025-103956_rd_pro_2.png"
-# The hero big, clipped by the edges: his hair and the sword's tip at the top, his hands at the
-# bottom (the drawing is 192 pixels; the hero spans x 62 to 156, y 50 to 182). 102 × 10 = 1020,
-# the rest repeated edge.
-CROP, SCALE = (58, 50, 160, 152), 10
-# The looser crop before it, hair to hips: shown in the preview only.
-ALT_CROP, ALT_SCALE = (56, 44, 168, 156), 9
+# The hero big, clipped by the edges (the tips of his hair and the sword at the top), down to his
+# knees, so a band of meadow shows below him and less sky and tree above (the drawing is 192
+# pixels; the hero spans x 62 to 156, y 50 to 182). 112 × 9 = 1008, the rest repeated edge.
+CROP, SCALE = (52, 62, 164, 174), 9
+# The crop before it, hair to hands, mostly sky and trees: shown in the preview only.
+ALT_CROP, ALT_SCALE = (58, 50, 160, 152), 10
 SIZE = 1024
 # Where the moonlight falls, in the drawing's pixels: the hero's face.
 FACE = (115, 103)
 
 # Lights at dusk, in the drawing's pixels: fireflies in the dark branches and grass, sparkles
 # in the blossom, stars in the gaps of night sky, and a glint on the sword's blade.
-FIREFLIES = [(61, 101), (152, 124), (158, 141), (64, 141), (99, 149), (148, 98), (94, 84), (156, 108)]
+FIREFLIES = [(61, 101), (152, 124), (158, 141), (64, 141), (148, 98), (94, 84), (60, 163), (153, 168), (74, 171), (140, 158)]
 PETALS = [(150, 62), (157, 79), (141, 88), (155, 55)]
-STARS = [(98, 51), (107, 56), (124, 52)]
-GLINT = (67, 60)
+STARS = [(54, 108), (57, 124), (161, 112), (158, 119)]
+GLINT = (68, 71)
 FIREFLY, FIREFLY_GLOW = (1.0, 0.97, 0.75), (0.88, 0.93, 0.5)
 PETAL, STAR = (1.0, 0.86, 0.95), (0.95, 0.96, 1.0)
 
