@@ -686,8 +686,10 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   sort (best for you, level, name, price, how many) and filters (the Bag's kinds; only what you can wear).
 - The bag and the bank (ours, since 0.8.0, asked for in playtesting 2026-10-25: "I want to add a bank to the
   game [...] so the item limit is 50 items you can hold"), as RuneScape has them; whether Fairyland Online had
-  a warehouse isn't verified here. The bag holds 50 slots: each kind of item one slot however many you carry,
-  the coins one more (`GameSession.bagSlots`). What doesn't fit is left behind, loot and rewards too (the
+  a warehouse isn't verified here. The bag holds 50 slots: every item one, however many of a kind you carry
+  (since 0.8.8, the playtester's choice: "repeated items should count to the inventory"; before, a kind took
+  one slot however many), the coins one more (`GameSession.bagSlots`). A save carrying more moves the rest
+  to the bank as it loads, a thing at a time from the biggest pile (`fitBag`). What doesn't fit is left behind, loot and rewards too (the
   playtester's choice); a chest stays shut till there's room. The coins are a slot in the Bag with a pile
   that grows with them (`CoinsTile`, tools/coin_art.py), RuneScape's way, not a count on the HUD. A bank
   (tools/building_art.py `bank`) with a banker (NPC role `bank`, a coin on the minimap and the world map)

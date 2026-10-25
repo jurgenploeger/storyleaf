@@ -46,11 +46,10 @@ struct MapOverlay: View {
                     WorldAtlas(session: session)
                 }
             }
-            // As tall as the map wants, or what the screen has room for (a phone on its side):
-            // the atlas scrolls in whatever height is left under the title.
-            .frame(maxWidth: 720)
+            // As big as a menu window, the map filling what's left under the title.
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .gameWindow()
-            .padding(14)
+            .menuWindowMargins()
         }
     }
 
@@ -167,6 +166,7 @@ struct CaveMap: View {
             .frame(minHeight: 260)
             .background(Color(red: 0.03, green: 0.05, blue: 0.1))
             .clipped()
+            .overlay(alignment: .topTrailing) { MapCompass(size: 60).padding(10).allowsHitTesting(false) }
             Button(L("World map"), action: showWorld)
                 .buttonStyle(PixelButtonStyle(compact: true))
                 .padding(.bottom, 10)

@@ -53,7 +53,9 @@ final class Ambience {
         if let hex = def?.tint, let color = UIColor(hex: hex) {
             let node = SKSpriteNode(color: color, size: CGSize(width: 3000, height: 3000))
             node.alpha = CGFloat(def?.tintAlpha ?? 0.15)
-            node.zPosition = 45_000
+            // Under the time of day's light, as the haze is (`Lighting`): a pale tint over the night
+            // washed it out.
+            node.zPosition = 42_900
             camera.addChild(node)
             tint = node
         } else {

@@ -1,0 +1,28 @@
+{
+  "_about": "The chat's filter (Storyleaf/Model/ChatFilter.swift): what you type is starred out where it matches. `words`: whole words only (short ones that sit inside harmless words: ass, but not class or assassin). `stems`: any word starting with them (fuck, fucking, fucker). `anywhere`: wherever it appears, for scripts written without spaces (Chinese, Japanese, Korean) and phrases. Matching ignores case and accents, reads 0 1 3 4 5 7 @ $ as o i e a s t a s, and, for a word with a letter held three times or more (fuuuck), also tries it with its repeated letters squeezed. Not translated.",
+  "words": [
+    "ass", "asses", "arse", "dick", "dicks", "cock", "cocks", "prick", "pricks", "fag", "fags", "kike", "kikes", "spic", "spics",
+    "chink", "chinks", "dyke", "dykes", "tranny", "trannies", "kys", "stfu", "milf", "porn", "tits", "titty",
+    "puta", "puto", "putas", "putos", "cabron", "cabrona", "joder", "verga", "culero", "pendejo", "pendeja", "marica", "maricon",
+    "porra", "caralho", "foda", "fodase", "buceta", "viado", "arrombado",
+    "merde", "pute", "putes", "connard", "connasse", "salope", "batard", "nique", "niquer", "enculé", "encule", "pd",
+    "fotze", "wichser", "arschloch", "schlampe", "hure", "huren", "missgeburt", "spast", "spasti",
+    "cazzo", "stronzo", "stronza", "coglione", "minchia", "troia", "frocio", "puttana", "vaffanculo",
+    "бля", "блядь", "блять", "сука", "суки", "хуй", "хуя", "хуе", "мудак", "гандон", "пидор", "пидр", "ебать", "ёб", "еб"
+  ],
+  "stems": [
+    "fuck", "motherfuck", "shit", "bullshit", "cunt", "bitch", "asshole", "dumbass", "jackass", "dickhead", "bastard", "piss",
+    "cocksuck", "slut", "whore", "wank", "twat", "faggot", "nigger", "nigga", "retard", "wetback", "rape", "rapist", "pussy",
+    "mierd", "gilipolla", "chinga", "hijueputa", "malparid",
+    "putain", "enculer", "encule", "fdp",
+    "scheiss", "scheiß", "hurensohn", "fick", "missgeburt",
+    "vaffancul", "puttan", "fanculo",
+    "пизд", "хуе", "хуё", "хуй", "ебан", "ебал", "ебло", "уеб", "заеб", "выеб", "блят", "бляд", "пидор", "пидар", "мудил", "долбоёб", "долбоеб", "шлюх"
+  ],
+  "anywhere": [
+    "kill yourself", "kill urself",
+    "他妈的", "他媽的", "操你", "肏", "傻逼", "傻屄", "傻b", "草泥马", "草泥馬", "婊子", "狗娘养", "狗娘養", "王八蛋", "去死", "贱人", "賤人", "鸡巴", "雞巴",
+    "死ね", "殺す", "ちんこ", "まんこ", "ちんぽ", "ファック",
+    "씨발", "시발", "씨팔", "ㅅㅂ", "개새끼", "개새기", "병신", "ㅂㅅ", "좆", "존나", "닥쳐", "미친놈", "미친년", "썅"
+  ]
+}

@@ -52,6 +52,8 @@ final class GameCoordinator {
     enum Overlay: Equatable {
         case menu(MenuTab)
         case npc(String)
+        /// A banker's bank, in its own window after a word with them (`BankView`).
+        case bank(String)
         case worldMap
         case chat
         /// Swapping goods with an adventurer you're standing next to.
@@ -682,6 +684,11 @@ final class GameCoordinator {
         go(to: map, entry: nil, waystone: waystone)
     }
 
+    /// From a word with a banker to their bank's window.
+    func openBank(_ banker: NPCDef) {
+        open(.bank(banker.id))
+    }
+
     func closeOverlay() {
         SoundEffects.shared.play(.close, volume: 0.8)
         overlay = nil
@@ -693,7 +700,11 @@ final class GameCoordinator {
         mapScene.talkToNearby()
     }
 
+    /// What you type goes through the chat's filter first (`ChatFilter`): a rude word is starred out
+    /// in your bubble and the chat, a note says so, and someone nearby tells you off.
     func say(_ text: String) {
-        mapScene.heroSay(text)
+        let checked = ChatFilter.shared.clean(text)
+        mapScene.heroSay(checked.text, rude: checked.rude)
+        if checked.rude { session.post(L("Some words were starred out. Keep the chat friendly!"), .system) }
     }
 }

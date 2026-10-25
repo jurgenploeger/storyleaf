@@ -1758,22 +1758,56 @@ struct RulesTests {
         #expect(session.status(of: Content.shared.quest("new_friend")!) == .available)
     }
 
-    /// The bag holds 50 slots, a kind of item each however many, the coins one more; what doesn't fit
-    /// is left behind (playtesting 2026-10-25).
+    /// The chat's filter stars out rude words however they're dressed up (capitals, stand-ins for
+    /// letters, letters held, scripts without spaces), and leaves harmless words that hold one
+    /// (playtesting 2026-10-25: "Have moderation in the game chat").
+    @Test func theChatFilterStarsOutRudeWords() {
+        let filter = ChatFilter(Content.shared.moderation)
+        #expect(filter.clean("what the fuck").text == "what the ****")
+        #expect(filter.clean("FUUUCKING hell").text == "********* hell")
+        #expect(filter.clean("you're an @ss").text == "you're an ***")
+        #expect(filter.clean("sh1t").text == "****")
+        #expect(filter.clean("Scheiße!").text == "*******!")
+        #expect(filter.clean("你他妈的").text == "你***")
+        #expect(filter.clean("씨발").rude)
+        #expect(filter.clean("shiiiit").rude)
+        let plain = filter.clean("Hello there!")
+        #expect(plain.text == "Hello there!" && !plain.rude)
+        for line in ["a class act", "the assassin", "Scunthorpe", "the cockpit", "a therapist", "Dickens", "grapes", "やくそく", "シネマ",
+                     "un cazo", "rappelle-toi", "妈妈的书", "불이 꺼져"] {
+            #expect(!filter.clean(line).rude, "\(line)")
+        }
+    }
+
+    /// The bag holds 50 slots, every item one however many of a kind (playtesting 2026-10-25: "repeated
+    /// items should count to the inventory"), the coins one; what doesn't fit is left behind.
     @Test func theBagHoldsFiftySlots() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
-        // A new game: its potions and its coins.
-        #expect(session.bagSlotsUsed == 2)
-        let others = Content.shared.items.map(\.id).filter { $0 != "potion" }
-        for id in others.prefix(GameSession.bagSlots - 2) { #expect(session.addItem(id)) }
-        #expect(session.bagSlotsFree == 0)
-        #expect(!session.addItem(others[GameSession.bagSlots - 2]))
-        #expect(session.count(of: others[GameSession.bagSlots - 2]) == 0)
-        // A kind you carry still stacks, and coins on coins.
-        #expect(session.addItem("potion", 5) && session.count(of: "potion") == 8)
+        // A new game: its three potions and its coins.
+        #expect(session.bagSlotsUsed == 4)
+        #expect(session.addItem("potion", 40) && session.bagSlotsUsed == 44)
+        // Seven ethers don't fit in six slots: none go in.
+        #expect(!session.addItem("ether", 7) && session.count(of: "ether") == 0)
+        #expect(session.addItem("ether", 6) && session.bagSlotsFree == 0)
+        #expect(!session.addItem("potion") && session.count(of: "potion") == 43)
+        // Coins on coins take no more room.
         #expect(session.gainGold(10) && session.data.gold == 40)
         // A quest's own things go in regardless.
-        #expect(session.addItem(others[GameSession.bagSlots - 2], force: true))
+        #expect(session.addItem("ether", force: true))
+    }
+
+    /// A bag from before every item took a slot, over 50, puts the rest in the bank as it loads, from
+    /// the biggest pile down, once.
+    @Test func anOverfullBagGoesToTheBankOnLoad() {
+        var data = GameSession.newGame(name: "Test", raceID: "human").data
+        data.inventory[GameSession.featherID] = 154
+        let loaded = GameSession(data: data)
+        // Three potions and the coins stay; the feathers fill the rest.
+        #expect(loaded.bagSlotsUsed == GameSession.bagSlots)
+        #expect(loaded.count(of: "potion") == 3 && loaded.data.gold == 30)
+        #expect(loaded.count(of: GameSession.featherID) == 46 && loaded.banked(GameSession.featherID) == 108)
+        let again = GameSession(data: loaded.data)
+        #expect(again.count(of: GameSession.featherID) == 46 && again.banked(GameSession.featherID) == 108)
     }
 
     /// The bank keeps what you put in it, coins too, and gives it back while the bag has room.
@@ -1788,6 +1822,10 @@ struct RulesTests {
         session.depositAll()
         #expect(session.bagSlotsUsed == 0 && session.banked("seal_stone") == 2 && session.bankGold == 30)
         #expect(session.withdrawGold(30) && session.data.gold == 30 && session.bankGold == 0)
+        // Out of the bank only as many as the bag has room for; the rest stays in.
+        session.data.bank = ["potion": 60]
+        #expect(session.withdraw("potion") && session.count(of: "potion") == 49 && session.banked("potion") == 11)
+        #expect(!session.withdraw("potion") && session.banked("potion") == 11)
     }
 
     /// Beaten by monsters you lose what you carry, coins too; beaten in a duel what you wear as well.
@@ -1824,14 +1862,19 @@ struct RulesTests {
         #expect(session.lostPiles.count == 1)
         session.watchPiles(now: worn.takenAt)
         #expect(session.lostPiles.isEmpty)
-        // A full bag picks up what fits and leaves the rest.
+        // A nearly full bag picks up what fits and leaves the rest, part of a pile too.
         session.dropPile(items: ["potion": 2, "ether": 1], gold: 5)
-        for n in 0..<GameSession.bagSlots { session.data.inventory["filler_\(n)"] = 1 }
-        session.data.inventory["filler_0"] = nil
-        session.data.inventory["potion"] = 1
+        var filler = 0
+        while session.bagSlotsFree > 1 {
+            session.data.inventory["filler_\(filler)"] = 1
+            filler += 1
+        }
         let full = try #require(session.lostPiles.first)
         #expect(session.pickUp(full.id))
-        #expect(session.count(of: "potion") == 3 && session.lostPiles.first?.items["ether"] == 1)
+        #expect(session.count(of: "ether") == 1 && session.lostPiles.first?.items["potion"] == 2 && session.lostPiles.first?.gold == 5)
+        session.data.inventory["filler_0"] = nil
+        #expect(session.pickUp(full.id))
+        #expect(session.count(of: "potion") == 1 && session.lostPiles.first?.items["potion"] == 1)
     }
 
     /// A game begun before the bank starts with its bag and coins in it, once; what a quest needs stays.
@@ -3710,8 +3753,13 @@ struct RewardTests {
         let cape = try #require(Content.shared.item(prize.item))
         #expect(session.heroStats.defense == before.defense + (cape.stats?.defense ?? 0))
         #expect(GameSession.lookKey(for: session.data.hero).contains(prize.item))
-        // Lost (it can't be sold), it can be woven again.
+        // Banked, it's still yours: not woven again.
         session.unequip(.cape)
+        session.deposit(prize.item)
+        #expect(session.count(of: prize.item) == 0 && session.hasCape(prize))
+        #expect(session.capesWaiting.isEmpty && !session.takeCape(prize))
+        #expect(session.withdraw(prize.item))
+        // Lost (it can't be sold), it can be woven again.
         #expect(session.removeItem(prize.item))
         #expect(session.capesWaiting.map(\.item) == [prize.item])
         session.checkTitles()

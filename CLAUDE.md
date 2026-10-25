@@ -54,7 +54,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   (`WorldOverview.isHeld`). You walk anywhere with no loading card; the land you're in
   (`here`) brings its music, air and encounters. Caves are scenes of their own (`WorldScene`), behind the card;
   `GameCoordinator.mapScene` is whichever you're in.
-- `content/*.json`: all game data (maps, monsters, skills, items, quests, music, looks, crowd, announcements, titles,
+- `content/*.json`: all game data (maps, monsters, skills, items, quests, music, looks, crowd, announcements, the chat's
+  filter (`moderation.json`, `ChatFilter`: what you type is starred out where it matches), titles,
   rewards: the daily gift, bounties, Monster Book milestones, monster cards, the weaver's status capes and the
   festive seasons with their hats). Data-driven; most features are a JSON edit.
 - `art/assets.json` + `art/sprites/`: every sprite. `derive` makes free palette swaps of existing art. Recolour a whole

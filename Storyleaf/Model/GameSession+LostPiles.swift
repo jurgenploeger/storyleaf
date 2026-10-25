@@ -55,15 +55,17 @@ extension GameSession {
         }
     }
 
-    /// Picks a pile up: everything the bag has room for, coins too; the rest stays where it lies.
+    /// Picks a pile up: as much as the bag has room for, coins too; the rest stays where it lies.
     /// False when there's no such pile or nothing fit.
     @discardableResult
     func pickUp(_ id: UUID) -> Bool {
         guard var pile = lostPiles.first(where: { $0.id == id }) else { return false }
         var got = false
-        for (item, amount) in pile.items.sorted(by: { $0.key < $1.key }) where hasRoom(for: [item]) {
-            data.inventory[item, default: 0] += amount
-            pile.items[item] = nil
+        for (item, amount) in pile.items.sorted(by: { $0.key < $1.key }) {
+            let taken = min(amount, bagSlotsFree)
+            guard taken > 0 else { continue }
+            data.inventory[item, default: 0] += taken
+            pile.items[item] = amount > taken ? amount - taken : nil
             got = true
         }
         if pile.gold > 0, hasRoom(for: [], gold: pile.gold) {

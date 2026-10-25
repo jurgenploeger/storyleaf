@@ -272,7 +272,7 @@ struct OrangeCloseButton: View {
     }
 
     /// How far out past a window's top-right corner the button sits, both ways: its round hangs 4
-    /// points over the frame, as the compass does over the minimap's.
+    /// points over the frame.
     static let overhang: CGFloat = 9
     /// The room it covers inside the window along the top edge, to keep a title or tabs clear of.
     static let room: CGFloat = 26
@@ -693,4 +693,22 @@ private struct PopIn: ViewModifier {
 extension View {
     /// See `PopIn`.
     func popIn() -> some View { modifier(PopIn()) }
+
+    /// A modal window as big as a menu window (`MenuMorph`; playtesting 2026-10-25: "the modal should
+    /// be bigger like the other modals"): out to 8 points from the screen's sides and top, and the
+    /// menu button's gap from the bottom. Apply it to the framed window, `gameWindow` and all.
+    func menuWindowMargins() -> some View { modifier(MenuWindowMargins()) }
+}
+
+private struct MenuWindowMargins: ViewModifier {
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    func body(content: Self.Content) -> some View {
+        let onItsSide = verticalSizeClass == .compact
+        content
+            .padding(.horizontal, MenuMorph.side)
+            .padding(.top, MenuMorph.side)
+            .padding(.bottom, MenuMorph.bottom(onItsSide: onItsSide))
+            .ignoresSafeArea(.container, edges: MenuMorph.bottomEdge(onItsSide: onItsSide))
+    }
 }

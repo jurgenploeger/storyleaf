@@ -7,6 +7,8 @@ struct NPCDialogView: View {
     let onClose: () -> Void
     /// Bosses: start the fight.
     var onFight: (NPCDef) -> Void = { _ in }
+    /// Bankers: open the bank's window.
+    var onBank: (NPCDef) -> Void = { _ in }
     @State private var reply: String?
     /// A quest just handed in: its reward card covers the dialog until you continue.
     @State private var finished: FinishedQuest?
@@ -99,7 +101,14 @@ struct NPCDialogView: View {
                     case .smith: SmithPanel(session: session, reply: $reply, info: $info)
                     case .weaver: CapePanel(session: session, reply: $reply, info: $info)
                     case .barber: BarberPanel(session: session, price: npc.price ?? 1000, reply: $reply)
-                    case .bank: BankPanel(session: session, reply: $reply)
+                    case .bank:
+                        // The bank itself opens in a window of its own (`BankView`), with room to see it all.
+                        Button {
+                            onBank(npc)
+                        } label: {
+                            Label(L("Open the bank"), icon: .coins)
+                        }
+                        .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -217,81 +226,6 @@ private struct CapePanel: View {
                 .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
             } else {
                 Text(verbatim: "\(progress.have)/\(progress.need)").font(HUDStyle.mono(10)).foregroundStyle(HUDStyle.dim)
-            }
-        }
-    }
-}
-
-/// A banker (playtesting 2026-10-25: "I want to add a bank to the game"): your bag and the bank side by
-/// side, RuneScape-style. Tap something in the bag to put it all in the bank, something in the bank to
-/// take it all out (if the bag has room); the coins go in and out the same way, and Deposit all empties
-/// the bag. Nothing in the bank is lost to a defeat.
-private struct BankPanel: View {
-    let session: GameSession
-    @Binding var reply: String?
-
-    private static let slot: CGFloat = 40
-    private let columns = [GridItem(.adaptive(minimum: BankPanel.slot + 6, maximum: BankPanel.slot + 12), spacing: 6)]
-
-    var body: some View {
-        let bag = session.content.items.filter { session.count(of: $0.id) > 0 }
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                SectionTitle(text: L("Bag {used}/{slots}", ["used": session.bagSlotsUsed, "slots": GameSession.bagSlots]))
-                Spacer()
-                Button(L("Deposit all")) {
-                    session.depositAll()
-                    session.save()
-                    reply = L("All safe with me.")
-                }
-                .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
-                .disabled(bag.isEmpty && session.data.gold == 0)
-            }
-            if bag.isEmpty && session.data.gold == 0 {
-                EmptyNote(L("Your bag is empty."), size: 11)
-            }
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 6) {
-                if session.data.gold > 0 {
-                    Button {
-                        session.depositGold(session.data.gold)
-                        session.save()
-                    } label: { CoinsTile(amount: session.data.gold, size: Self.slot) }
-                    .buttonStyle(PressScaleStyle())
-                    .accessibilityHint(L("Puts it in the bank"))
-                }
-                ForEach(bag) { item in
-                    Button {
-                        session.deposit(item.id)
-                        session.save()
-                    } label: { ItemIcon(item: item, size: Self.slot, count: session.count(of: item.id)) }
-                    .buttonStyle(PressScaleStyle())
-                    .accessibilityLabel(item.name)
-                    .accessibilityHint(L("Puts it in the bank"))
-                }
-            }
-            SectionTitle(text: L("Bank"))
-            let banked = session.bankItems
-            if banked.isEmpty && session.bankGold == 0 {
-                EmptyNote(L("Nothing in the bank yet. Tap something in your bag to keep it here."), size: 11)
-            }
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 6) {
-                if session.bankGold > 0 {
-                    Button {
-                        if !session.withdrawGold(session.bankGold) { reply = L("Your bag is full. Put something in the bank first.") }
-                        session.save()
-                    } label: { CoinsTile(amount: session.bankGold, size: Self.slot) }
-                    .buttonStyle(PressScaleStyle())
-                    .accessibilityHint(L("Takes it out of the bank"))
-                }
-                ForEach(banked) { item in
-                    Button {
-                        if !session.withdraw(item.id) { reply = L("Your bag is full. Put something in the bank first.") }
-                        session.save()
-                    } label: { ItemIcon(item: item, size: Self.slot, count: session.banked(item.id)) }
-                    .buttonStyle(PressScaleStyle())
-                    .accessibilityLabel(item.name)
-                    .accessibilityHint(L("Takes it out of the bank"))
-                }
             }
         }
     }

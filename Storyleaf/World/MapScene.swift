@@ -12,8 +12,9 @@ protocol MapScene: SKScene {
     func battleBackdrop(hiding npcID: String?) -> SKTexture?
     /// The HUD's Talk button: whoever's near enough.
     func talkToNearby()
-    /// You said something in the Chat window.
-    func heroSay(_ text: String)
+    /// You said something in the Chat window, through its filter (`ChatFilter`): `rude`, it starred
+    /// something out, and someone nearby tells you off.
+    func heroSay(_ text: String, rude: Bool)
     /// An adventurer's answer, in a bubble over them.
     func adventurerSays(_ line: String, _ id: UUID)
     /// After a duel you won, the rival skulks off.

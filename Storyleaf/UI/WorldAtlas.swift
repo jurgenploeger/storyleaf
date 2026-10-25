@@ -52,12 +52,13 @@ struct WorldAtlas: View {
 
     var body: some View {
         VStack(spacing: 8) {
+            // As much of the window as there is under the title.
             GeometryReader { proxy in
                 map(in: proxy.size)
             }
-            .frame(height: 400)
+            .frame(minHeight: 260, maxHeight: .infinity)
             .background(Color(red: Double(Self.seaColor.r) / 255, green: Double(Self.seaColor.g) / 255, blue: Double(Self.seaColor.b) / 255))
-            .overlay(alignment: .topTrailing) { AtlasCompass().padding(6).allowsHitTesting(false) }
+            .overlay(alignment: .topTrailing) { MapCompass().padding(10).allowsHitTesting(false) }
 
             if let selected, let map = Content.shared.map(selected) {
                 caption(for: map)
@@ -521,31 +522,63 @@ struct WorldAtlas: View {
     }
 }
 
-/// A little compass rose, turned like the map: N up-left, E up-right.
-private struct AtlasCompass: View {
+/// The map's compass (playtesting 2026-10-25: the minimap's little orange one, gone from there, bigger
+/// in the map's window): a round pin in the close buttons' orange (`OrangeCloseButton`), a needle
+/// through it, white to the north and deep orange to the south, and the four points round its rim,
+/// all turned as the game's view is: north up and to the left, east up and to the right. The world
+/// doesn't turn (its art is drawn from one side only), so neither does the compass.
+struct MapCompass: View {
+    var size: CGFloat = 72
+
+    /// Where a step north, east, south and west lands on the turned, squashed map, as degrees
+    /// clockwise from straight up (a row north is half as far up as it's across to the left).
+    private static func angle(col: CGFloat, row: CGFloat) -> Double {
+        let across = col - row, up = (col + row) / 2
+        return atan2(Double(across), Double(up)) * 180 / Double.pi
+    }
+    static let north = angle(col: 0, row: 1)
+
     var body: some View {
-        let reach: CGFloat = 17
-        // The slant of the turned map: a step east is two across for one up.
-        let slope: CGFloat = 0.5
-        let dy = reach * slope / (1 + slope * slope).squareRoot()
-        let dx = reach / (1 + slope * slope).squareRoot()
+        let points: [(label: String, angle: Double, main: Bool)] = [
+            (L("N"), Self.north, true), (L("E"), Self.angle(col: 1, row: 0), false),
+            (L("S"), Self.angle(col: 0, row: -1), false), (L("W"), Self.angle(col: -1, row: 0), false),
+        ]
         ZStack {
-            Circle().fill(HUDStyle.ink.opacity(0.55)).frame(width: 54, height: 54)
-            Path { path in
-                path.move(to: CGPoint(x: 27 - dx, y: 27 - dy)); path.addLine(to: CGPoint(x: 27 + dx, y: 27 + dy))
-                path.move(to: CGPoint(x: 27 + dx, y: 27 - dy)); path.addLine(to: CGPoint(x: 27 - dx, y: 27 + dy))
+            Circle()
+                .fill(RadialGradient(colors: [HUDStyle.closeLight, HUDStyle.orange, HUDStyle.closeDeep], center: UnitPoint(x: 0.35, y: 0.3),
+                                     startRadius: 1, endRadius: size / 2))
+                .overlay(Circle().strokeBorder(.white.opacity(0.85), lineWidth: max(1.5, size / 28)))
+            // The needle: white to the north, the pin's deep orange to the south.
+            VStack(spacing: 0) {
+                CompassTriangle().fill(.white).frame(width: size * 0.16, height: size * 0.24)
+                CompassTriangle().fill(HUDStyle.closeDeep).frame(width: size * 0.16, height: size * 0.24).rotationEffect(.degrees(180))
             }
-            .stroke(HUDStyle.cream.opacity(0.7), lineWidth: 1.5)
-            ForEach(["N", "E", "S", "W"], id: \.self) { label in
-                let sx: CGFloat = label == "E" || label == "S" ? 1 : -1
-                let sy: CGFloat = label == "S" || label == "W" ? 1 : -1
-                Text(label == "N" ? L("N") : label == "E" ? L("E") : label == "S" ? L("S") : L("W"))
-                    .font(HUDStyle.font(label == "N" ? 11 : 9))
-                    .foregroundStyle(label == "N" ? HUDStyle.gold : HUDStyle.cream)
-                    .position(x: 27 + sx * (dx + 5), y: 27 + sy * (dy + 5))
+            .shadow(color: HUDStyle.closeDeep.opacity(0.6), radius: 0, x: 1, y: 1)
+            .rotationEffect(.degrees(Self.north))
+            Circle().fill(.white).frame(width: size * 0.07, height: size * 0.07)
+            ForEach(points, id: \.label) { point in
+                let radians = point.angle * Double.pi / 180
+                Text(point.label)
+                    .font(HUDStyle.font(size * (point.main ? 0.2 : 0.15)))
+                    .foregroundStyle(point.main ? .white : HUDStyle.cream)
+                    .shadow(color: HUDStyle.closeDeep, radius: 0, x: 1, y: 1)
+                    .offset(x: CGFloat(sin(radians)) * size * 0.36, y: -CGFloat(cos(radians)) * size * 0.36)
             }
         }
-        .frame(width: 54, height: 54)
+        .frame(width: size, height: size)
+        .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 1)
         .accessibilityHidden(true)
+    }
+}
+
+/// A triangle pointing up, its base along the bottom.
+private struct CompassTriangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
     }
 }
