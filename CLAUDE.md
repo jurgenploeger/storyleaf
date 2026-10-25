@@ -91,7 +91,7 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   recoloured class by class, each colour onto the same rank of a hue-shifted seasonal ramp (its clusters kept),
   snow on the leaves' lit clusters, and hats and props drawn with `pixel_kit`, a hat's band on the head's widest row;
   each light, dark (its night, lit by the season's lights, `at_night`) and tinted, as the app icon is.
-  The game switches to one while its season runs (`SeasonalIcon`, rewards.json `seasons`; never in tests or debug launches).
+  The game switches to Halloween's all October, Christmas's all December and Easter's while its season runs (`SeasonalIcon.icon`; rewards.json `seasons` for Easter; never in tests or debug launches).
 - `tools/logo_art.py`: the logo (`Logo.png`), styled on Neopets' "Tales of Dacardia" logo, which the user pointed to:
   TALES OF over DORLUNE in chunky Luckiest Guy capitals (`tools/fonts/`, Apache 2.0), set tight, each letter tipped
   and lifted a little so the word bounces, each in a thin outline of its own; all gold, each line in one smooth

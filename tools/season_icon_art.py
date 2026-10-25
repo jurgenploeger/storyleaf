@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""The seasonal app icons, Halloween, Christmas and Easter, that the game switches to while each festive
-season runs (`SeasonalIcon` in Storyleaf/App, the seasons' dates in content/rewards.json `seasons`). The
+"""The seasonal app icons, Halloween, Christmas and Easter, that the game switches to for each festive
+time of year (`SeasonalIcon` in Storyleaf/App: all October, all December, and Easter's season in
+content/rewards.json `seasons`). The
 same picked drawing as the app icon (tools/app_icon_art.py `SOURCE`), cropped a little looser so a hat
 fits on the hero's head (`BOX`, 128 pixels at 8×), with only the scenery changed and something festive
 on him:

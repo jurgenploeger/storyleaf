@@ -3827,6 +3827,24 @@ struct RewardTests {
         #expect(session.data.giftDays == gifts.count + 1)
     }
 
+    /// The festive app icons (the user, 2026-10-25): Halloween's all October and Christmas's all
+    /// December, from the 1st to the last day, whatever the in-game seasons' dates; Easter's with Easter.
+    @Test func seasonalIconsCoverWholeMonths() {
+        let calendar = Calendar(identifier: .gregorian)
+        func day(_ year: Int, _ month: Int, _ day: Int) -> Date {
+            calendar.date(from: DateComponents(year: year, month: month, day: day, hour: 12)) ?? .distantPast
+        }
+        #expect(SeasonalIcon.icon(on: day(2026, 9, 30)) == nil)
+        #expect(SeasonalIcon.icon(on: day(2026, 10, 1)) == "AppIcon-Halloween")
+        #expect(SeasonalIcon.icon(on: day(2026, 10, 31)) == "AppIcon-Halloween")
+        #expect(SeasonalIcon.icon(on: day(2026, 11, 1)) == nil)
+        #expect(SeasonalIcon.icon(on: day(2026, 12, 1)) == "AppIcon-Christmas")
+        #expect(SeasonalIcon.icon(on: day(2026, 12, 31)) == "AppIcon-Christmas")
+        #expect(SeasonalIcon.icon(on: day(2027, 1, 1)) == nil)
+        #expect(SeasonalIcon.icon(on: day(2027, 3, 28)) == "AppIcon-Easter")
+        #expect(SeasonalIcon.icon(on: day(2026, 7, 1)) == nil)
+    }
+
     /// Festive seasons (playtesting 2026-10-17: "festive items like party, halloween, Christmas and
     /// Easter"): each on its own days, the New Year's party round the turn of the year, Easter with
     /// Easter Sunday. The first gift of one brings one of its hats you haven't got, once a season;
