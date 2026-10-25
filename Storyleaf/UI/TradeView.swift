@@ -120,3 +120,51 @@ struct TradeView: View {
         }
     }
 }
+
+/// An adventurer who walked up to you, offering for something you've put up for trade
+/// (`GameSession.Bid`): who, what, what they'd pay against what a shop would. Take it or leave it.
+struct TradeBidCard: View {
+    let session: GameSession
+    let bid: GameSession.Bid
+    let onAnswer: (Bool) -> Void
+
+    var body: some View {
+        let shop = GameSession.sellPrice(of: bid.item)
+        ZStack {
+            Color.black.opacity(0.45)
+                .ignoresSafeArea()
+            VStack(spacing: 0) {
+                FLTitleBar(title: L("Trade offer"), icon: .coins, onClose: { onAnswer(false) })
+                VStack(spacing: 12) {
+                    HStack(spacing: 10) {
+                        SpriteImage(art: session.artID(for: bid.buyer), size: 44)
+                        Text(L("{name} would like your {item}. They offer {gold} gold.", ["name": bid.buyer.name, "item": bid.item.name, "gold": bid.price]))
+                            .font(HUDStyle.font(12))
+                            .foregroundStyle(HUDStyle.cream)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    HStack(spacing: 14) {
+                        ItemIcon(item: bid.item, size: 38, count: session.count(of: bid.item.id))
+                        Label("\(bid.price)", icon: .coins, size: 18)
+                            .font(HUDStyle.font(15))
+                            .foregroundStyle(HUDStyle.gold)
+                    }
+                    Text(L("A shop pays {gold}g", ["gold": shop]))
+                        .font(HUDStyle.font(11))
+                        .foregroundStyle(bid.price >= shop ? HUDStyle.green : HUDStyle.orange)
+                    HStack(spacing: 10) {
+                        Button(L("Decline")) { onAnswer(false) }
+                            .buttonStyle(PixelButtonStyle(compact: true))
+                        Button(L("Accept")) { onAnswer(true) }
+                            .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
+                    }
+                }
+                .padding(16)
+            }
+            .frame(maxWidth: 340)
+            .gameWindow()
+            .padding(14)
+            .popIn()
+        }
+    }
+}

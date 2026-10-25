@@ -72,6 +72,16 @@ struct GameView: View {
             }
         }
         .overlay {
+            // An adventurer's offer for what you've put up for trade, once nothing else is up.
+            if let bid = coordinator.session.pendingBid, coordinator.isReady, coordinator.battle == nil,
+               coordinator.overlay == nil, coordinator.dailyGift == nil, !touring {
+                TradeBidCard(session: coordinator.session, bid: bid) { accept in
+                    withAnimation(.easeOut(duration: 0.2)) { coordinator.answerBid(accept) }
+                }
+                .transition(.opacity)
+            }
+        }
+        .overlay {
             if !coordinator.isReady {
                 if let name = coordinator.loadingMapName {
                     MapLoadingCard(mapName: name, progress: coordinator.loadProgress).transition(.opacity)

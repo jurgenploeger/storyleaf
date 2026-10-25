@@ -273,6 +273,15 @@ final class WorldScene: SKScene {
             guard let self, !self.isInputLocked else { return }
             self.startDuel(with: rival)
         }
+        // What you've put up for trade: now and then someone walks over with an offer.
+        crowd?.hasWares = { [weak self] in
+            guard let self else { return false }
+            return !self.isInputLocked && self.session.awaitsBuyer
+        }
+        crowd?.onOffer = { [weak self] buyer in
+            guard let self, !self.isInputLocked else { return }
+            self.session.receiveBid(from: buyer)
+        }
         await breathe()
         await planner.planTheRest(pause: { await self.breathe() })
         placeFairyRings(planner.plan.fairyRings)

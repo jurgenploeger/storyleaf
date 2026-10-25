@@ -74,7 +74,8 @@ struct MenuView: View {
                 let equip: (() -> Void)? = wearable ? { session.equip(item.id); close() } : nil
                 ItemInfoCard(session: session, item: item, onClose: close, onEquip: equip,
                              action: fromBag ? bagAction(for: item, close: close) : nil,
-                             note: fromBag ? bagNote(for: item) : nil)
+                             note: fromBag ? bagNote(for: item) : nil,
+                             trading: fromBag ? trading(for: item) : nil)
                 .transition(.opacity)
                 .zIndex(1)
             }
@@ -228,6 +229,18 @@ extension MenuView {
             }
         }
         return nil
+    }
+
+    /// Putting it up for trade, or taking it off: adventurers about then come over with offers
+    /// (`GameSession+TradeList`).
+    func trading(for item: ItemDef) -> ItemInfoCard.Action? {
+        if session.isForTrade(item.id) {
+            return ItemInfoCard.Action(title: L("Take off trade"), icon: .coins) { session.takeOffTrade(item.id) }
+        }
+        guard session.canPutUpForTrade(item) else { return nil }
+        return ItemInfoCard.Action(title: L("Put up for trade"), icon: .coins, enabled: session.forTrade.count < GameSession.maxForTrade) {
+            session.putUpForTrade(item.id)
+        }
     }
 
     /// Why an item in the Bag has nothing to do there.
@@ -1197,6 +1210,11 @@ private struct BagTab: View {
                 if full {
                     Text(L("Full: bank something")).foregroundStyle(HUDStyle.orange)
                 }
+                // What's up for trade (the coin on its slot): adventurers about come over with offers.
+                if !session.forTrade.isEmpty {
+                    Label(L("{count} for trade", ["count": session.forTrade.count]), icon: .coins)
+                        .foregroundStyle(HUDStyle.gold)
+                }
                 Spacer()
                 if let note { Text(note).foregroundStyle(HUDStyle.green) }
             }
@@ -1297,6 +1315,14 @@ private struct BagTab: View {
                 } label: {
                     ItemIcon(item: item, size: Self.slot, count: session.count(of: item.id), upgrade: session.isUpgrade(item))
                         .opacity(usable(item) ? 1 : 0.45)
+                        .overlay(alignment: .bottomLeading) {
+                            if session.isForTrade(item.id) {
+                                IconImage(.coins, size: 11)
+                                    .padding(2)
+                                    .background(Circle().fill(HUDStyle.ink.opacity(0.75)))
+                                    .accessibilityLabel(L("For trade"))
+                            }
+                        }
                         .padding(.top, 5)
                         .padding(.trailing, 5)
                 }
