@@ -112,8 +112,8 @@ struct TitleView: View {
                 languageButton
             }
         }
-        // The app icon's sky, its rays fanning out from behind the logo's leaf wherever the logo is
-        // (the story pages have none: there, near the top).
+        // The sky, its soft light behind the logo wherever the logo is (the story pages have
+        // none: there, near the top).
         .storyleafSky(fallback: UnitPoint(x: 0.5, y: 0.18))
         .onAppear {
             MusicPlayer.shared.play("title")
@@ -141,7 +141,7 @@ struct TitleView: View {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         guard let raw = try? Data(contentsOf: url), let game = try? SaveStore.imported(raw) else {
-            importNote = L("That file isn't a Talewild backup.")
+            importNote = L("That file isn't a Tales of Dorlune backup.")
             return
         }
         SaveStore.save(game)
@@ -227,7 +227,7 @@ struct TitleView: View {
             .scaledToFit()
             .raysAnchor(Brand.raysInLogo)
             .frame(maxWidth: 360, maxHeight: wide ? 190 : 260)
-            .accessibilityLabel(L("Talewild"))
+            .accessibilityLabel(L("Tales of Dorlune"))
     }
 
     /// Your games, one at a time, or before the first one, a hero waiting to be made.

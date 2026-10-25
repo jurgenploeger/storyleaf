@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Shown while a map is being built: the logo over the title's sky, and a leaf-green bar filling up.
+/// Shown while a map is being built: the logo over the title's sky, and a gold bar filling up.
 struct LoadingCurtain: View {
     /// 0...1: how far the map build has got.
     var progress: Double = 0
@@ -20,7 +20,7 @@ struct LoadingCurtain: View {
             }
             .padding(.horizontal, 40)
         }
-        // The rays fan out from behind the logo.
+        // The sky's soft light sits behind the logo.
         .storyleafSky(fallback: UnitPoint(x: 0.5, y: 0.44))
         .onAppear {
             withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { spin = true }
@@ -28,8 +28,8 @@ struct LoadingCurtain: View {
     }
 }
 
-/// Shown briefly when travelling to another map, in Storyleaf's colours like the game's own
-/// loading: the title's sky, a leaf-green swirl turning, the destination's name on a cream pill
+/// Shown briefly when travelling to another map, in the brand's colours like the game's own
+/// loading: the title's sky, a gold swirl turning, the destination's name on a cream pill
 /// outlined like the logo's tagline, and the same bar.
 struct MapLoadingCard: View {
     let mapName: String
@@ -40,26 +40,26 @@ struct MapLoadingCard: View {
         ZStack {
             VStack(spacing: 18) {
                 ZStack {
-                    // Outlined like the logo's letters: forest under, leaf green on top.
-                    SwirlShape().stroke(Brand.forest, style: StrokeStyle(lineWidth: 10, lineCap: .round, lineJoin: .round))
-                    SwirlShape().stroke(LinearGradient(colors: [Brand.leafLight, Brand.leaf, Brand.leafDeep], startPoint: .top, endPoint: .bottom),
+                    // Outlined like the logo's letters: midnight under, the logo's gold on top.
+                    SwirlShape().stroke(Brand.midnight, style: StrokeStyle(lineWidth: 10, lineCap: .round, lineJoin: .round))
+                    SwirlShape().stroke(LinearGradient(colors: [Brand.goldLight, Brand.gold, Brand.goldDeep], startPoint: .top, endPoint: .bottom),
                                         style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
                 }
                 .frame(width: 70, height: 70)
-                // The rays fan out from behind the swirl (its centre stays put as it turns).
+                // The sky's soft light sits behind the swirl (its centre stays put as it turns).
                 .raysAnchor()
                 .rotationEffect(.degrees(spin ? 360 : 0))
                 Text(mapName)
                     .font(HUDStyle.font(24))
-                    .foregroundStyle(Brand.forest)
+                    .foregroundStyle(Brand.midnight)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                     .padding(.horizontal, 22)
                     .padding(.vertical, 8)
                     .background(Capsule().fill(Brand.cream))
-                    .overlay(Capsule().strokeBorder(Brand.forest, lineWidth: 3))
+                    .overlay(Capsule().strokeBorder(Brand.midnight, lineWidth: 3))
                     // The thicker edge under it, like the logo's pill.
-                    .background(Capsule().fill(Brand.depth).offset(y: 3))
+                    .background(Capsule().fill(Brand.midnightDeep).offset(y: 3))
                 LoadingBar.storyleaf(progress: progress, label: L("Travelling"))
             }
             .padding(.horizontal, 40)
@@ -83,11 +83,11 @@ struct LoadingBar: View {
     /// How wide the bar grows at most.
     var width: CGFloat = 280
 
-    /// Storyleaf's own loading bar, the same on every loading screen: the logo's leaf green,
-    /// outlined like its letters, on its cream.
+    /// The brand's own loading bar, the same on every loading screen: the logo's gold, outlined in
+    /// midnight, on its cream.
     static func storyleaf(progress: Double, label: String) -> LoadingBar {
         LoadingBar(progress: progress, label: label, textColor: Brand.skyText,
-                   fill: [Brand.leafLight, Brand.leaf, Brand.leafDeep], track: Brand.cream, rim: Brand.forest,
+                   fill: [Brand.goldLight, Brand.gold, Brand.goldDeep], track: Brand.cream, rim: Brand.midnight,
                    width: 200)
     }
 

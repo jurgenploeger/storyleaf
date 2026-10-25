@@ -477,6 +477,58 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 
 ## Learned
 
+- **2026-10-25 (the seasonal app icons, `tools/season_icon_art.py`):** the first round regraded RD's scenery
+  by brightness percentile onto each season's ramp, scattered snow, lights and flowers as single pixels, ran
+  snow along every top edge, and drew the hats as flat fills with a rim all round. The user: "they don't
+  really look good". Held to these rules instead: RD's scenery has only a few colours a class (one to nine),
+  so swap each for the one of the same rank on a hue-shifted ramp, which keeps its clusters and light exactly;
+  its dark pixels a deep shade of what they round; snow on the lit colour of the leaves' clusters (RD's
+  `SNOW`), never per pixel; hats and props drawn with `pixel_kit` (lit, textured, outlined), each hat's band
+  on the head's widest row (sprite-acceptance.md, *Head pieces*); and nothing in the corners iOS rounds off.
+  Then (the user): "the outline around the hero is not cut correctly", "the witch hat is too straight and the
+  bunny ears should be lower". A hand-drawn polygon can't follow a pixel outline: half of it was recoloured as
+  scenery. The hero is cut by flooding the background in through everything but dark pixels, up to his own
+  outline, and his outline is the dark within 2 pixels of him (`hero_mask`). A witch's hat bends: hollow sides
+  and a tip hooked over, drawn low enough that the hook shows in the frame. Hair above a brim is cleared.
+  Then: "the mask cuts part of the hair", "the bunny ears should just be the ears, not the band", "the moon
+  looks like it has 2 eyes". A flood held back only by dark outlines runs straight through a lock too thin
+  for the band (the flick out to the left, the deep red hair behind it): the hair's own oranges and reds,
+  like the gold, are never background, and only the biggest piece is the hero. Ears grow out of the hair:
+  over its top three rows, behind the rest, short enough to show whole. A full moon with two craters is a
+  face; a crescent isn't. Each icon has a night, made as the app icon's dark one is.
+  Then: "the Santa hat should sit a bit lower", "the bunny ears should sit lower and come from the front of the
+  head", "the mask lets some green of the grass through between the legs", "in dark mode the hats should be
+  more lit". Ears half hidden behind the hair read as growing from behind the head: they stand on it, in
+  front, with a contact shadow on the hair round their feet. The polygon spans the gap between the legs, so
+  the flood can't reach it: it's seeded from the bottom edge too, and below the tunic's hem green is grass.
+  At night what he wears is lit as his face is, a little brighter than his hair.
+  Then: "don't cut parts of the boots and sword", "the hat bases look too oval, it should look more
+  natural", "the ears a bit taller, clipping them at the top is allowed", "a bit of grass at the right hand".
+  The band 5 pixels inside the polygon was eroded from the icon's edges too, so the flood ran into the boots
+  where the legs run off the bottom (erode from the polygon only); the boots are dark all through, so below
+  the hem the dark inside him is his. A brim is an arch (high over the brow, drooping at the sides, a tip
+  flicked up, thicker in front), a fur band a curve with tufted edges no wider than the head; an ellipse
+  reads as a stiff oval.
+  Then: "the witch hat can be a bit taller", "the bunny ears are too slim and stiff, the top should hang
+  forward", "the Santa hat's body looks too bulky". An ear is one tapering curve (`sweep`), narrow at its
+  foot and widest below the bend, its tip falling forward and out; a folded flap drawn as a shape of its own
+  read as a white block. The witch's crown may run off the top so long as its hook comes back into frame.
+  Then: "the witch and Santa hat should have a bit more shadow, so it's clearer where the curve sits".
+  pixel_kit's dome rounds a shape only near its edge, and under its near-frontal light a big shape is one
+  flat colour in the middle. Cloth hats curve all the way over: each run across the shape a half cylinder
+  (`rounded`: a cone or cap side to side, a brim or band top to bottom), smoothed along it so a row a pixel
+  wider doesn't light as a ridge.
+- **2026-10-25 (the logo, `tools/logo_art.py`):** "the DO feel proportionally smaller than the rest of the
+  wordmark". Luckiest Guy draws its O and D short (the O 146 pixels to the R's and N's 165), and each letter
+  stood on its tipped bounding box's lowest corner, so a tipped one rode high. Every capital is now sized to
+  the H's height, a round one 3% over (`ROUND`, `OVERSHOOT`: round shapes look small at the same height), and
+  centred on the line before its lift.
+- **2026-10-25 (the tinted app icons, `app_icon_art.tint`):** the user, from a Home Screen in iOS's Clear
+  look: "the clear and tinted app icons should have a bit more contrast, now it's washed out beside other app
+  icons". Stretching the whole picture's greys evenly left it in the middle greys (median 0.2, most of it a
+  busy scene); the system's own icons are a light figure on a dark field. The hero (cut on his own outline)
+  is stretched to the full range from his daylight colours, the scene pushed down to a dim backdrop with only
+  its small lights (and a season's moon) kept bright: a pale patch of snow or blossom kept bright read as noise.
 - **2026-10-25 (the ship):** `form_relief` is light per pixel, so a sprite twice a house's size needs
   as much change across areas twice as wide: the ship's deck and hull, lit by their normals alone, were
   flat at the 9 × 9 scale (0.010) and held it at 0.015. What lifted it: boards and strakes each a tone of

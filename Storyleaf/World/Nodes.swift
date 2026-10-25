@@ -520,7 +520,7 @@ enum Effects {
     static let tapMarkerZ: CGFloat = 21_000
 
     /// Fairyland Online's destination marker: a swirl on the ground, in Storyleaf's colours and drawn
-    /// like the logo's letters: a pale leaf-green line over a forest-green outline. On every
+    /// like the logo's letters: a pale gold line over a midnight outline. On every
     /// map one of the two stands out: the outline on sand, snow and candy, the line on grass,
     /// caves and dark woods. Over everything that stands (`tapMarkerZ`).
     static func tapMarker(at point: CGPoint, z: CGFloat = Effects.tapMarkerZ, in parent: SKNode) {
@@ -538,7 +538,7 @@ enum Effects {
             step == 0 ? spiral.move(to: p) : spiral.addLine(to: p)
         }
         let swirl = SKNode()
-        for (color, width) in [(UIColor(Brand.forest), CGFloat(5.5)), (UIColor(Brand.leafLight), CGFloat(2.5))] {
+        for (color, width) in [(UIColor(Brand.midnight), CGFloat(5.5)), (UIColor(Brand.goldLight), CGFloat(2.5))] {
             let line = SKShapeNode(path: spiral)
             line.strokeColor = color
             line.lineWidth = width

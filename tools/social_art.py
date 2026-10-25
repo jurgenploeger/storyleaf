@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Talewild's social media assets, made from the game's own art: the app icon's drawing for the
+"""Tales of Dorlune's social media assets, made from the game's own art: the app icon's drawing for the
 profile pictures, the logo (Logo.png, `logo_art.py`) for the logo files, and the HUD-free landscape screenshot
 scenes (`store_land_*` in tools/screenshots.txt, from CI's `screenshots` branch) behind the logo on
 every cover and banner.
@@ -38,18 +38,18 @@ PROFILE_CROP = (67, 52, 163, 148)
 # the logo. Where the shot is narrower than the cover (X, Bluesky, Facebook) it can't move him, so
 # the logo sits to the right of the middle instead; on the tall ones, above it.
 SPECS = [
-    ("x_header", (1500, 500), "store_land_companion", 0.46, (0.72, 0.4), 0.3),
-    ("bluesky_banner", (3000, 1000), "store_land_companion", 0.46, (0.72, 0.4), 0.3),
-    ("facebook_cover", (1640, 624), "store_land_explore", 0.42, (0.74, 0.42), 0.26),
-    ("youtube_banner", (2560, 1440), "store_land_anywhere", 0.36, (0.62, 0.5), 0.36),
-    ("discord_banner", (960, 540), "store_land_anywhere", 0.5, (0.7, 0.42), 0.26),
-    ("link_preview", (1200, 630), "store_land_explore", 0.5, (0.7, 0.42), 0.26),
-    ("instagram_post", (1080, 1350), "store_land_companion", 0.8, (0.5, 0.15), 0.5),
-    ("instagram_story", (1080, 1920), "store_land_anywhere", 0.8, (0.5, 0.2), 0.5),
+    ("x_header", (1500, 500), "store_land_companion", 0.36, (0.72, 0.42), 0.3),
+    ("bluesky_banner", (3000, 1000), "store_land_companion", 0.36, (0.72, 0.42), 0.3),
+    ("facebook_cover", (1640, 624), "store_land_explore", 0.34, (0.74, 0.42), 0.26),
+    ("youtube_banner", (2560, 1440), "store_land_anywhere", 0.3, (0.62, 0.5), 0.36),
+    ("discord_banner", (960, 540), "store_land_anywhere", 0.42, (0.7, 0.4), 0.26),
+    ("link_preview", (1200, 630), "store_land_explore", 0.42, (0.7, 0.4), 0.26),
+    ("instagram_post", (1080, 1350), "store_land_companion", 0.72, (0.5, 0.16), 0.5),
+    ("instagram_story", (1080, 1920), "store_land_anywhere", 0.72, (0.5, 0.2), 0.5),
 ]
 
 SKY = [(111, 192, 245), (169, 220, 250), (227, 245, 255)]
-FOREST = [(29, 74, 55), (15, 42, 32)]
+MIDNIGHT = [(27, 37, 80), (14, 21, 51)]
 
 
 def gradient(size: tuple[int, int], stops: list[tuple[int, int, int]]) -> Image.Image:
@@ -93,8 +93,9 @@ def place_logo(canvas: Image.Image, logo: Image.Image, width_share: float, middl
 
 
 def profile(side: int) -> Image.Image:
-    """The hero's face from the icon's drawing, scaled by whole pixels to fit `side`, its edges repeated out."""
-    rgb = app_icon_art.crop(PROFILE_CROP)
+    """The hero's face from the icon's drawing, its sky graded as the icon's is, scaled by whole pixels to fit
+    `side`, its edges repeated out."""
+    rgb = app_icon_art.day_sky(app_icon_art.crop(PROFILE_CROP), PROFILE_CROP)
     scale = side // rgb.shape[0]
     big = np.repeat(np.repeat(rgb, scale, axis=0), scale, axis=1)
     pad = side - big.shape[0]
@@ -115,7 +116,7 @@ def main() -> None:
     made["profile_1080"] = profile(1080)
     made["discord_server_icon_512"] = profile(512)
     made["logo_transparent"] = logo
-    for name, stops in [("logo_on_sky_1080", SKY), ("logo_on_forest_1080", FOREST)]:
+    for name, stops in [("logo_on_sky_1080", SKY), ("logo_on_midnight_1080", MIDNIGHT)]:
         square = gradient((1080, 1080), stops)
         place_logo(square, logo, 0.82, (0.5, 0.5))
         made[name] = square

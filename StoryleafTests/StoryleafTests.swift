@@ -3278,7 +3278,7 @@ struct RulesTests {
     @Test func announcementsFollowYouFromMapToMap() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         session.startChat(on: "Meadowbrook")
-        session.announce("Dawn breaks over Talewild.")
+        session.announce("Dawn breaks over Dorlune.")
         session.postChat("lol", from: "Momo", kind: .adventurer)
         session.startChat(on: "Ingothold")
         // The game's own notices stay; the map's own chatter starts over.
@@ -3300,9 +3300,9 @@ struct RulesTests {
         session.post("Found Copper Gauntlets!", .reward, toast: false)
         #expect(session.chat.last?.text == "Found Copper Gauntlets!")
         #expect(session.log.last?.text == "+120 EXP  +40 gold")
-        session.announce("Dawn breaks over Talewild.")
+        session.announce("Dawn breaks over Dorlune.")
         // An announcement is in the chat once, not again as a notice.
-        #expect(session.chat.filter { $0.text == "Dawn breaks over Talewild." }.count == 1)
+        #expect(session.chat.filter { $0.text == "Dawn breaks over Dorlune." }.count == 1)
         session.startChat(on: "Ingothold")
         #expect(session.chat.map(\.kind) == [.notice, .notice, .announcement, .system])
     }
@@ -3825,6 +3825,24 @@ struct RewardTests {
             #expect(session.collectDailyGift(on: day) == nil)
         }
         #expect(session.data.giftDays == gifts.count + 1)
+    }
+
+    /// The festive app icons (the user, 2026-10-25): Halloween's all October and Christmas's all
+    /// December, from the 1st to the last day, whatever the in-game seasons' dates; Easter's with Easter.
+    @Test func seasonalIconsCoverWholeMonths() {
+        let calendar = Calendar(identifier: .gregorian)
+        func day(_ year: Int, _ month: Int, _ day: Int) -> Date {
+            calendar.date(from: DateComponents(year: year, month: month, day: day, hour: 12)) ?? .distantPast
+        }
+        #expect(SeasonalIcon.icon(on: day(2026, 9, 30)) == nil)
+        #expect(SeasonalIcon.icon(on: day(2026, 10, 1)) == "AppIcon-Halloween")
+        #expect(SeasonalIcon.icon(on: day(2026, 10, 31)) == "AppIcon-Halloween")
+        #expect(SeasonalIcon.icon(on: day(2026, 11, 1)) == nil)
+        #expect(SeasonalIcon.icon(on: day(2026, 12, 1)) == "AppIcon-Christmas")
+        #expect(SeasonalIcon.icon(on: day(2026, 12, 31)) == "AppIcon-Christmas")
+        #expect(SeasonalIcon.icon(on: day(2027, 1, 1)) == nil)
+        #expect(SeasonalIcon.icon(on: day(2027, 3, 28)) == "AppIcon-Easter")
+        #expect(SeasonalIcon.icon(on: day(2026, 7, 1)) == nil)
     }
 
     /// Festive seasons (playtesting 2026-10-17: "festive items like party, halloween, Christmas and

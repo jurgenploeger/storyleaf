@@ -14,8 +14,9 @@ environment couldn't open the pages themselves, so a session that can should re-
 
 ## Names
 
-**Us** (since 0.8.1, 2026-10-25): the game is called **Talewild** for players (the App Store name, the logo and
-every in-game line), and so is the land. It was Storyleaf from 0.3.50, and the code, project and repo still are
+**Us** (since 0.8.11, 2026-10-25): the game is called **Tales of Dorlune** for players (the App Store name and the
+logo; the Home Screen, where a longer name is cut short, shows Dorlune), and the land is **Dorlune** in every
+in-game line. It was Talewild from 0.8.1 to 0.8.10, Storyleaf from 0.3.50, and the code, project and repo still are
 (renamed from Fairyland on 2026-10-22) until a follow-up renames them; only the bundle ID and the save files keep
 "Fairyland" for good. The goddess Liora binds the world's tales
 into one book, and its pages are the land. Names taken from FO were replaced with our own, and this file
@@ -50,7 +51,47 @@ existing game or mark: Fablemoor (FABLEMOON), Leafbound, Fairhollow, Wispwood, T
 Pixel Tales (an existing App Store app), and any "Tales of …" title (Bandai Namco's Tales series, which also has
 Tales of the Heroes and Tales of Legendia).
 
-**Name check (2026-10-25), the rename to Talewild:** wanted a name whose `.app` domain and social handles are
+**Name check (2026-10-25), the rename to Tales of Dorlune:** Fabelia (below) was dropped the same day: run
+together as a domain, talesoffabelia.com reads "tales off". So the name may not start with F ("off"), T ("soft")
+or A ("sofa"), and needn't end in -ia. The user liked the direction of Orlune (French *or* + *lune*, a gold
+moon) but not its O; Dorlune keeps its meaning (*d'or*, of gold) with a consonant in front. Screened by web search.
+- **Dorlune** (dor-LOON): chosen. Nothing found under the name; talesofdorlune reads cleanly. "Dor" is common
+  in Tolkien's names (Gondor, Mordor), no more. Before launch: reserve Tales of Dorlune in App Store Connect,
+  check the domain, and search it (and DORLUNE) on the USPTO, EUIPO and J-PlatPat registers, classes 9 and 41.
+- Also clear: Merlune (sea moon, an echo of Merlin), Mirandel (Latin "wondrous"), Merelia (Middle High German
+  *mære*, tale), Emerra, Verdalia, Lorvale. Ruled out: Solune (a 2023 JRPG on Steam), Valune (near Valeune, a
+  fables.gg world), Bellune (the French name for Belluno), Mervelle (sounds like Marvel), Velmora (an indie game),
+  Lorewyn (MTG's Lorwyn), Kathora (Hindi *kaṭhor*, cruel), Meadora (Spanish *mear*), Novelia (an iOS app).
+
+**Name check (2026-10-25), the rename to Tales of Fabelia** (replaced by Dorlune the same day): the user first took Avalune (below), then wanted
+the name to end in -ia, like Neopets' *Tales of Dacardia* (World of Neopia, iOS and Android, 2024), which shows
+another publisher already using "Tales of X-ia" beside Bandai Namco. Kept clear of -eria/-iria (Mysteria, FO's
+own relaunch; Vesperia, Zestiria) and of names near an existing one. Screened by web search only.
+- **Fabelia** (fuh-BEL-ee-uh; *Fabel* is "fable" in German, Dutch and Danish): chosen. Nothing found under the
+  name; near only Fablies (a kids' app) and Fabelab (a kids' brand). It shares "-elia" with Bandai's unused
+  Orfellia, and Portuguese and Spanish ears may faintly hear *favela*. Before launch: reserve Tales of Fabelia in
+  App Store Connect and search it (and FABELIA) on the USPTO, EUIPO and J-PlatPat registers, classes 9 and 41.
+- Also clear: Faelunia, Celandia, Talunia, Fernavia, Clovania (echoes Castlevania), Fayrelia, Bramblia.
+- Ruled out: Avalunia (one letter from *Avalonia Online RPG* on the App Store, and the .NET framework), Lioria
+  (*Tales of Liria*, and our goddess Liora), Elunia (WoW's Elune), Avandria (D&D's Avandra, Critical Role's
+  Exandria), Emerlia (reads as Emilia), Lunavia (*Lunavania* on Steam).
+
+**Name check (2026-10-25), the rename to Tales of Avalune** (replaced by Fabelia the same day): the user wanted "Tales of …" and a made-up,
+pronounceable name for the world (their example: Emerit). Screened by web search only (USPTO, EUIPO, J-PlatPat and
+the App Store weren't reachable from here). The pattern: Bandai Namco registers each of its titles as TALES OF + a
+word (TALES OF VESPERIA, US Reg. 3607384) and files names ahead; no stand-alone TALES OF mark or action against
+another "Tales of X" game turned up, and others ship under it (EA's *Tales of Kenzera: ZAU*, *Tales of the Shire*,
+*Tales of Wind* on the App Store). So the world's name must not look like theirs (Phantasia, Symphonia, Vesperia,
+Zestiria, Berseria, Luminaria...: no -ia, no Lumi-), and the logo isn't styled like theirs. Before launch: reserve
+Tales of Avalune in App Store Connect and search it (and AVALUNE) on the USPTO, EUIPO and J-PlatPat registers,
+classes 9 and 41. This reverses the "any Tales of … title" rule above, by the user's choice.
+- **Avalune** (AV-a-loon, Avalon and French *lune*, the moon): chosen. Nothing found under the name.
+- Also clear: Orlune, Faelora (a small fan-art species shares it), Emerra, Orlavel, Elmerin, Avelith.
+- Ruled out: Emerit (reads as "emeritus"; in Italian *emerito* also means "utter", as in "an utter fool"),
+  Elvarin (an indie RPG's continent), Aveloria and Eloria (-ia, crowded; Eloria begins with エロ in katakana),
+  Lumera (too near *Tales of Luminaria*), Ameris (a US bank), Solvane (a solvent), Elandor (crowded, Tolkien-ish).
+
+**Name check (2026-10-25), the rename to Talewild** (replaced by Avalune the same day): wanted a name whose `.app` domain and social handles are
 free. This environment couldn't reach domain registries or social sites, so names were screened by web search
 (no app, game, brand or channel under the name); the user confirmed talewild.app and the handles by hand.
 Before launch: reserve Talewild in App Store Connect, and search TALEWILD on the USPTO and EUIPO registers.
@@ -1035,7 +1076,7 @@ of a player with two or more 99s are trimmed), and a quest point cape once every
 cape for each of the 27 lands with monsters, once every monster living there (its wilds and its bosses,
 as the Monster Book lists homes) is beaten, in that land's colours; and six for the world: the Monster
 Book (every monster beaten), cards (every card), quests (every quest), bosses (every boss), lands (every
-land visited) and the Talewild Cape (every other cape) (rewards.json `prizes`). Free, worn in a slot of
+land visited) and the Dorlune Cape (every other cape) (rewards.json `prizes`). Free, worn in a slot of
 their own (so they never cost you your armour) and drawn on your back (`GearOverlay.drape`: from behind
 hung from the shoulders with a diamond emblem and a trimmed hem, the hair over it; from the front and
 side past your outline), a small bonus to stats; never sold or dropped, and woven again if lost. No
@@ -1153,7 +1194,7 @@ the Wishing Seal, which stays the Monster Book's last reward.
     afternoon, where half its glow was on screen and washed out the middle of the map (left of the screen
     half again as bright at 16hr in the screenshots, 2026-10-12); since 0.4.8 it stays in the corner. Whether FO's light moved
     with its clock isn't in any source we've found; this is ours. Clouds don't soften the shadows yet.
-  - Our setting is called Talewild in every in-game text (Fairyland until 0.3.50, Storyleaf until 0.8.1; see Names). In FO the
+  - Our setting is called Dorlune in every in-game text (Fairyland until 0.3.50, Storyleaf until 0.8.1, Talewild until 0.8.10; see Names). In FO the
     continent itself is Mysteria (above), which is also the relaunch's name.
 - **Bots, moderators and announcements:** ours, asked for in playtesting (2026-10-04). FO's chat channels,
   GM notices and player stalls (players selling under a sign in town) aren't in any source reachable from a

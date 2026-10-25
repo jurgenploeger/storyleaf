@@ -620,18 +620,21 @@ seal_broken  | newgame,level=12,map=smiling_forest,battle=1,seal=fail,fxstop=4.4
 store_moonglow | newgame,level=100,class=mage,pet=pineapple,friends=2,map=moonglow,battle=5,equip=snow_cloak | 15
 store_levelup | newgame,level=9,levelup,map=candy_mountain,battle=1,win,equip=golden_dragon_mail | 30
 # App Store slides, landscape (tools/store_slides.py adds the captions and exports the store sizes).
+# The world's scenes pick its showpieces (the user, 2026-10-25: "pick more interesting maps"): Starfall
+# Isle's tree houses in Glimmerbough, Prismhaven's walled plaza, the bridge over Briarmere's frozen lake,
+# and the road up to the Emerald Spire. The social covers (tools/social_art.py) use them too.
 # `clean`: no frame counter, and the whole screen without the Dynamic Island's black mask.
 store_land_battle  | newgame,level=60,class=mage,pet=pineapple,friends=2,map=candy_mountain,battle=6,cast=fire_bolt:9:2,fxstop=1.28,landscape,clean | 72
 store_land_seal    | newgame,level=12,pet=bunny,map=sunny_meadow,battle=1,seal=ok,fxstop=4.4,landscape,clean | 40
-store_land_explore | newgame,level=43,class=fighter,friends=2,map=meadowbrook,landscape,clean,nohud | 10
-store_land_anywhere | newgame,level=30,class=mage,pet=bunny,map=candy_mountain,landscape,clean,nohud | 10
+store_land_explore | newgame,level=43,class=fighter,friends=2,map=starfall_isle,at=0_2,landscape,clean,nohud | 12
+store_land_anywhere | newgame,level=30,class=mage,pet=bunny,map=rosen_lake,bridge=0,landscape,clean,nohud | 12
 store_land_boss    | newgame,level=95,class=fighter,pet=pineapple,friends=2,map=snow_white_forest,boss=wolf_den,wave=3,landscape,clean | 16
 store_land_night   | newgame,level=100,class=fighter,pet=pineapple,friends=2,map=moonglow,battle=5,cast=power_strike:9:2,fxstop=1.14,equip=snow_cloak,landscape,clean | 74
-store_land_town    | newgame,level=40,class=fighter,map=goldburg,landscape,clean,nohud | 15
+store_land_town    | newgame,level=40,class=fighter,map=rainbow_city,at=0_1,landscape,clean,nohud | 15
 store_land_levelup | newgame,level=9,levelup,pet=pineapple,map=candy_mountain,battle=1,win,equip=golden_dragon_mail,landscape,clean | 30
 # A companion at your heels: zoomed in as if pinched, the hero walking a loop (walk=) so the still catches
 # them mid-stride. The moment varies from run to run; if it catches them turning, run it again.
-store_land_companion | newgame,level=70,class=tamer,equip=azure_dragon_mail,pet=fire_bear,map=pineapple_shore,zoom=2.2,walk=1_0,landscape,clean,nohud | 6
+store_land_companion | newgame,level=70,class=tamer,equip=azure_dragon_mail,pet=fire_bear,map=emerald_road,at=1_-20,zoom=1.4,walk=1_0,landscape,clean,nohud | 8
 store_land_looks   | titlepage=create,landscape,clean | 10
 # Larkspur: its square in landscape (the healer, market and tailor all in view) and the terrace up north.
 larkspur         | newgame,level=30,map=bluebird,weather=clear,landscape | 8

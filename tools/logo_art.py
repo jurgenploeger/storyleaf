@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
-"""Talewild's logo (Logo.png): the one word in Lilita One, the store slides' face (tools/fonts/),
-with a leaf for the dot of its i. "Tale" gold and "wild" leaf green, inside one dark outline with a
-hard shadow under it; each part has a darker rim inside, and its face is shaded in hard bands, top
-to bottom, like the game's sprites. The type's edges stay smooth: cut into pixels it read as ugly.
-No emblem, tagline, gloss or rays (the brand in the Figma file, 02 Logo).
+"""The logo (Logo.png): TALES OF over DORLUNE, in the style of the logo the user pointed to (Neopets' "Tales
+of Dacardia"): chunky capitals in Luckiest Guy (tools/fonts/, Apache 2.0), set tight so their outlines run
+into one, each letter tipped a few degrees one way or the other and lifted or dropped a little, so the word
+bounces; TALES OF a little over half the world's name's size, a small gap above it. All gold, each line in
+one smooth gradient from pale gold at the top to deep amber at the foot, a thin light rim along the letters'
+top edges, inside one thick dark outline that drops into a deep block shadow underneath. No second colour,
+no bands, no emblem, tagline or rays (the brand in the Figma file, 02 Logo; the titles on the store slides
+use the same face and gold, tools/store_slides.py).
 
-Drawn `SS` times as big, every layer measured from the shapes' true edges (a round outline), then
-shrunk, so the edges are smooth and the bands stay hard.
+Drawn `SS` times as big, the outline measured from the letters' true edges (round), then shrunk, so the
+edges are smooth. The tilts and lifts come from a fixed seed, so every run draws the same logo.
 
     python3 tools/logo_art.py                    # writes Logo.png
-    python3 tools/logo_art.py --preview out.png  # on the sky, on the forest, and small
+    python3 tools/logo_art.py --preview out.png  # on the sky, on midnight, and small
 
 Needs pillow, numpy and scipy.
 """
 
 import argparse
-import math
 from pathlib import Path
 
 import numpy as np
@@ -24,91 +26,127 @@ from scipy.ndimage import distance_transform_edt
 
 ROOT = Path(__file__).resolve().parent.parent
 LOGO = ROOT / "Storyleaf/Resources/Assets.xcassets/Logo.imageset/Logo.png"
-FONT = ROOT / "tools/fonts/LilitaOne-Regular.ttf"
+FONT = ROOT / "tools/fonts/LuckiestGuy-Regular.ttf"
 
-WORD, SPLIT = "Talewild", 4
-# Sizes in Logo.png's pixels: the type, the space between letters, the outline round the word, how
-# far the shadow drops, and the rim inside each part.
-PX, TRACKING = 270, 5
-OUTLINE, SHADOW, RIM = 15, 11, 5
-SS = 4
-# The leaf for the i's dot, as shares of the i's stem width: its length, width, the gap under it,
-# and how far it leans (degrees up from the right).
-LEAF_LENGTH, LEAF_WIDTH, LEAF_GAP, LEAF_TILT = 1.9, 1.0, 0.3, 52
+# The lines, top to bottom: the words and their size as a share of the world's name's (`PX`, in Logo.png's
+# pixels). Then, as shares of `PX`: the space between letters (less than none: they touch), how far each
+# letter tips (degrees) and lifts, the gap between TALES OF and the name, the outline round the letters, how
+# deep the block shadow drops, and the light rim along their tops. Letters are drawn left to right, each in
+# a thin outline of its own (`SEAM`), so ones that touch stay apart.
+LINES = [("TALES OF", 0.6), ("DORLUNE", 1.0)]
+PX = 230
+TRACK, TIP, LIFT = -0.02, 3.0, 0.035
+# A small gap, wider than the letters lift, so the two lines never touch; their outlines still join.
+GAP = 0.08
+OUTLINE, DEPTH, RIM = 0.075, 0.07, 0.03
+# The thin outline each letter keeps of its own where it overlaps the one before it.
+SEAM = 0.022
+# Picked so the name's first letters, D and O, ride level with the rest: lower, they read a size down.
+SEED = 9
+# Round capitals, drawn a little taller than the flat ones so they look the same size.
+ROUND, OVERSHOOT = "OCGQS", 1.05
+SS = 3
 
 INK = (34, 22, 14)
-# Each part's face, top to bottom, where each band starts (a share of the letters' height), and its rim.
-BANDS = [0.0, 0.22, 0.5, 0.78]
-GOLD = [(255, 244, 184), (255, 213, 79), (240, 165, 48), (196, 110, 30)]
-GOLD_RIM = (138, 74, 18)
-GREEN = [(220, 250, 170), (150, 222, 100), (66, 176, 92), (32, 124, 76)]
-GREEN_RIM = (22, 92, 56)
+# The gold, top to bottom of each line's capitals: where each colour sits (a share of their height).
+GOLD = [(0.0, (255, 246, 190)), (0.42, (255, 208, 74)), (1.0, (226, 124, 22))]
 
 SKY = [(111, 192, 245), (169, 220, 250), (227, 245, 255)]
-FOREST = [(29, 74, 55), (15, 42, 32)]
+MIDNIGHT = [(27, 37, 80), (14, 21, 51)]
 
 
-def leaf(size: tuple[int, int], base: tuple[float, float], stem: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """The leaf's shape, its upper half (lit) and its midrib, from its base, leaning up and to the right."""
-    length, half = LEAF_LENGTH * stem, LEAF_WIDTH * stem / 2
-    angle = math.radians(LEAF_TILT)
-    along, across = (math.cos(angle), -math.sin(angle)), (math.sin(angle), math.cos(angle))
+def gold(height: int) -> np.ndarray:
+    """One colour per row: the gold's stops from the top of a line's capitals to their foot."""
+    t = np.linspace(0, 1, height)
+    stops = np.array([s for s, _ in GOLD])
+    colours = np.array([c for _, c in GOLD], dtype=float)
+    return np.stack([np.interp(t, stops, colours[:, k]) for k in range(3)], axis=1)
 
-    def at(a: float, c: float) -> tuple[float, float]:
-        return base[0] + a * along[0] + c * across[0], base[1] + a * along[1] + c * across[1]
 
-    steps = [i / 48 for i in range(49)]
-    # Fuller towards the base, coming to a point at the tip.
-    lower = [at(u * length, half * math.sin(math.pi * u ** 0.8)) for u in steps]
-    upper = [at(u * length, -half * math.sin(math.pi * u ** 0.8)) for u in steps]
-    shape, lit = Image.new("L", size), Image.new("L", size)
-    ImageDraw.Draw(shape).polygon(lower + upper[::-1], fill=255)
-    ImageDraw.Draw(lit).polygon(upper, fill=255)
-    rib = Image.new("L", size)
-    ImageDraw.Draw(rib).line([at(0.08 * length, 0), at(0.72 * length, 0)], fill=255, width=max(1, round(0.12 * stem)))
-    return np.asarray(shape) >= 128, np.asarray(lit) >= 128, np.asarray(rib) >= 128
+def glyph(font: ImageFont.FreeTypeFont, ch: str, angle: float) -> np.ndarray:
+    """One capital, tipped `angle` degrees, cut to it."""
+    left, top, right, bottom = font.getbbox(ch)
+    pad = 20 * SS
+    image = Image.new("L", (right - left + 2 * pad, bottom - top + 2 * pad))
+    ImageDraw.Draw(image).text((pad - left, pad - top), ch, font=font, fill=255)
+    letters = np.asarray(image.rotate(angle, resample=Image.BICUBIC, expand=True)) >= 128
+    rows, cols = np.flatnonzero(letters.any(axis=1)), np.flatnonzero(letters.any(axis=0))
+    return letters[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
+
+
+def line(word: str, px: int, rng: np.random.Generator) -> list:
+    """One line's capitals, `SS` times as big: each tipped the other way from the last, give or take, and
+    lifted or dropped a little, set `TRACK` apart. Each its own mask on the line's canvas, left to right."""
+    font = ImageFont.truetype(str(FONT), px * SS)
+    cap = font.getbbox("H")[3] - font.getbbox("H")[1]
+    placed, x = [], 0.0
+    for index, ch in enumerate(word):
+        if ch == " ":
+            x += px * SS * 0.28 + TRACK * px * SS
+            continue
+        angle = TIP * (1 if index % 2 else -1) + rng.uniform(-TIP / 2, TIP / 2)
+        # Every capital as tall as the H, a round one a touch taller (it would look short otherwise):
+        # Luckiest Guy draws its O and D small, and beside the R and N they read a size down.
+        top, bottom = font.getbbox(ch)[1], font.getbbox(ch)[3]
+        size = px * SS * cap / max(1, bottom - top) * (OVERSHOOT if ch in ROUND else 1.0)
+        shape = glyph(ImageFont.truetype(str(FONT), round(size)), ch, angle)
+        placed.append((shape, x, rng.uniform(-LIFT, LIFT) * px * SS))
+        x += shape.shape[1] + TRACK * px * SS
+    tall = max(shape.shape[0] for shape, _, _ in placed)
+    wide = max(int(left) + shape.shape[1] for shape, left, _ in placed)
+    middle = int(tall * 0.6)
+    masks = []
+    for shape, left, lift in placed:
+        canvas = np.zeros((int(tall * 1.2) + 4, wide + 4), bool)
+        # Each letter centred on the line (then lifted or dropped): a tipped letter's corner hangs below
+        # its foot, and lining up the corners left the tipped ones riding high and looking small.
+        y = int(middle - shape.shape[0] / 2 + lift)
+        canvas[y:y + shape.shape[0], int(left):int(left) + shape.shape[1]] = shape
+        masks.append(canvas)
+    union = np.any(masks, axis=0)
+    rows, cols = np.flatnonzero(union.any(axis=1)), np.flatnonzero(union.any(axis=0))
+    return [mask[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1] for mask in masks]
 
 
 def logo() -> Image.Image:
-    font = ImageFont.truetype(str(FONT), PX * SS)
-    size = (PX * SS * 5, PX * SS * 2)
-    first, second = np.zeros(size[::-1], bool), np.zeros(size[::-1], bool)
-    x, y = PX * SS / 2, PX * SS * 0.6
-    stem = None
-    for index, ch in enumerate(WORD):
-        mask = Image.new("L", size)
-        # The i without its dot: the leaf takes its place.
-        ImageDraw.Draw(mask).text((x, y), "ı" if ch == "i" else ch, font=font, fill=255)
-        if ch == "i":
-            stem = mask.getbbox()
-        (first if index < SPLIT else second)[np.asarray(mask) >= 128] = True
-        x += font.getlength(ch) + TRACKING * SS
-    letters = first | second
-    rows = np.flatnonzero(letters.any(axis=1))
-    top, height = rows[0], rows[-1] + 1 - rows[0]
+    rng = np.random.default_rng(SEED)
+    lines = [line(word, round(PX * share), rng) for word, share in LINES]
+    pad = int(PX * SS * 0.3)
+    gap = int(PX * SS * GAP)
+    width = max(part[0].shape[1] for part in lines) + 2 * pad
+    height = sum(part[0].shape[0] for part in lines) + gap * (len(lines) - 1) + 2 * pad
+    # Every letter on the logo's canvas, top line first, each with its line's gradient.
+    placed = []
+    y = pad
+    for part in lines:
+        h, w = part[0].shape
+        x = (width - w) // 2
+        colours = np.broadcast_to(gold(h)[:, None, :], (h, w, 3))
+        for mask in part:
+            letter = np.zeros((height, width), bool)
+            letter[y:y + h, x:x + w] = mask
+            face = np.zeros((height, width, 3))
+            face[y:y + h, x:x + w][mask] = colours[mask]
+            placed.append((letter, face))
+        y += h + gap
+    letters = np.any([letter for letter, _ in placed], axis=0)
 
-    width = stem[2] - stem[0]
-    base = ((stem[0] + stem[2]) / 2 - 0.2 * width, stem[1] - LEAF_GAP * width)
-    leaf_shape, lit, rib = leaf(size, base, width)
-    second |= leaf_shape
-    word = first | second
-
-    outline = distance_transform_edt(~word) <= OUTLINE * SS
-    shadow = np.roll(outline, SHADOW * SS, axis=0)
-    face = distance_transform_edt(word) > RIM * SS
-
-    art = np.zeros(size[::-1] + (4,), np.uint8)
-    art[outline | shadow] = INK + (255,)
-    band = np.searchsorted([top + height * b for b in BANDS[1:]], np.arange(size[1]), side="right")
-    for part, colours, rim in ((first, GOLD, GOLD_RIM), (second, GREEN, GREEN_RIM)):
-        art[part] = rim + (255,)
-        shades = np.array([c + (255,) for c in colours], np.uint8)[band]
-        inside = part & face
-        art[inside] = np.broadcast_to(shades[:, None, :], art.shape)[inside]
-    # The leaf in two greens either side of its midrib, lit from above.
-    art[leaf_shape & face] = GREEN[2] + (255,)
-    art[lit & face] = GREEN[1] + (255,)
-    art[rib & face] = GREEN_RIM + (255,)
+    # The outline round them all, then the block shadow: the outline dragged straight down, row by row.
+    outline = distance_transform_edt(~letters) <= OUTLINE * PX * SS
+    shadow = outline.copy()
+    for step in range(1, int(DEPTH * PX * SS) + 1):
+        shadow[step:] |= outline[:-step]
+    art = np.zeros((height, width, 4), np.uint8)
+    art[shadow] = INK + (255,)
+    # Then each letter in turn, in a thin outline of its own over the ones before, so letters that touch
+    # stay apart; and the light rim along its top edge.
+    seam = SEAM * PX * SS
+    reach = max(1, int(RIM * PX * SS))
+    for letter, face in placed:
+        art[(distance_transform_edt(~letter) <= seam) & ~letter] = INK + (255,)
+        art[letter, :3] = face[letter].round().astype(np.uint8)
+        rim = letter & ~np.roll(letter, reach, axis=0) & (distance_transform_edt(letter) <= reach)
+        art[rim, :3] = (face[rim] * 0.35 + 255 * 0.65).round().astype(np.uint8)
 
     image = Image.fromarray(art, "RGBA")
     image = image.crop(image.getbbox())
@@ -127,7 +165,7 @@ def gradient(size: tuple[int, int], stops: list) -> Image.Image:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--preview", type=Path, help="write the logo on the sky, on the forest and small here")
+    parser.add_argument("--preview", type=Path, help="write the logo on the sky, on midnight and small here")
     args = parser.parse_args()
 
     art = logo()
@@ -136,13 +174,13 @@ def main() -> None:
 
     if args.preview:
         tiles = []
-        for stops in (SKY, FOREST):
+        for stops in (SKY, MIDNIGHT):
             tile = gradient((art.width + 120, art.height + 120), stops)
             tile.alpha_composite(art, (60, 60))
             tiles.append(tile)
-        tile = gradient((240, 120), SKY)
+        tile = gradient((240, 140), SKY)
         thumb = art.resize((180, round(art.height * 180 / art.width)), Image.LANCZOS)
-        tile.alpha_composite(thumb, (30, (120 - thumb.height) // 2))
+        tile.alpha_composite(thumb, (30, (140 - thumb.height) // 2))
         tiles.append(tile)
         sheet = Image.new("RGB", (max(t.width for t in tiles) + 20, sum(t.height + 10 for t in tiles) + 10), (242, 242, 247))
         y = 10

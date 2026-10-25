@@ -2,6 +2,17 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
+      "version": "0.8.11",
+      "date": "2026-10-25",
+      "title": "A new name: Tales of Dorlune",
+      "notes": [
+        "The game has a new name: Tales of Dorlune. The land Liora bound from the world's fairy tales is called Dorlune.",
+        "Your hero, saves and progress are just as you left them.",
+        "A new logo and app icon to go with the name: Tales of Dorlune in gold, and your hero on the Home Screen.",
+        "At Halloween, Christmas and Easter the app icon dresses up for the season."
+      ]
+    },
+    {
       "version": "0.8.10",
       "date": "2026-10-25",
       "title": "Bigger battles",
@@ -11,16 +22,6 @@
         "Your strongest skills sweep a crescent of light through your foes or bring a pillar of light down from the sky, and a skill that reaches a whole side marks everyone with a rune circle first.",
         "Names stay out of the way: hold a fighter to read theirs, and let go over a monster to pick it.",
         "With friends at your side, their faces tick off as each one chooses, and your side stands on blue."
-      ]
-    },
-    {
-      "version": "0.8.6",
-      "date": "2026-10-25",
-      "title": "Storyleaf is now Talewild",
-      "notes": [
-        "The game has a new name: Talewild. The land Liora bound from the world's fairy tales is called Talewild too.",
-        "Your hero, saves and progress are just as you left them.",
-        "A new logo and app icon to go with the name: Talewild in gold and green, and your hero on the Home Screen."
       ]
     },
     {

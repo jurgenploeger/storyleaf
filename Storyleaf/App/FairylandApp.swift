@@ -76,6 +76,7 @@ struct RootView: View {
             case .active:
                 MusicPlayer.shared.resume()
                 Self.applyAppearance(appearance)
+                SeasonalIcon.update()
             default: break
             }
         }
