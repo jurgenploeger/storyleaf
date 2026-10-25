@@ -168,6 +168,11 @@ for skill in skills.values():
     if animation in seen:
         check(False, f"skill {skill['id']} → animation {animation} is {seen[animation]}'s already: every skill needs its own look")
     seen.setdefault(animation, skill["id"])
+    # The top skills' grand stroke on top of their own look (BattleScene.castSkill): a crescent of
+    # light sweeping through the foes, or a pillar of it falling from the top of the screen.
+    if "grand" in skill:
+        check(skill["grand"] in ("crescent", "pillar"), f"skill {skill['id']} → grand must be crescent or pillar: {skill['grand']}")
+        check(skill["kind"] in ("physical", "magic", "heal"), f"skill {skill['id']} → only attacks and heals have a grand stroke")
 
 for monster in monsters.values():
     check(monster["art"] in art, f"monster {monster['id']} → unknown art {monster['art']}")

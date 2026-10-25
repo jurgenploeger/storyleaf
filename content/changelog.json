@@ -2,7 +2,7 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
-      "version": "0.8.7",
+      "version": "0.8.8",
       "date": "2026-10-25",
       "title": "A new name: Tales of Fabelia",
       "notes": [
@@ -10,6 +10,18 @@
         "Your hero, saves and progress are just as you left them.",
         "A new logo and app icon to go with the name: Tales of Fabelia in gold, and your hero on the Home Screen.",
         "At Halloween, Christmas and Easter the app icon dresses up for the season."
+      ]
+    },
+    {
+      "version": "0.8.7",
+      "date": "2026-10-25",
+      "title": "Bigger battles",
+      "notes": [
+        "Bosses tower over their waves and step forward with their name across the field, their health along the top as you fight.",
+        "Your skills are tiles in battle, greyed out when you're short of MP.",
+        "Your strongest skills sweep a crescent of light through your foes or bring a pillar of light down from the sky, and a skill that reaches a whole side marks everyone with a rune circle first.",
+        "Names stay out of the way: hold a fighter to read theirs, and let go over a monster to pick it.",
+        "With friends at your side, their faces tick off as each one chooses, and your side stands on blue."
       ]
     },
     {

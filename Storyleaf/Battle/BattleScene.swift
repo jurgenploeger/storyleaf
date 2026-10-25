@@ -20,6 +20,9 @@ final class BattleScene: SKScene {
     /// While a special attack plays: its colour and tier, so every blow it lands flares in its light
     /// (SkillFlares.swift).
     private var flareLight: (color: UIColor, level: Int)?
+    /// While a skill with a crescent for its grand stroke plays: its colour and tier, till its blow
+    /// lands (`impactAll`).
+    private var crescent: (color: UIColor, level: Int)?
 
     init(controller: BattleController, size: CGSize, backdrop: SKTexture?) {
         self.controller = controller
@@ -78,6 +81,36 @@ final class BattleScene: SKScene {
     private func enter() {
         let duration = march(actors.values.sorted(by: { $0.fighterID < $1.fighterID }))
         run(.sequence([.wait(forDuration: duration), .run { [weak self] in self?.controller.begin() }]), withKey: "enter")
+        announceBoss()
+    }
+
+    /// A boss on the field as its wave marches in: BOSS over its name in big gold letters across the
+    /// field, in a burst of red rays, and the ground shakes.
+    private func announceBoss() {
+        guard let boss = controller.boss, boss.isAlive else { return }
+        let red = UIColor(red: 1, green: 0.38, blue: 0.3, alpha: 1)
+        let banner = SKNode()
+        banner.position = CGPoint(x: size.width / 2, y: size.height * 0.56)
+        banner.zPosition = 31_000
+        let over = NameTag(L("Boss").uppercased(), color: red, size: 16, alignment: .center)
+        over.position.y = 34
+        let title = NameTag(boss.name, color: Nodes.gold, size: 36, alignment: .center)
+        banner.addChild(over)
+        banner.addChild(title)
+        // A long name shrinks to fit the screen.
+        let fit = min(1, (size.width - 40) / max(1, title.calculateAccumulatedFrame().width))
+        banner.setScale(0.3 * fit)
+        banner.alpha = 0
+        addChild(banner)
+        SkillEffects.rays(at: banner.position, color: red, count: 12, length: 180, width: 12, z: 30_900, in: self)
+        shake(strength: 8)
+        banner.run(.sequence([
+            .group([.fadeIn(withDuration: 0.12), .scale(to: 1.2 * fit, duration: 0.2)]),
+            .scale(to: fit, duration: 0.12),
+            .wait(forDuration: 1.2),
+            .group([.fadeOut(withDuration: 0.3), .moveBy(x: 0, y: 24, duration: 0.3)]),
+            .removeFromParent(),
+        ]))
     }
 
     /// Fighters walk in from off-stage to their places, one after another (a boss fight's next
@@ -136,15 +169,19 @@ final class BattleScene: SKScene {
     /// line and the chat, and in a boss fight its waves under that, with the field kept well clear
     /// of them.
     private var portraitTopInset: CGFloat {
-        (view?.safeAreaInsets.top ?? 0) + (controller.waveCount > 1 ? 176 : 150)
+        (view?.safeAreaInsets.top ?? 0) + (controller.waveCount > 1 ? 176 : 150) + bossBarRoom
     }
+
+    /// Room under the HUD's top row for the boss's HP bar while a boss is on the field (BattleView's
+    /// `BossBar`).
+    private var bossBarRoom: CGFloat { controller.boss == nil ? 0 : 44 }
 
     private func layout() {
         guard size.width > 1, size.height > 1 else { return }
         buildGround()
         // Leave room for the HUD: your faces and the message line along the top, the command wheel
         // bottom-right.
-        let insets: (top: CGFloat, bottom: CGFloat) = isPortrait ? (portraitTopInset, 240) : (70, 40)
+        let insets: (top: CGFloat, bottom: CGFloat) = isPortrait ? (portraitTopInset, 240) : (70 + bossBarRoom, 40)
         let area = CGRect(x: 0, y: insets.bottom, width: size.width, height: max(120, size.height - insets.top - insets.bottom))
         lineSpacing = sharedSpacing()
         // Up to eight on the field at full size; past that everyone shrinks a little more with
@@ -170,6 +207,13 @@ final class BattleScene: SKScene {
             landscapeStep = longest > 1 ? min(76, max(36, (landscapeCeiling - landscapeFloor - climb) / CGFloat(longest - 1))) : 76
             arrange(controller.enemiesOnField, around: CGPoint(x: area.minX + area.width * 0.28, y: area.midY + 4), facing: .right)
             arrange(controller.party, around: CGPoint(x: area.minX + area.width * 0.6, y: area.midY - 24), facing: .left)
+        }
+        // A boss steps out in front of its wave, toward you, its head kept under the HUD.
+        for foe in controller.enemiesOnField {
+            guard let actor = actors[foe.id], actor.isBoss else { continue }
+            actor.nudge(by: isPortrait ? CGVector(dx: 18, dy: -44) * fieldScale : CGVector(dx: 56, dy: -8))
+            let ceiling = area.maxY - actor.height * 0.92
+            if actor.home.y > ceiling { actor.nudge(by: CGVector(dx: 0, dy: ceiling - actor.home.y)) }
         }
         showTargets(controller.validTargets)
     }
@@ -435,14 +479,42 @@ final class BattleScene: SKScene {
         }
     }
 
+    /// The fighter under your finger: its name shows while you hold it, and letting go over a target
+    /// picks it, so you can slide over a crowd reading names before you choose.
+    private var aimed: BattleActor?
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let point = touches.first?.location(in: self) else { return }
-        // Fainted friends count too: they're who Revive is for.
-        let candidates = actors.values.filter { controller.validTargets.contains($0.fighterID) }
-        guard let tapped = candidates.min(by: { $0.center.distance(to: point) < $1.center.distance(to: point) }),
-              tapped.center.distance(to: point) < 80
-        else { return }
-        controller.select(tapped.fighterID)
+        aim(at: touches.first?.location(in: self))
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        aim(at: touches.first?.location(in: self))
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        let picked = aimed
+        aim(at: nil)
+        if let picked, controller.validTargets.contains(picked.fighterID) { controller.select(picked.fighterID) }
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        aim(at: nil)
+    }
+
+    /// The fighter nearest `point`, within reach: a target when there are any there (fainted friends
+    /// too: they're who Revive is for), else anyone standing, to read their name.
+    private func aim(at point: CGPoint?) {
+        var nearest: BattleActor?
+        if let point {
+            let near = actors.values.filter { $0.center.distance(to: point) < 80 }
+            let targets = near.filter { controller.validTargets.contains($0.fighterID) }
+            let pool = targets.isEmpty ? near.filter { $0.alpha > 0.5 } : targets
+            nearest = pool.min { $0.center.distance(to: point) < $1.center.distance(to: point) }
+        }
+        guard nearest !== aimed else { return }
+        aimed?.showName(false)
+        aimed = nearest
+        nearest?.showName(true)
     }
 
     // MARK: - Playback
@@ -639,6 +711,7 @@ final class BattleScene: SKScene {
             }
             layout()
             march(arriving)
+            if arriving.contains(where: \.isBoss) { announceBoss() }
             await pause(0.9 + 0.08 * Double(arriving.count))
         }
     }
@@ -740,6 +813,15 @@ final class BattleScene: SKScene {
             let hold = SkillEffects.charge(on: caster, color: color, level: level, in: stage)
             if hold > 0 { await pause(hold) }
         }
+        // A skill that reaches a whole side marks everyone it will reach first: a rune circle in its
+        // colour opens on the ground under each of them.
+        if skill.target == .allEnemies || skill.target == .allAllies, targets.count > 1 {
+            for target in targets {
+                let radius = max(36, target.sprite.size.width * 0.42) * target.fieldScale
+                SkillEffects.magicCircle(at: target.position, color: color, radius: radius, duration: 0.7, in: stage)
+            }
+            await pause(0.18)
+        }
         // Special attacks leave the caster's hands in a flare, and every blow they land flares too.
         if skill.kind.isAttack {
             if let caster = actors[actorID] { SkillEffects.castFlare(on: caster, color: color, level: level, in: stage) }
@@ -805,6 +887,20 @@ final class BattleScene: SKScene {
             }
             return
         }
+
+        // The top skills' grand stroke (skills.json `grand`), on top of their own look: a pillar of
+        // light falls from the top of the screen onto everyone the skill reaches, or a crescent of
+        // light sweeps through them as the blow lands (`impactAll`).
+        switch skill.grand ?? "" {
+        case "pillar":
+            SkillEffects.skyPillar(on: targets, color: color, level: level, top: size.height, in: stage)
+            await pause(0.22)
+        case "crescent":
+            crescent = (color, level)
+        default:
+            break
+        }
+        defer { crescent = nil }
 
         switch style {
         case "slash":
@@ -1033,6 +1129,10 @@ final class BattleScene: SKScene {
     }
 
     private func impactAll(_ hits: [Hit], heal: Bool) {
+        if let stroke = crescent {
+            crescent = nil
+            SkillEffects.crescent(through: hits.compactMap { actors[$0.target] }, color: stroke.color, level: stroke.level, width: size.width, in: stage)
+        }
         for hit in hits { impact(hit, heal: heal) }
     }
 
@@ -1342,7 +1442,9 @@ final class BattleActor: SKNode {
     init(fighter: Combatant, art: ArtLibrary) {
         fighterID = fighter.id
         cycle = art.walkCycle(fighter.art)
-        let size = cycle.size * 2
+        // A boss towers over its wave at 3× (a whole number, so its pixels stay square).
+        isBoss = BattleController.isBoss(fighter)
+        let size = cycle.size * (isBoss ? 3 : 2)
         sprite = SKSpriteNode(texture: cycle.frames(.down).first, size: size)
         sprite.anchorPoint = CGPoint(x: 0.5, y: 0.05)
         // Everyone with MP shows it in a blue bar under their HP.
@@ -1351,10 +1453,13 @@ final class BattleActor: SKNode {
         // wide hero's circle isn't flatter than a monster's.
         let ringWidth = max(64, size.width * 0.85)
         ring = SKShapeNode(ellipseOf: CGSize(width: ringWidth, height: ringWidth * Self.ringAspect))
+        // Your side stands on blue, so it reads apart from the monsters in a crowd.
+        restStroke = fighter.side == .party ? UIColor(red: 0.45, green: 0.75, blue: 1, alpha: 0.85) : UIColor(white: 1, alpha: 0.55)
+        nameTag = NameTag(fighter.name, size: 9)
         super.init()
-        ring.strokeColor = UIColor(white: 1, alpha: 0.55)
+        ring.strokeColor = restStroke
         ring.lineWidth = 2
-        ring.fillColor = UIColor(white: 0, alpha: 0.18)
+        ring.fillColor = fighter.side == .party ? UIColor(red: 0.15, green: 0.4, blue: 0.9, alpha: 0.22) : UIColor(white: 0, alpha: 0.18)
         ring.zPosition = -2
         addChild(ring)
         addChild(sprite)
@@ -1366,13 +1471,37 @@ final class BattleActor: SKNode {
         addChild(bar)
         // The same small gap over every head, wherever the art's top edge sits in its frame.
         nameHeight = size.height * (1 - sprite.anchorPoint.y - Self.emptyTop(of: sprite.texture)) + Self.nameGap
-        let label = NameTag(fighter.name, size: 9)
-        label.position = CGPoint(x: 0, y: bar.position.y + 2)
-        addChild(label)
+        // The name stays hidden till you touch the fighter (`showName`): a crowd's names piled up
+        // over each other. The level and bars say enough at a glance.
+        nameTag.position = CGPoint(x: 0, y: bar.position.y + 2)
+        nameTag.alpha = 0
+        addChild(nameTag)
         sprite.run(IdleMotion.of(art: fighter.art).action(height: size.height, delay: .random(in: 0..<0.8)), withKey: "idle")
     }
 
     required init?(coder aDecoder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    let isBoss: Bool
+    /// The ground circle's colour at rest: blue for your side, white for the monsters.
+    private let restStroke: UIColor
+    private let nameTag: NameTag
+
+    /// The name over the bar while you touch the fighter (`shown`), fading a moment after.
+    func showName(_ shown: Bool) {
+        nameTag.removeAction(forKey: "name")
+        if shown {
+            nameTag.run(.fadeIn(withDuration: 0.1), withKey: "name")
+        } else {
+            nameTag.run(.sequence([.wait(forDuration: 1.2), .fadeOut(withDuration: 0.3)]), withKey: "name")
+        }
+    }
+
+    /// Moves the fighter's spot by `offset` (a boss stepping out in front of its wave).
+    func nudge(by offset: CGVector) {
+        home = home + offset
+        if !hasActions() { position = home }
+        zPosition = -home.y
+    }
 
     /// How big it stands on a crowded field (BattleScene's `fieldScale`), name plate and all.
     private(set) var fieldScale: CGFloat = 1
@@ -1522,7 +1651,7 @@ final class BattleActor: SKNode {
 
     /// A target you can pick: an orange ring.
     private var targeted = false
-    /// Whose move you're choosing (your hero, then your companion): the white ring lit up, glowing
+    /// Whose move you're choosing (your hero, then your companion): the ring lit up white, glowing
     /// and breathing gently.
     private var choosing = false
 
@@ -1552,7 +1681,7 @@ final class BattleActor: SKNode {
             ring.run(.repeatForever(.sequence([.fadeAlpha(to: 0.6, duration: 0.6), .fadeAlpha(to: 1, duration: 0.6)])),
                      withKey: "choosing")
         } else {
-            ring.strokeColor = UIColor(white: 1, alpha: 0.55)
+            ring.strokeColor = restStroke
             ring.lineWidth = 2
             ring.glowWidth = 0
         }
