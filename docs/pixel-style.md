@@ -340,6 +340,8 @@ surface, and the parts go through `pixel_kit` as the buildings' faces do:
   far apart (a wall's planks stacked their joints up like bricks).
 - **Something on its deck:** two barrels and a crate, each lit round, and the sails' shadow across the
   deck ahead of the mast.
+- **A rig that reads:** the jib well forward on its forestay with sky between it and the square sail,
+  the stays drawn behind whatever is nearer.
 - **The kit's finish:** a hue-shifted ramp of seven shades per material, the light snapped to the ramp's
   steps with each step's edge broken in soft clusters (left between two shades, the kit dithered the sail's
   slow billow into a checkerboard), a tinted outline, and the palette capped at 0.9 colours per 100 pixels.
@@ -447,8 +449,10 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   their own and lapped, a wale with its shadow, creases in the sail and its edges curling into shade,
   things on deck. Two that didn't: a camber across the deck (the light has almost nothing across the ship)
   and the sails' cast shadow (light from in front throws shadows behind things, mostly out of sight).
-  And build a rig as it would stand: the jib set into the square sail's belly ran its edge down the middle
-  of the sail's star.
+  And build a rig as it would stand, and as it reads: the jib set into the square sail's belly ran its edge
+  down the middle of the sail's star, and set just behind it, it came out from under the sail's edge in
+  the same cream and read as one sail cut by the other (the user). It's set well forward on its stay now,
+  sky between the two, the stay drawn, and ropes hidden behind what's nearer.
 
 - **2026-10-24 (flat buildings):** The landmarks passed every band, by hand and grand, and still looked
   flat beside RD's. Side by side, RD's forms are modelled: towers round, ledges with shadows under them,

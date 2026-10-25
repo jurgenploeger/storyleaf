@@ -253,10 +253,14 @@ def draw_ship():
             put(*sail_at(v, z), part, lit(normal(sail_at, v, z), 0.3, 0.65) - 0.2 * max(0.0, 1 - (yard_z - z) / 6) - 0.3 * (v / 48) ** 4,
                 -v * along, -z)
 
-    # The jib, on the stay from the masthead down to the bowsprit, its belly out toward you, set clear
-    # ahead of the square sail's belly (set into it, its edge ran down the middle of the sail's star).
+    # The jib, on the stay from the masthead down to the bowsprit, its belly out toward you, set well
+    # forward on it, clear of the square sail: set into its belly, its edge ran down the middle of the
+    # sail's star; set just behind it, it came out from under the sail's edge in the same cream and
+    # read as one sail cut by the other (2026-10-25). Sky between the two now.
     bow = (half_length + 16, 0.0, sheer(half_length) + 6)
-    head, foot = (mast_u + 24, 0.0, mast_top - 32), (mast_u + 30, 0.0, sail_low - 12)
+    along_stay = (mast_u + 62 - mast_u) / (bow[0] - mast_u)
+    head = (mast_u + 62, 0.0, mast_top + (bow[2] - mast_top) * along_stay)
+    foot = (mast_u + 66, 0.0, sheer(mast_u + 66) + 8)
 
     def jib_at(a, b):
         return (head[0] + (bow[0] - head[0]) * a + (foot[0] - head[0]) * b,
@@ -407,16 +411,21 @@ def draw_ship():
     size = int((np.asarray(img)[..., 3] > 0).sum())
     img = np.array(limit_palette(img, int(size * 0.9 / 100)))
 
-    # The rigging in hemp, a pixel wide, over the finish (the stays from the masthead to the stern and
-    # down to each side), and foam where the hull sits in the water: opaque specks, broken.
+    # The rigging in hemp, a pixel wide, over the finish (the stays from the masthead to the bowsprit
+    # and the stern, and from the yard down to each side), and foam where the hull sits in the water: opaque specks, broken.
     rope = (92, 62, 40, 255)
 
     def ink(u, v, z, colour):
-        x, y = int(math.floor((u - v) * c)) + half_w, int(math.floor(-((u + v) * c * 0.5 + z))) + half_h
+        # Behind whatever's nearer there (a stay passing behind a sail is hidden by it).
+        key = (int(math.floor((u - v) * c)), int(math.floor(-((u + v) * c * 0.5 + z))))
+        if key in points and points[key][0] < (u + v) - c * z - 1.0:
+            return
+        x, y = key[0] + half_w, key[1] + half_h
         if 0 <= y < H and 0 <= x < W:
             img[y, x] = colour
 
-    for a, b in (((mast_u, 0, mast_top), (-half_length + 4, 0, sheer(-half_length) + 6)),
+    for a, b in (((mast_u, 0, mast_top), bow),                                   # the forestay, holding the jib
+                 ((mast_u, 0, mast_top), (-half_length + 4, 0, sheer(-half_length) + 6)),
                  ((mast_u, 0, yard_z), (mast_u - 10, -breadth(mast_u - 10), sheer(mast_u - 10) + 5)),
                  ((mast_u, 0, yard_z), (mast_u - 10, breadth(mast_u - 10), sheer(mast_u - 10) + 5))):
         for t in frange(0, 1, 0.3 / math.dist(a, b)):
