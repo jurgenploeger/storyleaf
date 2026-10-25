@@ -217,6 +217,8 @@ enum DebugLaunch {
     }
     /// `info=iron_axe`: the shop's info card for that item opens with the dialog.
     static var itemInfo: ItemDef? { flags["info"].flatMap { Content.shared.item($0) } }
+    /// `talk=<page>`: a quest giver's conversation opens at that page (1 = the first; `last` its last).
+    static var talkPage: Int? { flags["talk"].map { $0 == "last" ? Int.max : max(0, (Int($0) ?? 1) - 1) } }
     /// `intro` or `intro=<page>` opens the title screen's story pages (1 = the story).
     static var introPage: Int? { flags["intro"].map { Int($0).map { $0 - 1 } ?? 0 } }
     /// `clip=<n>`: How to play's picture starts at that part (0 walk, 1 battle, 2 seal, 3 victory, 4 town).

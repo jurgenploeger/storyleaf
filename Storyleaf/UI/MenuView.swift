@@ -1438,6 +1438,8 @@ struct QuestRow: View {
     /// Who asked and where they live (the Quests list; not while you're talking to them).
     /// In the list a tap also shows the reward in full.
     var showsGiver = false
+    /// Its story (not on the last page of a conversation with its giver, who's just told it).
+    var showsDescription = true
     @State private var expanded = false
 
     var body: some View {
@@ -1449,7 +1451,10 @@ struct QuestRow: View {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     QuestNumber(number: session.questNumber(quest))
                     Text(quest.title).font(HUDStyle.font(13))
-                    DifficultyBadge(difficulty: session.difficulty(of: quest))
+                    // How hard it is, in the Quests list only (playtesting 2026-10-25), not as its giver offers it.
+                    if showsGiver {
+                        DifficultyBadge(difficulty: session.difficulty(of: quest))
+                    }
                     Spacer()
                     switch session.status(of: quest) {
                     case .active where quest.objective.type == .deliver:
@@ -1468,7 +1473,9 @@ struct QuestRow: View {
                         .font(HUDStyle.font(10))
                         .foregroundStyle(HUDStyle.gold.opacity(0.85))
                 }
-                Text(quest.description).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+                if showsDescription {
+                    Text(quest.description).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+                }
                 if showsGiver && expanded {
                     QuestRewardsView(session: session, quest: quest, earned: false)
                         .padding(.top, 4)

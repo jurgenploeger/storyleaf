@@ -59,31 +59,12 @@ struct NPCDialogView: View {
         VStack(alignment: .leading, spacing: 0) {
             FLTitleBar(title: npc.name, onClose: onClose)
             VStack(alignment: .leading, spacing: 10) {
-                Text(reply ?? npc.greeting)
-                    .font(HUDStyle.font(13))
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        // A favour you're carrying to them, whoever they are.
-                        ErrandPanel(session: session, npcID: npc.id, reply: $reply)
-                        Group {
-                            switch npc.role {
-                            case .healer: HealerPanel(session: session, reply: $reply)
-                            case .shop: ShopPanel(session: session, stock: npc.stock ?? [], reply: $reply, info: $info)
-                            case .quests: QuestGiverPanel(session: session, giver: npc.id, reply: $reply, finished: $finished)
-                            case .guild: GuildPanel(session: session, classID: npc.classId ?? "", reply: $reply)
-                            case .chest, .stairs, .waystone: EmptyView()   // straight from the map (GameCoordinator.open)
-                            case .boss: BossPanel(session: session, boss: npc, onFight: onFight)
-                            case .smith: SmithPanel(session: session, reply: $reply, info: $info)
-                            case .weaver: CapePanel(session: session, reply: $reply, info: $info)
-                            case .barber: BarberPanel(session: session, price: npc.price ?? 1000, reply: $reply)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
+                if npc.role == .quests {
+                    QuestConversation(session: session, giver: npc, reply: $reply, finished: $finished,
+                                      room: min(260, max(120, maxHeight - 110)))
+                } else {
+                    talk(maxHeight: maxHeight)
                 }
-                .frame(maxHeight: min(260, max(120, maxHeight - 110)))
             }
             .padding(12)
         }
@@ -94,6 +75,36 @@ struct NPCDialogView: View {
         // the way round over the title bar, like every window's (`gameWindow`).
         .background(SpeechBubble(tailY: tailY).fill(HUDStyle.glass).shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2))
         .overlay(HUDStyle.frame(SpeechBubble(tailY: tailY)))
+    }
+
+    /// What everyone but a quest giver says, and what they do for you under it.
+    @ViewBuilder
+    private func talk(maxHeight: CGFloat) -> some View {
+        Text(reply ?? npc.greeting)
+            .font(HUDStyle.font(13))
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                // A favour you're carrying to them, whoever they are.
+                ErrandPanel(session: session, npcID: npc.id, reply: $reply)
+                Group {
+                    switch npc.role {
+                    case .healer: HealerPanel(session: session, reply: $reply)
+                    case .shop: ShopPanel(session: session, stock: npc.stock ?? [], reply: $reply, info: $info)
+                    case .quests: EmptyView()   // QuestConversation
+                    case .guild: GuildPanel(session: session, classID: npc.classId ?? "", reply: $reply)
+                    case .chest, .stairs, .waystone: EmptyView()   // straight from the map (GameCoordinator.open)
+                    case .boss: BossPanel(session: session, boss: npc, onFight: onFight)
+                    case .smith: SmithPanel(session: session, reply: $reply, info: $info)
+                    case .weaver: CapePanel(session: session, reply: $reply, info: $info)
+                    case .barber: BarberPanel(session: session, price: npc.price ?? 1000, reply: $reply)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .frame(maxHeight: min(260, max(120, maxHeight - 110)))
     }
 }
 
@@ -418,73 +429,186 @@ private struct ErrandPanel: View {
     }
 }
 
-private struct QuestGiverPanel: View {
+/// A quest giver, talked to a page at a time (playtesting 2026-10-25: "it needs to be conversational,
+/// with next and back buttons [...] One should be completed first with storytelling"). They talk about
+/// one quest at a time (`GameSession.currentQuest`): its story told in the sentences of its description,
+/// Back and Next between them, and on the last page the quest itself and what you can do: take it on,
+/// hear it again, or hand it in. Handing one in leads into the next one's story.
+private struct QuestConversation: View {
     let session: GameSession
-    let giver: String
+    let giver: NPCDef
     @Binding var reply: String?
     @Binding var finished: FinishedQuest?
-    @State private var asking: String?
+    /// How tall the quest and its buttons may grow before they scroll.
+    let room: CGFloat
+    @State private var page = DebugLaunch.talkPage ?? 0
+    /// What they said to what you just did (took the quest on, handed one in): it opens what follows.
+    @State private var said: String?
+    /// The quest you're on, told again from the start.
+    @State private var retelling = false
 
     var body: some View {
-        let quests = session.quests(from: giver).filter { session.status(of: $0) != .completed }
-        VStack(alignment: .leading, spacing: 8) {
-            if quests.isEmpty {
-                // Why there's nothing, and where there's work instead.
-                Text(session.questGiverNote(giver)).font(HUDStyle.font(12)).foregroundStyle(HUDStyle.dim)
-                    .fixedSize(horizontal: false, vertical: true)
+        let quest = session.currentQuest(from: giver.id)
+        let told = (reply.map { [$0] } ?? []) + script(quest)
+        let lines = told.isEmpty ? [giver.greeting] : told
+        let index = min(page, lines.count - 1)
+        let last = index == lines.count - 1
+        VStack(alignment: .leading, spacing: 10) {
+            // A favour you're carrying to them: what they say to it comes first.
+            ErrandPanel(session: session, npcID: giver.id, reply: $reply)
+            Text(lines[index])
+                .font(HUDStyle.font(13))
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, minHeight: 50, alignment: .topLeading)
+                .contentShape(Rectangle())
+                // A tap on what they're saying reads on, as Next does.
+                .onTapGesture { if !last { turn(from: index, by: 1, of: lines.count) } }
+                .accessibilityAddTraits(last ? [] : .isButton)
+                .accessibilityHint(last ? "" : L("Next"))
+                .id(index)
+                .transition(.opacity)
+            if last, let quest {
+                ScrollView { offer(quest) }
+                    .frame(maxHeight: room)
             }
-            ForEach(quests) { quest in
-                VStack(alignment: .leading, spacing: 6) {
-                    QuestRow(session: session, quest: quest)
-                    switch session.status(of: quest) {
-                    case .available:
-                        if asking == quest.id, let question = quest.question {
-                            Text(question.text).font(HUDStyle.font(12)).foregroundStyle(HUDStyle.gold)
-                            HStack {
-                                ForEach(question.answers, id: \.text) { answer in
-                                    Button(answer.text) {
-                                        session.acceptQuest(quest.id, answer: answer)
-                                        asking = nil
-                                        reply = L("{answer}… a fine answer. Here are your gifts. Hatch that egg and come show me!", ["answer": answer.text])
-                                    }
-                                    .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
-                                }
-                            }
-                        } else {
-                            Button(L("Accept")) {
-                                if quest.question != nil {
-                                    asking = quest.id
-                                    reply = quest.question?.text
-                                } else {
-                                    session.acceptQuest(quest.id)
-                                    reply = L("Wonderful! I knew I could count on you.")
-                                }
+            if lines.count > 1 {
+                navigation(index: index, count: lines.count)
+            }
+        }
+        .onChange(of: reply) { _, _ in page = 0 }
+    }
+
+    /// What they say, page by page, about where you are with them.
+    private func script(_ quest: QuestDef?) -> [String] {
+        let opening = said ?? giver.greeting
+        guard let quest else { return [opening, session.questGiverNote(giver.id)] }
+        switch session.status(of: quest) {
+        case .available:
+            // The question (which egg hatches) is asked on the last page, its answers taking it on.
+            return [opening] + Conversation.pages(quest.description) + (quest.question.map { [$0.text] } ?? [])
+        case .ready:
+            return [said ?? L("You're back! Did you manage it?")]
+        default:
+            return retelling ? Conversation.pages(quest.description) : [said ?? L("How are you getting on?")]
+        }
+    }
+
+    /// The quest on the last page, and what you can do about it.
+    @ViewBuilder
+    private func offer(_ quest: QuestDef) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            QuestRow(session: session, quest: quest, showsDescription: false)
+            switch session.status(of: quest) {
+            case .available:
+                if let question = quest.question {
+                    HStack {
+                        ForEach(question.answers, id: \.text) { answer in
+                            Button(answer.text) {
+                                session.acceptQuest(quest.id, answer: answer)
+                                begin(L("{answer}… a fine answer. Here are your gifts. Hatch that egg and come show me!", ["answer": answer.text]))
                             }
                             .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
                         }
-                    case .ready:
-                        Button(L("Complete quest")) {
-                            let level = session.data.hero.level
-                            session.turnInQuest(quest.id)
-                            session.save()
-                            reply = L("Thank you! You've been a great help.")
-                            let reached = session.data.hero.level
-                            finished = FinishedQuest(quest: quest, newLevel: reached > level ? reached : nil, levelsGained: reached - level)
-                            if reached > level {
-                                // The level-up jingle after the quest's own little fanfare.
-                                Task {
-                                    try? await Task.sleep(for: .milliseconds(600))
-                                    SoundEffects.shared.play(.levelUp)
-                                }
-                            }
-                        }
-                        .buttonStyle(PixelButtonStyle(tint: HUDStyle.green, compact: true))
-                    default:
-                        EmptyView()
                     }
+                } else {
+                    Button(L("Accept")) {
+                        session.acceptQuest(quest.id)
+                        begin(L("Wonderful! I knew I could count on you."))
+                    }
+                    .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
                 }
+            case .ready:
+                Button(L("Complete quest")) { handIn(quest) }
+                    .buttonStyle(PixelButtonStyle(tint: HUDStyle.green, compact: true))
+            case .active:
+                Button(L("Tell me again")) {
+                    retelling = true
+                    withAnimation(.easeOut(duration: 0.15)) { page = 0 }
+                }
+                .buttonStyle(PixelButtonStyle(compact: true))
+            default:
+                EmptyView()
             }
         }
+    }
+
+    private func navigation(index: Int, count: Int) -> some View {
+        HStack(spacing: 8) {
+            Button { turn(from: index, by: -1, of: count) } label: { Label(L("Back"), icon: .arrowLeft, size: 12) }
+                .buttonStyle(PixelButtonStyle(compact: true))
+                .opacity(index == 0 ? 0.4 : 1)
+                .disabled(index == 0)
+            Spacer(minLength: 0)
+            HStack(spacing: 5) {
+                ForEach(0..<count, id: \.self) { dot in
+                    Circle()
+                        .fill(dot == index ? HUDStyle.gold : HUDStyle.cream.opacity(0.3))
+                        .frame(width: 6, height: 6)
+                }
+            }
+            .accessibilityHidden(true)
+            Spacer(minLength: 0)
+            Button { turn(from: index, by: 1, of: count) } label: { Label(L("Next"), icon: .arrowRight, size: 12) }
+                .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
+                .opacity(index == count - 1 ? 0.4 : 1)
+                .disabled(index == count - 1)
+        }
+    }
+
+    private func turn(from index: Int, by step: Int, of count: Int) {
+        withAnimation(.easeOut(duration: 0.15)) { page = max(0, min(index + step, count - 1)) }
+    }
+
+    /// The conversation starts over from what they just said.
+    private func begin(_ line: String) {
+        reply = nil
+        said = line
+        retelling = false
+        page = 0
+    }
+
+    private func handIn(_ quest: QuestDef) {
+        let level = session.data.hero.level
+        session.turnInQuest(quest.id)
+        session.save()
+        let reached = session.data.hero.level
+        finished = FinishedQuest(quest: quest, newLevel: reached > level ? reached : nil, levelsGained: reached - level)
+        if reached > level {
+            // The level-up jingle after the quest's own little fanfare.
+            Task {
+                try? await Task.sleep(for: .milliseconds(600))
+                SoundEffects.shared.play(.levelUp)
+            }
+        }
+        // Thanks, and into the next one's story if they have one for you.
+        let thanks = L("Thank you! You've been a great help.")
+        begin(session.currentQuest(from: giver.id) == nil ? thanks : thanks + " " + L("There's more, if you'll hear me out."))
+    }
+}
+
+/// What someone says, a page at a time.
+nonisolated enum Conversation {
+    /// `text` in pages to read one at a time: whole sentences, as many as fit in about three lines of
+    /// the bubble (a character of Chinese, Japanese or Korean counts as two and a half of Latin).
+    static func pages(_ text: String) -> [String] {
+        var sentences: [String] = []
+        text.enumerateSubstrings(in: text.startIndex..<text.endIndex, options: .bySentences) { sentence, _, _, _ in
+            if let sentence = sentence?.trimmingCharacters(in: .whitespacesAndNewlines), !sentence.isEmpty {
+                sentences.append(sentence)
+            }
+        }
+        guard !sentences.isEmpty else { return text.isEmpty ? [] : [text] }
+        let weight = { (line: String) in line.unicodeScalars.reduce(0.0) { $0 + ($1.value >= 0x2E80 ? 2.5 : 1) } }
+        var pages: [String] = []
+        for sentence in sentences {
+            if let last = pages.last, weight(last) + weight(sentence) <= 150 {
+                let wide = sentence.unicodeScalars.first.map { $0.value >= 0x2E80 } ?? false
+                pages[pages.count - 1] = last + (wide ? "" : " ") + sentence
+            } else {
+                pages.append(sentence)
+            }
+        }
+        return pages
     }
 }
 

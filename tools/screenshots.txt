@@ -461,6 +461,10 @@ glimmerdeep_lair | newgame,level=158,map=glimmerdeep,at=0_10 | 8
 battle_glimmerdeep | newgame,level=152,map=glimmerdeep,battle=5 | 15
 quest_pip_glimmerdeep | newgame,level=150,map=starfall_isle,at=-5_-3,npc=pip_lamplighter,done=lanterns_of_glimmerbough+sleeping_moonflowers+the_crystal_garden+a_lantern_for_lune+the_fallen_star,weather=clear,hour=12 | 8
 quest_lumen_drake | newgame,level=158,map=starfall_isle,at=-1_5,npc=mother_lumen,done=lanterns_of_glimmerbough+sleeping_moonflowers+the_crystal_garden+a_lantern_for_lune+the_fallen_star+glimmerdeep_crabs+glimmerstone_lanterns,weather=clear,hour=12 | 8
+# Quest givers talk a page at a time, one quest at a time (playtesting 2026-10-25): the story's first
+# page with Back and Next, its last with the quest and Accept, and the elder while you're on his quest.
+quest_talk_first | newgame,level=158,map=starfall_isle,at=-1_5,npc=mother_lumen,done=lanterns_of_glimmerbough+sleeping_moonflowers+the_crystal_garden+a_lantern_for_lune+the_fallen_star+glimmerdeep_crabs+glimmerstone_lanterns,talk=2,weather=clear,hour=12 | 8
+quest_talk_last | newgame,level=158,map=starfall_isle,at=-1_5,npc=mother_lumen,done=lanterns_of_glimmerbough+sleeping_moonflowers+the_crystal_garden+a_lantern_for_lune+the_fallen_star+glimmerdeep_crabs+glimmerstone_lanterns,talk=last,weather=clear,hour=12 | 8
 boss_prism_drake | newgame,level=160,class=fighter,map=glimmerdeep_heart,boss=prism_drake_lair | 25
 boss_prism_drake_win | newgame,level=160,class=fighter,map=glimmerdeep_heart,boss=prism_drake_lair,win | 35
 quest_captain  | newgame,level=126,map=hachoo_island,harbor=0,npc=captain_brine,done=a_spare_sail+a_figurehead_for_the_gull,weather=clear,hour=12 | 8

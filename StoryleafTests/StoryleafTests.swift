@@ -1720,11 +1720,52 @@ struct RulesTests {
         #expect(session.status(of: Content.shared.quest("new_friend")!) == .available)
     }
 
+    /// A quest giver gives one quest at a time (playtesting 2026-10-25): while you're on one of theirs,
+    /// they offer no other and show no "!", and they talk about the one you're on; handed in, the next.
+    @Test func oneQuestAtATimeFromAGiver() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.quests["hope_of_meadowbrook"] = QuestProgress(state: .completed, count: 3)
+        let jelly = try #require(Content.shared.quest("jelly_trouble"))
+        let path = try #require(Content.shared.quest("choose_path"))
+        #expect(jelly.giver == "elder" && path.giver == "elder")
+        #expect(session.status(of: path) == .available)
+        #expect(session.currentQuest(from: "elder")?.id == jelly.id)
+        #expect(session.notice(for: "elder") == .available)
+        session.acceptQuest(jelly.id)
+        #expect(session.isOnQuest(for: "elder"))
+        session.acceptQuest(path.id)
+        #expect(session.data.quests[path.id] == nil, "a second quest from the elder while on his first")
+        #expect(session.notice(for: "elder") == nil)
+        #expect(session.currentQuest(from: "elder")?.id == jelly.id)
+        for _ in 0..<3 { session.record(.defeat, target: "jelly") }
+        #expect(session.notice(for: "elder") == .ready)
+        session.turnInQuest(jelly.id)
+        #expect(!session.isOnQuest(for: "elder"))
+        let next = try #require(session.currentQuest(from: "elder"))
+        #expect(session.status(of: next) == .available)
+        session.acceptQuest(next.id)
+        #expect(session.data.quests[next.id]?.state == .active)
+    }
+
+    /// A quest's story is told a page at a time: whole sentences, none lost, a few to a page.
+    @Test func conversationsArePagedBySentence() {
+        for quest in Content.shared.quests {
+            let pages = Conversation.pages(quest.description)
+            #expect(!pages.isEmpty)
+            #expect(pages.joined(separator: " ").filter { !$0.isWhitespace } == quest.description.filter { !$0.isWhitespace },
+                    "\(quest.id) lost words in its pages")
+        }
+        let story = "One. Two is a longer sentence than one. " + String(repeating: "Three goes on and on. ", count: 12)
+        #expect(Conversation.pages(story).count > 1)
+        #expect(Conversation.pages("Just one.") == ["Just one."])
+    }
+
     /// The Quests list puts the quest you took last at the top, and the one you finished last first
     /// (playtesting 2026-10-16); quests from saves before they kept dates come after, in the game's order.
     @Test func newQuestsAreAtTheTop() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
-        let quests = Content.shared.quests.map(\.id).filter { $0 != "hope_of_meadowbrook" && $0 != "jelly_trouble" }.prefix(4).map { $0 }
+        // Not the elder's: he gives one at a time, and jelly_trouble is taken from him below.
+        let quests = Content.shared.quests.filter { $0.giver != "elder" }.map(\.id).prefix(4).map { $0 }
         // A day ago, so taking one now dates it later.
         let start = Date(timeIntervalSinceNow: -86_400)
         session.data.quests[quests[0]] = QuestProgress(state: .active, count: 0)
