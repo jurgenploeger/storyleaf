@@ -14,9 +14,9 @@ environment couldn't open the pages themselves, so a session that can should re-
 
 ## Names
 
-**Us** (since 0.8.8, 2026-10-25): the game is called **Tales of Dorlune** for players (the App Store name and the
+**Us** (since 0.8.10, 2026-10-25): the game is called **Tales of Dorlune** for players (the App Store name and the
 logo; the Home Screen, where a longer name is cut short, shows Dorlune), and the land is **Dorlune** in every
-in-game line. It was Talewild from 0.8.1 to 0.8.7, Storyleaf from 0.3.50, and the code, project and repo still are
+in-game line. It was Talewild from 0.8.1 to 0.8.9, Storyleaf from 0.3.50, and the code, project and repo still are
 (renamed from Fairyland on 2026-10-22) until a follow-up renames them; only the bundle ID and the save files keep
 "Fairyland" for good. The goddess Liora binds the world's tales
 into one book, and its pages are the land. Names taken from FO were replaced with our own, and this file
@@ -727,8 +727,10 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   sort (best for you, level, name, price, how many) and filters (the Bag's kinds; only what you can wear).
 - The bag and the bank (ours, since 0.8.0, asked for in playtesting 2026-10-25: "I want to add a bank to the
   game [...] so the item limit is 50 items you can hold"), as RuneScape has them; whether Fairyland Online had
-  a warehouse isn't verified here. The bag holds 50 slots: each kind of item one slot however many you carry,
-  the coins one more (`GameSession.bagSlots`). What doesn't fit is left behind, loot and rewards too (the
+  a warehouse isn't verified here. The bag holds 50 slots: every item one, however many of a kind you carry
+  (since 0.8.8, the playtester's choice: "repeated items should count to the inventory"; before, a kind took
+  one slot however many), the coins one more (`GameSession.bagSlots`). A save carrying more moves the rest
+  to the bank as it loads, a thing at a time from the biggest pile (`fitBag`). What doesn't fit is left behind, loot and rewards too (the
   playtester's choice); a chest stays shut till there's room. The coins are a slot in the Bag with a pile
   that grows with them (`CoinsTile`, tools/coin_art.py), RuneScape's way, not a count on the HUD. A bank
   (tools/building_art.py `bank`) with a banker (NPC role `bank`, a coin on the minimap and the world map)
@@ -1192,7 +1194,7 @@ the Wishing Seal, which stays the Monster Book's last reward.
     afternoon, where half its glow was on screen and washed out the middle of the map (left of the screen
     half again as bright at 16hr in the screenshots, 2026-10-12); since 0.4.8 it stays in the corner. Whether FO's light moved
     with its clock isn't in any source we've found; this is ours. Clouds don't soften the shadows yet.
-  - Our setting is called Dorlune in every in-game text (Fairyland until 0.3.50, Storyleaf until 0.8.1, Talewild until 0.8.7; see Names). In FO the
+  - Our setting is called Dorlune in every in-game text (Fairyland until 0.3.50, Storyleaf until 0.8.1, Talewild until 0.8.9; see Names). In FO the
     continent itself is Mysteria (above), which is also the relaunch's name.
 - **Bots, moderators and announcements:** ours, asked for in playtesting (2026-10-04). FO's chat channels,
   GM notices and player stalls (players selling under a sign in town) aren't in any source reachable from a

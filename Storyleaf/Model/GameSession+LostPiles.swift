@@ -38,6 +38,39 @@ extension GameSession {
         data.lostPiles = Array((lostPiles + [pile]).suffix(Self.maxPiles))
     }
 
+    /// Drops `amount` of a kind you carry at your feet (playtesting 2026-10-25: "I should be able to drop
+    /// items"), RuneScape's way: onto the pile you're standing by, else a new one, lying there as what
+    /// you lose when you fall does, yours to pick back up for a while, then anyone's, then gone. Not
+    /// what a quest you're on needs (`questKeepsakes`). False when there's none to drop.
+    @discardableResult
+    func drop(_ id: String, _ amount: Int, now: Date = Date()) -> Bool {
+        let held = count(of: id)
+        let amount = min(amount, held)
+        guard amount > 0, !questKeepsakes.contains(id) else { return false }
+        data.inventory[id] = held > amount ? held - amount : nil
+        if held == amount, data.forTrade != nil { data.forTrade = forTrade.map(\.id) }
+        var piles = lostPiles
+        // Onto the pile you're by (one about to go takes nothing more).
+        if let index = piles.firstIndex(where: { $0.takenAt > now && ($0.id == nearbyPile || isWithinReach($0)) }) {
+            piles[index].items[id, default: 0] += amount
+            data.lostPiles = piles
+        } else {
+            dropPile(items: [id: amount], gold: 0, now: now)
+        }
+        let name = content.item(id)?.name ?? id
+        post(L("You dropped {item}.", ["item": amount > 1 ? "\(name) ×\(amount)" : name]))
+        SoundEffects.shared.play(.equip)
+        return true
+    }
+
+    /// Whether a pile lies on this map within reach of where you stand (both nowhere in particular, the
+    /// map's middle, counts).
+    private func isWithinReach(_ pile: LostPile) -> Bool {
+        guard pile.mapID == data.mapID else { return false }
+        guard let here = playerPosition, let at = pile.position, at.count == 2 else { return playerPosition == nil && pile.position == nil }
+        return CGPoint(x: at[0], y: at[1]).distance(to: here) <= Self.pickUpReach
+    }
+
     /// Takes away the piles whose time is up, and says so: picked up by an adventurer, or gone.
     func watchPiles(now: Date = Date()) {
         let gone = lostPiles.filter { $0.takenAt <= now }
@@ -55,15 +88,17 @@ extension GameSession {
         }
     }
 
-    /// Picks a pile up: everything the bag has room for, coins too; the rest stays where it lies.
+    /// Picks a pile up: as much as the bag has room for, coins too; the rest stays where it lies.
     /// False when there's no such pile or nothing fit.
     @discardableResult
     func pickUp(_ id: UUID) -> Bool {
         guard var pile = lostPiles.first(where: { $0.id == id }) else { return false }
         var got = false
-        for (item, amount) in pile.items.sorted(by: { $0.key < $1.key }) where hasRoom(for: [item]) {
-            data.inventory[item, default: 0] += amount
-            pile.items[item] = nil
+        for (item, amount) in pile.items.sorted(by: { $0.key < $1.key }) {
+            let taken = min(amount, bagSlotsFree)
+            guard taken > 0 else { continue }
+            data.inventory[item, default: 0] += taken
+            pile.items[item] = amount > taken ? amount - taken : nil
             got = true
         }
         if pile.gold > 0, hasRoom(for: [], gold: pile.gold) {

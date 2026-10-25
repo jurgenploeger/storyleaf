@@ -1022,6 +1022,14 @@ nonisolated struct CrowdOptions: Decodable, Sendable {
     let traderLines: [String]?
 }
 
+/// What the chat's filter stars out (content/moderation.json, `ChatFilter`): whole words, words
+/// starting with a stem, and what's caught wherever it appears.
+nonisolated struct ModerationDef: Decodable, Sendable {
+    let words: [String]
+    let stems: [String]
+    let anywhere: [String]
+}
+
 /// The game's own notices in the chat (content/announcements.json): what's happening where and when.
 nonisolated struct AnnouncementOptions: Decodable, Sendable {
     /// Real seconds between notices while you play: [shortest, longest].
@@ -1284,6 +1292,7 @@ final class Content {
         let appearance: AppearanceOptions
         let crowd: CrowdOptions
         let announcements: AnnouncementOptions
+        let moderation: ModerationDef
         let releases: [ReleaseNote]
         let titles: [TitleDef]
         let rewards: RewardsDef
@@ -1316,6 +1325,8 @@ final class Content {
     var appearance: AppearanceOptions { loaded.appearance }
     var crowd: CrowdOptions { loaded.crowd }
     var announcements: AnnouncementOptions { loaded.announcements }
+    /// The chat's filter's words (`ChatFilter`).
+    var moderation: ModerationDef { loaded.moderation }
     /// Newest first.
     var releases: [ReleaseNote] { loaded.releases }
     var titles: [TitleDef] { loaded.titles }
@@ -1415,6 +1426,7 @@ final class Content {
             appearance: load("appearance"),
             crowd: load("crowd"),
             announcements: load("announcements"),
+            moderation: load("moderation"),
             releases: (load("changelog") as ChangelogFile).releases,
             titles: (load("titles") as TitlesFile).titles,
             rewards: load("rewards"),

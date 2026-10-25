@@ -192,6 +192,8 @@ final class ContinentScene: SKScene {
     private var allies: [Ally] = []
     /// What you lost when you fell, lying where you fell (`refreshPiles`).
     private var pileNodes: [UUID: Walker] = [:]
+    /// What each pile showed when it was drawn (`PileArt.look`).
+    private var pileLooks: [UUID: [String]] = [:]
     /// How close you come to a friend waiting for you before they set off with you again.
     private let rejoinRange: CGFloat = 64
     /// The land whose crowd leads you about, in the party you've joined (`GameSession.joinedParty`).
@@ -420,9 +422,13 @@ final class ContinentScene: SKScene {
         let dt = lastUpdate == 0 ? 0 : min(currentTime - lastUpdate, 1.0 / 8)
         lastUpdate = currentTime
         let stick = input.move
+        // In a party you've joined you go where it goes: the stick and taps do nothing till you
+        // leave it (the HUD's Leave party).
+        let following = session.joinedParty != nil
+        if following { player.path = [] }
         if isInputLocked {
             player.setWalking(false)
-        } else if stick.length > 0.15 {
+        } else if stick.length > 0.15, !following {
             player.path = []
             talkTarget = nil
             let step = stick * (walkSpeed * CGFloat(dt))
@@ -522,8 +528,9 @@ final class ContinentScene: SKScene {
     /// Tapping someone of a land's walks you up to talk to them; a passer-by turns to you and shows
     /// who they are; the ground walks you there, the shortest way within reach (`World.path`), to the
     /// very spot if you can stand on it.
+    /// Nothing while you follow a party you've joined: it leads you (`update`).
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard !isInputLocked, let point = touches.first?.location(in: layer) else { return }
+        guard !isInputLocked, session.joinedParty == nil, let point = touches.first?.location(in: layer) else { return }
         for land in lands.values {
             guard let npc = land.stage.npc(tappedAt: point) else { continue }
             talkTarget = (land.def.id, npc.def.id)
@@ -703,10 +710,10 @@ final class ContinentScene: SKScene {
 
     /// You said something in the Chat window: a bubble over your head, and maybe an answer from
     /// someone about you.
-    func heroSay(_ text: String) {
+    func heroSay(_ text: String, rude: Bool) {
         player.say(text)
         session.postChat(text, from: session.data.hero.name, kind: .you)
-        if let here, let stage = lands[here.id]?.stage { stage.crowd?.reply(near: stage.local(player.position)) }
+        if let here, let stage = lands[here.id]?.stage { stage.crowd?.reply(near: stage.local(player.position), scolding: rude) }
     }
 
     /// An adventurer's answer (befriended, invited), in a bubble over them, wherever they are.
@@ -953,10 +960,16 @@ final class ContinentScene: SKScene {
             if !piles.contains(where: { $0.id == id }) { SkillEffects.smoke(at: node.position, in: layer) }
             node.removeFromParent()
             pileNodes[id] = nil
+            pileLooks[id] = nil
+        }
+        // One that's changed (more dropped on it, some picked up) is drawn anew.
+        for pile in piles where pileNodes[pile.id] != nil && pileLooks[pile.id] != PileArt.look(of: pile) {
+            pileNodes.removeValue(forKey: pile.id)?.removeFromParent()
         }
         for pile in piles where pileNodes[pile.id] == nil {
             guard let at = point(of: pile) else { continue }
-            let node = Walker(cycle: art.walkCycle("lost_pile"), label: L("Your things"))
+            let node = PileArt.node(for: pile)
+            pileLooks[pile.id] = PileArt.look(of: pile)
             node.position = at
             node.zPosition = -at.y
             layer.addChild(node)
@@ -1116,7 +1129,7 @@ final class ContinentScene: SKScene {
         guard let quest = exit.requires.flatMap(content.quest) else { return }
         let giver = content.npc(quest.giver)?.name ?? quest.giver
         let line = L("The ship won't sail yet. Finish “{quest}” for {giver} first.", ["quest": quest.title, "giver": giver])
-        heroSay(line)
+        heroSay(line, rude: false)
         session.post(line, .quest)
     }
 

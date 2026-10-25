@@ -628,6 +628,11 @@ final class Crowd {
 
     // MARK: - Coming and going
 
+    /// What someone says to you when the chat's filter starred out what you said.
+    static var scoldings: [String] {
+        [L("Hey, let's keep it friendly!"), L("Whoa, mind your language!"), L("No need for that kind of talk.")]
+    }
+
     /// What someone says as they leave their group, and as they join one.
     static var partings: [String] {
         [L("I'm heading off on my own. See you!"), L("Thanks for the company, everyone!"), L("I'll go my own way from here. Bye!")]
@@ -843,12 +848,13 @@ final class Crowd {
         return true
     }
 
-    /// After you say something, someone nearby (or on the map) may answer.
-    func reply(near point: CGPoint) {
-        guard Int.random(in: 0..<3, using: &rng) > 0 else { return }
+    /// After you say something, someone nearby (or on the map) may answer. `scolding`: the chat's
+    /// filter starred something out (`ChatFilter`), and someone always answers, telling you off.
+    func reply(near point: CGPoint, scolding: Bool = false) {
+        guard scolding || Int.random(in: 0..<3, using: &rng) > 0 else { return }
         let nearby = members.filter { $0.walker.position.distance(to: point) < 420 }
         guard let member = (nearby.isEmpty ? members.filter { $0.kind == .adventurer } : nearby).randomElement(),
-              let line = replies.randomElement() else { return }
+              let line = (scolding ? Self.scoldings : replies).randomElement() else { return }
         member.chat = .random(in: 20...45)
         let near = !nearby.isEmpty
         member.walker.run(.wait(forDuration: .random(in: 1.2...3))) { [weak self] in

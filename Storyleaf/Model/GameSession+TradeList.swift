@@ -61,11 +61,7 @@ extension GameSession {
     func acceptBid() -> Bool {
         guard let bid = pendingBid else { return false }
         pendingBid = nil
-        // The coins need a slot, unless you carry some or this was the last of its kind.
-        guard data.gold > 0 || count(of: bid.item.id) == 1 || bagSlotsFree > 0 else {
-            post(L("Your bag is full. Put something in the bank first."), .system)
-            return false
-        }
+        // The coins go in the slot it leaves, if they need one.
         guard removeItem(bid.item.id) else { return false }
         gainGold(bid.price)
         if count(of: bid.item.id) == 0 { data.forTrade = forTrade.map(\.id) }

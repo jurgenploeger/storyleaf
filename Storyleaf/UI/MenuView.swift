@@ -76,7 +76,8 @@ struct MenuView: View {
                 ItemInfoCard(session: session, item: item, onClose: close, onEquip: equip,
                              action: fromBag ? bagAction(for: item, close: close) : nil,
                              note: fromBag ? bagNote(for: item) : nil,
-                             trading: fromBag ? trading(for: item) : nil)
+                             trading: fromBag ? trading(for: item) : nil,
+                             dropping: fromBag ? dropping(item, close: close) : nil)
                 .transition(.opacity)
                 .zIndex(1)
             }
@@ -249,6 +250,17 @@ extension MenuView {
         guard session.canPutUpForTrade(item) else { return nil }
         return ItemInfoCard.Action(title: L("Put up for trade"), icon: .coins, enabled: session.forTrade.count < GameSession.maxForTrade) {
             session.putUpForTrade(item.id)
+        }
+    }
+
+    /// Dropping some of it at your feet (`GameSession.drop`): not what a quest you're on needs. The card
+    /// closes once the last of it is gone.
+    func dropping(_ item: ItemDef, close: @escaping () -> Void) -> ((Int) -> Void)? {
+        guard session.count(of: item.id) > 0, !session.questKeepsakes.contains(item.id) else { return nil }
+        return { amount in
+            session.drop(item.id, amount)
+            session.save()
+            if session.count(of: item.id) == 0 { close() }
         }
     }
 

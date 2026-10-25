@@ -84,7 +84,10 @@ final class Lighting {
             node.alpha = CGFloat(def?.hazeAlpha ?? 0.2)
             hazeAlpha = node.alpha
             node.anchorPoint = CGPoint(x: 0.5, y: 1)
-            node.zPosition = 44_000
+            // Under the time of day's light (`Sky`'s shade, 43 000), so night darkens it as it does
+            // the map (playtesting 2026-10-25: over it, Larkspur's pale lavender haze stayed as
+            // bright at 4 a.m. as at noon and the night looked misty).
+            node.zPosition = 42_800
             camera.addChild(node)
             haze = node
         }

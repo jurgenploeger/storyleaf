@@ -28,6 +28,9 @@ npc_dark     | newgame,npc=elder,dark            | 8
 battle_ru    | newgame,lang=ru,map=sunny_meadow,battle | 15
 npc_ko       | newgame,lang=ko,npc=elder         | 8
 barber       | newgame,npc=barber,gold=2000      | 8
+# A banker's word, Open the bank under it; and the bank in its own window, the bag over the bank.
+banker       | newgame,npc=meadow_banker,bag=potion+seal_stone,gold=500 | 8
+bank         | newgame,bank=meadow_banker,bag=potion+seal_stone,gold=500 | 8
 quests_fr    | newgame,lang=fr,menu=quests       | 8
 meadowbrook  | newgame                           | 8
 sunny_meadow | newgame,map=sunny_meadow          | 15
@@ -129,6 +132,9 @@ dusk         | newgame,map=sunny_meadow,hour=18,weather=clear | 15
 rain         | newgame,map=sunny_meadow,hour=12,weather=rain  | 15
 storm_night  | newgame,map=frog_swamp,hour=23,weather=storm   | 15
 fog          | newgame,map=twilight_woods,hour=8,weather=fog  | 15
+# Larkspur at 4 a.m.: its pale lavender haze and tint darkened by the night like the rest, not a
+# bright veil over it (playtesting 2026-10-25: "kinda misty").
+night_larkspur | newgame,level=60,map=bluebird,hour=4,weather=clear | 10
 snowfall     | newgame,map=snow_white_forest,hour=14,weather=snow | 15
 battle_timer | newgame,level=44,class=fighter,learn=bash+first_aid+power_strike+whirlwind,map=rat_cavern,battle=2,turntimer=40 | 15
 battle_auto  | newgame,level=60,class=fighter,pet=pineapple,friends=2,map=sunny_meadow,battle=3,auto,fast | 1
@@ -274,6 +280,10 @@ quest_little_crab | newgame,class=fighter,level=125,map=hachoo_island,npc=little
 # Quest treasures: gear only a quest gives. Its card (gold frame, where it comes from), the treasures
 # a save that finished those quests gets by post, in the Bag and on the map, and one on offer.
 treasure_card    | newgame,class=fighter,level=100,menu=bag,bag=oxhide_mail,inspect=oxhide_mail | 8
+# A potion's card in the Bag: Drop and Drop all under it.
+drop_card        | newgame,menu=bag,bag=potion+potion,inspect=potion | 8
+# What you drop lies on the ground as the things themselves, very small, in a heap.
+pile_drop        | newgame,map=meadowbrook,bag=potion+potion+ether+iron_axe+seal_stone+homeward_feather,drop=potion+ether+iron_axe+seal_stone+homeward_feather,hour=12,weather=clear | 12
 treasure_bag     | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king+rat_king+puss_in_boots+crystal_hearts,menu=bag | 8
 treasure_post    | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king | 8
 treasure_offer   | newgame,class=fighter,level=72,map=sleepy_town,npc=thomas | 8

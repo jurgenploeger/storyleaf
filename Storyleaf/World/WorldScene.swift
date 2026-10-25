@@ -81,6 +81,8 @@ final class WorldScene: SKScene {
     private var allies: [Ally] = []
     /// What you lost when you fell on this map, lying where you fell (`refreshPiles`).
     private var pileNodes: [UUID: Walker] = [:]
+    /// What each pile showed when it was drawn (`PileArt.look`).
+    private var pileLooks: [UUID: [String]] = [:]
     /// How close you come to a friend waiting for you before they set off with you again.
     private let rejoinRange: CGFloat = 64
     /// Roads that stay closed until a quest is done: the barricade nodes and the cells they block.
@@ -1867,8 +1869,9 @@ final class WorldScene: SKScene {
 
     // MARK: - Input
 
+    /// Nothing while you follow a party you've joined: it leads you (`movePlayer`).
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard isBuilt, !isInputLocked, let point = touches.first?.location(in: world) else { return }
+        guard isBuilt, !isInputLocked, session.joinedParty == nil, let point = touches.first?.location(in: world) else { return }
         // A boss you've just beaten has gone (hidden) and doesn't answer taps.
         if let npc = npcs.first(where: { !$0.node.isHidden && ($0.node.position + CGVector(dx: 0, dy: 24 + $0.node.lift)).distance(to: point) < 34 }) {
             talkTarget = npc.def.id
@@ -1939,12 +1942,18 @@ final class WorldScene: SKScene {
             SkillEffects.smoke(at: node.position, in: world)
             node.removeFromParent()
             pileNodes[id] = nil
+            pileLooks[id] = nil
+        }
+        // One that's changed (more dropped on it, some picked up) is drawn anew.
+        for pile in piles where pileNodes[pile.id] != nil && pileLooks[pile.id] != PileArt.look(of: pile) {
+            pileNodes.removeValue(forKey: pile.id)?.removeFromParent()
         }
         for pile in piles where pileNodes[pile.id] == nil {
             var at = map.center(of: map.center)
             if let position = pile.position, position.count == 2 { at = CGPoint(x: position[0], y: position[1]) }
             if !canStand(at: at), let open = map.nearestWalkable(to: map.cell(at: at)) { at = map.center(of: open) }
-            let node = Walker(cycle: art.walkCycle("lost_pile"), label: L("Your things"))
+            let node = PileArt.node(for: pile)
+            pileLooks[pile.id] = PileArt.look(of: pile)
             node.position = at
             node.zPosition = -at.y
             world.addChild(node)
@@ -2225,10 +2234,10 @@ final class WorldScene: SKScene {
     }
 
     /// You said something in the Chat window: a bubble over your head, and maybe an answer.
-    func heroSay(_ text: String) {
+    func heroSay(_ text: String, rude: Bool) {
         player.say(text)
         session.postChat(text, from: session.data.hero.name, kind: .you)
-        crowd?.reply(near: player.position)
+        crowd?.reply(near: player.position, scolding: rude)
     }
 
     /// Called by the HUD's Talk button. Not while a battle's starting (or anything else has the map).
@@ -2411,7 +2420,11 @@ final class WorldScene: SKScene {
 
     private func movePlayer(_ dt: TimeInterval) {
         let stick = input.move
-        if stick.length > 0.15 {
+        // In a party you've joined you go where it goes: the stick and taps do nothing till you
+        // leave it (the HUD's Leave party).
+        let following = session.joinedParty != nil
+        if following { player.path = [] }
+        if stick.length > 0.15, !following {
             player.path = []
             talkTarget = nil
             let step = stick * (walkSpeed * CGFloat(dt))

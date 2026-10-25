@@ -57,7 +57,7 @@ engine's formulas, and the CI screenshots. Every finding here was checked agains
    references (the Drunk Dragon and its hangover quest) are 13+ too. Don't choose Made for Kids.
 5. **Where it's sold.** Untick China mainland (games need an NPPA approval number) and Vietnam (games must be
    licensed there). Declare your EU trader status (DSA) in App Store Connect.
-6. **The name: Tales of Dorlune** (since 0.8.8; Talewild before). Set it as the app's name (and a subtitle) in
+6. **The name: Tales of Dorlune** (since 0.8.10; Talewild before). Set it as the app's name (and a subtitle) in
    App Store Connect, the wordmark in `Logo.png` (the store slides draw it too), and search TALES OF DORLUNE and
    DORLUNE on the USPTO, EUIPO and J-PlatPat registers (docs/fairyland-online.md → Names: Bandai Namco's Tales
    marks). A domain and social handles for the new name are still to find: talewild.app and its handles were
@@ -159,7 +159,7 @@ engine's formulas, and the CI screenshots. Every finding here was checked agains
 14. **Rare soft-lock.** With five companions the starter egg can't hatch and there's no release button, which
     blocks Hope of Meadowbrook (a hatch quest) and the Elder's quests after it.
 15. ~~**The English tagline is part of the logo**~~ Done in 0.8.1: the logo has no tagline, just the
-    wordmark (TALES OF DORLUNE in gold since 0.8.7, `tools/logo_art.py`), the same in every language.
+    wordmark (TALES OF DORLUNE in gold since 0.8.10, `tools/logo_art.py`), the same in every language.
 16. **The music synth runs all the time**, muted or not (*est.* a few % of a core for the whole session). Stop the
     engine while muted or at volume 0.
 

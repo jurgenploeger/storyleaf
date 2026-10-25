@@ -194,6 +194,7 @@ final class GameSession {
         }
         Self.moveGearToItsSlot(&self.data)
         stockBankOnce()
+        fitBag()
         deliverQuestTreasures()
         applyLook()
     }
@@ -1294,13 +1295,13 @@ final class GameSession {
 
     func count(of id: String) -> Int { data.inventory[id] ?? 0 }
 
-    /// Into the bag, if it fits: a kind you carry stacks, a new one takes one of its 50 slots
-    /// (`GameSession+Bank`). False, and a note, when the bag is full: it's left behind. `force`: put
-    /// in whatever the bag holds (what an older save is owed, a quest's own things).
+    /// Into the bag, if they fit: each one takes one of its 50 slots (`GameSession+Bank`). False, and a
+    /// note, when the bag hasn't room for them all: they're left behind. `force`: put in whatever the
+    /// bag holds (what an older save is owed, a quest's own things).
     @discardableResult
     func addItem(_ id: String, _ amount: Int = 1, force: Bool = false) -> Bool {
         guard amount > 0 else { return true }
-        guard force || count(of: id) > 0 || bagSlotsFree > 0 else {
+        guard force || amount <= bagSlotsFree else {
             post(L("Your bag is full: {item} left behind.", ["item": content.item(id)?.name ?? id]), .reward)
             return false
         }
@@ -1388,14 +1389,10 @@ final class GameSession {
 
     func equip(_ id: String) {
         guard let item = content.item(id), ItemType.equipmentSlots.contains(item.type), equipIssue(item) == nil else { return }
-        // What it replaces goes in the bag: a slot for it, unless taking this one out frees one.
-        if let old = data.hero.equipment[item.type], count(of: old) == 0, count(of: id) > 1, bagSlotsFree == 0 {
-            post(L("Your bag is full. Put something in the bank first."), .system)
-            return
-        }
+        // What it replaces goes in the bag, in the slot this one leaves.
         guard removeItem(id) else { return }
         SoundEffects.shared.play(.equip)
-        if let old = data.hero.equipment[item.type] { addItem(old) }
+        if let old = data.hero.equipment[item.type] { addItem(old, force: true) }
         data.hero.equipment[item.type] = id
         clampHero()
         applyLook()
@@ -1412,7 +1409,7 @@ final class GameSession {
     func buy(_ id: String) -> Bool {
         guard let item = content.item(id), data.gold >= item.price else { return false }
         // Spending the last coins frees their slot.
-        guard count(of: id) > 0 || bagSlotsFree > 0 || data.gold == item.price else {
+        guard bagSlotsFree > 0 || data.gold == item.price else {
             post(L("Your bag is full. Put something in the bank first."), .system)
             return false
         }
@@ -1436,11 +1433,7 @@ final class GameSession {
     @discardableResult
     func sell(_ id: String) -> Int? {
         guard let item = content.item(id), item.price > 0 else { return nil }
-        // The coins need a slot, unless you carry some or this was the last of its kind.
-        guard data.gold > 0 || count(of: id) == 1 || bagSlotsFree > 0 else {
-            post(L("Your bag is full. Put something in the bank first."), .system)
-            return nil
-        }
+        // The coins go in the slot it leaves, if they need one.
         guard removeItem(id) else { return nil }
         let paid = Self.sellPrice(of: item)
         gainGold(paid)
@@ -1522,11 +1515,11 @@ final class GameSession {
         guard !(data.tradesDone ?? []).contains(offer.id) else { return false }
         switch offer.kind {
         case .theyBuy:
-            guard data.gold > 0 || count(of: offer.item.id) == 1 || bagSlotsFree > 0, removeItem(offer.item.id) else { return false }
+            guard removeItem(offer.item.id) else { return false }
             gainGold(offer.price)
         case .theySell:
             guard data.gold >= offer.price,
-                  count(of: offer.item.id) > 0 || bagSlotsFree > 0 || data.gold == offer.price else { return false }
+                  bagSlotsFree > 0 || data.gold == offer.price else { return false }
             data.gold -= offer.price
             addItem(offer.item.id)
         }
@@ -1569,11 +1562,7 @@ final class GameSession {
     @discardableResult
     func craft(_ id: String) -> Bool {
         guard let item = content.item(id), canCraft(item), let recipe = item.recipe else { return false }
-        // What's made needs a slot, unless it stacks or the materials free one.
-        guard count(of: id) > 0 || bagSlotsFree > 0 || recipe.contains(where: { count(of: $0.key) == $0.value }) else {
-            post(L("Your bag is full. Put something in the bank first."), .system)
-            return false
-        }
+        // What's made goes in a slot its materials leave.
         for (material, needed) in recipe {
             data.inventory[material, default: 0] -= needed
             if data.inventory[material] == 0 { data.inventory[material] = nil }
