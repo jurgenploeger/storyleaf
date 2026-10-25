@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Talewild's logo (Logo.png): TALEWILD in capitals, in Open Sans ExtraBold at its semi-condensed width
-(tools/fonts/), the face of the titles in the pixel RPGs the user pointed to ("FIGHT AGAINST BOSS"). All
-gold, in one smooth gradient from pale gold at the top to deep amber at the foot, inside a dark brown
-outline with a hard shadow under it. No second colour, no bands, no emblem, tagline or rays (the brand in
-the Figma file, 02 Logo; the titles on the store slides use the same face and gold, tools/store_slides.py).
+"""The logo (Logo.png): TALES OF over AVALUNE, in capitals, in Open Sans ExtraBold at its semi-condensed
+width (tools/fonts/), the face of the titles in the pixel RPGs the user pointed to ("FIGHT AGAINST BOSS").
+The world's name big, TALES OF small and spaced out above its middle, the two lines' outlines run into
+one. All gold, each line in one smooth gradient from pale gold at the top to deep amber at the foot,
+inside a dark brown outline with a hard shadow under it. No second colour, no bands, no emblem, tagline
+or rays (the brand in the Figma file, 02 Logo; the titles on the store slides use the same face and gold,
+tools/store_slides.py).
 
 Drawn `SS` times as big, the outline measured from the letters' true edges (round), then shrunk, so the
 edges are smooth.
@@ -25,10 +27,11 @@ ROOT = Path(__file__).resolve().parent.parent
 LOGO = ROOT / "Storyleaf/Resources/Assets.xcassets/Logo.imageset/Logo.png"
 FONT = ROOT / "tools/fonts/OpenSans-SemiCondensedExtraBold.ttf"
 
-WORD = "TALEWILD"
-# Sizes in Logo.png's pixels: the type, the space between letters, the outline round the word and how
-# far the hard shadow drops.
-PX, TRACKING = 250, 9
+# The lines, top to bottom: the words, their type size and the space between their letters, in Logo.png's
+# pixels; then the gap between the lines' letters (the outlines meet across it), the outline round the
+# letters and how far the hard shadow drops.
+LINES = [("TALES OF", 104, 22), ("AVALUNE", 250, 9)]
+GAP = 16
 OUTLINE, SHADOW = 10, 8
 SS = 4
 
@@ -48,24 +51,40 @@ def gold(height: int, top: int, span: int) -> np.ndarray:
     return np.stack([np.interp(t, stops, colours[:, k]) for k in range(3)], axis=1)
 
 
-def logo() -> Image.Image:
-    font = ImageFont.truetype(str(FONT), PX * SS)
-    size = (PX * SS * 6, PX * SS * 2)
-    mask = Image.new("L", size)
+def line(word: str, px: int, tracking: int) -> np.ndarray:
+    """One line's capitals, `SS` times as big, cut to them."""
+    font = ImageFont.truetype(str(FONT), px * SS)
+    mask = Image.new("L", (px * SS * (len(word) + 2), px * SS * 2))
     draw = ImageDraw.Draw(mask)
-    x, y = PX * SS / 2, PX * SS * 0.4
-    for ch in WORD:
-        draw.text((x, y), ch, font=font, fill=255)
-        x += font.getlength(ch) + TRACKING * SS
+    x = px * SS / 2
+    for ch in word:
+        draw.text((x, px * SS * 0.4), ch, font=font, fill=255)
+        x += font.getlength(ch) + tracking * SS
     letters = np.asarray(mask) >= 128
-    rows = np.flatnonzero(letters.any(axis=1))
-    top, span = rows[0], rows[-1] + 1 - rows[0]
+    rows, cols = np.flatnonzero(letters.any(axis=1)), np.flatnonzero(letters.any(axis=0))
+    return letters[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
+
+
+def logo() -> Image.Image:
+    lines = [line(*spec) for spec in LINES]
+    pad = (OUTLINE + SHADOW + 4) * SS
+    width = max(part.shape[1] for part in lines) + 2 * pad
+    height = sum(part.shape[0] for part in lines) + GAP * SS * (len(lines) - 1) + 2 * pad
+    letters = np.zeros((height, width), bool)
+    face = np.zeros((height, width, 3))
+    y = pad
+    for part in lines:
+        x = (width - part.shape[1]) // 2
+        letters[y:y + part.shape[0], x:x + part.shape[1]] = part
+        # Each line's own gradient, top to foot of its capitals.
+        face[y:y + part.shape[0]] = gold(part.shape[0], 0, part.shape[0])[:, None, :]
+        y += part.shape[0] + GAP * SS
+    size = (width, height)
 
     outline = distance_transform_edt(~letters) <= OUTLINE * SS
     shadow = np.roll(outline, SHADOW * SS, axis=0)
     art = np.zeros(size[::-1] + (4,), np.uint8)
     art[outline | shadow] = INK + (255,)
-    face = np.broadcast_to(gold(size[1], top, span)[:, None, :], size[::-1] + (3,))
     art[letters, :3] = face[letters].round().astype(np.uint8)
 
     image = Image.fromarray(art, "RGBA")

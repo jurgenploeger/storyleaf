@@ -139,7 +139,7 @@ private struct ChapterPage: View {
     private var lines: [String] {
         switch chapter {
         case .gathering: [
-            L("Long ago, the goddess Liora gathered the world's fairy tales into one land: Talewild. Villages grew up between the stories, and adventurers came from far and wide to explore them."),
+            L("Long ago, the goddess Liora gathered the world's fairy tales into one land: Avalune. Villages grew up between the stories, and adventurers came from far and wide to explore them."),
             L("Every tale found a home: Thumbelina's lotus pond, Snow White's forest, the Emerald Road to Oz and the golden sands of the Thousand and One Nights. For a long time, they all lived happily ever after."),
         ]
         case .shadows: [
@@ -147,7 +147,7 @@ private struct ChapterPage: View {
             L("Nobody knows why. Some say pages are being torn from Liora's great storybook, and every lost page lets a little more darkness in."),
         ]
         case .arrival, .reel: [
-            L("You arrive in Meadowbrook as a new adventurer, with the whole of Talewild ahead of you."),
+            L("You arrive in Meadowbrook as a new adventurer, with the whole of Avalune ahead of you."),
             L("Elder Oak is waiting in the village square with three gifts. Find a companion, learn from the guild masters, and set the stories right, one tale at a time."),
         ]
         }
@@ -266,7 +266,7 @@ private struct HowToPlayPage: View {
 private struct WorldPage: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            PageTitle(text: L("The world of Talewild"), icon: .map)
+            PageTitle(text: L("The world of Avalune"), icon: .map)
             Text(L("Roads join every place to its neighbours. Your journey starts in Meadowbrook. Quests open the roads further out, where stronger monsters live."))
                 .font(HUDStyle.font(11))
                 .foregroundStyle(HUDStyle.cream)

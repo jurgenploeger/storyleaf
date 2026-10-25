@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Talewild's social media assets, made from the game's own art: the app icon's drawing for the
+"""Tales of Avalune's social media assets, made from the game's own art: the app icon's drawing for the
 profile pictures, the logo (Logo.png, `logo_art.py`) for the logo files, and the HUD-free landscape screenshot
 scenes (`store_land_*` in tools/screenshots.txt, from CI's `screenshots` branch) behind the logo on
 every cover and banner.
@@ -38,14 +38,14 @@ PROFILE_CROP = (67, 52, 163, 148)
 # the logo. Where the shot is narrower than the cover (X, Bluesky, Facebook) it can't move him, so
 # the logo sits to the right of the middle instead; on the tall ones, above it.
 SPECS = [
-    ("x_header", (1500, 500), "store_land_companion", 0.46, (0.72, 0.4), 0.3),
-    ("bluesky_banner", (3000, 1000), "store_land_companion", 0.46, (0.72, 0.4), 0.3),
-    ("facebook_cover", (1640, 624), "store_land_explore", 0.42, (0.74, 0.42), 0.26),
-    ("youtube_banner", (2560, 1440), "store_land_anywhere", 0.36, (0.62, 0.5), 0.36),
-    ("discord_banner", (960, 540), "store_land_anywhere", 0.5, (0.7, 0.42), 0.26),
-    ("link_preview", (1200, 630), "store_land_explore", 0.5, (0.7, 0.42), 0.26),
-    ("instagram_post", (1080, 1350), "store_land_companion", 0.8, (0.5, 0.15), 0.5),
-    ("instagram_story", (1080, 1920), "store_land_anywhere", 0.8, (0.5, 0.2), 0.5),
+    ("x_header", (1500, 500), "store_land_companion", 0.36, (0.72, 0.42), 0.3),
+    ("bluesky_banner", (3000, 1000), "store_land_companion", 0.36, (0.72, 0.42), 0.3),
+    ("facebook_cover", (1640, 624), "store_land_explore", 0.34, (0.74, 0.42), 0.26),
+    ("youtube_banner", (2560, 1440), "store_land_anywhere", 0.3, (0.62, 0.5), 0.36),
+    ("discord_banner", (960, 540), "store_land_anywhere", 0.42, (0.7, 0.4), 0.26),
+    ("link_preview", (1200, 630), "store_land_explore", 0.42, (0.7, 0.4), 0.26),
+    ("instagram_post", (1080, 1350), "store_land_companion", 0.72, (0.5, 0.16), 0.5),
+    ("instagram_story", (1080, 1920), "store_land_anywhere", 0.72, (0.5, 0.2), 0.5),
 ]
 
 SKY = [(111, 192, 245), (169, 220, 250), (227, 245, 255)]

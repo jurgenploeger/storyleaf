@@ -32,7 +32,7 @@ enum Brand {
     static let skyText = Color.adaptive(light: HUDStyle.ink, dark: HUDStyle.cream)
 }
 
-/// Where the sky's soft light sits: the middle of the word in the logo (Logo.png, drawn by
+/// Where the sky's soft light sits: the middle of the world's name in the logo (Logo.png, drawn by
 /// tools/logo_art.py), or whatever else a screen puts in its middle (the travel card's swirl). Published with `raysAnchor`, read by `storyleafSky`.
 struct RaysAnchor: PreferenceKey {
     static var defaultValue: Anchor<CGPoint>? { nil }
@@ -42,12 +42,13 @@ struct RaysAnchor: PreferenceKey {
 }
 
 extension Brand {
-    /// Where the sky's light sits in the logo image (the middle of the word), as a share of its size.
-    static let raysInLogo = UnitPoint(x: 0.5, y: 0.5)
+    /// Where the sky's light sits in the logo image (the middle of AVALUNE, under the smaller TALES OF),
+    /// as a share of its size.
+    static let raysInLogo = UnitPoint(x: 0.5, y: 0.64)
 }
 
 extension View {
-    /// Marks this view's `point` (the middle of the word, for the logo) as where the sky's light sits.
+    /// Marks this view's `point` (the middle of the world's name, for the logo) as where the sky's light sits.
     func raysAnchor(_ point: UnitPoint = .center) -> some View {
         anchorPreference(key: RaysAnchor.self, value: .unitPoint(point)) { $0 }
     }
