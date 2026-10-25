@@ -301,10 +301,10 @@ def witch_hat() -> tuple:
     s = Sprite(92, 60)
     purple = Material("#5a3a8c", shades=5, texture=0.05)
     s.poly([(x, y + 8) for x, y in brim()], purple)
-    left, right = sweep([(42, 34), (40, 12), (56, 8), (76, 30)], lambda t: 9.0 * (1 - t) ** 1.2 + 1.0)
-    cone = [(21, 46), (25, 43), (30, 38), (33, 35)] + left + right[::-1] + [(51, 35), (55, 39), (60, 44), (64, 46)]
+    left, right = sweep([(42, 35), (40, 12), (56, 8), (76, 30)], lambda t: 13.0 * (1 - t) ** 1.05 + 1.2)
+    cone = [(18, 46), (22, 42), (26, 38), (29, 36)] + left + right[::-1] + [(55, 36), (59, 39), (63, 43), (67, 46)]
     s.poly(cone, purple)
-    s.poly([(20, 46), (65, 46), (63, 42), (22, 42)], Material("#e8a838", shades=4, texture=0.03, gloss=0.4), profile="cylinder")
+    s.poly([(17, 46), (68, 46), (66, 42), (19, 42)], Material("#e8a838", shades=4, texture=0.03, gloss=0.4), profile="cylinder")
     return s.render(), (78, 22)
 
 
@@ -329,8 +329,8 @@ def santa_hat() -> tuple:
     curves round the head (lower over the brow than at the sides), its edges in tufts, not a smooth oval."""
     s = Sprite(86, 52)
     fur = Material("#f2f0f6", shades=4, texture=0.12, grain=1.0)
-    s.poly([(16, 36), (19, 26), (27, 18), (39, 14), (51, 15), (61, 20), (69, 28), (75, 37), (76, 42), (71, 36),
-            (64, 29), (62, 36)], Material("#cc2e3e", shades=5, texture=0.05))
+    s.poly([(16, 36), (19, 26), (27, 18), (39, 14), (51, 14), (62, 18), (71, 25), (78, 33), (81, 41), (73, 42),
+            (67, 35), (62, 37)], Material("#cc2e3e", shades=5, texture=0.05))
     top, bottom = [], []
     for i in range(37):
         u = i / 18 - 1
@@ -341,7 +341,7 @@ def santa_hat() -> tuple:
         top.append((x, mid - half))
         bottom.append((x, mid + half))
     s.poly(top + bottom[::-1], fur)
-    s.ellipse(78, 44, 6.5, 6.5, fur)
+    s.ellipse(78, 45, 7, 7, fur)
     return s.render(), (79, 35)
 
 
