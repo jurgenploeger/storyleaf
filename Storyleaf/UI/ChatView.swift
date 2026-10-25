@@ -8,6 +8,7 @@ struct ChatView: View {
     let onClose: () -> Void
     @State private var draft = ""
     @FocusState private var typing: Bool
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
         ZStack {
@@ -59,9 +60,14 @@ struct ChatView: View {
                 .padding(10)
                 .background(HUDStyle.ink.opacity(0.6))
             }
-            .frame(maxWidth: 520, maxHeight: 460)
+            // As big as the menu's windows (playtesting 2026-10-25: "Make the chat modal the same size as
+            // the other modals"): out to the HUD's own margins (`MenuMorph`).
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .gameWindow()
-            .padding(16)
+            .padding(.horizontal, MenuMorph.side)
+            .padding(.top, MenuMorph.side)
+            .padding(.bottom, MenuMorph.bottom(onItsSide: verticalSizeClass == .compact))
+            .ignoresSafeArea(.container, edges: MenuMorph.bottomEdge(onItsSide: verticalSizeClass == .compact))
         }
         .onAppear { session.unreadChat = 0 }
     }
