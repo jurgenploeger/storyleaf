@@ -5,7 +5,7 @@ the apple and blossom trees, built from the game's sprites and redrawn by RD
 (art-variants/app_icon_sprite/, docs/sprite-acceptance.md → Retro Diffusion).
 
 Light: the drawing cropped in close on the hero, hair to knees over a band of meadow (`CROP`), so he reads on a
-small Home Screen icon, scaled by a whole number (`SCALE`, nearest neighbour) and its edge pixels
+small Home Screen icon, its flat sky graded from deep blue overhead to a pale haze (`day_sky`), scaled by a whole number (`SCALE`, nearest neighbour) and its edge pixels
 repeated out to 1024. Dark: the same scene at dusk, its sky the night `StoryleafSky` draws in Dark
 Mode, the rest darkened and cooled, moonlight on the hero's face keeping him brighter than the
 trees, the gold still warm, and the evening's lights: fireflies, sparkles in the blossom, stars,
@@ -51,6 +51,11 @@ PETAL, STAR = (1.0, 0.86, 0.95), (0.95, 0.96, 1.0)
 
 # The night sky, top to bottom, where the day's blue was.
 NIGHT = [(0.17, 0.12, 0.38), (0.07, 0.13, 0.33), (0.04, 0.2, 0.25)]
+# The day sky, top to bottom, in the drawing's pixels: RD painted it one flat blue, so it's graded from a
+# deeper blue overhead to a pale haze at the horizon, the hue turning from a touch of violet to a touch of
+# cyan as it pales (docs/pixel-style.md: hue-shifted ramps), in hard bands with a dithered seam (`day_sky`).
+DAY = ["#4f98e4", "#68acec", "#82bff2", "#9ccff5", "#b6def8", "#cfeafb"]
+SKY_ROWS = (62, 160)
 
 
 def crop(box: tuple[int, int, int, int]) -> np.ndarray:
@@ -81,6 +86,26 @@ def is_gold(rgb: np.ndarray) -> np.ndarray:
     gold = (hue > 33) & (hue < 58) & (sat > 0.45) & (val > 0.7)
     shine = (hue > 30) & (hue < 65) & (sat > 0.12) & (val > 0.9)
     return gold | shine
+
+
+def day_sky(rgb: np.ndarray, box: tuple[int, int, int, int]) -> np.ndarray:
+    """The sky graded in `DAY`'s bands down `SKY_ROWS`, each seam dithered in a checkerboard two pixels
+    deep, so it has depth; where RD's sky was its deeper blue, a band deeper still."""
+    out = rgb.copy()
+    sky = sky_mask(rgb)
+    pale = rgb.sum(axis=2) >= rgb[sky].sum(axis=1).max() - 0.02 if sky.any() else sky
+    bands = np.array([[int(c[i:i + 2], 16) / 255 for i in (1, 3, 5)] for c in DAY])
+    top, bottom = SKY_ROWS
+    for y, x in np.argwhere(sky):
+        t = np.clip((y + box[1] - top) / (bottom - top), 0, 0.999) * len(DAY)
+        band = int(t)
+        # The seam: the last two rows of a band checker into the next.
+        if t - band > 1 - 2 * len(DAY) / (bottom - top) and (x + y) % 2 and band < len(DAY) - 1:
+            band += 1
+        if not pale[y, x]:
+            band = max(0, band - 1)
+        out[y, x] = bands[band]
+    return out
 
 
 def light_up(out: np.ndarray, box: tuple[int, int, int, int]) -> np.ndarray:
@@ -164,7 +189,7 @@ def main() -> None:
 
     rgb = crop(CROP)
     night = dusk(rgb, CROP)
-    light, dark, tinted = scaled(rgb, SCALE), scaled(night, SCALE), scaled(tint(night), SCALE)
+    light, dark, tinted = scaled(day_sky(rgb, CROP), SCALE), scaled(night, SCALE), scaled(tint(night), SCALE)
     light.save(LIGHT, optimize=True)
     dark.save(DARK, optimize=True)
     tinted.save(TINTED, optimize=True)

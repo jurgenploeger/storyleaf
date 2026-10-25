@@ -81,8 +81,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   text straight on it uses `Brand.skyText`. Debug flag `dark` (or `light`) forces a look for screenshots.
 - `tools/app_icon_art.py`: the app icon, light, dark and tinted (iOS 18+), from one picked RD drawing
   (`SOURCE`: the game's own hero with a golden sword before the apple and blossom trees, built from the
-  sprites and redrawn by RD), cropped in close on him, hair to knees over a band of meadow (`CROP`), and scaled by a whole
-  number; dark is the scene at dusk under the night `StoryleafSky` draws, lit by its gold, fireflies, sparkles
+  sprites and redrawn by RD), cropped in close on him, hair to knees over a band of meadow (`CROP`), its flat sky graded from deep
+  blue overhead to a pale haze in dithered bands (`day_sky`), and scaled by a whole number; dark is the scene at dusk under the night `StoryleafSky` draws, lit by its gold, fireflies, sparkles
   and stars (`light_up`), in hard steps; tinted its greys. `--preview` shows Home Screen sizes.
 - `tools/season_icon_art.py`: the festive seasons' app icons (AppIcon-Halloween, -Christmas, -Easter), from the
   app icon's drawing cropped a little looser (`BOX`) so a hat fits: the hero as drawn (`HERO`), RD's scenery
