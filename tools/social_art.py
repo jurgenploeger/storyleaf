@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Talewild's social media assets, made from the game's own art: the app icon's drawing for the
-profile pictures, the logo (Logo.png) for the logo files, and the HUD-free landscape screenshot
+profile pictures, the logo (Logo.png, `logo_art.py`) for the logo files, and the HUD-free landscape screenshot
 scenes (`store_land_*` in tools/screenshots.txt, from CI's `screenshots` branch) behind the logo on
 every cover and banner.
 
@@ -23,6 +23,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 import app_icon_art
+import logo_art
 import store_slides
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,20 +33,20 @@ LOGO = ROOT / "Storyleaf" / "Resources" / "Assets.xcassets" / "Logo.imageset" / 
 # The profile picture: the icon's drawing around the hero's face (115, 103), 96 pixels across.
 PROFILE_CROP = (67, 52, 163, 148)
 
-# Covers: name, size, scene, the logo's height as a share of the cover's, where its middle goes
+# Covers: name, size, scene, the logo's width as a share of the cover's, where its middle goes
 # (shares of width and height), and where the hero lands across the cover (share of its width):
 # the game's camera keeps him in the middle of every shot, so the crop moves him out from under
 # the logo. Where the shot is narrower than the cover (X, Bluesky, Facebook) it can't move him, so
 # the logo sits to the right of the middle instead; on the tall ones, above it.
 SPECS = [
-    ("x_header", (1500, 500), "store_land_companion", 0.62, (0.78, 0.47), 0.3),
-    ("bluesky_banner", (3000, 1000), "store_land_companion", 0.62, (0.78, 0.47), 0.3),
-    ("facebook_cover", (1640, 624), "store_land_explore", 0.56, (0.76, 0.5), 0.26),
-    ("youtube_banner", (2560, 1440), "store_land_anywhere", 0.26, (0.56, 0.5), 0.36),
-    ("discord_banner", (960, 540), "store_land_anywhere", 0.5, (0.64, 0.5), 0.26),
-    ("link_preview", (1200, 630), "store_land_explore", 0.5, (0.64, 0.5), 0.26),
-    ("instagram_post", (1080, 1350), "store_land_companion", 0.24, (0.5, 0.17), 0.5),
-    ("instagram_story", (1080, 1920), "store_land_anywhere", 0.17, (0.5, 0.21), 0.5),
+    ("x_header", (1500, 500), "store_land_companion", 0.46, (0.72, 0.4), 0.3),
+    ("bluesky_banner", (3000, 1000), "store_land_companion", 0.46, (0.72, 0.4), 0.3),
+    ("facebook_cover", (1640, 624), "store_land_explore", 0.42, (0.74, 0.42), 0.26),
+    ("youtube_banner", (2560, 1440), "store_land_anywhere", 0.36, (0.62, 0.5), 0.36),
+    ("discord_banner", (960, 540), "store_land_anywhere", 0.5, (0.7, 0.42), 0.26),
+    ("link_preview", (1200, 630), "store_land_explore", 0.5, (0.7, 0.42), 0.26),
+    ("instagram_post", (1080, 1350), "store_land_companion", 0.8, (0.5, 0.15), 0.5),
+    ("instagram_story", (1080, 1920), "store_land_anywhere", 0.8, (0.5, 0.2), 0.5),
 ]
 
 SKY = [(111, 192, 245), (169, 220, 250), (227, 245, 255)]
@@ -85,13 +86,11 @@ def vignette(canvas: Image.Image, strength: float = 0.28) -> None:
     canvas.alpha_composite(shade)
 
 
-def place_logo(canvas: Image.Image, logo: Image.Image, height_share: float, middle: tuple[float, float]) -> None:
-    height = round(canvas.height * height_share)
-    width = round(logo.width * height / logo.height)
-    width = min(width, round(canvas.width * 0.86))
-    height = round(logo.height * width / logo.width)
-    art = logo.resize((width, height), Image.LANCZOS)
-    canvas.alpha_composite(art, (round(canvas.width * middle[0] - width / 2), round(canvas.height * middle[1] - height / 2)))
+def place_logo(canvas: Image.Image, logo: Image.Image, width_share: float, middle: tuple[float, float]) -> None:
+    """The logo at about `width_share` of the canvas's width, its pixels scaled by a whole number."""
+    scale = max(1, round(canvas.width * width_share / logo.width))
+    art = logo.resize((logo.width * scale, logo.height * scale), Image.NEAREST)
+    canvas.alpha_composite(art, (round(canvas.width * middle[0] - art.width / 2), round(canvas.height * middle[1] - art.height / 2)))
 
 
 def profile(side: int) -> Image.Image:
@@ -111,15 +110,15 @@ def main() -> None:
     args = parser.parse_args()
 
     OUT.mkdir(parents=True, exist_ok=True)
-    logo = Image.open(LOGO).convert("RGBA")
+    logo = logo_art.logo()
     made = {}
 
     made["profile_1080"] = profile(1080)
     made["discord_server_icon_512"] = profile(512)
-    made["logo_transparent"] = logo
+    made["logo_transparent"] = Image.open(LOGO).convert("RGBA")
     for name, stops in [("logo_on_sky_1080", SKY), ("logo_on_forest_1080", FOREST)]:
         square = gradient((1080, 1080), stops)
-        place_logo(square, logo, 0.58, (0.5, 0.5))
+        place_logo(square, logo, 0.82, (0.5, 0.5))
         made[name] = square
 
     for name, size, scene, share, middle, hero_x in SPECS:

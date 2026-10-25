@@ -84,6 +84,9 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   sprites and redrawn by RD), cropped in close on him, hair to knees over a band of meadow (`CROP`), and scaled by a whole
   number; dark is the scene at dusk under the night `StoryleafSky` draws, lit by its gold, fireflies, sparkles
   and stars (`light_up`), in hard steps; tinted its greys. `--preview` shows Home Screen sizes.
+- `tools/logo_art.py`: the logo (`Logo.png`), the one word Talewild in Lilita One (the store slides' face,
+  `tools/fonts/`), drawn as pixel art: set small and cut hard, "Tale" gold and "wild" green in one dark outline
+  with a hard shadow, faces in hard bands, scaled up by a whole number. No emblem, tagline or rays.
 - `tools/store_slides.py`: App Store slides from the landscape `store_land_*` screenshot scenes: captions in the
   logo's style (`tools/store_slides.json`, font in `tools/fonts/`), cropped clear of the Dynamic Island the
   simulator draws in, exported at 2622×1206 and 2868×1320 with no alpha.
