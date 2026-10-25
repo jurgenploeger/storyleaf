@@ -3710,8 +3710,13 @@ struct RewardTests {
         let cape = try #require(Content.shared.item(prize.item))
         #expect(session.heroStats.defense == before.defense + (cape.stats?.defense ?? 0))
         #expect(GameSession.lookKey(for: session.data.hero).contains(prize.item))
-        // Lost (it can't be sold), it can be woven again.
+        // Banked, it's still yours: not woven again.
         session.unequip(.cape)
+        session.deposit(prize.item)
+        #expect(session.count(of: prize.item) == 0 && session.hasCape(prize))
+        #expect(session.capesWaiting.isEmpty && !session.takeCape(prize))
+        #expect(session.withdraw(prize.item))
+        // Lost (it can't be sold), it can be woven again.
         #expect(session.removeItem(prize.item))
         #expect(session.capesWaiting.map(\.item) == [prize.item])
         session.checkTitles()

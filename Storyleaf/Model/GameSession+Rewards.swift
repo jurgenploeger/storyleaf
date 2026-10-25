@@ -145,9 +145,10 @@ extension GameSession {
         return progress.need > 0 && progress.have >= progress.need
     }
 
-    /// Whether you have a cape, in the bag or on.
+    /// Whether you have a cape, in the bag, on or in the bank (playtesting 2026-10-25: banked, the
+    /// weaver wove them all again).
     func hasCape(_ prize: RewardsDef.Prize) -> Bool {
-        count(of: prize.item) > 0 || data.hero.equipment.cape == prize.item
+        count(of: prize.item) > 0 || data.hero.equipment.cape == prize.item || banked(prize.item) > 0
     }
 
     /// The capes you've earned and don't have (or no longer have): the weaver weaves them for you.
@@ -351,9 +352,9 @@ extension GameSession {
         return nil
     }
 
-    /// Whether the hero has the item, in the bag or on.
+    /// Whether the hero has the item, in the bag, on or in the bank.
     func owns(_ id: String) -> Bool {
-        count(of: id) > 0 || ItemType.equipmentSlots.contains { data.hero.equipment[$0] == id }
+        count(of: id) > 0 || ItemType.equipmentSlots.contains { data.hero.equipment[$0] == id } || banked(id) > 0
     }
 
     /// The festive season's gift, once a season (`seasonGifts`): one of its hats, one you haven't
