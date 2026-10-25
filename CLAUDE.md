@@ -23,7 +23,7 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
 - `docs/launch-audit.md`: the pre-launch audit (2026-10-06): App Store checklist, open bugs and balance issues
   ranked, and gamification ideas. Tick items off or remove them as they're done.
 - Brand guidelines: the Figma file `521ECWenGbx2IP3rLgtIWo`, pages Cover to 09 Voice & Tone (logo, colour, type, icons,
-  assets, game UI, App Store, voice). Its colours are variables (the Storyleaf collection, with their Swift names);
+  assets, game UI, App Store, voice). Its colours are variables (the Talewild collection, with their Swift names; the text styles are Talewild/…);
   `Brand` in `Storyleaf/UI/BrandSky.swift` holds the same values, so change both together.
 - `content/world.json` + `tools/world_layout.py`: the lands as one continent, one landmass with one coast, each land a
   shape of its own (RuneScape-like regions, cold north, desert south). Edit world.json's `design` (each land's middle
