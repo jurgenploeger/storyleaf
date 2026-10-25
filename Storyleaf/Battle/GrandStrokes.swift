@@ -51,7 +51,14 @@ extension SkillEffects {
     static func crescent(through targets: [BattleActor], color: UIColor, level: Int, width: CGFloat, in parent: SKNode) {
         guard !targets.isEmpty else { return }
         let light = strokeLight(color)
-        let middle = targets.map(\.center).reduce(CGPoint.zero) { CGPoint(x: $0.x + $1.x / CGFloat(targets.count), y: $0.y + $1.y / CGFloat(targets.count)) }
+        // Where they stand on average.
+        var sumX: CGFloat = 0, sumY: CGFloat = 0
+        for target in targets {
+            sumX += target.center.x
+            sumY += target.center.y
+        }
+        let count = CGFloat(targets.count)
+        let middle = CGPoint(x: sumX / count, y: sumY / count)
         let across = min(width * 1.05, width * (0.45 + 0.12 * CGFloat(level)))
         let size = CGSize(width: across, height: across / 2)
         let stroke = SKNode()
