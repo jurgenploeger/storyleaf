@@ -89,6 +89,7 @@ import SpriteKit
 ///   bottom         open the menu scrolled to the end
 ///   npc=<id>       open an NPC dialog
 ///   bank=<id>      open that banker's bank window
+///   drop=a+b       once the map's up, drop all of those (put in the bag with bag=) in a pile beside you
 ///   info=<item>    with npc=<a shop>: open that item's info card
 ///   worldmap       open the world map
 ///   visited=a+b    those lands visited (`all`: every one), for the world map
@@ -992,6 +993,23 @@ enum DebugLaunch {
         // `bank=<banker>`: that banker's bank, its window open.
         if let banker = flags["bank"] {
             coordinator.open(.bank(banker))
+        }
+        // `drop=a+b`: once the map's up, all of each (put in the bag with `bag=`) dropped in a pile,
+        // set down a step to your right so you don't stand on it.
+        if let drop = flags["drop"] {
+            Task {
+                for _ in 0..<240 {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    let session = coordinator.session
+                    guard coordinator.isReady, session.playerPosition != nil else { continue }
+                    for id in drop.split(separator: "+").map(String.init) { session.drop(id, session.count(of: id)) }
+                    if var piles = session.data.lostPiles, let last = piles.indices.last, let at = piles[last].position, at.count == 2 {
+                        piles[last].position = [at[0] + 48, at[1]]
+                        session.data.lostPiles = piles
+                    }
+                    return
+                }
+            }
         }
         if let who = flags["profile"] {
             let session = coordinator.session

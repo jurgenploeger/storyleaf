@@ -1884,7 +1884,8 @@ struct RulesTests {
         #expect(session.drop("potion", 1) && session.count(of: "potion") == 2)
         let pile = try #require(session.lostPiles.first)
         #expect(pile.items["potion"] == 1 && pile.mapID == session.data.mapID)
-        // Standing by it, more go on the same pile; no more than you carry.
+        // Dropped where it lies, more go on the same pile, by the scene's word or not; no more than you carry.
+        #expect(session.drop("potion", 1) && session.lostPiles.count == 1 && session.lostPiles.first?.items["potion"] == 2)
         session.nearbyPile = pile.id
         #expect(session.drop("potion", 5) && session.count(of: "potion") == 0)
         #expect(session.lostPiles.count == 1 && session.lostPiles.first?.items["potion"] == 3)

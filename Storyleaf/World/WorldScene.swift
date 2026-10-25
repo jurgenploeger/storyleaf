@@ -81,6 +81,8 @@ final class WorldScene: SKScene {
     private var allies: [Ally] = []
     /// What you lost when you fell on this map, lying where you fell (`refreshPiles`).
     private var pileNodes: [UUID: Walker] = [:]
+    /// What each pile showed when it was drawn (`PileArt.look`).
+    private var pileLooks: [UUID: [String]] = [:]
     /// How close you come to a friend waiting for you before they set off with you again.
     private let rejoinRange: CGFloat = 64
     /// Roads that stay closed until a quest is done: the barricade nodes and the cells they block.
@@ -1940,12 +1942,18 @@ final class WorldScene: SKScene {
             SkillEffects.smoke(at: node.position, in: world)
             node.removeFromParent()
             pileNodes[id] = nil
+            pileLooks[id] = nil
+        }
+        // One that's changed (more dropped on it, some picked up) is drawn anew.
+        for pile in piles where pileNodes[pile.id] != nil && pileLooks[pile.id] != PileArt.look(of: pile) {
+            pileNodes.removeValue(forKey: pile.id)?.removeFromParent()
         }
         for pile in piles where pileNodes[pile.id] == nil {
             var at = map.center(of: map.center)
             if let position = pile.position, position.count == 2 { at = CGPoint(x: position[0], y: position[1]) }
             if !canStand(at: at), let open = map.nearestWalkable(to: map.cell(at: at)) { at = map.center(of: open) }
-            let node = Walker(cycle: art.walkCycle("lost_pile"), label: L("Your things"))
+            let node = PileArt.node(for: pile)
+            pileLooks[pile.id] = PileArt.look(of: pile)
             node.position = at
             node.zPosition = -at.y
             world.addChild(node)

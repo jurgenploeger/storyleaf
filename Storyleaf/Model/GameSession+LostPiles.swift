@@ -49,7 +49,9 @@ extension GameSession {
         guard amount > 0, !questKeepsakes.contains(id) else { return false }
         data.inventory[id] = held > amount ? held - amount : nil
         if held == amount, data.forTrade != nil { data.forTrade = forTrade.map(\.id) }
-        if let near = nearbyPile, var piles = data.lostPiles, let index = piles.firstIndex(where: { $0.id == near }) {
+        var piles = lostPiles
+        // Onto the pile you're by (one about to go takes nothing more).
+        if let index = piles.firstIndex(where: { $0.takenAt > now && ($0.id == nearbyPile || isWithinReach($0)) }) {
             piles[index].items[id, default: 0] += amount
             data.lostPiles = piles
         } else {
@@ -59,6 +61,14 @@ extension GameSession {
         post(L("You dropped {item}.", ["item": amount > 1 ? "\(name) ×\(amount)" : name]))
         SoundEffects.shared.play(.equip)
         return true
+    }
+
+    /// Whether a pile lies on this map within reach of where you stand (both nowhere in particular, the
+    /// map's middle, counts).
+    private func isWithinReach(_ pile: LostPile) -> Bool {
+        guard pile.mapID == data.mapID else { return false }
+        guard let here = playerPosition, let at = pile.position, at.count == 2 else { return playerPosition == nil && pile.position == nil }
+        return CGPoint(x: at[0], y: at[1]).distance(to: here) <= Self.pickUpReach
     }
 
     /// Takes away the piles whose time is up, and says so: picked up by an adventurer, or gone.

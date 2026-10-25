@@ -282,6 +282,8 @@ quest_little_crab | newgame,class=fighter,level=125,map=hachoo_island,npc=little
 treasure_card    | newgame,class=fighter,level=100,menu=bag,bag=oxhide_mail,inspect=oxhide_mail | 8
 # A potion's card in the Bag: Drop and Drop all under it.
 drop_card        | newgame,menu=bag,bag=potion+potion,inspect=potion | 8
+# What you drop lies on the ground as the things themselves, very small, in a heap.
+pile_drop        | newgame,map=meadowbrook,bag=potion+potion+ether+iron_axe+seal_stone+homeward_feather,drop=potion+ether+iron_axe+seal_stone+homeward_feather,hour=12,weather=clear | 12
 treasure_bag     | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king+rat_king+puss_in_boots+crystal_hearts,menu=bag | 8
 treasure_post    | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king | 8
 treasure_offer   | newgame,class=fighter,level=72,map=sleepy_town,npc=thomas | 8

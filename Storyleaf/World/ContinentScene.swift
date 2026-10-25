@@ -192,6 +192,8 @@ final class ContinentScene: SKScene {
     private var allies: [Ally] = []
     /// What you lost when you fell, lying where you fell (`refreshPiles`).
     private var pileNodes: [UUID: Walker] = [:]
+    /// What each pile showed when it was drawn (`PileArt.look`).
+    private var pileLooks: [UUID: [String]] = [:]
     /// How close you come to a friend waiting for you before they set off with you again.
     private let rejoinRange: CGFloat = 64
     /// The land whose crowd leads you about, in the party you've joined (`GameSession.joinedParty`).
@@ -958,10 +960,16 @@ final class ContinentScene: SKScene {
             if !piles.contains(where: { $0.id == id }) { SkillEffects.smoke(at: node.position, in: layer) }
             node.removeFromParent()
             pileNodes[id] = nil
+            pileLooks[id] = nil
+        }
+        // One that's changed (more dropped on it, some picked up) is drawn anew.
+        for pile in piles where pileNodes[pile.id] != nil && pileLooks[pile.id] != PileArt.look(of: pile) {
+            pileNodes.removeValue(forKey: pile.id)?.removeFromParent()
         }
         for pile in piles where pileNodes[pile.id] == nil {
             guard let at = point(of: pile) else { continue }
-            let node = Walker(cycle: art.walkCycle("lost_pile"), label: L("Your things"))
+            let node = PileArt.node(for: pile)
+            pileLooks[pile.id] = PileArt.look(of: pile)
             node.position = at
             node.zPosition = -at.y
             layer.addChild(node)
