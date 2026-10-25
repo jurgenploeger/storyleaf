@@ -509,6 +509,10 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   the hem the dark inside him is his. A brim is an arch (high over the brow, drooping at the sides, a tip
   flicked up, thicker in front), a fur band a curve with tufted edges no wider than the head; an ellipse
   reads as a stiff oval.
+  Then: "the witch hat can be a bit taller", "the bunny ears are too slim and stiff, the top should hang
+  forward", "the Santa hat's body looks too bulky". An ear is one tapering curve (`sweep`), narrow at its
+  foot and widest below the bend, its tip falling forward and out; a folded flap drawn as a shape of its own
+  read as a white block. The witch's crown may run off the top so long as its hook comes back into frame.
 - **2026-10-25 (the ship):** `form_relief` is light per pixel, so a sprite twice a house's size needs
   as much change across areas twice as wide: the ship's deck and hull, lit by their normals alone, were
   flat at the 9 × 9 scale (0.010) and held it at 0.015. What lifted it: boards and strakes each a tone of

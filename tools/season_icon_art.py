@@ -275,35 +275,37 @@ def pixels(out, kind, points, colours, allowed) -> None:
 # --- the hats --------------------------------------------------------------------------------------------
 # Each is drawn so its band's middle lands on the head's widest row above the eyes, (120, 72).
 
-def witch_hat() -> tuple:
-    """A witch's hat: a wide, soft brim (`brim`), a cone with hollow sides that bends over near the top, its tip hanging
-    off to the right, and a gold band. The cone is one shape: up its sides, then along a tapering curve."""
-    s = Sprite(92, 52)
-    purple = Material("#5a3a8c", shades=5, texture=0.05)
-    s.poly(brim(), purple)
+def sweep(p: list, half, steps: int = 16) -> tuple:
+    """The two sides of a tapering shape along a cubic curve through `p` (four points): `half(t)` is its half
+    width at t from 0 to 1. Returns the left side and the right side, base to tip."""
+    def at(t):
+        a, b, c, d = (1 - t) ** 3, 3 * (1 - t) ** 2 * t, 3 * (1 - t) * t * t, t ** 3
+        return a * p[0][0] + b * p[1][0] + c * p[2][0] + d * p[3][0], a * p[0][1] + b * p[1][1] + c * p[2][1] + d * p[3][1]
 
-    def bend(t):
-        # A cubic curve from the cone's waist up and over to its tip.
-        p = [(42, 26), (40, 16), (52, 10), (68, 20)]
-        x = (1 - t) ** 3 * p[0][0] + 3 * (1 - t) ** 2 * t * p[1][0] + 3 * (1 - t) * t * t * p[2][0] + t ** 3 * p[3][0]
-        y = (1 - t) ** 3 * p[0][1] + 3 * (1 - t) ** 2 * t * p[1][1] + 3 * (1 - t) * t * t * p[2][1] + t ** 3 * p[3][1]
-        return x, y
-
-    steps = [i / 16 for i in range(17)]
     left, right = [], []
-    for t in steps:
-        x, y = bend(t)
-        x2, y2 = bend(min(1, t + 0.02))
-        x1, y1 = bend(max(0, t - 0.02))
-        dx, dy = x2 - x1, y2 - y1
-        n = math.hypot(dx, dy) or 1
-        half = 9.0 * (1 - t) ** 1.2 + 1.0
-        left.append((x + dy / n * half, y - dx / n * half))
-        right.append((x - dy / n * half, y + dx / n * half))
-    cone = [(21, 38), (25, 35), (30, 30), (33, 27)] + left + right[::-1] + [(51, 27), (55, 31), (60, 36), (64, 38)]
+    for i in range(steps + 1):
+        t = i / steps
+        x, y = at(t)
+        (x1, y1), (x2, y2) = at(max(0, t - 0.02)), at(min(1, t + 0.02))
+        n = math.hypot(x2 - x1, y2 - y1) or 1
+        w = half(t)
+        left.append((x + (y2 - y1) / n * w, y - (x2 - x1) / n * w))
+        right.append((x - (y2 - y1) / n * w, y + (x2 - x1) / n * w))
+    return left, right
+
+
+def witch_hat() -> tuple:
+    """A witch's hat: a wide, soft brim (`brim`), a tall cone with hollow sides that bends over near the top
+    (the icon's edge clips its crown), its tip hanging off to the right, and a gold band. The cone is one
+    shape: up its sides, then along a tapering curve (`sweep`)."""
+    s = Sprite(92, 60)
+    purple = Material("#5a3a8c", shades=5, texture=0.05)
+    s.poly([(x, y + 8) for x, y in brim()], purple)
+    left, right = sweep([(42, 34), (40, 12), (56, 8), (76, 30)], lambda t: 9.0 * (1 - t) ** 1.2 + 1.0)
+    cone = [(21, 46), (25, 43), (30, 38), (33, 35)] + left + right[::-1] + [(51, 35), (55, 39), (60, 44), (64, 46)]
     s.poly(cone, purple)
-    s.poly([(20, 38), (65, 38), (63, 34), (22, 34)], Material("#e8a838", shades=4, texture=0.03, gloss=0.4), profile="cylinder")
-    return s.render(), (78, 30)
+    s.poly([(20, 46), (65, 46), (63, 42), (22, 42)], Material("#e8a838", shades=4, texture=0.03, gloss=0.4), profile="cylinder")
+    return s.render(), (78, 22)
 
 
 def brim() -> list:
@@ -322,12 +324,13 @@ def brim() -> list:
 
 
 def santa_hat() -> tuple:
-    """A Santa hat: the red cap flopping over to the right, its bobble hanging, and a fluffy fur band that
+    """A Santa hat: a soft red cap, not much taller than the head's crown, flopping over to the right, its
+    bobble hanging, and a fluffy fur band that
     curves round the head (lower over the brow than at the sides), its edges in tufts, not a smooth oval."""
     s = Sprite(86, 52)
     fur = Material("#f2f0f6", shades=4, texture=0.12, grain=1.0)
-    s.poly([(12, 36), (16, 22), (26, 12), (40, 6), (54, 8), (66, 16), (74, 26), (80, 38), (78, 44), (72, 34),
-            (66, 26), (66, 36)], Material("#cc2e3e", shades=5, texture=0.05))
+    s.poly([(16, 36), (19, 26), (27, 18), (39, 14), (51, 15), (61, 20), (69, 28), (75, 37), (76, 42), (71, 36),
+            (64, 29), (62, 36)], Material("#cc2e3e", shades=5, texture=0.05))
     top, bottom = [], []
     for i in range(37):
         u = i / 18 - 1
@@ -343,17 +346,28 @@ def santa_hat() -> tuple:
 
 
 def bunny_ears() -> tuple:
-    """Just the ears, no band: two ears standing on the top of the head, in front of the hair, a little
-    back from the brow, leaning a little apart, tall enough that the icon's top edge clips their tips.
-    Each casts a small shadow on the hair round its foot (`ear_shadow`)."""
-    s = Sprite(48, 42)
+    """Just the ears, no band: two soft ears standing on the top of the head, in front of the hair, a little
+    back from the brow, wide at the middle and tapering to a round tip, and soft: each is one curve, up out
+    of the hair and over at the top, its tip hanging down forward and out, the pink inside only on the part
+    that stands. The icon's top edge may clip them. Each casts a small shadow on the hair round its foot
+    (`ear_shadow`)."""
+    s = Sprite(56, 44)
     white = Material("#f4f0f8", shades=4, texture=0.04)
     pink = Material("#ff9cc0", shades=4, texture=0.03)
-    s.ellipse(12, 22, 5.2, 16, white, rot=-14)
-    s.ellipse(36, 22, 5.2, 16, white, rot=14)
-    s.ellipse(12, 23, 2.2, 11, pink, rot=-14, profile="flat")
-    s.ellipse(36, 23, 2.2, 11, pink, rot=14, profile="flat")
-    return s.render(), (97, 31)
+
+    def width(t):
+        # Narrow at the foot, widest a little below the bend, rounding off toward the tip.
+        return 1.8 + 5.0 * math.sin(math.pi * (0.04 + 0.84 * t)) ** 0.75
+
+    for x, flop in ((15, -1), (41, 1)):
+        # One curve: up out of the hair, over at the top, and the tip hanging down forward and out.
+        ear = [(x, 34), (x + 1 * flop, 14), (x + 4 * flop, 4), (x + 12 * flop, 20)]
+        left, right = sweep(ear, width, steps=20)
+        s.poly(left + right[::-1], white)
+        # The pink inside shows on the part that stands; past the bend it's the ear's white back.
+        inner_left, inner_right = sweep(ear, lambda t: width(t) * 0.45, steps=20)
+        s.poly(inner_left[2:11] + inner_right[2:11][::-1], pink, profile="flat")
+    return s.render(), (92, 30)
 
 
 def ear_shadow(out: np.ndarray, kind: np.ndarray, covered: np.ndarray) -> None:
