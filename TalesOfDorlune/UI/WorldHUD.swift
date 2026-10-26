@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// On-map HUD in Fairyland Online's style: round faces with HP, MP and XP for you and your
-/// companion and your party top-left (the date is on the map, `MapOverlay`), a framed minimap top-right with what
+/// On-map HUD in Fairyland Online's style: your round face with HP, MP and XP, your companion's
+/// small face on its corner, and your party top-left (the date is on the map, `MapOverlay`), a framed minimap top-right with what
 /// just happened toasting under it, joystick bottom-left, and Chat and the menu bottom-right (one
 /// button that opens into the menu's pages). While you're talking to someone (or any window is open
 /// over the map) the controls step aside, so nothing peeks out from behind the conversation.
@@ -169,11 +169,12 @@ private enum TopLeft {
     static let width: CGFloat = 214
 }
 
-/// Fairyland Online's top-left faces: you in a big round frame with your level, HP, MP and XP; your companion
-/// underneath with its own; and the friends in your party, smaller. Once three or more of you travel
-/// together, the others fold into one row of small faces under yours so they don't cover the map:
-/// tap the row to see everyone in full, and the arrow by the last friend to fold them again. Tap a
-/// face to see their stats.
+/// Fairyland Online's top-left faces: you in a big round frame with your level, HP, MP and XP; your companion's
+/// face small on its bottom-right corner, a button of its own (2026-10-26: one stats block, yours; its HP a thin
+/// arc round its face while it's hurt); and the friends in your party, smaller. Once two or more friends travel
+/// with you, they fold into one row of small faces under yours so they don't cover the map: tap the row to see
+/// everyone in full, and the arrow by the last friend to fold them again. Your face or your stats open the Hero
+/// window, your companion's face the Companions window (`GameCoordinator.open`), a friend's face their card.
 private struct StatusCluster: View {
     let session: GameSession
     let onInspect: (Profile) -> Void
@@ -184,11 +185,11 @@ private struct StatusCluster: View {
         let stats = session.heroStats
         let pet = session.activePet
         let friends = session.partyMembers
-        let crowded = (pet == nil ? 0 : 1) + friends.count >= 2
+        let crowded = friends.count >= 2
         VStack(alignment: .leading, spacing: 4) {
             Button { onInspect(.hero) } label: {
                 PortraitRow(face: ArtLibrary.shared.face(GameSession.heroArt), level: hero.level, name: hero.name,
-                            detail: session.heroClass.name, size: 52,
+                            detail: session.heroClass.name, size: HeroFace.size,
                             glowing: session.canChooseClass || session.canSpendSkillPoint) {
                     TaggedBar(tag: L("HP"), value: hero.hp, maximum: stats.hp, color: HUDStyle.hp)
                     TaggedBar(tag: L("MP"), value: hero.mp, maximum: stats.mp, color: HUDStyle.mp)
@@ -199,24 +200,23 @@ private struct StatusCluster: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(L("{name}, level {level}: stats", ["name": hero.name, "level": hero.level]))
+            // Your companion's face over the corner of yours, a button of its own laid over your row so
+            // it takes its taps first. Your portrait is a square as tall as the row (`PortraitBeside`).
+            .overlay(alignment: .topLeading) {
+                if let pet {
+                    GeometryReader { proxy in
+                        let side = proxy.size.height
+                        CompanionBadgeButton(session: session, pet: pet) { onInspect(.pet(pet.id)) }
+                            .position(x: side - CompanionBadge.inset, y: side - CompanionBadge.inset)
+                    }
+                }
+            }
+            // Room under your row for the rest of the badge's tap area, clear of whatever comes next.
+            .padding(.bottom, pet == nil ? 0 : CompanionBadge.overhang)
             if crowded && folded {
-                FoldedParty(session: session, pet: pet, friends: friends) { setFolded(false) }
+                FoldedParty(session: session, friends: friends) { setFolded(false) }
                     .transition(.opacity)
             } else {
-                if let pet {
-                    let petStats = session.stats(of: pet)
-                    Button { onInspect(.pet(pet.id)) } label: {
-                        PortraitRow(face: ArtLibrary.shared.face(session.artID(for: pet)), level: pet.level, name: pet.name,
-                                    detail: pet.hp > 0 ? nil : L("Fainted"), size: 38) {
-                            TaggedBar(tag: L("HP"), value: pet.hp, maximum: petStats.hp, color: HUDStyle.hp)
-                            TaggedBar(tag: L("MP"), value: pet.mp, maximum: petStats.mp, color: HUDStyle.mp)
-                            // Its XP too, as yours (2026-10-26).
-                            ExpBar(value: pet.exp, maximum: GameSession.expToNext(level: pet.level))
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(L("{name}, level {level}: stats", ["name": pet.name, "level": pet.level]))
-                }
                 ForEach(friends) { friend in
                     // A friend waiting somewhere for you to come back for them is greyed out.
                     let away = session.whereabouts(of: friend)
@@ -250,28 +250,89 @@ private struct StatusCluster: View {
     }
 }
 
-/// A big party folded into one row of small faces under yours: your companion's with a thin HP bar
-/// (grey once it has fainted), then your friends' (grey while they wait somewhere for you). Tap it to
-/// see everyone in full.
+/// Your face in the top-left: bigger than the rest (2026-10-26), at least this tall, taller if your
+/// name and bars beside it need more.
+private enum HeroFace {
+    static let size: CGFloat = 72
+}
+
+/// Your companion's face as a button on the corner of yours: its name, level and HP read out, and a
+/// tap opens the Companions window.
+private struct CompanionBadgeButton: View {
+    let session: GameSession
+    let pet: Pet
+    let open: () -> Void
+
+    var body: some View {
+        let stats = session.stats(of: pet)
+        let health: CGFloat = stats.hp > 0 ? min(1, max(0, CGFloat(pet.hp) / CGFloat(stats.hp))) : 0
+        Button(action: open) {
+            CompanionBadge(face: ArtLibrary.shared.face(session.artID(for: pet)), health: health, fainted: pet.hp <= 0)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(L("{name}, level {level}: stats", ["name": pet.name, "level": pet.level]))
+        .accessibilityValue(pet.hp > 0 ? L("HP") + " \(pet.hp) / \(stats.hp)" : L("Fainted"))
+    }
+}
+
+/// Your companion's small round face: a bevelled ring round it and a dark rim outside that, so it
+/// reads as a button apart from your face beneath. While it's hurt, a thin red arc on the ring shows
+/// the HP it has left, from the top round clockwise; at full HP the ring is plain. Grey once it has
+/// fainted. No level chip, as small as it is: its level is in the Companions window, and read out.
+/// Drawn `size` across, tapped anywhere in a circle `target` across (44 points, Apple's least).
+private struct CompanionBadge: View {
+    let face: UIImage
+    /// Its HP left, 0...1.
+    let health: CGFloat
+    let fainted: Bool
+
+    static let size: CGFloat = 30
+    static let target: CGFloat = 44
+    /// Its middle this far in from your portrait's bottom-right corner (the square's, not the
+    /// circle's): it covers the corner of your face and hangs a little past it.
+    static let inset: CGFloat = 12
+    /// How far its tap area reaches below your row.
+    static var overhang: CGFloat { target / 2 - inset }
+
+    var body: some View {
+        Image(uiImage: face)
+            .interpolation(.none)
+            .resizable()
+            .scaledToFit()
+            .padding(Self.size * 0.1)
+            .frame(width: Self.size, height: Self.size)
+            .background(Circle().fill(RadialGradient(colors: [HUDStyle.portrait, HUDStyle.portraitRim],
+                                                     center: UnitPoint(x: 0.4, y: 0.35), startRadius: 1, endRadius: Self.size * 0.7)))
+            .clipShape(Circle())
+            .saturation(fainted ? 0 : 1)
+            .overlay(Circle().strokeBorder(HUDStyle.bevel, lineWidth: 2))
+            .overlay {
+                if !fainted && health < 1 {
+                    // On the bevel: a 2-point stroke on a circle 1 point in.
+                    Circle()
+                        .trim(from: 0, to: health)
+                        .stroke(HUDStyle.hp, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .padding(1)
+                }
+            }
+            .background(Circle().fill(HUDStyle.frameDark).padding(-1.5))
+            .shadow(color: .black.opacity(0.45), radius: 1.5, y: 1)
+            .frame(width: Self.target, height: Self.target)
+            .contentShape(Circle())
+    }
+}
+
+/// A big party folded into one row of small faces under yours: your friends' (grey while they wait
+/// somewhere for you). Tap it to see everyone in full.
 private struct FoldedParty: View {
     let session: GameSession
-    let pet: Pet?
     let friends: [Adventurer]
     let unfold: () -> Void
 
     var body: some View {
         Button(action: unfold) {
             HStack(spacing: 4) {
-                if let pet {
-                    let stats = session.stats(of: pet)
-                    let health: CGFloat = stats.hp > 0 ? min(1, CGFloat(pet.hp) / CGFloat(stats.hp)) : 0
-                    VStack(spacing: 2) {
-                        Portrait(face: ArtLibrary.shared.face(session.artID(for: pet)), level: pet.level, size: 32)
-                            .saturation(pet.hp > 0 ? 1 : 0)
-                        GlossyBar(fraction: health, color: HUDStyle.hp, height: 5)
-                            .frame(width: 30)
-                    }
-                }
                 ForEach(friends) { friend in
                     Portrait(face: ArtLibrary.shared.face(session.artID(for: friend)), level: friend.level, size: 30)
                         .saturation(friend.waitingAt == nil ? 1 : 0)

@@ -43,7 +43,7 @@ private struct CoachStep {
 
     static var all: [CoachStep] { [
         CoachStep(target: .status, icon: .heart, title: L("Health and magic"),
-                  text: L("HP is your health, MP your magic and XP how far you are to the next level. The round badge shows your level. Once you have a companion, its face and bars show under yours.")),
+                  text: L("HP is your health, MP your magic and XP how far you are to the next level. The round badge shows your level. Tap your face for your hero. Once you have a companion, its small face sits on the corner of yours: tap it for your companion.")),
         CoachStep(target: .joystick, icon: .tap, title: L("Walking"),
                   text: L("Drag the stick to walk, or tap the ground and your hero walks there.")),
         CoachStep(target: .minimap, icon: .map, title: L("Where you are"),
