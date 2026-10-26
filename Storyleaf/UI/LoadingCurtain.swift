@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Shown while a map is being built: the logo over the title's sky, and a gold bar filling up.
+/// Shown while a map is being built: the logo over the title's sky, and a blue bar filling up.
 struct LoadingCurtain: View {
     /// 0...1: how far the map build has got.
     var progress: Double = 0
@@ -83,11 +83,11 @@ struct LoadingBar: View {
     /// How wide the bar grows at most.
     var width: CGFloat = 280
 
-    /// The brand's own loading bar, the same on every loading screen: the logo's gold, outlined in
-    /// midnight, on its cream.
+    /// The brand's own loading bar, the same on every loading screen: the brand blue (the sky's),
+    /// outlined in midnight, on cream.
     static func storyleaf(progress: Double, label: String) -> LoadingBar {
         LoadingBar(progress: progress, label: label, textColor: Brand.skyText,
-                   fill: [Brand.goldLight, Brand.gold, Brand.goldDeep], track: Brand.cream, rim: Brand.midnight,
+                   fill: [Brand.skyLight, Brand.sky, Brand.skyDeep], track: Brand.cream, rim: Brand.midnight,
                    width: 200)
     }
 
