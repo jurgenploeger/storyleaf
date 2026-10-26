@@ -3471,6 +3471,9 @@ def main(argv):
     from armour_art import plan
     armour = plan()
     ids = [i for i in ids if i not in armour]
+    # So are the icons redrawn in the clean look (tools/clean_icon_art.py, docs/pixel-style.md *Item icons*).
+    from clean_icon_art import DRAWINGS as CLEAN
+    ids = [i for i in ids if i not in CLEAN]
     # Each drawing is finished in the game's pixel style (docs/pixel-style.md): lit, ramped, textured
     # and outlined afresh by tools/pixel_kit.py, its design kept.
     import io

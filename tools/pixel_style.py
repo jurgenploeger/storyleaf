@@ -11,6 +11,7 @@ the look RD gave us, and the bands can be re-run as the reference grows.
     python3 tools/pixel_style.py check <png>...            # score sprites (exit 1 if any fails)
     python3 tools/pixel_style.py compare                   # RD's icons, ours, and the flat designs
     python3 tools/pixel_style.py check --kind icon <png>   # pick the band set (icon, creature, scenery, building)
+    python3 tools/pixel_style.py check --kind item <png>   # the clean item icons' rules (RD's Potion), 2026-10-26
 
 Needs pillow + numpy.
 """
@@ -138,6 +139,45 @@ def measure(path):
     dark_edge = eh[el < np.median(il) * 0.55]
     m["outline_sat"] = float(np.median(dark_edge[:, 1])) if len(dark_edge) else 0.0
     m["outline_value"] = float(np.median(dark_edge[:, 2])) if len(dark_edge) else 1.0
+    # The clean item icons (2026-10-26, *Item icons* in docs/pixel-style.md): the outline in the hue of what
+    # it rounds (`outline_hue`: degrees between each outline pixel and the inside pixel next to it, median,
+    # where both have colour; RD's Potion 6°, the house violet round a gold coin 138°), and one pixel thick
+    # (`outline_double`: the share of outline pixels with a pixel nearly as dark right inside them, the dark
+    # ring that made our icons' borders read two or three pixels thick: the Potion 0.29, ours 0.66).
+    L = luma(rgb)
+    med = float(np.median(L[interior])) if interior.any() else 0.5
+    hues, double = [], []
+    H_, W_ = opaque.shape
+    for y, x in zip(*np.nonzero(edge)):
+        for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            yy, xx = y + dy, x + dx
+            if 0 <= yy < H_ and 0 <= xx < W_ and interior[yy, xx]:
+                h1, s1, _ = colorsys.rgb_to_hsv(*rgb[y, x])
+                h2, s2, _ = colorsys.rgb_to_hsv(*rgb[yy, xx])
+                if s1 > 0.2 and s2 > 0.25:
+                    hues.append(abs((h1 - h2) * 360 + 180) % 360 - 180)
+                double.append(L[yy, xx] < max(0.5 * med, L[y, x] * 1.6))
+                break
+    m["outline_hue"] = float(np.median(np.abs(hues))) if hues else None
+    m["outline_double"] = float(np.mean(double)) if double else None
+    m["canvas"] = int(max(opaque.shape))
+    # Drawn at its size, not doubled from a smaller one (`native`): the share of pixels that a 2× shrink and
+    # blow-up would change among those where the colour changes, at the best of the four alignments. A 32-pixel icon blown up to 64 scores 0,
+    # and keeps its blocky steps and thick outline; RD's Potion 0.5, the clean icons 0.37 to 0.48.
+    q = np.where(opaque, np.round(rgb * 255).astype(int) @ np.array([65536, 256, 1]), -1)
+    best = 1.0
+    for oy in (0, 1):
+        for ox in (0, 1):
+            part = q[oy:, ox:]
+            hh, ww = part.shape[0] // 2 * 2, part.shape[1] // 2 * 2
+            part = part[:hh, :ww]
+            back = np.repeat(np.repeat(part[::2, ::2], 2, 0), 2, 1)
+            # Only where the colour changes (a boundary): inside a flat facet any size survives the trip.
+            pp = np.pad(part, 1, constant_values=-1)
+            boundary = (part >= 0) & ((pp[:-2, 1:-1] != part) | (pp[2:, 1:-1] != part)
+                                      | (pp[1:-1, :-2] != part) | (pp[1:-1, 2:] != part))
+            best = min(best, float((back != part)[boundary].mean()) if boundary.any() else 0.0)
+    m["native"] = best
     m["outline_colours"] = int(len(np.unique(np.round(rgb[edge] * 255).astype(int) @ np.array([65536, 256, 1]))))
     # The outline against what it rounds: each edge pixel's value (HSV) over the mean value of the inside
     # within 2 pixels of it, median. RD's outlines are a deep shade of the colour inside (a green tree's
@@ -402,6 +442,31 @@ CEILINGS = {"building": {"colour_density": 1.4}}
 CAPS = {"building": {"straight_edges": 0.40, "grid_lines": 0.033}}
 
 
+# The clean item icons (2026-10-26): house rules, not a calibrated band, as their reference is one sprite,
+# RD's Potion (playtesting: "Look at the potion items we created with retro diffusion, those look nice"),
+# with what the redrawn coins, seal stones and clover taught. Each: (way, limit, hard). docs/pixel-style.md,
+# *Item icons*, says why each is set where it is.
+ITEM_RULES = {
+    "canvas": ("min", 64, True),             # drawn at 64 pixels: finer pixels, so a one-pixel outline is thin
+    "native": ("min", 0.3, True),            # and drawn there, not blown up (those score 0, flat designs at most 0.24)
+    "fill": ("min", 0.78, True),
+    "semi_alpha": ("max", 0.0, True),
+    "outline_hue": ("max", 30.0, True),      # the outline a deep shade of what it rounds, not the house violet
+    "outline_double": ("max", 0.45, True),   # one pixel: no dark ring inside it
+    "outline_rel": ("max", 0.32, False),     # deep, though: it reads as the edge (the Potion 0.13)
+    "colour_density": ("max", 2.6, True),    # smooth ramps, no grain (the Potion 1.95; the grained finish 2.3 to 10)
+    "checker": ("max", 0.05, False),         # no dither fields
+    "orphans": ("max", 0.2, False),          # no salt and pepper (the Potion 0.17)
+    "cluster_size": ("min", 3.0, False),     # light in bands, not specks (the Potion 3.6; grained 1.6 to 3.2)
+    "value_range": ("min", 0.45, False),     # deep shadows to pale lights (the Potion 0.53)
+    "shades_per_ramp": ("min", 4, False),    # a form shaded in steps, not a flat design's three tones
+    "light_top_left": ("min", 0.1, False),
+    "hue_shift": ("min", 3.0, False),
+    "jaggies": ("max", 0.08, False),
+}
+HARD_BY_KIND["item"] = {name for name, (_way, _limit, hard) in ITEM_RULES.items() if hard}
+
+
 def calibrate():
     ref = reference()
     bands = {"_about": "Accepted bands per metric and kind (p10/p90 here hold the reference's 5th and 95th percentile) "
@@ -427,6 +492,14 @@ def calibrate():
 
 def judge(m, kind):
     """[(metric, value, band, ok)] for one sprite's metrics against its kind's bands."""
+    if kind == "item":
+        out = []
+        for name, (way, limit, _hard) in ITEM_RULES.items():
+            v = m.get(name)
+            if v is None:
+                continue
+            out.append((name, v, ("≥" if way == "min" else "≤") + str(limit), v >= limit if way == "min" else v <= limit))
+        return out
     bands = json.loads(BANDS.read_text())["kinds"][kind]
     out = []
     for name, way in ENFORCED.items():
@@ -485,9 +558,36 @@ def flat_designs():
     return out
 
 
+def clean_icons():
+    """The item icons drawn in the clean look (tools/clean_icon_art.py, tools/coin_art.py)."""
+    import clean_icon_art
+    import coin_art
+    return [SPRITES / f"item_{i}.png" for i in clean_icon_art.DRAWINGS] + [SPRITES / f"{n}.png" for n in coin_art.drawings()]
+
+
+def compare_items():
+    """The clean look's rules (kind `item`) must pass the Potion and the icons drawn to them, and fail the
+    grained 32-pixel finish they replace."""
+    clean = clean_icons()
+    grained = [p for p in code_drawn_icons() if p not in clean]
+    for label, paths in (("RD's Potion (the reference, should pass)", [SPRITES / "item_potion.png"]),
+                         ("clean item icons (should pass)", clean),
+                         ("grained item icons (the old finish, should fail)", grained)):
+        res = score(paths, "item")
+        fails = {}
+        for _, (_, _, f) in res.items():
+            for n, *_ in f:
+                fails[n] = fails.get(n, 0) + 1
+        passed = sum(v[0] for v in res.values())
+        print(f"{label}: {len(res)} sprites, {passed} pass ({passed / len(res):.0%})")
+        if fails:
+            print("   most failed: " + ", ".join(f"{n} {c / len(res):.0%}" for n, c in sorted(fails.items(), key=lambda kv: -kv[1])[:8]))
+
+
 def compare():
+    compare_items()
     ref = reference()["icon"]
-    code = code_drawn_icons()
+    code = [p for p in code_drawn_icons() if p not in clean_icons()]
     for label, paths in (("RD icons (reference, should pass)", ref), ("item icons as shipped", code),
                          ("flat designs, unfinished (should fail)", flat_designs())):
         res = score(paths, "icon")

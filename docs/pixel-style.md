@@ -11,6 +11,9 @@ date: this is meant to get stricter as we go.
 - `tools/pixel_style.py`: the measurements. `calibrate` measures the reference and writes each criterion's
   accepted band to `tools/pixel_style.json`; `check [--kind icon|creature|scenery] <png>...` scores sprites
   (exit 1 on a fail); `compare` scores the RD icons against the code-drawn ones, the criteria's own test.
+- `tools/pixel_style.py check --kind item <png>`: the clean item icons' rules (2026-10-26, *Item icons*
+  below), house rules from RD's Potion.
+- `tools/clean_icon_art.py` and `tools/coin_art.py`: item icons drawn in the clean look, at 64 pixels.
 - `tools/pixel_kit.py`: a renderer for the look. A sprite is shapes (ellipses, polygons, thick strokes) in
   the sprite's own pixels, back to front, each of a `Material`; the kit lights, textures and quantises them
   into pixel art with the outline, rim light, contact shadows and highlights described below.
@@ -38,7 +41,8 @@ These are the rules the numbers measure. A sprite that keeps them looks like Sto
    the middle ("pillow shading") flattens a form; RD's shade a form on its side away from the light.
 6. **Clean lines.** Along a slope the steps of the outline grow or shrink steadily (1, 1, 2, 2, 3), never
    jump about (1, 3, 1, 3: "jaggies"); no lone pixel stuck out of an edge, no doubled corner.
-7. **Outlines.** Item icons: one dark outline all round, the house colour `#231834` (`item_art.OUTLINE`).
+7. **Outlines.** Item icons (the grained finish; drawn anew, see *Item icons: the clean look* below): one dark
+   outline all round, the house colour `#231834` (`item_art.OUTLINE`).
    On something darker than it (a navy lash), the kit deepens it to half the light of what it rounds, so it
    still reads as the edge. Creatures, scenery and buildings: a broken, tinted outline, a deep shade of
    what it rounds and close to its colour, never near-black: a green tree's is dark green, a red roof's
@@ -56,6 +60,102 @@ These are the rules the numbers measure. A sprite that keeps them looks like Sto
     each tile's top, shadows turned toward blue and lights toward yellow. Detail sits on top of that, never
     instead of it (`light_masses`), and the whole house holds about 18 to 35 colours (`colour_density`
     capped as well as floored): every face its own seven shades made ours a hundred colours of grain.
+
+## Item icons: the clean look (2026-10-26)
+
+**This replaces the rules above for item icons.** Playtesting 2026-10-26: "A lot of item icons feel too clunky.
+I think we went too far with making the visuals look more natural [...] But now items like the coins don't look
+nice. Look at the potion items we created with retro diffusion, those look nice. The borders shouldn't look so
+thick and dark either." The reference is RD's Potion (`item_potion`, `rd_pro__fantasy` at 64 pixels; the Ether
+and the Hi-Potions are recolours of it), the only item RD drew at 64. Measured against it, the grained finish
+(`pixel_kit.restyle` on `item_art.py`'s designs, 32 pixels, the house outline) went wrong in four ways:
+
+| | RD's Potion | grained icons (old) | clean icons (new) |
+|---|---|---|---|
+| canvas | 64 | 32 | 64 |
+| outline's hue against what it rounds (`outline_hue`) | 6° | 35° to 138° (the house violet round gold or green) | 9° to 16° |
+| outline pixels with a dark pixel right inside (`outline_double`) | 0.29 | up to 0.67 | 0.09 to 0.39 |
+| colours per 100 pixels (`colour_density`) | 1.95 | 2.3 to 10 | 0.5 to 1.6 |
+| mean size of a patch of one colour (`cluster_size`) | 3.6 | 1.6 to 3.2 | 4 to 43 |
+
+1. **The border read thick because it was two pixels, not because it was dark.** The Potion's outline is
+   near-black (value 0.08), darker than our house violet. But it is one pixel at 64, half the width on screen
+   of one pixel at 32, and nothing dark lies inside it. Ours was a pixel at 32 with the kit's darkened ring
+   inside it (`rim="shape"`), so it read as a frame two to four screen pixels thick.
+2. **The outline was the wrong colour.** The Potion's is a deep crimson round red glass and a deep brown
+   round the cork. The house violet round a gold coin or a green leaf is a different hue, and it reads as a
+   drawn border, not as the thing's own edge in shadow.
+3. **Grain is noise at this size.** The texture clusters, the twin ramp and the dither made every surface
+   speckled (colour density 2 to 5 times the Potion's). The Potion's glass is smooth: broad bands of one
+   colour each, three or four steps from shadow to light, a few clean highlights.
+4. **The light was frontal and its ends compressed.** It was tuned on RD's armour (lit in its middle,
+   darkening toward every edge, the lightest shade well short of white), so coins came out as dull brass.
+   The Potion is lit from the top left (0.51 on `light_top_left`), from a crimson a third of its base up to a
+   pale pink.
+
+So an item icon now has these rules (`pixel_style.py check --kind item`, `ITEM_RULES`; house rules, as the
+reference is one sprite, each set from the Potion with a margin and checked against what it must fail):
+
+| rule | limit | hard | why |
+|---|---|---|---|
+| `canvas` | 64 | yes | finer pixels: a one-pixel outline is thin, a highlight can be a streak |
+| `native` | ≥ 0.3 | yes | drawn at 64, not blown up from 32 (blown up: 0; flat designs at most 0.24; the Potion 0.5) |
+| `fill` | ≥ 0.78 | yes | as before |
+| `semi_alpha` | 0 | yes | hard pixels |
+| `outline_hue` | ≤ 30° | yes | the outline a deep shade of what it rounds |
+| `outline_double` | ≤ 0.45 | yes | one pixel, no dark ring inside it |
+| `colour_density` | ≤ 2.6 | yes | smooth ramps, no grain (now a cap, not a floor) |
+| `outline_rel` | ≤ 0.32 | | still deep enough to read as the edge (the Potion 0.13) |
+| `cluster_size` | ≥ 3 | | light in bands, not specks |
+| `orphans` | ≤ 0.2 | | no salt and pepper |
+| `checker` | ≤ 0.05 | | no dither fields |
+| `value_range` | ≥ 0.45 | | deep shadows to pale lights |
+| `shades_per_ramp` | ≥ 4 | | a form shaded in steps, not a flat design's three tones |
+| `light_top_left` | ≥ 0.1 | | one light, from the top left |
+| `hue_shift` | ≥ 3° | | shadows away from yellow, lights toward it, as before |
+| `jaggies` | ≤ 0.08 | | clean lines, as before |
+
+**What they have to do themselves** (`pixel_style.py compare`, first lines): pass the Potion and every clean
+icon, and fail the grained icons (338 of 338 fail), the grained icons blown up to 64 (60 of 60; on
+`outline_double`, `outline_rel`, `jaggies`), the flat designs blown up to 64 with a tinted outline added
+(34 of 34; on `native`), and the grained finish rendered at 64 (10 of 10; on `outline_hue`, and on grain for
+half). Before `native` and `shades_per_ramp` were added, 12 of those 34 flat designs passed: the rules let
+"basic forms" through, which the user doesn't want either.
+
+**How to draw one** (`pixel_kit.Sprite.clean()`, `render(outline="deep")`, materials with `texture=0,
+variety=0, wide=True`; `tools/clean_icon_art.py` and `tools/coin_art.py` are the examples):
+
+- **Lit from the top left** (`ITEM_LIGHT`): the upper left of a form near the top of its ramp, the lower right
+  near its foot. A face looking straight out sits a little over the middle.
+- **Long ramps, smooth:** 6 or 7 shades a material from a third of the base to a pale tint (`wide`), no grain,
+  no twin ramp, no dither. Flat planes (a gem's facets, `tone`) still brighten a little toward the light across
+  them, so they shade in two or three bands as the Potion's glass does.
+- **A core shadow, not a ring:** only the edges turned from the light (below, right) step darker (`rim="core"`).
+- **One outline, a deep shade of what it rounds** (`deep_shade`: 0.5 of the value of the material's darkest
+  shade, its hue kept, a touch richer): a gold coin's is dark umber, a teal gem's deep teal.
+- **Lines inside are softer than the outline:** where one object lies over another (`Sprite.part()`: a coin on a
+  coin, one leaf on the next) a line in the darkest shade of the one beneath, not the outline's colour. In the
+  outline's colour a heap of coins read as cracked rock. The parts of one object (a coin's rim, field and star)
+  get no line at all: the light parts them.
+- **Shine is drawn, not computed:** a streak along the edge facing the light (a coin's rim, a gem's table) and a
+  speck or two, in a pale tint of the material (`relief=0`), as the Potion's highlight and bubbles are.
+- **Detail at the new size:** a coin's raised rim, its sunken field with the rim's shadow on its upper left, a
+  star struck in it; a gem's six crown facets round its table. Fewer, bigger forms than RD's armour carries,
+  but each one modelled.
+- **Read it as a whole:** a heap is a mound with coins strewn on it at odd angles, not rows of coins (rows read
+  as bricks).
+
+![RD's Potion, then the coins, seal stones and clover: the grained finish above, the clean look below](item-icons-clean.png)
+
+**Where it stands (2026-10-26):** redrawn so far: the four coin piles (`coin_art.py`), the five Seal Stones and
+the lucky clover (`clean_icon_art.py`, which `item_art.py` now skips). Every other code-drawn item icon (338) is
+still the grained finish and fails these rules. To bring the rest across, family by family (fix a family's
+helper, as before): draw it in `clean_icon_art.py` at 64, check it with `--kind item`, look at it beside the
+Potion at the size the bag shows it (`--sheet`), and in the game (`tools/screenshots.txt`: `clean_icons`,
+`clean_coins`). Families with palette swaps (`derive` in art/assets.json: the rings, many capes) need their
+swaps redone on the new drawing. The rules for weapons and armour (RD's drawings shrunk to 32 by
+`weapon_art.py` and `armour_art.py`) are unchanged so far: they are RD's own, and the `icon` bands still judge
+them.
 
 ## The target: Pixel Heroes (2026-10-25)
 
@@ -386,6 +486,9 @@ It passes both: the building bands with `form_relief` 0.016, `straight_edges` 0.
 
 ## Restyle: how every item icon is finished
 
+(The grained finish, which every code-drawn item icon still has. New and redrawn ones follow *Item icons: the
+clean look* above.)
+
 `tools/item_art.py` designs each item in flat three-tone fills (shapes, colours, details) and
 `pixel_kit.restyle` finishes it: each region of colour becomes a material on a hue-shifted ramp, the
 silhouette loses its square corners (never its notches or thin lines), the whole is lit from the top left
@@ -476,6 +579,13 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   5. Animation: walk cycles stay RD's for now (`sprite-acceptance.md`).
 
 ## Learned
+
+- **2026-10-26 (item icons, the clean look):** Measure the reference the user points at before trusting the
+  criteria: the `icon` bands failed RD's Potion on five counts (colour density, flatness, the outline's
+  depth) and passed the coins the user disliked, because they were calibrated on RD's 32-pixel armour and
+  weapons. A border reads thick from its width and what lies inside it, not from how dark it is. Lines inside
+  a sprite in the outline's colour turn a heap into cracked rock. A rule that only fails the old finish on
+  size proves nothing: test the old look blown up, and the flat designs given the new outline.
 
 - **2026-10-25 (the seasonal app icons, `tools/season_icon_art.py`):** the first round regraded RD's scenery
   by brightness percentile onto each season's ramp, scattered snow, lights and flowers as single pixels, ran

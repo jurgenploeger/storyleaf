@@ -38,6 +38,10 @@ OUTLINE = (35, 24, 52)                   # the item icons' house outline (tools/
 # pixel_style's light_top_left; a light from the top left alone gave ours 0.52).
 LIGHT = np.array([-0.17, -0.22, 1.0])
 LIGHT = LIGHT / np.linalg.norm(LIGHT)
+# The item icons' light since 2026-10-26 (the Potion's, `CLEAN`): from the top left, so a form is lit on its
+# upper left and turns into shadow toward its lower right (the Potion measures 0.51 on light_top_left).
+ITEM_LIGHT = np.array([-0.5, -0.6, 0.62])
+ITEM_LIGHT = ITEM_LIGHT / np.linalg.norm(ITEM_LIGHT)
 
 SHADOW_HUE, LIGHT_HUE = 245.0, 50.0      # shadows lean to blue-violet, highlights to warm yellow
 
@@ -53,10 +57,13 @@ def _toward(h, target, amount):
     return (h + max(-abs(d), min(abs(d), amount)) * (1 if d >= 0 else -1)) % 360
 
 
-def ramp(base, n=6, shift_dark=12.0, shift_light=7.0):
+def ramp(base, n=6, shift_dark=12.0, shift_light=7.0, wide=False):
     """`n` shades of `base`, dark to light. The base sits a little above the middle; shadows go deeper,
     more saturated and toward blue; highlights paler and toward yellow. Greys (metal, stone) get a cool
-    tint in shadow and a warm one in light, so they aren't dead grey."""
+    tint in shadow and a warm one in light, so they aren't dead grey. `wide`: the clean finish's longer
+    ramp, as the Potion's (its darkest red a third of its base, its lightest a pale pink): deeper shadows,
+    and lights climbing most of the way to white."""
+    deep, reach, fade = (1.08, 0.85, 0.5) if wide else (0.95, 0.6, 0.3)
     r, g, b = _rgb(base) if isinstance(base, str) else base
     h, s, v = colorsys.rgb_to_hsv(r, g, b)
     h *= 360
@@ -72,7 +79,7 @@ def ramp(base, n=6, shift_dark=12.0, shift_light=7.0):
         k = (t - pivot) * 0.62 / pivot if t < pivot else (t - pivot) * 0.38 / (1 - pivot)
         # Compressed ends, as RD's armour: the darkest shade about two fifths of the base, the lightest
         # well short of white (the glossy speck aside).
-        vv = min(1.0, v * (1 + 0.95 * k)) if k < 0 else min(1.0, v + (1 - v) * 0.6 * k / 0.38 + 0.06 * k)
+        vv = min(1.0, v * (1 + deep * k)) if k < 0 else min(1.0, v + (1 - v) * reach * k / 0.38 + 0.06 * k)
         # Pale materials (pearl, snow, silver) stay soft in shadow, never near-black.
         vv = max(0.08 + 0.4 * pale, vv)
         if grey:
@@ -83,7 +90,7 @@ def ramp(base, n=6, shift_dark=12.0, shift_light=7.0):
             # colour (a blue's shadows go to violet, its lights toward cyan; a red's shadows to crimson).
             away = 1 if (h - LIGHT_HUE) % 360 < 180 else -1
             hh = (h + away * shift_dark * -k / 0.62) % 360 if k < 0 else _toward(h, LIGHT_HUE, shift_light * k / 0.38)
-            ss = min(1.0, s * (1 + 0.25 * -k / 0.62)) if k < 0 else s * (1 - 0.3 * (k / 0.38) ** 1.4)
+            ss = min(1.0, s * (1 + 0.25 * -k / 0.62)) if k < 0 else s * (1 - fade * (k / 0.38) ** 1.4)
         out.append(tuple(round(c * 255) for c in colorsys.hsv_to_rgb(hh / 360, ss, vv)))
     return out
 
@@ -93,12 +100,15 @@ class Material:
     pixels), how glossy (a specular highlight), and how much it takes light at all (`relief`: 1 rounded
     by the light, 0 flat colour)."""
 
-    def __init__(self, base, shades=6, texture=0.06, grain=1.5, gloss=0.0, relief=1.0, variety=4.0, shift=1.0):
+    def __init__(self, base, shades=6, texture=0.06, grain=1.5, gloss=0.0, relief=1.0, variety=4.0, shift=1.0,
+                 wide=False):
         self.base, self.shades, self.texture, self.grain = base, shades, texture, grain
         self.gloss, self.relief = gloss, relief
+        # How deep the clean finish's outline is (render outline="deep"), as a share of the darkest shade's value.
+        self.outline = 0.5
         # `shift` scales how far the ramp's shadows and lights turn round the wheel (RD's buildings turn
         # theirs about twice as far as an icon's).
-        self.colours = ramp(base, shades, 12.0 * shift, 7.0 * shift)
+        self.colours = ramp(base, shades, 12.0 * shift, 7.0 * shift, wide)
         # A sister ramp a few degrees round the wheel: the texture picks between the two, so a surface
         # carries the near-duplicate colours RD's do instead of one clean ramp (0 turns it off).
         r, g, b = _rgb(base)
@@ -106,6 +116,15 @@ class Material:
         twin = colorsys.hsv_to_rgb(((h * 360 + variety) % 360) / 360, max(0, sat - 0.06), min(1, v * 0.97))
         self.twin = ramp(twin, shades, 12.0 * shift, 7.0 * shift) if variety else self.colours
         self.key = hashlib.md5(f"{base}{shades}{texture}{grain}{shift}".encode()).hexdigest()
+
+
+def deep_shade(mat):
+    """The clean finish's outline colour for a material (2026-10-26, RD's Potion): a deep shade of it, about
+    0.5 of the value of its darkest shade (`Material.outline`), its hue kept, a touch richer: a red's
+    near-black crimson, a gold's dark umber, never the house violet."""
+    r, g, b = (np.array(mat.colours[0]) / 255.0).tolist()
+    h, s, v = colorsys.rgb_to_hsv(r, g, b)
+    return tuple(int(c * 255) for c in colorsys.hsv_to_rgb(h, min(1.0, s * 1.1 + 0.1), max(0.05, v * mat.outline)))
 
 
 class Sprite:
@@ -118,6 +137,31 @@ class Sprite:
         # The light, if not the icons' (LIGHT): scenery stands in the world, lit more from the side.
         self.light = LIGHT
         self.overlay = None      # RGBA pixels put on top after the outline (sparkles, glows)
+        # A light 2 × 2 dither where a pixel sits between two shades (off for the clean finish).
+        self.dither = True
+        # Which object the next shapes belong to (`part`): with seams="parts", only where one object lies
+        # over another is there a line between them, in the deep outline's colour; a coin's rim and face don't
+        # get one.
+        self._part = 0
+
+    def part(self):
+        """Starts a new object: shapes from here on lie over the ones before as a thing of their own."""
+        self._part += 1
+        return self
+
+    def _add(self, entry):
+        entry[3]["part"] = self._part
+        self.shapes.append(entry)
+
+    @classmethod
+    def clean(cls, size=64):
+        """A sprite in the item icons' look since 2026-10-26 (docs/pixel-style.md, *Item icons*): RD's Potion.
+        At 64 pixels, lit from the top left, no grain or dither, a core shadow only where a form turns from
+        the light, and (render with outline="deep") a one-pixel outline in a deep shade of what it rounds.
+        Give its materials `texture=0, variety=0`."""
+        s = cls(size)
+        s.light, s.rim, s.dither, s.seams = ITEM_LIGHT, "core", False, "parts"
+        return s
 
     # --- shapes, in the sprite's own pixels -----------------------------------------------------------
 
@@ -129,7 +173,7 @@ class Sprite:
         x, y = self._grid()
         c, s = math.cos(math.radians(rot)), math.sin(math.radians(rot))
         u, v = (x - cx) * c + (y - cy) * s, -(x - cx) * s + (y - cy) * c
-        self.shapes.append((u * u / rx / rx + v * v / ry / ry <= 1, mat, profile, {"centre": (cx, cy), "bulge": bulge}))
+        self._add((u * u / rx / rx + v * v / ry / ry <= 1, mat, profile, {"centre": (cx, cy), "bulge": bulge}))
         return self
 
     def poly(self, points, mat, profile="dome", bulge=1.0, tone=None):
@@ -140,14 +184,14 @@ class Sprite:
             crosses = ((y0 > y) != (y1 > y)) & (x < (x1 - x0) * (y - y0) / (y1 - y0 + 1e-12) + x0)
             inside ^= crosses
         cx, cy = np.mean([p[0] for p in pts]), np.mean([p[1] for p in pts])
-        self.shapes.append((inside, mat, profile, {"centre": (cx, cy), "bulge": bulge, "tone": tone}))
+        self._add((inside, mat, profile, {"centre": (cx, cy), "bulge": bulge, "tone": tone}))
         return self
 
     def mask(self, mask, mat, height=None, detail=None):
         """A shape given as a hi-res mask, with its own height field and per-pixel light (a restyle's)."""
         ys, xs = np.nonzero(mask)
         centre = (xs.mean() / SS, ys.mean() / SS) if len(xs) else (0, 0)
-        self.shapes.append((mask, mat, "dome", {"centre": centre, "bulge": 1.0, "height": height, "detail": detail}))
+        self._add((mask, mat, "dome", {"centre": centre, "bulge": 1.0, "height": height, "detail": detail}))
         return self
 
     def stroke(self, points, width, mat, profile="cylinder", bulge=1.0):
@@ -160,7 +204,7 @@ class Sprite:
             best = np.minimum(best, np.hypot(x - (x0 + t * dx), y - (y0 + t * dy)))
         mask = best <= width / 2
         cx, cy = np.mean([p[0] for p in points]), np.mean([p[1] for p in points])
-        self.shapes.append((mask, mat, profile, {"centre": (cx, cy), "bulge": bulge, "axis_dist": best / (width / 2)}))
+        self._add((mask, mat, profile, {"centre": (cx, cy), "bulge": bulge, "axis_dist": best / (width / 2)}))
         return self
 
     # --- rendering ------------------------------------------------------------------------------------
@@ -211,6 +255,10 @@ class Sprite:
         # A surface facing the light lands on the base colour (the ramp's middle), the edges turning away
         # step down into shadow; only the gloss climbs above it.
         lit = 0.05 + 0.55 * diffuse ** 2
+        if self.rim == "core":
+            # The clean finish's top-left light: a face looking straight out is a little over the middle of
+            # its ramp, the side toward the light climbs to its top, the side away falls to its foot.
+            lit = 0.1 + 0.85 * diffuse
         if profile == "flat":
             cx, cy = extra["centre"]
             span = max(2.0, np.sqrt(mask.sum()) / SS)
@@ -220,6 +268,12 @@ class Sprite:
         if toned:
             # A plane given its own light (a gem's facet, a cut face): 0 dark … 1 lit.
             lit = np.full(mask.shape, float(extra["tone"]))
+            if self.rim == "core" and mask.any():
+                # The clean finish: a plane still brightens a little toward the light across it, as the
+                # Potion's glass does, so it shades in two or three bands instead of one flat tone.
+                cx, cy = extra["centre"]
+                span = max(2.0, np.sqrt(mask.sum()) / SS)
+                lit = lit + 0.12 * (-(x - cx) - (y - cy)) / span
         if mat.gloss and not toned:
             half = (self.light + np.array([0, 0, 1.0])) / np.linalg.norm(self.light + np.array([0, 0, 1.0]))
             lit = lit + mat.gloss * 0.8 * np.clip(n @ half, 0, 1) ** 60
@@ -325,6 +379,8 @@ class Sprite:
             near_step = np.abs(frac - 0.5) < 0.18
             if self.shapes[i][2] == "flat" or self.shapes[i][3].get("tone") is not None or mat.relief == 0:
                 near_step = np.zeros_like(near_step)
+            if not self.dither:
+                near_step = np.zeros_like(near_step)
             v = v + np.where(near_step, dither * 0.5, 0)
             level[sel] = np.clip(np.round(v[sel]), 0, steps)
         # Rim light and core shadow: along each shape's own edge, a step lighter where it faces the light
@@ -338,6 +394,11 @@ class Sprite:
             # RD darkens a form's inner edge all the way round (the light turns away there), a step deeper
             # where it faces away from the light; no lit rim.
             edge = sel & (~up | ~left | ~down | ~right)
+            if self.rim == "core":
+                # The clean finish: no ring darkened all the way round (with the outline it read as a
+                # border two or three pixels thick, playtesting 2026-10-26); a step darker only on the edges
+                # turned from the light, below and right.
+                edge = sel & (~down | ~right)
             if self.rim == "lower":
                 # Foliage: only the edges turned from the light darken; a cluster's top stays lit.
                 edge = sel & (~down | ~right)
@@ -345,6 +406,7 @@ class Sprite:
             level[edge] = np.maximum(level[edge] - 1, 0)
             level[away] = np.maximum(level[away] - (1 if self.rim == "silhouette" else 0), 0)
         # A darker line where a shape meets one lying over it (on the lower one's side).
+        parted = np.zeros((self.h, self.w), bool)
         for y in range(self.h if self.seams else 0):
             for x in range(self.w):
                 i = idx[y, x]
@@ -352,8 +414,13 @@ class Sprite:
                     continue
                 for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
                     yy, xx = y + dy, x + dx
-                    if 0 <= yy < self.h and 0 <= xx < self.w and idx[yy, xx] > i \
-                            and self.shapes[idx[yy, xx]][1] is not self.shapes[i][1]:
+                    if not (0 <= yy < self.h and 0 <= xx < self.w and idx[yy, xx] > i):
+                        continue
+                    if self.seams == "parts":
+                        if self.shapes[idx[yy, xx]][3]["part"] != self.shapes[i][3]["part"]:
+                            parted[y, x] = True
+                            break
+                    elif self.shapes[idx[yy, xx]][1] is not self.shapes[i][1]:
                         level[y, x] = max(0, min(level[y, x], self.shapes[i][1].shades - 1) - 2)
                         break
         out = np.zeros((self.h, self.w, 4), np.uint8)
@@ -366,6 +433,10 @@ class Sprite:
                     mat = self.shapes[i][1]
                     out[y, x, :3] = (mat.twin if pick[y, x] else mat.colours)[level[y, x]]
                     out[y, x, 3] = 255
+        # Lines inside the silhouette are softer than round it: the darkest shade of what lies beneath, not
+        # the outline's deep one (in the outline's colour, a heap of coins read as cracked rock, 2026-10-26).
+        for y, x in np.argwhere(parted):
+            out[y, x, :3] = self.shapes[idx[y, x]][1].colours[0]
         # Highlight specks: each glossy shape's brightest pixel gets its lightest shade. Polished metal and
         # cut stone (gloss 0.8 and over) get RD's glint instead: a small cross of near-white where the
         # light hits hardest, ringed by the lightest shade, and a speck or two more on other bulges
@@ -413,6 +484,19 @@ class Sprite:
                 inner = np.median(out[solid][:, :3] @ np.array([0.299, 0.587, 0.114]))
                 house *= min(1.0, 0.5 * inner / (house @ np.array([0.299, 0.587, 0.114])))
             for y, x in np.argwhere(ring):
+                if outline == "deep":
+                    # The Potion's outline (2026-10-26): one pixel, a deep shade of the material it rounds
+                    # (a red's near-black crimson, a gold's dark umber), never the house violet: about 0.4
+                    # of the value of that material's darkest shade, its hue kept, a touch richer.
+                    inside = [(y + dy, x + dx) for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1))
+                              if 0 <= y + dy < self.h and 0 <= x + dx < self.w and solid[y + dy, x + dx]]
+                    mats = [self.shapes[idx[p]][1] for p in inside if idx[p] >= 0]
+                    mat = max(set(mats), key=mats.count) if mats else None
+                    if mat is None:
+                        out[y, x] = (*house.astype(int), 255)
+                        continue
+                    out[y, x] = (*deep_shade(mat), 255)
+                    continue
                 if outline == "house":
                     out[y, x] = (*house.astype(int), 255)
                 else:

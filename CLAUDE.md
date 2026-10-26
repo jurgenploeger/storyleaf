@@ -66,7 +66,11 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   pale tips stay ginger. Derive them with `layers` instead (body, locks, hair from `tools/hero_layers.py`, the hair's
   rules widened to appearance.json `hairLayer`), as every quest giver is; `check_content.py` insists.
 - `Storyleaf/`: Swift code (World = maps and walking, Battle = combat, UI = SwiftUI HUD and menus).
-- `tools/item_art.py`: designs every item's 32×32 sprite in code (free), finished in the game's pixel style by
+- Item icons are moving to the clean look (2026-10-26, docs/pixel-style.md *Item icons*: RD's Potion, the user's
+  pick): 64 pixels, lit from the top left on smooth ramps, no grain, a one-pixel outline in a deep shade of what it
+  rounds; `tools/pixel_style.py check --kind item`. `tools/clean_icon_art.py` draws the ones redrawn so far (the
+  Seal Stones, the lucky clover; `item_art.py` skips them), `tools/coin_art.py` the coins. Draw new item icons there.
+- `tools/item_art.py`: designs every other item's 32×32 sprite in code (free), finished in the grained style by
   `pixel_kit.restyle` (docs/pixel-style.md; a palette swap of one, `derive`, is swapped on the design and
   finished too); rerun it after editing a drawing. Boots, gloves, capes and set hats share helpers (`boot`,
   `glove`, `cape`, `hat_piece`): fix the family there. A weapon also
@@ -161,7 +165,7 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   stats). `--sheet out.png` writes a contact sheet. Spells are light, not sprites:
   `Storyleaf/Battle/ElementEffects.swift` layers soft glows in each element's colours (`ElementLight`).
 - `tools/coin_art.py`: the coins in the Bag (`item_coins_1` to `_4`, a bigger pile the more you carry,
-  `CoinsTile`), drawn with `pixel_kit` as item icons are. The bag holds 50 slots (`GameSession+Bank.swift`); the
+  `CoinsTile`), drawn with `pixel_kit` in the clean look at 64 pixels. The bag holds 50 slots (`GameSession+Bank.swift`); the
   rest goes in a bank (`tools/building_art.py` `bank`, NPC role `bank`), the only place nothing is lost.
 - `tools/lair_art.py`: the pieces of the bosses' lairs no sprite had (a standing stone, a brazier, a gold hoard, a
   warning post, the Rat King's junk throne, a heap of bones, a hunter's torn tent, a broken pillar), drawn with
