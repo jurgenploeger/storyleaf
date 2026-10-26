@@ -14,7 +14,7 @@ struct TitleView: View {
     @State private var saves = SaveStore.all()
     @State private var selectedSlot: String?
     @State private var showingChangelog = DebugLaunch.titlePage == "news"
-    /// What's new's page (0 is the newest): turning it scrolls back up to the panel's top.
+    /// What's new's page (0 is the newest): turning it scrolls back up to the window's top.
     @State private var changelogPage = 0
     @State private var showingSettings = DebugLaunch.titlePage == "settings"
     /// The Settings window's tab (`SettingsPage`).
@@ -44,8 +44,12 @@ struct TitleView: View {
     /// A phone on its side, too short for the logo above everything: the logo on the left, the
     /// rest on the right.
     private var wide: Bool { verticalSizeClass == .compact }
-    /// The title's own menu, not hero creation, Settings, What's new or the languages.
-    private var onMenu: Bool { !creating && !showingLanguages && !showingChangelog && !showingSettings }
+    /// The title's own menu, not hero creation or the languages (What's new and Settings cover the
+    /// whole screen).
+    private var onMenu: Bool { !creating && !showingLanguages }
+
+    /// How What's new and Settings open and close: fading in over the sky as the story pages do.
+    private static let windowFade = Animation.easeInOut(duration: 0.25)
 
     var body: some View {
         ZStack {
@@ -58,6 +62,19 @@ struct TitleView: View {
                     }
                 }
                 .transition(.opacity)
+            } else if showingChangelog {
+                // What's new and Settings open as the story pages do (playtesting 2026-10-26: "almost
+                // full screen and no logo on the top"): one window over the sky, the logo and the
+                // round buttons out of the way.
+                ChangelogPanel(page: $changelogPage) {
+                    withAnimation(Self.windowFade) { showingChangelog = false }
+                }
+                .padding(16)
+                .transition(.opacity)
+            } else if showingSettings {
+                settingsWindow
+                    .padding(16)
+                    .transition(.opacity)
             } else if wide {
                 // The logo on the left, with the round buttons under it on the menu (half the width
                 // there, a narrower strip beside anything else), and the rest on the right: in the
@@ -69,16 +86,12 @@ struct TitleView: View {
                     }
                     .frame(maxWidth: onMenu ? .infinity : 220)
                     GeometryReader { proxy in
-                        ScrollViewReader { reader in
-                            ScrollView {
-                                page
-                                    .frame(maxWidth: .infinity)
-                                    .frame(minHeight: proxy.size.height)
-                                    .id(Self.pageTop)
-                            }
-                            .scrollBounceBehavior(.basedOnSize)
-                            .onChange(of: changelogPage) { scrollUp(reader) }
+                        ScrollView {
+                            page
+                                .frame(maxWidth: .infinity)
+                                .frame(minHeight: proxy.size.height)
                         }
+                        .scrollBounceBehavior(.basedOnSize)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -90,24 +103,21 @@ struct TitleView: View {
                 // Upright, the round buttons sit at the bottom of the screen, under everything
                 // else (scrolling with it when the screen is too short for all of it).
                 GeometryReader { proxy in
-                    ScrollViewReader { reader in
-                        ScrollView {
-                            VStack(spacing: 18) {
-                                logo.padding(.top, 12)
-                                page.id(Self.pageTop)
-                                if onMenu {
-                                    Spacer(minLength: 10)
-                                    roundButtons
-                                }
+                    ScrollView {
+                        VStack(spacing: 18) {
+                            logo.padding(.top, 12)
+                            page
+                            if onMenu {
+                                Spacer(minLength: 10)
+                                roundButtons
                             }
-                            .padding(20)
-                            .frame(maxWidth: .infinity)
-                            .frame(minHeight: proxy.size.height)
-                            .id(localizer.language)
                         }
-                        .scrollBounceBehavior(.basedOnSize)
-                        .onChange(of: changelogPage) { scrollUp(reader) }
+                        .padding(20)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: proxy.size.height)
+                        .id(localizer.language)
                     }
+                    .scrollBounceBehavior(.basedOnSize)
                 }
                 languageButton
             }
@@ -125,14 +135,6 @@ struct TitleView: View {
         .alert(importNote ?? "", isPresented: Binding(get: { importNote != nil }, set: { if !$0 { importNote = nil } })) {
             Button(L("OK"), role: .cancel) {}
         }
-    }
-
-    /// The scroll anchor at the top of what shows with the logo.
-    private static let pageTop = "page"
-
-    /// A new page of What's new starts at its top, not where the last one was read to.
-    private func scrollUp(_ reader: ScrollViewProxy) {
-        withAnimation(.easeInOut(duration: 0.25)) { reader.scrollTo(Self.pageTop, anchor: .top) }
     }
 
     /// A backup from Files becomes a game of its own on the carousel (never over another one).
@@ -162,37 +164,6 @@ struct TitleView: View {
             creation
         } else if showingLanguages {
             LanguagePanel { showingLanguages = false }
-        } else if showingChangelog {
-            ChangelogPanel(page: $changelogPage) { showingChangelog = false }
-        } else if showingSettings {
-            VStack(alignment: .leading, spacing: 0) {
-                // Its pages as tabs along the top, as in the game's Settings window; the close button
-                // over the corner.
-                HStack(spacing: 4) {
-                    PageTabs(page: $settingsPage, title: { $0.title }, icon: { $0.icon })
-                    Spacer(minLength: 4)
-                    Color.clear.frame(width: OrangeCloseButton.room, height: 34)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(HUDStyle.titleGloss.overlay(alignment: .bottom) { HUDStyle.titleEdge })
-                VStack(alignment: .leading, spacing: 12) {
-                    SettingsView(onImportBackup: {
-                        showingSettings = false
-                        importing = true
-                    }, page: settingsPage)
-                    Button {
-                        showingSettings = false
-                    } label: {
-                        Label(L("Back"), icon: .arrowLeft)
-                    }
-                    .buttonStyle(PixelButtonStyle(compact: true))
-                }
-                .padding(16)
-            }
-            .frame(maxWidth: 640)
-            .gameWindow()
-            .windowCloseButton { showingSettings = false }
         } else {
             // Your game, and how to start. The round buttons wait at the bottom of the screen
             // (on a phone on its side, under the logo).
@@ -201,6 +172,33 @@ struct TitleView: View {
                 startButtons
             }
         }
+    }
+
+    /// Settings, its pages as tabs along the top as in the game's Settings window, the close button
+    /// over the corner; as big as What's new.
+    private var settingsWindow: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            PageTabs(page: $settingsPage, title: { $0.title })
+            // Closed by its close button alone, as the story pages and What's new are.
+            ScrollView {
+                SettingsView(onImportBackup: {
+                    showingSettings = false
+                    importing = true
+                }, page: settingsPage)
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        }
+        .frame(maxWidth: 720, maxHeight: .infinity)
+        .gameWindow()
+        .windowCloseButton(closeSettings)
+        // A language switch (General) rebuilds its text in place.
+        .id(localizer.language)
+    }
+
+    private func closeSettings() {
+        withAnimation(Self.windowFade) { showingSettings = false }
     }
 
     /// The language button, top right of the menu: the first thing a player who can't read English
@@ -267,7 +265,9 @@ struct TitleView: View {
     /// for a player who already has a game.
     private var roundButtons: some View {
         HStack(alignment: .top, spacing: 4) {
-            Button(L("Settings")) { showingSettings = true }
+            Button(L("Settings")) {
+                withAnimation(Self.windowFade) { showingSettings = true }
+            }
                 .buttonStyle(TitleRoundButtonStyle(icon: .settings))
             if saves.isEmpty {
                 Button(L("Import a backup")) { importing = true }
@@ -282,7 +282,7 @@ struct TitleView: View {
                 Button(L("What's new")) {
                     seenRelease = newestRelease
                     changelogPage = 0
-                    showingChangelog = true
+                    withAnimation(Self.windowFade) { showingChangelog = true }
                 }
                 .buttonStyle(TitleRoundButtonStyle(icon: .star, marked: hasUnreadNotes))
                 .accessibilityValue(hasUnreadNotes ? L("Unread") : "")
@@ -297,7 +297,7 @@ struct TitleView: View {
 
     private var creation: some View {
         VStack(alignment: .leading, spacing: 0) {
-            FLTitleBar(title: L("Create your hero"), icon: .user, onClose: { creating = false })
+            WindowTitle(L("Create your hero"), onClose: { creating = false })
             VStack(alignment: .leading, spacing: 12) {
                 LookEditor(name: $name, look: $look, raceID: raceID)
 
@@ -340,10 +340,10 @@ extension TitleView {
     }
 }
 
-/// Release notes from content/changelog.json, newest first, five releases a page. Only the
-/// newest is open; tap any other to read it.
+/// Release notes from content/changelog.json, newest first, five releases a page, in a window
+/// nearly as big as the screen. Only the newest is open; tap any other to read it.
 private struct ChangelogPanel: View {
-    /// The page showing, 0 being the newest (TitleView scrolls up to the panel when it turns).
+    /// The page showing, 0 being the newest (turning it scrolls back up to the top).
     @Binding var page: Int
     let onClose: () -> Void
     @State private var open: Set<String> = Set(Content.shared.releases.prefix(1).map(\.id))
@@ -358,54 +358,73 @@ private struct ChangelogPanel: View {
         return Array(releases.dropFirst(start).prefix(Self.perPage))
     }
 
+    /// The scroll anchor at the notes' top.
+    private static let top = "top"
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            FLTitleBar(title: L("What's new"), icon: .book, onClose: onClose)
-            VStack(alignment: .leading, spacing: 12) {
-                ForEach(shown) { release in
-                    let isOpen = open.contains(release.id)
-                    VStack(alignment: .leading, spacing: 6) {
-                        Button {
-                            withAnimation(.easeOut(duration: 0.2)) {
-                                if isOpen { open.remove(release.id) } else { open.insert(release.id) }
-                            }
-                        } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                HStack(alignment: .firstTextBaseline) {
-                                    Text("v\(release.version)").font(HUDStyle.font(16)).foregroundStyle(HUDStyle.gold)
-                                    Spacer()
-                                    Text(release.date).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim)
-                                    IconImage(isOpen ? .chevronUp : .chevronDown, size: 12)
-                                        .foregroundStyle(HUDStyle.dim)
-                                }
-                                Text(release.title).font(HUDStyle.font(13))
-                                    .multilineTextAlignment(.leading)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            .contentShape(Rectangle())
+            WindowTitle(L("What's new"), onClose: onClose)
+            ScrollViewReader { reader in
+                ScrollView {
+                    notes
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .id(Self.top)
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                // A new page starts at its top, not where the last one was read to.
+                .onChange(of: page) {
+                    withAnimation(.easeInOut(duration: 0.25)) { reader.scrollTo(Self.top, anchor: .top) }
+                }
+            }
+        }
+        .foregroundStyle(HUDStyle.cream)
+        .frame(maxWidth: 720, maxHeight: .infinity)
+        .gameWindow()
+    }
+
+    /// This page's releases, and the pager under them.
+    private var notes: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(shown) { release in
+                let isOpen = open.contains(release.id)
+                VStack(alignment: .leading, spacing: 6) {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            if isOpen { open.remove(release.id) } else { open.insert(release.id) }
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityHint(isOpen ? L("Hides the notes") : L("Shows the notes"))
-                        if isOpen {
-                            ForEach(release.notes, id: \.self) { note in
-                                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                                    Text("•").foregroundStyle(HUDStyle.gold)
-                                    Text(note).fixedSize(horizontal: false, vertical: true)
-                                }
-                                .font(HUDStyle.font(11))
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(alignment: .firstTextBaseline) {
+                                Text("v\(release.version)").font(HUDStyle.font(16)).foregroundStyle(HUDStyle.gold)
+                                Spacer()
+                                Text(release.date).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim)
+                                IconImage(isOpen ? .chevronUp : .chevronDown, size: 12)
+                                    .foregroundStyle(HUDStyle.dim)
                             }
+                            Text(release.title).font(HUDStyle.font(13))
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(isOpen ? L("Hides the notes") : L("Shows the notes"))
+                    if isOpen {
+                        ForEach(release.notes, id: \.self) { note in
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                Text("•").foregroundStyle(HUDStyle.gold)
+                                Text(note).fixedSize(horizontal: false, vertical: true)
+                            }
+                            .font(HUDStyle.font(11))
                         }
                     }
                 }
-                if pageCount > 1 {
-                    pager.padding(.top, 4)
-                }
             }
-            .padding(16)
+            if pageCount > 1 {
+                pager.padding(.top, 4)
+            }
         }
-        .foregroundStyle(HUDStyle.cream)
-        .frame(maxWidth: 640)
-        .gameWindow()
     }
 
     /// Newer and Older under the notes, and which page this is.

@@ -19,7 +19,7 @@ struct BankView: View {
                 .onTapGesture(perform: onClose)
 
             VStack(spacing: 0) {
-                FLTitleBar(title: L("Bank"), icon: .coins, onClose: onClose)
+                WindowTitle(L("Bank"), onClose: onClose)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 10) {

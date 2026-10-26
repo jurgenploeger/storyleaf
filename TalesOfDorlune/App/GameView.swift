@@ -25,8 +25,7 @@ struct GameView: View {
                 }
                 switch coordinator.overlay {
                 case .menu(let tab):
-                    MenuView(session: coordinator.session, window: tab, onClose: coordinator.closeOverlay, onQuitToTitle: coordinator.onQuitToTitle,
-                             fromFace: coordinator.menuFromFace)
+                    MenuView(session: coordinator.session, window: tab, onClose: coordinator.closeOverlay, onQuitToTitle: coordinator.onQuitToTitle)
                 case .worldMap:
                     MapOverlay(session: coordinator.session, cave: coordinator.caveMap, levels: coordinator.caveLevels,
                                loadLevel: coordinator.caveMap(of:), rows: coordinator.mapRows, onClose: coordinator.closeOverlay)

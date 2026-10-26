@@ -59,7 +59,7 @@ struct NPCDialogView: View {
 
     private func bubble(maxHeight: CGFloat, tailY: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            FLTitleBar(title: npc.name, onClose: onClose)
+            WindowTitle(npc.name)
             VStack(alignment: .leading, spacing: 10) {
                 if npc.role == .quests {
                     QuestConversation(session: session, giver: npc, reply: $reply, finished: $finished,
@@ -71,12 +71,12 @@ struct NPCDialogView: View {
             .padding(12)
         }
         .foregroundStyle(HUDStyle.cream)
-        // The title bar's corners round with the window's.
         .clipShape(RoundedRectangle(cornerRadius: HUDStyle.windowRadius))
         // The window is a speech bubble: its glass runs out round the tail, and its frame goes all
-        // the way round over the title bar, like every window's (`gameWindow`).
+        // the way round, like every window's (`gameWindow`), the close button over its corner.
         .background(SpeechBubble(tailY: tailY).fill(HUDStyle.glass).shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2))
         .overlay(HUDStyle.frame(SpeechBubble(tailY: tailY)))
+        .windowCloseButton(onClose)
     }
 
     /// What everyone but a quest giver says, and what they do for you under it.

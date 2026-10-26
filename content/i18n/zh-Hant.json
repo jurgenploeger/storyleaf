@@ -524,6 +524,7 @@
     "Travelling": "移動中",
     "{percent} percent": "百分之{percent}",
     "World map": "世界地圖",
+    "You are in {place}": "你在{place}",
     "Coordinates {x}, {y}": "座標 {x}，{y}",
     "Hatch": "孵化",
     "Use": "使用",

@@ -25,14 +25,14 @@ struct ProfileCard: View {
 
             VStack(spacing: 0) {
                 if let facts = facts {
-                    FLTitleBar(title: facts.name, icon: facts.icon, onClose: onClose)
+                    WindowTitle(facts.name, onClose: onClose)
                     // As tall as it needs, scrolling only on a short (landscape) screen.
                     ViewThatFits(in: .vertical) {
                         details(facts).padding(14)
                         ScrollView { details(facts).padding(14) }
                     }
                 } else {
-                    FLTitleBar(title: L("Nobody here"), onClose: onClose)
+                    WindowTitle(L("Nobody here"), onClose: onClose)
                     Text(L("They've gone on their way."))
                         .font(HUDStyle.font(12))
                         .foregroundStyle(HUDStyle.dim)
@@ -142,7 +142,6 @@ struct ProfileCard: View {
     /// Everything the window shows about them, worked out once.
     private struct Facts {
         var name: String
-        var icon: GameIcon
         var art: String
         /// "Lv 42 · Human Fighter", "Lv 12 · Jelly Puff".
         var kind: String
@@ -167,7 +166,7 @@ struct ProfileCard: View {
         switch profile {
         case .hero:
             let hero = session.data.hero
-            var facts = Facts(name: hero.name, icon: .user, art: GameSession.heroArt,
+            var facts = Facts(name: hero.name, art: GameSession.heroArt,
                               kind: L("Lv {level} · {race} {heroClass}", ["level": hero.level, "race": content.race(hero.raceID).name, "heroClass": session.heroClass.name]),
                               stats: session.heroStats, hp: hero.hp, mp: hero.mp,
                               exp: (hero.exp, GameSession.expToNext(level: hero.level)))
@@ -177,7 +176,7 @@ struct ProfileCard: View {
 
         case .pet(let id):
             guard let pet = session.data.pets.first(where: { $0.id == id }), let species = session.species(of: pet) else { return nil }
-            var facts = Facts(name: pet.name, icon: .paw, art: session.artID(for: pet), kind: L("Lv {level} · {monster}", ["level": pet.level, "monster": species.name]),
+            var facts = Facts(name: pet.name, art: session.artID(for: pet), kind: L("Lv {level} · {monster}", ["level": pet.level, "monster": species.name]),
                               element: species.element, stats: session.stats(of: pet), hp: pet.hp, mp: pet.mp,
                               exp: (pet.exp, GameSession.expToNext(level: pet.level)))
             if pet.hp <= 0 {
@@ -194,7 +193,7 @@ struct ProfileCard: View {
             // A friend shows what their last fight with you left them; anyone else is at full strength.
             let stats = session.stats(of: person)
             let friend = session.data.friends?.first { $0.id == person.id }
-            var facts = Facts(name: person.name, icon: .user, art: session.artID(for: person),
+            var facts = Facts(name: person.name, art: session.artID(for: person),
                               kind: L("Lv {level} · {race} {heroClass}", ["level": person.level, "race": content.race(person.raceID).name, "heroClass": content.classDef(person.classID).name]),
                               stats: stats, hp: min(stats.hp, friend?.hp ?? stats.hp), mp: min(stats.mp, friend?.mp ?? stats.mp))
             facts.badge = .bot

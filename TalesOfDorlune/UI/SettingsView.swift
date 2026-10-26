@@ -22,15 +22,6 @@ nonisolated enum SettingsPage: String, CaseIterable {
         case .saves: L("Saves")
         }
     }
-
-    @MainActor var icon: GameIcon {
-        switch self {
-        case .general: .settings
-        case .sound: .volume
-        case .gameplay: .sword
-        case .saves: .book
-        }
-    }
 }
 
 /// Sound, feel and game options, a page at a time (`SettingsPage`). A window of the menu, and a panel
@@ -308,7 +299,19 @@ private struct PillChoices<Value: Hashable>: View {
     @Binding var selection: Value
     let title: (Value) -> String
 
+    /// Side by side, all as wide, when every name fits whole; else a row that scrolls sideways
+    /// (playtesting 2026-10-26: names shouldn't get truncated).
     var body: some View {
+        ViewThatFits(in: .horizontal) {
+            row(filling: true)
+            ScrollView(.horizontal, showsIndicators: false) {
+                row(filling: false)
+            }
+            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+        }
+    }
+
+    private func row(filling: Bool) -> some View {
         HStack(spacing: 6) {
             ForEach(choices, id: \.self) { choice in
                 let chosen = selection == choice
@@ -318,9 +321,10 @@ private struct PillChoices<Value: Hashable>: View {
                     Text(title(choice))
                         .font(HUDStyle.font(11))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .fixedSize()
+                        .padding(.horizontal, 12)
                         .foregroundStyle(chosen ? HUDStyle.ink : HUDStyle.cream)
-                        .frame(maxWidth: .infinity, minHeight: 32)
+                        .frame(maxWidth: filling ? .infinity : nil, minHeight: 32)
                         .background(Capsule().fill(chosen ? HUDStyle.gold : HUDStyle.ink.opacity(0.5)))
                         .overlay(Capsule().strokeBorder(HUDStyle.cream.opacity(chosen ? 0 : 0.4), lineWidth: 1))
                         .contentShape(Capsule())

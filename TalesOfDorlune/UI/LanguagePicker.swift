@@ -26,13 +26,13 @@ struct LanguageList: View {
     }
 }
 
-/// The title screen's language panel: the list under a title bar.
+/// The title screen's language panel: the list under its title.
 struct LanguagePanel: View {
     let onClose: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            FLTitleBar(title: L("Language"), icon: .globe, onClose: onClose)
+            WindowTitle(L("Language"), onClose: onClose)
             LanguageList()
                 .padding(14)
         }

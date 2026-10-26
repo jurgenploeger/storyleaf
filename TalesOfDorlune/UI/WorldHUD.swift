@@ -10,23 +10,18 @@ struct WorldHUD: View {
     /// The menu button opened into its list of pages (`GameMenu`).
     @State private var menuOpen = DebugLaunch.opensHUDMenu
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-    private var bottomGap: (joystick: CGFloat, buttons: CGFloat) { (joystick: onItsSide ? 8 : 10, buttons: MenuMorph.bottom(onItsSide: onItsSide)) }
+    private var bottomGap: (joystick: CGFloat, buttons: CGFloat) { (joystick: onItsSide ? 8 : 10, buttons: HUDMargins.bottom(onItsSide: onItsSide)) }
     /// On a phone on its side the bottom controls sit down in the home indicator's strip, a few
     /// points off the screen's edge (playtesting 2026-10-16: "should sit lower"): the indicator hides
     /// itself and a swipe there moves the joystick first (`GameView`). Upright, they keep over it.
     private var onItsSide: Bool { verticalSizeClass == .compact }
-    private var bottomEdge: SwiftUI.Edge.Set { MenuMorph.bottomEdge(onItsSide: onItsSide) }
+    private var bottomEdge: SwiftUI.Edge.Set { HUDMargins.bottomEdge(onItsSide: onItsSide) }
 
     private var session: GameSession { coordinator.session }
     private var controlsHidden: Bool { coordinator.overlay != nil }
     /// In a party you've joined it leads you: the joystick and what you'd walk up to (someone to
     /// talk to, your things, an adventurer) step aside till you leave it.
     private var following: Bool { session.joinedParty != nil }
-    /// One of the menu's windows is open: it grew out of the open menu, which stays open under it
-    /// to shrink back into.
-    private var menuWindowOpen: Bool {
-        if case .menu = coordinator.overlay { true } else { false }
-    }
 
     var body: some View {
         ZStack {
@@ -122,19 +117,28 @@ struct WorldHUD: View {
                 // a row of four buttons, Chat and Settings up by the minimap), each a window of its own
                 // (2026-10-25), Friends too.
                 HStack(alignment: .bottom, spacing: 7) {
+                    // The Bag a tap away, left of Chat (playtesting 2026-10-26: "Put an inventory button
+                    // on the left of chat, so it's easier accessable"): its window opens as from the menu.
+                    FLIconButton(icon: MenuTab.bag.icon, label: MenuTab.bag.menuTitle, badge: badge(for: .bag)) {
+                        menuOpen = false
+                        coordinator.open(.menu(.bag))
+                    }
+                    .stepsAside(controlsHidden)
                     FLIconButton(icon: .talk, label: L("Chat"), badge: session.unreadChat > 0) {
                         menuOpen = false
                         coordinator.open(.chat)
                     }
                     .coachTarget(.chat)
                     .stepsAside(controlsHidden)
+                    // A window chosen from it just opens, the menu closing behind it: closing the window
+                    // closes everything (playtesting 2026-10-26).
                     GameMenu(items: [.character, .companions, .friends, .bag, .quests, .settings], open: $menuOpen,
                              badge: { badge(for: $0) }) { tab in
+                        menuOpen = false
                         coordinator.open(.menu(tab))
                     }
                     .coachTarget(.toolbar)
-                    // Under a menu window it stays, open, for the window to shrink back into.
-                    .stepsAside(controlsHidden && !menuWindowOpen)
+                    .stepsAside(controlsHidden)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
@@ -144,9 +148,9 @@ struct WorldHUD: View {
             .animation(.spring(response: 0.3, dampingFraction: 0.75), value: session.nearbyAdventurer?.id)
             .animation(.spring(response: 0.3, dampingFraction: 0.75), value: session.nearbyPile)
         }
-        .padding(.horizontal, MenuMorph.side)
+        .padding(.horizontal, HUDMargins.side)
         .padding(.top, 4)
-        .onChange(of: controlsHidden) { if controlsHidden && !menuWindowOpen { menuOpen = false } }
+        .onChange(of: controlsHidden) { if controlsHidden { menuOpen = false } }
     }
 
     private func badge(for tab: MenuTab) -> Bool {
@@ -513,8 +517,8 @@ private struct ExpBar: View {
 /// windows (Hero, Companion, Friends, Inventory, Quests, Settings), the round close button in its top
 /// right corner (playtesting 2026-10-25). A gold dot on the button while any window has something new,
 /// and on that window's row. It takes the button's room only: open, the panel spreads up and to the
-/// left over Chat, which stays put (playtesting 2026-10-24: it pushed Chat aside). Tapping a row keeps
-/// the panel open: the window grows out of it, and shrinks back into it as it closes (`MenuMorph`).
+/// left over Chat, which stays put (playtesting 2026-10-24: it pushed Chat aside). Tapping a row opens
+/// that window and closes the panel (playtesting 2026-10-26).
 private struct GameMenu: View {
     let items: [MenuTab]
     @Binding var open: Bool
@@ -572,8 +576,8 @@ private struct GameMenu: View {
         .padding(.horizontal, 4)
         // Clear of the close button.
         .padding(.top, 16)
-        .frame(width: MenuMorph.width)
-        .background(Self.surface(RoundedRectangle(cornerRadius: MenuMorph.radius)))
+        .frame(width: HUDMargins.width)
+        .background(Self.surface(RoundedRectangle(cornerRadius: HUDMargins.radius)))
         .overlay(alignment: .topTrailing) {
             OrangeCloseButton {
                 SoundEffects.shared.play(.tap, volume: 0.7)
@@ -582,8 +586,6 @@ private struct GameMenu: View {
             .accessibilityLabel(L("Close menu"))
             .offset(x: OrangeCloseButton.overhang, y: -OrangeCloseButton.overhang)
         }
-        // Its size, for the window to grow out of.
-        .onGeometryChange(for: CGSize.self) { $0.size } action: { MenuMorph.from = $0 }
     }
 
     /// The button's and the panel's face: the HUD's blue tile with its bevel.
@@ -619,20 +621,13 @@ private struct GameMenu: View {
     }
 }
 
-/// How a menu window grows out of the open menu and shrinks back into it (playtesting 2026-10-25:
-/// "that same menu morphs into the bigger modal with the same margin spaces on each side as the
-/// original menu button and menu"): the menu panel's size, and the room both keep from the screen's
-/// edges, so the window's bottom right corner is the panel's.
+/// The HUD's room from the screen's edges, which the big windows keep too (the menu's, the map, Chat:
+/// playtesting 2026-10-25, "the same margin spaces on each side as the original menu button and
+/// menu"), and the menu panel's size.
 @MainActor
-enum MenuMorph {
+enum HUDMargins {
     static let width: CGFloat = 178
     static let radius: CGFloat = 18
-    static let spring = Animation.spring(response: 0.38, dampingFraction: 0.86)
-    /// The open panel's size, as last laid out.
-    static var from = CGSize(width: width, height: 290)
-    /// The size a window grows from when your face in the top-left corner opens it: about your face
-    /// and its bars.
-    static let fromFace = CGSize(width: 220, height: 64)
     /// From the sides (inside the safe area) and the top: the HUD's own 8 points.
     static let side: CGFloat = 8
 

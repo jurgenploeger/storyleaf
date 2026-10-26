@@ -39,7 +39,7 @@ struct EquipmentPicker: View {
                 .ignoresSafeArea()
                 .onTapGesture(perform: onClose)
             VStack(spacing: 0) {
-                FLTitleBar(title: slot.displayName, icon: Self.icon(of: slot), onClose: onClose)
+                WindowTitle(slot.displayName, onClose: onClose)
                 if findable {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 8) {
@@ -141,17 +141,5 @@ struct EquipmentPicker: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PressScaleStyle())
-    }
-
-    static func icon(of slot: ItemType) -> GameIcon {
-        switch slot {
-        case .weapon: .sword
-        case .armor: .shield
-        case .necklace: .gem
-        case .boots: .wind
-        case .cape: .shieldStar
-        case .head: .gift
-        default: .ring
-        }
     }
 }

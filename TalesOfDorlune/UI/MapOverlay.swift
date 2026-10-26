@@ -26,12 +26,18 @@ struct MapOverlay: View {
                 .ignoresSafeArea()
                 .onTapGesture(perform: onClose)
 
-            // The game's window, like every other: the title bar along its top edge, the atlas below
-            // out to its frame (no frame of its own inside it).
+            // The game's window, like every other. A cave's: its title along the top, the time and
+            // where you are under it, its map below. The world's: the atlas out to the frame, its
+            // title and where you are over it (playtesting 2026-10-26).
             VStack(spacing: 0) {
                 if let cave, !showsWorld {
-                    FLTitleBar(title: level?.name ?? session.mapName, icon: .map, onClose: onClose)
-                    if level == nil { here }
+                    WindowTitle(level?.name ?? session.mapName, onClose: onClose)
+                        .padding(.bottom, 8)
+                    if level == nil {
+                        pills
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 8)
+                    }
                     if levels.count > 1 { levelChips }
                     if level != nil {
                         CaveMap(picture: levelPicture, cell: nil, marks: []) { showsWorld = true }
@@ -41,9 +47,21 @@ struct MapOverlay: View {
                         }
                     }
                 } else {
-                    FLTitleBar(title: L("World map"), icon: .map, onClose: onClose)
-                    here
-                    WorldAtlas(session: session)
+                    WorldAtlas(session: session) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            WindowTitle(L("World map"), onClose: onClose)
+                            pills.padding(.horizontal, 16)
+                        }
+                    } bottomLeading: {
+                        // The land you're in.
+                        Text(session.mapName)
+                            .font(HUDStyle.font(15))
+                            .foregroundStyle(HUDStyle.cream)
+                            .shadow(color: .black.opacity(0.8), radius: 0, x: 1, y: 1)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityLabel(L("You are in {place}", ["place": session.mapName]))
+                    }
                 }
             }
             // As big as a menu window, the map filling what's left under the title.
@@ -53,31 +71,20 @@ struct MapOverlay: View {
         }
     }
 
-    /// Where you are: the land's name, and on their plates the date and time and your coordinates, as
-    /// the minimap's title bar and the HUD's calendar plate showed them before (playtesting 2026-10-25:
-    /// "Only when you tap on the mini map you see the coordinates"; "Remove the day/time bar in the top
-    /// left and incorporate that in the map modal").
-    private var here: some View {
-        HStack(spacing: 8) {
-            IconImage(.map, size: 14).foregroundStyle(HUDStyle.gold)
-            Text(session.mapName)
-                .font(HUDStyle.font(12))
+    /// The time of day and your coordinates, each on a dark pill (playtesting 2026-10-26: "The
+    /// year/date/time bar should only become a in-game time with sun/moon icon, just showing in a
+    /// dark blue pill. The coordinates should also show in a dark blue pill").
+    private var pills: some View {
+        let x = session.mapCell.col, y = rows - 1 - session.mapCell.row
+        return HStack(spacing: 6) {
+            GameTimePill(session: session)
+            // Close together: a thin space either side of the colon.
+            Text(verbatim: "\(x)\u{2009}:\u{2009}\(y)")
+                .font(HUDStyle.font(11).monospacedDigit())
                 .foregroundStyle(HUDStyle.cream)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            Spacer(minLength: 4)
-            GameDatePlate(session: session)
-            Text(verbatim: "\(session.mapCell.col) : \(rows - 1 - session.mapCell.row)")
-                .font(HUDStyle.mono(11))
-                .foregroundStyle(HUDStyle.plateDark)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(HUDStyle.plateBackground)
-                .accessibilityLabel(L("Coordinates {x}, {y}", ["x": session.mapCell.col, "y": rows - 1 - session.mapCell.row]))
+                .mapPill()
+                .accessibilityLabel(L("Coordinates {x}, {y}", ["x": x, "y": y]))
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
-        .background(Color(red: 0.03, green: 0.05, blue: 0.1))
     }
 
     /// One chip a level, gold for the one shown.
@@ -88,10 +95,9 @@ struct MapOverlay: View {
                     FilterChip(title: option.name, on: option.id == (level?.id ?? session.data.mapID)) { show(option) }
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
         }
-        .background(Color(red: 0.03, green: 0.05, blue: 0.1))
     }
 
     private func show(_ option: MapDef) {
@@ -182,28 +188,51 @@ struct CaveMap: View {
     }
 }
 
-/// The date and time on the game's calendar on a tan plate, with a sun by day and a moon by night
-/// (`GameClock`): on the map's "you are here" row, where the HUD's calendar plate went.
-private struct GameDatePlate: View {
+/// The time of day on the game's clock (`GameClock`) with a sun by day and a moon by night, on a
+/// dark pill: on the map, where the HUD's calendar plate went. Only the time, in the player's own
+/// way of writing it ("3:20 PM", "15:20").
+private struct GameTimePill: View {
     let session: GameSession
-    /// With night and day switched off in Settings, the sun shines on the plate around the clock.
+    /// With night and day switched off in Settings, the sun shines on the pill around the clock.
     @AppStorage(GameSettings.dayAndNightKey) private var dayAndNight = true
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 5)) { context in
-            let moment = GameClock.moment(at: context.date, since: session.data.startedAt)
-            let daytime = moment.isDaytime || !dayAndNight
+        // An in-game minute passes every real second by day.
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let hours = GameClock.hours(at: context.date, since: session.data.startedAt)
+            let hour = Int(hours) % 24
+            let daytime = (6..<18).contains(hour) || !dayAndNight
             HStack(spacing: 4) {
                 IconImage(daytime ? .sun : .moon, size: 12)
-                    .foregroundStyle(daytime ? HUDStyle.orange : Color(red: 0.35, green: 0.35, blue: 0.75))
-                Text(moment.text)
+                    .foregroundStyle(daytime ? HUDStyle.gold : HUDStyle.cream)
+                Text(Self.text(hour: hour, minute: Int((hours - hours.rounded(.down)) * 60)))
                     .font(HUDStyle.font(11).monospacedDigit())
-                    .foregroundStyle(HUDStyle.plateDark)
+                    .foregroundStyle(HUDStyle.cream)
                     .lineLimit(1)
+                    .fixedSize()
             }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(HUDStyle.plateBackground)
+            .mapPill()
         }
+    }
+
+    private static func text(hour: Int, minute: Int) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        let utc = TimeZone(identifier: "UTC") ?? .current
+        calendar.timeZone = utc
+        guard let date = calendar.date(from: DateComponents(year: 2001, month: 1, day: 1, hour: hour, minute: minute)) else {
+            return String(format: "%02d:%02d", hour, minute)
+        }
+        return date.formatted(Date.FormatStyle(date: .omitted, time: .shortened, locale: Localizer.shared.locale,
+                                               calendar: calendar, timeZone: utc))
+    }
+}
+
+extension View {
+    /// A dark navy pill, for what the map says over itself (the time, your coordinates).
+    func mapPill() -> some View {
+        padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Capsule().fill(HUDStyle.ink.opacity(0.88)))
+            .overlay(Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 1))
     }
 }

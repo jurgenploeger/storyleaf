@@ -163,6 +163,7 @@ struct FilterChip: View {
             Text(title)
                 .font(HUDStyle.font(11))
                 .lineLimit(1)
+                .fixedSize()
                 .foregroundStyle(on ? HUDStyle.ink : HUDStyle.cream)
                 .padding(.horizontal, 11)
                 .padding(.vertical, 5)

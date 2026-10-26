@@ -102,7 +102,7 @@ struct BattleView: View {
                     .transition(.scale(scale: 0.6, anchor: .bottomTrailing).combined(with: .opacity))
             }
         case .skills where controller.choosingForCompanion:
-            SkillBar(title: L("{companion}'s skills", ["companion": controller.companion?.name ?? L("Companion")]), icon: .paw, onBack: controller.back,
+            SkillBar(title: L("{companion}'s skills", ["companion": controller.companion?.name ?? L("Companion")]), onBack: controller.back,
                      empty: controller.companionSkills.isEmpty ? L("No skills yet.") : nil) {
                 ForEach(controller.companionSkills) { skill in
                     let price = controller.companionCost(of: skill)
@@ -112,7 +112,7 @@ struct BattleView: View {
             }
             .transition(.scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity))
         case .skills:
-            SkillBar(title: L("Skills"), icon: .sparkles, onBack: controller.back,
+            SkillBar(title: L("Skills"), onBack: controller.back,
                      empty: !controller.skills.isEmpty ? nil
                          : controller.session.learnableSkills.isEmpty ? controller.session.skillHint
                          : L("No skills yet.\nLearn one in the Character menu.")) {
@@ -124,7 +124,7 @@ struct BattleView: View {
             }
             .transition(.scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity))
         case .items:
-            ChoiceCard(title: L("Items"), icon: .backpack, onBack: controller.back) {
+            ChoiceCard(title: L("Items"), onBack: controller.back) {
                 if controller.items.isEmpty {
                     EmptyNote(L("Your bag is empty.\nShops in town sell potions."))
                 }
@@ -146,7 +146,7 @@ struct BattleView: View {
             .transition(.scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity))
         case .stones:
             // Capture with more than one kind of Seal Stone: which to throw, with what each brings.
-            ChoiceCard(title: L("Seal Stones"), icon: .sealStone, onBack: controller.back) {
+            ChoiceCard(title: L("Seal Stones"), onBack: controller.back) {
                 ForEach(controller.stones) { stone in
                     ChoiceRow(action: { controller.capture(with: stone) }, enabled: controller.canCapture) {
                         ItemIcon(item: stone, size: 26, count: controller.session.count(of: stone.id))
@@ -1156,14 +1156,13 @@ private struct RoundPressStyle: ButtonStyle {
 
 private struct ChoiceCard<Content: View>: View {
     let title: String
-    let icon: GameIcon
     let onBack: () -> Void
     @ViewBuilder let content: () -> Content
     @State private var contentHeight: CGFloat = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            FLTitleBar(title: title, icon: icon, onClose: onBack)
+            WindowTitle(title, onClose: onBack)
             // Hug the rows; long lists scroll instead of growing past the scene.
             ScrollView {
                 VStack(spacing: 6, content: content)
@@ -1183,7 +1182,6 @@ private struct ChoiceCard<Content: View>: View {
 /// window hugs the row up to the room there is.
 private struct SkillBar<Tiles: View>: View {
     let title: String
-    let icon: GameIcon
     let onBack: () -> Void
     /// What to say instead of the tiles, when there are none.
     let empty: String?
@@ -1196,7 +1194,7 @@ private struct SkillBar<Tiles: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            FLTitleBar(title: title, icon: icon, onClose: onBack)
+            WindowTitle(title, onClose: onBack)
             Group {
                 if let empty {
                     EmptyNote(empty)

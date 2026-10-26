@@ -16,7 +16,7 @@ struct TravelPicker: View {
                 .ignoresSafeArea()
                 .onTapGesture(perform: onClose)
             VStack(spacing: 0) {
-                FLTitleBar(title: L("Where to?"), icon: .map, onClose: onClose)
+                WindowTitle(L("Where to?"), onClose: onClose)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 8) {
                         header

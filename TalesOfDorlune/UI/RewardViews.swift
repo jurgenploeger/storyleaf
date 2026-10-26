@@ -12,7 +12,7 @@ struct DailyGiftCard: View {
                 .ignoresSafeArea()
                 .onTapGesture(perform: onClose)
             VStack(spacing: 0) {
-                FLTitleBar(title: L("Daily gift"), icon: .gift, onClose: onClose)
+                WindowTitle(L("Daily gift"), onClose: onClose)
                 VStack(spacing: 12) {
                     Text(L("Day {day} of {days}", ["day": gift.day, "days": gift.days]))
                         .font(HUDStyle.font(14))

@@ -13,7 +13,7 @@ extension Color {
 
 /// Fairyland Online's look: glossy light-blue bevelled frames, deep-blue glass windows,
 /// tan info plates, yellow outlined names and orange close buttons. In Dark Mode the light
-/// surfaces (frames, title bars, plates, buttons) dim and the glass goes deeper, like the same
+/// surfaces (frames, plates, buttons) dim and the glass goes deeper, like the same
 /// windows at night; the lettering on them stays as it is.
 enum HUDStyle {
     static let cream = Color(red: 1, green: 0.97, blue: 0.88)
@@ -87,17 +87,6 @@ enum HUDStyle {
 
     static let bevel = LinearGradient(colors: [frameLight, frameMid, frameDark], startPoint: .top, endPoint: .bottom)
 
-    /// A title bar's gloss (and the menu's row of tabs): a light sheen over the top half, then the
-    /// frame's mid blue, a clear step lighter than the window's glass below it.
-    static let titleGloss = LinearGradient(stops: [.init(color: frameLight, location: 0), .init(color: frameMid, location: 0.5),
-                                                   .init(color: frameMid, location: 1)],
-                                           startPoint: .top, endPoint: .bottom)
-
-    /// The hard edge along a title bar's foot, so the bar and the window under it don't run together.
-    static var titleEdge: some View {
-        ink.opacity(0.9).frame(height: 1.5)
-    }
-
     /// The deep-blue glass of the windows (deeper still, nearly midnight, in Dark Mode).
     static let glass = LinearGradient(
         colors: [Color.adaptive(light: Color(red: 0.13, green: 0.32, blue: 0.56).opacity(0.93), dark: Color(red: 0.07, green: 0.15, blue: 0.28).opacity(0.95)),
@@ -109,7 +98,7 @@ enum HUDStyle {
     static let windowRadius: CGFloat = 10
 
     /// A deep-blue glass window with a glossy light-blue bevel, as a background. A window with a
-    /// title bar or tabs along its top uses `gameWindow()` instead, so the frame goes over them.
+    /// title or tabs along its top uses `gameWindow()` instead, so its close button goes over the corner.
     static var panel: some View {
         panel(shape: RoundedRectangle(cornerRadius: windowRadius))
     }
@@ -123,7 +112,7 @@ enum HUDStyle {
     }
 
     /// A window's frame, the same on every window and dialog: the glossy light-blue bevel with a
-    /// dark inner edge, which sets it off from a light title bar, and a faint white line inside
+    /// dark inner edge, and a faint white line inside
     /// that catches the light on the glass. 4 pt in all, like the frame before it.
     static func frame(_ shape: some InsettableShape) -> some View {
         ZStack {
@@ -223,33 +212,35 @@ struct GlossyBar: View {
     }
 }
 
-/// A window title bar with an orange close button, like Fairyland Online's panels.
-struct FLTitleBar: View {
+/// A window's title: plain gold lettering on its glass, as the story pages' titles are (playtesting
+/// 2026-10-26: "All modal in the game don't need to have the light blue modal header"), clear of the
+/// close button over the window's corner. Given `onClose`, the window (`gameWindow`) draws that
+/// button; one that draws its own (`windowCloseButton`, the menu's windows) leaves it out.
+struct WindowTitle: View {
     let title: String
-    var icon: GameIcon?
-    let onClose: () -> Void
+    var onClose: (() -> Void)?
+
+    init(_ title: String, onClose: (() -> Void)? = nil) {
+        self.title = title
+        self.onClose = onClose
+    }
 
     var body: some View {
-        HStack(spacing: 6) {
-            if let icon { IconImage(icon, size: 16) }
-            Text(title).lineLimit(1)
-            Spacer(minLength: 4)
-            // The close button sits over the window's corner (`gameWindow`; playtesting 2026-10-25:
-            // "Put all the close buttons overlayed top right of the modals"): its room kept clear here.
-            Color.clear.frame(width: OrangeCloseButton.room, height: 34)
-        }
-        .preference(key: WindowCloseKey.self, value: WindowCloseKey.Action(run: onClose))
-        .font(HUDStyle.font(14))
-        .foregroundStyle(.white)
-        .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
-        .padding(.leading, 12)
-        .padding(.trailing, 6)
-        .padding(.vertical, 5)
-        .background(
-            UnevenRoundedRectangle(topLeadingRadius: 8, bottomLeadingRadius: 2, bottomTrailingRadius: 2, topTrailingRadius: 8)
-                .fill(HUDStyle.titleGloss)
-                .overlay(alignment: .bottom) { HUDStyle.titleEdge }
-        )
+        Text(title)
+            .font(HUDStyle.font(18))
+            .foregroundStyle(HUDStyle.gold)
+            .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
+            .lineLimit(2)
+            .minimumScaleFactor(0.8)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 16)
+            // The close button sits over the window's corner (playtesting 2026-10-25: "Put all the
+            // close buttons overlayed top right of the modals"): its room kept clear here.
+            .padding(.trailing, OrangeCloseButton.room + 8)
+            .padding(.top, 14)
+            .accessibilityAddTraits(.isHeader)
+            .preference(key: WindowCloseKey.self, value: onClose.map { WindowCloseKey.Action(run: $0) })
     }
 }
 
@@ -282,7 +273,7 @@ struct OrangeCloseButton: View {
 extension View {
     /// The orange close button over a window's top-right corner, hanging a little past it (playtesting
     /// 2026-10-25: "Put all the close buttons overlayed top right of the modals"): every window closes
-    /// the same way, those with a title bar too (`gameWindow`). Keep the window's own top line clear
+    /// the same way, those with a title too (`gameWindow`). Keep the window's own top line clear
     /// of the corner (`OrangeCloseButton.room`).
     func windowCloseButton(_ action: @escaping () -> Void) -> some View {
         overlay(alignment: .topTrailing) {
@@ -292,8 +283,8 @@ extension View {
     }
 }
 
-/// A title bar's close action (`FLTitleBar`), for its window to draw the close button over its corner
-/// (`gameWindow`): the title bar sits inside the window's clip, where a button hanging past the
+/// A window title's close action (`WindowTitle`), for its window to draw the close button over its corner
+/// (`gameWindow`): the title sits inside the window's clip, where a button hanging past the
 /// corner would be cut off.
 struct WindowCloseKey: PreferenceKey {
     struct Action {
@@ -653,13 +644,13 @@ struct Reveal: ViewModifier {
 
 extension View {
     /// The game's window around this content: deep-blue glass behind it, the content clipped to the
-    /// window's shape, and the frame drawn over it all the way round, so a title bar or tabs along
-    /// the top sit inside the frame instead of covering it. Every modal and dialog uses it.
+    /// window's shape, and the frame drawn over it all the way round, and its title's close button
+    /// (`WindowTitle`) over the corner. Every modal and dialog uses it.
     func gameWindow(_ shape: some InsettableShape) -> some View {
         clipShape(shape)
             .background(shape.fill(HUDStyle.glass).shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2))
             .overlay(HUDStyle.frame(shape))
-            // Its title bar's close button, over the corner; the window's own, not passed on to one
+            // Its title's close button, over the corner; the window's own, not passed on to one
             // it sits in.
             .overlayPreferenceValue(WindowCloseKey.self, alignment: .topTrailing) { close in
                 if let close {
@@ -695,7 +686,7 @@ extension View {
     /// See `PopIn`.
     func popIn() -> some View { modifier(PopIn()) }
 
-    /// A modal window as big as a menu window (`MenuMorph`; playtesting 2026-10-25: "the modal should
+    /// A modal window as big as a menu window (`HUDMargins`; playtesting 2026-10-25: "the modal should
     /// be bigger like the other modals"): out to 8 points from the screen's sides and top, and the
     /// menu button's gap from the bottom. Apply it to the framed window, `gameWindow` and all.
     func menuWindowMargins() -> some View { modifier(MenuWindowMargins()) }
@@ -707,9 +698,9 @@ private struct MenuWindowMargins: ViewModifier {
     func body(content: Self.Content) -> some View {
         let onItsSide = verticalSizeClass == .compact
         content
-            .padding(.horizontal, MenuMorph.side)
-            .padding(.top, MenuMorph.side)
-            .padding(.bottom, MenuMorph.bottom(onItsSide: onItsSide))
-            .ignoresSafeArea(.container, edges: MenuMorph.bottomEdge(onItsSide: onItsSide))
+            .padding(.horizontal, HUDMargins.side)
+            .padding(.top, HUDMargins.side)
+            .padding(.bottom, HUDMargins.bottom(onItsSide: onItsSide))
+            .ignoresSafeArea(.container, edges: HUDMargins.bottomEdge(onItsSide: onItsSide))
     }
 }

@@ -17,7 +17,7 @@ struct ChatView: View {
                 .onTapGesture(perform: onClose)
 
             VStack(spacing: 0) {
-                FLTitleBar(title: L("Chat · {map}", ["map": session.mapName]), icon: .talk, onClose: onClose)
+                WindowTitle(L("Chat · {map}", ["map": session.mapName]), onClose: onClose)
                 ScrollViewReader { reader in
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 6) {
@@ -61,13 +61,13 @@ struct ChatView: View {
                 .background(HUDStyle.ink.opacity(0.6))
             }
             // As big as the menu's windows (playtesting 2026-10-25: "Make the chat modal the same size as
-            // the other modals"): out to the HUD's own margins (`MenuMorph`).
+            // the other modals"): out to the HUD's own margins (`HUDMargins`).
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .gameWindow()
-            .padding(.horizontal, MenuMorph.side)
-            .padding(.top, MenuMorph.side)
-            .padding(.bottom, MenuMorph.bottom(onItsSide: verticalSizeClass == .compact))
-            .ignoresSafeArea(.container, edges: MenuMorph.bottomEdge(onItsSide: verticalSizeClass == .compact))
+            .padding(.horizontal, HUDMargins.side)
+            .padding(.top, HUDMargins.side)
+            .padding(.bottom, HUDMargins.bottom(onItsSide: verticalSizeClass == .compact))
+            .ignoresSafeArea(.container, edges: HUDMargins.bottomEdge(onItsSide: verticalSizeClass == .compact))
         }
         .onAppear { session.unreadChat = 0 }
     }
