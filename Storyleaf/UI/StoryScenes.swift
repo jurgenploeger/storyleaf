@@ -10,30 +10,42 @@ import SwiftUI
 /// and the HUD's own joystick and buttons over it. It loops; with Reduce Motion it holds still.
 struct StoryVignette: View {
     @State private var scene: StoryScene
+    let fade: Edge
 
-    init(_ kind: StoryScene.Kind) {
+    init(_ kind: StoryScene.Kind, fade: Edge) {
         _scene = State(initialValue: StoryScene(kind: kind))
+        self.fade = fade
     }
 
     var body: some View {
-        VignetteView(scene: scene)
+        VignetteView(scene: scene, fade: fade)
     }
 }
 
-/// A StoryScene on screen, with its HUD over it.
+/// A StoryScene on screen, with its HUD over it: filling the frame it's given (its sides cropped
+/// when that's narrower than the picture), melting into the window along `fade` (`progressiveFade`),
+/// with the HUD kept clear of the fade.
 struct VignetteView: View {
     let scene: StoryScene
+    let fade: Edge
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        SpriteView(scene: scene, isPaused: reduceMotion, options: [.allowsTransparency])
-            .overlay { VignetteHUDView(hud: scene.hud) }
-            .aspectRatio(StoryScene.stage.width / StoryScene.stage.height, contentMode: .fit)
-            .frame(maxWidth: 560)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(HUDStyle.frameMid.opacity(0.8), lineWidth: 2))
-            .frame(maxWidth: .infinity)
-            .accessibilityHidden(true)
+        GeometryReader { proxy in
+            let reach = ProgressiveFade.fadeReach * (fade == .top || fade == .bottom ? proxy.size.height : proxy.size.width)
+            SpriteView(scene: scene, isPaused: reduceMotion, options: [.allowsTransparency])
+                .progressiveFade(fade)
+                .overlay { VignetteHUDView(hud: scene.hud, clear: EdgeInsets(fade, reach)) }
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+extension EdgeInsets {
+    /// `length` along one edge, none along the others.
+    init(_ edge: Edge, _ length: CGFloat) {
+        self.init(top: edge == .top ? length : 0, leading: edge == .leading ? length : 0,
+                  bottom: edge == .bottom ? length : 0, trailing: edge == .trailing ? length : 0)
     }
 }
 
@@ -62,9 +74,6 @@ final class VignetteHUD {
     var victory: Reward?
     /// Which part of How to play the reel is showing (`StoryScene.Clip`).
     var clip = 0
-    /// The tip on the How to play page the picture is showing now: one at a time, so the town part
-    /// lights Towns as you walk into the square and Quests once Elder Oak speaks.
-    var tip = 0
 
     /// A clear screen for the next part.
     func clear() {
@@ -83,90 +92,100 @@ final class VignetteHUD {
 /// the victory card.
 private struct VignetteHUDView: View {
     let hud: VignetteHUD
+    /// Where the picture fades into the window: the HUD stays out of it, all but a finger's taps.
+    let clear: EdgeInsets
 
     var body: some View {
         GeometryReader { proxy in
             // The picture is shaped like a phone held sideways; its HUD keeps to that, a little larger
             // so it reads.
             let scale = proxy.size.width / 700
-            let points = proxy.size.width / StoryScene.stage.width
+            // The scene fills the view and is cropped to it, as SpriteKit's aspectFill does, the same
+            // amount off each side.
+            let stage = StoryScene.stage
+            let points = max(proxy.size.width / stage.width, proxy.size.height / stage.height)
+            let crop = CGSize(width: (stage.width * points - proxy.size.width) / 2, height: (stage.height * points - proxy.size.height) / 2)
             ZStack {
-                if let banner = hud.banner {
-                    // The battle's message line (BattleView.logLine). A new line takes the old one's
-                    // place at once, as in a fight; only its coming and going fades.
-                    Text(banner)
-                        .font(HUDStyle.font(max(9, 13 * scale)))
-                        .foregroundStyle(HUDStyle.cream)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 3)
-                        .background(Capsule().fill(HUDStyle.ink.opacity(0.78)))
-                        .padding(.horizontal, 20)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                        .padding(.top, 5)
-                        .transition(.opacity)
-                }
-                // The joystick and the commands are drawn at full size and scaled down, so they sit in
-                // overlays: their full size would push the rest of the HUD (the message line) about.
-                if let stick = hud.stick {
-                    Color.clear
-                        .overlay(alignment: .bottomLeading) {
-                            JoystickPreview(push: stick)
-                                .scaleEffect(scale, anchor: .bottomLeading)
-                                .padding(.leading, 6)
-                                .padding(.bottom, 6)
-                        }
-                        .transition(.opacity)
-                }
-                if hud.commands {
-                    // On the arc round Attack, as in a fight (`ThumbArc`).
-                    Color.clear
-                        .overlay(alignment: .bottomTrailing) {
-                            ThumbArc {
-                                command("attack", title: L("Attack"), icon: .sword, size: 88, tint: .primary)
-                                    .layoutValue(key: ArcSlot.self, value: 0)
-                                command("skills", title: L("Skills"), icon: .sparkles, size: 56, tint: .normal)
-                                    .layoutValue(key: ArcSlot.self, value: 1)
-                                if hud.capture {
-                                    command("capture", title: L("Capture"), icon: .sealStone, size: 56, tint: .special)
-                                        .layoutValue(key: ArcSlot.self, value: 2)
-                                        .transition(.scale(scale: 0.2).combined(with: .opacity))
-                                }
-                                command("more", title: L("More"), icon: .more, size: 56, tint: .quiet)
-                                    .layoutValue(key: ArcSlot.self, value: 3)
-                            }
-                            .scaleEffect(scale, anchor: .bottomTrailing)
-                            .padding(.trailing, 6)
-                            .padding(.bottom, 6)
-                        }
-                        .transition(.opacity)
-                }
-                if let reward = hud.victory {
-                    VStack(spacing: 4) {
-                        Text(L("Victory!"))
-                            .font(HUDStyle.font(15))
-                            .foregroundStyle(HUDStyle.gold)
-                        HStack(spacing: 10) {
-                            Label { Text(L("+{exp} EXP", ["exp": reward.exp])) } icon: { IconImage(.star, size: 11).foregroundStyle(HUDStyle.exp) }
-                            Label { Text(verbatim: "+\(reward.gold)") } icon: { IconImage(.coins, size: 11).foregroundStyle(HUDStyle.coin) }
-                        }
-                        .labelStyle(CompactLabelStyle())
-                        .font(HUDStyle.font(11))
-                        .foregroundStyle(HUDStyle.cream)
+                // Clear of the fade, in the picture still drawn sharp.
+                ZStack {
+                    if let banner = hud.banner {
+                        // The battle's message line (BattleView.logLine). A new line takes the old one's
+                        // place at once, as in a fight; only its coming and going fades.
+                        Text(banner)
+                            .font(HUDStyle.font(max(9, 13 * scale)))
+                            .foregroundStyle(HUDStyle.cream)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.6)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 3)
+                            .background(Capsule().fill(HUDStyle.ink.opacity(0.78)))
+                            .padding(.horizontal, 20)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                            .padding(.top, 5)
+                            .transition(.opacity)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(HUDStyle.panel)
-                    // Where the monsters stood, clear of you and your LEVEL UP!.
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                    .padding(.leading, 18)
-                    .transition(.scale(scale: 0.7).combined(with: .opacity))
+                    // The joystick and the commands are drawn at full size and scaled down, so they sit in
+                    // overlays: their full size would push the rest of the HUD (the message line) about.
+                    if let stick = hud.stick {
+                        Color.clear
+                            .overlay(alignment: .bottomLeading) {
+                                JoystickPreview(push: stick)
+                                    .scaleEffect(scale, anchor: .bottomLeading)
+                                    .padding(.leading, 6)
+                                    .padding(.bottom, 6)
+                            }
+                            .transition(.opacity)
+                    }
+                    if hud.commands {
+                        // On the arc round Attack, as in a fight (`ThumbArc`).
+                        Color.clear
+                            .overlay(alignment: .bottomTrailing) {
+                                ThumbArc {
+                                    command("attack", title: L("Attack"), icon: .sword, size: 88, tint: .primary)
+                                        .layoutValue(key: ArcSlot.self, value: 0)
+                                    command("skills", title: L("Skills"), icon: .sparkles, size: 56, tint: .normal)
+                                        .layoutValue(key: ArcSlot.self, value: 1)
+                                    if hud.capture {
+                                        command("capture", title: L("Capture"), icon: .sealStone, size: 56, tint: .special)
+                                            .layoutValue(key: ArcSlot.self, value: 2)
+                                            .transition(.scale(scale: 0.2).combined(with: .opacity))
+                                    }
+                                    command("more", title: L("More"), icon: .more, size: 56, tint: .quiet)
+                                        .layoutValue(key: ArcSlot.self, value: 3)
+                                }
+                                .scaleEffect(scale, anchor: .bottomTrailing)
+                                .padding(.trailing, 6)
+                                .padding(.bottom, 6)
+                            }
+                            .transition(.opacity)
+                    }
+                    if let reward = hud.victory {
+                        VStack(spacing: 4) {
+                            Text(L("Victory!"))
+                                .font(HUDStyle.font(15))
+                                .foregroundStyle(HUDStyle.gold)
+                            HStack(spacing: 10) {
+                                Label { Text(L("+{exp} EXP", ["exp": reward.exp])) } icon: { IconImage(.star, size: 11).foregroundStyle(HUDStyle.exp) }
+                                Label { Text(verbatim: "+\(reward.gold)") } icon: { IconImage(.coins, size: 11).foregroundStyle(HUDStyle.coin) }
+                            }
+                            .labelStyle(CompactLabelStyle())
+                            .font(HUDStyle.font(11))
+                            .foregroundStyle(HUDStyle.cream)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(HUDStyle.panel)
+                        // Where the monsters stood, clear of you and your LEVEL UP!.
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                        .padding(.leading, 18)
+                        .transition(.scale(scale: 0.7).combined(with: .opacity))
+                    }
                 }
+                .padding(clear)
                 if let tap = hud.tap {
                     TapMark()
                         .id(hud.taps)
-                        .position(x: tap.x * points, y: (StoryScene.stage.height - tap.y) * points)
+                        .position(x: tap.x * points - crop.width, y: (stage.height - tap.y) * points - crop.height)
                 }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -223,18 +242,18 @@ final class StoryScene: SKScene {
         /// You walk into Meadowbrook's square with your companion, where Elder Oak is waiting.
         case arrival
         /// How to play, played: a walk with the joystick and a tap, a fight with a spell, a Seal
-        /// Stone, the victory and a level up, and a quest giver in town (`Clip`).
+        /// Stone, the victory and a level up, and a quest giver in town (`Clip`), a part for each
+        /// of its slides.
         case reel
     }
 
-    /// The parts of the How to play reel, in order; it loops.
+    /// The parts of the How to play reel; each plays over and over while its slide is open.
     enum Clip: Int, CaseIterable {
         case walk, battle, seal, victory, town
 
-        /// The tips on the How to play page it shows (IntroView), by their place there, in the
-        /// order it shows them: the town is Towns first, then Quests when Elder Oak speaks (in that
-        /// order on the page too).
-        var tips: [Int] {
+        /// The How to play slides it plays on (IntroView), by their place among them: the town is
+        /// both Towns and Quests.
+        var steps: [Int] {
             switch self {
             case .walk: [0]
             case .battle: [1]
@@ -244,9 +263,9 @@ final class StoryScene: SKScene {
             }
         }
 
-        /// The part that shows a tip.
-        static func showing(tip: Int) -> Clip {
-            allCases.first { $0.tips.contains(tip) } ?? .walk
+        /// The part a slide plays.
+        static func showing(step: Int) -> Clip {
+            allCases.first { $0.steps.contains(step) } ?? .walk
         }
     }
 
@@ -678,8 +697,6 @@ final class StoryScene: SKScene {
                 // He has something to say: his words in a bubble, where his "!" was.
                 square.marker.run(.fadeOut(withDuration: 0.2))
                 square.elder.say(words, for: 3.4)
-                // He has a quest for you: How to play (the part with the joystick) lights Quests.
-                if steer { self?.hud.tip = Clip.town.tips[1] }
             },
             .wait(forDuration: 4.2),
             .run { [weak self] in
@@ -693,10 +710,9 @@ final class StoryScene: SKScene {
 
     // MARK: - How to play
 
-    /// Plays the reel from `clip` on (0 walk, 1 battle, 2 seal, 3 victory, 4 town), round and round.
-    /// The How to play page calls it when a tip is tapped, `lighting` that tip from the start (the
-    /// town part lit Towns first, so tapping Quests seemed to do nothing but play the town).
-    func play(clip index: Int, lighting tip: Int? = nil) {
+    /// Plays a part of the reel (0 walk, 1 battle, 2 seal, 3 victory, 4 town) over and over: How to
+    /// play's slides call it as you turn to one (IntroView).
+    func play(clip index: Int) {
         let count = Clip.allCases.count
         let clip = Clip(rawValue: ((index % count) + count) % count) ?? .walk
         guard kind == .reel, built else {
@@ -707,7 +723,6 @@ final class StoryScene: SKScene {
         battleStage.removeAllActions()
         hud.clear()
         hud.clip = clip.rawValue
-        hud.tip = tip.flatMap { clip.tips.contains($0) ? $0 : nil } ?? clip.tips[0]
         let part: SKAction = switch clip {
         case .walk: walkClip()
         case .battle: battleClip()
@@ -715,10 +730,15 @@ final class StoryScene: SKScene {
         case .victory: victoryClip()
         case .town: townClip()
         }
-        // The next part starts outside SpriteKit's frame, as a map's fights do (WorldScene.startEncounter):
-        // a fight snapshots the map for its backdrop.
+        // It starts again outside SpriteKit's frame, as a map's fights do (WorldScene.startEncounter):
+        // a fight snapshots the map for its backdrop. From the top of its fight, not where it ended.
         run(.sequence([part, .run { [weak self] in
-            Task { @MainActor [weak self] in self?.play(clip: clip.rawValue + 1) }
+            Task { @MainActor [weak self] in
+                // Unless a slide has turned to another part meanwhile.
+                guard let self, self.hud.clip == clip.rawValue else { return }
+                self.fight = nil
+                self.play(clip: clip.rawValue)
+            }
         }]), withKey: "reel")
     }
 

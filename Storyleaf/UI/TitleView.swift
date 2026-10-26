@@ -50,7 +50,7 @@ struct TitleView: View {
     var body: some View {
         ZStack {
             if let intro {
-                IntroView(finishTitle: intro.thenCreate ? L("Create your hero") : L("Done"), startPage: intro.startPage,
+                IntroView(finishTitle: intro.thenCreate ? L("Create your hero") : L("Done"), skips: intro.thenCreate, startPage: intro.startPage,
                           onClose: { withAnimation(.easeInOut(duration: 0.25)) { self.intro = nil } }) {
                     withAnimation(.easeInOut(duration: 0.25)) {
                         self.intro = nil
