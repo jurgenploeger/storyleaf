@@ -1133,8 +1133,9 @@ private struct SkillBar<Tiles: View>: View {
     @State private var rowWidth: CGFloat = 0
 
     /// No narrower than this, so the title fits.
-    private static let minWidth: CGFloat = 240
-    private static let padding: CGFloat = 12
+    // Computed: a generic type can't store a static.
+    private static var minWidth: CGFloat { 240 }
+    private static var padding: CGFloat { 12 }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
