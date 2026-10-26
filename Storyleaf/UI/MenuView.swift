@@ -2,16 +2,16 @@ import SwiftUI
 
 /// One of the menu's windows: Hero, Companions, Friends, Inventory, Quests or Settings, each on its own
 /// (playtesting 2026-10-25: "The menu items hero etc should become their own modal window"), its own
-/// pages its tabs (the Hero's Hero, Skills and Titles; the Companions' and the Monster Book...).
+/// pages its tabs (the Hero's Hero, Skills and Titles; the Companions' and the Monster Book...). It
+/// just opens, as every window does, and its close button closes it back to the map (playtesting
+/// 2026-10-26: "it shouldn't morph into it any more but just open. When you press close, everything
+/// closes").
 struct MenuView: View {
     let session: GameSession
     let onClose: () -> Void
     var onQuitToTitle: (() -> Void)?
     /// Which of the menu's windows this is.
     let window: MenuTab
-    /// Opened by tapping your face (or your companion's) in the top-left corner: it grows from there,
-    /// not out of the menu button, and shrinks back there.
-    let fromFace: Bool
     /// A language switch (in Settings) rebuilds the panel's text, staying on the same tab.
     @State private var localizer = Localizer.shared
     /// Use or Give in the Bag: who gets it, in a window over the menu.
@@ -31,28 +31,28 @@ struct MenuView: View {
     /// A tap on something in the Bag: its card, over the menu. Debug `inspect=<item>` opens one
     /// (unless it's for the gear grid, `change=`).
     @State private var inspecting: ItemDef? = DebugLaunch.changingSlot == nil ? DebugLaunch.inspectedItem.flatMap { Content.shared.item($0) } : nil
-    /// Grown out of the open menu to its full size; false while it grows, and as it shrinks back
-    /// into the menu to close (`MenuMorph`).
-    @State private var grown = false
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(session: GameSession, window: MenuTab, onClose: @escaping () -> Void, onQuitToTitle: (() -> Void)? = nil,
-         fromFace: Bool = false) {
+    init(session: GameSession, window: MenuTab, onClose: @escaping () -> Void, onQuitToTitle: (() -> Void)? = nil) {
         self.session = session
         self.onClose = onClose
         self.onQuitToTitle = onQuitToTitle
         self.window = window
-        self.fromFace = fromFace
     }
 
     var body: some View {
         ZStack {
-            Color.black.opacity(grown ? 0.5 : 0)
+            Color.black.opacity(0.5)
                 .ignoresSafeArea()
                 .onTapGesture(perform: close)
 
-            morphing
+            // As big as the HUD's margins allow; only the window scales as it opens (popIn).
+            page
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .gameWindow()
+                .windowCloseButton(close)
+                .accessibilityAction(.escape) { close() }
+                .popIn()
+                .menuWindowMargins()
 
             if let slot = changing {
                 // Fades in; only its window scales (popIn), so its backdrop always fills the screen.
@@ -92,19 +92,11 @@ struct MenuView: View {
 }
 
 extension MenuView {
-    /// The window's page: its tabs along the top (the round close button over the window's corner,
-    /// `morphing`), and what's on the tab you're on.
+    /// The window's page: its tabs along the top, or its name (the round close button over the
+    /// window's corner), and what's on the tab you're on.
     private var page: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 4) {
-                tabs
-                Spacer(minLength: 4)
-                // The close button's room: it sits over the window's corner (`morphing`).
-                Color.clear.frame(width: OrangeCloseButton.room, height: 34)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
-            .background(HUDStyle.titleGloss.overlay(alignment: .bottom) { HUDStyle.titleEdge })
+            tabs
 
             ScrollView {
                 Group {
@@ -131,58 +123,8 @@ extension MenuView {
         .id(localizer.language)
     }
 
-    /// The window growing out of the open menu, its bottom right corner the menu's, to as near the
-    /// screen's edges as the menu keeps (playtesting 2026-10-25): its glass and frame grow, the page
-    /// fades in inside them. Closing, it shrinks back into the menu and fades into it. With Reduce
-    /// Motion it's just there.
-    private var morphing: some View {
-        let onItsSide = verticalSizeClass == .compact
-        // Out of the menu button in the bottom-right corner, or out of the faces in the top-left one.
-        let corner: Alignment = fromFace ? .topLeading : .bottomTrailing
-        let start = fromFace ? MenuMorph.fromFace : MenuMorph.from
-        return GeometryReader { area in
-            let full = area.size
-            let size = grown ? full : CGSize(width: min(start.width, full.width), height: min(start.height, full.height))
-            let shape = RoundedRectangle(cornerRadius: grown ? HUDStyle.windowRadius : MenuMorph.radius)
-            ZStack(alignment: corner) {
-                shape.fill(HUDStyle.glass)
-                    .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)
-                    .frame(width: size.width, height: size.height)
-                page
-                    .frame(width: full.width, height: full.height)
-                    .mask(alignment: corner) { shape.frame(width: size.width, height: size.height) }
-                    .animation(grown ? .easeOut(duration: 0.22).delay(0.08) : .easeOut(duration: 0.1)) { $0.opacity(grown ? 1 : 0) }
-                HUDStyle.frame(shape)
-                    .frame(width: size.width, height: size.height)
-                    .allowsHitTesting(false)
-                // The close button over the window's corner, as on every window (playtesting 2026-10-25),
-                // where the open menu has its own: it grows and shrinks with the window.
-                OrangeCloseButton(action: close)
-                    .offset(x: OrangeCloseButton.overhang, y: -OrangeCloseButton.overhang)
-                    .frame(width: size.width, height: size.height, alignment: .topTrailing)
-            }
-            .frame(width: full.width, height: full.height, alignment: corner)
-        }
-        // Into the menu as it closes: still there most of the way, gone as it reaches it.
-        .animation(grown ? .easeOut(duration: 0.12) : .easeIn(duration: 0.3)) { $0.opacity(grown ? 1 : 0) }
-        .padding(.horizontal, MenuMorph.side)
-        .padding(.top, MenuMorph.side)
-        .padding(.bottom, MenuMorph.bottom(onItsSide: onItsSide))
-        .ignoresSafeArea(.container, edges: MenuMorph.bottomEdge(onItsSide: onItsSide))
-        .onAppear {
-            if reduceMotion {
-                grown = true
-            } else {
-                withAnimation(MenuMorph.spring) { grown = true }
-            }
-        }
-    }
-
-    /// Shrinks back into the menu, then closes.
     private func close() {
-        guard grown else { return }
-        guard !reduceMotion else { return onClose() }
-        withAnimation(MenuMorph.spring) { grown = false } completion: { onClose() }
+        onClose()
     }
 
     /// The window's tabs: its pages, or its own name alone when it has just the one.
@@ -191,7 +133,7 @@ extension MenuView {
         switch window {
         case .character:
             // A path to choose (at a guild master) or better gear, or a skill point to spend.
-            PageTabs(page: $characterPage, title: { $0.title }, icon: { $0.icon }) { page in
+            PageTabs(page: $characterPage, title: { $0.title }) { page in
                 switch page {
                 case .hero: session.canChooseClass || session.hasGearUpgrade
                 case .skills: session.canSpendSkillPoint
@@ -199,10 +141,10 @@ extension MenuView {
                 }
             }
         case .companions:
-            PageTabs(page: $companionsPage, title: { $0.title }, icon: { $0.icon })
+            PageTabs(page: $companionsPage, title: { $0.title })
         case .quests:
             // A quest to report back on, or a bounty or the bonus to claim.
-            PageTabs(page: $questsPage, title: { $0.title }, icon: { $0.icon }) { page in
+            PageTabs(page: $questsPage, title: { $0.title }) { page in
                 switch page {
                 case .quests:
                     session.activeQuests.contains { session.status(of: $0) == .ready }
@@ -211,11 +153,10 @@ extension MenuView {
                 }
             }
         case .settings:
-            PageTabs(page: $settingsPage, title: { $0.title }, icon: { $0.icon })
+            PageTabs(page: $settingsPage, title: { $0.title })
         case .friends, .bag:
-            Label(window.menuTitle, icon: window.icon, size: 20)
-                .labelStyle(TabLabelStyle(selected: true))
-                .accessibilityAddTraits(.isHeader)
+            WindowTitle(window.menuTitle)
+                .padding(.bottom, 2)
         }
     }
 
@@ -282,38 +223,69 @@ extension MenuView {
 
 // MARK: - Tabs
 
-/// A window's tabs along its top: the one you're on in gold, every one with its icon and its full
-/// name (playtesting 2026-10-25: the ones you weren't on showed only an icon). One you're not on wears
-/// the HUD's gold dot when something there waits for you (`waiting`). The pages are a nonisolated
-/// enum (its raw value is the debug name, `sub=skills`).
+/// A window's tabs along its top, its pages' names and nothing else (playtesting 2026-10-26: "The tabs
+/// don't need icons and shouldn't get truncated. If it doesn't fit, there should just be a horizontal
+/// scroll"): the one you're on in gold, each name in full, the row scrolling sideways when they don't
+/// all fit (the one you're on kept in view), clear of the close button over the window's corner. One
+/// you're not on wears the HUD's gold dot when something there waits for you (`waiting`). The pages
+/// are a nonisolated enum (its raw value is the debug name, `sub=skills`).
 struct PageTabs<Page: Hashable & CaseIterable>: View {
     @Binding var page: Page
     let title: (Page) -> String
-    let icon: (Page) -> GameIcon
     var waiting: (Page) -> Bool = { _ in false }
 
     var body: some View {
-        ForEach(Array(Page.allCases), id: \.self) { item in
-            let selected = item == page
-            let marked = !selected && waiting(item)
-            Button {
-                guard !selected else { return }
-                SoundEffects.shared.play(.tap, volume: 0.7)
-                page = item
-            } label: {
-                Label(title(item), icon: icon(item), size: 20)
-                    .labelStyle(TabLabelStyle(selected: selected))
-                    .overlay(alignment: .topTrailing) {
-                        if marked {
-                            Circle().fill(HUDStyle.gold).frame(width: 10, height: 10)
-                                .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
-                                .offset(x: 2, y: -2)
+        HStack(spacing: 0) {
+            ScrollViewReader { reader in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 4) {
+                        ForEach(Array(Page.allCases), id: \.self) { item in
+                            tab(item)
+                                .id(item)
                         }
                     }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                }
+                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+                .onAppear { reader.scrollTo(page, anchor: .center) }
+                .onChange(of: page) {
+                    withAnimation(.easeOut(duration: 0.2)) { reader.scrollTo(page, anchor: .center) }
+                }
             }
-            .accessibilityAddTraits(selected ? .isSelected : [])
-            .accessibilityValue(marked ? L("Something to do") : "")
+            // The close button's room: it sits over the window's corner.
+            Color.clear.frame(width: OrangeCloseButton.room, height: 34)
         }
+    }
+
+    private func tab(_ item: Page) -> some View {
+        let selected = item == page
+        let marked = !selected && waiting(item)
+        return Button {
+            guard !selected else { return }
+            SoundEffects.shared.play(.tap, volume: 0.7)
+            page = item
+        } label: {
+            Text(title(item))
+                .font(HUDStyle.font(13))
+                .lineLimit(1)
+                .fixedSize()
+                .foregroundStyle(selected ? HUDStyle.ink : HUDStyle.cream)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(Capsule().fill(selected ? HUDStyle.gold : .white.opacity(0.08)))
+                .overlay(alignment: .topTrailing) {
+                    if marked {
+                        Circle().fill(HUDStyle.gold).frame(width: 10, height: 10)
+                            .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1.5))
+                            .offset(x: 2, y: -2)
+                    }
+                }
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityValue(marked ? L("Something to do") : "")
     }
 }
 
@@ -356,24 +328,6 @@ private struct HowItWorks: View {
     }
 }
 
-struct TabLabelStyle: LabelStyle {
-    let selected: Bool
-
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 4) {
-            configuration.icon
-            configuration.title
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-        }
-        .font(HUDStyle.font(12))
-        .foregroundStyle(selected ? HUDStyle.ink : HUDStyle.cream)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 7)
-        .background(Capsule().fill(selected ? HUDStyle.gold : .white.opacity(0.08)))
-    }
-}
-
 struct SectionTitle: View {
     let text: String
 
@@ -401,14 +355,6 @@ private nonisolated enum CharacterPage: String, CaseIterable {
         case .hero: L("Hero")
         case .skills: L("Skills")
         case .titles: L("Titles")
-        }
-    }
-
-    @MainActor var icon: GameIcon {
-        switch self {
-        case .hero: .user
-        case .skills: .sparkles
-        case .titles: .star
         }
     }
 }
@@ -863,13 +809,6 @@ private nonisolated enum CompanionsPage: String, CaseIterable {
         switch self {
         case .companions: L("Companions")
         case .book: L("Monster Book")
-        }
-    }
-
-    @MainActor var icon: GameIcon {
-        switch self {
-        case .companions: .paw
-        case .book: .book
         }
     }
 }
@@ -1420,13 +1359,6 @@ private nonisolated enum QuestsPage: String, CaseIterable {
         switch self {
         case .quests: L("Quests")
         case .daily: L("Daily challenges")
-        }
-    }
-
-    @MainActor var icon: GameIcon {
-        switch self {
-        case .quests: .star
-        case .daily: .sun
         }
     }
 }

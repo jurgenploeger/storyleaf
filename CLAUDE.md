@@ -84,7 +84,7 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   read as a stick). Shrunk and turned offline, each pixel the colour covering most of it: in the game it was ragged.
 - Dark Mode: the game follows the phone's look, or Settings → Appearance (`GameSettings.appearanceKey`, set on the
   window by `RootView.applyAppearance`). `Color.adaptive(light:dark:)` (`Storyleaf/UI/Style.swift`) gives the
-  HUD's light surfaces (frames, title bars, plates, buttons, portraits) a dimmer twin and the glass a deeper one;
+  HUD's light surfaces (frames, plates, buttons, portraits) a dimmer twin and the glass a deeper one;
   lettering keeps its colours. The title and loading sky turns to night (`Brand.night*`, `StoryleafSky`), and
   text straight on it uses `Brand.skyText`. Debug flag `dark` (or `light`) forces a look for screenshots.
 - `tools/app_icon_art.py`: the app icon, light, dark and tinted (iOS 18+), from one picked RD drawing

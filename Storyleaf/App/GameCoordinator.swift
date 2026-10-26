@@ -80,9 +80,6 @@ final class GameCoordinator {
     private(set) var world: WorldScene
     private(set) var battle: BattleController?
     private(set) var overlay: Overlay?
-    /// A menu window opened from your face in the top-left corner (`open`): it grows from there, not
-    /// from the menu button.
-    private(set) var menuFromFace = false
     /// False until the first map frame has rendered (the loading curtain stays up until then).
     private(set) var isReady = false
     /// The map being travelled to, while its loading card is showing.
@@ -575,18 +572,14 @@ final class GameCoordinator {
             return
         }
         // Your face or your companion's (top left, or tapped on the map) opens the same big window as
-        // the menu's Hero or Companions, grown from the corner (playtesting 2026-10-26: "Tapping the hero
-        // or companion from the top left corner should open this same bigger modal"). The Companions
-        // window leads with the companion you have out. A friend's face keeps their card.
+        // the menu's Hero or Companions (playtesting 2026-10-26: "Tapping the hero or companion from
+        // the top left corner should open this same bigger modal"). The Companions window leads with
+        // the companion you have out. A friend's face keeps their card.
         switch overlay {
         case .profile(.hero):
-            menuFromFace = true
             return show(.menu(.character))
         case .profile(.pet(_)):
-            menuFromFace = true
             return show(.menu(.companions))
-        case .menu:
-            menuFromFace = false
         default:
             break
         }

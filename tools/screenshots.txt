@@ -9,6 +9,9 @@ title_settings | titlepage=settings              | 6
 title_create | titlepage=create                | 6
 title_news   | saves=3,titlepage=news          | 6
 title_news_fr | saves=3,titlepage=news,lang=fr | 6
+# Settings as the story pages open (playtesting 2026-10-26): nearly the whole screen, no logo; its
+# tabs whole in a long language, scrolling sideways where they don't fit.
+title_settings_ru | saves=3,titlepage=settings,lang=ru | 6
 curtain      | curtain                           | 4
 curtain_land | curtain,landscape                 | 4
 travel_card  | curtain=travel                    | 4
@@ -603,6 +606,14 @@ quests_finder | newgame,level=127,done=hope_of_meadowbrook+jelly_trouble+new_fri
 worldmap     | newgame,worldmap                                    | 180
 # Who's where, in every land you've been to (playtesting 2026-10-21: the world map's badges).
 worldmap_badges | newgame,level=60,visited=all,worldmap               | 180
+# The world map on its side: its title and the time over the top, where you are along the bottom,
+# the pale compass (playtesting 2026-10-26).
+worldmap_night_land | newgame,worldmap,landscape,hour=22            | 180
+# The menu's windows open as plain windows, their titles plain gold text and their tabs without
+# icons, whole, scrolling sideways in a long language (playtesting 2026-10-26).
+character_de_land | newgame,lang=de,menu=character,sub=titles,landscape | 8
+companions_ru | newgame,level=5,lang=ru,menu=companions               | 8
+settings_fr_land | newgame,lang=fr,menu=settings,sub=saves,landscape  | 8
 monster_book | newgame,book                                        | 8
 bounties     | newgame,level=12,map=northern_grassland,bounties=1,menu=quests,sub=daily | 8
 quests_dot   | newgame,level=12,map=northern_grassland,bounties=1,menu=quests | 8

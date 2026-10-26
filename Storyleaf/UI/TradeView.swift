@@ -21,7 +21,7 @@ struct TradeView: View {
                 .onTapGesture(perform: onClose)
 
             VStack(spacing: 0) {
-                FLTitleBar(title: L("Trade with {name}", ["name": adventurer.name]), icon: .coins, onClose: onClose)
+                WindowTitle(L("Trade with {name}", ["name": adventurer.name]), onClose: onClose)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack(spacing: 10) {
@@ -134,7 +134,7 @@ struct TradeBidCard: View {
             Color.black.opacity(0.45)
                 .ignoresSafeArea()
             VStack(spacing: 0) {
-                FLTitleBar(title: L("Trade offer"), icon: .coins, onClose: { onAnswer(false) })
+                WindowTitle(L("Trade offer"), onClose: { onAnswer(false) })
                 VStack(spacing: 12) {
                     HStack(spacing: 10) {
                         SpriteImage(art: session.artID(for: bid.buyer), size: 44)

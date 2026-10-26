@@ -10,6 +10,10 @@ import SwiftUI
 /// on). Tap a place to read about it. A quest closes a road one way only (the way back is always open, so you can't get stuck).
 struct WorldAtlas: View {
     let session: GameSession
+    /// Over the map's top left and bottom left corners, each on a soft dark shade so it reads over
+    /// any land (the window's title, the time and where you are: `MapOverlay`).
+    private let topLeading: AnyView
+    private let bottomLeading: AnyView
     @State private var selected: String?
     @State private var pulse = false
     /// Points a cell (0 until the map's first laid out), and where the turned map sits in the view.
@@ -46,6 +50,12 @@ struct WorldAtlas: View {
         return (low, high.col - low.col, high.row - low.row)
     }
 
+    init(session: GameSession, @ViewBuilder topLeading: () -> some View, @ViewBuilder bottomLeading: () -> some View) {
+        self.session = session
+        self.topLeading = AnyView(topLeading())
+        self.bottomLeading = AnyView(bottomLeading())
+    }
+
     private static let seaColor = WorldMap.seaColor
     private static let minScale: CGFloat = 0.15
     private static let maxScale: CGFloat = 8
@@ -58,6 +68,25 @@ struct WorldAtlas: View {
             }
             .frame(minHeight: 260, maxHeight: .infinity)
             .background(Color(red: Double(Self.seaColor.r) / 255, green: Double(Self.seaColor.g) / 255, blue: Double(Self.seaColor.b) / 255))
+            // Touches go through to the map under them.
+            .overlay(alignment: .top) {
+                topLeading
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, 26)
+                    .background(LinearGradient(colors: [.black.opacity(0.6), .black.opacity(0.3), .clear], startPoint: .top, endPoint: .bottom))
+                    .allowsHitTesting(false)
+            }
+            .overlay(alignment: .bottom) {
+                bottomLeading
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 16)
+                    // Clear of the zoom buttons on the right.
+                    .padding(.trailing, 52)
+                    .padding(.top, 26)
+                    .padding(.bottom, 12)
+                    .background(LinearGradient(colors: [.clear, .black.opacity(0.3), .black.opacity(0.6)], startPoint: .top, endPoint: .bottom))
+                    .allowsHitTesting(false)
+            }
             .overlay(alignment: .topTrailing) { MapCompass().padding(10).allowsHitTesting(false) }
 
             if let selected, let map = Content.shared.map(selected) {
@@ -523,10 +552,11 @@ struct WorldAtlas: View {
 }
 
 /// The map's compass (playtesting 2026-10-25: the minimap's little orange one, gone from there, bigger
-/// in the map's window): a round pin in the close buttons' orange (`OrangeCloseButton`), a needle
-/// through it, white to the north and deep orange to the south, and the four points round its rim,
-/// all turned as the game's view is: north up and to the left, east up and to the right. The world
-/// doesn't turn (its art is drawn from one side only), so neither does the compass.
+/// in the map's window): a pale round face (playtesting 2026-10-26: on the orange one the needle's
+/// red half didn't show), a needle through it, red to the north and slate to the south, and the four
+/// points round its rim in dark ink, all turned as the game's view is: north up and to the left,
+/// east up and to the right. The world doesn't turn (its art is drawn from one side only), so
+/// neither does the compass.
 struct MapCompass: View {
     var size: CGFloat = 72
 
@@ -537,6 +567,8 @@ struct MapCompass: View {
         return atan2(Double(across), Double(up)) * 180 / Double.pi
     }
     static let north = angle(col: 0, row: 1)
+    /// The needle's north half, and the N.
+    private static let needleRed = Color(red: 0.85, green: 0.16, blue: 0.14)
 
     var body: some View {
         let points: [(label: String, angle: Double, main: Bool)] = [
@@ -545,23 +577,22 @@ struct MapCompass: View {
         ]
         ZStack {
             Circle()
-                .fill(RadialGradient(colors: [HUDStyle.closeLight, HUDStyle.orange, HUDStyle.closeDeep], center: UnitPoint(x: 0.35, y: 0.3),
+                .fill(RadialGradient(colors: [.white, Color(white: 0.9), Color(white: 0.74)], center: UnitPoint(x: 0.35, y: 0.3),
                                      startRadius: 1, endRadius: size / 2))
-                .overlay(Circle().strokeBorder(.white.opacity(0.85), lineWidth: max(1.5, size / 28)))
-            // The needle: white to the north, the pin's deep orange to the south.
+                .overlay(Circle().strokeBorder(HUDStyle.ink.opacity(0.55), lineWidth: max(1.5, size / 28)))
+            // The needle: red to the north, slate to the south.
             VStack(spacing: 0) {
-                CompassTriangle().fill(.white).frame(width: size * 0.16, height: size * 0.24)
-                CompassTriangle().fill(HUDStyle.closeDeep).frame(width: size * 0.16, height: size * 0.24).rotationEffect(.degrees(180))
+                CompassTriangle().fill(Self.needleRed).frame(width: size * 0.16, height: size * 0.24)
+                CompassTriangle().fill(Color(white: 0.42)).frame(width: size * 0.16, height: size * 0.24).rotationEffect(.degrees(180))
             }
-            .shadow(color: HUDStyle.closeDeep.opacity(0.6), radius: 0, x: 1, y: 1)
+            .shadow(color: .black.opacity(0.25), radius: 0, x: 1, y: 1)
             .rotationEffect(.degrees(Self.north))
-            Circle().fill(.white).frame(width: size * 0.07, height: size * 0.07)
+            Circle().fill(HUDStyle.ink).frame(width: size * 0.07, height: size * 0.07)
             ForEach(points, id: \.label) { point in
                 let radians = point.angle * Double.pi / 180
                 Text(point.label)
                     .font(HUDStyle.font(size * (point.main ? 0.2 : 0.15)))
-                    .foregroundStyle(point.main ? .white : HUDStyle.cream)
-                    .shadow(color: HUDStyle.closeDeep, radius: 0, x: 1, y: 1)
+                    .foregroundStyle(point.main ? Self.needleRed : HUDStyle.ink)
                     .offset(x: CGFloat(sin(radians)) * size * 0.36, y: -CGFloat(cos(radians)) * size * 0.36)
             }
         }
@@ -572,7 +603,7 @@ struct MapCompass: View {
 }
 
 /// A triangle pointing up, its base along the bottom.
-private struct CompassTriangle: Shape {
+private nonisolated struct CompassTriangle: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         path.move(to: CGPoint(x: rect.midX, y: rect.minY))

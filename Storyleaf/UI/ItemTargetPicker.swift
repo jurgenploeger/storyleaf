@@ -26,8 +26,7 @@ struct ItemTargetPicker: View {
                 .ignoresSafeArea()
                 .onTapGesture { onClose(note) }
             VStack(spacing: 0) {
-                FLTitleBar(title: isToy ? L("Give {item}", ["item": item.name]) : L("Use {item}", ["item": item.name]),
-                           onClose: { onClose(note) })
+                WindowTitle(isToy ? L("Give {item}", ["item": item.name]) : L("Use {item}", ["item": item.name]), onClose: { onClose(note) })
                 ScrollView {
                     VStack(alignment: .leading, spacing: 8) {
                         header

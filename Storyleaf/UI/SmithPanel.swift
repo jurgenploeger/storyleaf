@@ -43,16 +43,14 @@ struct SmithPanel: View {
         // Around the hero's level: a little behind (to catch up) and a little ahead (to aim for).
         let shown = session.recipes.filter { Self.belongs($0, to: chosen) && ($0.level ?? 1) >= level - 15 && ($0.level ?? 1) <= level + 10 }
         VStack(alignment: .leading, spacing: 8) {
-            // The weapon lines in a row when they fit, two by two when they don't (a narrow panel, longer
-            // names), each name on one line.
-            ViewThatFits(in: .horizontal) {
+            // The weapon lines in a row, each name whole, scrolling sideways when they don't all fit
+            // (playtesting 2026-10-26: "If it doesn't fit, there should just be a horizontal scroll").
+            ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
-                    ForEach(Self.lines) { tab($0, chosen: chosen, fill: false) }
-                }
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
-                    ForEach(Self.lines) { tab($0, chosen: chosen, fill: true) }
+                    ForEach(Self.lines) { tab($0, chosen: chosen) }
                 }
             }
+            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             if shown.isEmpty {
                 EmptyNote(L("Nothing to forge in this line at your level."))
             }
@@ -62,14 +60,11 @@ struct SmithPanel: View {
         }
     }
 
-    /// `fill`: as wide as its grid column, the name shrunk a little if it must be.
-    private func tab(_ option: WeaponLine, chosen: String, fill: Bool) -> some View {
+    private func tab(_ option: WeaponLine, chosen: String) -> some View {
         Button { line = option.icon } label: {
             Text(option.name)
                 .lineLimit(1)
-                .minimumScaleFactor(fill ? 0.7 : 1)
-                .fixedSize(horizontal: !fill, vertical: false)
-                .frame(maxWidth: fill ? .infinity : nil)
+                .fixedSize()
         }
         .buttonStyle(PixelButtonStyle(tint: option.icon == chosen ? HUDStyle.gold : HUDStyle.dim, compact: true))
     }
