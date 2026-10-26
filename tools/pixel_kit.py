@@ -895,6 +895,47 @@ CLEAN = {
 }
 
 
+def _grow(mask, k, grow):
+    """`mask` eroded (`grow` False) or dilated (True) `k` times, 8-neighbour."""
+    for _ in range(k):
+        p = np.pad(mask, 1, constant_values=not grow)
+        nb = [p[1 + dy:p.shape[0] - 1 + dy, 1 + dx:p.shape[1] - 1 + dx] for dy in (-1, 0, 1) for dx in (-1, 0, 1)]
+        mask = np.logical_or.reduce(nb) if grow else np.logical_and.reduce(nb)
+    return mask
+
+
+def _thin_parts(body, k, least):
+    """The thin parts of `body` (lines, cords, a stitch): what an opening of `k` takes off, in pieces of at
+    least `least` pixels, joined at sides or corners."""
+    rest = body & ~_grow(_grow(body, k, False), k + 1, True)
+    pieces = rest & ~_specks(rest, least)
+    return pieces
+
+
+def _pieces_map(mask):
+    """Each pixel of `mask`'s piece (joined at sides or corners; -1 outside) and each piece's size."""
+    ids = np.full(mask.shape, -1)
+    sizes = []
+    h, w = mask.shape
+    for sy, sx in zip(*np.nonzero(mask)):
+        if ids[sy, sx] >= 0:
+            continue
+        k = len(sizes)
+        stack, size = [(sy, sx)], 0
+        ids[sy, sx] = k
+        while stack:
+            y, x = stack.pop()
+            size += 1
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    yy, xx = y + dy, x + dx
+                    if 0 <= yy < h and 0 <= xx < w and mask[yy, xx] and ids[yy, xx] < 0:
+                        ids[yy, xx] = k
+                        stack.append((yy, xx))
+        sizes.append(size)
+    return ids, sizes
+
+
 def _specks(mask, most):
     """The parts of `mask` in pieces of `most` pixels or fewer, joined at their sides or corners (a necklace's
     cord, a diagonal line of single pixels, is one piece: counted 4-connected, every pixel of it was a speck,
@@ -1107,6 +1148,16 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
     p = np.pad(opaque, 1)
     neigh = sum(p[1 + dy:h + 1 + dy, 1 + dx:w + 1 + dx] for dy in (-1, 0, 1) for dx in (-1, 0, 1) if dy or dx)
     lone = opaque & (neigh == 0)
+    if clean:
+        # A glint drawn in its own outline (a white pixel or two beside a ring, round a glowing sack) is a
+        # sparkle too: outlined at 64 it read as a stray dot (2026-10-26). Its outline goes with the rest.
+        pale = opaque & ~outline & (a[..., :3].min(axis=-1) >= 215)
+        own_line = np.all(a[..., :3] == OUTLINE, axis=-1) & opaque
+        bits, sizes = _pieces_map(opaque & ~own_line)
+        for k, size in enumerate(sizes):
+            piece = bits == k
+            if size <= 2 * 4 and pale[piece].all():
+                lone |= piece
     overlay = np.zeros_like(a)
     keep = lone | ((a[..., 3] > 0) & ~opaque)
     overlay[keep] = a[keep]
@@ -1227,6 +1278,12 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
     through = (n_ & s_) | (w_ & e_) | (nw & se) | (ne & sw)
     thin = (g1 >= 0) & (nb4 <= 2) & through
     thin_hi = np.kron(thin, np.ones((SS * 2, SS * 2) if clean else (SS, SS), bool))[:sil.shape[0], :sil.shape[1]]
+    if clean:
+        # Read at the new size instead, from the scaled shape itself: a drawing scaled up to fill its tile
+        # no longer lines up with every other pixel, and the joint of a necklace's cord to its bail, missed,
+        # was smoothed away, a gap between them (2026-10-26). Thin parts are what an opening (erode, then
+        # grow back) of a pixel and a half takes off, in long pieces (a sharp corner's sliver isn't one).
+        thin_hi = _thin_parts(big >= 0, round(SS * 1.5), SS * SS * 6)
     sil |= thin_hi
     cur = big.copy()
     for _ in range(SS * 3):
@@ -1288,6 +1345,19 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
                 lined_mask |= cut
             else:
                 exact_mask |= cut
+    if clean:
+        # Nothing breaks off: a tip joined to the body only at a corner (a leaf's, a wave's) came loose in the
+        # smoothing and floated beside it, a dot. A small piece that was part of a bigger one in the drawing
+        # goes. (Sparkles drawn apart are pieces of their own there, and stay.)
+        drawn_ids, drawn_sizes = _pieces_map(np.kron(gmap >= 0, np.ones((SS, SS), bool))[:cur.shape[0], :cur.shape[1]])
+        now_ids, now_sizes = _pieces_map(cur >= 0)
+        for k, size in enumerate(now_sizes):
+            if size >= SS * SS * 20:
+                continue
+            piece = now_ids == k
+            under = drawn_ids[piece & (drawn_ids >= 0)]
+            if len(under) and max(drawn_sizes[j] for j in set(under.tolist())) > 3 * size:
+                cur[piece] = -1
     # Height: one round form over the silhouette, each region swelling a little on it.
     if clean:
         s = Sprite.clean(w)

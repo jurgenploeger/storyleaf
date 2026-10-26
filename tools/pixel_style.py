@@ -608,6 +608,64 @@ def flat_designs():
     return out
 
 
+def pieces(path_or_img, least):
+    """How many separate pieces a sprite is in: opaque parts joined at their sides or corners, of `least`
+    pixels or more (a sparkle drawn off the body is a piece too, and counts the same in both)."""
+    img = path_or_img if isinstance(path_or_img, Image.Image) else Image.open(path_or_img)
+    mask = np.asarray(img.convert("RGBA"))[..., 3] > 127
+    seen = np.zeros(mask.shape, bool)
+    h, w = mask.shape
+    count = 0
+    for sy, sx in zip(*np.nonzero(mask)):
+        if seen[sy, sx]:
+            continue
+        stack, size = [(sy, sx)], 0
+        seen[sy, sx] = True
+        while stack:
+            y, x = stack.pop()
+            size += 1
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    yy, xx = y + dy, x + dx
+                    if 0 <= yy < h and 0 <= xx < w and mask[yy, xx] and not seen[yy, xx]:
+                        seen[yy, xx] = True
+                        stack.append((yy, xx))
+        count += size >= least
+    return count
+
+
+def _bits(mask):
+    from pixel_kit import _pieces_map
+    return _pieces_map(mask)
+
+
+def detached():
+    """The code-drawn icons that came apart: more pieces at 64 than their 32-pixel design has (a necklace's
+    cord no longer joined to its bail, 2026-10-26). [(item, pieces in the design, pieces in the icon)]."""
+    import io
+    import item_art
+    out = []
+    for p in code_drawn_icons():
+        item_id = p.stem[len("item_"):]
+        if item_id not in item_art.DRAWINGS:
+            continue
+        # The design without its outline: the outline joined a broken string's strands into one piece.
+        drawn = np.asarray(Image.open(io.BytesIO(item_art.render(item_id).png())).convert("RGBA")).copy()
+        drawn[np.all(drawn[..., :3] == np.array(item_art.OUTLINE[:3]), axis=-1), 3] = 0
+        design = pieces(Image.fromarray(drawn), 3)
+        # (Sparkles, drawn apart as light, are pale pieces with no outline: not pieces of the thing.)
+        lit = np.asarray(Image.open(p).convert("RGBA")).copy()
+        bits, sizes = _bits(lit[..., 3] > 127)
+        for k in range(len(sizes)):
+            piece = bits == k
+            if lit[piece][:, :3].max(axis=-1).min() >= 200:
+                lit[piece, 3] = 0
+        icon = pieces(Image.fromarray(lit), 8)
+        if icon > design:
+            out.append((item_id, design, icon))
+    return out
+
+
 def clean_icons():
     """Every item icon drawn in code: all in the clean look since 2026-10-26 (tools/item_art.py through
     `restyle(clean=True)`, tools/clean_icon_art.py, tools/coin_art.py)."""
@@ -639,7 +697,11 @@ def grained_icons(every=6):
 
 def compare_items():
     """The clean look's rules (kind `item`) must pass the Potion and the icons drawn to them, and fail the
-    grained finish they replace, at its own size and blown up to 64."""
+    grained finish they replace, at its own size and blown up to 64. And no icon may come apart from its
+    design (`detached`)."""
+    loose = detached()
+    print(f"icons come apart from their design (should be none): {len(loose)}"
+          + (": " + ", ".join(f"{i} {d}→{n}" for i, d, n in loose[:12]) if loose else ""))
     for label, paths in (("RD's Potion (the reference, should pass)", [SPRITES / "item_potion.png"]),
                          ("clean item icons (should pass)", clean_icons()),
                          ("grained finish, 32 and blown up to 64 (should fail)", grained_icons())):

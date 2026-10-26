@@ -66,7 +66,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   pale tips stay ginger. Derive them with `layers` instead (body, locks, hair from `tools/hero_layers.py`, the hair's
   rules widened to appearance.json `hairLayer`), as every quest giver is; `check_content.py` insists.
 - `Storyleaf/`: Swift code (World = maps and walking, Battle = combat, UI = SwiftUI HUD and menus).
-- Item icons are in the clean look (2026-10-26, docs/pixel-style.md *Item icons*: RD's Potion, the user's pick):
+- Item icons are in the clean look (2026-10-26, docs/pixel-style.md *Item icons*: RD's Potion, the user's pick;
+  its *Acceptance criteria* checklist is what every new or changed icon must meet):
   64 pixels, lit from the top left on smooth ramps, no grain, a one-pixel outline in a deep shade of what it
   rounds; `tools/pixel_style.py check --kind item`. `tools/clean_icon_art.py` draws a few at 64 (the Seal Stones,
   the lucky clover; `item_art.py` skips them), `tools/coin_art.py` the coins.

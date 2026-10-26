@@ -88,6 +88,7 @@ class Canvas:
             # facets as drawn (`exact="facets"`).
             self.exact.append(("poly", [tuple(p) for p in points], exact))
         ys = [p[1] for p in points]
+        filled = set()
         for y in range(int(min(ys)), int(max(ys)) + 1):
             xs = []
             for (x0, y0), (x1, y1) in zip(points, points[1:] + points[:1]):
@@ -96,7 +97,13 @@ class Canvas:
             xs.sort()
             for a, b in zip(xs[::2], xs[1::2]):
                 for x in range(int(math.ceil(a - 0.5)), int(math.floor(b - 0.5)) + 1):
-                    self.set(x, y, color)
+                    filled.add((x, y))
+        # A pixel of the fill touching no other (a sharp tip rasterized apart) isn't drawn: held to the
+        # shape only by its outline, at 64 pixels it floated beside it, a dot (the tidesong ring's wave, the
+        # goldleaf ring's leaf, 2026-10-26).
+        for x, y in filled:
+            if len(filled) <= 3 or any((x + dx, y + dy) in filled for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy):
+                self.set(x, y, color)
 
     def ring(self, cx, cy, r_out, r_in, color, ry_scale=1.0, exact=False):
         if exact:
@@ -2278,13 +2285,19 @@ def draw_lotus_dew_charm(c):
 
 
 def draw_golden_string(c):
-    """A coil of shining golden string."""
-    for i in range(70):
-        t = i / 70 * math.pi * 5
-        r = 3 + i * 0.12
-        c.set(16 + r * math.cos(t), 16 + r * math.sin(t) * 0.8, GOLD[2] if i % 5 == 0 else GOLD[1])
-    c.line(25, 20, 29, 29, GOLD[1])
-    c.set(16, 16, GOLD[0])
+    """A coil of shining golden string, one unbroken line wound round twice, its loose end trailing off.
+    (Drawn as dots set along a spiral, it was a string of crumbs at 64 pixels, 2026-10-26.)"""
+    pts = []
+    for i in range(61):
+        t = i / 60 * math.pi * 4
+        r = 2.6 + 3.3 * t / (2 * math.pi)
+        pts.append((15 + r * math.cos(t), 15 + r * math.sin(t) * 0.82))
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        c.line(x0, y0, x1, y1, GOLD[1])
+    end = pts[-1]
+    c.line(end[0], end[1], 26, 24, GOLD[1]); c.line(26, 24, 28, 29, GOLD[1])           # the loose end
+    for k in range(0, 61, 9):                                                      # glints along it
+        c.set(*pts[k], GOLD[2])
 
 
 def draw_heartwood_locket(c):

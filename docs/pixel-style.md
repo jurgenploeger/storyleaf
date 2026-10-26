@@ -63,6 +63,60 @@ These are the rules the numbers measure. A sprite that keeps them looks like Sto
 
 ## Item icons: the clean look (2026-10-26)
 
+### Acceptance criteria (the checklist)
+
+Every item icon, drawn new or changed, meets all of these. They sum up what the rest of this section found,
+round by round, each with the playtesting that taught it; the sections below say why and how.
+
+**A. By the tools** (fail one and it doesn't ship):
+
+1. `python3 tools/pixel_style.py check --kind item <png>`: every hard rule passes, and 80% of the soft ones.
+   A soft miss is allowed only where the shape explains it (a whip's thin lash, a necklace's cords, sparkles)
+   and the eye agrees.
+2. `python3 tools/pixel_style.py compare`: no icon comes apart from its design (`detached`: as many pieces as
+   its drawing, sparkles aside), RD's Potion passes, and the old grained finish (at 32 and blown up to 64)
+   still fails every time.
+3. After any change to the finish (`pixel_kit`) or a family's helper: render everything, list the icons that
+   changed most against the last commit, and look at each of them (B and C).
+
+**B. How it's built:**
+
+4. **64 pixels, drawn there** (`native`): not a 32-pixel icon blown up, nor doubled pixels inside.
+5. **One outline, one pixel, a deep shade of what it rounds** (`outline_hue`, `line_value` about 0.08): near-black
+   in the thing's own hue, never the house violet.
+6. **The band inside the outline is the material's mid tone**: on the lit side about 0.7 of its lit tone
+   (`rim_lit`), on the side turned away no darker than about 0.42 of it. Lighter reads as a hairline; a dark
+   ring there reads as a border two or three pixels thick (`outline_double`).
+7. **Lit from the top left on long, smooth ramps**: no grain, no dither, no twin ramp; deep shadows to pale
+   lights (`value_range`), shadows turned away from yellow (`hue_shift`), a floor of bounced light below.
+8. **Lines inside are softer than the outline**: where one object lies on another, the darkest shade of the one
+   beneath, not the outline's colour. The parts of one object get no line at all.
+9. **Clean shapes**: on the pixel grid, mirror-symmetric where the thing is; no pixel stepping in and straight
+   back out (`kinks`); a disc's edge one shape with straight sides, never two shapes pinched together.
+10. **Round is exactly round, sharp is exactly sharp**: rings, pearls, balls and eggs drawn `exact=True`; gems
+    and stars `exact="facets"` (star_shape does it). Every shade of the shape is cut, nothing smoothed in from
+    round it, and things joined to it (claws, arms, a bail) stay.
+11. **Nothing comes apart, nothing floats**: cords meet their bail, tips stay on their shape, no pixel held on
+    only by the old outline. A glint or sparkle is light, with no outline (an outlined dot reads as a stray).
+12. **Its parts keep their colours**: a gem's colours are its own, never the band's, under any palette swap.
+13. **The drawing's detail survives**: stars keep their points, necklaces their cords, hoods their fur tufts and
+    folds, helms their plates, gloves their stitching and creases. Drawn lines stay crisp; a design's broad dark
+    patches aren't counted twice (that's a smudge). How hard it smooths is one table, `pixel_kit.CLEAN`.
+14. **It fills its tile** (`fill` 0.78 or more), its size judged without loose specks; a drawing too small is
+    scaled up as much as twice.
+
+**C. By eye** (the rules measure the finish, not how much of the design survived):
+
+15. At the size the bag shows it, beside RD's Potion: it reads at a glance, and as the same make.
+16. At 8×: no lumps, gaps, notches, stray pixels or dark specks; curves even; corners where they should be.
+17. Beside its original on `main` and its family (one sheet of all the rings, all the necklaces, all the hoods):
+    nothing the original had is lost without a reason, and the family looks like one family.
+18. In the game, from CI's screenshots (`tools/screenshots.txt`: `clean_icons`, `clean_coins`, the Bag).
+
+When the eye catches something the rules passed, add it here and a rule or a check to the tools, so it can't
+pass again: `rim_lit`, `kinks`, `native`, `detached` and the exact cuts all started that way.
+
+
 **This replaces the rules above for item icons.** Playtesting 2026-10-26: "A lot of item icons feel too clunky.
 I think we went too far with making the visuals look more natural [...] But now items like the coins don't look
 nice. Look at the potion items we created with retro diffusion, those look nice. The borders shouldn't look so
@@ -166,7 +220,7 @@ still judge them. A new item: design it in `item_art.py` as before (or draw it a
 `clean_icon_art.py` when its design can't carry it), check it with `--kind item`, and look at it beside the
 Potion at the size the bag shows it, and in the game (`tools/screenshots.txt`: `clean_icons`, `clean_coins`).
 
-**Where it stands:** 328 of the 348 code-drawn icons pass (94%), 0 of 106 samples of the old finish do (at
+**Where it stands:** 332 of the 348 code-drawn icons pass (95%), none comes apart from its design, 0 of 106 samples of the old finish do (at
 32 and blown up to 64). The 21 that miss pass every hard rule and were looked at by eye; their misses are
 their shapes, not the finish: thin whips (few pixels for their colours, a lash curling away from the light),
 necklaces whose cords climb to the top left (corner steps count as `kinks`, and the cord pulls
@@ -244,6 +298,14 @@ misses; smoothing that passed more of them is what lost the detail. The eye deci
   outside it, and gems are cut before a ring's band, which never takes their colours. Under a palette swap
   the firepeak ring's orange gem and tan band were close enough in hue to be one region, and half the gem
   came out the band's tan (it had, in the grained finish too).
+- **Thin parts are found at the new size** (`_thin_parts`: what an opening of a pixel and a half takes off, in
+  long pieces), and keep every pixel through the smoothing. Read from the 32-pixel drawing instead, they no
+  longer lined up once a drawing was scaled to fill its tile, and a necklace's cord came off its bail ("The
+  necklace cords aren't fully attached and show a gap").
+- **A piece that breaks off is gone, a glint is light:** a small piece that was part of a bigger one in the
+  drawing is dropped; a pale pixel or two drawn in their own outline (a glint beside a ring, round a glowing
+  sack) is a sparkle, drawn without it. A polygon's tip rasterized apart from its fill isn't drawn at all.
+  `pixel_style.detached` checks every icon has no more pieces than its drawing.
 - **Nothing floats off a shape as single pixels:** the genie's smoke, specks above its gem at 32, came out
   as lumps at 64; it now curls on the stone's face. The tidesong ring's wave, two thin lines over its band,
   is a crest sitting on it. A ring's band is drawn in one colour: its drawn light and dark wedges were
@@ -674,6 +736,9 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 
 ## Learned
 
+- **2026-10-26 (joins):** A rule that judges each icon alone can't see a gap: a cord ending two pixels short
+  of its bail is a fine cord and a fine pendant. Comparing with the design can (`detached`: pieces then and
+  now). It found the cords, a leaf's tip and a wave's floating off their rings, and a string drawn as dots.
 - **2026-10-26 (detail):** Each smoothing that fixed a rule also took detail with it, and the rules never
   noticed: they measure the finish, not how much of the design survives. Four rounds in, the user saw what
   the numbers didn't: stars without points, necklaces without cords, hoods without fur, items flatter than
