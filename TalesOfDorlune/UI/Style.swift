@@ -102,13 +102,18 @@ enum HUDStyle {
     private static let glassFootLight = Color(red: 0.05, green: 0.17, blue: 0.35)
     private static let glassFootDark = Color(red: 0.03, green: 0.07, blue: 0.16)
 
-    /// Every window's corners.
-    static let windowRadius: CGFloat = 10
+    /// Every window's corners: round and smooth (continuous, as iOS draws its own), 22 points
+    /// (playtesting 2026-10-26: at 10 everything felt too sharp).
+    static let windowRadius: CGFloat = 22
+    /// A window's shape.
+    static var windowShape: RoundedRectangle { RoundedRectangle(cornerRadius: windowRadius, style: .continuous) }
+    /// The HUD's own small panels (the faces' stats, the party): as smooth, less round.
+    static var hudPanelShape: RoundedRectangle { RoundedRectangle(cornerRadius: 12, style: .continuous) }
 
     /// A deep-blue glass window with a glossy light-blue bevel, as a background. A window with a
     /// title or tabs along its top uses `gameWindow()` instead, so its close button goes over the corner.
     static var panel: some View {
-        panel(shape: RoundedRectangle(cornerRadius: windowRadius))
+        panel(shape: windowShape)
     }
 
     /// The same window in another shape (a speech bubble's), its bevel running all the way round.
@@ -689,7 +694,7 @@ extension View {
     }
 
     func gameWindow() -> some View {
-        gameWindow(RoundedRectangle(cornerRadius: HUDStyle.windowRadius))
+        gameWindow(HUDStyle.windowShape)
     }
 }
 
