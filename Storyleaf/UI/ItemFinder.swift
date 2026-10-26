@@ -197,7 +197,7 @@ struct ItemSlotMover: ViewModifier {
         return payload.hasPrefix(prefix) ? String(payload.dropFirst(prefix.count)) : nil
     }
 
-    func body(content: Content) -> some View {
+    func body(content: Self.Content) -> some View {
         let payload = Self.payload(item.id, on: side)
         let mySide = self.side, here = item.id, move = self.onMove
         return content
