@@ -91,7 +91,7 @@ struct IntroView: View {
 
     /// The slide's picture inside the window's frame, its outer corners rounded as the window's, with
     /// Skip over its corner.
-    private func visual(fade: Edge) -> some View {
+    private func visual(fade: SwiftUI.Edge) -> some View {
         let corner = HUDStyle.windowRadius - 3
         return ZStack {
             picture(fade: fade)
@@ -117,7 +117,7 @@ struct IntroView: View {
     }
 
     @ViewBuilder
-    private func picture(fade: Edge) -> some View {
+    private func picture(fade: SwiftUI.Edge) -> some View {
         switch slide {
         case .chapter(let kind): StoryVignette(kind, fade: fade)
         case .step: VignetteView(scene: reel, fade: fade)
@@ -256,7 +256,7 @@ private struct PageTitle: View {
 /// A picture melting into the window along one edge (the onboarding's slides): blurred more and
 /// more toward it, as through frosted glass, then fading out so the window's glass shows through.
 struct ProgressiveFade: ViewModifier {
-    let edge: Edge
+    let edge: SwiftUI.Edge
     /// How far in from the edge the blur reaches, and the fade, as fractions of the picture across it.
     static let blurReach: CGFloat = 0.42
     static let fadeReach: CGFloat = 0.24
@@ -289,7 +289,7 @@ struct ProgressiveFade: ViewModifier {
                        startPoint: point(on: edge.opposite), endPoint: point(on: edge))
     }
 
-    private func point(on edge: Edge) -> UnitPoint {
+    private func point(on edge: SwiftUI.Edge) -> UnitPoint {
         switch edge {
         case .top: .top
         case .bottom: .bottom
@@ -299,8 +299,8 @@ struct ProgressiveFade: ViewModifier {
     }
 }
 
-private extension Edge {
-    var opposite: Edge {
+private extension SwiftUI.Edge {
+    var opposite: SwiftUI.Edge {
         switch self {
         case .top: .bottom
         case .bottom: .top
@@ -312,7 +312,7 @@ private extension Edge {
 
 extension View {
     /// Melts into the window along `edge` (`ProgressiveFade`).
-    func progressiveFade(_ edge: Edge) -> some View {
+    func progressiveFade(_ edge: SwiftUI.Edge) -> some View {
         modifier(ProgressiveFade(edge: edge))
     }
 }
@@ -469,7 +469,7 @@ struct IntroAtlas: View {
     /// The place to mark with a gold dot.
     let highlight: String?
     /// The edge it melts into the window along (`progressiveFade`).
-    let fade: Edge
+    let fade: SwiftUI.Edge
     @State private var picture: CGImage?
     /// Points a cell (0 until the view's size is known), and where the turned map sits in the view.
     @State private var scale: CGFloat = 0
@@ -493,7 +493,7 @@ struct IntroAtlas: View {
     private let columns: Int
     private let rows: Int
 
-    init(highlight: String?, fade: Edge, content: Content = .shared) {
+    init(highlight: String?, fade: SwiftUI.Edge, content: Content = .shared) {
         self.highlight = highlight
         self.fade = fade
         let lands = content.maps.compactMap { def -> Land? in

@@ -10,9 +10,9 @@ import SwiftUI
 /// and the HUD's own joystick and buttons over it. It loops; with Reduce Motion it holds still.
 struct StoryVignette: View {
     @State private var scene: StoryScene
-    let fade: Edge
+    let fade: SwiftUI.Edge
 
-    init(_ kind: StoryScene.Kind, fade: Edge) {
+    init(_ kind: StoryScene.Kind, fade: SwiftUI.Edge) {
         _scene = State(initialValue: StoryScene(kind: kind))
         self.fade = fade
     }
@@ -27,7 +27,7 @@ struct StoryVignette: View {
 /// with the HUD kept clear of the fade.
 struct VignetteView: View {
     let scene: StoryScene
-    let fade: Edge
+    let fade: SwiftUI.Edge
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -43,7 +43,7 @@ struct VignetteView: View {
 
 extension EdgeInsets {
     /// `length` along one edge, none along the others.
-    init(_ edge: Edge, _ length: CGFloat) {
+    init(_ edge: SwiftUI.Edge, _ length: CGFloat) {
         self.init(top: edge == .top ? length : 0, leading: edge == .leading ? length : 0,
                   bottom: edge == .bottom ? length : 0, trailing: edge == .trailing ? length : 0)
     }
