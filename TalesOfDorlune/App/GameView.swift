@@ -33,8 +33,14 @@ struct GameView: View {
                     TradeView(session: coordinator.session, adventurer: adventurer, onClose: coordinator.closeOverlay)
                 case .chat:
                     ChatView(session: coordinator.session, onSay: coordinator.say, onClose: coordinator.closeOverlay)
-                case .profile(let profile):
-                    ProfileCard(session: coordinator.session, profile: profile, onClose: coordinator.closeOverlay)
+                case .profile(.adventurer(let person)):
+                    ProfileWindow(coordinator: coordinator, person: person, onClose: coordinator.closeOverlay)
+                case .profile(.hero):
+                    // `GameCoordinator.open` shows yours as the menu's Hero window, your companion's as
+                    // its Companions window; these never stay open as profiles.
+                    MenuView(session: coordinator.session, window: .character, onClose: coordinator.closeOverlay, onQuitToTitle: coordinator.onQuitToTitle)
+                case .profile(.pet(_)):
+                    MenuView(session: coordinator.session, window: .companions, onClose: coordinator.closeOverlay, onQuitToTitle: coordinator.onQuitToTitle)
                 case .destinations(let travel):
                     TravelPicker(session: coordinator.session, travel: travel, onGo: { coordinator.depart(travel, to: $0) },
                                  onClose: coordinator.closeOverlay)

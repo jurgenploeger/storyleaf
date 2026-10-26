@@ -459,10 +459,10 @@ private struct CharacterTab: View {
 
 /// The Stats section of the Character screen, and of the companion you bring along: the level,
 /// EXP, HP and MP bars and the four stats with their icons, every number in one size. Big and easy
-/// to read: the screen has the room.
-private struct StatsPanel: View {
+/// to read: the screen has the room. Another adventurer's (`ProfileWindow`) has no EXP to show.
+struct StatsPanel: View {
     let level: String
-    let exp: Int
+    let exp: Int?
     let expToNext: Int
     let hp: Int
     let mp: Int
@@ -479,7 +479,7 @@ private struct StatsPanel: View {
                 Spacer()
                 Text(level).font(HUDStyle.font(15))
             }
-            bar(L("EXP"), exp, expToNext, HUDStyle.exp)
+            if let exp { bar(L("EXP"), exp, expToNext, HUDStyle.exp) }
             bar(L("HP"), hp, stats.hp, HUDStyle.hp)
             // Companions without magic have no MP to show.
             if stats.mp > 0 { bar(L("MP"), mp, stats.mp, HUDStyle.mp) }
@@ -587,8 +587,8 @@ private struct DollSlot: View {
 
     private static let size: CGFloat = 44
 
-    /// What an empty slot shows, faded: the plainest piece for it.
-    private static let silhouettes: [ItemType: String] = [
+    /// What an empty slot shows, faded: the plainest piece for it (on someone else's doll too, `WornDoll`).
+    static let silhouettes: [ItemType: String] = [
         .weapon: "wooden_sword", .armor: "cloth_tunic", .gloves: "leather_gloves",
         .necklace: "shell_pendant", .boots: "straw_sandals", .accessory: "novice_ring", .cape: "wayfarer_cape",
         .head: "white_party_hat",
@@ -628,12 +628,75 @@ private struct DollSlot: View {
     }
 }
 
+/// Another adventurer in the middle of the same ring as your paper doll (`ProfileWindow`): what they
+/// hold and wear in its slot, an empty slot's shape faded, each slot's name under it. A tap on a piece
+/// opens its card (`inspect`).
+struct WornDoll: View {
+    let session: GameSession
+    let art: String
+    let weapon: ItemDef?
+    let worn: [ItemDef]
+    let inspect: (ItemDef) -> Void
+
+    private static let size: CGFloat = 44
+
+    var body: some View {
+        let radius = PaperDoll.radius, slot = PaperDoll.slot
+        let high = PaperDoll.high, low = PaperDoll.low
+        ZStack {
+            Circle()
+                .strokeBorder(.white.opacity(0.08), lineWidth: 2)
+                .frame(width: radius * 2, height: radius * 2)
+            WalkingSprite(art: art, size: 128, weapon: weapon)
+                .background(Circle().fill(.white.opacity(0.06)))
+            ForEach(PaperDoll.ring, id: \.slot) { place in
+                let angle = place.angle * Double.pi / 180
+                piece(place.slot)
+                    .frame(width: slot.width, height: slot.height)
+                    .offset(x: radius * CGFloat(cos(angle)), y: radius * CGFloat(sin(angle)))
+            }
+        }
+        .offset(y: (high - low) / 2)
+        .frame(width: radius * 2 + slot.width, height: high + low + slot.height)
+        .padding(.vertical, 4)
+    }
+
+    private func piece(_ type: ItemType) -> some View {
+        let item = worn.first { $0.type == type }
+        return Button {
+            if let item { inspect(item) }
+        } label: {
+            VStack(spacing: 3) {
+                Group {
+                    if let item {
+                        ItemIcon(item: item, size: Self.size)
+                    } else if let shape = DollSlot.silhouettes[type].flatMap(session.content.item) {
+                        ItemIcon(item: shape, size: Self.size)
+                            .saturation(0)
+                            .opacity(0.3)
+                    }
+                }
+                Text(type.displayName)
+                    .font(HUDStyle.font(9))
+                    .foregroundStyle(HUDStyle.dim)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .frame(width: Self.size + 14)
+            }
+        }
+        .buttonStyle(PressScaleStyle())
+        .allowsHitTesting(item != nil)
+        .accessibilityLabel(type.displayName)
+        .accessibilityValue(item.map { [$0.name, $0.stats?.bonusSummary ?? ""].filter { !$0.isEmpty }.joined(separator: ", ") } ?? L("Empty"))
+    }
+}
+
 /// The companion you bring along laid out as the hero is (playtesting 2026-10-25: the Hero and Companion
 /// pages "should become similar"): big on the same soft disc in the same faint ring, its skills in the
 /// ring's slots where the hero has their gear, the first pair either side of its head, the next under them.
-private struct CompanionDoll: View {
-    let session: GameSession
-    let pet: Pet
+/// Another adventurer's companion too (`ProfileWindow`).
+struct CompanionDoll: View {
+    let art: String
     let skills: [SkillDef]
 
     /// Where each skill sits on the ring, in the order the companion learnt them: on the hero's own
@@ -647,7 +710,7 @@ private struct CompanionDoll: View {
             Circle()
                 .strokeBorder(.white.opacity(0.08), lineWidth: 2)
                 .frame(width: radius * 2, height: radius * 2)
-            SpriteImage(art: session.artID(for: pet), size: 128)
+            SpriteImage(art: art, size: 128)
                 .background(Circle().fill(.white.opacity(0.06)))
             ForEach(Array(skills.prefix(Self.angles.count).enumerated()), id: \.offset) { index, skill in
                 let angle = Self.angles[index] * Double.pi / 180
@@ -972,7 +1035,7 @@ private struct CompanionCard: View {
     private func overview(species: MonsterDef?, stats: Stats, isActive: Bool) -> some View {
         AdaptiveStack(spacing: 18) {
             VStack(spacing: 6) {
-                CompanionDoll(session: session, pet: pet, skills: species?.skills.compactMap { session.content.skill($0) } ?? [])
+                CompanionDoll(art: session.artID(for: pet), skills: species?.skills.compactMap { session.content.skill($0) } ?? [])
                 nameLine(species: species, size: 18)
                 if let kind = renamed(species) {
                     Text(kind)

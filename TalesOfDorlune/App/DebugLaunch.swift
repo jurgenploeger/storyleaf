@@ -95,9 +95,11 @@ import SpriteKit
 ///   quiet          footsteps switched off in Settings, and left off (so its screenshot runs last)
 ///   menu=<tab>     open that menu window: character | companions | friends | bag | quests | settings
 ///   sub=<page>     a menu window's tab: skills | titles (menu=character), daily (menu=quests),
-///                  sound | gameplay | saves | advanced (menu=settings, or titlepage=settings)
+///                  sound | gameplay | saves | advanced (menu=settings, or titlepage=settings),
+///                  companion (profile=friend: their companion's page)
 ///   profile=<who>  tap a face in the top-left corner: hero (the Hero window) | pet (with pet=: the
-///                  Companions window) | friend (with friends=: their card)
+///                  Companions window) | friend (with friends=: their window) | friend2 (with
+///                  friends=2: the second, who has no companion)
 ///   bottom         open the menu scrolled to the end
 ///   npc=<id>       open an NPC dialog
 ///   bank=<id>      open that banker's bank window
@@ -1042,6 +1044,7 @@ enum DebugLaunch {
             let profile: Profile? = switch who {
             case "pet": session.activePet.map { .pet($0.id) }
             case "friend": session.partyMembers.first.map { .adventurer($0) }
+            case "friend2": session.partyMembers.dropFirst().first.map { .adventurer($0) }
             default: .hero
             }
             if let profile { coordinator.open(.profile(profile)) }

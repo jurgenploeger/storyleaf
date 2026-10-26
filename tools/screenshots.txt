@@ -391,9 +391,12 @@ hero_down    | newgame,level=43,class=fighter,friends=1,map=sunny_meadow,battle=
 goldburg_market | newgame,level=40,class=fighter,map=goldburg | 15
 goldburg_market_landscape | newgame,level=40,class=fighter,map=goldburg,landscape | 15
 chat_community | newgame,level=40,class=fighter,map=goldburg,announce,chat | 25
-# Your face in the top-left corner opens the Hero window, grown from the corner; a friend's, their card.
+# Your face in the top-left corner opens the Hero window; a friend's, their own window as big, with
+# a Hero and a Companion page (just the Hero page, under their name, for one without a companion).
 profile_hero | newgame,level=30,class=fighter,equip=iron_axe+leather_vest,pet=pineapple,profile=hero | 8
 profile_friend | newgame,level=43,class=fighter,pet=pineapple,friends=4,unfold,profile=friend | 8
+profile_friend_pet | newgame,level=43,class=fighter,pet=pineapple,friends=4,unfold,profile=friend,sub=companion | 8
+profile_friend_alone | newgame,level=43,class=fighter,pet=pineapple,friends=2,unfold,profile=friend2 | 8
 profile_pet  | newgame,level=30,class=tamer,pet=pineapple,profile=pet | 8
 talk_npc     | newgame,level=43,class=fighter,pet=pineapple,friends=2,map=lotus_land,npc=thumbelina | 15
 edge_fog     | newgame,map=sunny_meadow,at=80_0                 | 15
@@ -759,6 +762,7 @@ boss_oak_land     | newgame,level=28,map=smiling_forest,at=-66_-36,npc=oak_grove
 talk_npc_land     | newgame,level=43,class=fighter,pet=pineapple,friends=2,map=lotus_land,npc=thumbelina,landscape | 15
 profile_hero_land | newgame,level=30,class=fighter,equip=iron_axe+leather_vest,pet=pineapple,profile=hero,landscape | 8
 profile_friend_land | newgame,level=43,class=fighter,pet=pineapple,friends=4,unfold,profile=friend,landscape | 8
+profile_friend_pet_land | newgame,level=43,class=fighter,pet=pineapple,friends=4,unfold,profile=friend,sub=companion,landscape | 8
 profile_pet_land  | newgame,level=30,class=tamer,pet=pineapple,profile=pet,landscape | 8
 card_land         | newgame,level=45,class=fighter,map=wolf_lair,meet=1,landscape | 10
 invite_land       | newgame,level=49,class=fighter,pet=pineapple,friends=3,map=goldburg,invite=1,landscape | 12
