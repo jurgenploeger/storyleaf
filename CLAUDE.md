@@ -112,14 +112,16 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   Instagram and the website's link preview, from the HUD-free `store_land_*` scenes with the logo in each
   platform's safe area, `SPECS`). `--shots DIR` takes the scenes fetched from CI's `screenshots` branch.
 - `tools/weapon_art.py`: weapons from Retro Diffusion: a picked 64-pixel drawing (`PICKED`, from `art-variants/`)
-  shrunk to the icon and the held sprite at the drawn weapons' size, outlined afresh; `item_art.py` leaves those
+  made the icon at its own size, its outline a deep shade of what it rounds (`icon`; `pixel_style.py --kind
+  rd_item`), and shrunk to the held sprite at the drawn weapons' size; `item_art.py` leaves those
   alone. `tools/gear_preview.py --weapons out.png <ids>` shows weapons in hand on every body, direction and armour.
 - `tools/skill_art.py`: every skill's icon (`art/sprites/skill_<id>.png`), drawn as light, not pixel art: the
   glows, flares, sparks and trails of its battle animation in its colours (`LIGHTS`, `ElementLight`'s), on a dark
   backdrop of its tile's colour, at 128 pixels. The game shows art over 64 pixels smoothed (`IconTile`,
   `BattleScene.skillTile`). A new skill needs a `draw_<id>`; `--sheet out.png` previews them on their tiles.
 - `tools/armour_art.py`: the same for every armour's icon, from one picked RD drawing per shape (`PICKED`, `rda_<shape>`),
-  coloured as it's worn: the sheets' `MATERIAL` and the item's `tint` (a hide cloak its hood's), so icon and hero match.
+  coloured as it's worn: the sheets' `MATERIAL` and the item's `tint` (a hide cloak its hood's), so icon and hero match;
+  at 64 pixels as a weapon's is (`weapon_art.icon`).
 - `tools/prop_art.py`: the same for the few props a generated sprite got wrong (`candy_cane`, whose hook came out
   as a two-sided arch) or none was made for (the harbors' `ship`, built in 3D and projected as the game's view is,
   then lit and finished as the buildings are and held to their bands, `form_relief` too;

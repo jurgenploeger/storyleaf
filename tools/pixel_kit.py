@@ -138,6 +138,29 @@ def deep_shade(mat):
     return tuple(int(c * 255) for c in colorsys.hsv_to_rgb(h, min(1.0, s * 1.1 + 0.1), max(0.05, v * mat.outline)))
 
 
+def deep_line(rgb):
+    """`deep_shade` for a drawing with no materials to go by (an RD drawing): the outline beside a pixel of
+    colour `rgb`, a deep shade of it, its hue kept, a touch richer, at about a fifth of its value and never
+    over 0.13 (RD's Potion's line: 0.08). Lighter, RD's weapons' lines came out at 0.12 to 0.18 and read grey."""
+    h, s, v = colorsys.rgb_to_hsv(*(c / 255.0 for c in rgb[:3]))
+    return tuple(int(round(c * 255)) for c in colorsys.hsv_to_rgb(h, min(1.0, s * 1.1 + 0.1), max(0.04, min(0.13, v * 0.22))))
+
+
+def outline_deep(a):
+    """`a` (an RGBA array) with a one-pixel outline round its opaque pixels, each outline pixel a deep shade
+    (`deep_line`) of the pixels it rounds, side by side, as the clean finish's outline is (RD's Potion)."""
+    a = a.copy()
+    solid = a[..., 3] > 0
+    p = np.pad(solid, 1)
+    ring = ~solid & (p[:-2, 1:-1] | p[2:, 1:-1] | p[1:-1, :-2] | p[1:-1, 2:])
+    h, w = solid.shape
+    for y, x in np.argwhere(ring):
+        beside = [a[y + dy, x + dx, :3] for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1))
+                  if 0 <= y + dy < h and 0 <= x + dx < w and solid[y + dy, x + dx]]
+        a[y, x] = (*deep_line(np.mean(beside, axis=0)), 255)
+    return a
+
+
 class Sprite:
     def __init__(self, size=32, height=None):
         self.w, self.h = size, height or size

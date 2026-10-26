@@ -821,8 +821,9 @@ for item in items.values():
         check(item["type"] == "weapon" and re.fullmatch(r"#[0-9A-Fa-f]{6}", str(item["glow"])) is not None,
               f"item {item['id']} → glow must be a #RRGGBB colour on a weapon")
         at = item.get("glowAt")
-        check(isinstance(at, list) and len(at) == 2 and all(isinstance(v, (int, float)) and 0 <= v <= 32 for v in at),
-              f"item {item['id']} → glow needs glowAt: [x, y] inside its 32×32 art")
+        # In its icon's pixels: 32 for one drawn in tools/item_art.py, 64 for RD's (tools/weapon_art.py).
+        check(isinstance(at, list) and len(at) == 2 and all(isinstance(v, (int, float)) and 0 <= v <= 64 for v in at),
+              f"item {item['id']} → glow needs glowAt: [x, y] inside its art (32 or 64 pixels)")
     if "accent" in item:
         check(isinstance(item["accent"], str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", item["accent"]) is not None,
               f"item {item['id']} → accent must be #RRGGBB")

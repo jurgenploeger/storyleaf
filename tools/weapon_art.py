@@ -2,14 +2,16 @@
 """Weapons from Retro Diffusion: a picked 64-pixel RD drawing (art-variants/) made into the game's
 two sprites, by the same rules as tools/item_art.py's drawn weapons:
 
-- art/sprites/item_<id>.png, 32 × 32: the icon in bags, shops and the Character tab;
+- art/sprites/item_<id>.png, 64 × 64: the icon in bags, shops and the Character tab, RD's drawing at its
+  own size (`icon`, 2026-10-26: the item icons' clean look, docs/pixel-style.md *Item icons*);
 - art/sprites/held_<id>_side.png and _front.png: the weapon in hand walking left or right, and held up
   nearly upright facing you or away (GearArt.posed, item_art.posed), one of its pixels
   to one of the hero's.
 
-Both are shrunk from the RD drawing with its own outline taken off, each pixel the colour that
-covers most of it (a thin blade wins over the air beside it), then outlined afresh in the items'
-outline colour, so an RD weapon sits among the drawn ones. The game holds a weapon by the solid
+Both are made from the RD drawing with its own outline taken off. The icon keeps it at its own size,
+centred, outlined afresh in a deep shade of what each pixel of the outline rounds, as RD's Potion is
+(`pixel_kit.outline_deep`). The held sprites are shrunk, each pixel the colour that covers most of it
+(a thin blade wins over the air beside it), and outlined in the items' outline colour. The game holds a weapon by the solid
 pixel nearest the bottom-left corner and points it up and away (GearArt.held), so a drawing must lie
 diagonally, grip bottom-left; one that doesn't can be turned (`turn`, degrees anticlockwise) before
 it's shrunk. A magic weapon's glow (items.json `glow`) goes round its tip, found here.
@@ -32,6 +34,7 @@ ROOT = ia.ROOT
 VARIANTS = ROOT / "art-variants"
 
 ICON_INNER, HELD_INNER = 27, 20   # as big as the drawn weapons (tools/item_art.py), outline aside
+ICON = 64                         # the icon's size: RD's drawing at its own (`icon`)
 
 # item id → (the picked RD drawing under art-variants/, degrees to turn it anticlockwise).
 PICKED = {
@@ -171,12 +174,36 @@ def shrink(src, size, inner):
     return out
 
 
+def icon(src):
+    """The icon: RD's drawing (`load`, its outline off) at its own size, 64 pixels, centred, outlined in a
+    deep shade of what it rounds (`pixel_kit.outline_deep`). Shrunk to 32 and outlined in the house violet,
+    every RD weapon and armour failed the item icons' rules (2026-10-26); RD drew them at 64, so nothing of
+    its drawing is lost or redrawn."""
+    import numpy as np
+    from pixel_kit import outline_deep
+    drawn = [(x, y) for y in range(src.size) for x in range(src.size) if src.px[y][x]]
+    xs, ys = [x for x, _ in drawn], [y for _, y in drawn]
+    w, h = max(xs) - min(xs) + 1, max(ys) - min(ys) + 1
+    if max(w, h) > ICON - 2:
+        raise ValueError(f"an RD drawing {w} × {h} doesn't fit a {ICON}-pixel icon with its outline")
+    dx, dy = (ICON - w) // 2 - min(xs), (ICON - h) // 2 - min(ys)
+    a = np.zeros((ICON, ICON, 4), np.uint8)
+    for x, y in drawn:
+        a[y + dy, x + dx] = src.px[y][x]
+    a = outline_deep(a)
+    out = ia.Canvas(ICON)
+    for y, x in np.argwhere(a[..., 3] > 0):
+        out.px[y][x] = tuple(int(v) for v in a[y, x])
+    return out
+
+
 def tip(c):
     """Where a magic weapon's glow goes: its solid pixel nearest the top-right corner, a pixel and a
-    half in from it (items.json `glowAt`, in the icon's pixels)."""
-    best = min(((x, y) for y in range(c.size) for x in range(c.size) if c.px[y][x] and c.px[y][x] != ia.OUTLINE),
+    half in from it at 32 (items.json `glowAt`, in the icon's pixels)."""
+    best = min(((x, y) for y in range(c.size) for x in range(c.size) if c.px[y][x] and c.px[y][x][3] == 255),
                key=lambda p: (c.size - p[0]) + p[1])
-    return [round((best[0] - 1.5) * 2) / 2, round((best[1] + 1.5) * 2) / 2]
+    k = 1.5 * c.size / ia.SIZE
+    return [round((best[0] - k) * 2) / 2, round((best[1] + k) * 2) / 2]
 
 
 def make(item_id, path, turn=0, out=None):
@@ -184,16 +211,16 @@ def make(item_id, path, turn=0, out=None):
     spot."""
     items = {i["id"]: i for i in json.loads((ROOT / "content" / "items.json").read_text())["items"]}
     src = load(path, turn)
-    icon = shrink(src, ia.SIZE, ICON_INNER)
+    art = icon(src)
     k = src.size / HELD_INNER        # its pixels to one of the hero's: as long held as a drawn one
     side, front = ia.posed(src, k), ia.posed(src, k, ia.FRONT_TURN)
     spot = None
     if items[item_id].get("glow"):
-        spot = tip(icon)
-        ia.halo(icon, spot[0], spot[1], 10, ia.hexc(items[item_id]["glow"].lstrip("#")))
+        spot = tip(art)
+        ia.halo(art, spot[0], spot[1], 10 * ICON / ia.SIZE, ia.hexc(items[item_id]["glow"].lstrip("#")))
     folder = pathlib.Path(out) if out else ia.SPRITES
     folder.mkdir(parents=True, exist_ok=True)
-    (folder / f"item_{item_id}.png").write_bytes(icon.png())
+    (folder / f"item_{item_id}.png").write_bytes(art.png())
     (folder / f"held_{item_id}_side.png").write_bytes(side.png())
     (folder / f"held_{item_id}_front.png").write_bytes(front.png())
     return spot

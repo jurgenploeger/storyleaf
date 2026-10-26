@@ -3270,8 +3270,8 @@ GLOWS = _glows()
 def halo(c, cx, cy, radius, color):
     """Fills empty pixels near the tip with the glow colour, fading out with distance."""
     r, g, b = color[:3]
-    for y in range(SIZE):
-        for x in range(SIZE):
+    for y in range(c.size):
+        for x in range(c.size):
             if c.px[y][x] is not None:
                 continue
             d = math.hypot(x - cx, y - cy) / radius

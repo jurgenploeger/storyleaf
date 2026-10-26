@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Armour icons from Retro Diffusion: one picked 64-pixel RD drawing per armour shape (art-variants/
-rda_<shape>/), made into every armour's 32 × 32 icon (art/sprites/item_<id>.png) the way
-tools/weapon_art.py makes a weapon's: its own outline taken off, shrunk, outlined afresh.
+rda_<shape>/), made into every armour's 64 × 64 icon (art/sprites/item_<id>.png) the way
+tools/weapon_art.py makes a weapon's: its own outline taken off, kept at its own size, outlined afresh
+in a deep shade of what it rounds (`weapon_art.icon`, 2026-10-26: the item icons' clean look).
 
 Coloured as the armour is worn, so the icon and the hero match (playtesting 2026-10-23: the drawn
 icons "look quite bad now, while we have the RD version"): an armour with walk sheets (items.json
@@ -68,8 +69,10 @@ def plan():
     return out
 
 
-def icon(shape, mat, tint):
-    """The icon: the picked drawing coloured as worn, then shrunk as a weapon's is."""
+def icon(shape, mat, tint, small=False):
+    """The icon: the picked drawing coloured as worn, then made as a weapon's is (`weapon_art.icon`).
+    `small`: as it was till 2026-10-26, shrunk to 32 and centred, the reference of pixel_style's `icon`
+    bands (`pixel_style.reference`)."""
     img = np.asarray(Image.open(VARIANTS / PICKED[shape]).convert("RGBA")).astype(float) / 255
     if mat:
         img = material(img, **mat)
@@ -78,7 +81,9 @@ def icon(shape, mat, tint):
     buf = io.BytesIO()
     Image.fromarray((np.clip(img, 0, 1) * 255).round().astype(np.uint8), "RGBA").save(buf, "PNG")
     buf.seek(0)
-    return centred(wa.shrink(wa.load(buf), ia.SIZE, wa.ICON_INNER))
+    if small:
+        return centred(wa.shrink(wa.load(buf), ia.SIZE, wa.ICON_INNER))
+    return wa.icon(wa.load(buf))
 
 
 def centred(c):

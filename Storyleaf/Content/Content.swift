@@ -344,7 +344,7 @@ nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
     /// A festive hat (type head): how it's drawn on the hero's head (GearOverlay.hat): crown (a paper
     /// party crown), santa, ears (a bunny's, pink inside: `accent`) or mask (the face in `color`).
     let hat: String?
-    /// Magic weapons: a soft light while held, "#RRGGBB", centred on `glowAt` ([x, y] in the 32×32 art).
+    /// Magic weapons: a soft light while held, "#RRGGBB", centred on `glowAt` ([x, y] in its art's pixels).
     let glow: String?
     let glowAt: [Double]?
     /// Made by hand from the bag rather than at a smith (a quest's: RuneScape's quests have you
