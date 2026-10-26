@@ -528,7 +528,8 @@ struct IntroAtlas: View {
                     }
                 if scale > 0 {
                     ForEach(lands) { land in
-                        mark(for: land)
+                        // Every land named once it's near enough to read; zoomed out, the towns.
+                        mark(for: land, named: scale >= smallestScale(in: size) * 1.5)
                             .position(point(of: land.middle))
                     }
                 }
@@ -669,9 +670,10 @@ struct IntroAtlas: View {
         return CGPoint(x: scale * (u + v) + pan.width, y: scale * (v - u) / 2 + scale * CGFloat(columns) / 2 + pan.height)
     }
 
-    /// A town's name under a gold square, a boss's sword, where you start a gold dot and its name.
+    /// A town's name under a gold square, where you start a gold dot and its name; with `named`, the
+    /// wild lands' names too (playtesting 2026-10-26), a boss's land under its sword.
     @ViewBuilder
-    private func mark(for land: Land) -> some View {
+    private func mark(for land: Land, named: Bool) -> some View {
         let start = land.id == highlight
         let boss = land.def.npcs?.contains { $0.role == .boss } ?? false
         if start || land.def.town != nil {
@@ -683,19 +685,29 @@ struct IntroAtlas: View {
                     RoundedRectangle(cornerRadius: 2).fill(HUDStyle.ink.opacity(0.5)).frame(width: 8, height: 8)
                         .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(HUDStyle.gold, lineWidth: 1.5))
                 }
-                Text(land.def.name)
-                    .font(HUDStyle.font(8))
-                    .foregroundStyle(start ? HUDStyle.gold : HUDStyle.cream)
-                    .lineLimit(1)
-                    .fixedSize()
-                    .shadow(color: HUDStyle.ink, radius: 0, x: 1, y: 1)
+                name(of: land, color: start ? HUDStyle.gold : HUDStyle.cream)
             }
         } else if boss {
-            IconImage(.sword, size: 9)
-                .foregroundStyle(HUDStyle.hp)
-                .padding(2)
-                .background(Circle().fill(HUDStyle.ink.opacity(0.85)))
+            VStack(spacing: 1) {
+                IconImage(.sword, size: 9)
+                    .foregroundStyle(HUDStyle.hp)
+                    .padding(2)
+                    .background(Circle().fill(HUDStyle.ink.opacity(0.85)))
+                if named { name(of: land, color: HUDStyle.cream.opacity(0.9)) }
+            }
+        } else if named {
+            name(of: land, color: HUDStyle.cream.opacity(0.9))
         }
+    }
+
+    /// A land's name as the map writes it, with a dark edge so it reads over any ground.
+    private func name(of land: Land, color: Color) -> some View {
+        Text(land.def.name)
+            .font(HUDStyle.font(8))
+            .foregroundStyle(color)
+            .lineLimit(1)
+            .fixedSize()
+            .shadow(color: HUDStyle.ink, radius: 0, x: 1, y: 1)
     }
 
     /// The continent in one picture, a pixel a cell, north up: the sea, and each land's own map (its
