@@ -179,19 +179,12 @@ struct TitleView: View {
     private var settingsWindow: some View {
         VStack(alignment: .leading, spacing: 0) {
             PageTabs(page: $settingsPage, title: { $0.title })
+            // Closed by its close button alone, as the story pages and What's new are.
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    SettingsView(onImportBackup: {
-                        showingSettings = false
-                        importing = true
-                    }, page: settingsPage)
-                    Button {
-                        closeSettings()
-                    } label: {
-                        Label(L("Back"), icon: .arrowLeft)
-                    }
-                    .buttonStyle(PixelButtonStyle(compact: true))
-                }
+                SettingsView(onImportBackup: {
+                    showingSettings = false
+                    importing = true
+                }, page: settingsPage)
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
