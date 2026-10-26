@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// Fairyland Online's target frame for another adventurer you're standing next to: who they are,
-/// how strong, and what you can do (befriend, invite to your party, ask to join theirs, or duel in
-/// danger zones, where a beaten adventurer drops everything they carry). They don't always say yes.
+/// how strong, and what you can do (befriend, invite to your party, friend or not, ask to join
+/// theirs, or duel in danger zones, where a beaten adventurer drops everything they carry). They
+/// don't always say yes.
 struct AdventurerCard: View {
     let coordinator: GameCoordinator
     let adventurer: Adventurer
@@ -54,11 +55,6 @@ struct AdventurerCard: View {
                 } else if !session.isFriend(adventurer) {
                     Button { coordinator.befriend(adventurer) } label: { word(L("Befriend")) }
                         .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
-                } else if !session.isInParty(adventurer), !session.partyIsFull {
-                    Button { coordinator.invite(adventurer) } label: { word(L("Invite to party")) }
-                        .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
-                } else if session.partyIsFull {
-                    Text(L("Your party is full")).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim)
                 }
                 if !adventurer.hostile {
                     Button { coordinator.trade(with: adventurer) } label: { word(L("Trade")) }
@@ -67,6 +63,15 @@ struct AdventurerCard: View {
                 if danger {
                     Button { coordinator.challenge(adventurer) } label: { word(L("Duel")) }
                         .buttonStyle(PixelButtonStyle(tint: Color(red: 1, green: 0.55, blue: 0.5), compact: true))
+                }
+            }
+            // Anyone can come along, friend or not (playtesting 2026-10-26).
+            if !adventurer.hostile, !session.isInParty(adventurer) {
+                if session.partyIsFull {
+                    Text(L("Your party is full")).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim)
+                } else {
+                    Button { coordinator.invite(adventurer) } label: { word(L("Invite to party")) }
+                        .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
                 }
             }
             // Travelling with friends: ask whoever leads to let you join them, and follow them about.

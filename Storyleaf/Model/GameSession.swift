@@ -34,6 +34,9 @@ final class GameSession {
     var joinedParty: JoinedParty?
     /// Who said no to partying up lately, and till when they'd say no again (`askAlong`, `askToJoin`).
     @ObservationIgnored var declinedUntil: [UUID: Date] = [:]
+    /// Guests who just left your party (`leaveParty`): gone from your list, but still about, so the
+    /// map keeps them there for you to ask along again.
+    @ObservationIgnored var partedGuests: [UUID: Adventurer] = [:]
     /// When the party you've joined heads off on its own (`passPartyTime`).
     @ObservationIgnored var joinedUntil: Date = .distantFuture
     /// Whether the weaver has a cape for you (`capesWaiting`), as of the last time a milestone could
@@ -796,11 +799,16 @@ final class GameSession {
 
     // MARK: - Friends & party
 
-    var friends: [Adventurer] { data.friends ?? [] }
+    /// The adventurers you've befriended (not the guests in your party).
+    var friends: [Adventurer] { (data.friends ?? []).filter { $0.guest != true } }
 
+    /// Everyone in your party, friends and guests (`Adventurer.guest`).
     var partyMembers: [Adventurer] {
-        (data.partyIDs ?? []).compactMap { id in friends.first { $0.id == id } }
+        (data.partyIDs ?? []).compactMap { id in data.friends?.first { $0.id == id } }
     }
+
+    /// Who's in your party without being your friend.
+    var partyGuests: [Adventurer] { partyMembers.filter { $0.guest == true } }
 
     /// The friends in your party who are with you, not waiting somewhere for you to come back for
     /// them: they walk and fight beside you.
@@ -829,22 +837,36 @@ final class GameSession {
     func isFriend(_ adventurer: Adventurer) -> Bool { friends.contains { $0.id == adventurer.id } }
     func isInParty(_ adventurer: Adventurer) -> Bool { data.partyIDs?.contains(adventurer.id) == true }
 
-    /// Most adventurers are happy to be friends; the grumpy red-named ones aren't.
+    /// Most adventurers are happy to be friends; the grumpy red-named ones aren't. A guest in your
+    /// party becomes a friend, and stays one after they leave it.
     @discardableResult
     func befriend(_ adventurer: Adventurer) -> Bool {
         guard !isFriend(adventurer), !adventurer.hostile else { return false }
-        var friend = adventurer
-        friend.hostile = false
-        data.friends = friends + [friend]
+        if let index = data.friends?.firstIndex(where: { $0.id == adventurer.id }) {
+            data.friends?[index].guest = nil
+        } else {
+            var friend = adventurer
+            friend.hostile = false
+            data.friends = (data.friends ?? []) + [friend]
+        }
         post(L("{name} is now your friend!", ["name": adventurer.name]), .reward)
         checkTitles()
         save()
         return true
     }
 
-    func invite(_ id: UUID) {
-        guard let friend = friends.first(where: { $0.id == id }), !isInParty(friend), !partyIsFull,
-              adventurersAround.contains(id) else { return }
+    /// Brings `id` into your party: a friend, or anyone else about (`met`, as you met them), who comes
+    /// along as a guest (`Adventurer.guest`): you don't have to be friends to party up (playtesting
+    /// 2026-10-26: "I shouldn't need to befriend someone to invite them to my party").
+    func invite(_ id: UUID, met: Adventurer? = nil) {
+        guard data.partyIDs?.contains(id) != true, !partyIsFull, adventurersAround.contains(id) else { return }
+        if data.friends?.contains(where: { $0.id == id }) != true {
+            guard var guest = met, guest.id == id, !guest.hostile else { return }
+            guest.guest = true
+            guest.waitingAt = nil
+            data.friends = (data.friends ?? []) + [guest]
+        }
+        guard let friend = data.friends?.first(where: { $0.id == id }) else { return }
         // Friends keep up with you, and save where you last did. Read first, then write: the right
         // side of an optional-chained write runs while the write holds `data`, so reading `data`
         // there (`checkpoint` does) trips Swift's exclusivity check and the game aborts.
@@ -864,11 +886,19 @@ final class GameSession {
     }
 
     func leaveParty(_ id: UUID) {
-        guard let friend = friends.first(where: { $0.id == id }) else { return }
+        guard let friend = data.friends?.first(where: { $0.id == id }) else { return }
         data.partyIDs?.removeAll { $0 == id }
         data.partyLeaves?[id.uuidString] = nil
         if let index = data.friends?.firstIndex(where: { $0.id == id }) {
             data.friends?[index].waitingAt = nil
+        }
+        if friend.guest == true {
+            // Not a friend: gone from your list, still about to ask along again.
+            data.friends?.removeAll { $0.id == id }
+            var parted = friend
+            parted.guest = nil
+            parted.waitingAt = nil
+            partedGuests[id] = parted
         }
         post(L("{name} left the party. See you around!", ["name": friend.name]))
         save()
@@ -886,7 +916,7 @@ final class GameSession {
     /// Where a friend in your party is waiting for you ("the Sunny Meadow entrance", "Meadowbrook"),
     /// or nil while they're at your side.
     func whereabouts(of friend: Adventurer) -> String? {
-        guard let spot = friends.first(where: { $0.id == friend.id })?.waitingAt else { return nil }
+        guard let spot = data.friends?.first(where: { $0.id == friend.id })?.waitingAt else { return nil }
         if spot.position == nil { return checkpointName(Checkpoint(mapID: spot.mapID, entry: spot.entry)) }
         return content.map(spot.mapID)?.name ?? L("somewhere")
     }

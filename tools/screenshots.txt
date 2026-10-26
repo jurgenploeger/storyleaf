@@ -335,6 +335,8 @@ party_menu   | newgame,level=43,class=fighter,pet=pineapple,friends=4,menu=frien
 # A fourth friend joins through their card's buttons (debug invite=n), in town and in a cave.
 invite_town  | newgame,level=49,class=fighter,pet=pineapple,friends=3,map=goldburg,invite=1 | 12
 invite_cave  | newgame,level=49,class=fighter,pet=pineapple,friends=3,map=rat_cavern,invite=1 | 12
+# Anyone can join your party, friend or not (playtesting 2026-10-26): a stranger joins as a guest.
+invite_guest | newgame,level=49,class=fighter,pet=pineapple,friends=2,map=goldburg,invite=1,guest | 12
 party_away   | newgame,level=43,class=fighter,pet=pineapple,friends=2,away=1,map=twilight_woods,unfold | 15
 profile_away | newgame,level=43,class=fighter,friends=2,away=1,map=twilight_woods,profile=friend | 15
 hero_down    | newgame,level=43,class=fighter,friends=1,map=sunny_meadow,battle=2,herodown | 30

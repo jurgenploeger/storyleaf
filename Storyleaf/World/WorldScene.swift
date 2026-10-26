@@ -1974,8 +1974,9 @@ final class WorldScene: SKScene {
         guard members.map(\.id) != allies.map(\.id) || members.map(\.waitingAt) != allies.map(\.waiting)
                 || members.map({ $0.petSpecies != nil }) != allies.map({ $0.pet != nil }) else { return }
         for ally in allies where !members.contains(where: { $0.id == ally.id }) {
-            if let friend = session.friends.first(where: { $0.id == ally.id }), !session.isInParty(friend) {
-                // Left the party but still a friend: they stay here, so you can invite them back.
+            if let friend = session.friends.first(where: { $0.id == ally.id }) ?? session.partedGuests.removeValue(forKey: ally.id),
+               !session.isInParty(friend) {
+                // Left the party (a friend, or a guest): they stay here, so you can invite them back.
                 crowd?.rejoin(friend, at: ally.node.position, world: world)
             } else {
                 // Gone: unfriended, or off to wait for you on another map.

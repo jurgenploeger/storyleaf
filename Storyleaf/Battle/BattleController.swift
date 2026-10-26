@@ -154,9 +154,11 @@ final class BattleController {
         fighter.skillLevels = Dictionary(uniqueKeysWithValues: skills.map { ($0.id, Combatant.naturalSkillLevel(for: person.level)) })
         fighter.classID = person.classID
         fighter.raceID = person.raceID
-        // A friend still without a companion brings their Seal Stones to catch one with (not the
-        // party you've joined: theirs is theirs to keep).
-        if side == .party, person.petSpecies == nil, session.isFriend(person) { fighter.sealStones = person.stonesLeft }
+        // A friend (or guest) in your party still without a companion brings their Seal Stones to
+        // catch one with (not the party you've joined: theirs is theirs to keep).
+        if side == .party, person.petSpecies == nil, session.isFriend(person) || session.isInParty(person) {
+            fighter.sealStones = person.stonesLeft
+        }
         return fighter
     }
 
@@ -166,7 +168,7 @@ final class BattleController {
         guard fighter.art.hasPrefix("adv:") else { return nil }
         switch fighter.source {
         case .ally(let id):
-            if let friend = session.friends.first(where: { $0.id == id }) { return friend }
+            if let friend = session.data.friends?.first(where: { $0.id == id }) { return friend }
             return session.joinedParty?.members.first(where: { $0.id == id })
         case .rival(let id): return rival?.id == id ? rival : nil
         default: return nil

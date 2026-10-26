@@ -52,6 +52,7 @@ import SpriteKit
 ///   boss=<npc>     once the map is on screen, fight that boss (as if you'd pressed Fight)
 ///   invite=n       once the map is on screen, the n nearest adventurers come over, become friends
 ///                  and join your party, through the same steps as their card's buttons
+///   guest          with invite: they join your party without becoming friends (`Adventurer.guest`)
 ///   group          every adventurer who can travels with friends (crowd.json `groupChance` 1), and
 ///                  once the map is on screen the nearest group comes over, in line
 ///   joinparty      with group: their leader lets you join them, and you follow them about
@@ -805,10 +806,10 @@ enum DebugLaunch {
                     // The map notes who's around every 0.4 s; inviting needs them counted.
                     try? await Task.sleep(for: .seconds(1))
                     for adventurer in newcomers {
-                        coordinator.befriend(adventurer)
+                        if flags["guest"] == nil { coordinator.befriend(adventurer) }
                         try? await Task.sleep(for: .seconds(1))
                         // They always say yes here (`declined` shows a no).
-                        coordinator.session.invite(adventurer.id)
+                        coordinator.session.invite(adventurer.id, met: adventurer)
                         coordinator.session.nearbyAdventurer = nil
                         try? await Task.sleep(for: .seconds(1))
                     }
