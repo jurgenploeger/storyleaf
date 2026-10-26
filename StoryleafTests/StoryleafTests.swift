@@ -1828,6 +1828,22 @@ struct RulesTests {
         #expect(!session.withdraw("potion") && session.banked("potion") == 11)
     }
 
+    /// The bank's card moves as many as you pick, and deletes them for good, from either side; never
+    /// what a quest you're on needs.
+    @Test func theBankMovesAndDeletesSome() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.deposit("potion", 2)
+        #expect(session.count(of: "potion") == 1 && session.banked("potion") == 2)
+        #expect(session.withdraw("potion", 1) && session.count(of: "potion") == 2 && session.banked("potion") == 1)
+        #expect(!session.withdraw("potion", 0) && session.banked("potion") == 1)
+        #expect(session.destroy("potion", 5, fromBank: true) && session.banked("potion") == 0 && session.count(of: "potion") == 2)
+        #expect(session.destroy("potion", 1, fromBank: false) && session.count(of: "potion") == 1)
+        #expect(!session.destroy("potion", 1, fromBank: true))
+        let quest = try #require(Content.shared.quest("hope_of_meadowbrook"))
+        session.acceptQuest(quest.id)
+        #expect(!session.destroy("pet_egg", 1, fromBank: false) && session.count(of: "pet_egg") == 1)
+    }
+
     /// Beaten by monsters you lose what you carry, coins too; beaten in a duel what you wear as well.
     /// The bank, and what a quest you're on needs, stay.
     @Test func aDefeatCostsWhatYouCarry() throws {

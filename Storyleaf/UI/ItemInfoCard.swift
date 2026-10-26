@@ -19,6 +19,9 @@ struct ItemInfoCard: View {
     var trading: Action? = nil
     /// From the Bag: drop one, or all you carry, at your feet (`GameSession.drop`).
     var dropping: ((Int) -> Void)? = nil
+    /// From the bank, on the side it was tapped on: how many to put in, take out or delete
+    /// (`BankControls`), in place of Close.
+    var banking: BankSide? = nil
 
     struct Action {
         let title: String
@@ -27,7 +30,7 @@ struct ItemInfoCard: View {
         let run: () -> Void
     }
 
-    private var choosing: Bool { onEquip != nil || onUnequip != nil || action != nil || note != nil || trading != nil || dropping != nil }
+    private var choosing: Bool { onEquip != nil || onUnequip != nil || action != nil || note != nil || trading != nil || dropping != nil || banking != nil }
 
     private var isGear: Bool { ItemType.equipmentSlots.contains(item.type) }
 
@@ -130,7 +133,7 @@ struct ItemInfoCard: View {
 
     /// Cancel, and Equip (faded, with why, when you can't) or Unequip.
     private var actions: some View {
-        let issue = onUnequip == nil ? session.equipIssue(item) : nil
+        let issue = onUnequip == nil && banking == nil ? session.equipIssue(item) : nil
         return VStack(alignment: .trailing, spacing: 6) {
             if let issue {
                 Text(issue).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.orange)
@@ -160,29 +163,33 @@ struct ItemInfoCard: View {
                 }
                 .buttonStyle(PixelButtonStyle(compact: true))
             }
-            HStack(spacing: 10) {
-                Spacer(minLength: 0)
-                Button(action == nil && onEquip == nil && onUnequip == nil ? L("Close") : L("Cancel"), action: onClose)
-                    .buttonStyle(PixelButtonStyle())
-                if let action {
-                    Button(action: action.run) {
-                        if let icon = action.icon {
-                            Label(action.title, icon: icon)
-                        } else {
-                            Text(action.title)
+            if let banking {
+                BankControls(session: session, item: item, side: banking, onClose: onClose)
+            } else {
+                HStack(spacing: 10) {
+                    Spacer(minLength: 0)
+                    Button(action == nil && onEquip == nil && onUnequip == nil ? L("Close") : L("Cancel"), action: onClose)
+                        .buttonStyle(PixelButtonStyle())
+                    if let action {
+                        Button(action: action.run) {
+                            if let icon = action.icon {
+                                Label(action.title, icon: icon)
+                            } else {
+                                Text(action.title)
+                            }
                         }
+                        .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
+                        .disabled(!action.enabled)
+                        .opacity(action.enabled ? 1 : 0.5)
+                    } else if let onUnequip {
+                        Button(L("Unequip"), action: onUnequip)
+                            .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
+                    } else if let onEquip {
+                        Button(L("Equip"), action: onEquip)
+                            .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
+                            .disabled(issue != nil)
+                            .opacity(issue == nil ? 1 : 0.5)
                     }
-                    .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
-                    .disabled(!action.enabled)
-                    .opacity(action.enabled ? 1 : 0.5)
-                } else if let onUnequip {
-                    Button(L("Unequip"), action: onUnequip)
-                        .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
-                } else if let onEquip {
-                    Button(L("Equip"), action: onEquip)
-                        .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
-                        .disabled(issue != nil)
-                        .opacity(issue == nil ? 1 : 0.5)
                 }
             }
         }

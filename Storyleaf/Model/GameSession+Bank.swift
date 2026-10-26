@@ -61,11 +61,12 @@ extension GameSession {
     /// What the bank holds, in the game's order of items.
     var bankItems: [ItemDef] { content.items.filter { banked($0.id) > 0 } }
 
-    /// Puts all of a kind you carry in the bank.
-    func deposit(_ id: String) {
-        let amount = count(of: id)
+    /// Puts `amount` of a kind you carry in the bank, all of it unless told.
+    func deposit(_ id: String, _ amount: Int = .max) {
+        let held = count(of: id)
+        let amount = min(amount, held)
         guard amount > 0 else { return }
-        data.inventory[id] = nil
+        data.inventory[id] = held > amount ? held - amount : nil
         data.bank = bank.merging([id: amount]) { $0 + $1 }
         SoundEffects.shared.play(.equip)
     }
@@ -76,13 +77,13 @@ extension GameSession {
         depositGold(data.gold)
     }
 
-    /// Takes a kind out of the bank: all of it, or as many as the bag has room for (the rest stays in).
-    /// False when none fit.
+    /// Takes `amount` of a kind out of the bank (all of it unless told), or as many as the bag has room
+    /// for (the rest stays in). False when none fit.
     @discardableResult
-    func withdraw(_ id: String) -> Bool {
+    func withdraw(_ id: String, _ amount: Int = .max) -> Bool {
         let held = banked(id)
-        guard held > 0 else { return false }
-        let amount = min(held, bagSlotsFree)
+        guard held > 0, amount > 0 else { return false }
+        let amount = min(held, amount, bagSlotsFree)
         guard amount > 0 else {
             post(L("Your bag is full. Put something in the bank first."), .system)
             return false
@@ -113,6 +114,25 @@ extension GameSession {
         data.bankGold = bankGold - amount
         data.gold += amount
         SoundEffects.shared.play(.coins)
+        return true
+    }
+
+    /// Deletes `amount` of a kind for good (playtesting 2026-10-26: "You should also be able to delete
+    /// items"), from the bank or the bag: never what a quest you're on needs (`questKeepsakes`). False
+    /// when there's none to delete.
+    @discardableResult
+    func destroy(_ id: String, _ amount: Int, fromBank: Bool) -> Bool {
+        let held = fromBank ? banked(id) : count(of: id)
+        let amount = min(amount, held)
+        guard amount > 0, !questKeepsakes.contains(id) else { return false }
+        if fromBank {
+            data.bank?[id] = held > amount ? held - amount : nil
+        } else {
+            data.inventory[id] = held > amount ? held - amount : nil
+            if held == amount, data.forTrade != nil { data.forTrade = forTrade.map(\.id) }
+        }
+        let name = content.item(id)?.name ?? id
+        post(L("You deleted {item}.", ["item": amount > 1 ? "\(name) ×\(amount)" : name]))
         return true
     }
 
