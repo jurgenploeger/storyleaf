@@ -272,6 +272,10 @@ equip_locked | newgame,class=fighter,level=16,equip=leather_vest,bag=cloth_tunic
 gear_upgrade | newgame,class=fighter,level=40,equip=bronze_broadsword,bag=silver_sword+luna_axe+wooden_sword+cloth_tunic,menu=character | 8
 gear_find    | newgame,class=fighter,level=40,equip=bronze_broadsword,bag=silver_sword+luna_axe+wooden_sword+luna_staff+battle_axe+bronze_sword,menu=character,change=weapon | 8
 bag_find     | newgame,class=fighter,level=40,equip=bronze_broadsword,bag=silver_sword+luna_axe+wooden_sword+cloth_tunic+potion+seal_stone,menu=bag | 8
+# The item icons redrawn in the clean look (docs/pixel-style.md, Item icons) beside RD's Potion and the
+# grained ones: the seal stones, the clover and a heap of coins; and the coin piles in the bank.
+clean_icons  | newgame,menu=bag,bag=potion+seal_stone+moon_seal+heart_seal+star_seal+wishing_seal+lucky_clover+ether+iron_axe+homeward_feather,gold=20000 | 8
+clean_coins  | newgame,bank=meadow_banker,bag=potion+seal_stone+lucky_clover,gold=60 | 8
 armour_bag   | newgame,class=fighter,level=200,menu=bag,bag=cloth_tunic+leather_vest+chain_mail+iron_plate+dragon_mail+mage_robe+ranger_cloak+snow_cloak+tamer_jacket+copper_hide+ruby_plate+jade_robe+golden_dragon_mail+mossy_leather_vest+sapphire_hide+rose_snow_cloak | 8
 # A quest giver with nothing left says why and points to work elsewhere; the high-level quest givers.
 quest_giver_done | newgame,class=fighter,level=103,map=swan_lake,done=wishes_of_a_duckling,npc=swan_keeper | 8

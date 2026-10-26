@@ -11,6 +11,7 @@ the look RD gave us, and the bands can be re-run as the reference grows.
     python3 tools/pixel_style.py check <png>...            # score sprites (exit 1 if any fails)
     python3 tools/pixel_style.py compare                   # RD's icons, ours, and the flat designs
     python3 tools/pixel_style.py check --kind icon <png>   # pick the band set (icon, creature, scenery, building)
+    python3 tools/pixel_style.py check --kind item <png>   # the clean item icons' rules (RD's Potion), 2026-10-26
 
 Needs pillow + numpy.
 """
@@ -138,6 +139,90 @@ def measure(path):
     dark_edge = eh[el < np.median(il) * 0.55]
     m["outline_sat"] = float(np.median(dark_edge[:, 1])) if len(dark_edge) else 0.0
     m["outline_value"] = float(np.median(dark_edge[:, 2])) if len(dark_edge) else 1.0
+    # The clean item icons (2026-10-26, *Item icons* in docs/pixel-style.md): the outline in the hue of what
+    # it rounds (`outline_hue`: degrees between each outline pixel and the inside pixel next to it, median,
+    # where both have colour; RD's Potion 6°, the house violet round a gold coin 138°), and one pixel thick
+    # (`outline_double`: the share of outline pixels with a pixel nearly as dark right inside them, the dark
+    # ring that made our icons' borders read two or three pixels thick: the Potion 0.29, ours 0.66).
+    # (By value, the HSV brightness, not luma: a saturated red's mid tone has a low luma, and was counted
+    # as a dark ring where it was the shaded side of the form, 2026-10-26.)
+    L = rgb.max(axis=2)
+    med = float(np.median(L[interior])) if interior.any() else 0.5
+    hues, double = [], []
+    H_, W_ = opaque.shape
+    for y, x in zip(*np.nonzero(edge)):
+        for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            yy, xx = y + dy, x + dx
+            if 0 <= yy < H_ and 0 <= xx < W_ and interior[yy, xx]:
+                h1, s1, _ = colorsys.rgb_to_hsv(*rgb[y, x])
+                h2, s2, _ = colorsys.rgb_to_hsv(*rgb[yy, xx])
+                if s1 > 0.2 and s2 > 0.25:
+                    hues.append(abs((h1 - h2) * 360 + 180) % 360 - 180)
+                # Against the inside near it (within 4 pixels), not the whole sprite's: a drum's brown side in
+                # shadow beside its pale head isn't a ring.
+                near = interior[max(0, yy - 4):yy + 5, max(0, xx - 4):xx + 5]
+                local = float(np.median(L[max(0, yy - 4):yy + 5, max(0, xx - 4):xx + 5][near])) if near.any() else med
+                double.append(L[yy, xx] < max(0.45 * local, L[y, x] * 1.6))
+                break
+    m["outline_hue"] = float(np.median(np.abs(hues))) if hues else None
+    m["outline_double"] = float(np.mean(double)) if double else None
+    # The edge's weight (2026-10-26, "are the outlines a bit too thin now?"): the outline's own value
+    # (`line_value`, median; the Potion 0.08) and, just inside it on the lit side (top left), the value
+    # over the lit inside's (90th percentile): `rim_lit`. The Potion keeps a mid-tone rim there (0.70), so
+    # its one-pixel line reads firm; straight from the line to the lightest shade (0.93 to 1) it reads as
+    # a hairline.
+    V = rgb.max(axis=2)
+    m["line_value"] = float(np.median(V[edge]))
+    inner1 = interior & ~np.logical_and.reduce(neighbours(interior))
+    inner2 = interior & ~inner1
+    ys_, xs_ = np.nonzero(opaque)
+    gy_, gx_ = np.mgrid[0:opaque.shape[0], 0:opaque.shape[1]]
+    lit_side = (gx_ - xs_.mean()) + (gy_ - ys_.mean()) < 0
+    if (inner1 & lit_side).sum() >= 8 and inner2.sum() >= 30:
+        m["rim_lit"] = float(np.median(V[inner1 & lit_side]) / max(np.percentile(V[inner2], 90), 1e-6))
+    else:
+        m["rim_lit"] = None
+    # Kinks (2026-10-26, "some pixels don't line up or are a bit out of place, making the shape of a smaller
+    # coin [...] not the right shape"): along each side of the silhouette, a run of one or two pixels the
+    # outline steps in to and straight back out of (or out and back in), as a curve never does; per step
+    # of the outline. Two shapes meeting make one too (two coins side by side), so it allows a few: RD's
+    # Potion 0, the small coins drawn off the pixel grid 0.04 to 0.14.
+    kink = steps = 0
+    for view in (opaque, opaque[::-1], opaque.T, opaque.T[::-1]):
+        prof = [int(np.argmax(col)) if col.any() else None for col in view.T]
+        runs, vals = [], []
+        for v in prof:
+            if vals and v == vals[-1]:
+                runs[-1] += 1
+            else:
+                runs.append(1)
+                vals.append(v)
+        for k in range(1, len(runs) - 1):
+            a_, b_, c_ = vals[k - 1], vals[k], vals[k + 1]
+            if None in (a_, b_, c_):
+                continue
+            steps += 1
+            if (b_ - a_) * (c_ - b_) < 0 and runs[k] <= 2 and abs(b_ - a_) <= 2 and abs(c_ - b_) <= 2:
+                kink += 1
+    m["kinks"] = float(kink / steps) if steps else 0.0
+    m["canvas"] = int(max(opaque.shape))
+    # Drawn at its size, not doubled from a smaller one (`native`): the share of pixels that a 2× shrink and
+    # blow-up would change among those where the colour changes, at the best of the four alignments. A 32-pixel icon blown up to 64 scores 0,
+    # and keeps its blocky steps and thick outline; RD's Potion 0.5, the clean icons 0.37 to 0.48.
+    q = np.where(opaque, np.round(rgb * 255).astype(int) @ np.array([65536, 256, 1]), -1)
+    best = 1.0
+    for oy in (0, 1):
+        for ox in (0, 1):
+            part = q[oy:, ox:]
+            hh, ww = part.shape[0] // 2 * 2, part.shape[1] // 2 * 2
+            part = part[:hh, :ww]
+            back = np.repeat(np.repeat(part[::2, ::2], 2, 0), 2, 1)
+            # Only where the colour changes (a boundary): inside a flat facet any size survives the trip.
+            pp = np.pad(part, 1, constant_values=-1)
+            boundary = (part >= 0) & ((pp[:-2, 1:-1] != part) | (pp[2:, 1:-1] != part)
+                                      | (pp[1:-1, :-2] != part) | (pp[1:-1, 2:] != part))
+            best = min(best, float((back != part)[boundary].mean()) if boundary.any() else 0.0)
+    m["native"] = best
     m["outline_colours"] = int(len(np.unique(np.round(rgb[edge] * 255).astype(int) @ np.array([65536, 256, 1]))))
     # The outline against what it rounds: each edge pixel's value (HSV) over the mean value of the inside
     # within 2 pixels of it, median. RD's outlines are a deep shade of the colour inside (a green tree's
@@ -402,6 +487,36 @@ CEILINGS = {"building": {"colour_density": 1.4}}
 CAPS = {"building": {"straight_edges": 0.40, "grid_lines": 0.033}}
 
 
+# The clean item icons (2026-10-26): house rules, not a calibrated band, as their reference is one sprite,
+# RD's Potion (playtesting: "Look at the potion items we created with retro diffusion, those look nice"),
+# with what the redrawn coins, seal stones and clover taught. Each: (way, limit, hard). docs/pixel-style.md,
+# *Item icons*, says why each is set where it is.
+ITEM_RULES = {
+    "canvas": ("min", 64, True),             # drawn at 64 pixels: finer pixels, so a one-pixel outline is thin
+    "native": ("min", 0.3, True),            # and drawn there, not blown up (those score 0, flat designs at most 0.24)
+    "fill": ("min", 0.78, True),
+    "semi_alpha": ("max", 0.0, True),
+    "outline_hue": ("max", 30.0, True),      # the outline a deep shade of what it rounds, not the house violet
+    "outline_double": ("max", 0.4, True),    # one pixel: no dark ring inside it (the Potion 0.18)
+    "outline_rel": ("max", 0.32, False),     # deep, though: it reads as the edge (the Potion 0.13)
+    "line_value": ("max", 0.15, False),      # the line itself near-black in its hue (the Potion 0.08)
+    "rim_lit": ("max", 0.85, True),          # a mid-tone rim inside it on the lit side, not a hairline (the Potion 0.70)
+    # Smooth ramps, no grain (the Potion 1.95; the grained finish 2.3 to 10). Soft: a thin thing (a whip) has
+    # few pixels for its colours and runs high without any grain; `orphans` and `cluster_size` see grain.
+    "colour_density": ("max", 2.6, False),
+    "checker": ("max", 0.05, False),         # no dither fields
+    "orphans": ("max", 0.2, False),          # no salt and pepper (the Potion 0.17)
+    "cluster_size": ("min", 3.0, False),     # light in bands, not specks (the Potion 3.6; grained 1.6 to 3.2)
+    "value_range": ("min", 0.45, False),     # deep shadows to pale lights (the Potion 0.53)
+    "shades_per_ramp": ("min", 4, False),    # a form shaded in steps, not a flat design's three tones
+    "light_top_left": ("min", 0.1, False),
+    "hue_shift": ("min", 3.0, False),
+    "jaggies": ("max", 0.08, False),
+    "kinks": ("max", 0.04, False),           # outlines that wobble a pixel in and out (the Potion 0)
+}
+HARD_BY_KIND["item"] = {name for name, (_way, _limit, hard) in ITEM_RULES.items() if hard}
+
+
 def calibrate():
     ref = reference()
     bands = {"_about": "Accepted bands per metric and kind (p10/p90 here hold the reference's 5th and 95th percentile) "
@@ -427,6 +542,14 @@ def calibrate():
 
 def judge(m, kind):
     """[(metric, value, band, ok)] for one sprite's metrics against its kind's bands."""
+    if kind == "item":
+        out = []
+        for name, (way, limit, _hard) in ITEM_RULES.items():
+            v = m.get(name)
+            if v is None:
+                continue
+            out.append((name, v, ("≥" if way == "min" else "≤") + str(limit), v >= limit if way == "min" else v <= limit))
+        return out
     bands = json.loads(BANDS.read_text())["kinds"][kind]
     out = []
     for name, way in ENFORCED.items():
@@ -485,10 +608,221 @@ def flat_designs():
     return out
 
 
+def pieces(path_or_img, least):
+    """How many separate pieces a sprite is in: opaque parts joined at their sides or corners, of `least`
+    pixels or more (a sparkle drawn off the body is a piece too, and counts the same in both)."""
+    img = path_or_img if isinstance(path_or_img, Image.Image) else Image.open(path_or_img)
+    mask = np.asarray(img.convert("RGBA"))[..., 3] > 127
+    seen = np.zeros(mask.shape, bool)
+    h, w = mask.shape
+    count = 0
+    for sy, sx in zip(*np.nonzero(mask)):
+        if seen[sy, sx]:
+            continue
+        stack, size = [(sy, sx)], 0
+        seen[sy, sx] = True
+        while stack:
+            y, x = stack.pop()
+            size += 1
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    yy, xx = y + dy, x + dx
+                    if 0 <= yy < h and 0 <= xx < w and mask[yy, xx] and not seen[yy, xx]:
+                        seen[yy, xx] = True
+                        stack.append((yy, xx))
+        count += size >= least
+    return count
+
+
+def _bits(mask):
+    from pixel_kit import _pieces_map
+    return _pieces_map(mask)
+
+
+def detached():
+    """The code-drawn icons that came apart: more pieces at 64 than their 32-pixel design has (a necklace's
+    cord no longer joined to its bail, 2026-10-26). [(item, pieces in the design, pieces in the icon)]."""
+    import io
+    import item_art
+    out = []
+    for p in code_drawn_icons():
+        item_id = p.stem[len("item_"):]
+        if item_id not in item_art.DRAWINGS:
+            continue
+        # The design without its outline: the outline joined a broken string's strands into one piece.
+        drawn = np.asarray(Image.open(io.BytesIO(item_art.render(item_id).png())).convert("RGBA")).copy()
+        drawn[np.all(drawn[..., :3] == np.array(item_art.OUTLINE[:3]), axis=-1), 3] = 0
+        design = pieces(Image.fromarray(drawn), 3)
+        # (Sparkles, drawn apart as light, are pale pieces with no outline: not pieces of the thing.)
+        lit = np.asarray(Image.open(p).convert("RGBA")).copy()
+        bits, sizes = _bits(lit[..., 3] > 127)
+        for k in range(len(sizes)):
+            piece = bits == k
+            if lit[piece][:, :3].max(axis=-1).min() >= 200:
+                lit[piece, 3] = 0
+        icon = pieces(Image.fromarray(lit), 8)
+        if icon > design:
+            out.append((item_id, design, icon))
+    return out
+
+
+def lumpy_arcs():
+    """The code-drawn icons whose round shapes (drawn `exact`: rings, pearls, eggs) don't come out as clean
+    arcs as seen: their outline's stair steps shrinking steadily into the corners (`pixel_kit._arc_runs`),
+    round the rim and round a hole. The lower half is checked, its sides row by row and its bottom column by
+    column (the top half carries gems and bails); a part leading off the shape (a claw, a stand, an arm, three
+    pixels or more) is let through, and a shape shut inside another (a lens in its rim) is left out. Each
+    round item is finished again to learn where its shapes were cut (`pixel_kit._arc_mask`), then its icon
+    on disk is checked (a ring's lump in its lower right, 2026-10-26). [(item, wrong edge pixels)]."""
+    import json
+    import item_art
+    import pixel_kit
+    swaps = {}
+    for asset in json.loads((ROOT / "art" / "assets.json").read_text())["assets"]:
+        base = (asset.get("derive") or {}).get("from", "")
+        if base.startswith("item_") and not asset["derive"].get("layers"):
+            swaps.setdefault(base[len("item_"):], []).append(asset["id"])
+    out = []
+    for item_id in sorted(item_art.DRAWINGS):
+        if not any(sh[0] != "poly" for sh in item_art.render(item_id).exact):
+            continue
+        cuts, real = [], pixel_kit._arc_mask
+        def spy(shape, ox, oy, w, h, edge=None):
+            cuts.append((edge, ox, oy, w, h, shape))
+            return real(shape, ox, oy, w, h, edge)
+        pixel_kit._arc_mask = spy
+        try:
+            item_art.finished(item_id)
+        finally:
+            pixel_kit._arc_mask = real
+        for name in [f"item_{item_id}"] + swaps.get(item_id, []):
+            path = SPRITES / f"{name}.png"
+            if not path.exists():
+                continue
+            solid = np.asarray(Image.open(path).convert("RGBA"))[..., 3] > 127
+            wrong = sum(_arc_misses(solid, cut) for cut in cuts)
+            if wrong:
+                out.append((name[len("item_"):], wrong))
+    return out
+
+
+def _arc_misses(solid, cut):
+    """How many edge pixels of one cut shape's lower half are off its clean arc in `solid` (the icon's
+    opaque pixels): as seen, a rim is its cut and the outline round it, a hole its cut less the outline.
+    What lies past the arc in a piece of six pixels or more is a part of its own (a claw, a stand), not a
+    lump."""
+    import pixel_kit
+    edge, ox, oy, w, h, shape = cut
+    if edge not in ("outer", "inner") or w < 4 or h < 4:
+        return 0
+    grow = 1 if edge == "outer" else -1
+    seen = pixel_kit._arc_lo(shape, ox, oy, w + 2 * grow, h + 2 * grow)
+    if edge == "outer" and not (pixel_kit._cross(pixel_kit._cross(seen, False), True) == seen).all():
+        return 0                                  # too thin to cut for its outline: kept plain
+    H, W = solid.shape
+    seen = seen[:H, :W]
+    ys, xs = np.nonzero(seen)
+    if not len(ys):
+        return 0
+    # Past the arc: on a rim, what's opaque outside it; in a hole, what's opaque inside it.
+    past = solid & ~seen if edge == "outer" else solid & seen
+    bits, sizes = _bits(past)
+    big = np.isin(bits, [k for k, n in enumerate(sizes) if n >= 6])
+    mid = int(np.ceil((ys.min() + ys.max() + 1) / 2))
+    # The edge's pixels and the one past each: the lower half's rows at both ends, its columns at the bottom.
+    ends = []
+    for y in range(mid, ys.max() + 1):
+        row = np.nonzero(seen[y])[0]
+        if len(row):
+            ends += [((y, row.min()), (y, row.min() - 1)), ((y, row.max()), (y, row.max() + 1))]
+    for x in range(xs.min(), xs.max() + 1):
+        col = np.nonzero(seen[:, x])[0]
+        if len(col):
+            ends.append(((col.max(), x), (col.max() + 1, x)))
+    misses = checked = enclosed = 0
+    for (y, x), (y2, x2) in ends:
+        if not (0 <= y2 < H and 0 <= x2 < W):
+            continue
+        checked += 1
+        if edge == "outer":
+            # Its edge pixel opaque, the one past it clear (or a part of its own leading off).
+            if not solid[y, x]:
+                misses += 1
+            elif solid[y2, x2]:
+                if big[y2, x2]:
+                    enclosed += 1
+                else:
+                    misses += 1
+        else:
+            # The hole's edge pixel clear (unless something lies in it), the one past it the rim.
+            if solid[y, x] and not big[y, x]:
+                misses += 1
+            elif not solid[y2, x2]:
+                misses += 1
+    if edge == "outer" and enclosed > checked / 2:
+        return 0                                  # shut inside another shape (a lens in its rim)
+    return misses
+
+
+def clean_icons():
+    """Every item icon drawn in code: all in the clean look since 2026-10-26 (tools/item_art.py through
+    `restyle(clean=True)`, tools/clean_icon_art.py, tools/coin_art.py)."""
+    import coin_art
+    return code_drawn_icons() + [SPRITES / f"{n}.png" for n in coin_art.drawings()]
+
+
+def grained_icons(every=6):
+    """The finish the clean look replaced, for the rules to keep failing: every `every`-th code-drawn item
+    finished the old way (32 pixels, grained, the house outline), and the same blown up to 64 (written to a
+    temporary folder)."""
+    import io
+    import tempfile
+    import item_art
+    from pixel_kit import restyle
+    folder = pathlib.Path(tempfile.mkdtemp())
+    out = []
+    for item_id in sorted(p.stem[len("item_"):] for p in code_drawn_icons())[::every]:
+        if item_id not in item_art.DRAWINGS:
+            continue
+        drawn = Image.open(io.BytesIO(item_art.render(item_id).png()))
+        img = restyle(drawn, preset=item_art.preset_for(item_id), base=item_art.set_colour(item_id), trim=item_art.FUR,
+                      **item_art.RESTYLE.get(item_id, {})).render()
+        img.save(folder / f"item_{item_id}.png")
+        img.resize((64, 64), Image.NEAREST).save(folder / f"up_{item_id}.png")
+        out += [folder / f"item_{item_id}.png", folder / f"up_{item_id}.png"]
+    return out
+
+
+def compare_items():
+    """The clean look's rules (kind `item`) must pass the Potion and the icons drawn to them, and fail the
+    grained finish they replace, at its own size and blown up to 64. And no icon may come apart from its
+    design (`detached`)."""
+    loose = detached()
+    print(f"icons come apart from their design (should be none): {len(loose)}"
+          + (": " + ", ".join(f"{i} {d}→{n}" for i, d, n in loose[:12]) if loose else ""))
+    lumps = lumpy_arcs()
+    print(f"round shapes off their clean arcs (should be none): {len(lumps)}"
+          + (": " + ", ".join(f"{i} {n} px" for i, n in lumps[:12]) if lumps else ""))
+    for label, paths in (("RD's Potion (the reference, should pass)", [SPRITES / "item_potion.png"]),
+                         ("clean item icons (should pass)", clean_icons()),
+                         ("grained finish, 32 and blown up to 64 (should fail)", grained_icons())):
+        res = score(paths, "item")
+        fails = {}
+        for _, (_, _, f) in res.items():
+            for n, *_ in f:
+                fails[n] = fails.get(n, 0) + 1
+        passed = sum(v[0] for v in res.values())
+        print(f"{label}: {len(res)} sprites, {passed} pass ({passed / len(res):.0%})")
+        if fails:
+            print("   most failed: " + ", ".join(f"{n} {c / len(res):.0%}" for n, c in sorted(fails.items(), key=lambda kv: -kv[1])[:8]))
+
+
 def compare():
+    compare_items()
+    # The `icon` bands, calibrated on RD's 32-pixel weapon and armour icons, still judge those, and must
+    # still fail the flat designs.
     ref = reference()["icon"]
-    code = code_drawn_icons()
-    for label, paths in (("RD icons (reference, should pass)", ref), ("item icons as shipped", code),
+    for label, paths in (("RD icons (reference, should pass)", ref),
                          ("flat designs, unfinished (should fail)", flat_designs())):
         res = score(paths, "icon")
         fails = {}

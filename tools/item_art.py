@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Hand-drawn pixel art for every item, as code: writes art/sprites/item_<id>.png (32×32).
+"""Hand-drawn pixel art for every item, as code: writes art/sprites/item_<id>.png (64×64).
 
-Each item is designed here in flat colours with a light and a dark shade, then finished in the game's
-pixel style by tools/pixel_kit.py (`restyle`: lit from the top left on hue-shifted ramps, textured,
-outlined afresh; docs/pixel-style.md), so it sits beside the art Retro Diffusion drew. Needs pillow
+Each item is designed here at 32 × 32 in flat colours with a light and a dark shade, then finished in the
+clean look at 64 pixels by tools/pixel_kit.py (`restyle(clean=True)`: every edge smoothed at the new size,
+lit from the top left on smooth hue-shifted ramps, a one-pixel outline in a deep shade of what it rounds;
+docs/pixel-style.md *Item icons*), as RD drew the Potion. Needs pillow
 and numpy. Edit a drawing below and rerun:
 
     python3 tools/item_art.py            # all items
@@ -33,6 +34,12 @@ class Canvas:
     def __init__(self, size=SIZE):
         self.size = size
         self.px = [[None] * size for _ in range(size)]
+        # Shapes that must come out exactly round at 64 (`exact=True`: a ring's band, a pearl): the clean
+        # finish cuts them anew there, snapped to the grid, and shades them by its light alone
+        # (pixel_kit.restyle `exact`; `exact="lines"` keeps the lines drawn on it), so no pixel sticks
+        # out of the curve (playtesting 2026-10-26: "items that should be fully rounded like the ring and
+        # pearl shouldn't have jittered pixels that stick out").
+        self.exact = []
 
     def set(self, x, y, color):
         x, y = int(round(x)), int(round(y))
@@ -59,20 +66,29 @@ class Canvas:
             else:
                 self.disc(x, y, width / 2, color)
 
-    def disc(self, cx, cy, r, color):
+    def disc(self, cx, cy, r, color, exact=False):
+        if exact:
+            self.exact.append((cx, cy, r, r, 0.0, 0.0, exact))
         for y in range(int(cy - r - 1), int(cy + r + 2)):
             for x in range(int(cx - r - 1), int(cx + r + 2)):
                 if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
                     self.set(x, y, color)
 
-    def ellipse(self, cx, cy, rx, ry, color):
+    def ellipse(self, cx, cy, rx, ry, color, exact=False):
+        if exact:
+            self.exact.append((cx, cy, rx, ry, 0.0, 0.0, exact))
         for y in range(int(cy - ry - 1), int(cy + ry + 2)):
             for x in range(int(cx - rx - 1), int(cx + rx + 2)):
                 if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1:
                     self.set(x, y, color)
 
-    def poly(self, points, color):
+    def poly(self, points, color, exact=False):
+        if exact:
+            # A cut shape (a gem, a star): cut along its own straight edges at 64, its corners sharp, its
+            # facets as drawn (`exact="facets"`).
+            self.exact.append(("poly", [tuple(p) for p in points], exact))
         ys = [p[1] for p in points]
+        filled = set()
         for y in range(int(min(ys)), int(max(ys)) + 1):
             xs = []
             for (x0, y0), (x1, y1) in zip(points, points[1:] + points[:1]):
@@ -81,9 +97,17 @@ class Canvas:
             xs.sort()
             for a, b in zip(xs[::2], xs[1::2]):
                 for x in range(int(math.ceil(a - 0.5)), int(math.floor(b - 0.5)) + 1):
-                    self.set(x, y, color)
+                    filled.add((x, y))
+        # A pixel of the fill touching no other (a sharp tip rasterized apart) isn't drawn: held to the
+        # shape only by its outline, at 64 pixels it floated beside it, a dot (the tidesong ring's wave, the
+        # goldleaf ring's leaf, 2026-10-26).
+        for x, y in filled:
+            if len(filled) <= 3 or any((x + dx, y + dy) in filled for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy):
+                self.set(x, y, color)
 
-    def ring(self, cx, cy, r_out, r_in, color, ry_scale=1.0):
+    def ring(self, cx, cy, r_out, r_in, color, ry_scale=1.0, exact=False):
+        if exact:
+            self.exact.append((cx, cy, r_out, r_out * ry_scale, r_in, r_in * ry_scale, exact))
         for y in range(int(cy - r_out - 1), int(cy + r_out + 2)):
             for x in range(int(cx - r_out - 1), int(cx + r_out + 2)):
                 d = (x - cx) ** 2 + ((y - cy) / ry_scale) ** 2
@@ -237,16 +261,19 @@ def star_shape(c, cx, cy, r, color, inner=0.45, rotation=-math.pi / 2):
         radius = r if i % 2 == 0 else r * inner
         angle = rotation + i * math.pi / 5
         points.append((cx + radius * math.cos(angle), cy + radius * math.sin(angle)))
-    c.poly(points, color)
+    # A star big enough to read keeps its points sharp at 64 (smoothed, a ring's star went to a blob).
+    # (Points in the drawing's pixel-centre coordinates, as `disc` takes them; `poly` fills pixel squares.)
+    c.poly(points, color, exact="facets" if r >= 4 else False)
 
 
 def ring(c, band, gem=None, gem_color=None):
     dark, mid, light = band
-    c.ring(16, 19, 9, 5.5, mid, ry_scale=0.85)
-    c.shade(lambda x, y, col: col == mid and y > 21, dark)
-    c.shade(lambda x, y, col: col == mid and y < 16 and x < 15, light)
+    # One colour: the clean finish cuts the band exactly round and shades it by its light alone. (Its
+    # drawn light and dark wedges were ignored there, and under a palette swap the light one, beside the
+    # gem, came out as a patch on it: the firepeak ring's, 2026-10-26.)
+    c.ring(16, 19, 9, 5.5, mid, ry_scale=0.85, exact=True)
     if gem:
-        c.poly([(12, 9), (20, 9), (22, 12), (16, 17), (10, 12)], gem_color[1])
+        c.poly([(12, 9), (20, 9), (22, 12), (16, 17), (10, 12)], gem_color[1], exact="facets")
         c.shade(lambda x, y, col: col == gem_color[1] and x > 16, gem_color[0])
         c.poly([(13, 10), (16, 10), (15, 12), (12, 12)], gem_color[2])
 
@@ -369,7 +396,7 @@ def draw_homeward_feather(c):
 
 def draw_pet_egg(c):
     shell = [hexc("d8c8a4"), hexc("fbf2dc"), WHITE]
-    c.ellipse(16, 17.5, 9, 11.5, shell[1])
+    c.ellipse(16, 17.5, 9, 11.5, shell[1], exact=True)
     light_top_left(c, shell, 16, 17.5, 10)
     for (x, y, r, col) in ((12, 14, 2.2, hexc("f08aa8")), (20, 19, 2.6, hexc("7ac0f0")), (13, 23, 1.8, hexc("9ad86a")), (19, 11, 1.5, hexc("f6c33b"))):
         c.disc(x, y, r, col)
@@ -634,7 +661,7 @@ def draw_golden_ball_charm(c):
     gold sphere with a band round its middle and a ruby set in it."""
     c.ring(16, 3.5, 2.8, 1.5, GOLD[1])                                        # the loop
     c.rect(15, 6, 17, 8, GOLD[0])                                             # the bail
-    c.disc(16, 19, 10, GOLD[1])
+    c.disc(16, 19, 10, GOLD[1], exact="lines")
     light_top_left(c, GOLD, 16, 19, 10)
     for x in range(7, 26):                                                    # its band, curving round
         y = 19 + (x - 16) ** 2 / 28
@@ -684,7 +711,7 @@ def draw_gumdrop_star_charm(c):
 
 def draw_power_band(c):
     band = [hexc("8a1a2a"), hexc("d83a4a"), hexc("ff8a8a")]
-    c.ring(16, 16, 11, 6.5, band[1], ry_scale=0.62)
+    c.ring(16, 16, 11, 6.5, band[1], ry_scale=0.62, exact=True)
     c.shade(lambda x, y, col: col == band[1] and y > 17, band[0])
     c.shade(lambda x, y, col: col == band[1] and y < 13, band[2])
     for x in (8, 16, 24):
@@ -931,7 +958,7 @@ def draw_toy_music_box(c):
 
 def draw_toy_ball(c):
     """A red rubber ball with a yellow band and a white star, bouncing: two little marks below."""
-    c.disc(16, 13, 9.6, RED[1])
+    c.disc(16, 13, 9.6, RED[1], exact=True)
     c.shade(lambda x, y, col: col == RED[1] and 11 <= y <= 15, GOLD[1])
     light_top_left(c, RED, 16, 13, 10)
     c.shade(lambda x, y, col: col == GOLD[1] and (x - 16) + (y - 13) > 6, GOLD[0])
@@ -1394,7 +1421,7 @@ def banded(c, color):
 
 def pearl(c):
     pearl_c = [hexc("c07a3a"), hexc("ffb070"), hexc("fff0d0")]
-    c.disc(16, 17, 9, pearl_c[1])
+    c.disc(16, 17, 9, pearl_c[1], exact=True)
     light_top_left(c, pearl_c, 16, 17, 9)
     c.disc(12.5, 13.5, 2, WHITE)
     for (x0, y0, x1, y1) in ((6, 27, 9, 22), (26, 27, 23, 22)):   # a dragon's claws hold it
@@ -2016,7 +2043,7 @@ def draw_prospectors_gloves(c):
 
 def draw_beetle_shell(c):
     """A Dark Beetle's glossy wing case, split down the middle."""
-    c.ellipse(16, 17, 9, 12, BEETLE[1])
+    c.ellipse(16, 17, 9, 12, BEETLE[1], exact="lines")
     c.shade(lambda x, y, col: col == BEETLE[1] and x > 19, BEETLE[0])
     c.line(16, 6, 16, 29, BEETLE[0])
     c.line(11, 9, 9, 16, BEETLE[2]); c.line(12, 9, 10, 14, WHITE)             # gloss
@@ -2231,7 +2258,7 @@ def draw_ratcatcher_boots(c):
 
 def draw_dew_pearl(c):
     """A dewdrop as round as a pearl."""
-    c.disc(16, 18, 9, WISPGLOW[1])
+    c.disc(16, 18, 9, WISPGLOW[1], exact=True)
     light_top_left(c, WISPGLOW, 16, 18, 9)
     c.disc(12, 14, 2.4, WHITE)
     c.disc(19, 23, 1.2, WISPGLOW[2])
@@ -2258,13 +2285,19 @@ def draw_lotus_dew_charm(c):
 
 
 def draw_golden_string(c):
-    """A coil of shining golden string."""
-    for i in range(70):
-        t = i / 70 * math.pi * 5
-        r = 3 + i * 0.12
-        c.set(16 + r * math.cos(t), 16 + r * math.sin(t) * 0.8, GOLD[2] if i % 5 == 0 else GOLD[1])
-    c.line(25, 20, 29, 29, GOLD[1])
-    c.set(16, 16, GOLD[0])
+    """A coil of shining golden string, one unbroken line wound round twice, its loose end trailing off.
+    (Drawn as dots set along a spiral, it was a string of crumbs at 64 pixels, 2026-10-26.)"""
+    pts = []
+    for i in range(61):
+        t = i / 60 * math.pi * 4
+        r = 2.6 + 3.3 * t / (2 * math.pi)
+        pts.append((15 + r * math.cos(t), 15 + r * math.sin(t) * 0.82))
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        c.line(x0, y0, x1, y1, GOLD[1])
+    end = pts[-1]
+    c.line(end[0], end[1], 26, 24, GOLD[1]); c.line(26, 24, 28, 29, GOLD[1])           # the loose end
+    for k in range(0, 61, 9):                                                      # glints along it
+        c.set(*pts[k], GOLD[2])
 
 
 def draw_heartwood_locket(c):
@@ -2299,7 +2332,9 @@ def draw_genie_lamp(c):
 def draw_genies_ring(c):
     """A gold ring with a swirl of blue smoke in its stone."""
     ring(c, GOLD, gem=True, gem_color=BLUE)
-    for (x, y) in ((14, 7), (17, 5), (19, 3), (15, 3)):
+    # The smoke curls in the stone: a pale wisp on its face. (Drawn as specks floating over it, at 64
+    # pixels they came out as brown lumps on the gem, 2026-10-26.)
+    for (x, y) in ((14, 11), (15, 10), (17, 10), (18, 11), (17, 12)):
         c.set(x, y, BLUE[2])
 
 
@@ -2539,7 +2574,7 @@ def draw_frostlight_pendant(c):
 
 def draw_jelly_pearl(c):
     """A soft-glowing sea-green pearl."""
-    c.disc(16, 17, 8, SEAPEARL[1])
+    c.disc(16, 17, 8, SEAPEARL[1], exact=True)
     light_top_left(c, SEAPEARL, 16, 17, 8)
     c.disc(13, 14, 2, WHITE)
     for (x, y) in ((27, 9), (5, 24), (26, 26)):
@@ -2561,7 +2596,11 @@ def draw_offering_shell(c):
 def draw_tidesong_ring(c):
     """A sea-green silver ring with a little wave on top."""
     ring(c, SEAPEARL)
-    c.line(9, 10, 12, 7, SEAPEARL[2]); c.line(12, 7, 15, 10, SEAPEARL[2])
+    # The wave: a crest curling over on top of the band, as the other rings carry their stone. (Drawn as two
+    # thin lines above it, at 64 pixels it was a few specks floating over the ring, 2026-10-26.)
+    c.poly([(10.5, 12.5), (12, 9.5), (14.5, 7.5), (17.5, 7), (20, 8), (21.5, 10.5), (21.5, 12.5)], SEAPEARL[1],
+           exact="facets")
+    c.shade(lambda x, y, col: col == SEAPEARL[1] and y < 9 and 12 <= x <= 20, SEAPEARL[2])     # its foam
     c.line(15, 10, 18, 7, SEAPEARL[2]); c.line(18, 7, 21, 10, SEAPEARL[2])
     c.set(22, 8, WHITE)
 
@@ -2595,8 +2634,8 @@ def draw_cloud_glass(c):
 def draw_emerald_spectacles(c):
     """Round spectacles with green glass."""
     for x in (9, 23):
-        c.ring(x, 18, 6, 4.4, GOLD[1])
-        c.disc(x, 18, 4.4, EMERALDGLASS[1])
+        c.ring(x, 18, 6, 4.4, GOLD[1], exact=True)
+        c.disc(x, 18, 4.4, EMERALDGLASS[1], exact=True)
         c.set(x - 2, 16, EMERALDGLASS[2]); c.set(x - 1, 15, WHITE)
     c.line(15, 17, 17, 17, GOLD[1])                                           # the bridge and arms
     c.line(3, 16, 1, 12, GOLD[1]); c.line(29, 16, 31, 12, GOLD[1])
@@ -2878,7 +2917,7 @@ def draw_chocolate_egg(c):
     """A chocolate egg in coloured foil, peeled back at the top to show the chocolate."""
     foil = [hexc("1c4fa8"), hexc("3a86e8"), hexc("9ccaff")]
     choc = [hexc("3a2010"), hexc("6a3a1a"), hexc("9a6232")]
-    c.ellipse(16, 17, 10, 12.5, foil[1])
+    c.ellipse(16, 17, 10, 12.5, foil[1], exact=True)
     light_top_left(c, foil, 16, 17, 11)
     c.shade(lambda x, y, col: y < 10 and col in foil, choc[1])
     c.shade(lambda x, y, col: y < 7 and x < 15 and col == choc[1], choc[2])
@@ -3455,6 +3494,18 @@ def set_colour(item_id):
     return dominant_colour(Image.open(icon))
 
 
+def finished(item_id):
+    """The item's icon: its drawing finished in the clean look at 64 pixels (2026-10-26, docs/pixel-style.md
+    *Item icons*: RD's Potion)."""
+    import io
+    from PIL import Image
+    from pixel_kit import restyle
+    drawn = Image.open(io.BytesIO(render(item_id).png()))
+    options = {"preset": preset_for(item_id), "base": set_colour(item_id), "trim": FUR, **RESTYLE.get(item_id, {})}
+    options["exact"] = render(item_id).exact
+    return restyle(drawn, clean=True, **options).render(outline="deep")
+
+
 def main(argv):
     sheet_path = None
     if "--sheet" in argv:
@@ -3471,15 +3522,16 @@ def main(argv):
     from armour_art import plan
     armour = plan()
     ids = [i for i in ids if i not in armour]
+    # So are the icons redrawn in the clean look (tools/clean_icon_art.py, docs/pixel-style.md *Item icons*).
+    from clean_icon_art import DRAWINGS as CLEAN
+    ids = [i for i in ids if i not in CLEAN]
     # Each drawing is finished in the game's pixel style (docs/pixel-style.md): lit, ramped, textured
     # and outlined afresh by tools/pixel_kit.py, its design kept.
     import io
     from PIL import Image
     from pixel_kit import restyle
     for item_id in ids:
-        drawn = Image.open(io.BytesIO(render(item_id).png()))
-        options = {"preset": preset_for(item_id), "base": set_colour(item_id), "trim": FUR, **RESTYLE.get(item_id, {})}
-        restyle(drawn, **options).render().save(SPRITES / f"item_{item_id}.png")
+        finished(item_id).save(SPRITES / f"item_{item_id}.png")
     # Items that are palette swaps of these (art/assets.json `derive`) are swapped on the flat drawing,
     # where their hue windows were tuned, and finished the same way: swapping the finished icon misses
     # the shades the ramps turn toward blue and yellow. Their own PNG then wins over the swap in the game.
@@ -3492,7 +3544,9 @@ def main(argv):
         flat = np.asarray(Image.open(io.BytesIO(render(base[len("item_"):]).png())).convert("RGBA")).astype(float) / 255
         swapped = recolor(flat, asset["derive"]["recolor"])
         drawn = Image.fromarray((np.clip(swapped, 0, 1) * 255).round().astype(np.uint8), "RGBA")
-        restyle(drawn, preset=preset_for(base[len("item_"):])).render().save(SPRITES / f"{asset['id']}.png")
+        restyle(drawn, preset=preset_for(base[len("item_"):]), clean=True,
+                exact=render(base[len("item_"):]).exact).render(outline="deep").save(
+            SPRITES / f"{asset['id']}.png")
     for item_id in ids:
         if item_id in weapons:
             side, front = held_pair(item_id)
