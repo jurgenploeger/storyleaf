@@ -131,8 +131,9 @@ struct WorldHUD: View {
                     .coachTarget(.chat)
                     .stepsAside(controlsHidden)
                     // A window chosen from it just opens, the menu closing behind it: closing the window
-                    // closes everything (playtesting 2026-10-26).
-                    GameMenu(items: [.character, .companions, .friends, .bag, .quests, .settings], open: $menuOpen,
+                    // closes everything (playtesting 2026-10-26). The Bag isn't in it: it has its own
+                    // button, left of Chat (playtesting 2026-10-26).
+                    GameMenu(items: [.character, .companions, .friends, .quests, .settings], open: $menuOpen,
                              badge: { badge(for: $0) }) { tab in
                         menuOpen = false
                         coordinator.open(.menu(tab))
@@ -575,7 +576,7 @@ private struct ExpBar: View {
 }
 
 /// The menu: one round button with three lines that, tapped, grows into a panel listing the menu's
-/// windows (Hero, Companion, Friends, Inventory, Quests, Settings), the round close button in its top
+/// windows (Hero, Companion, Friends, Quests, Settings), the round close button in its top
 /// right corner (playtesting 2026-10-25). A gold dot on the button while any window has something new,
 /// and on that window's row. It takes the button's room only: open, the panel spreads up and to the
 /// left over Chat, which stays put (playtesting 2026-10-24: it pushed Chat aside). Tapping a row opens
