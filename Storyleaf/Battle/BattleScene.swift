@@ -166,7 +166,7 @@ final class BattleScene: SKScene {
     private var fieldScale: CGFloat = 1
 
     /// Upright, room at the top for the HUD: below the Dynamic Island (or the clock), the message
-    /// line and the chat, and in a boss fight its waves under that, with the field kept well clear
+    /// line, and in a boss fight its waves under that, with the field kept well clear
     /// of them.
     private var portraitTopInset: CGFloat {
         (view?.safeAreaInsets.top ?? 0) + (controller.waveCount > 1 ? 176 : 150) + bossBarRoom
