@@ -664,7 +664,8 @@ struct IntroAtlas: View {
     }
 
     /// Where a cell of the continent shows in the view: its place in the picture (columns east,
-    /// rows north to south), turned and squashed like the world (`WorldAtlas`).
+    /// rows north to south), turned and squashed like the game's view (the world map in the game,
+    /// `WorldAtlas`, lies north up).
     private func point(of cell: GridPoint) -> CGPoint {
         let u = CGFloat(cell.col - low.col) + 0.5, v = CGFloat(rows - (cell.row - low.row)) - 0.5
         return CGPoint(x: scale * (u + v) + pan.width, y: scale * (v - u) / 2 + scale * CGFloat(columns) / 2 + pan.height)

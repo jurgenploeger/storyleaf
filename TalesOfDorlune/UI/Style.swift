@@ -89,10 +89,18 @@ enum HUDStyle {
 
     /// The deep-blue glass of the windows (deeper still, nearly midnight, in Dark Mode).
     static let glass = LinearGradient(
-        colors: [Color.adaptive(light: Color(red: 0.13, green: 0.32, blue: 0.56).opacity(0.93), dark: Color(red: 0.07, green: 0.15, blue: 0.28).opacity(0.95)),
-                 Color.adaptive(light: Color(red: 0.05, green: 0.17, blue: 0.35).opacity(0.95), dark: Color(red: 0.03, green: 0.07, blue: 0.16).opacity(0.96))],
+        colors: [Color.adaptive(light: glassTopLight.opacity(0.93), dark: glassTopDark.opacity(0.95)),
+                 Color.adaptive(light: glassFootLight.opacity(0.95), dark: glassFootDark.opacity(0.96))],
         startPoint: .top, endPoint: .bottom
     )
+    /// The glass's blue at its top and at its foot, solid: what the world map melts into along its
+    /// top and bottom edges (`WorldAtlas`), so they're the window's own colour, not a dark tint.
+    static let glassTop = Color.adaptive(light: glassTopLight, dark: glassTopDark)
+    static let glassFoot = Color.adaptive(light: glassFootLight, dark: glassFootDark)
+    private static let glassTopLight = Color(red: 0.13, green: 0.32, blue: 0.56)
+    private static let glassTopDark = Color(red: 0.07, green: 0.15, blue: 0.28)
+    private static let glassFootLight = Color(red: 0.05, green: 0.17, blue: 0.35)
+    private static let glassFootDark = Color(red: 0.03, green: 0.07, blue: 0.16)
 
     /// Every window's corners.
     static let windowRadius: CGFloat = 10

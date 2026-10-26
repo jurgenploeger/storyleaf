@@ -639,6 +639,10 @@ worldmap_badges | newgame,level=60,visited=all,worldmap               | 180
 # The world map on its side: its title and the time over the top, where you are along the bottom,
 # the pale compass (playtesting 2026-10-26).
 worldmap_night_land | newgame,worldmap,landscape,hour=22            | 180
+# North up, then twisted 35 degrees as with two fingers: the compass turned with it, a quarter turn
+# between its points, the names and badges upright; the window's blue over a blur along the top and
+# bottom, the zoom buttons over it all, and no line about the place under the map (playtesting 2026-10-26).
+worldmap_turned | newgame,level=60,visited=all,worldmap,turn=35     | 30
 # The menu's windows open as plain windows, their titles plain gold text and their tabs without
 # icons, whole, scrolling sideways in a long language (playtesting 2026-10-26).
 character_de_land | newgame,lang=de,menu=character,sub=titles,landscape | 8
