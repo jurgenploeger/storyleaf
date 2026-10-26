@@ -6,7 +6,7 @@ soft shadow under them so they stand off whatever button they're on. Not pixel a
 512 pixels and shrunk to 128 (art/sprites/ui_<icon>.png), on no backdrop of their own, as the buttons
 they sit on are tiles already.
 
-Each is named after the `GameIcon` it stands in for (Storyleaf/UI/GameIcon.swift): `IconImage` shows it
+Each is named after the `GameIcon` it stands in for (TalesOfDorlune/UI/GameIcon.swift): `IconImage` shows it
 at button sizes (the battle buttons, the HUD's buttons, the menu's tabs), smoothed, and keeps the vector
 icon for small inline glyphs. Edit a drawing and rerun:
 

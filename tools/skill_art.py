@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Draws every skill's icon in code, as light: the glows, flares, sparks and trails its battle
-animation is made of (`Storyleaf/Battle/SkillStyles.swift`, `ElementEffects.swift`), in its colours,
+animation is made of (`TalesOfDorlune/Battle/SkillStyles.swift`, `ElementEffects.swift`), in its colours,
 on a dark backdrop of its own tile's colour. Not pixel art (playtesting 2026-10-23: "the spell icons
 don't have to be pixel art, but could be more like their animations, with flares and glows"): drawn
 smooth at 512 pixels and shrunk to 128, shown smoothed by the game (`IconTile`, `BattleScene.skillTile`).

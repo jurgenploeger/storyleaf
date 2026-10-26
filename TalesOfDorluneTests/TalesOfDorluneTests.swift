@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import UIKit
 import SpriteKit
-@testable import Storyleaf
+@testable import TalesOfDorlune
 
 /// Catches broken references when editing content/*.json or art/assets.json.
 @MainActor
@@ -3833,7 +3833,7 @@ struct RewardTests {
     }
 
     /// The capes are the weaver's alone: none for sale, none dropped, no adventurer wears one; the
-    /// Storyleaf Cape takes every other one; and a save from before capes loads with none on.
+    /// Dorlune Cape takes every other one; and a save from before capes loads with none on.
     @Test func capesAreOnlyTheWeavers() throws {
         let content = Content.shared
         let capes = content.items.filter { $0.type == .cape }
