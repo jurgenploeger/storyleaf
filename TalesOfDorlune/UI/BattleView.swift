@@ -1595,7 +1595,7 @@ private struct BossStoryCard: View {
         .padding(22)
         .frame(maxWidth: verticalSizeClass == .compact ? 620 : 420)
         .gameWindow()
-        .contentShape(RoundedRectangle(cornerRadius: HUDStyle.windowRadius))
+        .contentShape(HUDStyle.windowShape)
         .onTapGesture { revealAll() }
         // Closing it skips the rest of the story, on to the rewards.
         .windowCloseButton(onDone)

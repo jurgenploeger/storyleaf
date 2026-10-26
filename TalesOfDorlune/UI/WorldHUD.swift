@@ -204,11 +204,16 @@ private struct StatusCluster: View {
                 PortraitRow(face: ArtLibrary.shared.face(GameSession.heroArt), level: hero.level, name: hero.name,
                             detail: session.heroClass.name, size: HeroFace.size,
                             glowing: session.canChooseClass || session.canSpendSkillPoint) {
-                    TaggedBar(tag: L("HP"), value: hero.hp, maximum: stats.hp, color: HUDStyle.hp)
-                    TaggedBar(tag: L("MP"), value: hero.mp, maximum: stats.mp, color: HUDStyle.mp)
-                    // XP to the next level under the bars, as tall as they are (playtesting 2026-10-24:
-                    // it had a row of its own under the calendar; 2026-10-26: no thinner).
-                    ExpBar(value: hero.exp, maximum: GameSession.expToNext(level: hero.level))
+                    // A little taller and further apart than a friend's, so name and bars fill your
+                    // face's height with no gap opening between them (playtesting 2026-10-26).
+                    VStack(alignment: .leading, spacing: 4) {
+                        TaggedBar(tag: L("HP"), value: hero.hp, maximum: stats.hp, color: HUDStyle.hp, height: HeroFace.bar)
+                        TaggedBar(tag: L("MP"), value: hero.mp, maximum: stats.mp, color: HUDStyle.mp, height: HeroFace.bar)
+                        // XP to the next level under the bars, as tall as they are (playtesting 2026-10-24:
+                        // it had a row of its own under the calendar; 2026-10-26: no thinner).
+                        ExpBar(value: hero.exp, maximum: GameSession.expToNext(level: hero.level), height: HeroFace.bar)
+                    }
+                    .padding(.top, 2)
                 }
             }
             .buttonStyle(.plain)
@@ -267,6 +272,8 @@ private struct StatusCluster: View {
 /// name and bars beside it need more.
 private enum HeroFace {
     static let size: CGFloat = 72
+    /// Your bars' height, beside it.
+    static let bar: CGFloat = 11
 }
 
 /// Your companion's face as a button on the corner of yours: its name, level and HP read out, and a
@@ -341,7 +348,7 @@ private struct FoldedParty: View {
             .padding(.horizontal, 7)
             .padding(.vertical, 4)
             .frame(width: TopLeft.width, alignment: .leading)
-            .background(HUDStyle.panel)
+            .background(HUDStyle.panel(shape: HUDStyle.hudPanelShape))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(L("Show your whole party"))
@@ -399,17 +406,16 @@ private struct PortraitRow<Bars: View>: View {
                     }
                 }
                 .shadow(color: .black, radius: 0, x: 1, y: 1)
-                // The name up at the top, the bars down at the bottom, sharing out any room the
-                // portrait leaves (playtesting 2026-10-26: the name sat low, room above it). A friend's
-                // row, a name alone, keeps it in the middle.
-                if !Self.nameOnly { Spacer(minLength: 0) }
+                // The name up at the top and the bars right under it (playtesting 2026-10-26: the
+                // name sat low, room above it; pushed apart, the gap between them was too big). A
+                // friend's row, a name alone, keeps it in the middle.
                 bars()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: Self.nameOnly ? .leading : .topLeading)
             .padding(.horizontal, 7)
             .padding(.top, 2)
             .padding(.bottom, 5)
-            .background(HUDStyle.panel)
+            .background(HUDStyle.panel(shape: HUDStyle.hudPanelShape))
         }
     }
 }
@@ -539,7 +545,7 @@ private struct JoinedPartyPlate: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 5)
         .frame(width: TopLeft.width)
-        .background(HUDStyle.panel)
+        .background(HUDStyle.panel(shape: HUDStyle.hudPanelShape))
     }
 }
 
@@ -573,9 +579,10 @@ private struct GameToasts: View {
 private struct ExpBar: View {
     let value: Int
     let maximum: Int
+    var height: CGFloat = 9
 
     var body: some View {
-        TaggedBar(tag: L("XP"), value: value, maximum: maximum, color: HUDStyle.exp, showsNumbers: false)
+        TaggedBar(tag: L("XP"), value: value, maximum: maximum, color: HUDStyle.exp, height: height, showsNumbers: false)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(L("XP"))
             .accessibilityValue("\(value) / \(maximum)")
