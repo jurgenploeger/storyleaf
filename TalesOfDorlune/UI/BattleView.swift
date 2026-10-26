@@ -1525,9 +1525,7 @@ private struct ResultPanel: View {
                             IconImage(.star, size: 18).foregroundStyle(HUDStyle.exp)
                         }
                     }
-                    Label { Text("+\(result.gold)") } icon: {
-                        IconImage(.coins, size: 18).foregroundStyle(HUDStyle.gold)
-                    }
+                    GoldPill(amount: result.gold, size: 15, sign: "+")
                 }
                 .font(HUDStyle.font(16))
                 .foregroundStyle(HUDStyle.cream)

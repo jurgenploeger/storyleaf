@@ -115,6 +115,49 @@ struct CoinsTile: View {
     }
 }
 
+/// An amount of gold as Pixel Heroes shows it (playtesting 2026-10-26: "just a coin with numbers in a
+/// pill"): the bag's coin (`item_coins_1`) over the left end of a dark pill, the amount in it in light
+/// figures, the same on any backdrop. `size` is the figures' point size; `short` puts a big amount in
+/// a few characters (`HUDStyle.short`), and `sign` goes before it ("+" for gold just won).
+struct GoldPill: View {
+    let amount: Int
+    var size: CGFloat = 13
+    var short = false
+    var sign = ""
+
+    var body: some View {
+        let coin = (size * 1.75).rounded()
+        Text(sign + (short ? HUDStyle.short(amount) : amount.formatted()))
+            .font(HUDStyle.mono(size))
+            .monospacedDigit()
+            .foregroundStyle(HUDStyle.cream)
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.leading, coin * 0.62)
+            .padding(.trailing, size * 0.75)
+            .frame(height: (size * 1.6).rounded())
+            .background(
+                Capsule().fill(Color.black.opacity(0.55))
+                    .overlay(Capsule().strokeBorder(HUDStyle.gold.opacity(0.55), lineWidth: 1))
+            )
+            // The coin hangs over the pill's left end, its middle on the end's.
+            .padding(.leading, coin * 0.38)
+            .overlay(alignment: .leading) {
+                Group {
+                    if let picture = ArtLibrary.shared.artImage(CoinsTile.art(for: 1)) {
+                        Image(uiImage: picture).resizable().interpolation(.none)
+                    } else {
+                        IconImage(.coins, size: coin * 0.8).foregroundStyle(HUDStyle.gold)
+                    }
+                }
+                .frame(width: coin, height: coin)
+                .shadow(color: .black.opacity(0.4), radius: 0, x: 0, y: 1)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(L("{gold} gold", ["gold": amount]))
+    }
+}
+
 /// Something better to wear: a gold arrow pointing up, on a badge like `CountBadge`.
 struct UpgradeBadge: View {
     var size: CGFloat = 17

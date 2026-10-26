@@ -221,9 +221,7 @@ private struct BarberPanel: View {
                 }
             }
             HStack {
-                Label(L("{gold} gold", ["gold": session.data.gold]), icon: .coins)
-                    .font(HUDStyle.font(12))
-                    .foregroundStyle(HUDStyle.gold)
+                GoldPill(amount: session.data.gold, size: 12)
                 Spacer()
                 Button {
                     reply = session.restyle(look, price: price)
@@ -292,9 +290,7 @@ private struct ShopPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Label(L("{gold} gold", ["gold": session.data.gold]), icon: .coins)
-                    .font(HUDStyle.font(12))
-                    .foregroundStyle(HUDStyle.gold)
+                GoldPill(amount: session.data.gold, size: 12)
                 Spacer()
                 Button(L("Buy")) { selling = false }
                     .buttonStyle(PixelButtonStyle(tint: selling ? HUDStyle.cream : HUDStyle.gold, compact: true))

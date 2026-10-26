@@ -15,9 +15,9 @@ struct WorldHUD: View {
     /// points off the screen's edge (playtesting 2026-10-16: "should sit lower"): the indicator hides
     /// itself and a swipe there moves the joystick first (`GameView`). Upright, they keep over it.
     private var onItsSide: Bool { verticalSizeClass == .compact }
-    /// How tall the faces (and a joined party's plate) are, and the minimap, measured: upright, the
-    /// toasts go below whichever reaches lower (playtesting 2026-10-26: a long toast ran under the
-    /// minimap).
+    /// How tall the faces (and a joined party's plate) are, and the minimap with the gold under it,
+    /// measured: upright, the toasts go below whichever reaches lower (playtesting 2026-10-26: a long
+    /// toast ran under the minimap).
     @State private var facesHeight: CGFloat = 0
     @State private var minimapHeight: CGFloat = 0
     private var toastGap: CGFloat {
@@ -68,8 +68,19 @@ struct WorldHUD: View {
                     onOpen: { coordinator.open(.worldMap) }
                 )
                 .coachTarget(.minimap)
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { minimapHeight = $0 }
+                // The gold you carry under it, as Pixel Heroes shows it (playtesting 2026-10-26); a tap
+                // opens the Bag, where the coins are.
+                Button {
+                    menuOpen = false
+                    coordinator.open(.menu(.bag))
+                } label: {
+                    GoldPill(amount: session.data.gold, size: 13, short: true)
+                        .frame(minHeight: 30)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { minimapHeight = $0 }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
 
             // While the menu's open, a tap anywhere else closes it.
