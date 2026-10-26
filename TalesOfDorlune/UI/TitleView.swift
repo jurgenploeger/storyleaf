@@ -233,7 +233,7 @@ struct TitleView: View {
     @ViewBuilder
     private var games: some View {
         if saves.isEmpty {
-            SpriteImage(art: "player_walk", size: 96)
+            SpriteImage(art: "player_walk", size: 134)
         } else {
             SaveCarousel(saves: saves, selection: $selectedSlot)
         }
@@ -496,7 +496,7 @@ private struct SaveCarousel: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
-            .frame(height: 190)
+            .frame(height: 234)
             // The games either side fade out toward the edges as they slide by, instead of
             // being cut off sharp.
             .mask(
@@ -562,8 +562,10 @@ private struct IdlePair: View {
 
     /// Room under their feet for a squish or a sway to dip into (a swaying companion's corners
     /// drop a couple of points), and over the hero's head for a breath.
-    private static let size = CGSize(width: 150, height: 112)
-    private static let floor: CGFloat = 6
+    /// Larger than at first (playtesting 2026-10-26: "The hero and companion can be shown a bit
+    /// larger here"), about 1.4 times.
+    private static let size = CGSize(width: 210, height: 156)
+    private static let floor: CGFloat = 8
 
     private static func makeScene(hero: String, pet: String?) -> SKScene {
         let scene = SKScene(size: size)
@@ -580,10 +582,10 @@ private struct IdlePair: View {
             node.run(motion.action(height: node.size.height, delay: .random(in: 0..<0.6)))
         }
         if let pet {
-            add(hero, height: 100, x: size.width / 2 - 18, motion: .breathe)
-            add(pet, height: 58, x: size.width / 2 + 36, motion: IdleMotion.of(art: pet))
+            add(hero, height: 140, x: size.width / 2 - 25, motion: .breathe)
+            add(pet, height: 81, x: size.width / 2 + 50, motion: IdleMotion.of(art: pet))
         } else {
-            add(hero, height: 100, x: size.width / 2, motion: .breathe)
+            add(hero, height: 140, x: size.width / 2, motion: .breathe)
         }
         return scene
     }
