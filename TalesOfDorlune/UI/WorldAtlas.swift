@@ -486,6 +486,14 @@ struct WorldAtlas: View {
 
     private func tap(at location: CGPoint, in size: CGSize) {
         guard framing.scale > 0 else { return }
+        // A group of badges zooms in on it, its badges parting as they come apart.
+        if let group = marks.first(where: { $0.count > 1 && point(of: $0.spot, in: size).distance(to: location) < Self.badgeSize }) {
+            var next = framing
+            next.scale = clamped(framing.scale * 2.5, in: viewSize)
+            next.focus = group.spot
+            glide(to: clampedFocus(next))
+            return
+        }
         // A cave's mark first, small as it is; else the land under the tap.
         if let cave = marks.first(where: { $0.kind == .cave && point(of: $0.spot, in: size).distance(to: location) < 18 }) {
             selected = cave.place
@@ -500,13 +508,15 @@ struct WorldAtlas: View {
     /// gate, who's where in the lands you've been to (`badge`), and you.
     private struct Mark: Identifiable {
         enum Kind { case land, cave, lock, here, badge }
-        let id: String
+        var id: String
         let kind: Kind
         /// The place it's about (a land or a cave).
         let place: String
         let cell: GridPoint
         /// A badge's icon, as on the minimap.
         var badge: GameSession.MinimapMark.Kind? = nil
+        /// How many badges it stands for: more than one is a group, shown as its number.
+        var count = 1
         /// Its cell's middle on the picture (`spot(of:)`), filled in by `spotted`.
         var spot: CGPoint = .zero
     }
@@ -521,16 +531,19 @@ struct WorldAtlas: View {
         }
     }
 
-    /// How far in the map must be zoomed (points a cell) for the badges to show: out where whole
-    /// lands fit, they'd pile up on each other.
-    private static let badgeScale: CGFloat = 0.6
+    /// A badge across, in points, and how near (on screen) two must be to group: bigger than the
+    /// minimap's (playtesting 2026-10-26: "The badges on the map should be bigger").
+    private static let badgeSize: CGFloat = 22
+    private static let groupReach: CGFloat = 26
 
     /// The badges of the lands you've been to (playtesting 2026-10-21: "On the world map, there
     /// should be the badges of what is where"), at their people's spots (`WorldOverview.spots`).
-    /// Where two would overlap at this zoom, the one that matters more stays: a quest to hand in or
-    /// news first, a boss, then the town's services.
+    /// Badges that would overlap at this zoom group into one showing how many (playtesting
+    /// 2026-10-26: "If you're zoomed out, they should group together in a badge that shows a
+    /// number"); a group of one shows its badge, the one that matters most leading the group (a
+    /// quest to hand in or news first, a boss, then the town's services). Tapping a group zooms in.
     private var badges: [Mark] {
-        guard framing.scale >= Self.badgeScale else { return [] }
+        guard framing.scale > 0 else { return [] }
         let order: [GameSession.MinimapMark.Kind] = [.lost, .questReady, .questNew, .boss, .healer, .bank, .shop, .smith, .weaver,
                                                      .barber, .guild, .waystone, .quest, .chest]
         var found: [Mark] = []
@@ -552,12 +565,26 @@ struct WorldAtlas: View {
                               badge: .lost))
         }
         found.sort { (order.firstIndex(of: $0.badge ?? .chest) ?? 0) < (order.firstIndex(of: $1.badge ?? .chest) ?? 0) }
-        // As far apart on screen as on the picture, however the map's turned.
-        var kept: [Mark] = []
-        for mark in spotted(found) where kept.allSatisfy({ $0.spot.distance(to: mark.spot) * framing.scale >= 12 }) {
-            kept.append(mark)
+        // Grouped by how far apart they are on screen (as on the picture, however the map's turned):
+        // each joins the first group whose leader is within reach, else leads a group of its own.
+        var groups: [[Mark]] = []
+        for mark in spotted(found) {
+            if let index = groups.firstIndex(where: { $0[0].spot.distance(to: mark.spot) * framing.scale < Self.groupReach }) {
+                groups[index].append(mark)
+            } else {
+                groups.append([mark])
+            }
         }
-        return kept
+        return groups.map { group -> Mark in
+            guard group.count > 1 else { return group[0] }
+            var leader = group[0]
+            leader.id = "group " + leader.id
+            leader.count = group.count
+            // Where its badges are, on average.
+            let sum = group.reduce(CGPoint.zero) { CGPoint(x: $0.x + $1.spot.x, y: $0.y + $1.spot.y) }
+            leader.spot = CGPoint(x: sum.x / CGFloat(group.count), y: sum.y / CGFloat(group.count))
+            return leader
+        }
     }
 
     private var marks: [Mark] {
@@ -633,14 +660,25 @@ struct WorldAtlas: View {
             .allowsHitTesting(false)
             .accessibilityLabel(L("Where you are"))
         case .badge:
-            if let kind = mark.badge {
-                MinimapIcon(kind: kind)
+            if mark.count > 1 {
+                // A group: how many, in the brand's midnight ringed in gold.
+                Text(verbatim: "\(mark.count)")
+                    .font(HUDStyle.font(12))
+                    .monospacedDigit()
+                    .foregroundStyle(HUDStyle.cream)
+                    .frame(width: Self.badgeSize + 4, height: Self.badgeSize + 4)
+                    .background(Circle().fill(Brand.midnight))
+                    .overlay(Circle().strokeBorder(HUDStyle.gold, lineWidth: 2))
+                    .allowsHitTesting(false)
+                    .accessibilityLabel(L("{count} places", ["count": mark.count]))
+            } else if let kind = mark.badge {
+                MinimapIcon(kind: kind, size: Self.badgeSize)
                     .allowsHitTesting(false)
             }
         case .lock:
-            IconImage(.lock, size: 10)
+            IconImage(.lock, size: 12)
                 .foregroundStyle(HUDStyle.ink)
-                .frame(width: 18, height: 18)
+                .frame(width: Self.badgeSize, height: Self.badgeSize)
                 .background(Circle().fill(HUDStyle.gold))
                 .allowsHitTesting(false)
         case .cave:

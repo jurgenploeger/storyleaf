@@ -91,7 +91,7 @@ struct BattleView: View {
     @ViewBuilder
     private var clockPill: some View {
         if BattleController.turnSeconds != nil {
-            TurnClockPill(deadline: controller.turnDeadline)
+            TurnClockPill(deadline: controller.turnDeadline, window: BattleController.turnSeconds ?? 10)
         }
     }
 
@@ -282,11 +282,14 @@ private struct LockInStrip: View {
 }
 
 /// The time left to choose, top centre in a dark pill like the map's (`mapPill`): an hourglass and
-/// the seconds, the same in every phase of a turn (the commands, a list, picking a target). Red
-/// for the last three, with a beat as each goes. When it runs out the hero attacks. While no clock
+/// the seconds over a yellow bar running down as the time does (playtesting 2026-10-26: "The timer
+/// should show a yellow bar"), the same in every phase of a turn (the commands, a list, picking a
+/// target). Red for the last three, with a beat as each goes. When it runs out the hero attacks. While no clock
 /// ticks (a round playing, the buttons being rearranged) it keeps its place unseen.
 private struct TurnClockPill: View {
     let deadline: Date?
+    /// The whole time a turn gives, in seconds: the bar is full at it.
+    let window: TimeInterval
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let urgentSeconds: TimeInterval = 3
@@ -299,7 +302,7 @@ private struct TurnClockPill: View {
             let urgent = deadline != nil && left <= Self.urgentSeconds
             // How much of the second on show is left: 1 just as it shows, down to 0 as it goes.
             let into = CGFloat(left - left.rounded(.down))
-            pill(seconds: Int(left.rounded(.up)), urgent: urgent)
+            pill(seconds: Int(left.rounded(.up)), share: CGFloat(min(1, left / max(window, 1))), urgent: urgent)
                 .scaleEffect(urgent && !reduceMotion ? 1 + 0.14 * into * into : 1)
         }
         .opacity(deadline == nil ? 0 : 1)
@@ -310,15 +313,26 @@ private struct TurnClockPill: View {
         .accessibilityHidden(deadline == nil)
     }
 
-    private func pill(seconds: Int, urgent: Bool) -> some View {
-        HStack(spacing: 5) {
-            IconImage(.hourglass, size: 13)
-                .foregroundStyle(urgent ? Self.urgentRed : HUDStyle.gold)
-            Text(verbatim: String(seconds))
-                .font(HUDStyle.mono(13))
-                .foregroundStyle(urgent ? Self.urgentRed : HUDStyle.cream)
-                // Two digits' room, so the pill keeps its width as they count down.
-                .frame(minWidth: 16)
+    private func pill(seconds: Int, share: CGFloat, urgent: Bool) -> some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 5) {
+                IconImage(.hourglass, size: 13)
+                    .foregroundStyle(urgent ? Self.urgentRed : HUDStyle.gold)
+                Text(verbatim: String(seconds))
+                    .font(HUDStyle.mono(13))
+                    .foregroundStyle(urgent ? Self.urgentRed : HUDStyle.cream)
+                    // Two digits' room, so the pill keeps its width as they count down.
+                    .frame(minWidth: 16)
+            }
+            // The time left as a bar, emptying from the right; red with the numbers at the end.
+            Capsule()
+                .fill(HUDStyle.cream.opacity(0.18))
+                .frame(width: 52, height: 4)
+                .overlay(alignment: .leading) {
+                    Capsule()
+                        .fill(urgent ? Self.urgentRed : HUDStyle.gold)
+                        .frame(width: 52 * share, height: 4)
+                }
         }
         .padding(.horizontal, 2)
         .padding(.vertical, 1)

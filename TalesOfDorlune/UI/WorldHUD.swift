@@ -811,14 +811,16 @@ private struct MinimapWindow: View {
 /// "!" or "?" floating over their head in gold, else a book.
 struct MinimapIcon: View {
     let kind: GameSession.MinimapMark.Kind
+    /// Across, in points: 13 on the minimap, bigger on the world map.
+    var size: CGFloat = 13
 
     var body: some View {
         ZStack {
             Circle().fill(fill)
             sign
         }
-        .frame(width: 13, height: 13)
-        .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1))
+        .frame(width: size, height: size)
+        .overlay(Circle().stroke(HUDStyle.ink, lineWidth: size > 16 ? 1.5 : 1))
     }
 
     @ViewBuilder private var sign: some View {
@@ -846,12 +848,12 @@ struct MinimapIcon: View {
 
     private func mark(_ text: String) -> some View {
         Text(verbatim: text)
-            .font(.system(size: 10, weight: .black, design: .rounded))
+            .font(.system(size: 10 * size / 13, weight: .black, design: .rounded))
             .foregroundStyle(HUDStyle.ink)
     }
 
     private func glyph(_ icon: GameIcon) -> some View {
-        IconImage(icon, size: 8).foregroundStyle(.white)
+        IconImage(icon, size: 8 * size / 13).foregroundStyle(.white)
     }
 
     private var fill: Color {
