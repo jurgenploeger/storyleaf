@@ -91,7 +91,7 @@ final class VignetteHUD {
 }
 
 /// The game's own HUD over a vignette, at the picture's scale: the battle's log line, the joystick,
-/// the command buttons (Attack, Skills and More, and Capture once it glows in), a finger's taps and
+/// the command buttons in their row (More, Skills and Attack, and Capture once it glows in), a finger's taps and
 /// the victory card.
 private struct VignetteHUDView: View {
     let hud: VignetteHUD
@@ -140,22 +140,21 @@ private struct VignetteHUDView: View {
                             .transition(.opacity)
                     }
                     if hud.commands {
-                        // On the arc round Attack, as in a fight (`ThumbArc`).
+                        // In one row along the foot, as in a fight (`CommandRow`): More at the left
+                        // end, Attack at the right, every button the same size.
                         Color.clear
                             .overlay(alignment: .bottomTrailing) {
-                                ThumbArc {
-                                    command("attack", title: L("Attack"), icon: .sword, size: 88, tint: .primary)
-                                        .layoutValue(key: ArcSlot.self, value: 0)
-                                    command("skills", title: L("Skills"), icon: .sparkles, size: 56, tint: .normal)
-                                        .layoutValue(key: ArcSlot.self, value: 1)
+                                HStack(alignment: .bottom, spacing: CommandRow.spacing) {
+                                    command("more", title: L("More"), icon: .more, size: CommandRow.size, tint: .quiet)
                                     if hud.capture {
-                                        command("capture", title: L("Capture"), icon: .sealStone, size: 56, tint: .special)
-                                            .layoutValue(key: ArcSlot.self, value: 2)
+                                        command("capture", title: L("Capture"), icon: .sealStone, size: CommandRow.size, tint: .special)
                                             .transition(.scale(scale: 0.2).combined(with: .opacity))
                                     }
-                                    command("more", title: L("More"), icon: .more, size: 56, tint: .quiet)
-                                        .layoutValue(key: ArcSlot.self, value: 3)
+                                    command("skills", title: L("Skills"), icon: .sparkles, size: CommandRow.size, tint: .normal)
+                                    command("attack", title: L("Attack"), icon: .sword, size: CommandRow.size, tint: .primary)
                                 }
+                                // Room for the titles that hang below the buttons.
+                                .padding(.bottom, 16)
                                 .scaleEffect(scale, anchor: .bottomTrailing)
                                 .padding(.trailing, 6)
                                 .padding(.bottom, 6)

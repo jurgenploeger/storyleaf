@@ -801,62 +801,6 @@ private struct AutoPlaying: View {
     }
 }
 
-/// Which place round the big button a command takes (`ThumbArc`): 0 is the big button. A fight
-/// lays its commands out in a row now (`CommandRow`); the arc is left for the How to play picture
-/// (`StoryScenes`).
-nonisolated struct ArcSlot: LayoutValueKey {
-    static let defaultValue = 0
-}
-
-/// The commands round the big button in the corner, so a thumb reaches them all alike: the big
-/// button bottom right (slot 0), then an arc about it (1 to its left, 2 up and to the left, 3
-/// straight up), a wider arc of four beyond that (4 to 7), and so on. Labels hang below the
-/// buttons, outside the layout, so the arcs leave room for them.
-struct ThumbArc: Layout {
-    /// From the big button's middle to the first arc, and from each arc to the next.
-    var firstRadius: CGFloat = 104
-    var ringGap: CGFloat = 80
-
-    /// Where a slot sits from the big button's middle (up is negative).
-    private func offset(of slot: Int) -> CGPoint {
-        guard slot > 0 else { return .zero }
-        var ring = 0, first = 1, count = 3
-        while slot >= first + count {
-            first += count
-            count += 1
-            ring += 1
-        }
-        // From straight left (180°) round to straight up (90°).
-        let angle = Double.pi * (1 - 0.5 * Double(slot - first) / Double(count - 1))
-        let radius = firstRadius + ringGap * CGFloat(ring)
-        return CGPoint(x: radius * CGFloat(cos(angle)), y: -radius * CGFloat(sin(angle)))
-    }
-
-    /// Each button's frame about the big button's middle.
-    private func frames(_ subviews: Subviews) -> [CGRect] {
-        subviews.map { subview in
-            let size = subview.sizeThatFits(.unspecified)
-            let center = offset(of: subview[ArcSlot.self])
-            return CGRect(x: center.x - size.width / 2, y: center.y - size.height / 2, width: size.width, height: size.height)
-        }
-    }
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let union = frames(subviews).reduce(CGRect.null) { $0.union($1) }
-        return union.isNull ? .zero : union.size
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let placed = frames(subviews)
-        let union = placed.reduce(CGRect.null) { $0.union($1) }
-        guard !union.isNull else { return }
-        for (subview, frame) in zip(subviews, placed) {
-            subview.place(at: CGPoint(x: bounds.maxX - union.maxX + frame.midX, y: bounds.maxY - union.maxY + frame.midY),
-                          anchor: .center, proposal: ProposedViewSize(frame.size))
-        }
-    }
-}
-
 /// Your companion's turn, after the hero's choice: the same row as the hero's, Auto to let it
 /// decide for itself where More is, then Guard, its Skills, and Attack at the right end. The chip
 /// on top shows whose turn it is. The hero's choice is made by then, so there's no going back to
