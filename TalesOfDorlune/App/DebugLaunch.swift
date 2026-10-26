@@ -104,6 +104,7 @@ import SpriteKit
 ///   drop=a+b       once the map's up, drop all of those (put in the bag with bag=) in a pile beside you
 ///   info=<item>    with npc=<a shop>: open that item's info card
 ///   worldmap       open the world map
+///   turn=<deg>     with worldmap: the map opens turned that far clockwise (its compass turned with it)
 ///   visited=a+b    those lands visited (`all`: every one), for the world map
 ///   far            the lands next door aren't built: past the borders, their world map pictures
 ///   travel         every town visited, and the window for where a Homeward Feather takes you open
@@ -170,6 +171,8 @@ enum DebugLaunch {
     static var turnSeconds: TimeInterval? { flags["turntimer"].flatMap(Double.init) }
     /// `wave=3`: a boss fight opens at that wave, skipping the ones before.
     static var bossWave: Int? { flags["wave"].flatMap { Int($0) } }
+    /// `turn=30`: the world map opens turned that many degrees clockwise, as if twisted with two fingers.
+    static var mapTurn: Double? { flags["turn"].flatMap(Double.init) }
     /// `arrange`: battles open with the buttons already wiggling, ready to rearrange.
     static var arrangesButtons: Bool { flags["arrange"] != nil }
     /// `more`: battles open with the More buttons out (Auto and the pace among them).

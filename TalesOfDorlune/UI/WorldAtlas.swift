@@ -1,27 +1,39 @@
 import SwiftUI
 
 /// The whole world at a glance, RuneScape-style: the continent's lands as they really lie and look
-/// (each land's minimap, `WorldOverview`), the sea all round, turned like the game's isometric view
-/// so north points up-left and east up-right, the way you walk on screen. A compass in the corner
-/// says so. Drag to look round, pinch (or the buttons) to zoom; it opens on where you are. Places you
-/// haven't been to are faded and named "???"; a quest's shut gate shows its lock; caves show where
-/// they open. A dark land shows only where you've been, as its minimap does. Zoomed in, a land you've
-/// been to shows who's where with the minimap's badges (the healer, the shop, a quest's "!" and so
-/// on). Tap a place to read about it. A quest closes a road one way only (the way back is always open, so you can't get stuck).
+/// (each land's minimap, `WorldOverview`), the sea all round, north up like a paper map (playtesting
+/// 2026-10-26: turned like the game's isometric view, north up-left, its compass's points weren't a
+/// quarter turn apart). Drag to look round, pinch (or the buttons) to zoom, twist with two fingers to
+/// turn it: the compass turns with it, and a tap on the compass turns north back up. The names and
+/// marks stay upright however it's turned. It opens on where you are. Places you haven't been to
+/// are faded and named "???"; a quest's shut gate shows its lock; caves show where they open. A
+/// dark land shows only where you've been, as its minimap does. Zoomed in, a land you've been to
+/// shows who's where with the minimap's badges (the healer, the shop, a quest's "!" and so on). Tap
+/// a place to pick out its name. A quest closes a road one way only (the way back is always open,
+/// so you can't get stuck).
 struct WorldAtlas: View {
     let session: GameSession
-    /// Over the map's top left and bottom left corners, each on a soft dark shade so it reads over
-    /// any land (the window's title, the time and where you are: `MapOverlay`).
+    /// Over the map's top left and bottom left corners, on the window's own blue melting into the
+    /// map over a blur that deepens toward the edge (`edgeBand`): the window's title, the time and
+    /// where you are (`MapOverlay`).
     private let topLeading: AnyView
     private let bottomLeading: AnyView
     @State private var selected: String?
     @State private var pulse = false
-    /// Points a cell (0 until the map's first laid out), and where the turned map sits in the view.
-    @State private var scale: CGFloat = 0
-    @State private var pan: CGSize = .zero
-    @State private var dragStart: CGSize?
-    @State private var pinchStart: (scale: CGFloat, pan: CGSize)?
+    /// How the map lies in the view: its zoom, its turn and the spot in the middle.
+    @State private var framing = Framing()
+    /// The view's size, for the buttons over it.
+    @State private var viewSize: CGSize = .zero
+    /// A finger dragging the map: how it lay when the drag began, and the drag's translation then.
+    @State private var drag: (framing: Framing, translation: CGSize)?
+    /// Two fingers pinching and twisting it; `twoFingersDown` while they're on it, back to false
+    /// however their touch ends.
+    @State private var fingers: TwoFingers?
+    @GestureState private var twoFingersDown = false
+    /// The map gliding to where a button or the compass sends it.
+    @State private var gliding: Task<Void, Never>?
     @State private var picture: CGImage?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let overview = WorldOverview.shared
 
     enum Status: Equatable {
@@ -33,6 +45,55 @@ struct WorldAtlas: View {
     private struct Land {
         let def: MapDef
         let origin: GridPoint
+    }
+
+    /// How the map lies in the view. The picture is a pixel a cell, north up (`compose`); a spot on
+    /// it is counted in cells, east from its west edge and south from its north edge. Turned, it
+    /// turns about the middle of the view, so a spot's place on screen is the middle, plus its way
+    /// from `focus`, zoomed and turned.
+    private nonisolated struct Framing: Equatable {
+        /// Points a cell (0 until the map's first laid out).
+        var scale: CGFloat = 0
+        /// How far it's turned clockwise, in radians: on screen, north points that way from straight up.
+        var rotation: CGFloat = 0
+        /// The spot of the picture in the middle of the view.
+        var focus: CGPoint = .zero
+
+        /// Where a spot of the picture shows, from the middle of the view.
+        func offset(of spot: CGPoint) -> CGPoint {
+            let x = (spot.x - focus.x) * scale, y = (spot.y - focus.y) * scale
+            let cosine = cos(rotation), sine = sin(rotation)
+            return CGPoint(x: x * cosine - y * sine, y: x * sine + y * cosine)
+        }
+
+        /// The spot of the picture that shows `offset` from the middle of the view.
+        func spot(at offset: CGPoint) -> CGPoint {
+            guard scale > 0 else { return focus }
+            let cosine = cos(rotation), sine = sin(rotation)
+            return CGPoint(x: focus.x + (offset.x * cosine + offset.y * sine) / scale,
+                           y: focus.y + (offset.y * cosine - offset.x * sine) / scale)
+        }
+
+        /// `fraction` of the way from `start` to `end`: the zoom by even ratios, the turn and the
+        /// middle along a line.
+        static func between(_ start: Framing, _ end: Framing, _ fraction: CGFloat) -> Framing {
+            func mix(_ from: CGFloat, _ to: CGFloat) -> CGFloat { from + (to - from) * fraction }
+            let scale = start.scale > 0 && end.scale > 0 ? start.scale * pow(end.scale / start.scale, fraction) : mix(start.scale, end.scale)
+            return Framing(scale: scale, rotation: mix(start.rotation, end.rotation),
+                           focus: CGPoint(x: mix(start.focus.x, end.focus.x), y: mix(start.focus.y, end.focus.y)))
+        }
+    }
+
+    /// Two fingers on the map: how it lay when they came down, the spot between them then (from the
+    /// middle of the view), and how far they've pinched and twisted since.
+    private struct TwoFingers {
+        let start: Framing
+        let anchor: CGPoint
+        var magnification: CGFloat = 1
+        var turn: CGFloat = 0
+        /// The twist they'd made when the map began turning with them (`turnThreshold`), taken off
+        /// so it doesn't jump: nil till then.
+        var held: CGFloat?
     }
 
     private var lands: [Land] {
@@ -57,181 +118,361 @@ struct WorldAtlas: View {
     }
 
     private static let seaColor = WorldMap.seaColor
+    private static var sea: Color {
+        Color(red: Double(seaColor.r) / 255, green: Double(seaColor.g) / 255, blue: Double(seaColor.b) / 255)
+    }
     private static let minScale: CGFloat = 0.15
     private static let maxScale: CGFloat = 8
+    /// How far two fingers must twist before the map turns with them, so a pinch doesn't turn it
+    /// (radians: about 7 degrees).
+    private static let turnThreshold: CGFloat = 0.12
+    /// A turn left this near north settles on it (radians: about 6 degrees).
+    private static let northSnap: CGFloat = 0.1
+    /// The blur under the map's top and bottom edges (`edgeBand`): copies of the map, each blurred
+    /// more and reaching less far in from the edge (a fraction of the band), so it's blurred most
+    /// at the edge and not at all where the band ends.
+    private static let edgeBlurs: [(radius: CGFloat, reach: CGFloat)] = [(2.5, 1), (6, 0.6), (12, 0.3)]
 
     var body: some View {
-        VStack(spacing: 8) {
-            // As much of the window as there is under the title.
-            GeometryReader { proxy in
-                map(in: proxy.size)
-            }
-            .frame(minHeight: 260, maxHeight: .infinity)
-            .background(Color(red: Double(Self.seaColor.r) / 255, green: Double(Self.seaColor.g) / 255, blue: Double(Self.seaColor.b) / 255))
-            // Touches go through to the map under them.
-            .overlay(alignment: .top) {
-                topLeading
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.bottom, 26)
-                    .background(LinearGradient(colors: [.black.opacity(0.6), .black.opacity(0.3), .clear], startPoint: .top, endPoint: .bottom))
-                    .allowsHitTesting(false)
-            }
-            .overlay(alignment: .bottom) {
-                bottomLeading
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 16)
-                    // Clear of the zoom buttons on the right.
-                    .padding(.trailing, 52)
-                    .padding(.top, 26)
-                    .padding(.bottom, 12)
-                    .background(LinearGradient(colors: [.clear, .black.opacity(0.3), .black.opacity(0.6)], startPoint: .top, endPoint: .bottom))
-                    .allowsHitTesting(false)
-            }
-            .overlay(alignment: .topTrailing) { MapCompass().padding(10).allowsHitTesting(false) }
-
-            if let selected, let map = Content.shared.map(selected) {
-                caption(for: map)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 10)
-            }
+        // Placed once, for the map and the blurred copies of it along its edges.
+        let shown = framing.scale > 0 ? marks : []
+        GeometryReader { proxy in
+            map(in: proxy.size, marks: shown)
         }
+        .frame(minHeight: 260, maxHeight: .infinity)
+        .background(Self.sea)
+        // Touches go through to the map under them.
+        .overlay(alignment: .top) {
+            topLeading
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 30)
+                .background { edgeBand(.top, marks: shown) }
+                .allowsHitTesting(false)
+        }
+        .overlay(alignment: .bottom) {
+            bottomLeading
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 16)
+                // Clear of the zoom buttons on the right.
+                .padding(.trailing, 52)
+                .padding(.top, 30)
+                .padding(.bottom, 12)
+                .background { edgeBand(.bottom, marks: shown) }
+                .allowsHitTesting(false)
+        }
+        .overlay(alignment: .topTrailing) { compass.padding(10) }
+        // Over everything else: the edges, their blur and the land's name.
+        .overlay(alignment: .bottomTrailing) { controls }
         .onAppear {
             overview.prepare()
             withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) { pulse = true }
         }
+        .onDisappear { gliding?.cancel() }
         // Drawn again as each land's picture comes in.
         .task(id: overview.images.count) { picture = compose() }
     }
 
     // MARK: The map
 
-    private func map(in size: CGSize) -> some View {
+    private func map(in size: CGSize, marks: [Mark]) -> some View {
+        drawing(in: size, marks: marks)
+            .clipped()
+            .contentShape(Rectangle())
+            .gesture(dragging(in: size).simultaneously(with: pinchingAndTwisting(in: size)))
+            .onTapGesture(coordinateSpace: .local) { location in tap(at: location, in: size) }
+            .onAppear {
+                viewSize = size
+                if framing.scale == 0 { open(in: size) }
+            }
+            .onChange(of: size) {
+                viewSize = size
+                if framing.scale == 0 { open(in: size) }
+            }
+            // Two fingers lifted, or their touch cancelled (by a call coming in, say).
+            .onChange(of: twoFingersDown) {
+                if !twoFingersDown, fingers != nil { lifted() }
+            }
+    }
+
+    /// The map as drawn, without its touches: the picture, zoomed and turned, and the marks over
+    /// it, each upright at its place however the map's turned.
+    private func drawing(in size: CGSize, marks: [Mark]) -> some View {
         let (_, columns, rows) = bounds
+        let origin = framing.offset(of: .zero)
+        let cosine = cos(framing.rotation) * framing.scale, sine = sin(framing.rotation) * framing.scale
+        let turned = CGAffineTransform(a: cosine, b: sine, c: -sine, d: cosine,
+                                       tx: size.width / 2 + origin.x, ty: size.height / 2 + origin.y)
         return ZStack(alignment: .topLeading) {
             // The picture rides in an overlay, so its size never moves the view's.
             Color.clear
                 .frame(width: size.width, height: size.height)
                 .overlay(alignment: .topLeading) {
-                    if let picture, scale > 0 {
+                    if let picture, framing.scale > 0 {
                         Image(decorative: picture, scale: 1)
                             .interpolation(.none)
                             .resizable()
                             .frame(width: CGFloat(columns), height: CGFloat(rows))
-                            .transformEffect(CGAffineTransform(a: scale, b: -scale / 2, c: scale, d: scale / 2,
-                                                               tx: pan.width, ty: scale * CGFloat(columns) / 2 + pan.height))
+                            .transformEffect(turned)
                     }
                 }
-            if scale > 0 {
-                ForEach(marks) { mark in
-                    view(of: mark)
-                        .position(point(of: mark.cell))
-                }
+            ForEach(marks) { mark in
+                view(of: mark)
+                    .position(point(of: mark.spot, in: size))
             }
-            controls(in: size)
-                .frame(width: size.width, height: size.height, alignment: .bottomTrailing)
         }
         .frame(width: size.width, height: size.height)
-        .clipped()
-        .contentShape(Rectangle())
-        .gesture(dragging(in: size).simultaneously(with: pinching(in: size)))
-        .onTapGesture(coordinateSpace: .local) { location in tap(at: location) }
-        .onAppear { if scale == 0 { open(in: size) } }
     }
 
-    /// Opens on where you are, your land filling most of the view.
+    /// Along the map's top or bottom edge, under what's written there: the map blurred more the
+    /// nearer the edge (`edgeBlurs`, as the story's pictures blur toward where they melt into the
+    /// window, `EdgeBlur`), and over it the window's own blue (`HUDStyle.glassTop`, `glassFoot`)
+    /// melting to clear, with no dark tint to muddy the map's colours.
+    private func edgeBand(_ edge: SwiftUI.Edge, marks: [Mark]) -> some View {
+        let top = edge == .top
+        let blue = top ? HUDStyle.glassTop : HUDStyle.glassFoot
+        let size = viewSize
+        return GeometryReader { band in
+            ZStack {
+                if framing.scale > 0, size.width > 0, size.height > 0 {
+                    // Only the marks under the band.
+                    let near = marks.filter { mark in
+                        let y = point(of: mark.spot, in: size).y
+                        return top ? y < band.size.height + 30 : y > size.height - band.size.height - 30
+                    }
+                    ForEach(Self.edgeBlurs.indices, id: \.self) { index in
+                        drawing(in: size, marks: near)
+                            .background(Self.sea)
+                            .frame(width: band.size.width, height: band.size.height, alignment: top ? .top : .bottom)
+                            .clipped()
+                            .blur(radius: Self.edgeBlurs[index].radius, opaque: true)
+                            .mask {
+                                Self.ramp(edge, [.init(color: .black, location: 0),
+                                                 .init(color: .black.opacity(0), location: Self.edgeBlurs[index].reach)])
+                            }
+                            // VoiceOver reads the map's marks once, from the map itself.
+                            .accessibilityHidden(true)
+                    }
+                }
+                Self.ramp(edge, [.init(color: blue.opacity(0.92), location: 0), .init(color: blue.opacity(0.7), location: 0.3),
+                                 .init(color: blue.opacity(0.32), location: 0.65), .init(color: blue.opacity(0), location: 1)])
+            }
+        }
+    }
+
+    /// A gradient running in from `edge` (`stops` counted from there).
+    private static func ramp(_ edge: SwiftUI.Edge, _ stops: [Gradient.Stop]) -> LinearGradient {
+        LinearGradient(stops: stops, startPoint: edge == .top ? .top : .bottom, endPoint: edge == .top ? .bottom : .top)
+    }
+
+    /// Opens on where you are, north up, your land filling most of the view.
     private func open(in size: CGSize) {
+        guard size.width > 0, size.height > 0 else { return }
+        let (_, columns, rows) = bounds
         let here = lands.first { $0.def.id == session.data.mapID }
-        let span = CGFloat((here?.def.width ?? 150) + (here?.def.height ?? 120))
-        scale = clamped(size.width * 0.8 / span, in: size)
-        centre(on: hereCell ?? lands.first.map { GridPoint(col: $0.origin.col + $0.def.width / 2, row: $0.origin.row + $0.def.height / 2) },
-               in: size)
+        var opening = Framing()
+        opening.scale = clamped(min(size.width * 0.8 / CGFloat(here?.def.width ?? 150), size.height * 0.7 / CGFloat(here?.def.height ?? 120)),
+                                in: size)
+        opening.rotation = CGFloat((DebugLaunch.mapTurn ?? 0) * Double.pi / 180)
+        if let cell = hereCell ?? lands.first.map({ GridPoint(col: $0.origin.col + $0.def.width / 2, row: $0.origin.row + $0.def.height / 2) }) {
+            opening.focus = spot(of: cell)
+        } else {
+            opening.focus = CGPoint(x: CGFloat(columns) / 2, y: CGFloat(rows) / 2)
+        }
+        framing = clampedFocus(opening)
     }
 
-    private func centre(on cell: GridPoint?, in size: CGSize) {
-        guard let cell else { return }
-        let at = point(of: cell, pan: .zero)
-        pan = clampedPan(CGSize(width: size.width / 2 - at.x, height: size.height / 2 - at.y), in: size)
+    /// A cell's middle on the picture: cells east from its west edge, south from its north edge.
+    private func spot(of cell: GridPoint) -> CGPoint {
+        let (low, _, rows) = bounds
+        return Self.spot(of: cell, low: low, rows: rows)
     }
 
-    /// Where a cell of the continent shows in the view: its place in the picture (columns east, rows
-    /// north to south), turned and squashed like the world.
-    private func point(of cell: GridPoint, pan: CGSize? = nil) -> CGPoint {
-        let (low, columns, rows) = bounds
-        let u = CGFloat(cell.col - low.col) + 0.5, v = CGFloat(rows - (cell.row - low.row)) - 0.5
-        let shift = pan ?? self.pan
-        return CGPoint(x: scale * (u + v) + shift.width, y: scale * (v - u) / 2 + scale * CGFloat(columns) / 2 + shift.height)
+    private static func spot(of cell: GridPoint, low: GridPoint, rows: Int) -> CGPoint {
+        CGPoint(x: CGFloat(cell.col - low.col) + 0.5, y: CGFloat(rows - (cell.row - low.row)) - 0.5)
     }
 
-    /// The continent's cell under a point in the view.
-    private func cell(at location: CGPoint) -> GridPoint {
-        let (low, columns, rows) = bounds
-        let x = (location.x - pan.width) / scale
-        let y = 2 * (location.y - pan.height - scale * CGFloat(columns) / 2) / scale
-        let v = (x + y) / 2, u = (x - y) / 2
-        return GridPoint(col: low.col + Int(u.rounded(.down)), row: low.row + Int((CGFloat(rows) - v).rounded(.down)))
+    /// Where a spot of the picture shows in a view of `size`.
+    private func point(of spot: CGPoint, in size: CGSize) -> CGPoint {
+        let at = framing.offset(of: spot)
+        return CGPoint(x: size.width / 2 + at.x, y: size.height / 2 + at.y)
+    }
+
+    /// The continent's cell under a point in a view of `size`, however the map's turned.
+    private func cell(at location: CGPoint, in size: CGSize) -> GridPoint {
+        let (low, _, rows) = bounds
+        let spot = framing.spot(at: CGPoint(x: location.x - size.width / 2, y: location.y - size.height / 2))
+        return GridPoint(col: low.col + Int(spot.x.rounded(.down)), row: low.row + Int((CGFloat(rows) - spot.y).rounded(.down)))
     }
 
     private func clamped(_ value: CGFloat, in size: CGSize) -> CGFloat {
         let (_, columns, rows) = bounds
         // At the least, the whole continent in view.
-        let whole = min(size.width / CGFloat(columns + rows), size.height * 2 / CGFloat(columns + rows))
+        let whole = min(size.width / CGFloat(max(1, columns)), size.height / CGFloat(max(1, rows)))
         return min(Self.maxScale, max(min(whole, Self.minScale), value))
     }
 
     /// Keeps the middle of the view over the continent.
-    private func clampedPan(_ value: CGSize, in size: CGSize) -> CGSize {
+    private func clampedFocus(_ value: Framing) -> Framing {
         let (_, columns, rows) = bounds
-        let wide = scale * CGFloat(columns + rows), tall = wide / 2
-        return CGSize(width: min(size.width / 2, max(size.width / 2 - wide, value.width)),
-                      height: min(size.height / 2, max(size.height / 2 - tall, value.height)))
+        var kept = value
+        kept.focus = CGPoint(x: min(CGFloat(columns), max(0, value.focus.x)), y: min(CGFloat(rows), max(0, value.focus.y)))
+        return kept
+    }
+
+    /// The same turn, between half a turn back and half a turn on.
+    private static func normalized(_ angle: CGFloat) -> CGFloat {
+        let whole = 2 * CGFloat.pi
+        var turn = angle.truncatingRemainder(dividingBy: whole)
+        if turn > .pi {
+            turn -= whole
+        } else if turn <= -.pi {
+            turn += whole
+        }
+        return turn
     }
 
     private func dragging(in size: CGSize) -> some Gesture {
         DragGesture(minimumDistance: 4)
             .onChanged { value in
-                let start = dragStart ?? pan
-                dragStart = start
-                pan = clampedPan(CGSize(width: start.width + value.translation.width, height: start.height + value.translation.height), in: size)
+                // While two fingers are down they move it; one left on carries on from there.
+                guard fingers == nil else {
+                    drag = nil
+                    return
+                }
+                gliding?.cancel()
+                let start = drag ?? (framing: framing, translation: value.translation)
+                drag = start
+                // The spot under the finger stays under it.
+                var next = start.framing
+                next.focus = start.framing.spot(at: CGPoint(x: start.translation.width - value.translation.width,
+                                                            y: start.translation.height - value.translation.height))
+                framing = clampedFocus(next)
             }
-            .onEnded { _ in dragStart = nil }
+            .onEnded { _ in drag = nil }
     }
 
-    private func pinching(in size: CGSize) -> some Gesture {
-        MagnifyGesture()
+    /// Two fingers zoom it and, once they've twisted past `turnThreshold`, turn it, about the spot
+    /// between them.
+    private func pinchingAndTwisting(in size: CGSize) -> some Gesture {
+        MagnifyGesture().simultaneously(with: RotateGesture())
+            .updating($twoFingersDown) { _, down, _ in down = true }
             .onChanged { value in
-                let start = pinchStart ?? (scale: scale, pan: pan)
-                pinchStart = start
-                zoom(to: start.scale * value.magnification, around: value.startLocation, from: start, in: size)
+                gliding?.cancel()
+                let anchor = value.first.map { CGPoint(x: $0.startLocation.x - size.width / 2, y: $0.startLocation.y - size.height / 2) }
+                var touch = fingers ?? TwoFingers(start: framing, anchor: anchor ?? .zero)
+                if let pinch = value.first { touch.magnification = pinch.magnification }
+                if let twist = value.second {
+                    let turned = CGFloat(twist.rotation.radians)
+                    if touch.held == nil, abs(turned) > Self.turnThreshold {
+                        touch.held = turned > 0 ? Self.turnThreshold : -Self.turnThreshold
+                    }
+                    if let held = touch.held { touch.turn = turned - held }
+                }
+                fingers = touch
+                framing = framed(by: touch, in: size)
             }
-            .onEnded { _ in pinchStart = nil }
+            .onEnded { _ in lifted() }
     }
 
-    /// Zooms to `target`, keeping the spot at `anchor` where it is.
-    private func zoom(to target: CGFloat, around anchor: CGPoint, from start: (scale: CGFloat, pan: CGSize), in size: CGSize) {
-        let next = clamped(target, in: size)
-        let ratio = next / start.scale
-        scale = next
-        pan = clampedPan(CGSize(width: anchor.x - (anchor.x - start.pan.width) * ratio,
-                                height: anchor.y - (anchor.y - start.pan.height) * ratio), in: size)
+    /// The two fingers off the map: one finger can drag it again, and its turn settles.
+    private func lifted() {
+        fingers = nil
+        settleTurn()
     }
 
-    private func controls(in size: CGSize) -> some View {
+    /// How the map lies under two fingers: zoomed and turned about the spot that was between them,
+    /// which stays there.
+    private func framed(by touch: TwoFingers, in size: CGSize) -> Framing {
+        let start = touch.start
+        var next = start
+        next.scale = clamped(start.scale * touch.magnification, in: size)
+        next.rotation = start.rotation + touch.turn
+        next.focus = start.spot(at: touch.anchor)
+        next.focus = next.spot(at: CGPoint(x: -touch.anchor.x, y: -touch.anchor.y))
+        return clampedFocus(next)
+    }
+
+    /// Once the fingers lift: the turn kept within half a turn either way, and settled on north
+    /// when it's left near it.
+    private func settleTurn() {
+        var settled = framing
+        settled.rotation = Self.normalized(framing.rotation)
+        framing = settled
+        guard settled.rotation != 0, abs(settled.rotation) < Self.northSnap else { return }
+        var north = settled
+        north.rotation = 0
+        glide(to: north, from: settled)
+    }
+
+    /// The compass's tap: north back up, turning the short way round about the middle of the view.
+    private func northUp() {
+        var turned = framing
+        turned.rotation = Self.normalized(framing.rotation)
+        var north = turned
+        north.rotation = 0
+        glide(to: north, from: turned, duration: 0.4)
+    }
+
+    /// Glides the map from `origin` (where it is) to `target`, easing in and out; straight there
+    /// with Reduce Motion. Stepped a frame at a time, so the picture and the marks over it move
+    /// together, the marks round the middle as the map turns.
+    private func glide(to target: Framing, from origin: Framing? = nil, duration: Double = 0.3) {
+        gliding?.cancel()
+        let start = origin ?? framing
+        guard !reduceMotion, start != target else {
+            framing = target
+            return
+        }
+        gliding = Task {
+            let began = Date()
+            while !Task.isCancelled {
+                let time = min(1, Date().timeIntervalSince(began) / duration)
+                let eased = time < 0.5 ? 2 * time * time : 1 - pow(2 - 2 * time, 2) / 2
+                framing = Framing.between(start, target, CGFloat(eased))
+                if time >= 1 { break }
+                try? await Task.sleep(for: .milliseconds(16))
+            }
+        }
+    }
+
+    /// The compass, turned with the map; a tap turns north back up.
+    private var compass: some View {
+        Button {
+            northUp()
+        } label: {
+            MapCompass(heading: .radians(Double(framing.rotation)))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(L("Turn the map north up"))
+    }
+
+    private var controls: some View {
         VStack(spacing: 6) {
-            mapButton(Text("+").font(HUDStyle.font(16)), label: L("Zoom in")) {
-                zoom(to: scale * 1.6, around: CGPoint(x: size.width / 2, y: size.height / 2), from: (scale: scale, pan: pan), in: size)
-            }
-            mapButton(Text("−").font(HUDStyle.font(16)), label: L("Zoom out")) {
-                zoom(to: scale / 1.6, around: CGPoint(x: size.width / 2, y: size.height / 2), from: (scale: scale, pan: pan), in: size)
-            }
-            mapButton(IconImage(.user, size: 14), label: L("Where you are")) { centre(on: hereCell, in: size) }
+            mapButton(Text("+").font(HUDStyle.font(16)), label: L("Zoom in")) { zoom(by: 1.6) }
+            mapButton(Text("−").font(HUDStyle.font(16)), label: L("Zoom out")) { zoom(by: 1 / 1.6) }
+            mapButton(IconImage(.user, size: 14), label: L("Where you are")) { centreOnHere() }
         }
         .padding(6)
     }
 
+    /// Zooms about the middle of the view.
+    private func zoom(by factor: CGFloat) {
+        guard framing.scale > 0 else { return }
+        var next = framing
+        next.scale = clamped(framing.scale * factor, in: viewSize)
+        glide(to: next)
+    }
+
+    /// Where you are in the middle of the view, the map turned as it is.
+    private func centreOnHere() {
+        guard framing.scale > 0, let here = hereCell else { return }
+        var next = framing
+        next.focus = spot(of: here)
+        glide(to: clampedFocus(next))
+    }
+
     private func mapButton(_ face: some View, label: String, action: @escaping () -> Void) -> some View {
-        Button {
-            withAnimation(.easeOut(duration: 0.25)) { action() }
-        } label: {
+        Button(action: action) {
             face
                 .foregroundStyle(HUDStyle.ink)
                 .frame(width: 30, height: 30)
@@ -242,14 +483,14 @@ struct WorldAtlas: View {
         .accessibilityLabel(label)
     }
 
-    private func tap(at location: CGPoint) {
-        guard scale > 0 else { return }
+    private func tap(at location: CGPoint, in size: CGSize) {
+        guard framing.scale > 0 else { return }
         // A cave's mark first, small as it is; else the land under the tap.
-        if let cave = marks.first(where: { $0.kind == .cave && point(of: $0.cell).distance(to: location) < 18 }) {
+        if let cave = marks.first(where: { $0.kind == .cave && point(of: $0.spot, in: size).distance(to: location) < 18 }) {
             selected = cave.place
             return
         }
-        selected = Continent.owner(atWorld: cell(at: location))?.id
+        selected = Continent.owner(atWorld: cell(at: location, in: size))?.id
     }
 
     // MARK: Marks
@@ -265,6 +506,18 @@ struct WorldAtlas: View {
         let cell: GridPoint
         /// A badge's icon, as on the minimap.
         var badge: GameSession.MinimapMark.Kind? = nil
+        /// Its cell's middle on the picture (`spot(of:)`), filled in by `spotted`.
+        var spot: CGPoint = .zero
+    }
+
+    /// The marks with their spots on the picture, the continent's bounds worked out once for them all.
+    private func spotted(_ marks: [Mark]) -> [Mark] {
+        let (low, _, rows) = bounds
+        return marks.map { mark in
+            var placed = mark
+            placed.spot = Self.spot(of: mark.cell, low: low, rows: rows)
+            return placed
+        }
     }
 
     /// How far in the map must be zoomed (points a cell) for the badges to show: out where whole
@@ -276,7 +529,7 @@ struct WorldAtlas: View {
     /// Where two would overlap at this zoom, the one that matters more stays: a quest to hand in or
     /// news first, a boss, then the town's services.
     private var badges: [Mark] {
-        guard scale >= Self.badgeScale else { return [] }
+        guard framing.scale >= Self.badgeScale else { return [] }
         let order: [GameSession.MinimapMark.Kind] = [.lost, .questReady, .questNew, .boss, .healer, .bank, .shop, .smith, .weaver,
                                                      .barber, .guild, .waystone, .quest, .chest]
         var found: [Mark] = []
@@ -298,12 +551,12 @@ struct WorldAtlas: View {
                               badge: .lost))
         }
         found.sort { (order.firstIndex(of: $0.badge ?? .chest) ?? 0) < (order.firstIndex(of: $1.badge ?? .chest) ?? 0) }
-        var kept: [(mark: Mark, at: CGPoint)] = []
-        for mark in found {
-            let at = point(of: mark.cell, pan: .zero)
-            if kept.allSatisfy({ $0.at.distance(to: at) >= 12 }) { kept.append((mark, at)) }
+        // As far apart on screen as on the picture, however the map's turned.
+        var kept: [Mark] = []
+        for mark in spotted(found) where kept.allSatisfy({ $0.spot.distance(to: mark.spot) * framing.scale >= 12 }) {
+            kept.append(mark)
         }
-        return kept.map(\.mark)
+        return kept
     }
 
     private var marks: [Mark] {
@@ -325,7 +578,7 @@ struct WorldAtlas: View {
             }
         }
         if let here = hereCell { marks.append(Mark(id: "here", kind: .here, place: session.data.mapID, cell: here)) }
-        return marks
+        return spotted(marks)
     }
 
     /// Where a road leaves a land through `exit`, on the continent: where it crosses the land's border
@@ -396,7 +649,7 @@ struct WorldAtlas: View {
                     .fill(HUDStyle.ink)
                     .frame(width: 12, height: 12)
                     .overlay(Circle().strokeBorder(selected == mark.place ? HUDStyle.gold : HUDStyle.cream.opacity(0.8), lineWidth: 1.5))
-                if scale >= 1.2 || selected == mark.place {
+                if framing.scale >= 1.2 || selected == mark.place {
                     label(known ? Content.shared.map(mark.place)?.name ?? "" : "???", size: 8, color: HUDStyle.cream.opacity(known ? 1 : 0.6))
                 }
             }
@@ -406,7 +659,7 @@ struct WorldAtlas: View {
                 let state = status(of: def)
                 let known = state == .here || state == .visited
                 // Out where the whole continent shows, only where you are and what you tapped.
-                if scale >= 0.45 || state == .here || selected == def.id {
+                if framing.scale >= 0.45 || state == .here || selected == def.id {
                     HStack(spacing: 3) {
                         if known, def.fence == true { IconImage(.star, size: 9).foregroundStyle(HUDStyle.gold) }
                         label(known ? def.name : "???", size: 10,
@@ -500,45 +753,6 @@ struct WorldAtlas: View {
         return (0.52, 0.82, 0.42)
     }
 
-    // MARK: Caption
-
-    /// About the place you tapped. Nothing until you do: the gold mark already says where you are.
-    private func caption(for map: MapDef) -> some View {
-        Text(captionText(for: map))
-            .font(HUDStyle.font(11))
-            .foregroundStyle(HUDStyle.cream)
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
-    }
-
-    private func captionText(for map: MapDef) -> String {
-        switch status(of: map) {
-        case .here, .visited:
-            return "\(map.name)\(levels(map))" + closedRoads(from: map)
-        case .undiscovered:
-            return L("Not discovered yet. Follow the roads to find it.")
-        case .locked(let quest):
-            return L("Locked. Finish “{quest}” to open the road.", ["quest": quest ?? L("a quest")])
-        }
-    }
-
-    /// The roads out of `map` a quest still closes, a line each (the way back in is open).
-    private func closedRoads(from map: MapDef) -> String {
-        map.exits.compactMap { exit -> String? in
-            guard !session.canTravel(exit), let other = Content.shared.map(exit.to) else { return nil }
-            let place = session.hasVisited(other.id) ? other.name : L("an undiscovered place")
-            let quest = exit.requires.flatMap { session.content.quest($0)?.title } ?? L("a quest")
-            return "\n" + L("The road to {place} opens after “{quest}”; it's open coming the other way.", ["place": place, "quest": quest])
-        }
-        .joined()
-    }
-
-    private func levels(_ map: MapDef) -> String {
-        if map.fence == true { return " · " + L("town") }
-        guard let range = map.encounters?.levels, range.count == 2 else { return "" }
-        return " · " + L("monsters Lv {min}–{max}", ["min": range[0], "max": range[1]])
-    }
-
     // MARK: State
 
     func status(of map: MapDef) -> Status {
@@ -554,26 +768,33 @@ struct WorldAtlas: View {
 /// The map's compass (playtesting 2026-10-25: the minimap's little orange one, gone from there, bigger
 /// in the map's window): a pale round face (playtesting 2026-10-26: on the orange one the needle's
 /// red half didn't show), a needle through it, red to the north and slate to the south, and the four
-/// points round its rim in dark ink, all turned as the game's view is: north up and to the left,
-/// east up and to the right. The world doesn't turn (its art is drawn from one side only), so
-/// neither does the compass.
+/// points round its rim in dark ink, a quarter turn apart (playtesting 2026-10-26: drawn as the
+/// game's turned view lies, north up-left and south down-right, they looked skewed). On the world
+/// map north is up till you turn the map (`heading`): the needle and the points go round with it,
+/// the letters staying upright. A cave's map lies as the game's view does (`isometric`): north up
+/// and to the left, east up and to the right, as the cave does on screen.
 struct MapCompass: View {
     var size: CGFloat = 72
-
-    /// Where a step north, east, south and west lands on the turned, squashed map, as degrees
-    /// clockwise from straight up (a row north is half as far up as it's across to the left).
-    private static func angle(col: CGFloat, row: CGFloat) -> Double {
-        let across = col - row, up = (col + row) / 2
-        return atan2(Double(across), Double(up)) * 180 / Double.pi
-    }
-    static let north = angle(col: 0, row: 1)
+    /// How far the map under it is turned clockwise: its north points that way from straight up.
+    var heading: Angle = .zero
+    /// The map under it lies turned and squashed as the game's view is (a cave's, `CaveMap`).
+    var isometric = false
     /// The needle's north half, and the N.
     private static let needleRed = Color(red: 0.85, green: 0.16, blue: 0.14)
 
+    /// Where a step `col` east and `row` north points on the map under it, as degrees clockwise
+    /// from straight up.
+    private func angle(col: CGFloat, row: CGFloat) -> Double {
+        // On the turned, squashed view a row north is half as far up as it's across to the left.
+        let (across, up) = isometric ? (col - row, (col + row) / 2) : (col, row)
+        return atan2(Double(across), Double(up)) * 180 / Double.pi + heading.degrees
+    }
+
     var body: some View {
+        let north = angle(col: 0, row: 1)
         let points: [(label: String, angle: Double, main: Bool)] = [
-            (L("N"), Self.north, true), (L("E"), Self.angle(col: 1, row: 0), false),
-            (L("S"), Self.angle(col: 0, row: -1), false), (L("W"), Self.angle(col: -1, row: 0), false),
+            (L("N"), north, true), (L("E"), angle(col: 1, row: 0), false),
+            (L("S"), angle(col: 0, row: -1), false), (L("W"), angle(col: -1, row: 0), false),
         ]
         ZStack {
             Circle()
@@ -586,7 +807,7 @@ struct MapCompass: View {
                 CompassTriangle().fill(Color(white: 0.42)).frame(width: size * 0.16, height: size * 0.24).rotationEffect(.degrees(180))
             }
             .shadow(color: .black.opacity(0.25), radius: 0, x: 1, y: 1)
-            .rotationEffect(.degrees(Self.north))
+            .rotationEffect(.degrees(north))
             Circle().fill(HUDStyle.ink).frame(width: size * 0.07, height: size * 0.07)
             ForEach(points, id: \.label) { point in
                 let radians = point.angle * Double.pi / 180
@@ -598,7 +819,6 @@ struct MapCompass: View {
         }
         .frame(width: size, height: size)
         .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 1)
-        .accessibilityHidden(true)
     }
 }
 
