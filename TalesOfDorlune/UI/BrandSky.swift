@@ -16,22 +16,25 @@ enum Brand {
     /// The name pill, and the loading bar's track.
     static let cream = Color(red: 1, green: 0.969, blue: 0.878)        // #FFF7E0
 
-    /// The icon's sky, top to bottom.
-    static let lavender = Color(red: 0.8, green: 0.722, blue: 1)       // #CCB8FF
-    /// The brand's blue: the middle of the sky, and of the loading bar.
+    /// The brand's blue, sky blue: the loading bar's middle, and the day sky's from a little above
+    /// the middle down.
     static let sky = Color(red: 0.659, green: 0.859, blue: 1)          // #A8DBFF
-    static let mint = Color(red: 0.722, green: 0.961, blue: 0.839)     // #B8F5D6
     /// The brand blue lighter and deeper, the loading bar's top and foot as the logo's gold has
     /// its light and deep: the foot leans to indigo, as gold deep leans to red, and stands out from
-    /// the cream track (3:1, as gold deep does) on the day sky and the night sky alike.
+    /// the cream track (3:1, as gold deep does) on the day sky and the night sky alike. Sky deep is
+    /// also the top of the day sky.
     static let skyLight = Color(red: 0.894, green: 0.957, blue: 1)     // #E4F4FF
     static let skyDeep = Color(red: 0.29, green: 0.565, blue: 0.91)    // #4A90E8
+    /// The haze along the day sky's horizon, behind the clouds: paler than sky blue, but not so pale
+    /// that the white clouds melt into it (sky light did).
+    static let skyHaze = Color(red: 0.788, green: 0.914, blue: 1)      // #C9E9FF
 
-    /// The same sky at night, for Dark Mode (the dark app icon's, `tools/app_icon_art.py`):
-    /// deep indigo, navy and teal where the day has lavender, sky blue and mint.
-    static let nightTop = Color(red: 0.17, green: 0.12, blue: 0.38)    // #2B1F61
+    /// The same sky at night, for Dark Mode: a clear night in blues, deepest navy overhead to a
+    /// lighter blue along the horizon, as the day's goes from sky deep to haze. (Until 0.9 it was the
+    /// dark app icon's indigo, navy and teal, as the day's was the icon's lavender, sky and mint.)
+    static let nightTop = Color(red: 0.043, green: 0.082, blue: 0.22)  // #0B1538
     static let night = Color(red: 0.07, green: 0.13, blue: 0.33)       // #122154
-    static let nightBottom = Color(red: 0.04, green: 0.2, blue: 0.25)  // #0A3340
+    static let nightBottom = Color(red: 0.114, green: 0.227, blue: 0.439) // #1D3A70
     /// The night's clouds, lit by the moon.
     static let moonCloud = Color(red: 0.3, green: 0.38, blue: 0.52)    // #4D6185
 
@@ -79,10 +82,11 @@ extension View {
     }
 }
 
-/// The sky behind the title and loading screens: lavender at the top through sky blue to mint, a
-/// soft light behind the logo, and clouds along the bottom. No sun rays: fanned out round the
-/// logo they looked cheap. In Dark Mode it's the dark icon's night: indigo through navy to teal,
-/// the light faint, the clouds moonlit and a scatter of stars.
+/// The sky behind the title and loading screens: a clear day in the brand blue, sky deep overhead
+/// through sky blue to a pale haze behind the clouds, a soft light behind the logo, and clouds
+/// along the bottom. No sun rays: fanned out round the logo they looked cheap. In Dark Mode it's a
+/// clear night: deep navy overhead to a lighter blue at the horizon, the light faint, the clouds
+/// moonlit and a scatter of stars.
 struct TalesOfDorluneSky: View {
     /// Where the soft light sits, as a share of the screen: behind the logo.
     var raysFrom = UnitPoint(x: 0.5, y: 0.3)
@@ -103,13 +107,25 @@ struct TalesOfDorluneSky: View {
         (0.98, 0.6), (0.8, 0.42), (0.64, 0.26),
     ]
 
+    /// The day sky, top to bottom: sky blue from a little above the middle, so the bar and the
+    /// buttons sit on the brand blue and the horizon pales only behind the clouds.
+    private static let dayStops: [Gradient.Stop] = [
+        Gradient.Stop(color: Brand.skyDeep, location: 0),
+        Gradient.Stop(color: Brand.sky, location: 0.6),
+        Gradient.Stop(color: Brand.skyHaze, location: 1),
+    ]
+    private static let nightStops: [Gradient.Stop] = [
+        Gradient.Stop(color: Brand.nightTop, location: 0),
+        Gradient.Stop(color: Brand.night, location: 0.5),
+        Gradient.Stop(color: Brand.nightBottom, location: 1),
+    ]
+
     var body: some View {
         GeometryReader { proxy in
             let side = min(proxy.size.width, proxy.size.height)
             let night = colorScheme == .dark
             ZStack {
-                LinearGradient(colors: night ? [Brand.nightTop, Brand.night, Brand.nightBottom] : [Brand.lavender, Brand.sky, Brand.mint],
-                               startPoint: .top, endPoint: .bottom)
+                LinearGradient(stops: night ? Self.nightStops : Self.dayStops, startPoint: .top, endPoint: .bottom)
 
                 Rectangle()
                     .fill(RadialGradient(colors: [.white.opacity(night ? 0.08 : 0.28), .white.opacity(0)], center: raysFrom,
