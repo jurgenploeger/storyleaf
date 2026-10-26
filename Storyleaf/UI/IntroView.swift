@@ -464,8 +464,8 @@ private struct WorldText: View {
 /// game draws it), its shape in a colour from its ground until that's drawn, the sea all round, turned
 /// like the game's view so north points up-left. The towns are named, the bosses' lands carry a
 /// sword, and where you start a gold dot. Pinch (or the buttons) to zoom and drag to look round, as
-/// on the world map in the game (playtesting 2026-10-24); it opens on the whole continent, clear of
-/// where it melts into the window (`fade`).
+/// on the world map in the game (playtesting 2026-10-24); it opens close in on where you start
+/// (`fit`), clear of where it melts into the window (`fade`).
 struct IntroAtlas: View {
     /// The place to mark with a gold dot.
     let highlight: String?
@@ -561,13 +561,28 @@ struct IntroAtlas: View {
                       height: size.height - faded.top - faded.bottom)
     }
 
-    /// The whole continent in view, in the middle.
+    /// How much closer than the whole continent it opens (playtesting 2026-10-26: zoomed out, the
+    /// lands were too small to read).
+    private static let openingZoom: CGFloat = 2.2
+
+    /// Opens on where you start (`highlight`), `openingZoom` closer than the whole continent, a
+    /// little below the middle of what's clear, so more of the lands ahead show above it; the
+    /// whole continent when there's no start.
     private func fit(in size: CGSize) {
         guard size.width > 0, size.height > 0 else { return }
-        scale = smallestScale(in: size)
         let area = clearArea(in: size)
-        let wide = scale * CGFloat(columns + rows), tall = wide / 2
-        pan = CGSize(width: area.minX + (area.width - wide) / 2, height: area.minY + (area.height - tall) / 2)
+        guard let start = lands.first(where: { $0.id == highlight }) else {
+            scale = smallestScale(in: size)
+            let wide = scale * CGFloat(columns + rows), tall = wide / 2
+            pan = CGSize(width: area.minX + (area.width - wide) / 2, height: area.minY + (area.height - tall) / 2)
+            return
+        }
+        scale = clamped(smallestScale(in: size) * Self.openingZoom, in: size)
+        // `point(of:)` with no pan, then the pan that puts the start where it's wanted.
+        let u = CGFloat(start.middle.col - low.col) + 0.5, v = CGFloat(rows - (start.middle.row - low.row)) - 0.5
+        let unpanned = CGPoint(x: scale * (u + v), y: scale * (v - u) / 2 + scale * CGFloat(columns) / 2)
+        let wanted = CGPoint(x: area.midX, y: area.midY + area.height * 0.12)
+        pan = clampedPan(CGSize(width: wanted.x - unpanned.x, height: wanted.y - unpanned.y), in: size)
     }
 
     /// As far out as it zooms: the whole continent in view.
