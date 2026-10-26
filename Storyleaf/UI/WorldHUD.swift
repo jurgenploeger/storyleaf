@@ -595,6 +595,9 @@ enum MenuMorph {
     static let spring = Animation.spring(response: 0.38, dampingFraction: 0.86)
     /// The open panel's size, as last laid out.
     static var from = CGSize(width: width, height: 290)
+    /// The size a window grows from when your face in the top-left corner opens it: about your face
+    /// and its bars.
+    static let fromFace = CGSize(width: 220, height: 64)
     /// From the sides (inside the safe area) and the top: the HUD's own 8 points.
     static let side: CGFloat = 8
 

@@ -85,7 +85,8 @@ import SpriteKit
 ///   quiet          footsteps switched off in Settings, and left off (so its screenshot runs last)
 ///   menu=<tab>     open that menu window: character | companions | friends | bag | quests | settings
 ///   sub=<page>     a menu window's tab: skills | titles (menu=character), daily (menu=quests)
-///   profile=<who>  open someone's stats: hero | pet (with pet=) | friend (with friends=)
+///   profile=<who>  tap a face in the top-left corner: hero (the Hero window) | pet (with pet=: the
+///                  Companions window) | friend (with friends=: their card)
 ///   bottom         open the menu scrolled to the end
 ///   npc=<id>       open an NPC dialog
 ///   bank=<id>      open that banker's bank window

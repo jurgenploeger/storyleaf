@@ -8,8 +8,9 @@ enum Profile: Equatable {
     case adventurer(Adventurer)
 }
 
-/// Fairyland Online's character window: tap someone on the map, or a face in the top-left corner, to see
-/// who they are and how strong: level, HP and MP, attack, defense, magic and speed, and what they
+/// Fairyland Online's character window: tap someone on the map, or a friend's face in the top-left corner,
+/// to see who they are and how strong (your own face and your companion's open the Hero and Companions
+/// windows instead, `GameCoordinator.open`): level, HP and MP, attack, defense, magic and speed, and what they
 /// fight with (their skills, your gear, a friend's companion), each with its picture.
 struct ProfileCard: View {
     let session: GameSession
