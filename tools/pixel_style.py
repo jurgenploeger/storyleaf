@@ -176,6 +176,29 @@ def measure(path):
         m["rim_lit"] = float(np.median(V[inner1 & lit_side]) / max(np.percentile(V[inner2], 90), 1e-6))
     else:
         m["rim_lit"] = None
+    # Kinks (2026-10-26, "some pixels don't line up or are a bit out of place, making the shape of a smaller
+    # coin [...] not the right shape"): along each side of the silhouette, a run of one or two pixels the
+    # outline steps in to and straight back out of (or out and back in), as a curve never does; per step
+    # of the outline. Two shapes meeting make one too (two coins side by side), so it allows a few: RD's
+    # Potion 0, the small coins drawn off the pixel grid 0.04 to 0.14.
+    kink = steps = 0
+    for view in (opaque, opaque[::-1], opaque.T, opaque.T[::-1]):
+        prof = [int(np.argmax(col)) if col.any() else None for col in view.T]
+        runs, vals = [], []
+        for v in prof:
+            if vals and v == vals[-1]:
+                runs[-1] += 1
+            else:
+                runs.append(1)
+                vals.append(v)
+        for k in range(1, len(runs) - 1):
+            a_, b_, c_ = vals[k - 1], vals[k], vals[k + 1]
+            if None in (a_, b_, c_):
+                continue
+            steps += 1
+            if (b_ - a_) * (c_ - b_) < 0 and runs[k] <= 2 and abs(b_ - a_) <= 2 and abs(c_ - b_) <= 2:
+                kink += 1
+    m["kinks"] = float(kink / steps) if steps else 0.0
     m["canvas"] = int(max(opaque.shape))
     # Drawn at its size, not doubled from a smaller one (`native`): the share of pixels that a 2× shrink and
     # blow-up would change among those where the colour changes, at the best of the four alignments. A 32-pixel icon blown up to 64 scores 0,
@@ -481,6 +504,7 @@ ITEM_RULES = {
     "light_top_left": ("min", 0.1, False),
     "hue_shift": ("min", 3.0, False),
     "jaggies": ("max", 0.08, False),
+    "kinks": ("max", 0.04, False),           # outlines that wobble a pixel in and out (the Potion 0)
 }
 HARD_BY_KIND["item"] = {name for name, (_way, _limit, hard) in ITEM_RULES.items() if hard}
 

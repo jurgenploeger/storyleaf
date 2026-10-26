@@ -117,6 +117,7 @@ reference is one sprite, each set from the Potion with a margin and checked agai
 | `light_top_left` | ≥ 0.1 | | one light, from the top left |
 | `hue_shift` | ≥ 3° | | shadows away from yellow, lights toward it, as before |
 | `jaggies` | ≤ 0.08 | | clean lines, as before |
+| `kinks` | ≤ 0.04 | | no outline stepping a pixel in and straight back out (the Potion 0; two shapes meeting make a few) |
 
 **What they have to do themselves** (`pixel_style.py compare`, first lines): pass the Potion and every clean
 icon, and fail the grained icons (338 of 338 fail), the grained icons blown up to 64 (60 of 60; on
@@ -145,6 +146,10 @@ variety=0, wide=True`; `tools/clean_icon_art.py` and `tools/coin_art.py` are the
   coin, one leaf on the next) a line in the darkest shade of the one beneath, not the outline's colour. In the
   outline's colour a heap of coins read as cracked rock. The parts of one object (a coin's rim, field and star)
   get no line at all: the light parts them.
+- **Shapes on the pixel grid** (`Sprite.snap`, on in `clean()`): an ellipse a whole number of pixels across
+  and down, its edges on pixel boundaries, so its halves round alike; a disc's edge seen from the front one
+  shape with straight sides (`Sprite.capsule`), not two ellipses laid one over the other, which pinch where
+  they meet; a stack's coins a whole number of pixels apart.
 - **Shine is drawn, not computed:** a streak along the edge facing the light (a coin's rim, a gem's table) and a
   speck or two, in a pale tint of the material (`relief=0`), as the Potion's highlight and bubbles are.
 - **Detail at the new size:** a coin's raised rim, its sunken field with the rim's shadow on its upper left, a
@@ -588,6 +593,13 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 
 ## Learned
 
+- **2026-10-26 (shapes):** "Some shapes have a bit of weird sides because some pixels don't line up or are a
+  bit out of place, making the shape of a smaller coin for example not the right shape." A small coin's side
+  stepped 3, 3, 4, 4, 3, 4, 4 pixels in: its face and its edge were two ellipses at fractional positions, the
+  union pinched where one ended and the other began, and an ellipse off the grid rounds differently on each
+  side. The `jaggies` rule never saw it (it reads only the top and left and only big jumps). Now shapes snap
+  to the grid, a coin's edge is one capsule, and `kinks` counts the wobble: 0.04 to 0.14 before, 0 to 0.03
+  after, the Potion 0.
 - **2026-10-26 (outline weight):** "Are the outlines a bit too thin now?" Measured against the Potion: the
   same one-pixel line, a little paler (0.10 to 0.15 against 0.08), but the real difference was just inside
   it. On the lit side the Potion's glass is a mid tone (0.70 of its lit tone) for a pixel before it brightens,

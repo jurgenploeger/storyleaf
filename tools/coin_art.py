@@ -48,8 +48,12 @@ SHINE = gold("#fff3c4", shades=3, relief=0.0)
 def coin(s, cx, cy, r=10.0, tilt=0.55, thick=3.0):
     """One coin lying flat at (cx, cy), `r` across its face, seen at `tilt` (its depth over its width)."""
     s.part()
-    s.ellipse(cx, cy + thick, r, r * tilt, EDGE, profile="flat")
-    s.ellipse(cx, cy, r, r * tilt, RIM)
+    # One capsule for its edge (straight sides down to the bottom curve), the face over it, both on the
+    # pixel grid so the coin rounds alike on every side.
+    cx, cy, r, ry = s.snapped(cx, cy, r, r * tilt)
+    tilt = ry / r
+    s.capsule(cx, cy, r, ry, thick, EDGE)
+    s.ellipse(cx, cy, r, ry, RIM)
     rim = max(1.4, r * 0.16)
     if r >= 5:
         # Sunken: the rim shades the field's upper left, so a crescent of shadow shows there.
@@ -73,11 +77,10 @@ def coin(s, cx, cy, r=10.0, tilt=0.55, thick=3.0):
 def stack(s, cx, base, count, r=10.0):
     """A stack of `count` coins, the bottom one at `base`: only the top one's face shows, the rest are edges."""
     for k in range(count):
-        x, y = cx + (0.8 if k % 2 else -0.6), base - k * 3.2
+        x, y = cx + (k % 2), base - k * 3
         if k < count - 1:
             s.part()
-            s.ellipse(x, y + 3, r, r * 0.55, EDGE, profile="flat")
-            s.ellipse(x, y, r, r * 0.55, EDGE, bulge=0.3)
+            s.capsule(x, y, r, r * 0.55, 3, EDGE)
         else:
             coin(s, x, y, r)
 

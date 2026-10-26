@@ -139,6 +139,10 @@ class Sprite:
         self.overlay = None      # RGBA pixels put on top after the outline (sparkles, glows)
         # A light 2 × 2 dither where a pixel sits between two shades (off for the clean finish).
         self.dither = True
+        # Ellipses snapped to the pixel grid (the clean finish): their edges on pixel boundaries, so both
+        # halves round alike. Off the grid, a small coin's sides wobbled in and out a pixel (playtesting
+        # 2026-10-26: "some pixels don't line up or are a bit out of place").
+        self.snap = False
         # Which object the next shapes belong to (`part`): with seams="parts", only where one object lies
         # over another is there a line between them, in the deep outline's colour; a coin's rim and face don't
         # get one.
@@ -160,7 +164,7 @@ class Sprite:
         the light, and (render with outline="deep") a one-pixel outline in a deep shade of what it rounds.
         Give its materials `texture=0, variety=0`."""
         s = cls(size)
-        s.light, s.rim, s.dither, s.seams = ITEM_LIGHT, "core", False, "parts"
+        s.light, s.rim, s.dither, s.seams, s.snap = ITEM_LIGHT, "core", False, "parts", True
         return s
 
     # --- shapes, in the sprite's own pixels -----------------------------------------------------------
@@ -169,7 +173,29 @@ class Sprite:
         ys, xs = np.mgrid[0:self.h * SS, 0:self.w * SS]
         return (xs + 0.5) / SS, (ys + 0.5) / SS
 
+    def snapped(self, cx, cy, rx, ry):
+        """An ellipse's centre and radii on the pixel grid, if the sprite snaps (`snap`): a whole number of
+        pixels across and down, its edges on pixel boundaries, so it rounds the same on every side."""
+        if not self.snap:
+            return cx, cy, rx, ry
+        w, h = max(1, round(2 * rx)), max(1, round(2 * ry))
+        return round(cx - w / 2) + w / 2, round(cy - h / 2) + h / 2, w / 2, h / 2
+
+    def capsule(self, cx, cy, rx, ry, depth, mat, profile="flat", bulge=1.0):
+        """An ellipse drawn out `depth` pixels downward, one shape with straight sides: the edge of a disc
+        seen from above and in front (a coin's). Two ellipses laid one over the other instead pinched in
+        where they met."""
+        cx, cy, rx, ry = self.snapped(cx, cy, rx, ry)
+        depth = round(depth) if self.snap else depth
+        x, y = self._grid()
+        disc = lambda yc: (x - cx) ** 2 / rx / rx + (y - yc) ** 2 / ry / ry <= 1
+        band = (np.abs(x - cx) <= rx) & (y >= cy) & (y <= cy + depth)
+        self._add((disc(cy) | band | disc(cy + depth), mat, profile, {"centre": (cx, cy + depth / 2), "bulge": bulge}))
+        return self
+
     def ellipse(self, cx, cy, rx, ry, mat, profile="dome", rot=0.0, bulge=1.0):
+        if not rot:
+            cx, cy, rx, ry = self.snapped(cx, cy, rx, ry)
         x, y = self._grid()
         c, s = math.cos(math.radians(rot)), math.sin(math.radians(rot))
         u, v = (x - cx) * c + (y - cy) * s, -(x - cx) * s + (y - cy) * c
