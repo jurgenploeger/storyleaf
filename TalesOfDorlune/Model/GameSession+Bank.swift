@@ -58,8 +58,8 @@ extension GameSession {
     var bankGold: Int { data.bankGold ?? 0 }
     func banked(_ id: String) -> Int { bank[id] ?? 0 }
 
-    /// What the bank holds, in the game's order of items.
-    var bankItems: [ItemDef] { content.items.filter { banked($0.id) > 0 } }
+    /// What the bank holds, in your order of it (`GameSession+ItemOrder`).
+    var bankItems: [ItemDef] { items(on: .bank) }
 
     /// Puts `amount` of a kind you carry in the bank, all of it unless told.
     func deposit(_ id: String, _ amount: Int = .max) {
