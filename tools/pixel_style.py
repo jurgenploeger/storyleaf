@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Storyleaf's pixel-art style, measured: the numbers behind docs/pixel-style.md.
+"""Tales of Dorlune's pixel-art style, measured: the numbers behind docs/pixel-style.md.
 
 Every sprite the game shipped from Retro Diffusion (monsters, props, buildings, tiles, and the weapon and
 armour icons shrunk from RD drawings) is the reference: `calibrate` measures them all and writes each

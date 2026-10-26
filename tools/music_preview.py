@@ -1,4 +1,4 @@
-"""Renders songs from content/music.json to WAV files: the same algorithm as Storyleaf/Audio/SongSynth.swift,
+"""Renders songs from content/music.json to WAV files: the same algorithm as TalesOfDorlune/Audio/SongSynth.swift,
 written with numpy + scipy so songs can be tuned and listened to without a Mac.
 
     python3 tools/music_preview.py town battle        # writes music-preview/town.wav, battle.wav

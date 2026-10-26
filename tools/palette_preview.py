@@ -7,7 +7,7 @@
 
 Each row is a small patch of the map drawn roughly the way the game does it (isometric ground,
 path, accent patch, pond, scattered props, the hero, the ambience tint and vignette): left without
-the palette, right with it. The grade mirrors Recolor.grade in Storyleaf/Art/Recolor.swift.
+the palette, right with it. The grade mirrors Recolor.grade in TalesOfDorlune/Art/Recolor.swift.
 """
 import json, random, sys, math, colorsys
 import numpy as np

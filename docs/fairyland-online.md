@@ -16,9 +16,9 @@ environment couldn't open the pages themselves, so a session that can should re-
 
 **Us** (since 0.8.11, 2026-10-25): the game is called **Tales of Dorlune** for players (the App Store name and the
 logo; the Home Screen, where a longer name is cut short, shows Dorlune), and the land is **Dorlune** in every
-in-game line. It was Talewild from 0.8.1 to 0.8.10, Storyleaf from 0.3.50, and the code, project and repo still are
-(renamed from Fairyland on 2026-10-22) until a follow-up renames them; only the bundle ID and the save files keep
-"Fairyland" for good. The goddess Liora binds the world's tales
+in-game line. It was Talewild from 0.8.1 to 0.8.10 and Storyleaf from 0.3.50. The code and project were Storyleaf too (renamed
+from Fairyland on 2026-10-22) until 2026-10-26, when they became TalesOfDorlune; only the bundle ID and the save
+files keep "Fairyland" for good. The goddess Liora binds the world's tales
 into one book, and its pages are the land. Names taken from FO were replaced with our own, and this file
 keeps the FO names when it describes the original:
 
@@ -40,8 +40,8 @@ Content ids (`rainbow_city`, `linns`, `dragon_god_staff`…) keep the old words,
 names (Fire Bolt, Potion, Seal Stone), Meadowbrook, and public-domain fairy tales (Snow White, Thumbelina,
 Oz) stay.
 
-**Name check (2026-10-06):** the App Store already has *Story Leaf - English Readers*, a picture-book
-reader in Education by Nobuaki Kuwabara. It comes up first when you search "Storyleaf". We keep Storyleaf as
+**Name check (2026-10-06, superseded: the game became Tales of Dorlune in 0.8.11):** the App Store already has *Story Leaf - English Readers*, a picture-book
+reader in Education by Nobuaki Kuwabara. It comes up first when you search "Storyleaf". We kept Storyleaf as
 one word, with a game subtitle (e.g. "Storyleaf: Cozy Pixel RPG"). Before launch: reserve the name in App
 Store Connect, and search STORYLEAF / STORY LEAF on the USPTO and EUIPO registers. No app, game or trademark
 turned up under these exact names, kept in case a rename is ever needed: Lanternvale, Talewood, Talehaven,
