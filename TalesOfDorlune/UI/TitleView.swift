@@ -378,13 +378,20 @@ private struct ChangelogPanel: View {
                     withAnimation(.easeInOut(duration: 0.25)) { reader.scrollTo(Self.top, anchor: .top) }
                 }
             }
+            .frame(maxHeight: .infinity, alignment: .top)
+            // The pager stays at the window's foot, however short or long the page's notes.
+            if pageCount > 1 {
+                pager
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+            }
         }
         .foregroundStyle(HUDStyle.cream)
         .frame(maxWidth: 720, maxHeight: .infinity)
         .gameWindow()
     }
 
-    /// This page's releases, and the pager under them.
+    /// This page's releases.
     private var notes: some View {
         VStack(alignment: .leading, spacing: 12) {
             ForEach(shown) { release in
@@ -422,13 +429,10 @@ private struct ChangelogPanel: View {
                     }
                 }
             }
-            if pageCount > 1 {
-                pager.padding(.top, 4)
-            }
         }
     }
 
-    /// Newer and Older under the notes, and which page this is.
+    /// Newer and Older at the window's foot, and which page this is.
     private var pager: some View {
         HStack(spacing: 10) {
             Button {
@@ -449,7 +453,11 @@ private struct ChangelogPanel: View {
             Button {
                 turn(to: page + 1)
             } label: {
-                Label(L("Older"), icon: .arrowRight)
+                // The arrow after the word, pointing the way it goes.
+                HStack(spacing: 6) {
+                    Text(L("Older"))
+                    IconImage(.arrowRight, size: 15)
+                }
             }
             .buttonStyle(PixelButtonStyle(compact: true))
             .opacity(page >= pageCount - 1 ? 0.4 : 1)
