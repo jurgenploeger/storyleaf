@@ -921,6 +921,31 @@ def _specks(mask, most):
     return out
 
 
+def _edge_outline(a):
+    """The drawing's outline pixels (OUTLINE) joined to its edge through other outline pixels, corners too,
+    as long as the run stays a line (a pixel with three or four outline pixels beside it is a filled area:
+    a hood's opening, drawn in the outline's colour, stays)."""
+    opaque = a[..., 3] >= 250
+    line = np.all(a[..., :3] == OUTLINE, axis=-1) & opaque
+    h, w = line.shape
+    p = np.pad(line, 1)
+    beside = p[:-2, 1:-1].astype(int) + p[2:, 1:-1] + p[1:-1, :-2] + p[1:-1, 2:]
+    thin = line & (beside <= 2)
+    q = np.pad(opaque, 1)
+    at_edge = line & ~(q[:-2, 1:-1] & q[2:, 1:-1] & q[1:-1, :-2] & q[1:-1, 2:])
+    seen = at_edge & thin
+    stack = list(zip(*np.nonzero(seen)))
+    while stack:
+        y, x = stack.pop()
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                yy, xx = y + dy, x + dx
+                if 0 <= yy < h and 0 <= xx < w and thin[yy, xx] and not seen[yy, xx]:
+                    seen[yy, xx] = True
+                    stack.append((yy, xx))
+    return seen
+
+
 def _inside(points, x, y):
     """Whether each (x, y) lies inside the polygon `points` (even-odd)."""
     inside = np.zeros(np.shape(x), bool)
@@ -954,24 +979,38 @@ def _exact_poly(cur, shape, scale, src, dst, kin):
     dy_ = np.floor(from_hi(hy, 1) / (2 * SS)) + 0.5
     drawn = _inside(list(points), dx_, dy_)
     same, voids = kin(own)
-    cut = ~shape_mask & drawn & np.isin(cur, [own] + list(voids))
+    family = [own] + list(same) + list(voids)
+    # Every shade of it is cut (its dark half and lit facet are colours of their own: left, they bulged past
+    # the cut, lumps on a ring's gem), and what the smoothing pushed into it from round it (the ring's band)
+    # goes back: a region mostly outside it. What's drawn on it (a star's middle) stays.
+    for lab in np.unique(cur[shape_mask & (cur >= 0)]):
+        if lab in family:
+            continue
+        mine = cur == lab
+        if (mine & shape_mask).sum() < 0.5 * mine.sum():
+            cur[mine & shape_mask] = -1
+    cut = ~shape_mask & drawn & np.isin(cur, family)
     # Cut inside the body (a small star on a big one), a pixel takes what lies round it, not the air: left
     # empty, the outline was drawn round each, dark specks round the small star.
-    solid = cur >= 0
-    for _ in range(SS * 2):
-        q = np.pad(solid, 1)
-        solid = solid & q[:-2, 1:-1] & q[2:, 1:-1] & q[1:-1, :-2] & q[1:-1, 2:]
+    # (Only a pixel right by the air, a pixel of the sprite or less, stays empty: the shape's own edge.)
+    near_air = cur < 0
+    for _ in range(SS):
+        q = np.pad(near_air, 1)
+        near_air = near_air | q[:-2, 1:-1] | q[2:, 1:-1] | q[1:-1, :-2] | q[1:-1, 2:]
     cur[cut] = -1
-    inside_cut = cut & solid
-    for _ in range(SS * 4):
-        if not inside_cut.any():
-            break
-        pc = np.pad(cur, 1, constant_values=-1)
-        for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-            nb = pc[1 + dy:cur.shape[0] + 1 + dy, 1 + dx:cur.shape[1] + 1 + dx]
-            take = inside_cut & (nb >= 0) & (nb != own)
-            cur[take] = nb[take]
-            inside_cut &= ~take
+    inside_cut = cut & ~near_air
+    # From what lies round it that isn't this shape (the band under a gem); failing that (a small star on a
+    # big one of its own colour family), from anything but its own colour: never left empty in the body.
+    for allowed in (lambda nb: ~np.isin(nb, family), lambda nb: (nb != own) & ~np.isin(nb, list(voids))):
+        for _ in range(SS * 4):
+            if not inside_cut.any():
+                break
+            pc = np.pad(cur, 1, constant_values=-1)
+            for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                nb = pc[1 + dy:cur.shape[0] + 1 + dy, 1 + dx:cur.shape[1] + 1 + dx]
+                take = inside_cut & (nb >= 0) & allowed(nb)
+                cur[take] = nb[take]
+                inside_cut &= ~take
     # And inside it, the gaps and the rounding's bites fill from its own colours (the nearest of them).
     hole = shape_mask & ((cur < 0) | np.isin(cur, list(voids)))
     for _ in range(SS * 4):
@@ -980,7 +1019,7 @@ def _exact_poly(cur, shape, scale, src, dst, kin):
         pc = np.pad(cur, 1, constant_values=-1)
         for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
             nb = pc[1 + dy:cur.shape[0] + 1 + dy, 1 + dx:cur.shape[1] + 1 + dx]
-            take = hole & (nb >= 0) & ~np.isin(nb, list(voids)) & _inside(pts, mx, my)
+            take = hole & (nb >= 0) & np.isin(nb, [own] + list(same)) & _inside(pts, mx, my)
             cur[take] = nb[take]
             hole &= ~take
     cur[hole] = own
@@ -1057,6 +1096,7 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
     `exact`: shapes of the drawing that must come out exactly round, (cx, cy, rx, ry, inner rx, inner ry) in
     its own pixels (item_art `Canvas.exact`): cut anew at the new size, snapped to the grid."""
     if clean:
+        edge_line = _edge_outline(np.asarray(img.convert("RGBA")))
         img = img.convert("RGBA").resize((img.width * 2, img.height * 2), Image.NEAREST)
         round_corners *= CLEAN["corners"]
     a = np.asarray(img.convert("RGBA")).copy()
@@ -1081,7 +1121,10 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
         q2 = np.pad(inner, 1)
         touches_air |= ~(q2[:-2, 1:-1] & q2[2:, 1:-1] & q2[1:-1, :-2] & q2[1:-1, 2:]) & body
         edge2 = outline & touches_air
-        # (Only outline pixels joined to the edge: an opening drawn inside stays.)
+        # (Only outline pixels joined to the edge: an opening drawn inside stays.) And the old outline
+        # wherever it runs on from the edge as a line (into the notches between a ring's little gems):
+        # left in, it was shaded as dark openings, brown lumps between the gems.
+        edge2 |= outline & np.kron(edge_line, np.ones((2, 2), bool))[:h, :w]
         body &= ~edge2
     else:
         body &= ~(outline & touches_air)

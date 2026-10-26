@@ -2318,7 +2318,9 @@ def draw_genie_lamp(c):
 def draw_genies_ring(c):
     """A gold ring with a swirl of blue smoke in its stone."""
     ring(c, GOLD, gem=True, gem_color=BLUE)
-    for (x, y) in ((14, 7), (17, 5), (19, 3), (15, 3)):
+    # The smoke curls in the stone: a pale wisp on its face. (Drawn as specks floating over it, at 64
+    # pixels they came out as brown lumps on the gem, 2026-10-26.)
+    for (x, y) in ((14, 11), (15, 10), (17, 10), (18, 11), (17, 12)):
         c.set(x, y, BLUE[2])
 
 

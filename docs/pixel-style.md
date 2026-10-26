@@ -166,7 +166,7 @@ still judge them. A new item: design it in `item_art.py` as before (or draw it a
 `clean_icon_art.py` when its design can't carry it), check it with `--kind item`, and look at it beside the
 Potion at the size the bag shows it, and in the game (`tools/screenshots.txt`: `clean_icons`, `clean_coins`).
 
-**Where it stands:** 327 of the 348 code-drawn icons pass (94%), 0 of 106 samples of the old finish do (at
+**Where it stands:** 328 of the 348 code-drawn icons pass (94%), 0 of 106 samples of the old finish do (at
 32 and blown up to 64). The 21 that miss pass every hard rule and were looked at by eye; their misses are
 their shapes, not the finish: thin whips (few pixels for their colours, a lash curling away from the light),
 necklaces whose cords climb to the top left (corner steps count as `kinks`, and the cord pulls
@@ -233,7 +233,15 @@ misses; smoothing that passed more of them is what lost the detail. The eye deci
   its corners kept (`_exact_poly`); its facets, drawn in colours of their own, stay. Smoothed, a ring's
   ruby went to a blob and its star lost its points ("Some shapes on the rings like the diamonds and star
   look very odd"). Where it's cut inside the body (a small star on a big one), a pixel takes what lies
-  round it: left empty, the outline was drawn round each, dark specks round the small star.
+  round it: left empty, the outline was drawn round each, dark specks round the small star. Every shade of
+  the gem is cut, not only its main colour (its dark half and lit facet are colours of their own: left,
+  they bulged past the cut, "These diamonds have strange lumps now"), and what the smoothing pushed into it
+  from round it (the ring's band) goes back; what's drawn on it (a star's middle) stays.
+- **The old outline goes wherever it runs on from the edge as a line** (`_edge_outline`), not only where it
+  touches the air: between a ring's little gems it ran into the notches, stayed, and was shaded as brown
+  lumps. A filled area in the outline's colour (a hood's opening) isn't a line and stays.
+- **Nothing floats off a shape as single pixels:** the genie's smoke, specks above its gem at 32, came out
+  as lumps at 64; it now curls on the stone's face.
 - **Specks off the body don't count toward its size:** a sparkle drawn with an outline kept the Jelly Pearl
   from being scaled up to fill its tile (up to 2× now).
 
