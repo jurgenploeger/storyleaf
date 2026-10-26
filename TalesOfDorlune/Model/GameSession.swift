@@ -1438,18 +1438,37 @@ final class GameSession {
         applyLook()
     }
 
+    /// Buys `amount` of a thing from a shop, if the coins pay for them all and the bag has room.
     @discardableResult
-    func buy(_ id: String) -> Bool {
-        guard let item = content.item(id), data.gold >= item.price else { return false }
+    func buy(_ id: String, _ amount: Int = 1) -> Bool {
+        guard amount > 0, let item = content.item(id) else { return false }
+        let cost = item.price * amount
+        guard data.gold >= cost else { return false }
         // Spending the last coins frees their slot.
-        guard bagSlotsFree > 0 || data.gold == item.price else {
+        guard amount <= bagSlotsFree + (data.gold == cost ? 1 : 0) else {
             post(L("Your bag is full. Put something in the bank first."), .system)
             return false
         }
-        data.gold -= item.price
+        data.gold -= cost
         SoundEffects.shared.play(.coins)
-        addItem(id)
+        addItem(id, amount)
         return true
+    }
+
+    /// How many you could buy at `price` each: as many as your coins pay for and your bag has room
+    /// for (spending the very last coins frees their slot for one more).
+    func affordable(at price: Int) -> Int {
+        let free = bagSlotsFree
+        guard price > 0 else { return free }
+        let paid = data.gold / price
+        if paid <= free { return paid }
+        return paid == free + 1 && paid * price == data.gold ? paid : free
+    }
+
+    /// Whether a thing is bought and sold several at once (potions, materials, eggs...): anything
+    /// but gear, which goes one piece at a time.
+    static func sellsInBulk(_ item: ItemDef) -> Bool {
+        !ItemType.equipmentSlots.contains(item.type)
     }
 
     // MARK: - Selling and trading
@@ -1462,13 +1481,15 @@ final class GameSession {
         content.items.filter { $0.price > 0 && count(of: $0.id) > 0 }
     }
 
-    /// Sells one to a shop. Returns the gold paid, or nil if there was nothing to sell.
+    /// Sells `amount` to a shop. Returns the gold paid, or nil if there weren't that many to sell.
     @discardableResult
-    func sell(_ id: String) -> Int? {
-        guard let item = content.item(id), item.price > 0 else { return nil }
+    func sell(_ id: String, _ amount: Int = 1) -> Int? {
+        guard amount > 0, let item = content.item(id), item.price > 0 else { return nil }
+        let held = count(of: id)
+        guard held >= amount else { return nil }
         // The coins go in the slot it leaves, if they need one.
-        guard removeItem(id) else { return nil }
-        let paid = Self.sellPrice(of: item)
+        data.inventory[id] = held > amount ? held - amount : nil
+        let paid = Self.sellPrice(of: item) * amount
         gainGold(paid)
         SoundEffects.shared.play(.coins)
         return paid
@@ -1480,9 +1501,13 @@ final class GameSession {
         enum Kind { case theyBuy, theySell }
         let kind: Kind
         let item: ItemDef
+        /// For one.
         let price: Int
         /// Who offered it, on which in-game day, for what: a deal is made once.
         let id: String
+        /// The most the deal is for: a few of a potion or a material (they'd buy that many, or
+        /// carry that many), one piece of gear.
+        var stock = 1
     }
 
     /// Today's offers from `adventurer`. They change with the in-game day, and stay put while
@@ -1495,7 +1520,12 @@ final class GameSession {
         let done = Set(data.tradesDone ?? [])
         func offer(_ kind: TradeOffer.Kind, _ item: ItemDef, _ price: Int) -> TradeOffer? {
             let id = "\(adventurer.id)|\(day)|\(kind == .theyBuy ? "buy" : "sell")|\(item.id)"
-            return done.contains(id) ? nil : TradeOffer(kind: kind, item: item, price: price, id: id)
+            guard !done.contains(id) else { return nil }
+            // A few of a potion or a material, from the deal's own seed, so the day's offers stay
+            // the ones they were.
+            var roll = SeededRandom(text: id)
+            let stock = GameSession.sellsInBulk(item) ? Int.random(in: 2...5, using: &roll) : 1
+            return TradeOffer(kind: kind, item: item, price: price, id: id, stock: stock)
         }
         // They want a few of your things, each of a different kind (gear, potions, materials...; playtesting
         // 2026-10-25: "they should buy a lot of different items, currently they only buy materials"), and
@@ -1542,19 +1572,23 @@ final class GameSession {
         return taken.map(\.item)
     }
 
-    /// Makes a deal. Returns false if you can't (not enough gold, or the item's gone).
+    /// Makes a deal, for `amount` (up to its `stock`). Returns false if you can't (not enough gold
+    /// or room, or not that many of the item). A deal is made once, however many it was for.
     @discardableResult
-    func trade(_ offer: TradeOffer) -> Bool {
-        guard !(data.tradesDone ?? []).contains(offer.id) else { return false }
+    func trade(_ offer: TradeOffer, _ amount: Int = 1) -> Bool {
+        guard amount > 0, amount <= offer.stock, !(data.tradesDone ?? []).contains(offer.id) else { return false }
+        let total = offer.price * amount
         switch offer.kind {
         case .theyBuy:
-            guard removeItem(offer.item.id) else { return false }
-            gainGold(offer.price)
+            let held = count(of: offer.item.id)
+            guard held >= amount else { return false }
+            data.inventory[offer.item.id] = held > amount ? held - amount : nil
+            gainGold(total)
         case .theySell:
-            guard data.gold >= offer.price,
-                  bagSlotsFree > 0 || data.gold == offer.price else { return false }
-            data.gold -= offer.price
-            addItem(offer.item.id)
+            guard data.gold >= total,
+                  amount <= bagSlotsFree + (data.gold == total ? 1 : 0) else { return false }
+            data.gold -= total
+            addItem(offer.item.id, amount)
         }
         data.tradesDone = Array((data.tradesDone ?? []).suffix(200)) + [offer.id]
         SoundEffects.shared.play(.coins)

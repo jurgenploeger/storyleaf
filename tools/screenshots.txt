@@ -313,6 +313,18 @@ bag_grid_land    | newgame,class=fighter,level=40,equip=bronze_broadsword,bag=si
 bag_sort         | newgame,class=fighter,level=40,bag=silver_sword+potion+seal_stone+ether+iron_axe,menu=bag,sortopen | 8
 bank_grid        | newgame,bank=meadow_banker,bag=potion+seal_stone+ether+iron_axe+bamboo+silver_sword+hi_potion,gold=500 | 8
 bank_grid_land   | newgame,bank=meadow_banker,bag=potion+seal_stone+ether+iron_axe+bamboo+silver_sword+hi_potion,gold=500,landscape | 8
+# Progressive disclosure (0.9.1): the Quests' Sort in the Bag's panel; a bank card's Delete behind "…",
+# folded and out; a piece of gear's Compare row, folded (equip_detail) and open; how many to buy or
+# sell at a shop; Settings' Advanced tab, in the game and on the title screen.
+quests_sort      | newgame,menu=quests,sortopen | 8
+bank_card        | newgame,bank=meadow_banker,bag=potion+potion+potion+seal_stone,gold=500,inspect=potion | 8
+bank_card_more   | newgame,bank=meadow_banker,bag=potion+potion+potion+seal_stone,gold=500,inspect=potion,more | 8
+equip_compare    | newgame,class=fighter,level=16,equip=leather_vest,bag=cloth_tunic+chain_mail+silk_robe+dragon_mail,menu=character,change=armor,inspect=chain_mail,compare | 8
+shop_buy_many    | newgame,npc=shop,gold=500,deal=potion | 8
+shop_sell_many   | newgame,npc=shop,bag=bamboo+bamboo+bamboo+bamboo+bamboo,sell=bamboo | 8
+shop_buy_many_land | newgame,npc=shop,gold=500,deal=potion,landscape | 8
+settings_advanced | newgame,menu=settings,sub=advanced,weather=clear | 8
+title_settings_advanced | titlepage=settings,sub=advanced | 6
 # What you drop lies on the ground as the things themselves, very small, in a heap.
 pile_drop        | newgame,map=meadowbrook,bag=potion+potion+ether+iron_axe+seal_stone+homeward_feather,drop=potion+ether+iron_axe+seal_stone+homeward_feather,hour=12,weather=clear | 12
 treasure_bag     | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king+rat_king+puss_in_boots+crystal_hearts,menu=bag | 8
@@ -790,7 +802,7 @@ hud_bag_land      | newgame,level=40,class=fighter,weather=clear,hour=12,bag=pet
 hud_toasts        | newgame,level=40,class=fighter,weather=clear,hour=12,notices | 12
 chat_notices      | newgame,level=40,class=fighter,weather=clear,hour=12,notices,chat | 16
 # Settings with footsteps switched off (the darker switch). `quiet` leaves them off, so this runs last.
-settings_quiet | newgame,menu=settings,weather=clear,quiet | 8
+settings_quiet | newgame,menu=settings,sub=advanced,weather=clear,quiet | 8
 # Each land's own homes (Retro Diffusion, 2026-10-22): standing just in front of one, at noon.
 homes_genie_desert | newgame,map=genie_desert,at=-9_19,weather=clear,hour=12 | 8
 homes_goldburg | newgame,map=goldburg,at=-26_20,weather=clear,hour=12 | 8
