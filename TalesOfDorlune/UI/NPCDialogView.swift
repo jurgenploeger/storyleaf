@@ -14,6 +14,11 @@ struct NPCDialogView: View {
     @State private var finished: FinishedQuest?
     /// An item tapped in the shop or at the smith, for a closer look.
     @State private var info: ItemDef? = DebugLaunch.itemInfo
+    /// How many of a potion or material to buy or sell, in a window over the shop. Debug
+    /// `deal=<item>` (or `sell=<item>`) opens one.
+    @State private var deal: ShopDeal? = DebugLaunch.shopDeal.flatMap { wanted in
+        Content.shared.item(wanted.item).map { ShopDeal(item: $0, selling: wanted.selling) }
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -49,10 +54,25 @@ struct NPCDialogView: View {
                         .frame(width: proxy.size.width, height: proxy.size.height)
                         .transition(.opacity)
                 }
+
+                if let deal {
+                    ItemDealWindow(session: session, item: deal.item, selling: deal.selling,
+                                   price: deal.selling ? GameSession.sellPrice(of: deal.item) : deal.item.price,
+                                   onDeal: { count in
+                                       let said: String? = deal.selling ? ShopPanel.sell(deal.item, count, session: session)
+                                                               : ShopPanel.buy(deal.item, count, session: session)
+                                       if let said { reply = said }
+                                       self.deal = nil
+                                   },
+                                   onClose: { self.deal = nil })
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                        .transition(.opacity)
+                }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
             .animation(.easeOut(duration: 0.2), value: finished?.quest.id)
             .animation(.easeOut(duration: 0.15), value: info?.id)
+            .animation(.easeOut(duration: 0.15), value: deal?.id)
         }
         .ignoresSafeArea()
     }
@@ -93,7 +113,7 @@ struct NPCDialogView: View {
                 Group {
                     switch npc.role {
                     case .healer: HealerPanel(session: session, reply: $reply)
-                    case .shop: ShopPanel(session: session, stock: npc.stock ?? [], reply: $reply, info: $info)
+                    case .shop: ShopPanel(session: session, stock: npc.stock ?? [], reply: $reply, info: $info, deal: $deal)
                     case .quests: EmptyView()   // QuestConversation
                     case .guild: GuildPanel(session: session, classID: npc.classId ?? "", reply: $reply)
                     case .chest, .stairs, .waystone: EmptyView()   // straight from the map (GameCoordinator.open)
@@ -296,13 +316,38 @@ private struct HealerPanel: View {
     }
 }
 
+/// How many of a thing to buy or sell at a shop, in a window over the dialog (`ItemDealWindow`).
+private struct ShopDeal {
+    let item: ItemDef
+    let selling: Bool
+    var id: String { "\(selling ? "sell" : "buy").\(item.id)" }
+}
+
 private struct ShopPanel: View {
     let session: GameSession
     let stock: [String]
     @Binding var reply: String?
     /// Tap an item for everything about it (who can use it, from what level).
     @Binding var info: ItemDef?
-    @State private var selling = false
+    /// A potion or material with more than one to buy or sell: how many, in a window of its own.
+    @Binding var deal: ShopDeal?
+    @State private var selling = DebugLaunch.shopDeal?.selling ?? false
+
+    /// Buys `count` and says so; what the shopkeeper says back.
+    static func buy(_ item: ItemDef, _ count: Int, session: GameSession) -> String {
+        guard session.buy(item.id, count) else { return L("Hmm, you're a bit short on gold.") }
+        let name = count > 1 ? "\(item.name) ×\(count)" : item.name
+        session.post(L("Bought {item}.", ["item": name]), .reward)
+        return L("Thanks! Enjoy your {item}.", ["item": name])
+    }
+
+    /// Sells `count` and says so; what the shopkeeper says back, if they were sold.
+    static func sell(_ item: ItemDef, _ count: Int, session: GameSession) -> String? {
+        guard let paid = session.sell(item.id, count) else { return nil }
+        let name = count > 1 ? "\(item.name) ×\(count)" : item.name
+        session.post(L("Sold {item} for {gold} gold.", ["item": name, "gold": paid]), .reward)
+        return L("A fine {item}! Here's {gold} gold.", ["item": name, "gold": paid])
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -349,11 +394,11 @@ private struct ShopPanel: View {
                     Text(L("own {count}", ["count": session.count(of: item.id)])).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.dim)
                 }
                 Button(L("{gold}g", ["gold": item.price])) {
-                    if session.buy(item.id) {
-                        session.post(L("Bought {item}.", ["item": item.name]), .reward)
-                        reply = L("Thanks! Enjoy your {item}.", ["item": item.name])
+                    // A potion or material, with coins and room for more than one: how many first.
+                    if GameSession.sellsInBulk(item) && session.affordable(at: item.price) > 1 {
+                        deal = ShopDeal(item: item, selling: false)
                     } else {
-                        reply = L("Hmm, you're a bit short on gold.")
+                        reply = Self.buy(item, 1, session: session)
                     }
                 }
                 .buttonStyle(PixelButtonStyle(tint: session.data.gold >= item.price ? HUDStyle.gold : HUDStyle.dim, compact: true))
@@ -389,9 +434,11 @@ private struct ShopPanel: View {
                 .buttonStyle(.plain)
                 .accessibilityHint(L("Shows what it does and who can use it"))
                 Button(L("Sell {gold}g", ["gold": GameSession.sellPrice(of: item)])) {
-                    if let paid = session.sell(item.id) {
-                        session.post(L("Sold {item} for {gold} gold.", ["item": item.name, "gold": paid]), .reward)
-                        reply = L("A fine {item}! Here's {gold} gold.", ["item": item.name, "gold": paid])
+                    // A potion or material you have more than one of: how many first.
+                    if GameSession.sellsInBulk(item) && session.count(of: item.id) > 1 {
+                        deal = ShopDeal(item: item, selling: true)
+                    } else if let said = Self.sell(item, 1, session: session) {
+                        reply = said
                     }
                 }
                 .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))

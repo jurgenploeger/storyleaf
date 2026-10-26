@@ -18,7 +18,7 @@ struct TitleView: View {
     @State private var changelogPage = 0
     @State private var showingSettings = DebugLaunch.titlePage == "settings"
     /// The Settings window's tab (`SettingsPage`).
-    @State private var settingsPage: SettingsPage = .general
+    @State private var settingsPage: SettingsPage = DebugLaunch.subTab.flatMap(SettingsPage.init(rawValue:)) ?? .general
     @State private var showingLanguages = DebugLaunch.titlePage == "languages"
     /// Its language: switching rebuilds the screen's text in place.
     @State private var localizer = Localizer.shared

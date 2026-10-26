@@ -40,10 +40,16 @@ import SpriteKit
 ///   unfold         the top-left HUD shows a big party in full instead of folded into one row
 ///   change=<slot>  open the Character tab's window of gear for weapon | armor | accessory (with menu=character)
 ///   inspect=<item> with change: that piece's card is open in it, with Cancel and Equip; with
-///                  menu=bag (no change): that item's card over the Bag
+///                  menu=bag (no change): that item's card over the Bag; with bank=: its card on
+///                  the bag's side of the bank
 ///   itemwindow=<w> with menu=bag and inspect: the card's drop | trade window is open over it (use=<item>
 ///                  with inspect opens who gets it over the card)
-///   sortopen       the Bag's (or the bank's) Sort button has its panel of orders out
+///   sortopen       the Bag's (or the bank's, or the Quests') Sort button has its panel of orders out
+///   compare        a piece of gear's card (inspect=, info=) opens with its Compare row open
+///   deal=<item>    with npc=<a shop>: the window for how many of that item to buy is open
+///   sell=<item>    with npc=<a shop>: the window for how many of that item to sell is open (put
+///                  some in the bag with bag=)
+///   more           with bank and inspect=<item>: the item's card has Delete out from behind "…"
 ///   race=<id>      play this race (content/classes.json); with titlepage=create, the new hero's race
 ///   style=<id>     wear this hairstyle (content/appearance.json `styles`)
 ///   hair=<id>      dye the hair this colour (content/appearance.json `hair`)
@@ -88,7 +94,8 @@ import SpriteKit
 ///                  nearest one's card shows Befriend, Trade (and Duel where duels are allowed)
 ///   quiet          footsteps switched off in Settings, and left off (so its screenshot runs last)
 ///   menu=<tab>     open that menu window: character | companions | friends | bag | quests | settings
-///   sub=<page>     a menu window's tab: skills | titles (menu=character), daily (menu=quests)
+///   sub=<page>     a menu window's tab: skills | titles (menu=character), daily (menu=quests),
+///                  sound | gameplay | saves | advanced (menu=settings, or titlepage=settings)
 ///   profile=<who>  tap a face in the top-left corner: hero (the Hero window) | pet (with pet=: the
 ///                  Companions window) | friend (with friends=: their card)
 ///   bottom         open the menu scrolled to the end
@@ -213,8 +220,17 @@ enum DebugLaunch {
     static var inspectedItem: String? { flags["inspect"] }
     /// `itemwindow=drop` or `trade`: with menu=bag and inspect, that window over the item's card.
     static var itemWindow: String? { flags["itemwindow"] }
-    /// `sortopen`: a list's Sort button (the Bag's, the bank's) opens with its panel out.
+    /// `sortopen`: a list's Sort button (the Bag's, the bank's, the Quests') opens with its panel out.
     static var opensSort: Bool { flags["sortopen"] != nil }
+    /// `compare`: a piece of gear's card opens with its Compare row open, each stat against what you wear.
+    static var opensComparison: Bool { flags["compare"] != nil }
+    /// `deal=<item>`: with npc=<a shop>, the window for how many of it to buy is open (`sell=<item>`:
+    /// to sell).
+    static var shopDeal: (item: String, selling: Bool)? {
+        if let id = flags["deal"] { return (id, false) }
+        if let id = flags["sell"] { return (id, true) }
+        return nil
+    }
     /// `titlepage=settings`: the title screen opens on that page instead of its menu.
     static var titlePage: String? { flags["titlepage"] }
     static var opensMenuAtBottom: Bool { flags["bottom"] != nil }
