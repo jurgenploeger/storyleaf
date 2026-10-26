@@ -2,8 +2,8 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
-      "version": "0.8.11",
-      "date": "2026-10-25",
+      "version": "0.8.12",
+      "date": "2026-10-26",
       "title": "A new name: Tales of Dorlune",
       "notes": [
         "The game has a new name: Tales of Dorlune. The land Liora bound from the world's fairy tales is called Dorlune.",

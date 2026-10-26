@@ -9,6 +9,9 @@ struct MenuView: View {
     var onQuitToTitle: (() -> Void)?
     /// Which of the menu's windows this is.
     let window: MenuTab
+    /// Opened by tapping your face (or your companion's) in the top-left corner: it grows from there,
+    /// not out of the menu button, and shrinks back there.
+    let fromFace: Bool
     /// A language switch (in Settings) rebuilds the panel's text, staying on the same tab.
     @State private var localizer = Localizer.shared
     /// Use or Give in the Bag: who gets it, in a window over the menu.
@@ -34,11 +37,13 @@ struct MenuView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(session: GameSession, window: MenuTab, onClose: @escaping () -> Void, onQuitToTitle: (() -> Void)? = nil) {
+    init(session: GameSession, window: MenuTab, onClose: @escaping () -> Void, onQuitToTitle: (() -> Void)? = nil,
+         fromFace: Bool = false) {
         self.session = session
         self.onClose = onClose
         self.onQuitToTitle = onQuitToTitle
         self.window = window
+        self.fromFace = fromFace
     }
 
     var body: some View {
@@ -132,17 +137,20 @@ extension MenuView {
     /// Motion it's just there.
     private var morphing: some View {
         let onItsSide = verticalSizeClass == .compact
+        // Out of the menu button in the bottom-right corner, or out of the faces in the top-left one.
+        let corner: Alignment = fromFace ? .topLeading : .bottomTrailing
+        let start = fromFace ? MenuMorph.fromFace : MenuMorph.from
         return GeometryReader { area in
             let full = area.size
-            let size = grown ? full : CGSize(width: min(MenuMorph.from.width, full.width), height: min(MenuMorph.from.height, full.height))
+            let size = grown ? full : CGSize(width: min(start.width, full.width), height: min(start.height, full.height))
             let shape = RoundedRectangle(cornerRadius: grown ? HUDStyle.windowRadius : MenuMorph.radius)
-            ZStack(alignment: .bottomTrailing) {
+            ZStack(alignment: corner) {
                 shape.fill(HUDStyle.glass)
                     .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)
                     .frame(width: size.width, height: size.height)
                 page
                     .frame(width: full.width, height: full.height)
-                    .mask(alignment: .bottomTrailing) { shape.frame(width: size.width, height: size.height) }
+                    .mask(alignment: corner) { shape.frame(width: size.width, height: size.height) }
                     .animation(grown ? .easeOut(duration: 0.22).delay(0.08) : .easeOut(duration: 0.1)) { $0.opacity(grown ? 1 : 0) }
                 HUDStyle.frame(shape)
                     .frame(width: size.width, height: size.height)
@@ -153,7 +161,7 @@ extension MenuView {
                     .offset(x: OrangeCloseButton.overhang, y: -OrangeCloseButton.overhang)
                     .frame(width: size.width, height: size.height, alignment: .topTrailing)
             }
-            .frame(width: full.width, height: full.height, alignment: .bottomTrailing)
+            .frame(width: full.width, height: full.height, alignment: corner)
         }
         // Into the menu as it closes: still there most of the way, gone as it reaches it.
         .animation(grown ? .easeOut(duration: 0.12) : .easeIn(duration: 0.3)) { $0.opacity(grown ? 1 : 0) }
