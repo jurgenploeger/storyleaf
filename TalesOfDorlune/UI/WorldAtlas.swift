@@ -225,11 +225,12 @@ struct WorldAtlas: View {
 
     /// Along the map's top or bottom edge, under what's written there: the map blurred more the
     /// nearer the edge (`edgeBlurs`, as the story's pictures blur toward where they melt into the
-    /// window, `EdgeBlur`), and over it the window's own blue (`HUDStyle.glassTop`, `glassFoot`)
-    /// melting to clear, with no dark tint to muddy the map's colours.
+    /// window, `EdgeBlur`), and over it the window's own blue (`HUDStyle.glassTop`, the same at both
+    /// edges: the foot's deeper blue read as a different colour, playtesting 2026-10-26) melting to
+    /// clear, with no dark tint to muddy the map's colours.
     private func edgeBand(_ edge: SwiftUI.Edge, marks: [Mark]) -> some View {
         let top = edge == .top
-        let blue = top ? HUDStyle.glassTop : HUDStyle.glassFoot
+        let blue = HUDStyle.glassTop
         let size = viewSize
         return GeometryReader { band in
             ZStack {
