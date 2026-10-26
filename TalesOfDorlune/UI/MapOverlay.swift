@@ -192,8 +192,8 @@ struct CaveMap: View {
 }
 
 /// The time of day on the game's clock (`GameClock`) with a sun by day and a moon by night, on a
-/// dark pill: on the map, where the HUD's calendar plate went. Only the time, in the player's own
-/// way of writing it ("3:20 PM", "15:20").
+/// dark pill: on the map, where the HUD's calendar plate went. Only the hour, in the player's own
+/// way of writing it ("8 PM", "20 Uhr"; playtesting 2026-10-26: "Don't show the minutes").
 private struct GameTimePill: View {
     let session: GameSession
     /// With night and day switched off in Settings, the sun shines on the pill around the clock.
@@ -208,7 +208,7 @@ private struct GameTimePill: View {
             HStack(spacing: 4) {
                 IconImage(daytime ? .sun : .moon, size: 12)
                     .foregroundStyle(daytime ? HUDStyle.gold : HUDStyle.cream)
-                Text(Self.text(hour: hour, minute: Int((hours - hours.rounded(.down)) * 60)))
+                Text(Self.text(hour: hour))
                     .font(HUDStyle.font(11).monospacedDigit())
                     .foregroundStyle(HUDStyle.cream)
                     .lineLimit(1)
@@ -218,15 +218,15 @@ private struct GameTimePill: View {
         }
     }
 
-    private static func text(hour: Int, minute: Int) -> String {
+    private static func text(hour: Int) -> String {
         var calendar = Calendar(identifier: .gregorian)
         let utc = TimeZone(identifier: "UTC") ?? .current
         calendar.timeZone = utc
-        guard let date = calendar.date(from: DateComponents(year: 2001, month: 1, day: 1, hour: hour, minute: minute)) else {
-            return String(format: "%02d:%02d", hour, minute)
+        guard let date = calendar.date(from: DateComponents(year: 2001, month: 1, day: 1, hour: hour)) else {
+            return String(format: "%02d", hour)
         }
-        return date.formatted(Date.FormatStyle(date: .omitted, time: .shortened, locale: Localizer.shared.locale,
-                                               calendar: calendar, timeZone: utc))
+        return date.formatted(Date.FormatStyle(locale: Localizer.shared.locale, calendar: calendar, timeZone: utc)
+            .hour(.defaultDigits(amPM: .abbreviated)))
     }
 }
 
