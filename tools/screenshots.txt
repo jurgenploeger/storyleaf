@@ -326,6 +326,12 @@ boss_story_landscape | newgame,level=60,class=fighter,map=rat_cavern,boss=rat_th
 battle_companion | newgame,level=30,class=tamer,pet=pineapple,map=sunny_meadow,battle=2,orders | 15
 battle_afflict | newgame,level=30,class=mage,map=sunny_meadow,battle=3,afflict | 15
 party_full   | newgame,level=43,class=fighter,pet=pineapple,friends=4,map=twilight_woods | 15
+# The top-left faces (2026-10-26): you and your companion each with HP, MP and XP, the portrait as
+# tall as the panel beside it, names in the rounded letters; upright, on its side, dark, in French.
+party_frames | newgame,level=30,class=fighter,pet=pineapple,map=sunny_meadow,weather=clear,hour=12 | 8
+party_frames_land | newgame,level=30,class=fighter,pet=pineapple,map=sunny_meadow,landscape,weather=clear,hour=12 | 8
+party_frames_dark | newgame,level=30,class=fighter,pet=pineapple,map=sunny_meadow,dark,weather=clear,hour=12 | 8
+party_frames_fr | newgame,lang=fr,level=30,class=fighter,pet=pineapple,map=sunny_meadow,weather=clear,hour=12 | 8
 battle_party | newgame,level=43,class=fighter,pet=pineapple,friends=4,map=sunny_meadow,battle=3 | 15
 # Your party's faces bottom left while you choose, each ticked as that one locks in their move: with
 # 40 seconds to choose, some of your friends have and some haven't yet.
