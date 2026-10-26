@@ -50,7 +50,8 @@ struct TitleView: View {
     var body: some View {
         ZStack {
             if let intro {
-                IntroView(finishTitle: intro.thenCreate ? L("Create your hero") : L("Done"), skips: intro.thenCreate, startPage: intro.startPage,
+                IntroView(finishTitle: intro.thenCreate ? L("Create your hero") : L("Done"), skips: intro.thenCreate,
+                          howToPlayOnly: intro.howToPlayOnly, startPage: intro.startPage,
                           onClose: { withAnimation(.easeInOut(duration: 0.25)) { self.intro = nil } }) {
                     withAnimation(.easeInOut(duration: 0.25)) {
                         self.intro = nil
@@ -275,7 +276,7 @@ struct TitleView: View {
             } else {
                 Button(L("How to play")) {
                     withAnimation(.easeInOut(duration: 0.25)) {
-                        intro = IntroRequest(startPage: IntroView.howToPlayPage, thenCreate: false)
+                        intro = IntroRequest(startPage: 0, thenCreate: false, howToPlayOnly: true)
                     }
                 }
                 .buttonStyle(TitleRoundButtonStyle(icon: .book))
@@ -597,6 +598,8 @@ private struct IntroRequest {
     let startPage: Int
     /// Go on to hero creation afterwards (a new game), rather than back to the menu.
     let thenCreate: Bool
+    /// How to play's slides alone (the title screen's How to play), not the story before them.
+    var howToPlayOnly = false
 }
 
 private struct RaceCard: View {

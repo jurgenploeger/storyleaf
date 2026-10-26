@@ -58,7 +58,7 @@ private struct CoachStep {
 }
 
 /// The first-play tour: dims the screen except for one control at a time, with a note beside it:
-/// Previous, Next and Skip, and the close button in its corner.
+/// Back (from the second note on), Next and Skip, and the close button in its corner.
 struct CoachMarksView: View {
     let anchors: [CoachTarget: Anchor<CGRect>]
     let onDone: () -> Void
@@ -147,14 +147,17 @@ struct CoachMarksView: View {
                     .opacity(isLast ? 0 : 1)
                     .disabled(isLast)
                 Spacer(minLength: 0)
+                // Not on the first note, where there's nothing to go back to; it keeps its place, so
+                // Next stays put.
                 Button {
                     withAnimation(.easeInOut(duration: 0.35)) { index -= 1 }
                 } label: {
-                    Label(L("Previous"), icon: .arrowLeft, size: 12)
+                    Label(L("Back"), icon: .arrowLeft, size: 12)
                 }
                 .buttonStyle(PixelButtonStyle(compact: true))
-                .opacity(index == 0 ? 0.4 : 1)
+                .opacity(index == 0 ? 0 : 1)
                 .disabled(index == 0)
+                .accessibilityHidden(index == 0)
                 Button {
                     if isLast {
                         onDone()
@@ -162,7 +165,11 @@ struct CoachMarksView: View {
                         withAnimation(.easeInOut(duration: 0.35)) { index += 1 }
                     }
                 } label: {
-                    Label(isLast ? L("Let's go") : L("Next"), icon: isLast ? .check : .arrowRight, size: 12)
+                    // The mark after the words, as on the onboarding's Next.
+                    HStack(spacing: 6) {
+                        Text(isLast ? L("Let's go") : L("Next"))
+                        IconImage(isLast ? .check : .arrowRight, size: 12)
+                    }
                 }
                 .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
             }

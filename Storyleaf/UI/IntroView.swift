@@ -6,7 +6,7 @@ import SwiftUI
 /// level up, the town and a quest), and the whole world map. Each slide's picture fills the top of
 /// the window (its left side, on a phone held sideways) and melts into it (`progressiveFade`), its
 /// title and words below; Back, Next and a dot for each slide along the foot, and a swipe turns too.
-/// Also opens from the title screen, at How to play.
+/// Also opens from the title screen with How to play's slides alone (`howToPlayOnly`).
 struct IntroView: View {
     /// What the last slide's button says ("Create your hero", or "Done" when just reading).
     let finishTitle: String
@@ -22,8 +22,8 @@ struct IntroView: View {
     @State private var reel: StoryScene
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
-    /// How to play's first slide, after the story's three.
-    static let howToPlayPage = 3
+    /// The picture's share of the window's height, on a phone held upright.
+    private static let pictureShare: CGFloat = 0.75
 
     private enum Slide: Equatable {
         case chapter(StoryScene.Kind)
@@ -32,23 +32,28 @@ struct IntroView: View {
         case world
     }
 
-    private static let slides: [Slide] = [.chapter(.gathering), .chapter(.shadows), .chapter(.arrival)]
-        + (0..<HowToPlayStep.count).map(Slide.step) + [.world]
+    private static let story: [Slide] = [.chapter(.gathering), .chapter(.shadows), .chapter(.arrival)]
+    private static let howToPlay: [Slide] = (0..<HowToPlayStep.count).map(Slide.step) + [.world]
+    /// The story and How to play for a new game; How to play alone from the title screen.
+    private let slides: [Slide]
 
-    init(finishTitle: String, skips: Bool = true, startPage: Int = 0, onClose: @escaping () -> Void, onFinish: @escaping () -> Void) {
+    init(finishTitle: String, skips: Bool = true, howToPlayOnly: Bool = false, startPage: Int = 0,
+         onClose: @escaping () -> Void, onFinish: @escaping () -> Void) {
         self.finishTitle = finishTitle
         self.skips = skips
         self.onClose = onClose
         self.onFinish = onFinish
-        let page = min(max(0, startPage), Self.slides.count - 1)
+        let slides = howToPlayOnly ? Self.howToPlay : Self.story + Self.howToPlay
+        self.slides = slides
+        let page = min(max(0, startPage), slides.count - 1)
         _page = State(initialValue: page)
         var clip = StoryScene.Clip.walk
-        if case .step(let step) = Self.slides[page] { clip = StoryScene.Clip.showing(step: step) }
+        if case .step(let step) = slides[page] { clip = StoryScene.Clip.showing(step: step) }
         _reel = State(initialValue: StoryScene(kind: .reel, startClip: DebugLaunch.introClip ?? clip.rawValue))
     }
 
-    private var slide: Slide { Self.slides[page] }
-    private var isLastPage: Bool { page == Self.slides.count - 1 }
+    private var slide: Slide { slides[page] }
+    private var isLastPage: Bool { page == slides.count - 1 }
     /// A phone on its side: the picture on the left, the words on the right.
     private var wide: Bool { verticalSizeClass == .compact }
 
@@ -63,11 +68,13 @@ struct IntroView: View {
                         words
                     }
                 } else {
-                    // Wider than tall, so little of the picture's sides is cropped (VignetteView).
+                    // The words start inside the picture's fade, where it has melted into the glass.
+                    let picture = size.height * Self.pictureShare
                     VStack(spacing: 0) {
                         visual(fade: .bottom)
-                            .frame(height: min((size.width - 6) / 1.6, size.height * 0.5))
+                            .frame(height: picture)
                         words
+                            .padding(.top, -picture * ProgressiveFade.fadeReach * 0.6)
                     }
                 }
             }
@@ -80,9 +87,9 @@ struct IntroView: View {
         .onChange(of: page) { old, new in
             // How to play's picture plays the part for the step you turned to; from Towns to Quests,
             // both the town, it carries on.
-            guard case .step(let step) = Self.slides[new] else { return }
+            guard case .step(let step) = slides[new] else { return }
             let clip = StoryScene.Clip.showing(step: step).rawValue
-            if case .step = Self.slides[old], reel.hud.clip == clip { return }
+            if case .step = slides[old], reel.hud.clip == clip { return }
             reel.play(clip: clip)
         }
     }
@@ -176,16 +183,19 @@ struct IntroView: View {
     /// button, which can be long: "Create your hero").
     private var controls: some View {
         VStack(spacing: 12) {
-            PageDots(count: Self.slides.count, current: page)
+            PageDots(count: slides.count, current: page)
             HStack(spacing: 10) {
+                // Not on the first slide, where there's nothing to go back to; it keeps its place, so
+                // Next stays put.
                 Button {
                     turn(by: -1)
                 } label: {
                     Label(L("Back"), icon: .arrowLeft)
                 }
                 .buttonStyle(PixelButtonStyle(compact: true))
-                .opacity(page == 0 ? 0.4 : 1)
+                .opacity(page == 0 ? 0 : 1)
                 .disabled(page == 0)
+                .accessibilityHidden(page == 0)
                 Spacer(minLength: 0)
                 Button {
                     if isLastPage {
@@ -194,7 +204,11 @@ struct IntroView: View {
                         turn(by: 1)
                     }
                 } label: {
-                    Label(isLastPage ? finishTitle : L("Next"), icon: .arrowRight)
+                    // The arrow after the words: onward.
+                    HStack(spacing: 6) {
+                        Text(isLastPage ? finishTitle : L("Next"))
+                        IconImage(.arrowRight, size: 15)
+                    }
                 }
                 .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
             }
@@ -214,7 +228,7 @@ struct IntroView: View {
 
     private func turn(by step: Int) {
         let next = page + step
-        guard Self.slides.indices.contains(next) else { return }
+        guard slides.indices.contains(next) else { return }
         forward = step > 0
         withAnimation(.easeInOut(duration: 0.25)) { page = next }
     }
@@ -241,15 +255,24 @@ private struct PageDots: View {
 
 private struct PageTitle: View {
     let text: String
-    let icon: GameIcon
 
     var body: some View {
-        Label(text, icon: icon, size: 18)
-            .font(HUDStyle.font(18))
+        Text(text)
+            .font(HUDStyle.font(24))
             .foregroundStyle(HUDStyle.gold)
             .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
+            .fixedSize(horizontal: false, vertical: true)
             // Clear of the close button in the corner, on a phone held sideways.
             .padding(.trailing, 24)
+    }
+}
+
+/// A slide's words under its title.
+private extension View {
+    func slideText() -> some View {
+        font(HUDStyle.font(15))
+            .foregroundStyle(HUDStyle.cream)
+            .lineSpacing(2)
     }
 }
 
@@ -323,11 +346,11 @@ extension View {
 private struct ChapterText: View {
     let chapter: StoryScene.Kind
 
-    private var title: (text: String, icon: GameIcon) {
+    private var title: String {
         switch chapter {
-        case .gathering: (text: L("Once upon a time"), icon: GameIcon.book)
-        case .shadows: (text: L("The tales go wrong"), icon: GameIcon.moon)
-        case .arrival, .reel: (text: L("A new adventurer"), icon: GameIcon.sparkles)
+        case .gathering: L("Once upon a time")
+        case .shadows: L("The tales go wrong")
+        case .arrival, .reel: L("A new adventurer")
         }
     }
 
@@ -350,11 +373,10 @@ private struct ChapterText: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            PageTitle(text: title.text, icon: title.icon)
+            PageTitle(text: title)
             StoryLines(lines: lines)
+                .slideText()
         }
-        .font(HUDStyle.font(12))
-        .foregroundStyle(HUDStyle.cream)
     }
 }
 
@@ -398,7 +420,6 @@ private struct StoryLines: View {
 
 /// A step of How to play, a slide of its own; the reel plays its part (`StoryScene.Clip.steps`).
 private struct HowToPlayStep {
-    let icon: GameIcon
     let title: String
     let text: String
 
@@ -407,14 +428,14 @@ private struct HowToPlayStep {
 
     static var all: [HowToPlayStep] {
         [
-            HowToPlayStep(icon: .tap, title: L("Walk"), text: L("Drag the stick in the corner, or tap the ground and your hero walks there.")),
-            HowToPlayStep(icon: .sword, title: L("Battle"), text: L("Monsters jump out as you explore the wild. Battles take turns: attack, cast a skill or use an item.")),
-            HowToPlayStep(icon: .paw, title: L("Companions"), text: L("Throw a Seal Stone at a monster to befriend it: the weaker it is, the likelier it works. Keep up to five.")),
-            HowToPlayStep(icon: .star, title: L("Grow"), text: L("Every level gives a skill point. At level {level}, visit a guild master in town to become a Fighter, Mage or Beast Tamer.", ["level": Content.shared.classChoiceLevel])),
+            HowToPlayStep(title: L("Walk"), text: L("Drag the stick in the corner, or tap the ground and your hero walks there.")),
+            HowToPlayStep(title: L("Battle"), text: L("Monsters jump out as you explore the wild. Battles take turns: attack, cast a skill or use an item.")),
+            HowToPlayStep(title: L("Companions"), text: L("Throw a Seal Stone at a monster to befriend it: the weaker it is, the likelier it works. Keep up to five.")),
+            HowToPlayStep(title: L("Grow"), text: L("Every level gives a skill point. At level {level}, visit a guild master in town to become a Fighter, Mage or Beast Tamer.", ["level": Content.shared.classChoiceLevel])),
             // Towns before Quests, as the town part shows them: the square as you walk in, then Elder
             // Oak's quest.
-            HowToPlayStep(icon: .heart, title: L("Towns"), text: L("Shops, healers and checkpoints wait in town. Your progress saves by itself.")),
-            HowToPlayStep(icon: .star, title: L("Quests"), text: L("Villagers with a gold ! have work for you. Quests reward you and open the roads to new places.")),
+            HowToPlayStep(title: L("Towns"), text: L("Shops, healers and checkpoints wait in town. Your progress saves by itself.")),
+            HowToPlayStep(title: L("Quests"), text: L("Villagers with a gold ! have work for you. Quests reward you and open the roads to new places.")),
         ]
     }
 }
@@ -423,14 +444,10 @@ private struct StepText: View {
     let step: HowToPlayStep
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(L("How to play"))
-                .font(HUDStyle.font(11))
-                .foregroundStyle(HUDStyle.dim)
-            PageTitle(text: step.title, icon: step.icon)
+        VStack(alignment: .leading, spacing: 10) {
+            PageTitle(text: step.title)
             Text(step.text)
-                .font(HUDStyle.font(12))
-                .foregroundStyle(HUDStyle.cream)
+                .slideText()
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -441,17 +458,16 @@ private struct StepText: View {
 private struct WorldText: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            PageTitle(text: L("The world of Dorlune"), icon: .map)
+            PageTitle(text: L("The world of Dorlune"))
             Text(L("Roads join every place to its neighbours. Your journey starts in Meadowbrook. Quests open the roads further out, where stronger monsters live."))
-                .font(HUDStyle.font(12))
-                .foregroundStyle(HUDStyle.cream)
+                .slideText()
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 14) {
                 Label { Text(L("Start")) } icon: { Circle().fill(HUDStyle.gold).frame(width: 9, height: 9) }
                 Label { Text(L("Town")) } icon: { RoundedRectangle(cornerRadius: 2).strokeBorder(HUDStyle.gold, lineWidth: 2).frame(width: 10, height: 10) }
                 Label { Text(L("Boss")) } icon: { IconImage(.sword, size: 10).foregroundStyle(HUDStyle.hp) }
             }
-            .font(HUDStyle.font(10))
+            .font(HUDStyle.font(12))
             .foregroundStyle(HUDStyle.dim)
             .labelStyle(CompactLabelStyle())
         }

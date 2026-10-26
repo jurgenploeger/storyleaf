@@ -22,9 +22,9 @@ struct StoryVignette: View {
     }
 }
 
-/// A StoryScene on screen, with its HUD over it: filling the frame it's given (its sides cropped
-/// when that's narrower than the picture), melting into the window along `fade` (`progressiveFade`),
-/// with the HUD kept clear of the fade.
+/// A StoryScene on screen, with its HUD over it: filling the frame it's given, the scene taking the
+/// frame's shape (`StoryScene.fit`), melting into the window along `fade` (`progressiveFade`), with
+/// the HUD kept clear of the fade.
 struct VignetteView: View {
     let scene: StoryScene
     let fade: SwiftUI.Edge
@@ -36,6 +36,8 @@ struct VignetteView: View {
             SpriteView(scene: scene, isPaused: reduceMotion, options: [.allowsTransparency])
                 .progressiveFade(fade)
                 .overlay { VignetteHUDView(hud: scene.hud, clear: EdgeInsets(fade, reach)) }
+                .onAppear { scene.fit(proxy.size) }
+                .onChange(of: proxy.size) { scene.fit(proxy.size) }
         }
         .accessibilityHidden(true)
     }
@@ -100,9 +102,9 @@ private struct VignetteHUDView: View {
             // The picture is shaped like a phone held sideways; its HUD keeps to that, a little larger
             // so it reads.
             let scale = proxy.size.width / 700
-            // The scene fills the view and is cropped to it, as SpriteKit's aspectFill does, the same
-            // amount off each side.
-            let stage = StoryScene.stage
+            // The scene takes the view's shape (`StoryScene.fit`); any rounding is cropped as
+            // SpriteKit's aspectFill does, the same amount off each side.
+            let stage = StoryScene.size(for: proxy.size)
             let points = max(proxy.size.width / stage.width, proxy.size.height / stage.height)
             let crop = CGSize(width: (stage.width * points - proxy.size.width) / 2, height: (stage.height * points - proxy.size.height) / 2)
             ZStack {
@@ -269,8 +271,30 @@ final class StoryScene: SKScene {
         }
     }
 
-    /// The scene's size in points; the view scales it to fit.
+    /// The picture as it's laid out, in points: everything stands on this stage, in the middle of
+    /// the scene. A view taller than the stage gets a taller scene (`fit`), the map or the fight's
+    /// backdrop filling the rest, rather than the stage zoomed in and its sides cut off.
     static let stage = CGSize(width: 360, height: 170)
+    /// As little of the stage's width as a tall view shows: a little closer in, everyone still in it.
+    private static let narrowest: CGFloat = 300
+
+    /// The scene for a view of `view`'s shape: the stage's width (down to `narrowest` for a tall
+    /// view), and as tall as the view's shape asks, never shorter than the stage.
+    static func size(for view: CGSize) -> CGSize {
+        guard view.width > 0, view.height > 0 else { return stage }
+        let aspect = view.width / view.height
+        let width = min(stage.width, max(narrowest, stage.height * aspect))
+        return CGSize(width: width, height: max(stage.height, (width / aspect).rounded()))
+    }
+
+    /// Plain ground round every patch, in cells: enough for the tallest picture (3/4 of the
+    /// onboarding's window, on a phone held upright) wherever the camera looks on the layout.
+    private static let margin = 10
+
+    /// Everything laid out on the stage, kept in the middle of the scene.
+    private let stageRoot = SKNode()
+    /// The ambiences' particles, over the whole scene.
+    private var particleLayers: [SKNode] = []
     /// What the HUD over the picture shows (VignetteView draws it).
     let hud = VignetteHUD()
     private let kind: Kind
@@ -337,16 +361,15 @@ final class StoryScene: SKScene {
         scaleMode = .aspectFill
         anchorPoint = .zero
         backgroundColor = .clear
-        addChild(mapRoot)
+        addChild(stageRoot)
+        stageRoot.addChild(mapRoot)
         mapRoot.addChild(world)
-        tint.anchorPoint = .zero
         tint.zPosition = 1_000
         tint.isHidden = true
         mapRoot.addChild(tint)
-        addChild(battleRoot)
+        stageRoot.addChild(battleRoot)
         battleRoot.isHidden = true
         for node in [backdrop, shade] {
-            node.anchorPoint = .zero
             battleRoot.addChild(node)
         }
         backdrop.zPosition = -10_000
@@ -357,6 +380,52 @@ final class StoryScene: SKScene {
         flash.zPosition = 40_000
         flash.alpha = 0
         addChild(flash)
+        layOut()
+    }
+
+    /// Takes the shape of the view it's shown in (`size(for:)`).
+    func fit(_ view: CGSize) {
+        let fitted = Self.size(for: view)
+        if size != fitted { size = fitted }
+    }
+
+    override func didChangeSize(_ oldSize: CGSize) {
+        super.didChangeSize(oldSize)
+        layOut()
+    }
+
+    /// The stage in the middle of the scene, and what covers the whole scene stretched over it.
+    private func layOut() {
+        stageRoot.position = CGPoint(x: (size.width - Self.stage.width) / 2, y: (size.height - Self.stage.height) / 2)
+        // The scene's middle, in the stage's points.
+        let middle = CGPoint(x: Self.stage.width / 2, y: Self.stage.height / 2)
+        for node in [tint, shade] {
+            node.position = middle
+            node.size = size
+        }
+        backdrop.position = middle
+        backdrop.size = covering(backdrop.texture)
+        flash.size = size
+        for layer in particleLayers {
+            for case let emitter as SKEmitterNode in layer.children {
+                emitter.position = CGPoint(x: size.width / 2, y: size.height / 2 + 30)
+                emitter.particlePositionRange = CGVector(dx: size.width + 60, dy: size.height + 60)
+            }
+        }
+    }
+
+    /// A backdrop's size to cover the scene in its own shape.
+    private func covering(_ texture: SKTexture?) -> CGSize {
+        guard let texture, texture.size().width > 0, texture.size().height > 0 else { return size }
+        let picture = texture.size()
+        let scale = max(size.width / picture.width, size.height / picture.height)
+        return CGSize(width: picture.width * scale, height: picture.height * scale)
+    }
+
+    /// The fight's backdrop: a snapshot of the land, covering the scene.
+    private func setBackdrop(_ texture: SKTexture) {
+        backdrop.texture = texture
+        backdrop.size = covering(texture)
     }
 
     required init?(coder: NSCoder) {
@@ -464,7 +533,7 @@ final class StoryScene: SKScene {
     /// the Thousand and One Nights, candy canes from Gumdrop Peaks. Its creatures play below while
     /// sparks of the tales drift up into her light.
     private func buildGathering() {
-        guard let meadow = MapPatch(map: "sunny_meadow", columns: 22, rows: 22) else { return }
+        guard let meadow = MapPatch(map: "sunny_meadow", columns: 22, rows: 22, margin: Self.margin) else { return }
         meadow.road([(0, 8), (7, 10), (12, 10), (21, 12)])
         meadow.blob(8, 14, radius: 2.5, .water)
         meadow.blob(14, 6, radius: 2.6, .accent)
@@ -487,7 +556,7 @@ final class StoryScene: SKScene {
         // Liora's light, high over the land, drawing every tale toward it.
         let light = glow(Nodes.gold, size: 120, at: CGPoint(x: 180, y: 150))
         light.run(.repeatForever(.sequence([.scale(to: 1.15, duration: 1.4), .scale(to: 0.92, duration: 1.4)])))
-        Ambience.twinkle(around: CGPoint(x: 180, y: 136), radius: 34, count: 6, in: self)
+        Ambience.twinkle(around: CGPoint(x: 180, y: 136), radius: 34, count: 6, in: stageRoot)
         run(.repeatForever(.sequence([.run { [weak self] in self?.riseToTheLight() }, .wait(forDuration: 0.28)])))
         particles("petals")
     }
@@ -530,7 +599,7 @@ final class StoryScene: SKScene {
                 guard let self else { return }
                 for (place, layer) in weather.enumerated() { layer.isHidden = place != index }
                 if let shot {
-                    self.backdrop.texture = shot
+                    self.setBackdrop(shot)
                     self.mapRoot.isHidden = true
                 } else if let land {
                     self.show(land.patch, zoom: 0.8, looking: land.patch.middle)
@@ -555,7 +624,7 @@ final class StoryScene: SKScene {
         }
         battleRoot.isHidden = false
         if let first = backdrops.first ?? nil {
-            backdrop.texture = first
+            setBackdrop(first)
             mapRoot.isHidden = true
         } else if let forest = lands.first ?? nil {
             show(forest.patch, zoom: 0.8, looking: forest.patch.middle)
@@ -567,7 +636,7 @@ final class StoryScene: SKScene {
 
     /// The Snow White Forest at night.
     private func makeForest() -> (patch: MapPatch, tint: UIColor)? {
-        guard let forest = MapPatch(map: "snow_white_forest", columns: 22, rows: 22) else { return nil }
+        guard let forest = MapPatch(map: "snow_white_forest", columns: 22, rows: 22, margin: Self.margin) else { return nil }
         forest.road([(0, 9), (10, 10), (21, 12)])
         forest.blob(6, 15, radius: 2.2, .water)
         forest.layGround()
@@ -582,7 +651,7 @@ final class StoryScene: SKScene {
 
     /// The Rat King's cavern: rock floor, stalagmites, crystals and an old mine cart in the dark.
     private func makeCavern() -> (patch: MapPatch, tint: UIColor)? {
-        guard let cavern = MapPatch(map: "rat_cavern", columns: 22, rows: 22) else { return nil }
+        guard let cavern = MapPatch(map: "rat_cavern", columns: 22, rows: 22, margin: Self.margin) else { return nil }
         cavern.road([(0, 10), (21, 11)])
         cavern.blob(7, 14, radius: 2.4, .accent)
         cavern.blob(15, 6, radius: 2.2, .accent)
@@ -598,7 +667,7 @@ final class StoryScene: SKScene {
 
     /// The oasis in Genie Desert where the dragon drinks: sand, palms round the water, cactus.
     private func makeOasis() -> (patch: MapPatch, tint: UIColor)? {
-        guard let oasis = MapPatch(map: "genie_desert", columns: 22, rows: 22) else { return nil }
+        guard let oasis = MapPatch(map: "genie_desert", columns: 22, rows: 22, margin: Self.margin) else { return nil }
         oasis.road([(0, 8), (21, 9)])
         oasis.blob(10, 14, radius: 2.6, .water)
         oasis.blob(15, 6, radius: 2.4, .accent)
@@ -630,7 +699,7 @@ final class StoryScene: SKScene {
     /// at their places, cottages round the crossroads, and you with your companion coming up the
     /// street.
     private func makeSquare(companion species: String, staff: Bool) -> Square? {
-        guard let patch = MapPatch(map: "meadowbrook", columns: 22, rows: 22) else { return nil }
+        guard let patch = MapPatch(map: "meadowbrook", columns: 22, rows: 22, margin: Self.margin) else { return nil }
         patch.road([(0, 10), (21, 10)])
         patch.road([(11, 0), (11, 21)])
         patch.blob(11, 10, radius: 1.6, .path)
@@ -753,7 +822,7 @@ final class StoryScene: SKScene {
     /// Sunny Meadow, where How to play walks and fights: a road past a pond and a flower meadow,
     /// and you, a young mage, with your companion.
     private func makeMeadow() -> MapPatch? {
-        guard let meadow = MapPatch(map: "sunny_meadow", columns: 22, rows: 22) else { return nil }
+        guard let meadow = MapPatch(map: "sunny_meadow", columns: 22, rows: 22, margin: Self.margin) else { return nil }
         meadow.road([(0, 9), (6, 10), (11, 11), (16, 11), (21, 13)])
         meadow.blob(7, 15, radius: 2.6, .water)
         meadow.blob(12, 6, radius: 2.8, .accent)
@@ -1012,12 +1081,14 @@ final class StoryScene: SKScene {
         party.forEach { $0.isHidden = true }
         let shot = snapshot()
         party.forEach { $0.isHidden = false }
-        if let shot { backdrop.texture = shot }
+        if let shot { setBackdrop(shot) }
     }
 
     /// What the map shows now, blurred.
     private func snapshot() -> SKTexture? {
-        guard let view, let shot = view.texture(from: mapRoot, crop: CGRect(origin: .zero, size: size)) else { return nil }
+        // The whole scene, in the map's points: the stage sits in its middle.
+        let seen = CGRect(x: -stageRoot.position.x, y: -stageRoot.position.y, width: size.width, height: size.height)
+        guard let view, let shot = view.texture(from: mapRoot, crop: seen) else { return nil }
         return BattleScene.blur(shot, radius: 5) ?? shot
     }
 
@@ -1392,7 +1463,7 @@ final class StoryScene: SKScene {
         SkillEffects.burst(at: hero.center, color: gold, count: 24, speed: 130, in: battleStage)
         hero.sprite.run(.sequence([.moveBy(x: 0, y: 18, duration: 0.16), .moveBy(x: 0, y: -18, duration: 0.2)]), withKey: "cheer")
         let banner = SKNode()
-        banner.position = CGPoint(x: size.width / 2, y: size.height * 0.58)
+        banner.position = CGPoint(x: Self.stage.width / 2, y: Self.stage.height * 0.58)
         banner.zPosition = 31_000
         let title = NameTag(L("LEVEL UP!"), color: gold, size: 26, alignment: .center)
         let subtitle = NameTag(L("Level {level}", ["level": level]), color: .white, size: 13, alignment: .center)
@@ -1401,8 +1472,8 @@ final class StoryScene: SKScene {
         banner.addChild(subtitle)
         banner.setScale(0.3)
         banner.alpha = 0
-        addChild(banner)
-        SkillEffects.rays(at: banner.position, color: gold, count: 14, length: 100, width: 8, z: 30_900, in: self)
+        stageRoot.addChild(banner)
+        SkillEffects.rays(at: banner.position, color: gold, count: 14, length: 100, width: 8, z: 30_900, in: stageRoot)
         banner.run(.sequence([
             .group([.fadeIn(withDuration: 0.12), .scale(to: 1.2, duration: 0.2)]),
             .scale(to: 1, duration: 0.12),
@@ -1423,7 +1494,7 @@ final class StoryScene: SKScene {
         node.blendMode = .add
         node.position = point
         node.zPosition = parent == nil ? 2_000 : -1
-        (parent ?? self).addChild(node)
+        (parent ?? stageRoot).addChild(node)
         return node
     }
 
@@ -1444,6 +1515,7 @@ final class StoryScene: SKScene {
             emitter.advanceSimulationTime(TimeInterval(emitter.particleLifetime))
         }
         addChild(layer)
+        particleLayers.append(layer)
         return layer
     }
 
@@ -1456,7 +1528,7 @@ final class StoryScene: SKScene {
         star.position = CGPoint(x: CGFloat.random(in: 10...350), y: CGFloat.random(in: 8...100))
         star.zPosition = 2_100
         star.alpha = 0
-        addChild(star)
+        stageRoot.addChild(star)
         let target = CGPoint(x: 180 + CGFloat.random(in: -14...14), y: 150 + CGFloat.random(in: -8...8))
         let fly = SKAction.move(to: target, duration: TimeInterval.random(in: 1.6...2.4))
         fly.timingMode = .easeIn
