@@ -305,6 +305,8 @@ struct ItemSlotGrid<Lead: View, Tile: View>: View {
     /// How far the finger has moved it since it lifted.
     @State private var shift: CGSize = .zero
     @GestureState private var pressing = false
+    /// When a lifted slot was last put down, so its touch doesn't also open it.
+    @State private var putDownAt = Date.distantPast
 
     /// Between slots, and the most a slot grows to before another fits in the row.
     private static var spacing: CGFloat { 6 }
@@ -374,7 +376,15 @@ struct ItemSlotGrid<Lead: View, Tile: View>: View {
         return tile(item, slot)
             .frame(width: slot, height: slot)
             .contentShape(Rectangle())
-            .gesture(lift(item).exclusively(before: TapGesture().onEnded { onTap(item) }))
+            // A tap opens it; held, it lifts. Each a gesture of its own, side by side: as the hold's
+            // fallback (`exclusively(before:)`) the tap never came, in a scroll view (playtesting
+            // 2026-10-26: "Clicking on items in the inventory doesn't work").
+            .onTapGesture {
+                // Not the touch that lifted it, nor the one that just put it down.
+                guard held == nil, Date().timeIntervalSince(putDownAt) > 0.3 else { return }
+                onTap(item)
+            }
+            .simultaneousGesture(lift(item))
             .scaleEffect(isHeld ? 1.15 : 1)
             .shadow(color: .black.opacity(isHeld ? 0.45 : 0), radius: isHeld ? 8 : 0, x: 0, y: isHeld ? 5 : 0)
             .offset(x: place.x, y: place.y)
@@ -438,6 +448,7 @@ struct ItemSlotGrid<Lead: View, Tile: View>: View {
             shift = .zero
             if from != to, let target { onMove(id, target) }
         }
+        putDownAt = Date()
         dragging?.wrappedValue = false
     }
 }
