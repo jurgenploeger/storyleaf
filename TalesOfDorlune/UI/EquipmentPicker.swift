@@ -46,10 +46,13 @@ struct EquipmentPicker: View {
                             ItemSearchField(text: $search)
                             ItemSortMenu(sort: $sort, options: Self.sorts)
                         }
+                        // The sort's panel over what's under it.
+                        .zIndex(1)
                         FilterChip(title: L("Can wear"), on: wearableOnly) { wearableOnly.toggle() }
                     }
                     .padding(.horizontal, 14)
                     .padding(.top, 12)
+                    .zIndex(1)
                 }
                 ScrollView {
                     if worn == nil && spares.isEmpty {

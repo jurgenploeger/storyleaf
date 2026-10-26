@@ -288,8 +288,23 @@ quest_little_crab | newgame,class=fighter,level=125,map=hachoo_island,npc=little
 # Quest treasures: gear only a quest gives. Its card (gold frame, where it comes from), the treasures
 # a save that finished those quests gets by post, in the Bag and on the map, and one on offer.
 treasure_card    | newgame,class=fighter,level=100,menu=bag,bag=oxhide_mail,inspect=oxhide_mail | 8
-# A potion's card in the Bag: Drop and Drop all under it.
+# A potion's card in the Bag: Drop, Trade and Use under it (playtesting 2026-10-26), and the window
+# each opens over it: how many to drop; a price and how many to put up for trade; who gets it, and how
+# many; upright and on its side.
 drop_card        | newgame,menu=bag,bag=potion+potion,inspect=potion | 8
+item_drop        | newgame,menu=bag,bag=potion+potion,inspect=potion,itemwindow=drop | 8
+item_trade       | newgame,menu=bag,bag=potion+potion,inspect=potion,itemwindow=trade | 8
+item_use         | newgame,level=30,pet=jelly,hp=0.4,bag=potion+potion+potion+ether,menu=bag,inspect=potion,use=potion | 8
+item_card_de     | newgame,menu=bag,bag=potion+potion+iron_axe,inspect=iron_axe,lang=de | 8
+item_trade_land  | newgame,menu=bag,bag=potion+potion,inspect=potion,itemwindow=trade,landscape | 8
+item_drop_land   | newgame,menu=bag,bag=potion+potion,inspect=potion,itemwindow=drop,landscape | 8
+# The Bag as one grid, six to a row upright (playtesting 2026-10-26), its count after the title, and
+# its Sort panel; the bank the same, upright and on its side.
+bag_grid         | newgame,class=fighter,level=40,equip=bronze_broadsword,bag=silver_sword+luna_axe+wooden_sword+cloth_tunic+potion+potion+seal_stone+ether+hi_potion+iron_axe+bronze_ingot+bamboo+homeward_feather+toy_ball,menu=bag,gold=250 | 8
+bag_grid_land    | newgame,class=fighter,level=40,equip=bronze_broadsword,bag=silver_sword+luna_axe+wooden_sword+cloth_tunic+potion+potion+seal_stone+ether+hi_potion+iron_axe+bronze_ingot+bamboo+homeward_feather+toy_ball,menu=bag,gold=250,landscape | 8
+bag_sort         | newgame,class=fighter,level=40,bag=silver_sword+potion+seal_stone+ether+iron_axe,menu=bag,sortopen | 8
+bank_grid        | newgame,bank=meadow_banker,bag=potion+seal_stone+ether+iron_axe+bamboo+silver_sword+hi_potion,gold=500 | 8
+bank_grid_land   | newgame,bank=meadow_banker,bag=potion+seal_stone+ether+iron_axe+bamboo+silver_sword+hi_potion,gold=500,landscape | 8
 # What you drop lies on the ground as the things themselves, very small, in a heap.
 pile_drop        | newgame,map=meadowbrook,bag=potion+potion+ether+iron_axe+seal_stone+homeward_feather,drop=potion+ether+iron_axe+seal_stone+homeward_feather,hour=12,weather=clear | 12
 treasure_bag     | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king+rat_king+puss_in_boots+crystal_hearts,menu=bag | 8

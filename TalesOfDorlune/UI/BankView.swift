@@ -11,6 +11,8 @@ struct BankView: View {
     @State private var reply: String?
     /// What you tapped in the bag or the bank: its card, over the bank.
     @State private var picked: BankPick?
+    /// A slot lifted to move it (`ItemSlotGrid`): the window holds still.
+    @State private var dragLock = false
 
     var body: some View {
         ZStack {
@@ -29,10 +31,11 @@ struct BankView: View {
                                 .foregroundStyle(HUDStyle.cream)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        BankPanel(session: session, reply: $reply) { picked = $0 }
+                        BankPanel(session: session, reply: $reply, onPick: { picked = $0 }, dragging: $dragLock)
                     }
                     .padding(14)
                 }
+                .scrollDisabled(dragLock)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .gameWindow()
@@ -62,9 +65,9 @@ struct BankPick: Identifiable {
 
 /// The bank's insides: your bag over the bank, RuneScape-style. Tap something, coins too, for its card
 /// (`onPick`; playtesting 2026-10-26: "tap on an item to open its details in another modal"): how many
-/// to put in or take out, or to delete. Deposit all empties the bag. Hold a slot and drag it onto
-/// another on its side to move it there (`ItemSlotMover`; "In the bank and inventory I should be able
-/// to reorder any items"). The bank's search, sort and kinds ("Also add sorting and filtering to the
+/// to put in or take out, or to delete. Deposit all empties the bag. Hold a slot to lift it and move it
+/// about its side, the others sliding aside (`ItemSlotGrid`; "In the bank and inventory I should be
+/// able to reorder any items"). The bank's search, sort and kinds ("Also add sorting and filtering to the
 /// bank") are a way of looking, as the Bag's are: what's filtered out is still there, and a sort
 /// leaves your order as it is till you move something while it's on. Nothing in the bank is lost to a
 /// defeat.
@@ -72,15 +75,14 @@ struct BankPanel: View {
     let session: GameSession
     @Binding var reply: String?
     let onPick: (BankPick) -> Void
+    /// True while a slot is lifted to move it: the window holds still.
+    var dragging: Binding<Bool>? = nil
 
     /// The bag as the Bag tab sorts it.
     @AppStorage("bagSort") private var bagSort: ItemSort = .standard
     @AppStorage("bankSort") private var bankSort: ItemSort = .standard
     @State private var search = ""
     @State private var shelf: ItemShelf = .all
-
-    private static let slot: CGFloat = 48
-    private let columns = [GridItem(.adaptive(minimum: BankPanel.slot + 6, maximum: BankPanel.slot + 12), spacing: 6)]
 
     var body: some View {
         let bag = ItemFinder.arrange(session.bagItems, search: "", sort: bagSort, session: session)
@@ -99,16 +101,8 @@ struct BankPanel: View {
             if bag.isEmpty && session.data.gold == 0 {
                 EmptyNote(L("Your bag is empty."), size: 11)
             }
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 6) {
-                if session.data.gold > 0 {
-                    Button { onPick(BankPick(item: nil, side: .bag)) } label: {
-                        CoinsTile(amount: session.data.gold, size: Self.slot)
-                    }
-                    .buttonStyle(PressScaleStyle())
-                }
-                ForEach(bag) { item in
-                    tile(item, in: bag, side: .bag)
-                }
+            if !bag.isEmpty || session.data.gold > 0 {
+                grid(bag, coins: session.data.gold, side: .bag)
             }
             SectionTitle(text: L("Bank"))
             let all = session.bankItems
@@ -117,6 +111,7 @@ struct BankPanel: View {
             }
             if !all.isEmpty {
                 finder
+                    .zIndex(1)
             }
             let narrowed = !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || shelf != .all
             let banked = ItemFinder.arrange(all.filter { shelf.holds($0) }, search: search, sort: bankSort, session: session, on: .bank)
@@ -124,17 +119,10 @@ struct BankPanel: View {
                 EmptyNote(L("Nothing in the bank matches."), size: 11)
                     .padding(.vertical, 8)
             }
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 6) {
-                // The coins in the first slot, while you're not looking for something.
-                if session.bankGold > 0 && !narrowed {
-                    Button { onPick(BankPick(item: nil, side: .bank)) } label: {
-                        CoinsTile(amount: session.bankGold, size: Self.slot)
-                    }
-                    .buttonStyle(PressScaleStyle())
-                }
-                ForEach(banked) { item in
-                    tile(item, in: banked, side: .bank)
-                }
+            // The coins in the first slot, while you're not looking for something.
+            let coins = narrowed ? 0 : session.bankGold
+            if !banked.isEmpty || coins > 0 {
+                grid(banked, coins: coins, side: .bank)
             }
         }
     }
@@ -146,6 +134,8 @@ struct BankPanel: View {
                 ItemSearchField(text: $search)
                 ItemSortMenu(sort: $bankSort, options: ItemSort.allCases, bank: true)
             }
+            // The sort's panel over the chips.
+            .zIndex(1)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(ItemShelf.allCases, id: \.self) { kind in
@@ -153,21 +143,32 @@ struct BankPanel: View {
                     }
                 }
             }
-            Text(L("Hold a slot and drag it onto another to move it."))
-                .font(HUDStyle.font(10))
-                .foregroundStyle(HUDStyle.dim)
         }
     }
 
-    /// One thing on one side: a tap for its card; held and dragged, it moves.
-    private func tile(_ item: ItemDef, in shown: [ItemDef], side: BankSide) -> some View {
-        let count = session.held(item.id, on: side)
-        return Button { onPick(BankPick(item: item, side: side)) } label: {
-            ItemIcon(item: item, size: Self.slot, count: count)
-        }
-        .buttonStyle(PressScaleStyle())
-        .movableSlot(item, in: shown, side: side, size: Self.slot) { move($0, onto: $1, on: side) }
-        .accessibilityLabel(count > 1 ? L("{item}, {count}", ["item": item.name, "count": count]) : item.name)
+    /// One side's things, the coins first: a tap for a thing's card; held, it lifts to move about
+    /// its side.
+    private func grid(_ items: [ItemDef], coins: Int, side: BankSide) -> some View {
+        ItemSlotGrid(items: items, leads: coins > 0, dragging: dragging,
+                     label: { item in
+                         let count = session.held(item.id, on: side)
+                         return count > 1 ? L("{item}, {count}", ["item": item.name, "count": count]) : item.name
+                     },
+                     onTap: { onPick(BankPick(item: $0, side: side)) },
+                     onMove: { move($0, onto: $1, on: side) },
+                     lead: { size in
+                         Button { onPick(BankPick(item: nil, side: side)) } label: {
+                             CoinsTile(amount: coins, size: size - 5)
+                                 .padding(.top, 5)
+                                 .padding(.trailing, 5)
+                         }
+                         .buttonStyle(PressScaleStyle())
+                     },
+                     tile: { item, size in
+                         ItemIcon(item: item, size: size - 5, count: session.held(item.id, on: side))
+                             .padding(.top, 5)
+                             .padding(.trailing, 5)
+                     })
     }
 
     /// Puts what was dragged where `target` is; sorted another way, the order you see is yours from
@@ -223,9 +224,8 @@ struct BankCoinsCard: View {
 
 /// How many to move between the bag and the bank, or to delete (playtesting 2026-10-26: "a stepper to
 /// decide how many you want to deposit or take [...] delete items and click on the item count [...] to
-/// show a numpad"): − and + round the count, the count a button that opens a keypad to type it, All;
-/// then Delete (items only, not what a quest you're on needs, asked twice) and Deposit or Withdraw.
-/// Out of the bank only as many as the bag has room for. The card closes once none are left on its side.
+/// show a numpad"): how many (`AmountPicker`); then Delete (items only, not what a quest you're on
+/// needs, asked twice) and Deposit or Withdraw. Out of the bank only as many as the bag has room for. The card closes once none are left on its side.
 struct BankControls: View {
     let session: GameSession
     /// Nil: the coins.
@@ -234,8 +234,8 @@ struct BankControls: View {
     let onClose: () -> Void
 
     @State private var amount = 1
-    /// The keypad's digits while it's open.
-    @State private var typed: String?
+    /// Whether the amount's keypad is open (`AmountPicker`).
+    @State private var typing = false
     @State private var confirmingDelete = false
 
     /// How many there are on this side.
@@ -258,9 +258,6 @@ struct BankControls: View {
         return !session.questKeepsakes.contains(item.id)
     }
 
-    /// The count as it shows: what's typed while the keypad is open.
-    private var shown: Int { typed.flatMap(Int.init) ?? (typed == nil ? amount : 0) }
-
     var body: some View {
         let held = self.held
         let count = min(max(1, amount), max(1, held))
@@ -268,11 +265,7 @@ struct BankControls: View {
             Text(side == .bag ? L("In your bag: {count}", ["count": held]) : L("In the bank: {count}", ["count": held]))
                 .font(HUDStyle.font(11))
                 .foregroundStyle(HUDStyle.dim)
-            if typed != nil {
-                keypad(held: held)
-            } else {
-                stepper(count: count, held: held)
-            }
+            AmountPicker(amount: $amount, typing: $typing, maximum: held)
             if movable < count {
                 Text(movable == 0 ? L("Your bag is full. Put something in the bank first.")
                                   : L("Your bag has room for {count}.", ["count": movable]))
@@ -281,7 +274,7 @@ struct BankControls: View {
             }
             if confirmingDelete, let item {
                 deleteConfirmation(item: item, count: count)
-            } else if typed == nil {
+            } else if !typing {
                 buttons(count: count)
             }
         }
@@ -289,90 +282,6 @@ struct BankControls: View {
         .onChange(of: held) { _, now in
             if now == 0 { onClose() } else { amount = min(amount, now) }
         }
-    }
-
-    private func stepper(count: Int, held: Int) -> some View {
-        HStack(spacing: 8) {
-            Button { amount = max(1, count - 1) } label: { Text("-").frame(minWidth: 18) }
-                .buttonStyle(PixelButtonStyle())
-                .disabled(count <= 1)
-                .opacity(count <= 1 ? 0.5 : 1)
-                .accessibilityLabel(L("Fewer"))
-            Button { typed = "" } label: {
-                Text(count.formatted())
-                    .font(HUDStyle.mono(17))
-                    .foregroundStyle(HUDStyle.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                    .frame(maxWidth: .infinity, minHeight: 34)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(HUDStyle.plateLight))
-                    .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(HUDStyle.plateDark, lineWidth: 2))
-            }
-            .buttonStyle(PressScaleStyle())
-            .accessibilityLabel(L("Amount: {count}", ["count": count]))
-            .accessibilityHint(L("Type how many"))
-            Button { amount = min(held, count + 1) } label: { Text("+").frame(minWidth: 18) }
-                .buttonStyle(PixelButtonStyle())
-                .disabled(count >= held)
-                .opacity(count >= held ? 0.5 : 1)
-                .accessibilityLabel(L("More"))
-            Button(L("All")) { amount = held }
-                .buttonStyle(PixelButtonStyle(compact: true))
-                .disabled(count >= held)
-                .opacity(count >= held ? 0.5 : 1)
-        }
-    }
-
-    /// Digits typed past what there is stop at what there is.
-    private func keypad(held: Int) -> some View {
-        let keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "⌫"]
-        return VStack(spacing: 8) {
-            Text(shown.formatted())
-                .font(HUDStyle.mono(20))
-                .foregroundStyle(HUDStyle.ink)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-                .frame(maxWidth: .infinity, minHeight: 40)
-                .background(RoundedRectangle(cornerRadius: 6).fill(HUDStyle.plateLight))
-                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(HUDStyle.gold, lineWidth: 2))
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
-                ForEach(keys, id: \.self) { key in
-                    Button { press(key, held: held) } label: {
-                        Group {
-                            if key == "⌫" { IconImage(.arrowLeft, size: 15) } else { Text(key) }
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(PixelButtonStyle())
-                    .accessibilityLabel(key == "C" ? L("Clear") : key == "⌫" ? L("Delete digit") : key)
-                }
-            }
-            HStack(spacing: 10) {
-                Spacer(minLength: 0)
-                Button(L("Cancel")) { typed = nil }
-                    .buttonStyle(PixelButtonStyle())
-                Button(L("OK")) {
-                    amount = max(1, min(shown, held))
-                    typed = nil
-                }
-                .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
-                .disabled(shown == 0)
-                .opacity(shown == 0 ? 0.5 : 1)
-            }
-        }
-    }
-
-    private func press(_ key: String, held: Int) {
-        var digits = typed ?? ""
-        switch key {
-        case "C": digits = ""
-        case "⌫": digits = String(digits.dropLast())
-        default: digits += key
-        }
-        digits = String(digits.drop(while: { $0 == "0" }))
-        if let value = Int(digits), value > held { digits = String(held) }
-        if digits.count > 12 { digits = String(held) }
-        typed = digits
     }
 
     private func buttons(count: Int) -> some View {

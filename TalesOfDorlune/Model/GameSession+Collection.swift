@@ -81,4 +81,34 @@ extension GameSession {
         save()
         return L("{name} loves the {toy}! {bonus} for good.", ["name": pet.name, "toy": item.name, "bonus": raise.bonusSummary])
     }
+
+    /// How many more toys a companion would play with.
+    func toysWanted(by petID: UUID) -> Int {
+        guard let pet = data.pets.first(where: { $0.id == petID }) else { return 0 }
+        return max(0, Self.toysPerCompanion - (pet.toys ?? 0))
+    }
+
+    /// Gives a companion up to `times` of a toy, stopping once it has all it can play with or there's
+    /// none left. How many were given, and a message.
+    @discardableResult
+    func giveToy(_ id: String, to petID: UUID, times: Int) -> (given: Int, note: String?) {
+        var given = 0
+        var note: String?
+        while given < times, count(of: id) > 0 {
+            let before = count(of: id)
+            let result = giveToy(id, to: petID)
+            guard count(of: id) < before else {
+                if given == 0 { note = result }
+                break
+            }
+            given += 1
+            note = result
+        }
+        if given > 1, let item = content.item(id), let raise = item.stats,
+           let pet = data.pets.first(where: { $0.id == petID }) {
+            return (given, L("{name} loves the {toy} ×{count}! {bonus} for good.",
+                             ["name": pet.name, "toy": item.name, "count": given, "bonus": (raise * given).bonusSummary]))
+        }
+        return (given, note)
+    }
 }

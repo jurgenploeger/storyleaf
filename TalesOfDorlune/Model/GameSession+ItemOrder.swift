@@ -7,8 +7,8 @@ nonisolated enum BankSide: String, Sendable {
 
 /// Where things sit in the bag and the bank (playtesting 2026-10-26: "In the bank and inventory I
 /// should be able to reorder any items. Also add sorting and filtering to the bank."): your order of
-/// each, by item id (`SaveData.bagOrder`, `bankOrder`). Hold a thing and drag it onto another to put
-/// it there (`ItemSlotMover`). What you've never placed follows what you have, in the game's order, so
+/// each, by item id (`SaveData.bagOrder`, `bankOrder`). Hold a thing to lift it and move it where
+/// another is (`ItemSlotGrid`). What you've never placed follows what you have, in the game's order, so
 /// something new turns up at the end; a kind gone from its side drops out of the order as the game
 /// saves (`tidyItemOrders`), and comes back at the end. A game that's never moved anything keeps the
 /// game's order. Sorting (`ItemSort`) is a way of looking: moving something while sorted another way

@@ -1701,6 +1701,48 @@ final class GameSession {
         return L("{name} feels better.", ["name": data.hero.name])
     }
 
+    /// How many of a potion or ether it takes to fill the hero (no `petID`) or a companion up, as far
+    /// as it can: none when it wouldn't help.
+    func usesToFill(_ id: String, onPet petID: UUID? = nil) -> Int {
+        guard let item = content.item(id), item.type == .consumable else { return 0 }
+        let heal = item.heal ?? 0, mp = item.mp ?? 0
+        let missing: (hp: Int, mp: Int)
+        if let petID {
+            guard let pet = data.pets.first(where: { $0.id == petID }) else { return 0 }
+            let stats = stats(of: pet)
+            missing = (max(0, stats.hp - pet.hp), max(0, stats.mp - pet.mp))
+        } else {
+            let stats = heroStats
+            missing = (max(0, stats.hp - data.hero.hp), max(0, stats.mp - data.hero.mp))
+        }
+        let forHP = heal > 0 ? (missing.hp + heal - 1) / heal : 0
+        let forMP = mp > 0 ? (missing.mp + mp - 1) / mp : 0
+        return max(forHP, forMP)
+    }
+
+    /// Uses a potion or ether up to `times` times on the same one (playtesting 2026-10-26: "select
+    /// the amount"), stopping once it wouldn't help any more or there's none left. How many were
+    /// used, and a message.
+    @discardableResult
+    func use(_ id: String, times: Int, onPet petID: UUID? = nil) -> (used: Int, note: String?) {
+        var used = 0
+        var note: String?
+        while used < times, count(of: id) > 0 {
+            let before = count(of: id)
+            let result = use(id, onPet: petID)
+            guard count(of: id) < before else {
+                if used == 0 { note = result }
+                break
+            }
+            used += 1
+            note = result
+        }
+        if used > 1, let note, let name = content.item(id)?.name {
+            return (used, L("{item} ×{count}: {result}", ["item": name, "count": used, "result": note]))
+        }
+        return (used, note)
+    }
+
     // MARK: - Quests
 
     enum QuestStatus: Equatable {

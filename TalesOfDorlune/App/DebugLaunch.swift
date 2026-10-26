@@ -41,6 +41,9 @@ import SpriteKit
 ///   change=<slot>  open the Character tab's window of gear for weapon | armor | accessory (with menu=character)
 ///   inspect=<item> with change: that piece's card is open in it, with Cancel and Equip; with
 ///                  menu=bag (no change): that item's card over the Bag
+///   itemwindow=<w> with menu=bag and inspect: the card's drop | trade window is open over it (use=<item>
+///                  with inspect opens who gets it over the card)
+///   sortopen       the Bag's (or the bank's) Sort button has its panel of orders out
 ///   race=<id>      play this race (content/classes.json); with titlepage=create, the new hero's race
 ///   style=<id>     wear this hairstyle (content/appearance.json `styles`)
 ///   hair=<id>      dye the hair this colour (content/appearance.json `hair`)
@@ -208,6 +211,10 @@ enum DebugLaunch {
     /// `change=armor`: the Character tab opens with that slot's list of things to wear.
     static var changingSlot: ItemType? { flags["change"].flatMap(ItemType.init(rawValue:)) }
     static var inspectedItem: String? { flags["inspect"] }
+    /// `itemwindow=drop` or `trade`: with menu=bag and inspect, that window over the item's card.
+    static var itemWindow: String? { flags["itemwindow"] }
+    /// `sortopen`: a list's Sort button (the Bag's, the bank's) opens with its panel out.
+    static var opensSort: Bool { flags["sortopen"] != nil }
     /// `titlepage=settings`: the title screen opens on that page instead of its menu.
     static var titlePage: String? { flags["titlepage"] }
     static var opensMenuAtBottom: Bool { flags["bottom"] != nil }

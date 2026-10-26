@@ -130,6 +130,7 @@ struct TradeBidCard: View {
 
     var body: some View {
         let shop = GameSession.sellPrice(of: bid.item)
+        let asked = session.tradeAsk(bid.item.id).price
         ZStack {
             Color.black.opacity(0.45)
                 .ignoresSafeArea()
@@ -152,6 +153,12 @@ struct TradeBidCard: View {
                     Text(L("A shop pays {gold}g", ["gold": shop]))
                         .font(HUDStyle.font(11))
                         .foregroundStyle(bid.price >= shop ? HUDStyle.green : HUDStyle.orange)
+                    // Less than you asked: what you asked, to weigh it against.
+                    if asked > bid.price {
+                        Text(L("You asked {gold}g", ["gold": asked]))
+                            .font(HUDStyle.font(11))
+                            .foregroundStyle(HUDStyle.dim)
+                    }
                     HStack(spacing: 10) {
                         Button(L("Decline")) { onAnswer(false) }
                             .buttonStyle(PixelButtonStyle(compact: true))

@@ -590,8 +590,7 @@ private struct GameMenu: View {
 
     /// The button's and the panel's face: the HUD's blue tile with its bevel.
     private static func surface(_ shape: some InsettableShape) -> some View {
-        shape.fill(LinearGradient(colors: HUDStyle.tile, startPoint: .top, endPoint: .bottom))
-            .overlay(shape.strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
+        HUDStyle.panelSurface(shape)
     }
 
     private func row(_ tab: MenuTab) -> some View {
