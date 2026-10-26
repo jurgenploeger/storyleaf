@@ -111,6 +111,13 @@ enum HUDStyle {
             .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)
     }
 
+    /// The HUD menu's face (the round menu button, its panel, the sort panel: `ItemSortMenu`): the
+    /// HUD's blue tile with its bevel.
+    static func panelSurface(_ shape: some InsettableShape) -> some View {
+        shape.fill(LinearGradient(colors: tile, startPoint: .top, endPoint: .bottom))
+            .overlay(shape.strokeBorder(bevel, lineWidth: 2.5))
+    }
+
     /// A window's frame, the same on every window and dialog: the glossy light-blue bevel with a
     /// dark inner edge, and a faint white line inside
     /// that catches the light on the glass. 4 pt in all, like the frame before it.
@@ -219,14 +226,24 @@ struct GlossyBar: View {
 struct WindowTitle: View {
     let title: String
     var onClose: (() -> Void)?
+    /// A few words after the title, smaller and dimmer ("Inventory 5/50").
+    var detail: String?
+    var detailTint: Color = HUDStyle.dim
 
-    init(_ title: String, onClose: (() -> Void)? = nil) {
+    init(_ title: String, detail: String? = nil, detailTint: Color = HUDStyle.dim, onClose: (() -> Void)? = nil) {
         self.title = title
+        self.detail = detail
+        self.detailTint = detailTint
         self.onClose = onClose
     }
 
+    private var text: Text {
+        guard let detail else { return Text(title) }
+        return Text(title) + Text("  " + detail).font(HUDStyle.font(13)).foregroundStyle(detailTint)
+    }
+
     var body: some View {
-        Text(title)
+        text
             .font(HUDStyle.font(18))
             .foregroundStyle(HUDStyle.gold)
             .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)

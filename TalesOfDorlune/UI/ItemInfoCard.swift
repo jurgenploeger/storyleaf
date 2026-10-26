@@ -15,13 +15,17 @@ struct ItemInfoCard: View {
     var action: Action? = nil
     /// From the Bag, when there's nothing to do with it there: why (only in battle, no companions).
     var note: String? = nil
-    /// From the Bag: put it up for trade, or take it off (`GameSession+TradeList`).
-    var trading: Action? = nil
-    /// From the Bag: drop one, or all you carry, at your feet (`GameSession.drop`).
-    var dropping: ((Int) -> Void)? = nil
+    /// From the Bag (playtesting 2026-10-26: "there should be three buttons: Drop, Trade and Use"):
+    /// Drop and Trade, each opening a window over the card for how many and at what price
+    /// (`ItemDropWindow`, `ItemTradeWindow`), and the item's own action (`action`, or Equip for gear)
+    /// as the main one. The corner button closes the card.
+    var fromBag = false
     /// From the bank, on the side it was tapped on: how many to put in, take out or delete
     /// (`BankControls`), in place of Close.
     var banking: BankSide? = nil
+
+    /// Drop's or Trade's window, over the card. Debug `itemwindow=drop` or `trade` opens one.
+    @State private var window: ItemCardWindow? = DebugLaunch.itemWindow.flatMap(ItemCardWindow.init(rawValue:))
 
     struct Action {
         let title: String
@@ -30,7 +34,7 @@ struct ItemInfoCard: View {
         let run: () -> Void
     }
 
-    private var choosing: Bool { onEquip != nil || onUnequip != nil || action != nil || note != nil || trading != nil || dropping != nil || banking != nil }
+    private var choosing: Bool { onEquip != nil || onUnequip != nil || action != nil || note != nil || fromBag || banking != nil }
 
     private var isGear: Bool { ItemType.equipmentSlots.contains(item.type) }
 
@@ -111,7 +115,33 @@ struct ItemInfoCard: View {
             .padding(24)
             .popIn()
             .accessibilityElement(children: .contain)
+            .accessibilityHidden(fromBag && window != nil)
+
+            if fromBag, let window {
+                Group {
+                    switch window {
+                    case .drop:
+                        ItemDropWindow(session: session, item: item) { dropped in
+                            closeWindow()
+                            // The last of it gone: back to the Bag.
+                            if dropped && session.count(of: item.id) == 0 { onClose() }
+                        }
+                    case .trade:
+                        ItemTradeWindow(session: session, item: item) { closeWindow() }
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(1)
+            }
         }
+    }
+
+    private func open(_ window: ItemCardWindow) {
+        withAnimation(.easeOut(duration: 0.2)) { self.window = window }
+    }
+
+    private func closeWindow() {
+        withAnimation(.easeOut(duration: 0.2)) { window = nil }
     }
 
     private var header: some View {
@@ -141,30 +171,13 @@ struct ItemInfoCard: View {
             if let note {
                 Text(note).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
             }
-            if let trading {
-                Button(action: trading.run) {
-                    Label(trading.title, icon: trading.icon ?? .coins)
-                }
-                .buttonStyle(PixelButtonStyle(compact: true))
-                .disabled(!trading.enabled)
-                .opacity(trading.enabled ? 1 : 0.5)
-            }
-            if let dropping {
-                let held = session.count(of: item.id)
-                HStack(spacing: 8) {
-                    Button { dropping(1) } label: {
-                        Label(L("Drop"), icon: .arrowDown)
-                    }
-                    if held > 1 {
-                        Button { dropping(held) } label: {
-                            Label(L("Drop all {count}", ["count": held]), icon: .arrowDown)
-                        }
-                    }
-                }
-                .buttonStyle(PixelButtonStyle(compact: true))
+            if fromBag, let kept = keptBack {
+                Text(kept).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
             }
             if let banking {
                 BankControls(session: session, item: item, side: banking, onClose: onClose)
+            } else if fromBag {
+                bagButtons(issue: issue)
             } else {
                 HStack(spacing: 10) {
                     Spacer(minLength: 0)
@@ -195,6 +208,105 @@ struct ItemInfoCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
         .padding(.top, 4)
+    }
+
+    // MARK: - From the Bag
+
+    /// Drop, Trade, and the item's own action in gold; on a narrow card (a long action, a long
+    /// language) the action over the other two.
+    private func bagButtons(issue: String?) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) {
+                Spacer(minLength: 0)
+                dropButton
+                tradeButton
+                mainButton(issue: issue)
+            }
+            VStack(alignment: .trailing, spacing: 8) {
+                mainButton(issue: issue)
+                HStack(spacing: 10) {
+                    dropButton
+                    tradeButton
+                }
+            }
+        }
+    }
+
+    /// Why it can't be dropped, if it can't: a quest you're on needs it.
+    private var dropBlock: String? {
+        if session.questKeepsakes.contains(item.id) { return L("A quest you're on needs it.") }
+        if session.count(of: item.id) == 0 { return L("You have none.") }
+        return nil
+    }
+
+    /// Why it can't go up for trade, if it can't: a quest's, worth nothing, or the list is full.
+    private var tradeBlock: String? {
+        if let dropBlock { return dropBlock }
+        if item.price <= 0 { return L("No one trades for it.") }
+        if !session.isForTrade(item.id) && session.forTrade.count >= GameSession.maxForTrade {
+            return L("Up to {count} kinds of thing can be up for trade at once.", ["count": GameSession.maxForTrade])
+        }
+        return nil
+    }
+
+    /// One line on the card for why Drop and Trade are faded, when they are.
+    private var keptBack: String? {
+        dropBlock ?? tradeBlock
+    }
+
+    private var dropButton: some View {
+        let block = dropBlock
+        return Button { open(.drop) } label: {
+            Label(L("Drop"), icon: .arrowDown)
+        }
+        .buttonStyle(PixelButtonStyle())
+        .disabled(block != nil)
+        .opacity(block == nil ? 1 : 0.5)
+        .accessibilityHint(block ?? L("Choose how many to drop"))
+    }
+
+    private var tradeButton: some View {
+        let block = tradeBlock
+        let listed = session.isForTrade(item.id)
+        return Button { open(.trade) } label: {
+            Label(L("Trade"), icon: .coins)
+        }
+        .buttonStyle(PixelButtonStyle())
+        .disabled(block != nil)
+        .opacity(block == nil ? 1 : 0.5)
+        .accessibilityValue(listed ? L("For trade") : "")
+        .accessibilityHint(block ?? L("Choose a price and how many to sell"))
+    }
+
+    /// The item's own action (Use, Give, Hatch, Carve...), Equip for gear, or Use faded when there's
+    /// nothing to do with it from the Bag.
+    @ViewBuilder
+    private func mainButton(issue: String?) -> some View {
+        if let action {
+            Button(action: action.run) {
+                if let icon = action.icon {
+                    Label(action.title, icon: icon)
+                } else {
+                    Text(action.title)
+                }
+            }
+            .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
+            .disabled(!action.enabled)
+            .opacity(action.enabled ? 1 : 0.5)
+            .accessibilityHint(action.enabled ? "" : (note ?? ""))
+        } else if let onEquip {
+            Button(L("Equip"), action: onEquip)
+                .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
+                .disabled(issue != nil)
+                .opacity(issue == nil ? 1 : 0.5)
+                .accessibilityHint(issue ?? "")
+        } else {
+            Button(L("Use")) {}
+                .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
+                .disabled(true)
+                .opacity(0.5)
+                .accessibilityHint(note ?? L("Nothing to use it for here."))
+        }
     }
 
     /// Where a quest treasure comes from: the quest, who gives it and where they live.
@@ -328,6 +440,10 @@ struct ItemInfoCard: View {
         var lines: [String] = []
         if owned > 0 || worn {
             lines.append(worn ? L("You have {count} in your bag, and one on", ["count": owned]) : L("You have {count}", ["count": owned]))
+        }
+        if session.isForTrade(item.id) {
+            let ask = session.tradeAsk(item.id)
+            lines.append(L("Up for trade: {count} at {gold}g each", ["count": ask.count, "gold": ask.price]))
         }
         if item.price > 0 {
             // No shop sells a quest treasure, but they'll buy one.

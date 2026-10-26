@@ -200,6 +200,9 @@ nonisolated struct SaveData: Codable, Sendable {
     var lostPiles: [LostPile]?
     /// What you've put up for trade, by id (`GameSession.forTrade`).
     var forTrade: [String]?
+    /// For each of those, your asking price and how many you'd sell (`GameSession.tradeAsk`): nil,
+    /// all you carry at the going price.
+    var tradeAsks: [String: TradeAsk]?
     /// Your order of the bag and of the bank, by item id (`GameSession+ItemOrder`): nil, the game's.
     var bagOrder: [String]?
     var bankOrder: [String]?
@@ -307,6 +310,12 @@ nonisolated struct LostPile: Codable, Equatable, Sendable, Identifiable {
     /// When it's gone: picked up by an adventurer passing, or just gone, at the latest
     /// `GameSession.pileLasts` after it was dropped. Rolled as it's dropped.
     var takenAt: Date
+}
+
+/// What you ask for something you've put up for trade: a price for one, and how many you'd sell.
+nonisolated struct TradeAsk: Codable, Equatable, Sendable {
+    var price: Int
+    var count: Int
 }
 
 nonisolated struct Spot: Codable, Equatable, Sendable {

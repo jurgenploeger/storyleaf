@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// How a list of things you carry is ordered (the Bag, the bank, the gear for a slot), remembered
 /// between visits. Nonisolated like the other enums shown with `ForEach(id: \.self)`.
@@ -117,35 +118,104 @@ struct ItemSearchField: View {
     }
 }
 
-/// Sort: a button showing the order in use, which opens the choice of orders.
+/// Sort: a button with the sort icon that opens the orders in a small panel under it, in the HUD
+/// menu's look (playtesting 2026-10-26: "The 'Bag order' sorting button should just say 'Sort' with
+/// the same leading icon. That button should open the same menu style as the hamburger menu, so no
+/// native iOS dropdown menu"): the one in use in gold with a tick; a tap on one, or anywhere else,
+/// closes it. The row it sits in needs `.zIndex(1)`, so the panel lies over what's under the row.
 struct ItemSortMenu: View {
     @Binding var sort: ItemSort
     let options: [ItemSort]
     /// In the bank: your order is the bank's.
     var bank = false
+    /// Debug `sortopen`: out from the start.
+    @State private var open = DebugLaunch.opensSort
 
     private func title(_ sort: ItemSort) -> String { bank ? sort.bankTitle : sort.title }
 
     var body: some View {
-        Menu {
-            Picker(L("Sort by"), selection: $sort) {
-                ForEach(options, id: \.self) { Text(title($0)).tag($0) }
-            }
+        Button {
+            SoundEffects.shared.play(.tap, volume: 0.7)
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { open.toggle() }
         } label: {
             HStack(spacing: 5) {
                 IconImage(.sort, size: 14)
-                Text(title(sort))
+                Text(L("Sort"))
                     .lineLimit(1)
             }
             .font(HUDStyle.font(11))
             .foregroundStyle(HUDStyle.cream)
             .padding(.horizontal, 10)
             .frame(minHeight: 32)
-            .background(Capsule().fill(.white.opacity(0.1)))
+            .background(Capsule().fill(Color.white.opacity(open ? 0.2 : 0.1)))
             .fixedSize()
+            .contentShape(Capsule())
         }
-        .accessibilityLabel(L("Sort by"))
+        .buttonStyle(.plain)
+        .accessibilityLabel(L("Sort"))
         .accessibilityValue(title(sort))
+        // Anywhere else closes it: a tap catcher over the window round the button, under the panel.
+        .overlay {
+            if open {
+                Color.clear
+                    .frame(width: 4000, height: 4000)
+                    .contentShape(Rectangle())
+                    .onTapGesture { close() }
+                    .accessibilityHidden(true)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if open {
+                panel
+                    .offset(y: 38)
+                    .transition(.scale(scale: 0.6, anchor: .topTrailing).combined(with: .opacity))
+            }
+        }
+    }
+
+    private func close() {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { open = false }
+    }
+
+    private var panel: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(options, id: \.self) { row($0) }
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 4)
+        .frame(minWidth: 160, alignment: .leading)
+        .background(HUDStyle.panelSurface(RoundedRectangle(cornerRadius: 14)))
+        .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)
+        .fixedSize()
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(.isModal)
+        .accessibilityAction(.escape) { close() }
+    }
+
+    private func row(_ option: ItemSort) -> some View {
+        let selected = option == sort
+        return Button {
+            SoundEffects.shared.play(.tap, volume: 0.7)
+            sort = option
+            close()
+        } label: {
+            HStack(spacing: 8) {
+                IconImage(.check, size: 14)
+                    .foregroundStyle(HUDStyle.gold)
+                    .opacity(selected ? 1 : 0)
+                Text(title(option))
+                    .font(HUDStyle.font(13))
+                    .foregroundStyle(selected ? HUDStyle.gold : .white)
+                    .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressScaleStyle())
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
@@ -175,56 +245,187 @@ struct FilterChip: View {
     }
 }
 
-/// A slot in the Bag or the bank you can move (playtesting 2026-10-26: "In the bank and inventory I
-/// should be able to reorder any items"): hold it and drag it onto another slot on its side to put it
-/// there (`GameSession.moveItem`), the slot under it lifting while it's over it. A tap still opens its
-/// card. VoiceOver moves it a slot at a time.
-struct ItemSlotMover: ViewModifier {
-    let item: ItemDef
-    let side: BankSide
-    let size: CGFloat
-    /// The slots shown before and after it, for VoiceOver.
-    let before: ItemDef?
-    let after: ItemDef?
+/// The slots of the Bag or one side of the bank, one grid for every kind of thing, in your order
+/// (playtesting 2026-10-26: "Make sure 6 grid items fit on the same row"): six to a row on a phone
+/// held upright, the slots as big as the width allows; more on a wider window. A slot that doesn't
+/// move may come first (the coins). Hold a slot and it lifts (a little bigger, a shadow, a tap of the
+/// Taptic Engine) and follows your finger, the others sliding aside to open the place it would land
+/// in; let go and it's there (`onMove`, `GameSession.moveItem`) ("If I tap and hold the item lifts
+/// up, then when I move it around the other item grid cards move aside"). A tap opens its card; a
+/// swipe still scrolls the window, which holds still while a slot is lifted (`dragging`). VoiceOver
+/// moves it a slot at a time.
+struct ItemSlotGrid<Lead: View, Tile: View>: View {
+    let items: [ItemDef]
+    /// Whether `lead` fills the first slot.
+    let leads: Bool
+    /// True while a slot is lifted: the window's scroll view holds still meanwhile.
+    let dragging: Binding<Bool>?
+    let label: (ItemDef) -> String
+    let hint: String?
+    let onTap: (ItemDef) -> Void
     /// Puts the first id where the second is.
     let onMove: (_ id: String, _ target: String) -> Void
-    @State private var targeted = false
+    let lead: (_ size: CGFloat) -> Lead
+    let tile: (_ item: ItemDef, _ size: CGFloat) -> Tile
 
-    /// What's dragged: the side and the item's id, so a drop only takes its own side's things.
-    nonisolated static func payload(_ id: String, on side: BankSide) -> String { "\(side.rawValue):\(id)" }
-
-    nonisolated static func id(in payload: String, on side: BankSide) -> String? {
-        let prefix = "\(side.rawValue):"
-        return payload.hasPrefix(prefix) ? String(payload.dropFirst(prefix.count)) : nil
+    init(items: [ItemDef], leads: Bool = false, dragging: Binding<Bool>? = nil,
+         label: @escaping (ItemDef) -> String, hint: String? = nil,
+         onTap: @escaping (ItemDef) -> Void, onMove: @escaping (_ id: String, _ target: String) -> Void,
+         @ViewBuilder lead: @escaping (_ size: CGFloat) -> Lead,
+         @ViewBuilder tile: @escaping (_ item: ItemDef, _ size: CGFloat) -> Tile) {
+        self.items = items
+        self.leads = leads
+        self.dragging = dragging
+        self.label = label
+        self.hint = hint
+        self.onTap = onTap
+        self.onMove = onMove
+        self.lead = lead
+        self.tile = tile
     }
 
-    func body(content: Self.Content) -> some View {
-        let payload = Self.payload(item.id, on: side)
-        let mySide = self.side, here = item.id, move = self.onMove
-        return content
-            .draggable(payload) {
-                ItemIcon(item: item, size: size)
+    /// The room width the grid has, measured.
+    @State private var width: CGFloat = 0
+    /// The slot that's lifted, where it was, and where it would land, as places in `items`.
+    @State private var held: String?
+    @State private var start = 0
+    @State private var landing = 0
+    /// How far the finger has moved it since it lifted.
+    @State private var shift: CGSize = .zero
+    @GestureState private var pressing = false
+
+    /// Between slots, and the most a slot grows to before another fits in the row.
+    private static var spacing: CGFloat { 6 }
+    private static var widest: CGFloat { 66 }
+    private static var settle: Animation { .spring(response: 0.3, dampingFraction: 0.8) }
+    /// The grid's own space, which the finger's moves are measured in: the slot itself moves.
+    private static var space: String { "itemSlotGrid" }
+
+    private var columns: Int {
+        guard width > 0 else { return 6 }
+        return max(6, Int((width + Self.spacing) / (Self.widest + Self.spacing)))
+    }
+
+    private var slot: CGFloat {
+        guard width > 0 else { return 52 }
+        return floor((width - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns))
+    }
+
+    private var leadCells: Int { leads ? 1 : 0 }
+
+    /// The top-left corner of a cell.
+    private func corner(_ cell: Int) -> CGPoint {
+        let step = slot + Self.spacing
+        return CGPoint(x: CGFloat(cell % columns) * step, y: CGFloat(cell / columns) * step)
+    }
+
+    /// The items as they show: while one's lifted, the others close up round where it would land.
+    private var shown: [ItemDef] {
+        guard let held, let item = items.first(where: { $0.id == held }) else { return items }
+        var rest = items.filter { $0.id != held }
+        rest.insert(item, at: min(max(0, landing), rest.count))
+        return rest
+    }
+
+    var body: some View {
+        let slot = self.slot
+        let cells = leadCells + items.count
+        let rows = max(1, (cells + columns - 1) / columns)
+        let height = CGFloat(rows) * slot + CGFloat(rows - 1) * Self.spacing
+        ZStack(alignment: .topLeading) {
+            if leads {
+                lead(slot)
+                    .frame(width: slot, height: slot)
             }
-            .dropDestination(for: String.self) { payloads, _ in
-                guard let id = payloads.first.flatMap({ Self.id(in: $0, on: mySide) }), id != here else { return false }
-                move(id, here)
-                return true
-            } isTargeted: { targeted = $0 }
-            .scaleEffect(targeted ? 1.12 : 1)
-            .shadow(color: targeted ? HUDStyle.gold : .clear, radius: 6)
-            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: targeted)
+            ForEach(Array(shown.enumerated()), id: \.element.id) { index, item in
+                cell(item, at: index, slot: slot)
+            }
+        }
+        .frame(width: width > 0 ? width : nil, height: height, alignment: .topLeading)
+        .coordinateSpace(name: Self.space)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        // A lift that ends without a lift's end (the window took the touch): it lands where it is.
+        .onChange(of: pressing) { _, now in
+            if !now { putDown() }
+        }
+    }
+
+    private func cell(_ item: ItemDef, at index: Int, slot: CGFloat) -> some View {
+        let isHeld = held == item.id
+        let home = corner(leadCells + index)
+        let lifted = corner(leadCells + start)
+        let place = isHeld ? CGPoint(x: lifted.x + shift.width, y: lifted.y + shift.height) : home
+        let position = items.firstIndex { $0.id == item.id }
+        let before = position.flatMap { $0 > 0 ? items[$0 - 1] : nil }
+        let after = position.flatMap { $0 + 1 < items.count ? items[$0 + 1] : nil }
+        return tile(item, slot)
+            .frame(width: slot, height: slot)
+            .contentShape(Rectangle())
+            .gesture(lift(item).exclusively(before: TapGesture().onEnded { onTap(item) }))
+            .scaleEffect(isHeld ? 1.15 : 1)
+            .shadow(color: .black.opacity(isHeld ? 0.45 : 0), radius: isHeld ? 8 : 0, x: 0, y: isHeld ? 5 : 0)
+            .offset(x: place.x, y: place.y)
+            .zIndex(isHeld ? 1 : 0)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(label(item))
+            .accessibilityHint(hint ?? "")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { onTap(item) }
             .accessibilityAction(named: L("Move earlier")) { if let before { onMove(item.id, before.id) } }
             .accessibilityAction(named: L("Move later")) { if let after { onMove(item.id, after.id) } }
     }
-}
 
-extension View {
-    /// Hold and drag to move it (`ItemSlotMover`); `shown`: the slots on its side as they show.
-    func movableSlot(_ item: ItemDef, in shown: [ItemDef], side: BankSide, size: CGFloat,
-                     onMove: @escaping (_ id: String, _ target: String) -> Void) -> some View {
-        let index = shown.firstIndex { $0.id == item.id }
-        let before = index.flatMap { $0 > 0 ? shown[$0 - 1] : nil }
-        let after = index.flatMap { $0 + 1 < shown.count ? shown[$0 + 1] : nil }
-        return modifier(ItemSlotMover(item: item, side: side, size: size, before: before, after: after, onMove: onMove))
+    /// Held a moment, the slot lifts; then it follows the finger.
+    private func lift(_ item: ItemDef) -> some Gesture {
+        LongPressGesture(minimumDuration: 0.3)
+            .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .named(Self.space)))
+            .updating($pressing) { value, state, _ in
+                if case .second(true, _) = value { state = true }
+            }
+            .onChanged { value in
+                guard case .second(true, let drag) = value else { return }
+                if held != item.id { pickUp(item) }
+                shift = drag?.translation ?? .zero
+                hover()
+            }
+            .onEnded { _ in putDown() }
+    }
+
+    private func pickUp(_ item: ItemDef) {
+        guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
+        held = item.id
+        start = index
+        landing = index
+        shift = .zero
+        dragging?.wrappedValue = true
+        Haptics.impact(.light)
+    }
+
+    /// Where the lifted slot would land: the cell its middle is over, the others sliding aside.
+    private func hover() {
+        guard held != nil, !items.isEmpty else { return }
+        let step = slot + Self.spacing
+        let lifted = corner(leadCells + start)
+        let middle = CGPoint(x: lifted.x + shift.width + slot / 2, y: lifted.y + shift.height + slot / 2)
+        let column = min(max(Int(middle.x / step), 0), columns - 1)
+        let row = max(Int(middle.y / step), 0)
+        let to = min(max(row * columns + column - leadCells, 0), items.count - 1)
+        guard to != landing else { return }
+        withAnimation(Self.settle) { landing = to }
+        if GameSettings.haptics { UISelectionFeedbackGenerator().selectionChanged() }
+    }
+
+    /// Let go: it lands where it would, and the order's saved by `onMove`.
+    private func putDown() {
+        guard let id = held else { return }
+        let from = start, to = landing
+        let target = items.indices.contains(to) ? items[to].id : nil
+        withAnimation(Self.settle) {
+            held = nil
+            shift = .zero
+            if from != to, let target { onMove(id, target) }
+        }
+        dragging?.wrappedValue = false
     }
 }

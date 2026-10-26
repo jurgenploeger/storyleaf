@@ -28,6 +28,8 @@ struct MenuView: View {
     @State private var settingsPage: SettingsPage = DebugLaunch.subTab.flatMap(SettingsPage.init(rawValue:)) ?? .general
     /// An egg to hatch, chosen on its card: the Bag plays the hatching.
     @State private var hatchRequest: ItemDef?
+    /// A slot in the Bag lifted to move it (`ItemSlotGrid`): the page holds still.
+    @State private var dragLock = false
     /// A tap on something in the Bag: its card, over the menu. Debug `inspect=<item>` opens one
     /// (unless it's for the gear grid, `change=`).
     @State private var inspecting: ItemDef? = DebugLaunch.changingSlot == nil ? DebugLaunch.inspectedItem.flatMap { Content.shared.item($0) } : nil
@@ -63,15 +65,6 @@ struct MenuView: View {
                 .zIndex(1)
             }
 
-            if let item = picking {
-                ItemTargetPicker(session: session, item: item) { note in
-                    if let note { bagNote = note }
-                    withAnimation(.easeOut(duration: 0.2)) { picking = nil }
-                }
-                .transition(.opacity)
-                .zIndex(1)
-            }
-
             if let item = inspecting {
                 let close = { withAnimation(.easeOut(duration: 0.2)) { inspecting = nil } }
                 // From the Bag: what you can do with it there, on its card.
@@ -81,10 +74,23 @@ struct MenuView: View {
                 ItemInfoCard(session: session, item: item, onClose: close, onEquip: equip,
                              action: fromBag ? bagAction(for: item, close: close) : nil,
                              note: fromBag ? bagNote(for: item) : nil,
-                             trading: fromBag ? trading(for: item) : nil,
-                             dropping: fromBag ? dropping(item, close: close) : nil)
+                             fromBag: fromBag)
                 .transition(.opacity)
                 .zIndex(1)
+            }
+
+            // Over the item's card when it's opened from there: the card shows again once it closes,
+            // unless the last of it is gone.
+            if let item = picking {
+                ItemTargetPicker(session: session, item: item) { note in
+                    if let note { bagNote = note }
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        picking = nil
+                        if session.count(of: item.id) == 0 { inspecting = nil }
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(2)
             }
         }
         .foregroundStyle(HUDStyle.cream)
@@ -108,7 +114,7 @@ extension MenuView {
                     case .companions: CompanionsTab(session: session, page: $companionsPage)
                     case .friends: FriendsTab(session: session)
                     case .bag:
-                        BagTab(session: session, note: $bagNote, hatchRequest: $hatchRequest,
+                        BagTab(session: session, note: $bagNote, hatchRequest: $hatchRequest, dragging: $dragLock,
                                onInspect: { item in withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { inspecting = item } })
                     case .quests: QuestsTab(session: session, page: $questsPage)
                     case .settings: SettingsView(session: session, onQuitToTitle: onQuitToTitle, page: settingsPage)
@@ -119,6 +125,8 @@ extension MenuView {
             }
             // Debug `bottom`: opens at the end of the page (screenshots of the skills).
             .defaultScrollAnchor(DebugLaunch.opensMenuAtBottom ? .bottom : nil)
+            // Still while a slot in the Bag is lifted, so the finger moves the slot.
+            .scrollDisabled(dragLock)
         }
         .id(localizer.language)
     }
@@ -154,8 +162,15 @@ extension MenuView {
             }
         case .settings:
             PageTabs(page: $settingsPage, title: { $0.title })
-        case .friends, .bag:
+        case .friends:
             WindowTitle(window.menuTitle)
+                .padding(.bottom, 2)
+        case .bag:
+            // How full the bag is after its name (playtesting 2026-10-26: "add the x/50 behind the big
+            // 'Inventory' title"): 50 slots, a kind of item each, the coins one (`GameSession+Bank`).
+            WindowTitle(window.menuTitle, detail: "\(session.bagSlotsUsed)/\(GameSession.bagSlots)",
+                        detailTint: session.bagSlotsFree == 0 ? HUDStyle.orange : HUDStyle.dim)
+                .accessibilityValue(L("{used} of {slots} slots", ["used": session.bagSlotsUsed, "slots": GameSession.bagSlots]))
                 .padding(.bottom, 2)
         }
     }
@@ -163,7 +178,8 @@ extension MenuView {
     /// What an item in the Bag can do, on its card: drink it (or give it) to someone, give a toy to
     /// a companion, fly home on a feather, or hatch an egg.
     func bagAction(for item: ItemDef, close: @escaping () -> Void) -> ItemInfoCard.Action? {
-        let pick = { close(); withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { picking = item } }
+        // Who gets it, in a window over the card (the card stays behind it).
+        let pick = { withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { picking = item } }
         if item.hatches != nil {
             return ItemInfoCard.Action(title: L("Hatch"), icon: .egg) { close(); hatchRequest = item }
         }
@@ -188,29 +204,6 @@ extension MenuView {
             }
         }
         return nil
-    }
-
-    /// Putting it up for trade, or taking it off: adventurers about then come over with offers
-    /// (`GameSession+TradeList`).
-    func trading(for item: ItemDef) -> ItemInfoCard.Action? {
-        if session.isForTrade(item.id) {
-            return ItemInfoCard.Action(title: L("Take off trade"), icon: .coins) { session.takeOffTrade(item.id) }
-        }
-        guard session.canPutUpForTrade(item) else { return nil }
-        return ItemInfoCard.Action(title: L("Put up for trade"), icon: .coins, enabled: session.forTrade.count < GameSession.maxForTrade) {
-            session.putUpForTrade(item.id)
-        }
-    }
-
-    /// Dropping some of it at your feet (`GameSession.drop`): not what a quest you're on needs. The card
-    /// closes once the last of it is gone.
-    func dropping(_ item: ItemDef, close: @escaping () -> Void) -> ((Int) -> Void)? {
-        guard session.count(of: item.id) > 0, !session.questKeepsakes.contains(item.id) else { return nil }
-        return { amount in
-            session.drop(item.id, amount)
-            session.save()
-            if session.count(of: item.id) == 0 { close() }
-        }
     }
 
     /// Why an item in the Bag has nothing to do there.
@@ -1134,16 +1127,18 @@ private struct CompanionCard: View {
 
 // MARK: - Bag
 
-/// Everything you carry in a grid of slots, like an adventurer's pack: potions and other things to
-/// use, spare gear, and materials, each with how many you have. A tap opens the item's card, with
-/// what it does and the button to use, give, hatch or wear it; holding one and dragging it onto another
-/// moves it there (`ItemSlotMover`, your order of the bag). Search, sort and pick the kinds to show at
-/// the top; gear better than what you wear has the gold upgrade arrow.
+/// Everything you carry in one grid of slots, like an adventurer's pack: potions and other things to
+/// use, spare gear, and materials, each with how many you have, in your order. A tap opens the item's
+/// card, with Drop, Trade and the button to use, give, hatch or wear it; holding one lifts it to move
+/// it, the others sliding aside (`ItemSlotGrid`, your order of the bag). Search, sort and pick the
+/// kinds to show at the top; gear better than what you wear has the gold upgrade arrow.
 private struct BagTab: View {
     let session: GameSession
     @Binding var note: String?
     /// An egg chosen on its card: it hatches here.
     @Binding var hatchRequest: ItemDef?
+    /// True while a slot is lifted to move it: the window holds still.
+    @Binding var dragging: Bool
     /// A tap on an item: MenuView shows its card.
     let onInspect: (ItemDef) -> Void
     @State private var hatched: Pet?
@@ -1157,71 +1152,46 @@ private struct BagTab: View {
     /// Which kinds of thing the Bag shows.
     private typealias Shelf = ItemShelf
 
-    private static let slot: CGFloat = 52
-    private let columns = [GridItem(.adaptive(minimum: BagTab.slot + 6, maximum: BagTab.slot + 14), spacing: 8)]
-
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                // How full the bag is: 50 slots, a kind of item each, the coins one (`GameSession+Bank`).
-                let full = session.bagSlotsFree == 0
-                Label(L("Bag {used}/{slots}", ["used": session.bagSlotsUsed, "slots": GameSession.bagSlots]), icon: .backpack)
-                    .foregroundStyle(full ? HUDStyle.orange : HUDStyle.gold)
-                if full {
-                    Text(L("Full: bank something")).foregroundStyle(HUDStyle.orange)
+            // How full the bag is shows by the window's title (`MenuView.tabs`); here, when it's full,
+            // what's up for trade (the coin on its slot), and what the last thing used did.
+            let full = session.bagSlotsFree == 0
+            if full || !session.forTrade.isEmpty || note != nil {
+                HStack {
+                    if full {
+                        Text(L("Full: bank something")).foregroundStyle(HUDStyle.orange)
+                    }
+                    if !session.forTrade.isEmpty {
+                        Label(L("{count} for trade", ["count": session.forTrade.count]), icon: .coins)
+                            .foregroundStyle(HUDStyle.gold)
+                    }
+                    Spacer()
+                    if let note { Text(note).foregroundStyle(HUDStyle.green) }
                 }
-                // What's up for trade (the coin on its slot): adventurers about come over with offers.
-                if !session.forTrade.isEmpty {
-                    Label(L("{count} for trade", ["count": session.forTrade.count]), icon: .coins)
-                        .foregroundStyle(HUDStyle.gold)
-                }
-                Spacer()
-                if let note { Text(note).foregroundStyle(HUDStyle.green) }
+                .font(HUDStyle.font(12))
             }
-            .font(HUDStyle.font(12))
 
             if hatching, let pet = hatched {
                 HatchView(session: session, pet: pet) { hatching = false }
             }
 
             finder
-            // While you look for something, a kind with nothing that fits is left out, and its
-            // where-to-get-some line with it.
-            let narrowed = !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || wearableOnly
-            let items = wearableOnly ? [] : arranged(session.consumables)
-            let gear = arranged(session.bagEquipment.filter { !wearableOnly || session.equipIssue($0) == nil })
-            let materials = wearableOnly ? [] : arranged(session.bagMaterials)
-
-            if shows(.items), !(narrowed && items.isEmpty) {
-                SectionTitle(text: L("Items"))
-                if items.isEmpty {
-                    Text(L("No potions. Trader Bo in Meadowbrook sells them.")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
-                }
-                // The coins you carry in the first slot, as RuneScape's pack has them.
-                grid(items, coins: narrowed ? 0 : session.data.gold)
+                .zIndex(1)
+            // One grid for every kind of thing, in your order (playtesting 2026-10-26: "The Items,
+            // Equipment and Materials sections should not exist, it's all the same"); the chips narrow it.
+            let searching = !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || wearableOnly
+            let kinds = session.bagItems.filter { item in
+                shelf.holds(item) && (!wearableOnly || (ItemType.equipmentSlots.contains(item.type) && session.equipIssue(item) == nil))
             }
-
-            if shows(.gear), !(narrowed && gear.isEmpty) {
-                SectionTitle(text: L("Equipment"))
-                if gear.isEmpty {
-                    Text(L("Nothing spare. Equipped gear is on the Character tab.")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
-                }
-                // Gear you can't wear yet (too low a level, another class's) is faded.
-                grid(gear) { session.equipIssue($0) == nil }
-            }
-
-            if shows(.materials), !(narrowed && materials.isEmpty) {
-                SectionTitle(text: L("Materials"))
-                if materials.isEmpty {
-                    Text(L("Monsters drop wood, metal, gems and hides. A town smith forges them into weapons and armor, to wear or to sell."))
-                        .font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
-                }
-                grid(materials)
-            }
-
-            if narrowed, [shows(.items) ? items : [], shows(.gear) ? gear : [], shows(.materials) ? materials : []].allSatisfy(\.isEmpty) {
-                EmptyNote(L("Nothing in your bag matches."), size: 11)
+            let shown = ItemFinder.arrange(kinds, search: search, sort: sort, session: session)
+            // The coins you carry in the first slot, as RuneScape's pack has them.
+            let coins = !searching && (shelf == .all || shelf == .items) ? session.data.gold : 0
+            if shown.isEmpty && coins == 0 {
+                EmptyNote(searching || shelf != .all ? L("Nothing in your bag matches.") : L("Your bag is empty."), size: 11)
                     .padding(.vertical, 12)
+            } else {
+                grid(shown, coins: coins)
             }
         }
         .onChange(of: hatchRequest?.id) { _, id in
@@ -1243,6 +1213,8 @@ private struct BagTab: View {
                 ItemSearchField(text: $search)
                 ItemSortMenu(sort: $sort, options: ItemSort.allCases)
             }
+            // The sort's panel over the chips.
+            .zIndex(1)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(Shelf.allCases, id: \.self) { kind in
@@ -1251,24 +1223,12 @@ private struct BagTab: View {
                     FilterChip(title: L("Can wear"), on: wearableOnly) { wearableOnly.toggle() }
                 }
             }
-            Text(L("Hold a slot and drag it onto another to move it."))
-                .font(HUDStyle.font(10))
-                .foregroundStyle(HUDStyle.dim)
         }
     }
 
-    private func shows(_ kind: Shelf) -> Bool { shelf == .all || shelf == kind }
-
-    private func arranged(_ items: [ItemDef]) -> [ItemDef] {
-        ItemFinder.arrange(items, search: search, sort: sort, session: session)
-    }
-
     /// Puts what was dragged where `target` is; sorted another way, the order you see is yours from
-    /// then on, so the sort goes back to Bag order.
+    /// then on, so the sort goes back to your order.
     private func move(_ id: String, onto target: String) {
-        // Within its own section: a potion dropped on a sword would land somewhere you can't see.
-        guard let moved = session.content.item(id), let there = session.content.item(target),
-              Shelf.allCases.contains(where: { $0 != .all && $0.holds(moved) && $0.holds(there) }) else { return }
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
             guard session.moveItem(id, onto: target, on: .bag, sortedBy: sort) else { return }
             sort = .standard
@@ -1276,38 +1236,38 @@ private struct BagTab: View {
         session.save()
     }
 
-    /// One slot per kind of item, its count in the corner from two up, and the upgrade arrow on gear
-    /// better than what you wear.
-    private func grid(_ items: [ItemDef], coins: Int = 0, usable: @escaping (ItemDef) -> Bool = { _ in true }) -> some View {
-        LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
-            if coins > 0 {
-                CoinsTile(amount: coins, size: Self.slot)
-                    .padding(.top, 5)
-                    .padding(.trailing, 5)
-            }
-            ForEach(items) { item in
-                Button {
-                    onInspect(item)
-                } label: {
-                    ItemIcon(item: item, size: Self.slot, count: session.count(of: item.id), upgrade: session.isUpgrade(item))
-                        .opacity(usable(item) ? 1 : 0.45)
-                        .overlay(alignment: .bottomLeading) {
-                            if session.isForTrade(item.id) {
-                                IconImage(.coins, size: 11)
-                                    .padding(2)
-                                    .background(Circle().fill(HUDStyle.ink.opacity(0.75)))
-                                    .accessibilityLabel(L("For trade"))
-                            }
-                        }
-                        .padding(.top, 5)
-                        .padding(.trailing, 5)
-                }
-                .buttonStyle(PressScaleStyle())
-                .movableSlot(item, in: items, side: .bag, size: Self.slot) { move($0, onto: $1) }
-                .accessibilityLabel(session.count(of: item.id) > 1 ? L("{item}, {count}", ["item": item.name, "count": session.count(of: item.id)]) : item.name)
-                .accessibilityHint(L("Shows what it does and who can use it"))
-            }
-        }
+    /// One slot per kind of item, its count in the corner from two up, the upgrade arrow on gear
+    /// better than what you wear, gear you can't wear yet (too low a level, another class's) faded,
+    /// and a coin on what's up for trade.
+    private func grid(_ items: [ItemDef], coins: Int) -> some View {
+        ItemSlotGrid(items: items, leads: coins > 0, dragging: $dragging,
+                     label: { item in
+                         let count = session.count(of: item.id)
+                         let name = count > 1 ? L("{item}, {count}", ["item": item.name, "count": count]) : item.name
+                         return session.isForTrade(item.id) ? name + ", " + L("For trade") : name
+                     },
+                     hint: L("Shows what it does and who can use it"),
+                     onTap: onInspect,
+                     onMove: { move($0, onto: $1) },
+                     lead: { size in
+                         CoinsTile(amount: coins, size: size - 5)
+                             .padding(.top, 5)
+                             .padding(.trailing, 5)
+                     },
+                     tile: { item, size in
+                         let wearable = !ItemType.equipmentSlots.contains(item.type) || session.equipIssue(item) == nil
+                         ItemIcon(item: item, size: size - 5, count: session.count(of: item.id), upgrade: session.isUpgrade(item))
+                             .opacity(wearable ? 1 : 0.45)
+                             .overlay(alignment: .bottomLeading) {
+                                 if session.isForTrade(item.id) {
+                                     IconImage(.coins, size: 11)
+                                         .padding(2)
+                                         .background(Circle().fill(HUDStyle.ink.opacity(0.75)))
+                                 }
+                             }
+                             .padding(.top, 5)
+                             .padding(.trailing, 5)
+                     })
     }
 }
 

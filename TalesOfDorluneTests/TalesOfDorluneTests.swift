@@ -1912,6 +1912,91 @@ struct RulesTests {
         #expect(session.pickUp(pile.id) && session.count(of: "potion") == 3)
     }
 
+    /// Drop's window drops as many as you choose, no more than you carry (playtesting 2026-10-26).
+    @Test func droppingHowManyYouChoose() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.inventory["ether"] = 5
+        #expect(session.drop("ether", 3) && session.count(of: "ether") == 2)
+        #expect(session.lostPiles.first?.items["ether"] == 3)
+        #expect(session.drop("ether", 99) && session.count(of: "ether") == 0)
+        #expect(session.lostPiles.first?.items["ether"] == 5)
+    }
+
+    /// Using several on one: as many as you choose, no more than fills them up, and no more than you
+    /// have (playtesting 2026-10-26: "there it should also be able to select the amount").
+    @Test func usingSeveralAtOnce() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let potion = try #require(Content.shared.item("potion"))
+        let heal = try #require(potion.heal)
+        let full = session.heroStats.hp
+        session.data.inventory["potion"] = 10
+        // Down by up to two and a half potions' worth: as many as that takes fill the hero up.
+        session.data.hero.hp = max(1, full - heal * 5 / 2)
+        let needed = session.usesToFill("potion")
+        #expect(needed == (full - session.data.hero.hp + heal - 1) / heal)
+        let five = session.use("potion", times: 5)
+        #expect(five.used == needed && session.count(of: "potion") == 10 - needed)
+        #expect(session.data.hero.hp == full && five.note != nil)
+        // Full: none used.
+        #expect(session.usesToFill("potion") == 0)
+        #expect(session.use("potion", times: 2).used == 0 && session.count(of: "potion") == 10 - needed)
+        // No more than you have.
+        session.data.inventory["potion"] = 1
+        session.data.hero.hp = 1
+        #expect(session.use("potion", times: 9).used == 1 && session.count(of: "potion") == 0)
+        // Toys: no more than a companion plays with.
+        let pet = try #require(session.makePet(species: "jelly", level: 5))
+        session.addPet(pet, countsForQuests: false)
+        let index = try #require(session.data.pets.firstIndex { $0.id == pet.id })
+        session.data.pets[index].toys = GameSession.toysPerCompanion - 2
+        session.data.inventory["toy_ball"] = 5
+        #expect(session.toysWanted(by: pet.id) == 2)
+        let given = session.giveToy("toy_ball", to: pet.id, times: 5)
+        #expect(given.given == 2 && session.count(of: "toy_ball") == 3)
+        #expect(session.data.pets[index].toys == GameSession.toysPerCompanion && session.toysWanted(by: pet.id) == 0)
+    }
+
+    /// Trade's window puts as many as you choose up at your price (playtesting 2026-10-26: "determine the
+    /// price of the item (prefilled with default price/value) and then how many"): a buyer who'd pay it
+    /// offers it, one who wouldn't offers what they would; sold out, it's off the list.
+    @Test func puttingSomeUpForTradeAtAPrice() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let buyer = Adventurer(name: "Mimi", raceID: "elf", classID: "mage", level: 10, look: .standard)
+        let ether = try #require(Content.shared.item("ether"))
+        session.data.inventory["ether"] = 5
+        // Not up yet: all you carry, at the going price.
+        #expect(session.tradeAsk("ether") == TradeAsk(price: GameSession.tradeValue(of: ether), count: 5))
+        #expect(GameSession.tradeValue(of: ether) > GameSession.sellPrice(of: ether))
+        #expect(GameSession.tradeValue(of: ether) < GameSession.topTradePrice(of: ether))
+        session.putUpForTrade("ether", count: 2, price: 20)
+        #expect(session.isForTrade("ether") && session.forSale("ether") == 2 && session.tradeAsk("ether").price == 20)
+        // One who'd pay more offers your price; one who'd pay less, what they would.
+        session.receiveBid(from: buyer, roll: 0.99)
+        #expect(session.pendingBid?.price == 20)
+        let gold = session.data.gold
+        #expect(session.acceptBid())
+        #expect(session.data.gold == gold + 20 && session.count(of: "ether") == 4 && session.forSale("ether") == 1)
+        session.receiveBid(from: buyer, roll: 0)
+        let low = try #require(session.pendingBid)
+        #expect(low.price < 20 && low.price >= 1)
+        session.declineBid()
+        // Asked again: what's asked changes, still one kind on the list.
+        session.putUpForTrade("ether", count: 1, price: 0)
+        #expect(session.tradeAsk("ether").price == 1 && session.forTrade.map(\.id) == ["ether"])
+        session.putUpForTrade("ether", count: 1, price: GameSession.maxTradePrice + 5)
+        #expect(session.tradeAsk("ether").price == GameSession.maxTradePrice)
+        // The last one sold: off the list, with four left in the bag.
+        session.receiveBid(from: buyer, roll: 0.5)
+        #expect(session.acceptBid())
+        #expect(!session.isForTrade("ether") && session.count(of: "ether") == 3 && session.forTrade.isEmpty)
+        #expect(session.data.tradeAsks?["ether"] == nil)
+        // No more up than you carry; taken off, the ask is forgotten.
+        session.putUpForTrade("ether", count: 50)
+        #expect(session.forSale("ether") == 3)
+        session.takeOffTrade("ether")
+        #expect(!session.isForTrade("ether") && session.data.tradeAsks?["ether"] == nil)
+    }
+
     /// A game begun before the bank starts with its bag and coins in it, once; what a quest needs stays.
     @Test func olderGamesStartWithTheirBagInTheBank() throws {
         let fresh = GameSession.newGame(name: "Test", raceID: "human")
@@ -1962,6 +2047,24 @@ struct RulesTests {
         loaded.data.bagOrder = nil
         #expect(loaded.bagItems.map(\.id) == Content.shared.items.filter { loaded.count(of: $0.id) > 0 }.map(\.id))
         #expect(loaded.bagItems.first?.id == "potion")
+    }
+
+    /// The Bag is one grid (playtesting 2026-10-26: "The Items, Equipment and Materials sections should
+    /// not exist, it's all the same"): gear, materials and potions share one order, and any can go
+    /// anywhere in it.
+    @Test func theBagIsOneOrderAcrossKinds() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.inventory = ["potion": 3, "wooden_sword": 1, "bamboo": 2]
+        let first = session.bagItems.map(\.id)
+        #expect(Set(first) == ["potion", "wooden_sword", "bamboo"])
+        let last = first[2]
+        #expect(session.moveItem(last, onto: first[0], on: .bag))
+        #expect(session.bagItems.map(\.id) == [last, first[0], first[1]])
+        #expect(session.moveItem(first[0], onto: last, on: .bag))
+        #expect(session.bagItems.map(\.id) == [first[0], last, first[1]])
+        // The filters narrow the one order without changing it.
+        #expect(session.bagItems.filter { ItemShelf.gear.holds($0) }.map(\.id) == ["wooden_sword"])
+        #expect(session.data.bagOrder == [first[0], last, first[1]])
     }
 
     /// Saves from before your order (0.8.13 and older) have no `bagOrder` or `bankOrder`: they load,
