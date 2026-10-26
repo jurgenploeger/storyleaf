@@ -2,8 +2,8 @@ import SwiftUI
 
 /// A banker's bank (playtesting 2026-10-25: "I want to add a bank to the game"; then "the bank
 /// interface itself should be a bigger modal, just like the other modals"): after a word with the
-/// banker (`NPCDialogView`'s Open the bank), a window as big as a menu window's, the banker and what
-/// they say at the top, your bag and the bank under it. Nothing in the bank is lost to a defeat.
+/// banker (`NPCDialogView`'s Open the bank), a window as big as a menu window's: your bag and the bank
+/// under it, and what the banker says to what you just did. Nothing in the bank is lost to a defeat.
 struct BankView: View {
     let npc: NPCDef
     let session: GameSession
@@ -25,9 +25,10 @@ struct BankView: View {
                 WindowTitle(L("Bank"), onClose: onClose)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
-                        HStack(spacing: 10) {
-                            SpriteImage(art: npc.art, size: 44)
-                            Text(reply ?? npc.greeting)
+                        // No greeting here: the banker said it in their bubble on the way in
+                        // (playtesting 2026-10-26). What they say to what you just did, though.
+                        if let reply {
+                            Text(reply)
                                 .font(HUDStyle.font(12))
                                 .foregroundStyle(HUDStyle.cream)
                                 .fixedSize(horizontal: false, vertical: true)
