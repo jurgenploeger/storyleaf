@@ -15,6 +15,14 @@ struct WorldHUD: View {
     /// points off the screen's edge (playtesting 2026-10-16: "should sit lower"): the indicator hides
     /// itself and a swipe there moves the joystick first (`GameView`). Upright, they keep over it.
     private var onItsSide: Bool { verticalSizeClass == .compact }
+    /// How tall the faces (and a joined party's plate) are, and the minimap, measured: upright, the
+    /// toasts go below whichever reaches lower (playtesting 2026-10-26: a long toast ran under the
+    /// minimap).
+    @State private var facesHeight: CGFloat = 0
+    @State private var minimapHeight: CGFloat = 0
+    private var toastGap: CGFloat {
+        onItsSide ? 10 : max(10, minimapHeight + 8 - facesHeight - 6)
+    }
     private var bottomEdge: SwiftUI.Edge.Set { HUDMargins.bottomEdge(onItsSide: onItsSide) }
 
     private var session: GameSession { coordinator.session }
@@ -26,14 +34,17 @@ struct WorldHUD: View {
     var body: some View {
         ZStack {
             VStack(alignment: .leading, spacing: 6) {
-                // The faces open their stats, and the party folds and unfolds; the rest lets taps
-                // through to the map.
-                StatusCluster(session: session, onInspect: { coordinator.open(.profile($0)) })
-                    .coachTarget(.status)
-                // The party you've joined: whose it is, and a way out of it.
-                if let joined = session.joinedParty, let leader = joined.leader {
-                    JoinedPartyPlate(leader: leader, count: joined.members.count) { coordinator.leaveJoinedParty() }
+                VStack(alignment: .leading, spacing: 6) {
+                    // The faces open their stats, and the party folds and unfolds; the rest lets taps
+                    // through to the map.
+                    StatusCluster(session: session, onInspect: { coordinator.open(.profile($0)) })
+                        .coachTarget(.status)
+                    // The party you've joined: whose it is, and a way out of it.
+                    if let joined = session.joinedParty, let leader = joined.leader {
+                        JoinedPartyPlate(leader: leader, count: joined.members.count) { coordinator.leaveJoinedParty() }
+                    }
                 }
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { facesHeight = $0 }
                 // What just happened, top centre under the panels on both sides (walking into a land
                 // too: its toast, no banner of its own; playtesting 2026-10-24).
                 // The autosave's "Saved" under them, in the same style.
@@ -42,7 +53,7 @@ struct WorldHUD: View {
                     SavedBadge(lastSaved: session.lastSaved)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.top, 10)
+                .padding(.top, toastGap)
                 .allowsHitTesting(false)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -57,6 +68,7 @@ struct WorldHUD: View {
                     onOpen: { coordinator.open(.worldMap) }
                 )
                 .coachTarget(.minimap)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { minimapHeight = $0 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
 
@@ -184,7 +196,8 @@ private struct StatusCluster: View {
     var body: some View {
         let hero = session.data.hero
         let stats = session.heroStats
-        let pet = session.activePet
+        // A companion that has fainted isn't shown on your face (playtesting 2026-10-26).
+        let pet = session.activePet.flatMap { $0.hp > 0 ? $0 : nil }
         let friends = session.partyMembers
         let crowded = friends.count >= 2
         VStack(alignment: .leading, spacing: 4) {
