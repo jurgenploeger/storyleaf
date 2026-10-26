@@ -73,8 +73,9 @@ and the Hi-Potions are recolours of it), the only item RD drew at 64. Measured a
 | | RD's Potion | grained icons (old) | clean icons (new) |
 |---|---|---|---|
 | canvas | 64 | 32 | 64 |
-| outline's hue against what it rounds (`outline_hue`) | 6° | 35° to 138° (the house violet round gold or green) | 9° to 16° |
-| outline pixels with a dark pixel right inside (`outline_double`) | 0.29 | up to 0.67 | 0.09 to 0.39 |
+| outline's hue against what it rounds (`outline_hue`) | 6° | 35° to 138° (the house violet round gold or green) | 6° to 11° |
+| outline pixels with a dark pixel right inside (`outline_double`) | 0.29 | up to 0.67 | 0.06 to 0.39 |
+| just inside the line on the lit side, over the lit tone (`rim_lit`) | 0.70 | | 0.62 to 0.74 |
 | colours per 100 pixels (`colour_density`) | 1.95 | 2.3 to 10 | 0.5 to 1.6 |
 | mean size of a patch of one colour (`cluster_size`) | 3.6 | 1.6 to 3.2 | 4 to 43 |
 
@@ -105,7 +106,9 @@ reference is one sprite, each set from the Potion with a margin and checked agai
 | `outline_hue` | ≤ 30° | yes | the outline a deep shade of what it rounds |
 | `outline_double` | ≤ 0.45 | yes | one pixel, no dark ring inside it |
 | `colour_density` | ≤ 2.6 | yes | smooth ramps, no grain (now a cap, not a floor) |
+| `rim_lit` | ≤ 0.85 | yes | a mid-tone rim inside the line on the lit side, not a hairline (the Potion 0.70) |
 | `outline_rel` | ≤ 0.32 | | still deep enough to read as the edge (the Potion 0.13) |
+| `line_value` | ≤ 0.15 | | the line near-black in its hue (the Potion 0.08) |
 | `cluster_size` | ≥ 3 | | light in bands, not specks |
 | `orphans` | ≤ 0.2 | | no salt and pepper |
 | `checker` | ≤ 0.05 | | no dither fields |
@@ -130,9 +133,14 @@ variety=0, wide=True`; `tools/clean_icon_art.py` and `tools/coin_art.py` are the
 - **Long ramps, smooth:** 6 or 7 shades a material from a third of the base to a pale tint (`wide`), no grain,
   no twin ramp, no dither. Flat planes (a gem's facets, `tone`) still brighten a little toward the light across
   them, so they shade in two or three bands as the Potion's glass does.
-- **A core shadow, not a ring:** only the edges turned from the light (below, right) step darker (`rim="core"`).
-- **One outline, a deep shade of what it rounds** (`deep_shade`: 0.5 of the value of the material's darkest
-  shade, its hue kept, a touch richer): a gold coin's is dark umber, a teal gem's deep teal.
+- **A core shadow, not a dark ring:** only the edges turned from the light (below, right) step darker
+  (`rim="core"`).
+- **A mid-tone rim on the lit side:** just inside the outline at the top left, the material at no more than
+  two fifths up its ramp, never its lightest shade, as the Potion keeps a band of mid-tone glass there. Going
+  straight from the line to a highlight, the edge reads as a hairline (`rim_lit`).
+- **One outline, a deep shade of what it rounds** (`deep_shade`: 0.35 of the value of the material's darkest
+  shade, its hue kept, a touch richer; the line's value 0.07 to 0.10, the Potion's 0.08): a gold coin's is
+  dark umber, a teal gem's deep teal.
 - **Lines inside are softer than the outline:** where one object lies over another (`Sprite.part()`: a coin on a
   coin, one leaf on the next) a line in the darkest shade of the one beneath, not the outline's colour. In the
   outline's colour a heap of coins read as cracked rock. The parts of one object (a coin's rim, field and star)
@@ -580,6 +588,13 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 
 ## Learned
 
+- **2026-10-26 (outline weight):** "Are the outlines a bit too thin now?" Measured against the Potion: the
+  same one-pixel line, a little paler (0.10 to 0.15 against 0.08), but the real difference was just inside
+  it. On the lit side the Potion's glass is a mid tone (0.70 of its lit tone) for a pixel before it brightens,
+  so its line reads about one and a half pixels firm; ours went from the line straight to the lightest
+  shade (0.93 to 1), a hairline. Thick and dark (the grained finish) and thin (the first clean icons) are
+  both about that band, not the line: a near-black ring there is too heavy, the highlight too light, the
+  material's own mid tone right. Now a rule (`rim_lit`), with the line deepened to 0.35 of the darkest shade.
 - **2026-10-26 (item icons, the clean look):** Measure the reference the user points at before trusting the
   criteria: the `icon` bands failed RD's Potion on five counts (colour density, flatness, the outline's
   depth) and passed the coins the user disliked, because they were calibrated on RD's 32-pixel armour and

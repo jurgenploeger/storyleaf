@@ -105,7 +105,7 @@ class Material:
         self.base, self.shades, self.texture, self.grain = base, shades, texture, grain
         self.gloss, self.relief = gloss, relief
         # How deep the clean finish's outline is (render outline="deep"), as a share of the darkest shade's value.
-        self.outline = 0.5
+        self.outline = 0.35
         # `shift` scales how far the ramp's shadows and lights turn round the wheel (RD's buildings turn
         # theirs about twice as far as an icon's).
         self.colours = ramp(base, shades, 12.0 * shift, 7.0 * shift, wide)
@@ -120,7 +120,7 @@ class Material:
 
 def deep_shade(mat):
     """The clean finish's outline colour for a material (2026-10-26, RD's Potion): a deep shade of it, about
-    0.5 of the value of its darkest shade (`Material.outline`), its hue kept, a touch richer: a red's
+    0.35 of the value of its darkest shade (`Material.outline`), its hue kept, a touch richer: a red's
     near-black crimson, a gold's dark umber, never the house violet."""
     r, g, b = (np.array(mat.colours[0]) / 255.0).tolist()
     h, s, v = colorsys.rgb_to_hsv(r, g, b)
@@ -405,6 +405,18 @@ class Sprite:
             away = sel & (~down | ~right)
             level[edge] = np.maximum(level[edge] - 1, 0)
             level[away] = np.maximum(level[away] - (1 if self.rim == "silhouette" else 0), 0)
+        if self.rim == "core":
+            # The clean finish's rim (2026-10-26, measured on RD's Potion): just inside the outline on the
+            # lit side, the material at no more than its middle shade, never its lightest. Straight from the
+            # outline to a highlight, the edge read as a hairline ("are the outlines a bit too thin now?");
+            # the Potion keeps a band of mid-tone glass there, so its one-pixel line reads firm.
+            solid = np.pad(idx >= 0, 1)
+            lit_edge = (idx >= 0) & (~solid[:-2, 1:-1] | ~solid[1:-1, :-2])
+            for i, (_, mat, *_r) in enumerate(self.shapes):
+                if mat.relief == 0:
+                    continue
+                sel = lit_edge & (idx == i)
+                level[sel] = np.minimum(level[sel], round(0.4 * (mat.shades - 1)))
         # A darker line where a shape meets one lying over it (on the lower one's side).
         parted = np.zeros((self.h, self.w), bool)
         for y in range(self.h if self.seams else 0):

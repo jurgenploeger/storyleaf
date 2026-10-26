@@ -160,6 +160,22 @@ def measure(path):
                 break
     m["outline_hue"] = float(np.median(np.abs(hues))) if hues else None
     m["outline_double"] = float(np.mean(double)) if double else None
+    # The edge's weight (2026-10-26, "are the outlines a bit too thin now?"): the outline's own value
+    # (`line_value`, median; the Potion 0.08) and, just inside it on the lit side (top left), the value
+    # over the lit inside's (90th percentile): `rim_lit`. The Potion keeps a mid-tone rim there (0.70), so
+    # its one-pixel line reads firm; straight from the line to the lightest shade (0.93 to 1) it reads as
+    # a hairline.
+    V = rgb.max(axis=2)
+    m["line_value"] = float(np.median(V[edge]))
+    inner1 = interior & ~np.logical_and.reduce(neighbours(interior))
+    inner2 = interior & ~inner1
+    ys_, xs_ = np.nonzero(opaque)
+    gy_, gx_ = np.mgrid[0:opaque.shape[0], 0:opaque.shape[1]]
+    lit_side = (gx_ - xs_.mean()) + (gy_ - ys_.mean()) < 0
+    if (inner1 & lit_side).sum() >= 8 and inner2.sum() >= 30:
+        m["rim_lit"] = float(np.median(V[inner1 & lit_side]) / max(np.percentile(V[inner2], 90), 1e-6))
+    else:
+        m["rim_lit"] = None
     m["canvas"] = int(max(opaque.shape))
     # Drawn at its size, not doubled from a smaller one (`native`): the share of pixels that a 2× shrink and
     # blow-up would change among those where the colour changes, at the best of the four alignments. A 32-pixel icon blown up to 64 scores 0,
@@ -454,6 +470,8 @@ ITEM_RULES = {
     "outline_hue": ("max", 30.0, True),      # the outline a deep shade of what it rounds, not the house violet
     "outline_double": ("max", 0.45, True),   # one pixel: no dark ring inside it
     "outline_rel": ("max", 0.32, False),     # deep, though: it reads as the edge (the Potion 0.13)
+    "line_value": ("max", 0.15, False),      # the line itself near-black in its hue (the Potion 0.08)
+    "rim_lit": ("max", 0.85, True),          # a mid-tone rim inside it on the lit side, not a hairline (the Potion 0.70)
     "colour_density": ("max", 2.6, True),    # smooth ramps, no grain (the Potion 1.95; the grained finish 2.3 to 10)
     "checker": ("max", 0.05, False),         # no dither fields
     "orphans": ("max", 0.2, False),          # no salt and pepper (the Potion 0.17)
