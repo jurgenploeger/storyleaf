@@ -144,7 +144,9 @@ def measure(path):
     # where both have colour; RD's Potion 6°, the house violet round a gold coin 138°), and one pixel thick
     # (`outline_double`: the share of outline pixels with a pixel nearly as dark right inside them, the dark
     # ring that made our icons' borders read two or three pixels thick: the Potion 0.29, ours 0.66).
-    L = luma(rgb)
+    # (By value, the HSV brightness, not luma: a saturated red's mid tone has a low luma, and was counted
+    # as a dark ring where it was the shaded side of the form, 2026-10-26.)
+    L = rgb.max(axis=2)
     med = float(np.median(L[interior])) if interior.any() else 0.5
     hues, double = [], []
     H_, W_ = opaque.shape
@@ -156,7 +158,11 @@ def measure(path):
                 h2, s2, _ = colorsys.rgb_to_hsv(*rgb[yy, xx])
                 if s1 > 0.2 and s2 > 0.25:
                     hues.append(abs((h1 - h2) * 360 + 180) % 360 - 180)
-                double.append(L[yy, xx] < max(0.5 * med, L[y, x] * 1.6))
+                # Against the inside near it (within 4 pixels), not the whole sprite's: a drum's brown side in
+                # shadow beside its pale head isn't a ring.
+                near = interior[max(0, yy - 4):yy + 5, max(0, xx - 4):xx + 5]
+                local = float(np.median(L[max(0, yy - 4):yy + 5, max(0, xx - 4):xx + 5][near])) if near.any() else med
+                double.append(L[yy, xx] < max(0.45 * local, L[y, x] * 1.6))
                 break
     m["outline_hue"] = float(np.median(np.abs(hues))) if hues else None
     m["outline_double"] = float(np.mean(double)) if double else None
@@ -491,11 +497,13 @@ ITEM_RULES = {
     "fill": ("min", 0.78, True),
     "semi_alpha": ("max", 0.0, True),
     "outline_hue": ("max", 30.0, True),      # the outline a deep shade of what it rounds, not the house violet
-    "outline_double": ("max", 0.45, True),   # one pixel: no dark ring inside it
+    "outline_double": ("max", 0.4, True),    # one pixel: no dark ring inside it (the Potion 0.18)
     "outline_rel": ("max", 0.32, False),     # deep, though: it reads as the edge (the Potion 0.13)
     "line_value": ("max", 0.15, False),      # the line itself near-black in its hue (the Potion 0.08)
     "rim_lit": ("max", 0.85, True),          # a mid-tone rim inside it on the lit side, not a hairline (the Potion 0.70)
-    "colour_density": ("max", 2.6, True),    # smooth ramps, no grain (the Potion 1.95; the grained finish 2.3 to 10)
+    # Smooth ramps, no grain (the Potion 1.95; the grained finish 2.3 to 10). Soft: a thin thing (a whip) has
+    # few pixels for its colours and runs high without any grain; `orphans` and `cluster_size` see grain.
+    "colour_density": ("max", 2.6, False),
     "checker": ("max", 0.05, False),         # no dither fields
     "orphans": ("max", 0.2, False),          # no salt and pepper (the Potion 0.17)
     "cluster_size": ("min", 3.0, False),     # light in bands, not specks (the Potion 3.6; grained 1.6 to 3.2)
@@ -601,20 +609,40 @@ def flat_designs():
 
 
 def clean_icons():
-    """The item icons drawn in the clean look (tools/clean_icon_art.py, tools/coin_art.py)."""
-    import clean_icon_art
+    """Every item icon drawn in code: all in the clean look since 2026-10-26 (tools/item_art.py through
+    `restyle(clean=True)`, tools/clean_icon_art.py, tools/coin_art.py)."""
     import coin_art
-    return [SPRITES / f"item_{i}.png" for i in clean_icon_art.DRAWINGS] + [SPRITES / f"{n}.png" for n in coin_art.drawings()]
+    return code_drawn_icons() + [SPRITES / f"{n}.png" for n in coin_art.drawings()]
+
+
+def grained_icons(every=6):
+    """The finish the clean look replaced, for the rules to keep failing: every `every`-th code-drawn item
+    finished the old way (32 pixels, grained, the house outline), and the same blown up to 64 (written to a
+    temporary folder)."""
+    import io
+    import tempfile
+    import item_art
+    from pixel_kit import restyle
+    folder = pathlib.Path(tempfile.mkdtemp())
+    out = []
+    for item_id in sorted(p.stem[len("item_"):] for p in code_drawn_icons())[::every]:
+        if item_id not in item_art.DRAWINGS:
+            continue
+        drawn = Image.open(io.BytesIO(item_art.render(item_id).png()))
+        img = restyle(drawn, preset=item_art.preset_for(item_id), base=item_art.set_colour(item_id), trim=item_art.FUR,
+                      **item_art.RESTYLE.get(item_id, {})).render()
+        img.save(folder / f"item_{item_id}.png")
+        img.resize((64, 64), Image.NEAREST).save(folder / f"up_{item_id}.png")
+        out += [folder / f"item_{item_id}.png", folder / f"up_{item_id}.png"]
+    return out
 
 
 def compare_items():
     """The clean look's rules (kind `item`) must pass the Potion and the icons drawn to them, and fail the
-    grained 32-pixel finish they replace."""
-    clean = clean_icons()
-    grained = [p for p in code_drawn_icons() if p not in clean]
+    grained finish they replace, at its own size and blown up to 64."""
     for label, paths in (("RD's Potion (the reference, should pass)", [SPRITES / "item_potion.png"]),
-                         ("clean item icons (should pass)", clean),
-                         ("grained item icons (the old finish, should fail)", grained)):
+                         ("clean item icons (should pass)", clean_icons()),
+                         ("grained finish, 32 and blown up to 64 (should fail)", grained_icons())):
         res = score(paths, "item")
         fails = {}
         for _, (_, _, f) in res.items():
@@ -628,9 +656,10 @@ def compare_items():
 
 def compare():
     compare_items()
+    # The `icon` bands, calibrated on RD's 32-pixel weapon and armour icons, still judge those, and must
+    # still fail the flat designs.
     ref = reference()["icon"]
-    code = [p for p in code_drawn_icons() if p not in clean_icons()]
-    for label, paths in (("RD icons (reference, should pass)", ref), ("item icons as shipped", code),
+    for label, paths in (("RD icons (reference, should pass)", ref),
                          ("flat designs, unfinished (should fail)", flat_designs())):
         res = score(paths, "icon")
         fails = {}

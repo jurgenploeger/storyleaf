@@ -104,8 +104,8 @@ reference is one sprite, each set from the Potion with a margin and checked agai
 | `fill` | ≥ 0.78 | yes | as before |
 | `semi_alpha` | 0 | yes | hard pixels |
 | `outline_hue` | ≤ 30° | yes | the outline a deep shade of what it rounds |
-| `outline_double` | ≤ 0.45 | yes | one pixel, no dark ring inside it |
-| `colour_density` | ≤ 2.6 | yes | smooth ramps, no grain (now a cap, not a floor) |
+| `outline_double` | ≤ 0.4 | yes | one pixel, no dark ring inside it (by value, against the inside within 4 pixels: the Potion 0.18) |
+| `colour_density` | ≤ 2.6 | | smooth ramps, no grain (now a cap, not a floor; soft, as a thin thing runs high) |
 | `rim_lit` | ≤ 0.85 | yes | a mid-tone rim inside the line on the lit side, not a hairline (the Potion 0.70) |
 | `outline_rel` | ≤ 0.32 | | still deep enough to read as the edge (the Potion 0.13) |
 | `line_value` | ≤ 0.15 | | the line near-black in its hue (the Potion 0.08) |
@@ -158,17 +158,51 @@ variety=0, wide=True`; `tools/clean_icon_art.py` and `tools/coin_art.py` are the
 - **Read it as a whole:** a heap is a mound with coins strewn on it at odd angles, not rows of coins (rows read
   as bricks).
 
-![RD's Potion, then the coins, seal stones and clover: the grained finish above, the clean look below](item-icons-clean.png)
+**Every code-drawn item icon is in the clean look (2026-10-26).** The coins (`coin_art.py`), the Seal Stones
+and the lucky clover (`clean_icon_art.py`) are drawn for it at 64; every other one is `item_art.py`'s
+32-pixel design finished by `pixel_kit.restyle(clean=True)` at 64, palette swaps (`derive`) too. Weapons and
+armour drawn by RD (`weapon_art.py`, `armour_art.py`) are RD's own and stay as they are; the `icon` bands
+still judge them. A new item: design it in `item_art.py` as before (or draw it at 64 in
+`clean_icon_art.py` when its design can't carry it), check it with `--kind item`, and look at it beside the
+Potion at the size the bag shows it, and in the game (`tools/screenshots.txt`: `clean_icons`, `clean_coins`).
 
-**Where it stands (2026-10-26):** redrawn so far: the four coin piles (`coin_art.py`), the five Seal Stones and
-the lucky clover (`clean_icon_art.py`, which `item_art.py` now skips). Every other code-drawn item icon (338) is
-still the grained finish and fails these rules. To bring the rest across, family by family (fix a family's
-helper, as before): draw it in `clean_icon_art.py` at 64, check it with `--kind item`, look at it beside the
-Potion at the size the bag shows it (`--sheet`), and in the game (`tools/screenshots.txt`: `clean_icons`,
-`clean_coins`). Families with palette swaps (`derive` in art/assets.json: the rings, many capes) need their
-swaps redone on the new drawing. The rules for weapons and armour (RD's drawings shrunk to 32 by
-`weapon_art.py` and `armour_art.py`) are unchanged so far: they are RD's own, and the `icon` bands still judge
-them.
+**Where it stands:** 338 of the 348 code-drawn icons pass (97%), 0 of 106 samples of the old finish do (at
+32 and blown up to 64). The ten that miss pass every hard rule and were looked at by eye; their misses are
+their shapes, not the finish: thin whips (few pixels for their colours, a lash curling away from the light),
+the bubble wand's glow (partly transparent by design), and a quill, a pendant and a tooth charm with sparkles
+or points off the body.
+
+![RD's Potion, then a dozen icons: the grained finish above, the clean look below](item-icons-clean.png)
+
+**How `restyle(clean=True)` brings a 32-pixel design across**, each step something the first pass got wrong:
+
+- The design is doubled, then **every region's edge is smoothed at the new size**, not only the silhouette
+  (each pixel to the region with most of the blurred neighbourhood; a line drawn one pixel wide keeps its
+  pixels). Left blocky, the inside stepped two pixels at a time and failed `native`.
+- **The silhouette is smoothed three times as hard as at 32** (`round_corners`): a design's two-pixel step
+  doubled is four, and at twice the smoothing still read as a jag (165 icons over `jaggies`). Gaps between
+  fingers and thin lines are kept as before.
+- **The old outline goes to its full doubled width.** Only its outer pixel went at first; the inner one
+  stayed and was shaded as a dark opening all round, a second outline inside the new one (288 icons over
+  `outline_double`).
+- **The edge band is set by the material's own lit tone**, as measured on the Potion: on the lit side no
+  lighter than 0.72 of it, on the side turned away no darker than 0.42 of it. A fixed step up the ramp
+  suited gold and put a dark leather's rim near-black.
+- **A floor under the light** (`lit = 0.24 + 0.72 × diffuse`): the side turned away still catches light
+  bounced from below. From nothing, it stacked with the core shadow into a near-black band.
+- **Material presets keep their structure, not their grain** (`CLEAN_PRESETS`): plate bands, folds, facets,
+  a seam's stitches, doubled and softened; mail rings and scales drawn at 64 (`FINE_PRESETS`), one-pixel
+  features at twice the period. Doubled, rings read as blocks; softened enough not to, a crocodile hide's
+  scales were gone.
+- **A trim (a hood's fur) is shaded too**, its ramp barely turned round the wheel so it stays a warm taupe;
+  pasted in its drawn colours, doubled, it stayed blocky.
+- **Only drawn lines count double.** A design's dark creases and slits stay crisp, but a broad patch of its
+  dark shade is shading the new light already does: counted double on top of it, it came out as a dirty
+  smudge (an amulet's, a nugget's, a gauntlet's).
+- **Pale colours turn further round the wheel** (`ramp(wide=True)` for a saturation of 0.1 to 0.3): cool in the
+  shade, warm in the light, as a grey's do; snow and cream had almost no hue to shift (1.5°).
+- **Specks off the body don't count toward its size:** a sparkle drawn with an outline kept the Jelly Pearl
+  from being scaled up to fill its tile (up to 2× now).
 
 ## The target: Pixel Heroes (2026-10-25)
 
@@ -499,8 +533,8 @@ It passes both: the building bands with `form_relief` 0.016, `straight_edges` 0.
 
 ## Restyle: how every item icon is finished
 
-(The grained finish, which every code-drawn item icon still has. New and redrawn ones follow *Item icons: the
-clean look* above.)
+(The grained finish, `restyle` without `clean`: how the item icons were finished until 2026-10-26. They
+are now finished with `clean=True`, *Item icons: the clean look* above; the design side below still holds.)
 
 `tools/item_art.py` designs each item in flat three-tone fills (shapes, colours, details) and
 `pixel_kit.restyle` finishes it: each region of colour becomes a material on a hue-shifted ramp, the
@@ -593,6 +627,16 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 
 ## Learned
 
+- **2026-10-26 (judging against the neighbourhood):** `outline_double` first compared each edge pixel with the
+  whole sprite's median: a drum's brown side in shadow next to its pale head counted as a dark ring. It now
+  compares with the inside within 4 pixels. A rule that judges an edge should look at what's next to it.
+- **2026-10-26 (bringing every icon across):** A finisher built for 32 pixels doubled to 64 keeps the
+  doubling anywhere it isn't told otherwise: the old outline's inner pixel, region edges, pasted trims,
+  1-pixel patterns. Each showed up as a rule failing on hundreds of icons at once (`outline_double`,
+  `native`, `jaggies`), which is what the rules are for. Two rules were wrong instead and changed:
+  `outline_double` compared luma, so a saturated red's shaded side counted as a dark ring (now value);
+  `colour_density` was a hard cap, and a thin whip, few pixels and several materials, ran over it with no
+  grain at all (now soft; `orphans` and `cluster_size` judge grain).
 - **2026-10-26 (shapes):** "Some shapes have a bit of weird sides because some pixels don't line up or are a
   bit out of place, making the shape of a smaller coin for example not the right shape." A small coin's side
   stepped 3, 3, 4, 4, 3, 4, 4 pixels in: its face and its edge were two ellipses at fractional positions, the

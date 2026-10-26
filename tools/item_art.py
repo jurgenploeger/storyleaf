@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Hand-drawn pixel art for every item, as code: writes art/sprites/item_<id>.png (32×32).
+"""Hand-drawn pixel art for every item, as code: writes art/sprites/item_<id>.png (64×64).
 
-Each item is designed here in flat colours with a light and a dark shade, then finished in the game's
-pixel style by tools/pixel_kit.py (`restyle`: lit from the top left on hue-shifted ramps, textured,
-outlined afresh; docs/pixel-style.md), so it sits beside the art Retro Diffusion drew. Needs pillow
+Each item is designed here at 32 × 32 in flat colours with a light and a dark shade, then finished in the
+clean look at 64 pixels by tools/pixel_kit.py (`restyle(clean=True)`: every edge smoothed at the new size,
+lit from the top left on smooth hue-shifted ramps, a one-pixel outline in a deep shade of what it rounds;
+docs/pixel-style.md *Item icons*), as RD drew the Potion. Needs pillow
 and numpy. Edit a drawing below and rerun:
 
     python3 tools/item_art.py            # all items
@@ -3482,7 +3483,8 @@ def main(argv):
     for item_id in ids:
         drawn = Image.open(io.BytesIO(render(item_id).png()))
         options = {"preset": preset_for(item_id), "base": set_colour(item_id), "trim": FUR, **RESTYLE.get(item_id, {})}
-        restyle(drawn, **options).render().save(SPRITES / f"item_{item_id}.png")
+        # In the clean look at 64 pixels (2026-10-26, docs/pixel-style.md *Item icons*: RD's Potion).
+        restyle(drawn, clean=True, **options).render(outline="deep").save(SPRITES / f"item_{item_id}.png")
     # Items that are palette swaps of these (art/assets.json `derive`) are swapped on the flat drawing,
     # where their hue windows were tuned, and finished the same way: swapping the finished icon misses
     # the shades the ramps turn toward blue and yellow. Their own PNG then wins over the swap in the game.
@@ -3495,7 +3497,8 @@ def main(argv):
         flat = np.asarray(Image.open(io.BytesIO(render(base[len("item_"):]).png())).convert("RGBA")).astype(float) / 255
         swapped = recolor(flat, asset["derive"]["recolor"])
         drawn = Image.fromarray((np.clip(swapped, 0, 1) * 255).round().astype(np.uint8), "RGBA")
-        restyle(drawn, preset=preset_for(base[len("item_"):])).render().save(SPRITES / f"{asset['id']}.png")
+        restyle(drawn, preset=preset_for(base[len("item_"):]), clean=True).render(outline="deep").save(
+            SPRITES / f"{asset['id']}.png")
     for item_id in ids:
         if item_id in weapons:
             side, front = held_pair(item_id)

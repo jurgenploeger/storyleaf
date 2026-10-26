@@ -57,6 +57,12 @@ def _toward(h, target, amount):
     return (h + max(-abs(d), min(abs(d), amount)) * (1 if d >= 0 else -1)) % 360
 
 
+def _hsv_s(base):
+    """A colour's saturation, from a hex string or an RGB tuple of 0 … 1."""
+    r, g, b = _rgb(base) if isinstance(base, str) else base
+    return colorsys.rgb_to_hsv(r, g, b)[1]
+
+
 def ramp(base, n=6, shift_dark=12.0, shift_light=7.0, wide=False):
     """`n` shades of `base`, dark to light. The base sits a little above the middle; shadows go deeper,
     more saturated and toward blue; highlights paler and toward yellow. Greys (metal, stone) get a cool
@@ -64,6 +70,11 @@ def ramp(base, n=6, shift_dark=12.0, shift_light=7.0, wide=False):
     ramp, as the Potion's (its darkest red a third of its base, its lightest a pale pink): deeper shadows,
     and lights climbing most of the way to white."""
     deep, reach, fade = (1.08, 0.85, 0.5) if wide else (0.95, 0.6, 0.3)
+    if wide and 0.1 <= _hsv_s(base) < 0.3:
+        # A pale colour (snow, pearl, cream) has little hue for its shadows and lights to turn: they turn
+        # further, cool in the shade and warm in the light, as a grey's do (the snow hoods measured a shift of
+        # 1.5°, against 3° for every other icon).
+        shift_dark, shift_light = shift_dark * 2.5, shift_light * 2
     r, g, b = _rgb(base) if isinstance(base, str) else base
     h, s, v = colorsys.rgb_to_hsv(r, g, b)
     h *= 360
@@ -284,7 +295,10 @@ class Sprite:
         if self.rim == "core":
             # The clean finish's top-left light: a face looking straight out is a little over the middle of
             # its ramp, the side toward the light climbs to its top, the side away falls to its foot.
-            lit = 0.1 + 0.85 * diffuse
+            # A floor under it: the side turned away still catches light bounced up from below, as the
+            # Potion's lower edge does (half its body's value); from nothing, it stacked with the core shadow
+            # into a near-black band inside the outline.
+            lit = 0.24 + 0.72 * diffuse
         if profile == "flat":
             cx, cy = extra["centre"]
             span = max(2.0, np.sqrt(mask.sum()) / SS)
@@ -438,11 +452,26 @@ class Sprite:
             # the Potion keeps a band of mid-tone glass there, so its one-pixel line reads firm.
             solid = np.pad(idx >= 0, 1)
             lit_edge = (idx >= 0) & (~solid[:-2, 1:-1] | ~solid[1:-1, :-2])
+            # And on the side turned away, no darker than about 0.42 of the lit tone (the Potion's lower
+            # edge: 0.35 against its lit glass's 0.86): darker, it read as a second, inner outline.
+            shade_edge = (idx >= 0) & (~solid[2:, 1:-1] | ~solid[1:-1, 2:]) & ~lit_edge
             for i, (_, mat, *_r) in enumerate(self.shapes):
                 if mat.relief == 0:
                     continue
                 sel = lit_edge & (idx == i)
-                level[sel] = np.minimum(level[sel], round(0.4 * (mat.shades - 1)))
+                if not (idx == i).any():
+                    continue
+                # The rim at about 0.72 of the value of the material's lit tone (the Potion's 0.70): the
+                # highest shade under that, so a dark leather's rim isn't near-black and a gold's isn't white.
+                value = [max(c) / 255 for c in mat.colours]
+                lit = value[int(np.percentile(level[idx == i], 90))]
+                under = [k for k, v in enumerate(value) if v <= 0.72 * lit]
+                cap = max(under) if under else 0
+                level[sel] = np.minimum(level[sel], max(cap, 1))
+                low = shade_edge & (idx == i)
+                over = [k for k, v in enumerate(value) if v >= 0.42 * lit]
+                floor = min(over) if over else 0
+                level[low] = np.maximum(level[low], min(floor, cap))
         # A darker line where a shape meets one lying over it (on the lower one's side).
         parted = np.zeros((self.h, self.w), bool)
         for y in range(self.h if self.seams else 0):
@@ -743,12 +772,59 @@ PRESETS = {
 }
 
 
-def preset_pattern(name, region, seed=11):
-    """The preset's light and shade over `region` (1×, bool), 0 outside it."""
+# The clean look keeps a preset's structure and leaves out its grain (2026-10-26): smoothed for 64 pixels,
+# the leather's grain, the stone's flecks, the cloth's weave and the fur's and wood's wavering turned to blotches.
+CLEAN_PRESETS = {"leather": "stitch", "stone": "cracks", "cloth": "folds", "wood": "grain", "fur": "strands"}
+
+
+def _fine_chain(yy, xx):
+    """Mail at 64 pixels: rings four pixels apart, rows offset by two, each a dark hole, lit on its upper left
+    and shaded on its lower right."""
+    x = (xx + 2 * ((yy // 4) % 2)) % 4
+    y = yy % 4
+    hole = (y == 2) & (x == 2)
+    lit = ((y == 1) & (x == 1)) | ((y == 1) & (x == 2)) | ((y == 2) & (x == 1))
+    shade = ((y == 3) & (x == 2)) | ((y == 3) & (x == 3)) | ((y == 2) & (x == 3))
+    return np.where(hole, -0.5, np.where(lit, 0.22, np.where(shade, -0.18, 0.0)))
+
+
+def _fine_scales(yy, xx):
+    """Scales at 64 pixels: rows six pixels deep, each scale eight across and offset by four on the next
+    row, lit along its top and dark along its round foot where the next row overlaps it."""
+    row = yy // 6
+    x = (xx + 4 * (row % 2)) % 8
+    y = yy % 6
+    foot = (y == 5) | ((y == 4) & ((x == 0) | (x == 7)))
+    lit = (y == 1) & (x >= 2) & (x <= 5)
+    return np.where(foot, -0.42, np.where(lit, 0.26, np.where(y == 4, -0.14, 0.0)))
+
+
+FINE_PRESETS = {"chain": _fine_chain, "scales": _fine_scales}
+
+
+def preset_pattern(name, region, seed=11, clean=False):
+    """The preset's light and shade over `region` (1×, bool), 0 outside it. `clean`: without its grain."""
     if not region.any():
         return np.zeros(region.shape)
     ys, xs = np.mgrid[0:region.shape[0], 0:region.shape[1]]
     py, px = np.nonzero(region)
+    if clean and name in CLEAN_PRESETS:
+        top, left, bottom, right = py.min(), px.min(), py.max(), px.max()
+        if name == "leather":
+            ins = _inset(region)
+            t = np.where((ins == 2) & ((xs + ys) % 2 == 0), 0.34, 0.0)
+        elif name == "stone":
+            t = np.minimum(_stone(region, ys, xs, top, left, bottom, right, seed), 0)
+        elif name == "cloth":
+            t = 0.17 * np.sin((xs - left) * 0.8 + (ys - top) * 0.12 + seed % 7)
+        elif name == "wood":
+            cov = np.cov(np.stack([px, py])) if len(px) >= 3 else np.eye(2)
+            ax = np.linalg.eigh(cov)[1][:, -1]
+            across = -(xs - px.mean()) * ax[1] + (ys - py.mean()) * ax[0]
+            t = 0.18 * (np.sin(across * 1.7) > 0.6)
+        else:
+            t = np.where((xs - ys) % 4 == 0, -0.18, 0.0)
+        return np.where(region, t, 0.0)
     t = PRESETS[name][0](region, ys, xs, py.min(), px.min(), py.max(), px.max(), seed)
     return np.where(region, t, 0.0)
 
@@ -804,14 +880,46 @@ def dominant_colour(img):
     return "#%02x%02x%02x" % tuple(int(round(c * 255)) for c in mid)
 
 
-def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=None, trim=()):
+def _specks(mask, most):
+    """The parts of `mask` in 4-connected pieces of `most` pixels or fewer."""
+    seen = np.zeros(mask.shape, bool)
+    out = np.zeros(mask.shape, bool)
+    h, w = mask.shape
+    for sy, sx in zip(*np.nonzero(mask)):
+        if seen[sy, sx]:
+            continue
+        stack, piece = [(sy, sx)], []
+        seen[sy, sx] = True
+        while stack:
+            y, x = stack.pop()
+            piece.append((y, x))
+            for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                yy, xx = y + dy, x + dx
+                if 0 <= yy < h and 0 <= xx < w and mask[yy, xx] and not seen[yy, xx]:
+                    seen[yy, xx] = True
+                    stack.append((yy, xx))
+        if len(piece) <= most:
+            for y, x in piece:
+                out[y, x] = True
+    return out
+
+
+def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=None, trim=(), clean=False):
     """An icon drawn the old way (tools/item_art.py: flat three-tone fills, one outline) re-rendered in
     the look: its regions of colour become materials on hue-shifted ramps, its silhouette rounded at the
     corners, the whole lit from the top left as one form with each region swelling a little on it, the
     old drawing's own light and dark kept as detail (creases, slits, laces), textured, rim-lit and
     outlined afresh. Sparkles and soft glows are kept as drawn. `preset` (PRESETS: "plate", "chain",
     "cloth"…) is the main material's, its detail and finish laid on the biggest region; `base` (a hex
-    colour) is that region's colour instead of the design's (a set piece takes its armour's)."""
+    colour) is that region's colour instead of the design's (a set piece takes its armour's).
+
+    `clean` (2026-10-26, docs/pixel-style.md *Item icons*): the clean look instead, at twice the size (a
+    32-pixel drawing comes out at 64): every region's edge smoothed at the new size, not only the
+    silhouette, so nothing reads as doubled pixels; smooth ramps lit from the top left, no grain, the
+    drawing's own light and dark kept softly, a mid-tone rim and the deep outline (`Sprite.clean`)."""
+    if clean:
+        img = img.convert("RGBA").resize((img.width * 2, img.height * 2), Image.NEAREST)
+        round_corners *= 3
     a = np.asarray(img.convert("RGBA")).copy()
     h, w = a.shape[:2]
     opaque = a[..., 3] >= 250
@@ -827,7 +935,17 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
     # The old outline goes (the kit draws its own); dark lines inside the drawing stay as a material.
     q = np.pad(body, 1)
     touches_air = ~(q[:-2, 1:-1] & q[2:, 1:-1] & q[1:-1, :-2] & q[1:-1, 2:])
-    body &= ~(outline & touches_air)
+    if clean:
+        # Doubled, the old outline is two pixels wide: the inner one goes too, or it's shaded as a dark
+        # opening all the way round, inside the new outline.
+        inner = body & ~touches_air
+        q2 = np.pad(inner, 1)
+        touches_air |= ~(q2[:-2, 1:-1] & q2[2:, 1:-1] & q2[1:-1, :-2] & q2[1:-1, 2:]) & body
+        edge2 = outline & touches_air
+        # (Only outline pixels joined to the edge: an opening drawn inside stays.)
+        body &= ~edge2
+    else:
+        body &= ~(outline & touches_air)
     # Regions: colours grouped into families by hue and saturation (a drawing's dark/mid/light of one
     # ramp land together), each family's commonest colour its base.
     keys = [tuple(c) for c in a[..., :3][body]]
@@ -859,9 +977,13 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
     # of it, centred, as RD's icons do: re-rendered from 4×, nothing is stretched.
     big = np.kron(gmap, np.ones((SS, SS), int))
     every = (gmap >= 0) | (overlay[..., 3] > 0)
+    if clean:
+        # Specks off the body (a sparkle drawn outlined, its outline gone) don't count toward its size: the
+        # Jelly Pearl's kept it from being scaled up to fill its tile.
+        every = (gmap >= 0) & ~_specks(gmap >= 0, 16)
     ys, xs = np.nonzero(every)
     span = max(xs.max() - xs.min() + 1, ys.max() - ys.min() + 1) if len(xs) else w
-    scale = min(1.5, fill * max(h, w) / span) if fill and span < fill * max(h, w) else 1.0
+    scale = min(2.0 if clean else 1.5, fill * max(h, w) / span) if fill and span < fill * max(h, w) else 1.0
     if scale > 1.0:
         src = ((xs.min() + xs.max() + 1) / 2 * SS, (ys.min() + ys.max() + 1) / 2 * SS)
         dst = (w * SS / 2, h * SS / 2)
@@ -896,13 +1018,15 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
     # Lines (a chain, a whip's lash) are never rounded away: a pixel with its body neighbours on opposite
     # sides (left and right, up and down, or corner to corner) is part of something thin, and stays. A
     # spur sticking out of an edge (one neighbour) is a corner, and goes.
-    qb = np.pad(gmap >= 0, 1)
+    # (A doubled drawing is read at its own size, every other pixel, where its lines are one pixel thick.)
+    g1 = gmap[::2, ::2] if clean else gmap
+    qb = np.pad(g1 >= 0, 1)
     n_, s_, w_, e_ = qb[:-2, 1:-1], qb[2:, 1:-1], qb[1:-1, :-2], qb[1:-1, 2:]
     nw, ne, sw, se = qb[:-2, :-2], qb[:-2, 2:], qb[2:, :-2], qb[2:, 2:]
     nb4 = n_.astype(int) + s_ + w_ + e_
     through = (n_ & s_) | (w_ & e_) | (nw & se) | (ne & sw)
-    thin = (gmap >= 0) & (nb4 <= 2) & through
-    sil |= np.kron(thin, np.ones((SS, SS), bool))
+    thin = (g1 >= 0) & (nb4 <= 2) & through
+    sil |= np.kron(thin, np.ones((SS * 2, SS * 2) if clean else (SS, SS), bool))[:sil.shape[0], :sil.shape[1]]
     cur = big.copy()
     for _ in range(SS * 3):
         empty = cur < 0
@@ -914,9 +1038,30 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
             fill = (cur < 0) & (nb >= 0)
             cur[fill] = nb[fill]
     cur[~sil] = -1
+    if clean:
+        # Every region's edge smoothed at the new size, as the silhouette's is: each region's share of
+        # the neighbourhood, blurred, and each pixel to the region with the most of it. Left blocky, the
+        # inside of a doubled drawing still stepped two pixels at a time.
+        labels = [i for i in range(len(groups)) if (cur == i).any()]
+        if len(labels) > 1:
+            votes = np.stack([np.asarray(Image.fromarray(((cur == i) * 255).astype(np.uint8)).filter(
+                ImageFilterGaussian(SS * 0.8)), float) for i in labels])
+            smooth = np.array(labels)[votes.argmax(0)]
+            # A thin region (a line drawn one pixel wide) keeps its pixels: the vote would wash it out.
+            for i in labels:
+                r1 = np.pad(gmap[::2, ::2] == i, 1)
+                inner = r1[1:-1, 1:-1]
+                same = r1[:-2, 1:-1].astype(int) + r1[2:, 1:-1] + r1[1:-1, :-2] + r1[1:-1, 2:]
+                if inner.sum() and (same[inner] <= 2).mean() > 0.6:
+                    smooth[cur == i] = i
+            cur = np.where(cur >= 0, smooth, -1)
     # Height: one round form over the silhouette, each region swelling a little on it.
-    s = Sprite(w, h)
-    s.contact, s.seams, s.rim = False, False, "silhouette"
+    if clean:
+        s = Sprite.clean(w)
+        s.seams = False
+    else:
+        s = Sprite(w, h)
+        s.contact, s.seams, s.rim = False, False, "silhouette"
     whole = s._distance(cur >= 0)
     t = whole / max(1.0, whole.max())
     height = np.sqrt(np.clip(1 - (1 - t) ** 2, 0, 1)) * (whole.max() / SS) * 0.55
@@ -930,6 +1075,21 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
     # Drawn dark lines (creases between fingers, seams, a slit) count double, so the new light doesn't
     # wash them out.
     detail = np.kron(np.where(tone < -0.5, tone * 2 * 0.3, tone * 0.15), np.ones((SS, SS)))
+    if clean:
+        # Only drawn lines (a crease, a slit: dark pixels gone after one erosion of the dark at the design's
+        # own size) count double. A broad patch of the design's dark shade is shading the new light already
+        # does: doubled on top of it, it came out as a dirty smudge (an amulet's, a nugget's).
+        dark1 = (tone < -0.5)[::2, ::2]
+        q = np.pad(dark1, 1)
+        broad1 = dark1 & q[:-2, 1:-1] & q[2:, 1:-1] & q[1:-1, :-2] & q[1:-1, 2:]
+        broad1 = broad1 | (np.pad(broad1, 1)[:-2, 1:-1] | np.pad(broad1, 1)[2:, 1:-1]
+                           | np.pad(broad1, 1)[1:-1, :-2] | np.pad(broad1, 1)[1:-1, 2:]) & dark1
+        broad = np.kron(broad1, np.ones((2, 2), bool))[:h, :w]
+        detail = np.kron(np.where(broad, tone * 0.12, np.where(tone < -0.5, tone * 2 * 0.3, tone * 0.15)),
+                         np.ones((SS, SS)))
+        # Softly: the drawing's planes and creases as gentle steps in the light, not doubled pixels.
+        detail = np.asarray(Image.fromarray(((detail + 1) * 100).astype(np.uint8)).filter(
+            ImageFilterGaussian(SS * 0.7)), float) / 100 - 1
     # The main region is the biggest, leaving out a `trim` (colours drawn as a trim, a hood's fur, which
     # can outsize the cloth it edges and would take the set's colour from it).
     trims = {tuple(t[:3]) for t in trim}
@@ -971,7 +1131,32 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
                        texture=texture * (0.45 if shiny else 0.2 if is_void else 1.0),
                        relief=0.0 if is_void else 1.0, gloss=0.6 if shiny and not is_void else 0.0,
                        variety=0.0 if is_void else (2.0 if shiny else 4.0))
-        if preset and i == main:
+        if clean:
+            # A trim (a hood's fur) is shaded too, its ramp barely turned round the wheel so its shadows stay
+            # a warm taupe: pasted in its drawn colours, doubled, it stayed blocky.
+            mat = Material("#%02x%02x%02x" % tuple(base), shades=8 if is_void else 7, texture=0, variety=0,
+                           relief=mat.relief, gloss=mat.gloss, wide=True, shift=0.2 if is_trim else 1.0)
+        if preset and i == main and clean:
+            # The preset's structure (plates, rings, scales, folds, facets) at the drawing's own scale,
+            # smoothed, and gentler: its grain and flecks are what the clean look leaves out.
+            finish = PRESETS[preset][1]
+            mat = Material("#%02x%02x%02x" % tuple(base), shades=7, texture=0, variety=0, wide=True,
+                           gloss=finish.get("gloss", mat.gloss))
+            if preset in FINE_PRESETS:
+                # Rings and scales drawn at the new size, one-pixel features at twice the period: doubled from
+                # 32 they read as blocks, and smoothed enough not to, they were gone.
+                region2 = gmap == i
+                yy2, xx2 = np.mgrid[0:region2.shape[0], 0:region2.shape[1]]
+                py2, px2 = np.nonzero(region2)
+                fine = FINE_PRESETS[preset](yy2 - py2.min(), xx2 - px2.min()) if len(py2) else np.zeros(region2.shape)
+                pattern = np.kron(np.where(region2, fine, 0.0), np.ones((SS, SS)))[:m.shape[0], :m.shape[1]]
+            else:
+                region1 = (gmap[::2, ::2] == i)
+                pattern = np.kron(preset_pattern(preset, region1, clean=True), np.ones((SS * 2, SS * 2)))[:m.shape[0], :m.shape[1]]
+                pattern = np.asarray(Image.fromarray(((pattern + 1) * 100).astype(np.uint8)).filter(
+                    ImageFilterGaussian(SS * 0.9)), float) / 100 - 1
+            s.mask(m, mat, height=height + own, detail=detail + 0.6 * pattern)
+        elif preset and i == main:
             pattern, finish = PRESETS[preset]
             mat = Material("#%02x%02x%02x" % tuple(base), shades=mat.shades,
                            **{"texture": mat.texture, "gloss": mat.gloss, "variety": 4.0, **finish})
@@ -997,7 +1182,7 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
     # A trim is kept in its drawn colours, laid over the render: fur re-ramped turns from cream to a cold
     # grey (its shadows turned away from yellow), where RD's cloaks shade it toward a warm taupe.
     trim_groups = [i for i, (_, cols) in enumerate(groups) if trims & {tuple(c) for c in cols}]
-    if trim_groups:
+    if trim_groups and not clean:
         kept = np.isin(gmap, trim_groups)
         overlay = overlay.copy()
         overlay[kept] = a[kept]
