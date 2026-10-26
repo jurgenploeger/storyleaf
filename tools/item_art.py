@@ -3494,6 +3494,18 @@ def set_colour(item_id):
     return dominant_colour(Image.open(icon))
 
 
+def finished(item_id):
+    """The item's icon: its drawing finished in the clean look at 64 pixels (2026-10-26, docs/pixel-style.md
+    *Item icons*: RD's Potion)."""
+    import io
+    from PIL import Image
+    from pixel_kit import restyle
+    drawn = Image.open(io.BytesIO(render(item_id).png()))
+    options = {"preset": preset_for(item_id), "base": set_colour(item_id), "trim": FUR, **RESTYLE.get(item_id, {})}
+    options["exact"] = render(item_id).exact
+    return restyle(drawn, clean=True, **options).render(outline="deep")
+
+
 def main(argv):
     sheet_path = None
     if "--sheet" in argv:
@@ -3519,11 +3531,7 @@ def main(argv):
     from PIL import Image
     from pixel_kit import restyle
     for item_id in ids:
-        drawn = Image.open(io.BytesIO(render(item_id).png()))
-        options = {"preset": preset_for(item_id), "base": set_colour(item_id), "trim": FUR, **RESTYLE.get(item_id, {})}
-        options["exact"] = render(item_id).exact
-        # In the clean look at 64 pixels (2026-10-26, docs/pixel-style.md *Item icons*: RD's Potion).
-        restyle(drawn, clean=True, **options).render(outline="deep").save(SPRITES / f"item_{item_id}.png")
+        finished(item_id).save(SPRITES / f"item_{item_id}.png")
     # Items that are palette swaps of these (art/assets.json `derive`) are swapped on the flat drawing,
     # where their hue windows were tuned, and finished the same way: swapping the finished icon misses
     # the shades the ramps turn toward blue and yellow. Their own PNG then wins over the swap in the game.

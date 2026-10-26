@@ -558,7 +558,11 @@ class Sprite:
                     inside = [(y + dy, x + dx) for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1))
                               if 0 <= y + dy < self.h and 0 <= x + dx < self.w and solid[y + dy, x + dx]]
                     mats = [self.shapes[idx[p]][1] for p in inside if idx[p] >= 0]
-                    mat = max(set(mats), key=mats.count) if mats else None
+                    # The material it rounds most; on a tie, the one with the darker line, so it comes out
+                    # the same every run and on both sides of a mirrored shape (picked from a set of the
+                    # materials, a tie went by where they lay in memory: an icon changed by a pixel or two
+                    # with what was rendered before it, 2026-10-26).
+                    mat = max(mats, key=lambda m: (mats.count(m), -sum(deep_shade(m)))) if mats else None
                     if mat is None:
                         out[y, x] = (*house.astype(int), 255)
                         continue

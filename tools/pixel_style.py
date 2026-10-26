@@ -666,6 +666,104 @@ def detached():
     return out
 
 
+def lumpy_arcs():
+    """The code-drawn icons whose round shapes (drawn `exact`: rings, pearls, eggs) don't come out as clean
+    arcs as seen: their outline's stair steps shrinking steadily into the corners (`pixel_kit._arc_runs`),
+    round the rim and round a hole. The lower half is checked, its sides row by row and its bottom column by
+    column (the top half carries gems and bails); a part leading off the shape (a claw, a stand, an arm, three
+    pixels or more) is let through, and a shape shut inside another (a lens in its rim) is left out. Each
+    round item is finished again to learn where its shapes were cut (`pixel_kit._arc_mask`), then its icon
+    on disk is checked (a ring's lump in its lower right, 2026-10-26). [(item, wrong edge pixels)]."""
+    import json
+    import item_art
+    import pixel_kit
+    swaps = {}
+    for asset in json.loads((ROOT / "art" / "assets.json").read_text())["assets"]:
+        base = (asset.get("derive") or {}).get("from", "")
+        if base.startswith("item_") and not asset["derive"].get("layers"):
+            swaps.setdefault(base[len("item_"):], []).append(asset["id"])
+    out = []
+    for item_id in sorted(item_art.DRAWINGS):
+        if not any(sh[0] != "poly" for sh in item_art.render(item_id).exact):
+            continue
+        cuts, real = [], pixel_kit._arc_mask
+        def spy(shape, ox, oy, w, h, edge=None):
+            cuts.append((edge, ox, oy, w, h, shape))
+            return real(shape, ox, oy, w, h, edge)
+        pixel_kit._arc_mask = spy
+        try:
+            item_art.finished(item_id)
+        finally:
+            pixel_kit._arc_mask = real
+        for name in [f"item_{item_id}"] + swaps.get(item_id, []):
+            path = SPRITES / f"{name}.png"
+            if not path.exists():
+                continue
+            solid = np.asarray(Image.open(path).convert("RGBA"))[..., 3] > 127
+            wrong = sum(_arc_misses(solid, cut) for cut in cuts)
+            if wrong:
+                out.append((name[len("item_"):], wrong))
+    return out
+
+
+def _arc_misses(solid, cut):
+    """How many edge pixels of one cut shape's lower half are off its clean arc in `solid` (the icon's
+    opaque pixels): as seen, a rim is its cut and the outline round it, a hole its cut less the outline.
+    What lies past the arc in a piece of six pixels or more is a part of its own (a claw, a stand), not a
+    lump."""
+    import pixel_kit
+    edge, ox, oy, w, h, shape = cut
+    if edge not in ("outer", "inner") or w < 4 or h < 4:
+        return 0
+    grow = 1 if edge == "outer" else -1
+    seen = pixel_kit._arc_lo(shape, ox, oy, w + 2 * grow, h + 2 * grow)
+    if edge == "outer" and not (pixel_kit._cross(pixel_kit._cross(seen, False), True) == seen).all():
+        return 0                                  # too thin to cut for its outline: kept plain
+    H, W = solid.shape
+    seen = seen[:H, :W]
+    ys, xs = np.nonzero(seen)
+    if not len(ys):
+        return 0
+    # Past the arc: on a rim, what's opaque outside it; in a hole, what's opaque inside it.
+    past = solid & ~seen if edge == "outer" else solid & seen
+    bits, sizes = _bits(past)
+    big = np.isin(bits, [k for k, n in enumerate(sizes) if n >= 6])
+    mid = int(np.ceil((ys.min() + ys.max() + 1) / 2))
+    # The edge's pixels and the one past each: the lower half's rows at both ends, its columns at the bottom.
+    ends = []
+    for y in range(mid, ys.max() + 1):
+        row = np.nonzero(seen[y])[0]
+        if len(row):
+            ends += [((y, row.min()), (y, row.min() - 1)), ((y, row.max()), (y, row.max() + 1))]
+    for x in range(xs.min(), xs.max() + 1):
+        col = np.nonzero(seen[:, x])[0]
+        if len(col):
+            ends.append(((col.max(), x), (col.max() + 1, x)))
+    misses = checked = enclosed = 0
+    for (y, x), (y2, x2) in ends:
+        if not (0 <= y2 < H and 0 <= x2 < W):
+            continue
+        checked += 1
+        if edge == "outer":
+            # Its edge pixel opaque, the one past it clear (or a part of its own leading off).
+            if not solid[y, x]:
+                misses += 1
+            elif solid[y2, x2]:
+                if big[y2, x2]:
+                    enclosed += 1
+                else:
+                    misses += 1
+        else:
+            # The hole's edge pixel clear (unless something lies in it), the one past it the rim.
+            if solid[y, x] and not big[y, x]:
+                misses += 1
+            elif not solid[y2, x2]:
+                misses += 1
+    if edge == "outer" and enclosed > checked / 2:
+        return 0                                  # shut inside another shape (a lens in its rim)
+    return misses
+
+
 def clean_icons():
     """Every item icon drawn in code: all in the clean look since 2026-10-26 (tools/item_art.py through
     `restyle(clean=True)`, tools/clean_icon_art.py, tools/coin_art.py)."""
@@ -702,6 +800,9 @@ def compare_items():
     loose = detached()
     print(f"icons come apart from their design (should be none): {len(loose)}"
           + (": " + ", ".join(f"{i} {d}→{n}" for i, d, n in loose[:12]) if loose else ""))
+    lumps = lumpy_arcs()
+    print(f"round shapes off their clean arcs (should be none): {len(lumps)}"
+          + (": " + ", ".join(f"{i} {n} px" for i, n in lumps[:12]) if lumps else ""))
     for label, paths in (("RD's Potion (the reference, should pass)", [SPRITES / "item_potion.png"]),
                          ("clean item icons (should pass)", clean_icons()),
                          ("grained finish, 32 and blown up to 64 (should fail)", grained_icons())):

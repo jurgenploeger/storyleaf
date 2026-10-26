@@ -74,10 +74,12 @@ round by round, each with the playtesting that taught it; the sections below say
    A soft miss is allowed only where the shape explains it (a whip's thin lash, a necklace's cords, sparkles)
    and the eye agrees.
 2. `python3 tools/pixel_style.py compare`: no icon comes apart from its design (`detached`: as many pieces as
-   its drawing, sparkles aside), RD's Potion passes, and the old grained finish (at 32 and blown up to 64)
-   still fails every time.
-3. After any change to the finish (`pixel_kit`) or a family's helper: render everything, list the icons that
-   changed most against the last commit, and look at each of them (B and C).
+   its drawing, sparkles aside), no round shape is off its clean arc (`lumpy_arcs`: rim and hole, lower half,
+   as seen), RD's Potion passes, and the old grained finish (at 32 and blown up to 64) still fails every time.
+3. After any change to the finish (`pixel_kit`) or a family's helper: render everything (`item_art.py`,
+   `coin_art.py`, `clean_icon_art.py`), list the icons that changed most against the last commit, and look at
+   each of them (B and C). Every icon that changed should be one you meant to change: rendering is repeatable,
+   an icon the same however many others were rendered before it, so a stray change is a bug in the finish.
 
 **B. How it's built:**
 
@@ -90,14 +92,16 @@ round by round, each with the playtesting that taught it; the sections below say
 7. **Lit from the top left on long, smooth ramps**: no grain, no dither, no twin ramp; deep shadows to pale
    lights (`value_range`), shadows turned away from yellow (`hue_shift`), a floor of bounced light below.
 8. **Lines inside are softer than the outline**: where one object lies on another, the darkest shade of the one
-   beneath, not the outline's colour. The parts of one object get no line at all.
+   beneath, not the outline's colour. The parts of one object get no line at all. Where the outline rounds two
+   materials equally (a cord at its pendant), it takes the darker one's shade.
 9. **Clean shapes**: on the pixel grid, mirror-symmetric where the thing is; no pixel stepping in and straight
    back out (`kinks`); a disc's edge one shape with straight sides, never two shapes pinched together.
 10. **Round is exactly round, sharp is exactly sharp**: rings, pearls, balls and eggs drawn `exact=True`; gems
     and stars `exact="facets"` (star_shape does it). Every shade of the shape is cut, nothing smoothed in from
     round it, and things joined to it (claws, arms, a bail) stay. A curve's stair steps shrink steadily into
     its corners (runs 4, 3, 2, 1, never 4, 3, 1, 2: the short step reads as a lump), on the outline as seen,
-    the rim's and the hole's both; nothing of its colours or drawn on it pokes past the curve.
+    the rim's and the hole's both (`lumpy_arcs`); nothing of its colours or drawn on it pokes past the curve.
+    It's shaded on its smooth curve, so its light runs in even bands, never striped along its steps.
 11. **Nothing comes apart, nothing floats**: cords meet their bail, tips stay on their shape, no pixel held on
     only by the old outline. A glint or sparkle is light, with no outline (an outlined dot reads as a stray).
 12. **Its parts keep their colours**: a gem's colours are its own, never the band's, under any palette swap.
@@ -293,8 +297,17 @@ misses; smoothing that passed more of them is what lost the detail. The eye deci
   (`_arc_mask` `edge`): a rim one pixel in from the arc as seen, a hole one pixel out from it. It's shaded on
   the smooth curve, not on its steps (shaded on the steps, a pearl came out striped). Anything of its colours
   within two pixels outside the curve goes too, and what's drawn mostly on it (a highlight, a band's studs) is
-  cut to it; a part leading off it (a bridge between two rims) keeps its join. Check: each round item's rim
-  and hole, row by row, equal `_arc_runs` of themselves, and its lower half mirrors.
+  cut to it; a part leading off it (a bridge between two rims) keeps its join. `pixel_style.lumpy_arcs`
+  checks it: it finishes each round item again to learn where its shapes were cut, then holds the icon's
+  lower half to the clean arc, sides row by row and bottom column by column, rim and hole; what lies past the
+  arc in a piece of six pixels or more is a part (a claw, a stand), and a shape shut inside another (a lens
+  in its rim) is left out. On the icons from before this fix it found the Stargazer Band's lump and 4 to 16
+  wrong edge pixels on every other ring, pearl and egg tried.
+- **Rendering is repeatable.** Where the outline rounds two materials equally, it took the colour of one
+  picked from a `set` of material objects, ordered by where they lay in memory: an icon came out a pixel or
+  two different with what had been rendered before it, and every full render changed some 60 icons nobody
+  had touched (found 2026-10-26: `honey_jar` changed once `agate` had been rendered). A tie now goes to the
+  darker line, the same every run and on both sides of a mirrored shape.
 - **What should be sharp is cut exactly sharp:** a cut gem or a star (`Canvas.poly(exact="facets")`;
   `star_shape` does it for any star 4 pixels or more across) is cut along its own straight edges at 64,
   its corners kept (`_exact_poly`); its facets, drawn in colours of their own, stay. Smoothed, a ring's
