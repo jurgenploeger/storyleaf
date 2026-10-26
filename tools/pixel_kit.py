@@ -1069,6 +1069,88 @@ def _exact_poly(cur, shape, scale, src, dst, kin):
     return cur, np.zeros(cur.shape, bool), took
 
 
+def _arc_runs(widths):
+    """A quarter of an ellipse's rows (`widths`, each row's width from the middle row out) restepped so its
+    curve is a clean pixel-art arc: down the steep side the runs of rows the same width shorten steadily
+    toward the corner, and across the flat side each row's step in narrows widens steadily. Rasterized as
+    it is, a curve steps 4, 3, 1, 2 here and there, and the short step between longer ones reads as a lump
+    (the Stargazer Band's lower right, 2026-10-26). The runs and steps are only reordered, so the curve
+    still meets the same ends."""
+    groups = []                                   # (rows the same width, how much narrower the next is)
+    for k, w in enumerate(widths):
+        if groups and w == widths[k - 1]:
+            groups[-1][0] += 1
+        else:
+            if groups:
+                groups[-1][1] = widths[k - 1] - w
+            groups.append([1, 0])
+    groups[-1][1] = widths[-1]                     # the last row steps in to nothing
+    steep = 0
+    while steep < len(groups) - 1 and groups[steep][1] == 2:
+        steep += 1
+    runs = sorted((g[0] for g in groups[:steep + 1]), reverse=True)
+    for g, r in zip(groups[:steep + 1], runs):
+        g[0] = r
+    # (The two sides can share rows: a row where the steep side ends is the flat side's first.)
+    flat = len(groups)
+    while flat > 1 and groups[flat - 1][0] == 1:
+        flat -= 1
+    steps = sorted(g[1] for g in groups[flat:-1])
+    for g, d in zip(groups[flat:-1], steps):
+        g[1] = d
+    out, w = [], widths[0]
+    for rows, step in groups:
+        out += [w] * rows
+        w -= step
+    return out
+
+
+def _arc_lo(shape, ox, oy, w, h):
+    """An ellipse `w` × `h` sprite pixels round (ox, oy), at the sprite's own pixels (for a hi-res map of
+    `shape`), its edges on the pixel grid and stepped as clean arcs (`_arc_runs`), alike on all four sides."""
+    rows = []
+    for j in range(h):
+        y = j + 0.5 - h / 2
+        half = (w / 2) * math.sqrt(max(0.0, 1 - (y / (h / 2)) ** 2))
+        # Pixel middles inside, in whole pairs either side of the middle (w odd: the middle one and pairs).
+        rows.append(2 * math.floor(half + 0.5) if w % 2 == 0 else 2 * math.floor(half) + 1)
+    mid = h // 2
+    lower = _arc_runs(rows[mid:])
+    rows = [*(lower[1:] if h % 2 else lower)[::-1], *lower]
+    left, top = round(ox - w / 2), round(oy - h / 2)
+    lo = np.zeros((-(-shape[0] // SS), -(-shape[1] // SS)), bool)
+    for j, rw in enumerate(rows):
+        y = top + j
+        if 0 <= y < lo.shape[0] and rw:
+            x0 = left + (w - rw) // 2
+            lo[y, max(0, x0):max(0, x0 + rw)] = True
+    return lo
+
+
+def _cross(m, grow):
+    """`m` grown (or shrunk) by one pixel across its four sides: what the outline does to an edge."""
+    p = np.pad(m, 1, constant_values=not grow)
+    sides = (p[:-2, 1:-1], p[2:, 1:-1], p[1:-1, :-2], p[1:-1, 2:])
+    return m | np.logical_or.reduce(sides) if grow else m & np.logical_and.reduce(sides)
+
+
+def _arc_mask(shape, ox, oy, w, h, edge=None):
+    """The hi-res mask (`shape`) of `_arc_lo`'s ellipse. The outline goes round the cut one pixel outside it,
+    so with `edge` the cut is made for it: "outer" one pixel in from the arc w + 2 across, so the outline
+    lies on it; "inner" (a hole) one pixel out from the arc w - 2 across, so the hole left open is it. Cut to
+    the arc and outlined, a clean arc came out stepped 4, 2, 6 (a ring's hole, 2026-10-26). A rim too thin to
+    take its outline that way keeps the plain cut."""
+    lo = _arc_lo(shape, ox, oy, w, h)
+    if edge == "inner" and w > 2 and h > 2:
+        lo = _cross(_arc_lo(shape, ox, oy, w - 2, h - 2), True)
+    elif edge == "outer":
+        seen = _arc_lo(shape, ox, oy, w + 2, h + 2)
+        cut = _cross(seen, False)
+        if (_cross(cut, True) == seen).all():
+            lo = cut
+    return np.repeat(np.repeat(lo, SS, 0), SS, 1)[:shape[0], :shape[1]]
+
+
 def _exact(cur, shape, scale, src, dst, kin=lambda own: ((), ())):
     """`cur` (the hi-res map of regions) with one round part cut exactly: an ellipse, or a ring between two,
     given in the 32-pixel drawing's own pixels (a pixel's middle at its index), drawn at 64 and moved as the
@@ -1076,7 +1158,7 @@ def _exact(cur, shape, scale, src, dst, kin=lambda own: ((), ())):
     alike on every side. The region that fills it most takes it: its pixels outside go, the empty ones inside
     fill. Other regions over it (a ring's gem) stay as they are, but shades of its own colour split off from
     it, and the old outline's leftovers in it (`kin(own)`: those two lists), become it. Returns the map and
-    the shape's mask."""
+    the shape's mask, and (its region, the smooth curve's mask, the shape's mask) to shade it by."""
     cx, cy, rx, ry, irx, iry = shape[:6]
     to_hi = lambda v, k: ((v + 0.5) * 2 * SS - src[k]) * scale + dst[k] if scale > 1.0 else (v + 0.5) * 2 * SS
     # In the 64-pixel sprite's own pixels, then snapped.
@@ -1089,12 +1171,16 @@ def _exact(cur, shape, scale, src, dst, kin=lambda own: ((), ())):
     hi_ += (ho - hi_) % 2 if hi_ else 0
     yy, xx = np.mgrid[0:cur.shape[0], 0:cur.shape[1]]
     u, v = (xx + 0.5) / SS - ox, (yy + 0.5) / SS - oy
-    outer = (u / (wo / 2)) ** 2 + (v / (ho / 2)) ** 2 <= 1
-    inner = ((u / (wi / 2)) ** 2 + (v / (hi_ / 2)) ** 2 <= 1) if wi and hi_ else np.zeros(outer.shape, bool)
+    outer = _arc_mask(cur.shape, ox, oy, wo, ho, "outer")
+    inner = _arc_mask(cur.shape, ox, oy, wi, hi_, "inner") if wi and hi_ else np.zeros(outer.shape, bool)
+    # The curve itself, for the light: shaded on the pixel steps, the band came out striped.
+    smooth = (u / (wo / 2)) ** 2 + (v / (ho / 2)) ** 2 <= 1
+    if wi and hi_:
+        smooth &= (u / (wi / 2)) ** 2 + (v / (hi_ / 2)) ** 2 > 1
     band = outer & ~inner
     labels, counts = np.unique(cur[band & (cur >= 0)], return_counts=True)
     if not len(labels):
-        return cur, band
+        return cur, band, None
     own = labels[np.argmax(counts)]
     cur = cur.copy()
     same, voids = kin(own)
@@ -1111,13 +1197,33 @@ def _exact(cur, shape, scale, src, dst, kin=lambda own: ((), ())):
     drawn = (dx_ / rx) ** 2 + (dy_ / ry) ** 2 <= 1
     if irx and iry:
         drawn &= (dx_ / irx) ** 2 + (dy_ / iry) ** 2 > 1
-    fringe = ~outer & drawn
-    cur[fringe & np.isin(cur, list(family))] = -1
+    # And anything of its colours two pixels or less outside the curve, wherever it came from (the smoothing
+    # pushed a pixel past it here and there: a bump on one side of a ring, 2026-10-26). A part joined to it
+    # loses at most that pixel at the join; `pixel_style.detached` checks it stays on.
+    rn = np.sqrt((u / (wo / 2)) ** 2 + (v / (ho / 2)) ** 2)
+    skin = ~outer & ((rn - 1) * min(wo, ho) / 2 <= 2.0)
+    if irx and iry:
+        skin |= inner
+    # What's drawn on it (a pearl's highlight, a band's studs: colours mostly on the shape) is cut to its
+    # curve too: left, a highlight poked out of a pearl's side as a bump.
+    on_it = []
+    for lab in np.unique(cur[(cur >= 0) & outer & ~inner]):
+        if lab in family:
+            continue
+        here = cur == lab
+        if (here & outer & ~inner).sum() >= 0.7 * here.sum():
+            on_it.append(lab)
+    # (Except where it leads on to something further out: a bridge between two rims, an arm, a claw.)
+    mine = np.isin(cur, list(family) + on_it)
+    beyond = mine & ~outer & ~skin & ~inner
+    skin &= ~_grow(beyond, 2 * SS + 1, True)
+    fringe = ~outer & drawn | skin & ~band
+    cur[fringe & mine] = -1
     # And its hole is clear: its own colour and the old outline's leftovers go (a ring's).
     cur[inner & np.isin(cur, list(family))] = -1
     cur[band & (cur < 0)] = own
     # (Its own pixels: a gem set over the band keeps its facets' shading.)
-    return cur, band & (cur == own)
+    return cur, band & (cur == own), (own, smooth, band & (cur == own))
 
 
 def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=None, trim=(), clean=False,
@@ -1328,6 +1434,7 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
                     same.append(j)
             return same, voids
         exact_mask = np.zeros(cur.shape, bool)       # shaded by the light alone
+        curves = []                                  # (region, its smooth curve) to shade by
         lined_mask = np.zeros(cur.shape, bool)       # keeping the drawing's lines (`exact="lines"`)
         # Cut shapes (gems, stars) first: their colours are theirs, never a ring band's, though a palette
         # swap can bring the two close in hue (the firepeak ring's gem and band).
@@ -1340,7 +1447,9 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
                 cur, cut, took = _exact_poly(cur, shape, scale, src, dst, kin)
                 claimed |= set(took)
                 continue
-            cur, cut = _exact(cur, shape, scale, src, dst, kin_free)
+            cur, cut, curve = _exact(cur, shape, scale, src, dst, kin_free)
+            if curve:
+                curves.append(curve)
             if len(shape) > 6 and shape[6] == "lines":
                 lined_mask |= cut
             else:
@@ -1365,7 +1474,11 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
     else:
         s = Sprite(w, h)
         s.contact, s.seams, s.rim = False, False, "silhouette"
-    whole = s._distance(cur >= 0)
+    # (An exact shape is shaded on its smooth curve, not on its pixel steps.)
+    soft = cur
+    for own, curve, cut in (curves if clean and exact else []):
+        soft = np.where(cut & ~curve, -1, np.where(curve & (soft < 0), own, soft))
+    whole = s._distance(soft >= 0)
     t = whole / max(1.0, whole.max())
     height = np.sqrt(np.clip(1 - (1 - t) ** 2, 0, 1)) * (whole.max() / SS) * 0.55
     # The old drawing's own shading, as detail: each pixel's value against its region's base.
@@ -1413,7 +1526,7 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
         m = cur == i
         if not m.any():
             continue
-        d = s._distance(m)
+        d = s._distance(soft == i)
         own = np.sqrt(np.clip(d / max(1.0, d.max()), 0, 1)) * (d.max() / SS) * 0.3
         hh, ss, vv = _hsv(base)
         is_void = tuple(base) == OUTLINE

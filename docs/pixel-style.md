@@ -95,7 +95,9 @@ round by round, each with the playtesting that taught it; the sections below say
    back out (`kinks`); a disc's edge one shape with straight sides, never two shapes pinched together.
 10. **Round is exactly round, sharp is exactly sharp**: rings, pearls, balls and eggs drawn `exact=True`; gems
     and stars `exact="facets"` (star_shape does it). Every shade of the shape is cut, nothing smoothed in from
-    round it, and things joined to it (claws, arms, a bail) stay.
+    round it, and things joined to it (claws, arms, a bail) stay. A curve's stair steps shrink steadily into
+    its corners (runs 4, 3, 2, 1, never 4, 3, 1, 2: the short step reads as a lump), on the outline as seen,
+    the rim's and the hole's both; nothing of its colours or drawn on it pokes past the curve.
 11. **Nothing comes apart, nothing floats**: cords meet their bail, tips stay on their shape, no pixel held on
     only by the old outline. A glint or sparkle is light, with no outline (an outlined dot reads as a stray).
 12. **Its parts keep their colours**: a gem's colours are its own, never the band's, under any palette swap.
@@ -282,6 +284,17 @@ misses; smoothing that passed more of them is what lost the detail. The eye deci
   split down a beetle's wing case. Drawn exact so far: every ring and band, the pearls, the toy ball, the
   golden ball charm, the pet and chocolate eggs, the beetle shell, the spectacles' rims and lenses. A hood's
   fur ring is not: cut exact, its tufts read as a porthole's bolts.
+- **A clean arc steps evenly, as the eye sees it.** Rasterized as it falls, an ellipse steps 4, 3, 1, 2 here
+  and there; the short step between longer ones reads as a lump ("This ring still has a lump in the bottom
+  right", the Stargazer Band, 2026-10-26). `_arc_runs` reorders a quarter's runs, never adding or taking a
+  pixel: down the steep side the runs of rows shorten steadily, across the flat side each row's step widens,
+  and the row where one side meets the other counts for both. The outline goes round the cut one pixel out,
+  and on a hole one pixel in, which stepped a clean arc 4, 2, 6 again, so the cut is made for it
+  (`_arc_mask` `edge`): a rim one pixel in from the arc as seen, a hole one pixel out from it. It's shaded on
+  the smooth curve, not on its steps (shaded on the steps, a pearl came out striped). Anything of its colours
+  within two pixels outside the curve goes too, and what's drawn mostly on it (a highlight, a band's studs) is
+  cut to it; a part leading off it (a bridge between two rims) keeps its join. Check: each round item's rim
+  and hole, row by row, equal `_arc_runs` of themselves, and its lower half mirrors.
 - **What should be sharp is cut exactly sharp:** a cut gem or a star (`Canvas.poly(exact="facets")`;
   `star_shape` does it for any star 4 pixels or more across) is cut along its own straight edges at 64,
   its corners kept (`_exact_poly`); its facets, drawn in colours of their own, stay. Smoothed, a ring's
