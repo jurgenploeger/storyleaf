@@ -563,8 +563,8 @@ struct IntroAtlas: View {
     }
 
     /// How much closer than the whole continent it opens (playtesting 2026-10-26: zoomed out, the
-    /// lands were too small to read).
-    private static let openingZoom: CGFloat = 2.2
+    /// lands were too small to read; at 2.2 still too far out, the user zoomed in to about 3).
+    private static let openingZoom: CGFloat = 3
 
     /// Opens on where you start (`highlight`), `openingZoom` closer than the whole continent, a
     /// little below the middle of what's clear, so more of the lands ahead show above it; the
