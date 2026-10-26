@@ -90,6 +90,94 @@ struct ItemDropWindow: View {
     }
 }
 
+/// Buying or selling several of a thing at once, at a shop or with an adventurer (playtesting
+/// 2026-10-26, progressive disclosure): how many (`AmountPicker`), from 1 to as many as the deal
+/// allows, and what that comes to. Buying, as many as your coins pay for and your bag has room for
+/// (`GameSession.affordable`), and no more than they have; selling, as many as you have, and no
+/// more than they'd take. Potions and materials only (`GameSession.sellsInBulk`): gear goes a piece
+/// at a time, as before.
+struct ItemDealWindow: View {
+    let session: GameSession
+    let item: ItemDef
+    /// Selling yours, or buying theirs.
+    let selling: Bool
+    /// For one.
+    let price: Int
+    /// How many they have to sell, or would buy; nil for a shop, which has no end of them.
+    var stock: Int? = nil
+    /// Makes the deal for that many.
+    let onDeal: (Int) -> Void
+    let onClose: () -> Void
+
+    @State private var amount = 1
+    @State private var typing = false
+
+    /// The most the deal can be for, and why it stops there when that's worth saying.
+    private var most: (count: Int, why: String?) {
+        let limit: Int = stock ?? Int.max
+        if selling {
+            let held = session.count(of: item.id)
+            guard held > limit else { return (count: held, why: nil) }
+            let why: String? = L("They'd buy up to {count}.", ["count": limit])
+            return (count: limit, why: why)
+        }
+        let affordable = session.affordable(at: price)
+        if limit <= affordable {
+            let why: String? = stock == nil ? nil : L("They have {count} to sell.", ["count": limit])
+            return (count: limit, why: why)
+        }
+        // Coins for more than the bag holds: the bag stops it; else the coins do.
+        let paidFor = price > 0 ? session.data.gold / price : Int.max
+        let why: String? = paidFor > affordable ? L("Your bag has room for {count}.", ["count": affordable])
+                                                : L("Your gold pays for {count}.", ["count": affordable])
+        return (count: affordable, why: why)
+    }
+
+    var body: some View {
+        let most = self.most
+        let count = min(max(1, amount), max(1, most.count))
+        let total = price * count
+        ItemSubWindow(title: selling ? L("Sell {item}", ["item": item.name]) : L("Buy {item}", ["item": item.name]),
+                      session: session, item: item,
+                      subtitle: selling ? L("{gold}g each. You have {count}.", ["gold": price, "count": session.count(of: item.id)])
+                                        : L("{gold}g each. You have {coins} gold.", ["gold": price, "coins": session.data.gold]),
+                      onClose: onClose) {
+            Text(L("How many?")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.gold)
+            AmountPicker(amount: $amount, typing: $typing, maximum: most.count)
+            if let why = most.why {
+                Text(why)
+                    .font(HUDStyle.font(11))
+                    .foregroundStyle(HUDStyle.dim)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if !typing {
+                HStack(spacing: 10) {
+                    HStack(spacing: 5) {
+                        Text(L("Total"))
+                            .font(HUDStyle.font(11))
+                            .foregroundStyle(HUDStyle.dim)
+                        IconImage(.coins, size: 14)
+                        Text(total.formatted())
+                            .font(HUDStyle.mono(13))
+                            .foregroundStyle(HUDStyle.gold)
+                    }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(L("Total: {gold} gold", ["gold": total]))
+                    Spacer(minLength: 0)
+                    Button {
+                        onDeal(count)
+                    } label: {
+                        Label(selling ? L("Sell {count}", ["count": count]) : L("Buy {count}", ["count": count]), icon: .coins)
+                    }
+                    .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
+                    .disabled(most.count < 1)
+                    .opacity(most.count < 1 ? 0.5 : 1)
+                }
+            }
+        }
+    }
+}
+
 /// Trade: your price for one, starting at the going price (`GameSession.tradeValue`), and how many to
 /// sell, then up for trade (`GameSession.putUpForTrade`); for what's up already, what you asked, to
 /// change, or Take off trade.

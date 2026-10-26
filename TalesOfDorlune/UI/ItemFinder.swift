@@ -122,16 +122,14 @@ struct ItemSearchField: View {
 /// menu's look (playtesting 2026-10-26: "The 'Bag order' sorting button should just say 'Sort' with
 /// the same leading icon. That button should open the same menu style as the hamburger menu, so no
 /// native iOS dropdown menu"): the one in use in gold with a tick; a tap on one, or anywhere else,
-/// closes it. The row it sits in needs `.zIndex(1)`, so the panel lies over what's under the row.
-struct ItemSortMenu: View {
-    @Binding var sort: ItemSort
-    let options: [ItemSort]
-    /// In the bank: your order is the bank's.
-    var bank = false
+/// closes it. Any list's orders (the Bag's and the bank's `ItemSort`, the Quests'), each named by
+/// `title`. The row it sits in needs `.zIndex(1)`, so the panel lies over what's under the row.
+struct SortMenu<Option: Hashable>: View {
+    @Binding var sort: Option
+    let options: [Option]
+    let title: (Option) -> String
     /// Debug `sortopen`: out from the start.
     @State private var open = DebugLaunch.opensSort
-
-    private func title(_ sort: ItemSort) -> String { bank ? sort.bankTitle : sort.title }
 
     var body: some View {
         Button {
@@ -192,7 +190,7 @@ struct ItemSortMenu: View {
         .accessibilityAction(.escape) { close() }
     }
 
-    private func row(_ option: ItemSort) -> some View {
+    private func row(_ option: Option) -> some View {
         let selected = option == sort
         return Button {
             SoundEffects.shared.play(.tap, volume: 0.7)
@@ -216,6 +214,20 @@ struct ItemSortMenu: View {
         }
         .buttonStyle(PressScaleStyle())
         .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+/// The Sort button for things you carry (the Bag, the bank, the gear for a slot): `SortMenu` with
+/// `ItemSort`'s names, the bank's own order called the bank's.
+struct ItemSortMenu: View {
+    @Binding var sort: ItemSort
+    let options: [ItemSort]
+    /// In the bank: your order is the bank's.
+    var bank = false
+
+    var body: some View {
+        let bank = self.bank
+        SortMenu(sort: $sort, options: options, title: { bank ? $0.bankTitle : $0.title })
     }
 }
 

@@ -10,6 +10,8 @@ struct TradeView: View {
     @State private var reply: String?
     /// The item tapped for a closer look.
     @State private var info: ItemDef?
+    /// A deal for a few of a potion or material: how many, in a window of its own (`ItemDealWindow`).
+    @State private var dealing: GameSession.TradeOffer?
 
     var body: some View {
         let offers = session.tradeOffers(with: adventurer)
@@ -67,8 +69,44 @@ struct TradeView: View {
                 ItemInfoCard(session: session, item: info) { self.info = nil }
                     .transition(.opacity)
             }
+
+            if let dealing {
+                ItemDealWindow(session: session, item: dealing.item, selling: dealing.kind == .theyBuy,
+                               price: dealing.price, stock: dealing.stock,
+                               onDeal: { count in
+                                   make(dealing, count)
+                                   self.dealing = nil
+                               },
+                               onClose: { self.dealing = nil })
+                    .transition(.opacity)
+            }
         }
         .animation(.easeOut(duration: 0.15), value: info?.id)
+        .animation(.easeOut(duration: 0.15), value: dealing?.id)
+    }
+
+    /// The most a deal can be for now: up to its stock, as many as you have (they buy) or as your
+    /// coins and bag allow (they sell).
+    private func most(_ offer: GameSession.TradeOffer) -> Int {
+        switch offer.kind {
+        case .theyBuy: min(offer.stock, session.count(of: offer.item.id))
+        case .theySell: min(offer.stock, session.affordable(at: offer.price))
+        }
+    }
+
+    /// Makes the deal for `count`, and says how it went.
+    private func make(_ offer: GameSession.TradeOffer, _ count: Int) {
+        let name = count > 1 ? "\(offer.item.name) ×\(count)" : offer.item.name
+        let total = offer.price * count
+        if session.trade(offer, count) {
+            session.post(offer.kind == .theyBuy
+                         ? L("Sold {item} to {name} for {gold} gold.", ["item": name, "name": adventurer.name, "gold": total])
+                         : L("Bought {item} from {name} for {gold} gold.", ["item": name, "name": adventurer.name, "gold": total]), .reward)
+            reply = offer.kind == .theyBuy ? L("Just what I needed, thanks!") : L("Pleasure doing business!")
+            session.save()
+        } else {
+            reply = offer.kind == .theyBuy ? L("Looks like you don't have that any more.") : L("Come back when you've got the gold.")
+        }
     }
 
     /// What a seller's item is: a potion or material's own words, gear's kind and stats.
@@ -106,14 +144,11 @@ struct TradeView: View {
             .buttonStyle(.plain)
             .accessibilityHint(L("Shows what it does and who can use it"))
             Button(button) {
-                if session.trade(offer) {
-                    session.post(offer.kind == .theyBuy
-                                 ? L("Sold {item} to {name} for {gold} gold.", ["item": offer.item.name, "name": adventurer.name, "gold": offer.price])
-                                 : L("Bought {item} from {name} for {gold} gold.", ["item": offer.item.name, "name": adventurer.name, "gold": offer.price]), .reward)
-                    reply = offer.kind == .theyBuy ? L("Just what I needed, thanks!") : L("Pleasure doing business!")
-                    session.save()
+                // A few of a potion or material, and room for more than one: how many first.
+                if GameSession.sellsInBulk(offer.item) && most(offer) > 1 {
+                    dealing = offer
                 } else {
-                    reply = offer.kind == .theyBuy ? L("Looks like you don't have that any more.") : L("Come back when you've got the gold.")
+                    make(offer, 1)
                 }
             }
             .buttonStyle(PixelButtonStyle(tint: enabled ? HUDStyle.gold : HUDStyle.dim, compact: true))

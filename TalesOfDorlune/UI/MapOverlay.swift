@@ -172,7 +172,10 @@ struct CaveMap: View {
             .frame(minHeight: 260)
             .background(Color(red: 0.03, green: 0.05, blue: 0.1))
             .clipped()
-            .overlay(alignment: .topTrailing) { MapCompass(size: 60).padding(10).allowsHitTesting(false) }
+            // Its compass as the cave lies, turned like the game's view (`MapCompass.isometric`).
+            .overlay(alignment: .topTrailing) {
+                MapCompass(size: 60, isometric: true).padding(10).allowsHitTesting(false).accessibilityHidden(true)
+            }
             Button(L("World map"), action: showWorld)
                 .buttonStyle(PixelButtonStyle(compact: true))
                 .padding(.bottom, 10)

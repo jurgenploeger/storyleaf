@@ -10,7 +10,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "0.9.0"
+    MARKETING_VERSION: "0.9.1"
     CURRENT_PROJECT_VERSION: "1"
 
 targets:
@@ -39,7 +39,7 @@ targets:
     info:
       path: TalesOfDorlune/Info.plist
       properties:
-        CFBundleDisplayName: Dorlune
+        CFBundleDisplayName: Tales of Dorlune
         # The game translates itself (content/i18n), with no .lproj folders: this tells iOS and the
         # App Store which languages it speaks, so the store page lists them all and system screens
         # (the Files picker, the keyboard) follow the player's language.

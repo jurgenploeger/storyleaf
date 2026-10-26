@@ -313,6 +313,18 @@ bag_grid_land    | newgame,class=fighter,level=40,equip=bronze_broadsword,bag=si
 bag_sort         | newgame,class=fighter,level=40,bag=silver_sword+potion+seal_stone+ether+iron_axe,menu=bag,sortopen | 8
 bank_grid        | newgame,bank=meadow_banker,bag=potion+seal_stone+ether+iron_axe+bamboo+silver_sword+hi_potion,gold=500 | 8
 bank_grid_land   | newgame,bank=meadow_banker,bag=potion+seal_stone+ether+iron_axe+bamboo+silver_sword+hi_potion,gold=500,landscape | 8
+# Progressive disclosure (0.9.1): the Quests' Sort in the Bag's panel; a bank card's Delete behind "…",
+# folded and out; a piece of gear's Compare row, folded (equip_detail) and open; how many to buy or
+# sell at a shop; Settings' Advanced tab, in the game and on the title screen.
+quests_sort      | newgame,menu=quests,sortopen | 8
+bank_card        | newgame,bank=meadow_banker,bag=potion+potion+potion+seal_stone,gold=500,inspect=potion | 8
+bank_card_more   | newgame,bank=meadow_banker,bag=potion+potion+potion+seal_stone,gold=500,inspect=potion,more | 8
+equip_compare    | newgame,class=fighter,level=16,equip=leather_vest,bag=cloth_tunic+chain_mail+silk_robe+dragon_mail,menu=character,change=armor,inspect=chain_mail,compare | 8
+shop_buy_many    | newgame,npc=shop,gold=500,deal=potion | 8
+shop_sell_many   | newgame,npc=shop,bag=bamboo+bamboo+bamboo+bamboo+bamboo,sell=bamboo | 8
+shop_buy_many_land | newgame,npc=shop,gold=500,deal=potion,landscape | 8
+settings_advanced | newgame,menu=settings,sub=advanced,weather=clear | 8
+title_settings_advanced | titlepage=settings,sub=advanced | 6
 # What you drop lies on the ground as the things themselves, very small, in a heap.
 pile_drop        | newgame,map=meadowbrook,bag=potion+potion+ether+iron_axe+seal_stone+homeward_feather,drop=potion+ether+iron_axe+seal_stone+homeward_feather,hour=12,weather=clear | 12
 treasure_bag     | newgame,class=fighter,level=103,done=four_oxen+wolf_hunt+puppet_king+rat_king+puss_in_boots+crystal_hearts,menu=bag | 8
@@ -353,9 +365,12 @@ boss_story_landscape | newgame,level=60,class=fighter,map=rat_cavern,boss=rat_th
 battle_companion | newgame,level=30,class=tamer,pet=pineapple,map=sunny_meadow,battle=2,orders | 15
 battle_afflict | newgame,level=30,class=mage,map=sunny_meadow,battle=3,afflict | 15
 party_full   | newgame,level=43,class=fighter,pet=pineapple,friends=4,map=twilight_woods | 15
-# The top-left faces (2026-10-26): you and your companion each with HP, MP and XP, the portrait as
-# tall as the panel beside it, names in the rounded letters; upright, on its side, dark, in French.
+# The top-left faces (2026-10-26): your face big beside the only stats block, yours (HP, MP and XP),
+# your companion's face small on its bottom-right corner, a button of its own; upright, on its side,
+# dark, in French; with no companion (no small face); and with friends under it, folded and open.
 party_frames | newgame,level=30,class=fighter,pet=pineapple,map=sunny_meadow,weather=clear,hour=12 | 8
+party_frames_solo | newgame,level=30,class=fighter,map=sunny_meadow,weather=clear,hour=12 | 8
+party_frames_friends | newgame,level=43,class=fighter,pet=pineapple,friends=2,map=sunny_meadow,unfold,weather=clear,hour=12 | 8
 party_frames_land | newgame,level=30,class=fighter,pet=pineapple,map=sunny_meadow,landscape,weather=clear,hour=12 | 8
 party_frames_dark | newgame,level=30,class=fighter,pet=pineapple,map=sunny_meadow,dark,weather=clear,hour=12 | 8
 party_frames_fr | newgame,lang=fr,level=30,class=fighter,pet=pineapple,map=sunny_meadow,weather=clear,hour=12 | 8
@@ -639,6 +654,10 @@ worldmap_badges | newgame,level=60,visited=all,worldmap               | 180
 # The world map on its side: its title and the time over the top, where you are along the bottom,
 # the pale compass (playtesting 2026-10-26).
 worldmap_night_land | newgame,worldmap,landscape,hour=22            | 180
+# North up, then twisted 35 degrees as with two fingers: the compass turned with it, a quarter turn
+# between its points, the names and badges upright; the window's blue over a blur along the top and
+# bottom, the zoom buttons over it all, and no line about the place under the map (playtesting 2026-10-26).
+worldmap_turned | newgame,level=60,visited=all,worldmap,turn=35     | 30
 # The menu's windows open as plain windows, their titles plain gold text and their tabs without
 # icons, whole, scrolling sideways in a long language (playtesting 2026-10-26).
 character_de_land | newgame,lang=de,menu=character,sub=titles,landscape | 8
@@ -797,7 +816,7 @@ hud_bag_land      | newgame,level=40,class=fighter,weather=clear,hour=12,bag=pet
 hud_toasts        | newgame,level=40,class=fighter,weather=clear,hour=12,notices | 12
 chat_notices      | newgame,level=40,class=fighter,weather=clear,hour=12,notices,chat | 16
 # Settings with footsteps switched off (the darker switch). `quiet` leaves them off, so this runs last.
-settings_quiet | newgame,menu=settings,weather=clear,quiet | 8
+settings_quiet | newgame,menu=settings,sub=advanced,weather=clear,quiet | 8
 # Each land's own homes (Retro Diffusion, 2026-10-22): standing just in front of one, at noon.
 homes_genie_desert | newgame,map=genie_desert,at=-9_19,weather=clear,hour=12 | 8
 homes_goldburg | newgame,map=goldburg,at=-26_20,weather=clear,hour=12 | 8

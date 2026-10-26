@@ -26,6 +26,8 @@ struct ItemInfoCard: View {
 
     /// Drop's or Trade's window, over the card. Debug `itemwindow=drop` or `trade` opens one.
     @State private var window: ItemCardWindow? = DebugLaunch.itemWindow.flatMap(ItemCardWindow.init(rawValue:))
+    /// Gear: the Compare row opened into each stat against what you wear. Debug `compare` opens it.
+    @State private var comparing = DebugLaunch.opensComparison
 
     struct Action {
         let title: String
@@ -369,7 +371,10 @@ struct ItemInfoCard: View {
         }
     }
 
-    /// Against what you wear in that slot: each stat it would raise or lower.
+    /// Against what you wear in that slot: folded into a Compare row (playtesting 2026-10-26,
+    /// progressive disclosure) that says at a glance whether it's better or worse for you
+    /// (`GameSession.gearValue`, as the grid's upgrade arrow does); a tap opens each stat it would
+    /// raise or lower. Debug `compare` opens it.
     @ViewBuilder
     private var comparison: some View {
         let worn = session.equipped(item.type)
@@ -379,15 +384,64 @@ struct ItemInfoCard: View {
             let gained: Stats = item.stats ?? Stats.zero
             let lost: Stats = worn.stats ?? Stats.zero
             let change = Self.parts(of: gained + lost * -1)
-            section(L("Instead of your {item}", ["item": worn.name])) {
-                if change.isEmpty {
-                    Text(L("The same stats.")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
-                } else {
-                    chips(change)
+            let gain = session.gearValue(item) - session.gearValue(worn)
+            VStack(alignment: .leading, spacing: 6) {
+                Button {
+                    SoundEffects.shared.play(.tap, volume: 0.7)
+                    withAnimation(Reveal.animation) { comparing.toggle() }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(L("Compare"))
+                            .font(HUDStyle.font(11))
+                            .foregroundStyle(HUDStyle.gold)
+                        Spacer(minLength: 6)
+                        verdict(gain)
+                        IconImage(.chevronDown, size: 11)
+                            .foregroundStyle(HUDStyle.gold)
+                            .rotationEffect(.degrees(comparing ? 180 : 0))
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(comparing ? 0.1 : 0.06)))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+                .accessibilityHint(comparing ? L("Hides the stats") : L("Shows each stat against your {item}", ["item": worn.name]))
+                if comparing {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(L("Instead of your {item}", ["item": worn.name]))
+                            .font(HUDStyle.font(11))
+                            .foregroundStyle(HUDStyle.dim)
+                        if change.isEmpty {
+                            Text(L("The same stats.")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+                        } else {
+                            chips(change)
+                        }
+                    }
+                    .transition(.reveal)
                 }
             }
         } else {
             Text(L("You have no {type} on.", ["type": item.type.displayName.midSentence])).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.dim)
+        }
+    }
+
+    /// Better or worse for you than what you wear, with its arrow, or about the same.
+    @ViewBuilder
+    private func verdict(_ gain: Double) -> some View {
+        if gain > 0.001 {
+            Label(L("Better"), icon: .arrowUp, size: 12)
+                .font(HUDStyle.font(11))
+                .foregroundStyle(HUDStyle.green)
+        } else if gain < -0.001 {
+            Label(L("Worse"), icon: .arrowDown, size: 12)
+                .font(HUDStyle.font(11))
+                .foregroundStyle(HUDStyle.orange)
+        } else {
+            Text(L("About the same"))
+                .font(HUDStyle.font(11))
+                .foregroundStyle(HUDStyle.dim)
         }
     }
 

@@ -1407,10 +1407,13 @@ private struct QuestsTab: View {
             Text(L("Completed {count} of {total} quests", ["count": session.completedQuests.count, "total": session.content.quests.count]))
                 .font(HUDStyle.font(12))
                 .foregroundStyle(HUDStyle.gold)
+            // Sort as the Bag's is: the panel in the HUD menu's look, no system menu.
             HStack(spacing: 8) {
                 ItemSearchField(text: $search)
-                QuestSortMenu(sort: $sort)
+                SortMenu(sort: $sort, options: QuestSort.allCases, title: { $0.title })
             }
+            // The sort's panel over the chips.
+            .zIndex(1)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(QuestShelf.allCases, id: \.self) { kind in
@@ -1420,6 +1423,8 @@ private struct QuestsTab: View {
                 }
             }
         }
+        // The sort's panel over the quests under it.
+        .zIndex(1)
         if shelf != .done {
             SectionTitle(text: L("Active"))
             if session.activeQuests.isEmpty {
@@ -1603,34 +1608,6 @@ private struct QuestNumber: View {
             .font(HUDStyle.mono(10))
             .foregroundStyle(HUDStyle.gold.opacity(0.85))
             .accessibilityLabel(L("Quest {number}", ["number": number]))
-    }
-}
-
-/// The Quests list's order: a button showing the one in use, which opens the choice (as
-/// `ItemSortMenu` does for the Bag).
-private struct QuestSortMenu: View {
-    @Binding var sort: QuestSort
-
-    var body: some View {
-        Menu {
-            Picker(L("Sort by"), selection: $sort) {
-                ForEach(QuestSort.allCases, id: \.self) { Text($0.title).tag($0) }
-            }
-        } label: {
-            HStack(spacing: 5) {
-                IconImage(.sort, size: 14)
-                Text(sort.title)
-                    .lineLimit(1)
-            }
-            .font(HUDStyle.font(11))
-            .foregroundStyle(HUDStyle.cream)
-            .padding(.horizontal, 10)
-            .frame(minHeight: 32)
-            .background(Capsule().fill(.white.opacity(0.1)))
-            .fixedSize()
-        }
-        .accessibilityLabel(L("Sort by"))
-        .accessibilityValue(sort.title)
     }
 }
 

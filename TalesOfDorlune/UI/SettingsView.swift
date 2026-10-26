@@ -7,12 +7,15 @@ import UniformTypeIdentifiers
 nonisolated enum SettingsPage: String, CaseIterable {
     /// The language, Light or Dark Mode, and what the game is.
     case general
-    /// Music, sound effects, footsteps and vibration.
+    /// Music and sound effects.
     case sound
-    /// The world's sky and how fights go.
+    /// How fights go.
     case gameplay
-    /// Saving, backing up, leaving and deleting a game; on the title screen, bringing one back.
+    /// Saving, backing up and leaving a game; on the title screen, bringing one back.
     case saves
+    /// What's seldom changed, last (playtesting 2026-10-26, progressive disclosure): footsteps and
+    /// vibration, the world's day and night and weather, and deleting the game.
+    case advanced
 
     var title: String {
         switch self {
@@ -20,6 +23,7 @@ nonisolated enum SettingsPage: String, CaseIterable {
         case .sound: L("Sound")
         case .gameplay: L("Gameplay")
         case .saves: L("Saves")
+        case .advanced: L("Advanced")
         }
     }
 }
@@ -118,27 +122,8 @@ struct SettingsView: View {
                         SoundEffects.shared.play(.coins)
                     }
                     .onChange(of: soundEffects) { _, on in if on { SoundEffects.shared.play(.coins) } }
-                    SoundRow(title: L("Footsteps"), icon: nil, isOn: $footsteps)
-                }
-
-                section(L("Feel"), icon: .tap) {
-                    Toggle(L("Vibration on hits and rewards"), isOn: $haptics)
-                        .onChange(of: haptics) { _, on in if on { Haptics.impact(.medium) } }
                 }
             case .gameplay:
-                // The sky over the maps: the light follows the clock, and the weather comes and goes.
-                section(L("World"), icon: .sun) {
-                    Toggle(L("Day and night"), isOn: $dayAndNight)
-                    Text(L("Off, it's always daytime."))
-                        .font(HUDStyle.font(10))
-                        .foregroundStyle(HUDStyle.dim)
-                    Toggle(L("Weather"), isOn: $weather)
-                    Text(L("Off, the sky stays clear: no rain, storms, fog or snow."))
-                        .font(HUDStyle.font(10))
-                        .foregroundStyle(HUDStyle.dim)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
                 section(L("Battle"), icon: .paw) {
                     Toggle(L("Choose your companion's moves"), isOn: $commandCompanion)
                     Text(L("After your own choice, tell your companion what to do. Off, it fights on its own."))
@@ -211,6 +196,39 @@ struct SettingsView: View {
                     }
                 }
 
+                if let onImportBackup {
+                    section(L("Backups"), icon: .arrowDown) {
+                        Button(action: onImportBackup) {
+                            Label(L("Import a backup"), icon: .arrowDown)
+                        }
+                        .buttonStyle(PixelButtonStyle(compact: true))
+                        Text(L("A backup from Files or iCloud Drive comes back as a game of its own, next to your others."))
+                            .font(HUDStyle.font(10))
+                            .foregroundStyle(HUDStyle.dim)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            case .advanced:
+                // Fine-tuning the sound and feel: footsteps (on by default) and the Taptic Engine.
+                section(L("Sound and feel"), icon: .tap) {
+                    Toggle(L("Footsteps"), isOn: $footsteps)
+                    Toggle(L("Vibration on hits and rewards"), isOn: $haptics)
+                        .onChange(of: haptics) { _, on in if on { Haptics.impact(.medium) } }
+                }
+
+                // The sky over the maps: the light follows the clock, and the weather comes and goes.
+                section(L("World"), icon: .sun) {
+                    Toggle(L("Day and night"), isOn: $dayAndNight)
+                    Text(L("Off, it's always daytime."))
+                        .font(HUDStyle.font(10))
+                        .foregroundStyle(HUDStyle.dim)
+                    Toggle(L("Weather"), isOn: $weather)
+                    Text(L("Off, the sky stays clear: no rain, storms, fog or snow."))
+                        .font(HUDStyle.font(10))
+                        .foregroundStyle(HUDStyle.dim)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 if let session, let onQuitToTitle {
                     section(L("Danger zone"), icon: .close) {
                         Text(L("Deleting a game can't be undone."))
@@ -231,19 +249,6 @@ struct SettingsView: View {
                         } message: {
                             Text(L("{hero}, level {level}, and everything they carry will be gone for good.", ["hero": session.data.hero.name, "level": session.data.hero.level]))
                         }
-                    }
-                }
-
-                if let onImportBackup {
-                    section(L("Backups"), icon: .arrowDown) {
-                        Button(action: onImportBackup) {
-                            Label(L("Import a backup"), icon: .arrowDown)
-                        }
-                        .buttonStyle(PixelButtonStyle(compact: true))
-                        Text(L("A backup from Files or iCloud Drive comes back as a game of its own, next to your others."))
-                            .font(HUDStyle.font(10))
-                            .foregroundStyle(HUDStyle.dim)
-                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }

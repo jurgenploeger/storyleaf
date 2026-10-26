@@ -1695,6 +1695,45 @@ struct RulesTests {
         #expect(Set(wants).count == wants.count)
     }
 
+    /// Potions and materials go several at a time at a shop and with an adventurer (playtesting
+    /// 2026-10-26), as many as the coins pay for and the bag holds; gear a piece at a time.
+    @Test func buyingAndSellingSeveralAtOnce() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let potion = try #require(Content.shared.item("potion"))
+        let gear = try #require(Content.shared.items.first { ItemType.equipmentSlots.contains($0.type) })
+        #expect(GameSession.sellsInBulk(potion) && !GameSession.sellsInBulk(gear))
+        let potions = session.count(of: "potion")
+        session.data.gold = potion.price * 4
+        #expect(session.affordable(at: potion.price) == 4)
+        #expect(!session.buy("potion", 5) && session.count(of: "potion") == potions)
+        #expect(session.buy("potion", 4) && session.count(of: "potion") == potions + 4 && session.data.gold == 0)
+        #expect(session.sell("potion", 3) == GameSession.sellPrice(of: potion) * 3)
+        #expect(session.count(of: "potion") == potions + 1)
+        #expect(session.sell("potion", potions + 2) == nil && session.count(of: "potion") == potions + 1)
+        // The bag stops it too: two slots free, and spending the very last coins frees theirs for one more.
+        session.data.inventory = ["potion": GameSession.bagSlots - 3]
+        session.data.gold = potion.price * 10
+        #expect(session.affordable(at: potion.price) == 2)
+        #expect(!session.buy("potion", 3))
+        session.data.gold = potion.price * 3
+        #expect(session.affordable(at: potion.price) == 3)
+        #expect(session.buy("potion", 3) && session.bagSlotsFree == 0)
+
+        // An adventurer's deal for a potion or a material is for a few; gear's for one. Made once.
+        session.data.inventory = [:]
+        session.data.gold = 1_000_000
+        for level in [10, 30, 60, 100] {
+            let trader = Adventurer(name: "Momo", raceID: "dwarf", classID: "fighter", level: level, look: .standard)
+            for offer in session.tradeOffers(with: trader) {
+                #expect(GameSession.sellsInBulk(offer.item) ? (2...5).contains(offer.stock) : offer.stock == 1)
+            }
+            guard let deal = session.tradeOffers(with: trader).first(where: { $0.kind == .theySell && $0.stock > 1 }) else { continue }
+            #expect(!session.trade(deal, deal.stock + 1))
+            #expect(session.trade(deal, deal.stock) && session.count(of: deal.item.id) >= deal.stock)
+            #expect(!session.trade(deal, 1))
+        }
+    }
+
     /// Put something up for trade, and an adventurer who walks up makes an offer for it: take it, or
     /// leave it (playtesting 2026-10-25).
     @Test func offersForWhatYouPutUpForTrade() throws {
