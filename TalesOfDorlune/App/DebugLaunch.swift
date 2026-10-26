@@ -1,7 +1,7 @@
 import Foundation
 import SpriteKit
 
-/// Debug-only shortcuts for testing, via the STORYLEAF_DEBUG environment variable
+/// Debug-only shortcuts for testing, via the TALES_OF_DORLUNE_DEBUG environment variable
 /// (Xcode: Product → Scheme → Edit Scheme → Run → Environment Variables), comma-separated:
 ///
 ///   newgame        skip the title screen with a fresh hero
@@ -135,7 +135,7 @@ import SpriteKit
 enum DebugLaunch {
     private static var flags: [String: String] {
         #if DEBUG
-        let raw = ProcessInfo.processInfo.environment["STORYLEAF_DEBUG"] ?? ""
+        let raw = ProcessInfo.processInfo.environment["TALES_OF_DORLUNE_DEBUG"] ?? ""
         var flags: [String: String] = [:]
         for part in raw.split(separator: ",") {
             let pair = part.split(separator: "=", maxSplits: 1).map(String.init)

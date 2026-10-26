@@ -1,9 +1,10 @@
 .DS_Store
 
 # Xcode (the project is generated from project.yml)
-Storyleaf.xcodeproj/
-# The project's name before the rename: an old generated copy left on a Mac.
+TalesOfDorlune.xcodeproj/
+# The project's names before the renames: old generated copies left on a Mac.
 Fairyland.xcodeproj/
+Storyleaf.xcodeproj/
 xcuserdata/
 DerivedData/
 build/

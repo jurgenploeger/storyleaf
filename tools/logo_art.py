@@ -25,7 +25,7 @@ from PIL import Image, ImageDraw, ImageFont
 from scipy.ndimage import distance_transform_edt
 
 ROOT = Path(__file__).resolve().parent.parent
-LOGO = ROOT / "Storyleaf/Resources/Assets.xcassets/Logo.imageset/Logo.png"
+LOGO = ROOT / "TalesOfDorlune/Resources/Assets.xcassets/Logo.imageset/Logo.png"
 FONT = ROOT / "tools/fonts/LuckiestGuy-Regular.ttf"
 
 # The lines, top to bottom: the words and their size as a share of the world's name's (`PX`, in Logo.png's

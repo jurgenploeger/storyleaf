@@ -34,7 +34,7 @@ enum Brand {
 }
 
 /// Where the sky's soft light sits: the middle of the world's name in the logo (Logo.png, drawn by
-/// tools/logo_art.py), or whatever else a screen puts in its middle (the travel card's swirl). Published with `raysAnchor`, read by `storyleafSky`.
+/// tools/logo_art.py), or whatever else a screen puts in its middle (the travel card's swirl). Published with `raysAnchor`, read by `talesOfDorluneSky`.
 struct RaysAnchor: PreferenceKey {
     static var defaultValue: Anchor<CGPoint>? { nil }
     static func reduce(value: inout Anchor<CGPoint>?, nextValue: () -> Anchor<CGPoint>?) {
@@ -54,10 +54,10 @@ extension View {
         anchorPreference(key: RaysAnchor.self, value: .unitPoint(point)) { $0 }
     }
 
-    /// The Storyleaf sky behind this screen, its light exactly where `raysAnchor`
+    /// The Tales of Dorlune sky behind this screen, its light exactly where `raysAnchor`
     /// marks, wherever that lands on this phone and however the screen moves it (scrolling, a
     /// phone on its side); from `fallback` (a share of the screen) where nothing marks it.
-    func storyleafSky(fallback: UnitPoint) -> some View {
+    func talesOfDorluneSky(fallback: UnitPoint) -> some View {
         frame(maxWidth: .infinity, maxHeight: .infinity)
             .backgroundPreferenceValue(RaysAnchor.self) { anchor in
                 // Full screen, like the sky, so the anchor resolves in the sky's own coordinates.
@@ -66,7 +66,7 @@ extension View {
                         let point = proxy[anchor]
                         return UnitPoint(x: point.x / max(1, proxy.size.width), y: point.y / max(1, proxy.size.height))
                     }
-                    StoryleafSky(raysFrom: center ?? fallback)
+                    TalesOfDorluneSky(raysFrom: center ?? fallback)
                 }
                 .ignoresSafeArea()
             }
@@ -77,7 +77,7 @@ extension View {
 /// soft light behind the logo, and clouds along the bottom. No sun rays: fanned out round the
 /// logo they looked cheap. In Dark Mode it's the dark icon's night: indigo through navy to teal,
 /// the light faint, the clouds moonlit and a scatter of stars.
-struct StoryleafSky: View {
+struct TalesOfDorluneSky: View {
     /// Where the soft light sits, as a share of the screen: behind the logo.
     var raysFrom = UnitPoint(x: 0.5, y: 0.3)
     @Environment(\.colorScheme) private var colorScheme

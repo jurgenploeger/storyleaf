@@ -16,12 +16,12 @@ struct LoadingCurtain: View {
                     .raysAnchor(Brand.raysInLogo)
                     .frame(maxWidth: 300)
                     .scaleEffect(spin ? 1.03 : 0.97)
-                LoadingBar.storyleaf(progress: progress, label: L("Loading"))
+                LoadingBar.talesOfDorlune(progress: progress, label: L("Loading"))
             }
             .padding(.horizontal, 40)
         }
         // The sky's soft light sits behind the logo.
-        .storyleafSky(fallback: UnitPoint(x: 0.5, y: 0.44))
+        .talesOfDorluneSky(fallback: UnitPoint(x: 0.5, y: 0.44))
         .onAppear {
             withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { spin = true }
         }
@@ -60,11 +60,11 @@ struct MapLoadingCard: View {
                     .overlay(Capsule().strokeBorder(Brand.midnight, lineWidth: 3))
                     // The thicker edge under it, like the logo's pill.
                     .background(Capsule().fill(Brand.midnightDeep).offset(y: 3))
-                LoadingBar.storyleaf(progress: progress, label: L("Travelling"))
+                LoadingBar.talesOfDorlune(progress: progress, label: L("Travelling"))
             }
             .padding(.horizontal, 40)
         }
-        .storyleafSky(fallback: UnitPoint(x: 0.5, y: 0.42))
+        .talesOfDorluneSky(fallback: UnitPoint(x: 0.5, y: 0.42))
         .onAppear {
             withAnimation(.linear(duration: 1.1).repeatForever(autoreverses: false)) { spin = true }
         }
@@ -85,7 +85,7 @@ struct LoadingBar: View {
 
     /// The brand's own loading bar, the same on every loading screen: the logo's gold, outlined in
     /// midnight, on its cream.
-    static func storyleaf(progress: Double, label: String) -> LoadingBar {
+    static func talesOfDorlune(progress: Double, label: String) -> LoadingBar {
         LoadingBar(progress: progress, label: label, textColor: Brand.skyText,
                    fill: [Brand.goldLight, Brand.gold, Brand.goldDeep], track: Brand.cream, rim: Brand.midnight,
                    width: 200)

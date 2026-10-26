@@ -6,7 +6,7 @@ the apple and blossom trees, built from the game's sprites and redrawn by RD
 
 Light: the drawing cropped in close on the hero, hair to knees over a band of meadow (`CROP`), so he reads on a
 small Home Screen icon, its flat sky graded from deep blue overhead to a pale haze (`day_sky`), scaled by a whole number (`SCALE`, nearest neighbour) and its edge pixels
-repeated out to 1024. Dark: the same scene at dusk, its sky the night `StoryleafSky` draws in Dark
+repeated out to 1024. Dark: the same scene at dusk, its sky the night `TalesOfDorluneSky` draws in Dark
 Mode, the rest darkened and cooled, moonlight on the hero's face keeping him brighter than the
 trees, the gold still warm, and the evening's lights: fireflies, sparkles in the blossom, stars,
 a glint on the sword (`light_up`). Tinted: greys iOS colours with the tint chosen (and its Clear look):
@@ -25,7 +25,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent.parent
-ICONSET = ROOT / "Storyleaf/Resources/Assets.xcassets/AppIcon.appiconset"
+ICONSET = ROOT / "TalesOfDorlune/Resources/Assets.xcassets/AppIcon.appiconset"
 LIGHT = ICONSET / "AppIcon.png"
 DARK = ICONSET / "AppIcon-Dark.png"
 TINTED = ICONSET / "AppIcon-Tinted.png"

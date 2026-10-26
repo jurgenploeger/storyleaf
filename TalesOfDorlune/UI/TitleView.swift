@@ -114,7 +114,7 @@ struct TitleView: View {
         }
         // The sky, its soft light behind the logo wherever the logo is (the story pages have
         // none: there, near the top).
-        .storyleafSky(fallback: UnitPoint(x: 0.5, y: 0.18))
+        .talesOfDorluneSky(fallback: UnitPoint(x: 0.5, y: 0.18))
         .onAppear {
             MusicPlayer.shared.play("title")
             if saves.isEmpty { seenRelease = newestRelease }

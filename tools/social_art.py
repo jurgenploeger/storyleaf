@@ -27,7 +27,7 @@ import store_slides
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "marketing" / "social"
-LOGO = ROOT / "Storyleaf" / "Resources" / "Assets.xcassets" / "Logo.imageset" / "Logo.png"
+LOGO = ROOT / "TalesOfDorlune" / "Resources" / "Assets.xcassets" / "Logo.imageset" / "Logo.png"
 
 # The profile picture: the icon's drawing around the hero's face (115, 103), 96 pixels across.
 PROFILE_CROP = (67, 52, 163, 148)
