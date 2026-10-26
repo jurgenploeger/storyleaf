@@ -125,9 +125,10 @@ import SpriteKit
 ///                  (rewards.json `seasons`: date=10-31 is Halloween, and with gift, its hat comes too)
 ///   weather=<kind> every map with a sky has this weather (clear | cloudy | rain | storm | fog | snow)
 ///   lang=<code>    play in this language (content/i18n/languages.json), without changing the saved choice
-///   intro[=page]   open the title screen's story pages at that page (1 = the story, 4 = how to play)
-///   clip=<n>       with intro=4: How to play's picture starts at that part (0 walk … 4 town), and
-///                  marks debug-ready as it does
+///   intro[=page]   open the title screen's story slides at that slide (1 = the story, 4 to 9 = how
+///                  to play's steps, 10 = the world)
+///   clip=<n>       with intro=4…9: How to play's picture plays that part (0 walk … 4 town, 5 quest) instead of
+///                  the slide's own, and marks debug-ready as it starts
 ///   titlepage=<p>  the title screen opens on settings | news (What's new) | languages | create
 ///   saves=n        the title screen lists n made-up games (up to 3, in a folder of their own), with
 ///                  What's new not read yet
@@ -225,7 +226,7 @@ enum DebugLaunch {
     static var talkPage: Int? { flags["talk"].map { $0 == "last" ? Int.max : max(0, (Int($0) ?? 1) - 1) } }
     /// `intro` or `intro=<page>` opens the title screen's story pages (1 = the story).
     static var introPage: Int? { flags["intro"].map { Int($0).map { $0 - 1 } ?? 0 } }
-    /// `clip=<n>`: How to play's picture starts at that part (0 walk, 1 battle, 2 seal, 3 victory, 4 town).
+    /// `clip=<n>`: How to play's picture plays that part (0 walk, 1 battle, 2 seal, 3 victory, 4 town, 5 quest).
     static var introClip: Int? { flags["clip"].flatMap { Int($0) } }
 
     /// `battle[=n]` once the map is up: a fight on the current map (exactly n monsters), and the

@@ -7,25 +7,32 @@ import SpriteKit
 /// show the game with it as it really looks, without building a whole map.
 ///
 /// The layout is drawn on a grid like a map's: columns run east (up and right on screen), rows run
-/// north (up and left), row 0 is the south edge.
+/// north (up and left), row 0 is the south edge. A `margin` of the map's plain ground goes all round
+/// it, so a taller picture never runs off the patch; its roads carry on into it.
 final class MapPatch: SKNode {
     let def: MapDef
     let columns: Int
     let rows: Int
+    /// Plain ground round the layout, in cells, on every side.
+    let margin: Int
+    /// The whole patch, the margin with it.
+    private var allColumns: Int { columns + 2 * margin }
+    private var allRows: Int { rows + 2 * margin }
     /// Everyone and everything standing on the ground, kept in depth order by `sortByDepth`.
     let things = SKNode()
     private var kinds: [[Ground]]
     private let art = ArtLibrary.shared
     private var feet: [ObjectIdentifier: CGFloat] = [:]
 
-    /// A patch of `columns` × `rows` cells of the map `mapID`, all its plain ground until painted.
-    /// Nil if there's no such map.
-    init?(map mapID: String, columns: Int, rows: Int) {
-        guard let def = Content.shared.map(mapID), columns > 0, rows > 0 else { return nil }
+    /// A patch of `columns` × `rows` cells of the map `mapID`, all its plain ground until painted,
+    /// with `margin` more all round. Nil if there's no such map.
+    init?(map mapID: String, columns: Int, rows: Int, margin: Int = 0) {
+        guard let def = Content.shared.map(mapID), columns > 0, rows > 0, margin >= 0 else { return nil }
         self.def = def
         self.columns = columns
         self.rows = rows
-        kinds = Array(repeating: Array(repeating: .ground, count: columns), count: rows)
+        self.margin = margin
+        kinds = Array(repeating: Array(repeating: .ground, count: columns + 2 * margin), count: rows + 2 * margin)
         super.init()
         addChild(things)
     }
@@ -34,8 +41,12 @@ final class MapPatch: SKNode {
 
     // MARK: - Painting the ground
 
-    /// A road from waypoint to waypoint, stepping a cell at a time like the map's carved roads.
+    /// A road from waypoint to waypoint, stepping a cell at a time like the map's carved roads. An
+    /// end on the layout's edge carries on through the margin.
     func road(_ points: [(col: Int, row: Int)]) {
+        var points = points
+        if let first = points.first, first != onward(first) { points.insert(onward(first), at: 0) }
+        if let last = points.last, last != onward(last) { points.append(onward(last)) }
         for (from, to) in zip(points, points.dropFirst()) {
             var col = from.col, row = from.row
             paint(col, row, .path)
@@ -50,18 +61,28 @@ final class MapPatch: SKNode {
         }
     }
 
+    /// Where a road's end on the layout's edge comes out of the patch, straight on through the margin.
+    private func onward(_ end: (col: Int, row: Int)) -> (col: Int, row: Int) {
+        var col = end.col, row = end.row
+        if col == 0 { col = -margin } else if col == columns - 1 { col = columns - 1 + margin }
+        if row == 0 { row = -margin } else if row == rows - 1 { row = rows - 1 + margin }
+        return (col, row)
+    }
+
     /// A round patch of `kind` (a pond, a flower meadow) over plain ground.
     func blob(_ col: Int, _ row: Int, radius: CGFloat, _ kind: Ground) {
-        for r in 0..<rows {
-            for c in 0..<columns where kinds[r][c] == .ground {
-                let dx = CGFloat(c - col), dy = CGFloat(r - row)
+        for r in 0..<allRows {
+            for c in 0..<allColumns where kinds[r][c] == .ground {
+                let dx = CGFloat(c - margin - col), dy = CGFloat(r - margin - row)
                 if dx * dx + dy * dy <= radius * radius { kinds[r][c] = kind }
             }
         }
     }
 
+    /// Paints a cell of the layout (the margin's, past its edge).
     private func paint(_ col: Int, _ row: Int, _ kind: Ground) {
-        guard row >= 0, row < rows, col >= 0, col < columns else { return }
+        let col = col + margin, row = row + margin
+        guard row >= 0, row < allRows, col >= 0, col < allColumns else { return }
         kinds[row][col] = kind
     }
 
@@ -93,6 +114,7 @@ final class MapPatch: SKNode {
             return made
         }
         let patchAccent = (theme.accentPatches ?? 0) > 0 && theme.accent != nil && theme.accent != theme.ground
+        let columns = allColumns, rows = allRows
         func kind(_ col: Int, _ row: Int) -> Ground? {
             guard row >= 0, row < rows, col >= 0, col < columns else { return nil }
             return kinds[row][col]
@@ -186,14 +208,39 @@ final class MapPatch: SKNode {
         return squash
     }
 
-    // MARK: - Standing on it
-
-    /// The middle of a cell (fractions for in between), where people stand.
-    func point(_ col: CGFloat, _ row: CGFloat) -> CGPoint {
-        WorldMap.project(CGPoint(x: (col + 0.5) * WorldMap.tileSize, y: (row + 0.5) * WorldMap.tileSize))
+    /// Scatters `ids` over the margin, about one cell in `every`, the same way each time (seeded by
+    /// the map), off its roads and water: the land carrying on round the layout.
+    func scatter(_ ids: [String], every: Int) {
+        guard !ids.isEmpty, every > 0, margin > 0 else { return }
+        // A seed of the map's id, the same on every launch (Swift's own hashes aren't).
+        var state = def.id.utf8.reduce(UInt64(5381)) { ($0 &* 33) &+ UInt64($1) }
+        func next() -> UInt64 {
+            state &+= 0x9E37_79B9_7F4A_7C15
+            var mixed = state
+            mixed = (mixed ^ (mixed >> 30)) &* 0xBF58_476D_1CE4_E5B9
+            mixed = (mixed ^ (mixed >> 27)) &* 0x94D0_49BB_1331_11EB
+            return mixed ^ (mixed >> 31)
+        }
+        for row in 0..<allRows {
+            for col in 0..<allColumns {
+                let inside = (margin..<margin + columns).contains(col) && (margin..<margin + rows).contains(row)
+                guard !inside, kinds[row][col] == .ground, next() % UInt64(every) == 0 else { continue }
+                let id = ids[Int(next() % UInt64(ids.count))]
+                let jitter = { CGFloat(next() % 100) / 100 - 0.5 }
+                prop(id, CGFloat(col - margin) + jitter() * 0.6, CGFloat(row - margin) + jitter() * 0.6)
+            }
+        }
     }
 
-    /// The middle of the whole patch.
+    // MARK: - Standing on it
+
+    /// The middle of a cell of the layout (fractions for in between), where people stand.
+    func point(_ col: CGFloat, _ row: CGFloat) -> CGPoint {
+        let col = col + CGFloat(margin), row = row + CGFloat(margin)
+        return WorldMap.project(CGPoint(x: (col + 0.5) * WorldMap.tileSize, y: (row + 0.5) * WorldMap.tileSize))
+    }
+
+    /// The middle of the layout.
     var middle: CGPoint { point(CGFloat(columns - 1) / 2, CGFloat(rows - 1) / 2) }
 
     /// A piece of scenery set down on a cell as WorldScene.addScenery does: standing on its lowest

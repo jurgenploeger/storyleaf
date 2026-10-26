@@ -1,96 +1,240 @@
 import SwiftUI
 
-/// The onboarding before a new hero is made: the story in three chapters, each with a little
-/// animated scene made of the game itself (StoryVignette), then how to play (the game played: a
-/// walk, a fight, a Seal Stone, a level up and a quest, each tip lighting up as it plays) and the
-/// whole world map. Also opens from the title screen, at How to play.
+/// The onboarding before a new hero is made, a slide at a time like a carousel: the story in three
+/// chapters, each with a little animated scene made of the game itself (StoryVignette), then how to
+/// play, a slide for each step with its part of the game played (a walk, a fight, a Seal Stone, a
+/// level up, the town and a quest), and the whole world map. Each slide's picture fills the top of
+/// the window (its left side, on a phone held sideways) and melts into it (`progressiveFade`), its
+/// title and words below; Back, Next and a dot for each slide along the foot, and a swipe turns too.
+/// Also opens from the title screen with How to play's slides alone (`howToPlayOnly`).
 struct IntroView: View {
-    /// What the last page's button says ("Create your hero", or "Done" when just reading).
+    /// What the last slide's button says ("Create your hero", or "Done" when just reading).
     let finishTitle: String
+    /// Skip, over the picture: when finishing makes a hero. When just reading, the close button does it.
+    let skips: Bool
     /// The close button: back to the title screen, without making a hero.
     let onClose: () -> Void
     let onFinish: () -> Void
     @State private var page: Int
+    /// Which way the last turn went, for the words to slide in from that side.
+    @State private var forward = true
+    /// How to play's picture, the same scene on all its slides, each playing its own part of it.
+    @State private var reel: StoryScene
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
-    private static let pageCount = 5
-    /// How to play's page, after the story's three.
-    static let howToPlayPage = 3
+    /// The picture's share of the window's height, on a phone held upright.
+    private static let pictureShare: CGFloat = 0.75
 
-    init(finishTitle: String, startPage: Int = 0, onClose: @escaping () -> Void, onFinish: @escaping () -> Void) {
+    private enum Slide: Equatable {
+        case chapter(StoryScene.Kind)
+        /// A step of How to play, by its place among them (`HowToPlayStep.all`).
+        case step(Int)
+        case world
+    }
+
+    private static let story: [Slide] = [.chapter(.gathering), .chapter(.shadows), .chapter(.arrival)]
+    private static let howToPlay: [Slide] = (0..<HowToPlayStep.count).map(Slide.step) + [.world]
+    /// The story and How to play for a new game; How to play alone from the title screen.
+    private let slides: [Slide]
+
+    init(finishTitle: String, skips: Bool = true, howToPlayOnly: Bool = false, startPage: Int = 0,
+         onClose: @escaping () -> Void, onFinish: @escaping () -> Void) {
         self.finishTitle = finishTitle
+        self.skips = skips
         self.onClose = onClose
         self.onFinish = onFinish
-        _page = State(initialValue: min(max(0, startPage), Self.pageCount - 1))
+        let slides = howToPlayOnly ? Self.howToPlay : Self.story + Self.howToPlay
+        self.slides = slides
+        let page = min(max(0, startPage), slides.count - 1)
+        _page = State(initialValue: page)
+        var clip = StoryScene.Clip.walk
+        if case .step(let step) = slides[page] { clip = StoryScene.Clip.showing(step: step) }
+        _reel = State(initialValue: StoryScene(kind: .reel, startClip: DebugLaunch.introClip ?? clip.rawValue))
     }
+
+    private var slide: Slide { slides[page] }
+    private var isLastPage: Bool { page == slides.count - 1 }
+    /// A phone on its side: the picture on the left, the words on the right.
+    private var wide: Bool { verticalSizeClass == .compact }
 
     var body: some View {
-        VStack(spacing: 10) {
-            ScrollView {
-                Group {
-                    switch page {
-                    case 0: ChapterPage(chapter: .gathering)
-                    case 1: ChapterPage(chapter: .shadows)
-                    case 2: ChapterPage(chapter: .arrival)
-                    case Self.howToPlayPage: HowToPlayPage()
-                    default: WorldPage()
+        GeometryReader { proxy in
+            let size = CGSize(width: min(proxy.size.width, 720), height: min(proxy.size.height, wide ? proxy.size.height : 680))
+            Group {
+                if wide {
+                    HStack(spacing: 0) {
+                        visual(fade: .trailing)
+                            .frame(width: min(size.width * 0.6, size.height * 1.7))
+                        words
+                    }
+                } else {
+                    // The words start inside the picture's fade, where it has melted into the glass.
+                    let picture = size.height * Self.pictureShare
+                    VStack(spacing: 0) {
+                        visual(fade: .bottom)
+                            .frame(height: picture)
+                        words
+                            .padding(.top, -picture * ProgressiveFade.fadeReach * 0.6)
                     }
                 }
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: 720)
+            .frame(width: size.width, height: size.height)
             .background(HUDStyle.panel)
             .windowCloseButton(onClose)
-            .id(page)
-            .transition(.opacity)
-
-            // The last page's button is the longest ("Create your hero"): there's no Skip to make room
-            // for, and on a narrow phone the page dots step aside too.
-            ViewThatFits(in: .horizontal) {
-                controls(dots: true)
-                controls(dots: false)
-            }
-            .frame(maxWidth: 720)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(16)
+        .onChange(of: page) { old, new in
+            // How to play's picture plays the part for the step you turned to; from Towns to Quests,
+            // both the town, it carries on.
+            guard case .step(let step) = slides[new] else { return }
+            let clip = StoryScene.Clip.showing(step: step).rawValue
+            if case .step = slides[old], reel.hud.clip == clip { return }
+            reel.play(clip: clip)
+        }
     }
 
-    private var isLastPage: Bool { page == Self.pageCount - 1 }
+    // MARK: The picture
 
-    private func controls(dots: Bool) -> some View {
-        HStack(spacing: 10) {
-            if !isLastPage {
+    /// The slide's picture inside the window's frame, its outer corners rounded as the window's, with
+    /// Skip over its corner.
+    private func visual(fade: SwiftUI.Edge) -> some View {
+        let corner = HUDStyle.windowRadius - 3
+        return ZStack {
+            picture(fade: fade)
+                // How to play's slides share one picture, so turning between them doesn't fade it.
+                .id(pictureID)
+                .transition(.opacity)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipShape(UnevenRoundedRectangle(topLeadingRadius: corner, bottomLeadingRadius: wide ? corner : 0,
+                                          bottomTrailingRadius: 0, topTrailingRadius: wide ? 0 : corner))
+        .overlay(alignment: .topLeading) {
+            if skips && !isLastPage {
                 Button(L("Skip"), action: onFinish)
                     .buttonStyle(PixelButtonStyle(compact: true))
+                    .padding(10)
             }
-            Spacer(minLength: 0)
-            if dots {
-                PageDots(count: Self.pageCount, current: page)
-                Spacer(minLength: 0)
-            }
-            Button {
-                withAnimation(.easeInOut(duration: 0.25)) { page -= 1 }
-            } label: {
-                Label(L("Back"), icon: .arrowLeft)
-            }
-            .buttonStyle(PixelButtonStyle(compact: true))
-            .opacity(page == 0 ? 0.4 : 1)
-            .disabled(page == 0)
-            Button {
-                if isLastPage {
-                    onFinish()
-                } else {
-                    withAnimation(.easeInOut(duration: 0.25)) { page += 1 }
-                }
-            } label: {
-                Label(isLastPage ? finishTitle : L("Next"), icon: .arrowRight)
-            }
-            .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
         }
-        .lineLimit(1)
+        .contentShape(Rectangle())
+        // The world map drags round itself instead.
+        .gesture(swipe, including: slide == .world ? .subviews : .all)
+        // Inside the window's bevel.
+        .padding(EdgeInsets(top: 3, leading: 3, bottom: wide ? 3 : 0, trailing: wide ? 0 : 3))
+    }
+
+    @ViewBuilder
+    private func picture(fade: SwiftUI.Edge) -> some View {
+        switch slide {
+        case .chapter(let kind): StoryVignette(kind, fade: fade)
+        case .step: VignetteView(scene: reel, fade: fade)
+        case .world: IntroAtlas(highlight: Content.shared.startMap, fade: fade)
+        }
+    }
+
+    private var pictureID: String {
+        switch slide {
+        case .chapter(let kind): "\(kind)"
+        case .step: "reel"
+        case .world: "world"
+        }
+    }
+
+    // MARK: The words
+
+    /// The slide's title and words, then the way on.
+    private var words: some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                // Stacked, so the old slide's words and the new one's cross over each other.
+                ZStack(alignment: .topLeading) {
+                    text
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .id(page)
+                        .transition(.asymmetric(insertion: .move(edge: forward ? .trailing : .leading).combined(with: .opacity),
+                                                removal: .opacity))
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, wide ? 18 : 2)
+                .padding(.bottom, 12)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .clipped()
+            .simultaneousGesture(swipe)
+            controls
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 14)
+        }
+    }
+
+    @ViewBuilder
+    private var text: some View {
+        switch slide {
+        case .chapter(let kind): ChapterText(chapter: kind)
+        case .step(let index): StepText(step: HowToPlayStep.all[index])
+        case .world: WorldText()
+        }
+    }
+
+    // MARK: Turning
+
+    /// The dots, which slide you're on, over Back and Next (Next makes way for the last slide's
+    /// button, which can be long: "Create your hero").
+    private var controls: some View {
+        VStack(spacing: 12) {
+            PageDots(count: slides.count, current: page)
+            HStack(spacing: 10) {
+                // Not on the first slide, where there's nothing to go back to; it keeps its place, so
+                // Next stays put.
+                Button {
+                    turn(by: -1)
+                } label: {
+                    Label(L("Back"), icon: .arrowLeft)
+                }
+                .buttonStyle(PixelButtonStyle(compact: true))
+                .opacity(page == 0 ? 0 : 1)
+                .disabled(page == 0)
+                .accessibilityHidden(page == 0)
+                Spacer(minLength: 0)
+                Button {
+                    if isLastPage {
+                        onFinish()
+                    } else {
+                        turn(by: 1)
+                    }
+                } label: {
+                    // The arrow after the words: onward.
+                    HStack(spacing: 6) {
+                        Text(isLastPage ? finishTitle : L("Next"))
+                        IconImage(.arrowRight, size: 15)
+                    }
+                }
+                .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
+            }
+            .lineLimit(1)
+        }
+    }
+
+    /// A swipe across, like a carousel: to the left for the next slide, to the right for the one before.
+    private var swipe: some Gesture {
+        DragGesture(minimumDistance: 20)
+            .onEnded { value in
+                let across = value.translation.width
+                guard abs(across) > 50, abs(across) > abs(value.translation.height) * 1.5 else { return }
+                turn(by: across < 0 ? 1 : -1)
+            }
+    }
+
+    private func turn(by step: Int) {
+        let next = page + step
+        guard slides.indices.contains(next) else { return }
+        forward = step > 0
+        withAnimation(.easeInOut(duration: 0.25)) { page = next }
     }
 }
 
+/// A dot for each slide, the one you're on drawn long and gold.
 private struct PageDots: View {
     let count: Int
     let current: Int
@@ -98,11 +242,12 @@ private struct PageDots: View {
     var body: some View {
         HStack(spacing: 6) {
             ForEach(0..<count, id: \.self) { index in
-                Circle()
-                    .fill(index == current ? HUDStyle.gold : HUDStyle.cream.opacity(0.45))
-                    .frame(width: 8, height: 8)
+                Capsule()
+                    .fill(index == current ? HUDStyle.gold : HUDStyle.cream.opacity(0.35))
+                    .frame(width: index == current ? 18 : 7, height: 7)
             }
         }
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: current)
         .accessibilityElement()
         .accessibilityLabel(L("Page {page} of {count}", ["page": current + 1, "count": count]))
     }
@@ -110,29 +255,87 @@ private struct PageDots: View {
 
 private struct PageTitle: View {
     let text: String
-    let icon: GameIcon
 
     var body: some View {
-        Label(text, icon: icon, size: 18)
-            .font(HUDStyle.font(18))
+        Text(text)
+            .font(HUDStyle.font(24))
             .foregroundStyle(HUDStyle.gold)
             .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
-            // Clear of the close button in the corner.
+            .fixedSize(horizontal: false, vertical: true)
+            // Clear of the close button in the corner, on a phone held sideways.
             .padding(.trailing, 24)
+    }
+}
+
+/// A slide's words under its title.
+private extension View {
+    func slideText() -> some View {
+        font(HUDStyle.font(15))
+            .foregroundStyle(HUDStyle.cream)
+            .lineSpacing(2)
+    }
+}
+
+/// A picture melting into the window along one edge (the onboarding's slides): fading out so the
+/// window's glass shows through. The story's pictures blur toward that edge first, in their own
+/// colours (`EdgeBlur`, `blurReach`); a frosted material there tinted them a muddy grey-brown.
+struct ProgressiveFade: ViewModifier {
+    let edge: SwiftUI.Edge
+    /// How far in from the edge the blur reaches, and the fade, as fractions of the picture across it.
+    static let blurReach: CGFloat = 0.42
+    static let fadeReach: CGFloat = 0.24
+
+    func body(content: Self.Content) -> some View {
+        content
+            .mask(ramp(from: .black, at: 1 - Self.fadeReach, to: .clear, at: 1))
+    }
+
+    /// `inner` up to `start` and `outer` from `end` on, counted from the far side of the picture
+    /// (0) to `edge` (1).
+    private func ramp(from inner: Color, at start: CGFloat, to outer: Color, at end: CGFloat) -> LinearGradient {
+        LinearGradient(stops: [.init(color: inner, location: start), .init(color: outer, location: end)],
+                       startPoint: point(on: edge.opposite), endPoint: point(on: edge))
+    }
+
+    private func point(on edge: SwiftUI.Edge) -> UnitPoint {
+        switch edge {
+        case .top: .top
+        case .bottom: .bottom
+        case .leading: .leading
+        case .trailing: .trailing
+        }
+    }
+}
+
+private extension SwiftUI.Edge {
+    var opposite: SwiftUI.Edge {
+        switch self {
+        case .top: .bottom
+        case .bottom: .top
+        case .leading: .trailing
+        case .trailing: .leading
+        }
+    }
+}
+
+extension View {
+    /// Melts into the window along `edge` (`ProgressiveFade`).
+    func progressiveFade(_ edge: SwiftUI.Edge) -> some View {
+        modifier(ProgressiveFade(edge: edge))
     }
 }
 
 // MARK: - Story
 
-/// A chapter of the story: its title, its living picture, and its lines told one after another.
-private struct ChapterPage: View {
+/// A chapter of the story: its title and its lines told one after another.
+private struct ChapterText: View {
     let chapter: StoryScene.Kind
 
-    private var title: (text: String, icon: GameIcon) {
+    private var title: String {
         switch chapter {
-        case .gathering: (text: L("Once upon a time"), icon: GameIcon.book)
-        case .shadows: (text: L("The tales go wrong"), icon: GameIcon.moon)
-        case .arrival, .reel: (text: L("A new adventurer"), icon: GameIcon.sparkles)
+        case .gathering: L("Once upon a time")
+        case .shadows: L("The tales go wrong")
+        case .arrival, .reel: L("A new adventurer")
         }
     }
 
@@ -154,13 +357,11 @@ private struct ChapterPage: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            PageTitle(text: title.text, icon: title.icon)
-            StoryVignette(chapter)
+        VStack(alignment: .leading, spacing: 10) {
+            PageTitle(text: title)
             StoryLines(lines: lines)
+                .slideText()
         }
-        .font(HUDStyle.font(12))
-        .foregroundStyle(HUDStyle.cream)
     }
 }
 
@@ -202,82 +403,56 @@ private struct StoryLines: View {
 
 // MARK: - How to play
 
-private struct Tip {
-    let icon: GameIcon
+/// A step of How to play, a slide of its own; the reel plays its part (`StoryScene.Clip.steps`).
+private struct HowToPlayStep {
     let title: String
     let text: String
+
+    /// As many as `all` holds, without making their words.
+    static let count = 6
+
+    static var all: [HowToPlayStep] {
+        [
+            HowToPlayStep(title: L("Walk"), text: L("Drag the stick in the corner, or tap the ground and your hero walks there.")),
+            HowToPlayStep(title: L("Battle"), text: L("Monsters jump out as you explore the wild. Battles take turns: attack, cast a skill or use an item.")),
+            HowToPlayStep(title: L("Companions"), text: L("Throw a Seal Stone at a monster to befriend it: the weaker it is, the likelier it works. Keep up to five.")),
+            HowToPlayStep(title: L("Grow"), text: L("Every level gives a skill point. At level {level}, visit a guild master in town to become a Fighter, Mage or Beast Tamer.", ["level": Content.shared.classChoiceLevel])),
+            // Towns before Quests, as the town part shows them: the square as you walk in, then Elder
+            // Oak's quest.
+            HowToPlayStep(title: L("Towns"), text: L("Shops, healers and checkpoints wait in town. Your progress saves by itself.")),
+            HowToPlayStep(title: L("Quests"), text: L("Villagers with a gold ! have work for you. Quests reward you and open the roads to new places.")),
+        ]
+    }
 }
 
-private struct HowToPlayPage: View {
-    /// The game played, a part for each tip; tapping a tip shows its part.
-    @State private var reel = StoryScene(kind: .reel, startClip: DebugLaunch.introClip ?? 0)
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    private let tips: [Tip] = [
-        Tip(icon: .tap, title: L("Walk"), text: L("Drag the stick in the corner, or tap the ground and your hero walks there.")),
-        Tip(icon: .sword, title: L("Battle"), text: L("Monsters jump out as you explore the wild. Battles take turns: attack, cast a skill or use an item.")),
-        Tip(icon: .paw, title: L("Companions"), text: L("Throw a Seal Stone at a monster to befriend it: the weaker it is, the likelier it works. Keep up to five.")),
-        Tip(icon: .star, title: L("Grow"), text: L("Every level gives a skill point. At level {level}, visit a guild master in town to become a Fighter, Mage or Beast Tamer.", ["level": Content.shared.classChoiceLevel])),
-        // Towns before Quests, as the reel shows them: the square as you walk in, then Elder Oak's
-        // quest (playtesting 2026-10-24: the other way round, they lit in the wrong order).
-        Tip(icon: .heart, title: L("Towns"), text: L("Shops, healers and checkpoints wait in town. Your progress saves by itself.")),
-        Tip(icon: .star, title: L("Quests"), text: L("Villagers with a gold ! have work for you. Quests reward you and open the roads to new places.")),
-    ]
+private struct StepText: View {
+    let step: HowToPlayStep
 
     var body: some View {
-        // The tip the picture is showing now (none while it holds still).
-        let showing = reduceMotion ? nil : reel.hud.tip
-        VStack(alignment: .leading, spacing: 12) {
-            PageTitle(text: L("How to play"), icon: .sparkles)
-            VignetteView(scene: reel)
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 250), spacing: 12, alignment: .top)], alignment: .leading, spacing: 12) {
-                ForEach(Array(tips.enumerated()), id: \.offset) { index, tip in
-                    let lit = showing == index
-                    HStack(alignment: .top, spacing: 10) {
-                        IconImage(tip.icon, size: 20)
-                            .foregroundStyle(HUDStyle.gold)
-                            .frame(width: 26)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(tip.title).font(HUDStyle.font(13)).foregroundStyle(HUDStyle.gold)
-                            Text(tip.text).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.cream)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                    // The whole cell, so every highlight is the same width and the text lines up.
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(.white.opacity(lit ? 0.12 : 0))
-                            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(HUDStyle.gold.opacity(lit ? 0.8 : 0), lineWidth: 1.5))
-                    )
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        reel.play(clip: StoryScene.Clip.showing(tip: index).rawValue, lighting: index)
-                    }
-                }
-            }
-            .animation(.easeOut(duration: 0.3), value: reel.hud.tip)
+        VStack(alignment: .leading, spacing: 10) {
+            PageTitle(text: step.title)
+            Text(step.text)
+                .slideText()
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
 
 // MARK: - World map
 
-private struct WorldPage: View {
+private struct WorldText: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            PageTitle(text: L("The world of Dorlune"), icon: .map)
+            PageTitle(text: L("The world of Dorlune"))
             Text(L("Roads join every place to its neighbours. Your journey starts in Meadowbrook. Quests open the roads further out, where stronger monsters live."))
-                .font(HUDStyle.font(11))
-                .foregroundStyle(HUDStyle.cream)
+                .slideText()
                 .fixedSize(horizontal: false, vertical: true)
-            IntroAtlas(highlight: Content.shared.startMap)
             HStack(spacing: 14) {
                 Label { Text(L("Start")) } icon: { Circle().fill(HUDStyle.gold).frame(width: 9, height: 9) }
                 Label { Text(L("Town")) } icon: { RoundedRectangle(cornerRadius: 2).strokeBorder(HUDStyle.gold, lineWidth: 2).frame(width: 10, height: 10) }
                 Label { Text(L("Boss")) } icon: { IconImage(.sword, size: 10).foregroundStyle(HUDStyle.hp) }
             }
-            .font(HUDStyle.font(10))
+            .font(HUDStyle.font(12))
             .foregroundStyle(HUDStyle.dim)
             .labelStyle(CompactLabelStyle())
         }
@@ -289,10 +464,13 @@ private struct WorldPage: View {
 /// game draws it), its shape in a colour from its ground until that's drawn, the sea all round, turned
 /// like the game's view so north points up-left. The towns are named, the bosses' lands carry a
 /// sword, and where you start a gold dot. Pinch (or the buttons) to zoom and drag to look round, as
-/// on the world map in the game (playtesting 2026-10-24); it opens on the whole continent.
+/// on the world map in the game (playtesting 2026-10-24); it opens close in on where you start
+/// (`fit`), clear of where it melts into the window (`fade`).
 struct IntroAtlas: View {
     /// The place to mark with a gold dot.
     let highlight: String?
+    /// The edge it melts into the window along (`progressiveFade`).
+    let fade: SwiftUI.Edge
     @State private var picture: CGImage?
     /// Points a cell (0 until the view's size is known), and where the turned map sits in the view.
     @State private var scale: CGFloat = 0
@@ -300,7 +478,6 @@ struct IntroAtlas: View {
     @State private var dragStart: CGSize?
     @State private var pinchStart: (scale: CGFloat, pan: CGSize)?
     private static let maxScale: CGFloat = 8
-    private static let height: CGFloat = 440
     private let overview = WorldOverview.shared
 
     /// A land on the continent, its box's south-west cell there and its middle.
@@ -317,8 +494,9 @@ struct IntroAtlas: View {
     private let columns: Int
     private let rows: Int
 
-    init(highlight: String?, content: Content = .shared) {
+    init(highlight: String?, fade: SwiftUI.Edge, content: Content = .shared) {
         self.highlight = highlight
+        self.fade = fade
         let lands = content.maps.compactMap { def -> Land? in
             guard let origin = content.world[def.id] else { return nil }
             let middle = content.regions[def.id]?.middle ?? GridPoint(col: def.width / 2, row: def.height / 2)
@@ -350,12 +528,13 @@ struct IntroAtlas: View {
                     }
                 if scale > 0 {
                     ForEach(lands) { land in
-                        mark(for: land)
+                        // Every land named once it's near enough to read; zoomed out, the towns.
+                        mark(for: land, named: scale >= smallestScale(in: size) * 1.5)
                             .position(point(of: land.middle))
                     }
                 }
+                // In the corner the window's close button and the fade leave free.
                 controls(in: size)
-                    .frame(width: size.width, height: size.height, alignment: .bottomTrailing)
             }
             .frame(width: size.width, height: size.height)
             .clipped()
@@ -365,10 +544,8 @@ struct IntroAtlas: View {
             .onAppear { if scale == 0 { fit(in: size) } }
             .onChange(of: size) { fit(in: size) }
         }
-        .frame(height: Self.height)
         .background(Color(red: Double(WorldMap.seaColor.r) / 255, green: Double(WorldMap.seaColor.g) / 255, blue: Double(WorldMap.seaColor.b) / 255))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(HUDStyle.bevel.opacity(0.6), lineWidth: 1.5))
+        .progressiveFade(fade)
         .onAppear { overview.prepare() }
         // Drawn again as each land's own map comes in.
         .task(id: overview.images.count) { picture = compose() }
@@ -378,17 +555,41 @@ struct IntroAtlas: View {
 
     // MARK: Looking round (as `WorldAtlas`)
 
-    /// The whole continent in view, in the middle.
+    /// The view but for where it fades into the window: where the continent is kept.
+    private func clearArea(in size: CGSize) -> CGRect {
+        let faded = EdgeInsets(fade, ProgressiveFade.fadeReach * (fade == .top || fade == .bottom ? size.height : size.width))
+        return CGRect(x: faded.leading, y: faded.top, width: size.width - faded.leading - faded.trailing,
+                      height: size.height - faded.top - faded.bottom)
+    }
+
+    /// How much closer than the whole continent it opens (playtesting 2026-10-26: zoomed out, the
+    /// lands were too small to read).
+    private static let openingZoom: CGFloat = 2.2
+
+    /// Opens on where you start (`highlight`), `openingZoom` closer than the whole continent, a
+    /// little below the middle of what's clear, so more of the lands ahead show above it; the
+    /// whole continent when there's no start.
     private func fit(in size: CGSize) {
         guard size.width > 0, size.height > 0 else { return }
-        scale = smallestScale(in: size)
-        let wide = scale * CGFloat(columns + rows), tall = wide / 2
-        pan = CGSize(width: (size.width - wide) / 2, height: (size.height - tall) / 2)
+        let area = clearArea(in: size)
+        guard let start = lands.first(where: { $0.id == highlight }) else {
+            scale = smallestScale(in: size)
+            let wide = scale * CGFloat(columns + rows), tall = wide / 2
+            pan = CGSize(width: area.minX + (area.width - wide) / 2, height: area.minY + (area.height - tall) / 2)
+            return
+        }
+        scale = clamped(smallestScale(in: size) * Self.openingZoom, in: size)
+        // `point(of:)` with no pan, then the pan that puts the start where it's wanted.
+        let u = CGFloat(start.middle.col - low.col) + 0.5, v = CGFloat(rows - (start.middle.row - low.row)) - 0.5
+        let unpanned = CGPoint(x: scale * (u + v), y: scale * (v - u) / 2 + scale * CGFloat(columns) / 2)
+        let wanted = CGPoint(x: area.midX, y: area.midY + area.height * 0.12)
+        pan = clampedPan(CGSize(width: wanted.x - unpanned.x, height: wanted.y - unpanned.y), in: size)
     }
 
     /// As far out as it zooms: the whole continent in view.
     private func smallestScale(in size: CGSize) -> CGFloat {
-        min(size.width / CGFloat(max(1, columns + rows)), size.height * 2 / CGFloat(max(1, columns + rows)))
+        let area = clearArea(in: size)
+        return min(area.width / CGFloat(max(1, columns + rows)), area.height * 2 / CGFloat(max(1, columns + rows)))
     }
 
     private func clamped(_ value: CGFloat, in size: CGSize) -> CGFloat {
@@ -398,11 +599,13 @@ struct IntroAtlas: View {
     /// Keeps the continent in view: zoomed out, in the middle; zoomed in, the middle of the view
     /// over it.
     private func clampedPan(_ value: CGSize, in size: CGSize) -> CGSize {
+        let area = clearArea(in: size)
         let wide = scale * CGFloat(columns + rows), tall = wide / 2
-        func axis(_ value: CGFloat, view: CGFloat, map: CGFloat) -> CGFloat {
-            map <= view ? (view - map) / 2 : min(0, max(view - map, value))
+        func axis(_ value: CGFloat, from start: CGFloat, view: CGFloat, map: CGFloat) -> CGFloat {
+            map <= view ? start + (view - map) / 2 : min(start, max(start + view - map, value))
         }
-        return CGSize(width: axis(value.width, view: size.width, map: wide), height: axis(value.height, view: size.height, map: tall))
+        return CGSize(width: axis(value.width, from: area.minX, view: area.width, map: wide),
+                      height: axis(value.height, from: area.minY, view: area.height, map: tall))
     }
 
     private func dragging(in size: CGSize) -> some Gesture {
@@ -437,13 +640,13 @@ struct IntroAtlas: View {
     private func controls(in size: CGSize) -> some View {
         VStack(spacing: 6) {
             mapButton(Text("+").font(HUDStyle.font(16)), label: L("Zoom in")) {
-                zoom(to: scale * 1.6, around: CGPoint(x: size.width / 2, y: size.height / 2), from: (scale: scale, pan: pan), in: size)
+                zoom(to: scale * 1.6, around: CGPoint(x: clearArea(in: size).midX, y: clearArea(in: size).midY), from: (scale: scale, pan: pan), in: size)
             }
             mapButton(Text("−").font(HUDStyle.font(16)), label: L("Zoom out")) {
-                zoom(to: scale / 1.6, around: CGPoint(x: size.width / 2, y: size.height / 2), from: (scale: scale, pan: pan), in: size)
+                zoom(to: scale / 1.6, around: CGPoint(x: clearArea(in: size).midX, y: clearArea(in: size).midY), from: (scale: scale, pan: pan), in: size)
             }
         }
-        .padding(6)
+        .padding(10)
     }
 
     private func mapButton(_ face: some View, label: String, action: @escaping () -> Void) -> some View {
@@ -467,9 +670,10 @@ struct IntroAtlas: View {
         return CGPoint(x: scale * (u + v) + pan.width, y: scale * (v - u) / 2 + scale * CGFloat(columns) / 2 + pan.height)
     }
 
-    /// A town's name under a gold square, a boss's sword, where you start a gold dot and its name.
+    /// A town's name under a gold square, where you start a gold dot and its name; with `named`, the
+    /// wild lands' names too (playtesting 2026-10-26), a boss's land under its sword.
     @ViewBuilder
-    private func mark(for land: Land) -> some View {
+    private func mark(for land: Land, named: Bool) -> some View {
         let start = land.id == highlight
         let boss = land.def.npcs?.contains { $0.role == .boss } ?? false
         if start || land.def.town != nil {
@@ -481,19 +685,29 @@ struct IntroAtlas: View {
                     RoundedRectangle(cornerRadius: 2).fill(HUDStyle.ink.opacity(0.5)).frame(width: 8, height: 8)
                         .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(HUDStyle.gold, lineWidth: 1.5))
                 }
-                Text(land.def.name)
-                    .font(HUDStyle.font(8))
-                    .foregroundStyle(start ? HUDStyle.gold : HUDStyle.cream)
-                    .lineLimit(1)
-                    .fixedSize()
-                    .shadow(color: HUDStyle.ink, radius: 0, x: 1, y: 1)
+                name(of: land, color: start ? HUDStyle.gold : HUDStyle.cream)
             }
         } else if boss {
-            IconImage(.sword, size: 9)
-                .foregroundStyle(HUDStyle.hp)
-                .padding(2)
-                .background(Circle().fill(HUDStyle.ink.opacity(0.85)))
+            VStack(spacing: 1) {
+                IconImage(.sword, size: 9)
+                    .foregroundStyle(HUDStyle.hp)
+                    .padding(2)
+                    .background(Circle().fill(HUDStyle.ink.opacity(0.85)))
+                if named { name(of: land, color: HUDStyle.cream.opacity(0.9)) }
+            }
+        } else if named {
+            name(of: land, color: HUDStyle.cream.opacity(0.9))
         }
+    }
+
+    /// A land's name as the map writes it, with a dark edge so it reads over any ground.
+    private func name(of land: Land, color: Color) -> some View {
+        Text(land.def.name)
+            .font(HUDStyle.font(8))
+            .foregroundStyle(color)
+            .lineLimit(1)
+            .fixedSize()
+            .shadow(color: HUDStyle.ink, radius: 0, x: 1, y: 1)
     }
 
     /// The continent in one picture, a pixel a cell, north up: the sea, and each land's own map (its
