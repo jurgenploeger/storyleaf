@@ -65,7 +65,8 @@ enum HUDStyle {
         .system(size: size, weight: .heavy, design: .rounded)
     }
 
-    /// Fairyland Online's chat/name lettering.
+    /// For numbers only (amounts, counters, coordinates, a level on its own): names and other words,
+    /// a number among them too, are in `font` (2026-10-26), with `.monospacedDigit()` where digits tick.
     static func mono(_ size: CGFloat) -> Font {
         .system(size: size, weight: .bold, design: .monospaced)
     }

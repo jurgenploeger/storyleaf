@@ -249,7 +249,7 @@ private struct BossBar: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                 Text(level)
-                    .font(HUDStyle.mono(10))
+                    .font(HUDStyle.font(10).monospacedDigit())
                     .foregroundStyle(HUDStyle.cream)
                     .fixedSize()
             }
@@ -1207,7 +1207,7 @@ private struct SkillTileButton: View {
                     }
                     .overlay(alignment: .bottomLeading) {
                         Text(L("Lv{level}", ["level": level]))
-                            .font(HUDStyle.mono(8))
+                            .font(HUDStyle.font(8).monospacedDigit())
                             .foregroundStyle(.white)
                             .lineLimit(1)
                             .fixedSize()
@@ -1225,7 +1225,7 @@ private struct SkillTileButton: View {
                     .multilineTextAlignment(.center)
                     .frame(height: 26, alignment: .top)
                 Text(L("{cost} MP", ["cost": cost]))
-                    .font(HUDStyle.mono(9))
+                    .font(HUDStyle.font(9).monospacedDigit())
                     .foregroundStyle(HUDStyle.mp)
                     .lineLimit(1)
             }

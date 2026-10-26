@@ -197,7 +197,7 @@ private struct GameDatePlate: View {
                 IconImage(daytime ? .sun : .moon, size: 12)
                     .foregroundStyle(daytime ? HUDStyle.orange : Color(red: 0.35, green: 0.35, blue: 0.75))
                 Text(moment.text)
-                    .font(HUDStyle.mono(11))
+                    .font(HUDStyle.font(11).monospacedDigit())
                     .foregroundStyle(HUDStyle.plateDark)
                     .lineLimit(1)
             }
