@@ -572,7 +572,7 @@ struct MapCompass: View {
 }
 
 /// A triangle pointing up, its base along the bottom.
-private struct CompassTriangle: Shape {
+private nonisolated struct CompassTriangle: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         path.move(to: CGPoint(x: rect.midX, y: rect.minY))
