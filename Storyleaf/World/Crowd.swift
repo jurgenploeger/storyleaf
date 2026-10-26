@@ -863,8 +863,9 @@ final class Crowd {
     }
 
     private func speak(_ line: String, by member: Member, bubble: Bool) {
-        // Long enough to read: a longer line stays up longer.
-        if bubble { member.walker.say(line, for: max(3.5, Double(line.count) / 14)) }
+        // Long enough to read: a longer line stays up longer. None over the map on its own (`nohud`, the
+        // App Store slides and covers): a passing remark ended up under a caption or the logo.
+        if bubble && !DebugLaunch.hidesHUD { member.walker.say(line, for: max(3.5, Double(line.count) / 14)) }
         onChat?(member.name, line, member.kind)
     }
 }
