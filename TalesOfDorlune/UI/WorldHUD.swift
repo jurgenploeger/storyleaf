@@ -572,10 +572,10 @@ private struct GameMenu: View {
         VStack(alignment: .leading, spacing: 2) {
             ForEach(items) { row($0) }
         }
-        .padding(.bottom, 6)
+        // As much room above the first row as below the last (playtesting 2026-10-26): the close
+        // button hangs off the corner, clear of the rows' names on the left.
+        .padding(.vertical, 6)
         .padding(.horizontal, 4)
-        // Clear of the close button.
-        .padding(.top, 16)
         .frame(width: HUDMargins.width)
         .background(Self.surface(RoundedRectangle(cornerRadius: HUDMargins.radius)))
         .overlay(alignment: .topTrailing) {
