@@ -201,6 +201,19 @@ or points off the body.
   smudge (an amulet's, a nugget's, a gauntlet's).
 - **Pale colours turn further round the wheel** (`ramp(wide=True)` for a saturation of 0.1 to 0.3): cool in the
   shade, warm in the light, as a grey's do; snow and cream had almost no hue to shift (1.5°).
+- **What should be round is cut exactly round.** A design drawn at 32 and smoothed at 64 is only as round as
+  its 32-pixel staircase: rings, pearls, balls and eggs came out with pixels sticking out of the curve and
+  dark notches round a ring's hole (playtesting 2026-10-26: "Items that should be fully rounded like the ring
+  and pearl shouldn't have jittered pixels that stick out"). Draw such a part with `exact=True`
+  (`Canvas.disc`, `ellipse`, `ring` in `item_art.py`): `restyle` cuts it anew at 64 (`_exact`), snapped to
+  the grid, the hole centred on the same grid as the rim. What the shape was drawn on and lies outside the
+  curve goes, the hole is cleared, and the empty pixels inside fill. Parts joined to it that it wasn't drawn
+  on stay: a dragon pearl's claws, spectacles' arms. Shades of its own colour and the old outline's
+  leftovers inside it become it, and the light alone shades it, as the design's blocky light and dark cut a
+  ring's band in wedges. `exact="lines"` keeps the lines drawn on it: the band round the golden ball, the
+  split down a beetle's wing case. Drawn exact so far: every ring and band, the pearls, the toy ball, the
+  golden ball charm, the pet and chocolate eggs, the beetle shell, the spectacles' rims and lenses. A hood's
+  fur ring is not: cut exact, its tufts read as a porthole's bolts.
 - **Specks off the body don't count toward its size:** a sparkle drawn with an outline kept the Jelly Pearl
   from being scaled up to fill its tile (up to 2× now).
 
@@ -627,6 +640,11 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 
 ## Learned
 
+- **2026-10-26 (round things):** Smoothing can't make a shape rounder than the drawing it starts from. A
+  32-pixel circle is a staircase, and blurred and thresholded at 64 it keeps that staircase's bumps. Where
+  the drawing knows the shape (it drew it with `disc` or `ring`), cut it again from the geometry. And "near
+  the shape" isn't the same as "part of the shape": trimming everything within a pixel and a half of the
+  curve cut a dragon pearl's claws and the spectacles' arms. Trim only what the shape itself was drawn on.
 - **2026-10-26 (judging against the neighbourhood):** `outline_double` first compared each edge pixel with the
   whole sprite's median: a drum's brown side in shadow next to its pale head counted as a dark ring. It now
   compares with the inside within 4 pixels. A rule that judges an edge should look at what's next to it.

@@ -904,7 +904,58 @@ def _specks(mask, most):
     return out
 
 
-def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=None, trim=(), clean=False):
+def _exact(cur, shape, scale, src, dst, kin=lambda own: ((), ())):
+    """`cur` (the hi-res map of regions) with one round part cut exactly: an ellipse, or a ring between two,
+    given in the 32-pixel drawing's own pixels (a pixel's middle at its index), drawn at 64 and moved as the
+    drawing was scaled to fill its tile; snapped to the grid, its edges on pixel boundaries, so it rounds
+    alike on every side. The region that fills it most takes it: its pixels outside go, the empty ones inside
+    fill. Other regions over it (a ring's gem) stay as they are, but shades of its own colour split off from
+    it, and the old outline's leftovers in it (`kin(own)`: those two lists), become it. Returns the map and
+    the shape's mask."""
+    cx, cy, rx, ry, irx, iry = shape[:6]
+    to_hi = lambda v, k: ((v + 0.5) * 2 * SS - src[k]) * scale + dst[k] if scale > 1.0 else (v + 0.5) * 2 * SS
+    # In the 64-pixel sprite's own pixels, then snapped.
+    ox, oy = to_hi(cx, 0) / SS, to_hi(cy, 1) / SS
+    k = 2 * (scale if scale > 1.0 else 1.0)
+    wo, ho = max(1, round(2 * rx * k)), max(1, round(2 * ry * k))
+    ox, oy = round(ox - wo / 2) + wo / 2, round(oy - ho / 2) + ho / 2
+    wi, hi_ = round(2 * irx * k), round(2 * iry * k)
+    wi += (wo - wi) % 2 if wi else 0                     # the hole centred on the same grid as the rim
+    hi_ += (ho - hi_) % 2 if hi_ else 0
+    yy, xx = np.mgrid[0:cur.shape[0], 0:cur.shape[1]]
+    u, v = (xx + 0.5) / SS - ox, (yy + 0.5) / SS - oy
+    outer = (u / (wo / 2)) ** 2 + (v / (ho / 2)) ** 2 <= 1
+    inner = ((u / (wi / 2)) ** 2 + (v / (hi_ / 2)) ** 2 <= 1) if wi and hi_ else np.zeros(outer.shape, bool)
+    band = outer & ~inner
+    labels, counts = np.unique(cur[band & (cur >= 0)], return_counts=True)
+    if not len(labels):
+        return cur, band
+    own = labels[np.argmax(counts)]
+    cur = cur.copy()
+    same, voids = kin(own)
+    if len(shape) > 6 and shape[6] == "lines":
+        same = []          # its lines may be colours of their own (a wing case's dark split): kept
+    family = set(same) | set(voids) | {own}
+    cur[band & np.isin(cur, list(family))] = own
+    # What sticks out: pixels outside the curve that the shape itself was drawn on (each hi-res pixel taken
+    # back to the 32-pixel drawing's pixel under it, tested as the drawing tested it). Anything else there is
+    # another part of the drawing joined to it (a dragon's claws round its pearl, spectacles' arms).
+    from_hi = lambda q, k: ((q - dst[k]) / scale + src[k]) if scale > 1.0 else q
+    dx_ = np.round(from_hi(xx + 0.5, 0) / (2 * SS) - 0.5) - cx
+    dy_ = np.round(from_hi(yy + 0.5, 1) / (2 * SS) - 0.5) - cy
+    drawn = (dx_ / rx) ** 2 + (dy_ / ry) ** 2 <= 1
+    if irx and iry:
+        drawn &= (dx_ / irx) ** 2 + (dy_ / iry) ** 2 > 1
+    fringe = ~outer & drawn
+    cur[fringe & np.isin(cur, list(family))] = -1
+    # And its hole is clear: its own colour and the old outline's leftovers go (a ring's).
+    cur[inner & np.isin(cur, list(family))] = -1
+    cur[band & (cur < 0)] = own
+    return cur, band
+
+
+def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=None, trim=(), clean=False,
+            exact=()):
     """An icon drawn the old way (tools/item_art.py: flat three-tone fills, one outline) re-rendered in
     the look: its regions of colour become materials on hue-shifted ramps, its silhouette rounded at the
     corners, the whole lit from the top left as one form with each region swelling a little on it, the
@@ -916,7 +967,9 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
     `clean` (2026-10-26, docs/pixel-style.md *Item icons*): the clean look instead, at twice the size (a
     32-pixel drawing comes out at 64): every region's edge smoothed at the new size, not only the
     silhouette, so nothing reads as doubled pixels; smooth ramps lit from the top left, no grain, the
-    drawing's own light and dark kept softly, a mid-tone rim and the deep outline (`Sprite.clean`)."""
+    drawing's own light and dark kept softly, a mid-tone rim and the deep outline (`Sprite.clean`).
+    `exact`: shapes of the drawing that must come out exactly round, (cx, cy, rx, ry, inner rx, inner ry) in
+    its own pixels (item_art `Canvas.exact`): cut anew at the new size, snapped to the grid."""
     if clean:
         img = img.convert("RGBA").resize((img.width * 2, img.height * 2), Image.NEAREST)
         round_corners *= 3
@@ -984,6 +1037,7 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
     ys, xs = np.nonzero(every)
     span = max(xs.max() - xs.min() + 1, ys.max() - ys.min() + 1) if len(xs) else w
     scale = min(2.0 if clean else 1.5, fill * max(h, w) / span) if fill and span < fill * max(h, w) else 1.0
+    src, dst = (0.0, 0.0), (0.0, 0.0)
     if scale > 1.0:
         src = ((xs.min() + xs.max() + 1) / 2 * SS, (ys.min() + ys.max() + 1) / 2 * SS)
         dst = (w * SS / 2, h * SS / 2)
@@ -1055,6 +1109,26 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
                 if inner.sum() and (same[inner] <= 2).mean() > 0.6:
                     smooth[cur == i] = i
             cur = np.where(cur >= 0, smooth, -1)
+        # Exact shapes (a ring, a pearl): cut anew; shades of its own colour (hue within 25°) and the old
+        # outline's leftovers inside it become it, and the new light alone shades it (below).
+        def kin(own):
+            oh, osat, _ = _hsv(groups[own][0])
+            same, voids = [], []
+            for j, (b, _c) in enumerate(groups):
+                hh_, ss_, _ = _hsv(b)
+                if tuple(b) == OUTLINE:
+                    voids.append(j)
+                elif ss_ >= 0.1 and abs((hh_ - oh + 0.5) % 1 - 0.5) * 360 < 25:
+                    same.append(j)
+            return same, voids
+        exact_mask = np.zeros(cur.shape, bool)       # shaded by the light alone
+        lined_mask = np.zeros(cur.shape, bool)       # keeping the drawing's lines (`exact="lines"`)
+        for shape in exact:
+            cur, cut = _exact(cur, shape, scale, src, dst, kin)
+            if len(shape) > 6 and shape[6] == "lines":
+                lined_mask |= cut
+            else:
+                exact_mask |= cut
     # Height: one round form over the silhouette, each region swelling a little on it.
     if clean:
         s = Sprite.clean(w)
@@ -1087,6 +1161,12 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
         broad = np.kron(broad1, np.ones((2, 2), bool))[:h, :w]
         detail = np.kron(np.where(broad, tone * 0.12, np.where(tone < -0.5, tone * 2 * 0.3, tone * 0.15)),
                          np.ones((SS, SS)))
+        if exact:
+            # On an exact shape the drawing's own light and dark go (they cut a ring's band in wedges); on
+            # one marked "lines", its drawn lines stay (the band round the golden ball's middle).
+            lines = np.kron(np.where(broad, 0.0, np.where(tone < -0.3, tone * 2 * 0.3, 0.0)), np.ones((SS, SS)))
+            detail = np.where(lined_mask[:detail.shape[0], :detail.shape[1]], lines, detail)
+            detail = np.where(exact_mask[:detail.shape[0], :detail.shape[1]], 0.0, detail)
         # Softly: the drawing's planes and creases as gentle steps in the light, not doubled pixels.
         detail = np.asarray(Image.fromarray(((detail + 1) * 100).astype(np.uint8)).filter(
             ImageFilterGaussian(SS * 0.7)), float) / 100 - 1

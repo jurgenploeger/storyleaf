@@ -34,6 +34,12 @@ class Canvas:
     def __init__(self, size=SIZE):
         self.size = size
         self.px = [[None] * size for _ in range(size)]
+        # Shapes that must come out exactly round at 64 (`exact=True`: a ring's band, a pearl): the clean
+        # finish cuts them anew there, snapped to the grid, and shades them by its light alone
+        # (pixel_kit.restyle `exact`; `exact="lines"` keeps the lines drawn on it), so no pixel sticks
+        # out of the curve (playtesting 2026-10-26: "items that should be fully rounded like the ring and
+        # pearl shouldn't have jittered pixels that stick out").
+        self.exact = []
 
     def set(self, x, y, color):
         x, y = int(round(x)), int(round(y))
@@ -60,13 +66,17 @@ class Canvas:
             else:
                 self.disc(x, y, width / 2, color)
 
-    def disc(self, cx, cy, r, color):
+    def disc(self, cx, cy, r, color, exact=False):
+        if exact:
+            self.exact.append((cx, cy, r, r, 0.0, 0.0, exact))
         for y in range(int(cy - r - 1), int(cy + r + 2)):
             for x in range(int(cx - r - 1), int(cx + r + 2)):
                 if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
                     self.set(x, y, color)
 
-    def ellipse(self, cx, cy, rx, ry, color):
+    def ellipse(self, cx, cy, rx, ry, color, exact=False):
+        if exact:
+            self.exact.append((cx, cy, rx, ry, 0.0, 0.0, exact))
         for y in range(int(cy - ry - 1), int(cy + ry + 2)):
             for x in range(int(cx - rx - 1), int(cx + rx + 2)):
                 if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1:
@@ -84,7 +94,9 @@ class Canvas:
                 for x in range(int(math.ceil(a - 0.5)), int(math.floor(b - 0.5)) + 1):
                     self.set(x, y, color)
 
-    def ring(self, cx, cy, r_out, r_in, color, ry_scale=1.0):
+    def ring(self, cx, cy, r_out, r_in, color, ry_scale=1.0, exact=False):
+        if exact:
+            self.exact.append((cx, cy, r_out, r_out * ry_scale, r_in, r_in * ry_scale, exact))
         for y in range(int(cy - r_out - 1), int(cy + r_out + 2)):
             for x in range(int(cx - r_out - 1), int(cx + r_out + 2)):
                 d = (x - cx) ** 2 + ((y - cy) / ry_scale) ** 2
@@ -243,7 +255,7 @@ def star_shape(c, cx, cy, r, color, inner=0.45, rotation=-math.pi / 2):
 
 def ring(c, band, gem=None, gem_color=None):
     dark, mid, light = band
-    c.ring(16, 19, 9, 5.5, mid, ry_scale=0.85)
+    c.ring(16, 19, 9, 5.5, mid, ry_scale=0.85, exact=True)
     c.shade(lambda x, y, col: col == mid and y > 21, dark)
     c.shade(lambda x, y, col: col == mid and y < 16 and x < 15, light)
     if gem:
@@ -370,7 +382,7 @@ def draw_homeward_feather(c):
 
 def draw_pet_egg(c):
     shell = [hexc("d8c8a4"), hexc("fbf2dc"), WHITE]
-    c.ellipse(16, 17.5, 9, 11.5, shell[1])
+    c.ellipse(16, 17.5, 9, 11.5, shell[1], exact=True)
     light_top_left(c, shell, 16, 17.5, 10)
     for (x, y, r, col) in ((12, 14, 2.2, hexc("f08aa8")), (20, 19, 2.6, hexc("7ac0f0")), (13, 23, 1.8, hexc("9ad86a")), (19, 11, 1.5, hexc("f6c33b"))):
         c.disc(x, y, r, col)
@@ -635,7 +647,7 @@ def draw_golden_ball_charm(c):
     gold sphere with a band round its middle and a ruby set in it."""
     c.ring(16, 3.5, 2.8, 1.5, GOLD[1])                                        # the loop
     c.rect(15, 6, 17, 8, GOLD[0])                                             # the bail
-    c.disc(16, 19, 10, GOLD[1])
+    c.disc(16, 19, 10, GOLD[1], exact="lines")
     light_top_left(c, GOLD, 16, 19, 10)
     for x in range(7, 26):                                                    # its band, curving round
         y = 19 + (x - 16) ** 2 / 28
@@ -685,7 +697,7 @@ def draw_gumdrop_star_charm(c):
 
 def draw_power_band(c):
     band = [hexc("8a1a2a"), hexc("d83a4a"), hexc("ff8a8a")]
-    c.ring(16, 16, 11, 6.5, band[1], ry_scale=0.62)
+    c.ring(16, 16, 11, 6.5, band[1], ry_scale=0.62, exact=True)
     c.shade(lambda x, y, col: col == band[1] and y > 17, band[0])
     c.shade(lambda x, y, col: col == band[1] and y < 13, band[2])
     for x in (8, 16, 24):
@@ -932,7 +944,7 @@ def draw_toy_music_box(c):
 
 def draw_toy_ball(c):
     """A red rubber ball with a yellow band and a white star, bouncing: two little marks below."""
-    c.disc(16, 13, 9.6, RED[1])
+    c.disc(16, 13, 9.6, RED[1], exact=True)
     c.shade(lambda x, y, col: col == RED[1] and 11 <= y <= 15, GOLD[1])
     light_top_left(c, RED, 16, 13, 10)
     c.shade(lambda x, y, col: col == GOLD[1] and (x - 16) + (y - 13) > 6, GOLD[0])
@@ -1395,7 +1407,7 @@ def banded(c, color):
 
 def pearl(c):
     pearl_c = [hexc("c07a3a"), hexc("ffb070"), hexc("fff0d0")]
-    c.disc(16, 17, 9, pearl_c[1])
+    c.disc(16, 17, 9, pearl_c[1], exact=True)
     light_top_left(c, pearl_c, 16, 17, 9)
     c.disc(12.5, 13.5, 2, WHITE)
     for (x0, y0, x1, y1) in ((6, 27, 9, 22), (26, 27, 23, 22)):   # a dragon's claws hold it
@@ -2017,7 +2029,7 @@ def draw_prospectors_gloves(c):
 
 def draw_beetle_shell(c):
     """A Dark Beetle's glossy wing case, split down the middle."""
-    c.ellipse(16, 17, 9, 12, BEETLE[1])
+    c.ellipse(16, 17, 9, 12, BEETLE[1], exact="lines")
     c.shade(lambda x, y, col: col == BEETLE[1] and x > 19, BEETLE[0])
     c.line(16, 6, 16, 29, BEETLE[0])
     c.line(11, 9, 9, 16, BEETLE[2]); c.line(12, 9, 10, 14, WHITE)             # gloss
@@ -2232,7 +2244,7 @@ def draw_ratcatcher_boots(c):
 
 def draw_dew_pearl(c):
     """A dewdrop as round as a pearl."""
-    c.disc(16, 18, 9, WISPGLOW[1])
+    c.disc(16, 18, 9, WISPGLOW[1], exact=True)
     light_top_left(c, WISPGLOW, 16, 18, 9)
     c.disc(12, 14, 2.4, WHITE)
     c.disc(19, 23, 1.2, WISPGLOW[2])
@@ -2540,7 +2552,7 @@ def draw_frostlight_pendant(c):
 
 def draw_jelly_pearl(c):
     """A soft-glowing sea-green pearl."""
-    c.disc(16, 17, 8, SEAPEARL[1])
+    c.disc(16, 17, 8, SEAPEARL[1], exact=True)
     light_top_left(c, SEAPEARL, 16, 17, 8)
     c.disc(13, 14, 2, WHITE)
     for (x, y) in ((27, 9), (5, 24), (26, 26)):
@@ -2596,8 +2608,8 @@ def draw_cloud_glass(c):
 def draw_emerald_spectacles(c):
     """Round spectacles with green glass."""
     for x in (9, 23):
-        c.ring(x, 18, 6, 4.4, GOLD[1])
-        c.disc(x, 18, 4.4, EMERALDGLASS[1])
+        c.ring(x, 18, 6, 4.4, GOLD[1], exact=True)
+        c.disc(x, 18, 4.4, EMERALDGLASS[1], exact=True)
         c.set(x - 2, 16, EMERALDGLASS[2]); c.set(x - 1, 15, WHITE)
     c.line(15, 17, 17, 17, GOLD[1])                                           # the bridge and arms
     c.line(3, 16, 1, 12, GOLD[1]); c.line(29, 16, 31, 12, GOLD[1])
@@ -2879,7 +2891,7 @@ def draw_chocolate_egg(c):
     """A chocolate egg in coloured foil, peeled back at the top to show the chocolate."""
     foil = [hexc("1c4fa8"), hexc("3a86e8"), hexc("9ccaff")]
     choc = [hexc("3a2010"), hexc("6a3a1a"), hexc("9a6232")]
-    c.ellipse(16, 17, 10, 12.5, foil[1])
+    c.ellipse(16, 17, 10, 12.5, foil[1], exact=True)
     light_top_left(c, foil, 16, 17, 11)
     c.shade(lambda x, y, col: y < 10 and col in foil, choc[1])
     c.shade(lambda x, y, col: y < 7 and x < 15 and col == choc[1], choc[2])
@@ -3483,6 +3495,7 @@ def main(argv):
     for item_id in ids:
         drawn = Image.open(io.BytesIO(render(item_id).png()))
         options = {"preset": preset_for(item_id), "base": set_colour(item_id), "trim": FUR, **RESTYLE.get(item_id, {})}
+        options["exact"] = render(item_id).exact
         # In the clean look at 64 pixels (2026-10-26, docs/pixel-style.md *Item icons*: RD's Potion).
         restyle(drawn, clean=True, **options).render(outline="deep").save(SPRITES / f"item_{item_id}.png")
     # Items that are palette swaps of these (art/assets.json `derive`) are swapped on the flat drawing,
@@ -3497,7 +3510,8 @@ def main(argv):
         flat = np.asarray(Image.open(io.BytesIO(render(base[len("item_"):]).png())).convert("RGBA")).astype(float) / 255
         swapped = recolor(flat, asset["derive"]["recolor"])
         drawn = Image.fromarray((np.clip(swapped, 0, 1) * 255).round().astype(np.uint8), "RGBA")
-        restyle(drawn, preset=preset_for(base[len("item_"):]), clean=True).render(outline="deep").save(
+        restyle(drawn, preset=preset_for(base[len("item_"):]), clean=True,
+                exact=render(base[len("item_"):]).exact).render(outline="deep").save(
             SPRITES / f"{asset['id']}.png")
     for item_id in ids:
         if item_id in weapons:

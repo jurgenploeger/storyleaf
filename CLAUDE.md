@@ -72,7 +72,8 @@ Online's own names (towns, people, bosses, quests) in player-facing text: `docs/
   the lucky clover; `item_art.py` skips them), `tools/coin_art.py` the coins.
 - `tools/item_art.py`: designs every other item at 32×32 in code (free), finished in the clean look at 64 by
   `pixel_kit.restyle(clean=True)` (a palette swap of one, `derive`, is swapped on the design and finished too);
-  rerun it after editing a drawing. Boots, gloves, capes and set hats share helpers (`boot`,
+  rerun it after editing a drawing. Anything meant to be round (a ring, a pearl, an egg) is drawn with
+  `exact=True` so it's cut exactly round at 64. Boots, gloves, capes and set hats share helpers (`boot`,
   `glove`, `cape`, `hat_piece`): fix the family there. A weapon also
   gets `held_<id>_side.png` and `_front.png` (`held_pair`), its grip in the middle of a 64-pixel canvas, one of its
   pixels to one of the hero's (`GearArt.posed`): its drawing about 24 pixels across walking left or right; facing
