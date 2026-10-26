@@ -239,26 +239,34 @@ struct TitleView: View {
         }
     }
 
-    /// Continue the game on show, or start another.
+    /// Continue the game on show, or start another: the screen's main choices, so big, and as wide
+    /// as each other (playtesting 2026-10-26: "they are primary").
     private var startButtons: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 14) {
             if let save = selectedSave {
                 Button {
                     onStart(GameSession(data: save))
                 } label: {
-                    Label(L("Continue: {hero}, Lv {level}", ["hero": save.hero.name, "level": save.hero.level]), icon: .play)
+                    Label(L("Continue: {hero}, Lv {level}", ["hero": save.hero.name, "level": save.hero.level]), icon: .play, size: 20)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
+                .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, primary: true))
             }
             Button {
                 // A new game gets its own save, next to the others.
                 startNewGame()
             } label: {
-                Label(L("New game"), icon: .sparkles)
+                Label(L("New game"), icon: .sparkles, size: 20)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .frame(maxWidth: .infinity)
             }
             // Before your first game, it's the one thing to do.
-            .buttonStyle(PixelButtonStyle(tint: saves.isEmpty ? HUDStyle.gold : HUDStyle.cream))
+            .buttonStyle(PixelButtonStyle(tint: saves.isEmpty ? HUDStyle.gold : HUDStyle.cream, primary: true))
         }
+        .frame(maxWidth: 320)
     }
 
     /// The rest waits in small round buttons, only what fits the moment. A backup is for bringing

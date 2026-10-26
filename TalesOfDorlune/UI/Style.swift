@@ -531,13 +531,15 @@ struct NameBadge: View {
 struct PixelButtonStyle: ButtonStyle {
     var tint: Color = HUDStyle.buttonFace
     var compact = false
+    /// A screen's main choice (the title screen's Continue and New game): bigger lettering and room.
+    var primary = false
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(HUDStyle.font(compact ? 11 : 13))
+            .font(HUDStyle.font(primary ? 18 : compact ? 11 : 13))
             .foregroundStyle(HUDStyle.ink)
-            .padding(.horizontal, compact ? 12 : 16)
-            .padding(.vertical, compact ? 6 : 9)
+            .padding(.horizontal, primary ? 24 : compact ? 12 : 16)
+            .padding(.vertical, primary ? 15 : compact ? 6 : 9)
             .background(
                 // Only the face casts the shadow, under the button. The outline goes on after it: a
                 // shadow on both draws the outline's again inside the face, 3 pt below its top edge.
