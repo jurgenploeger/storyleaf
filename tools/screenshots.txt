@@ -192,13 +192,13 @@ intro_story  | intro                             | 6
 intro_shadows | intro=2                          | 6
 intro_arrival | intro=3                          | 6
 intro_play   | intro=4                           | 6
-# How to play's slides, each playing its part (clip=: 1 battle, 2 seal, 3 victory, 4 town), seconds from the part's start.
+# How to play's slides, each playing its part (clip=: 1 battle, 2 seal, 3 victory, 4 town, 5 quest), seconds from the part's start.
 intro_battle | intro=5,clip=1                    | 4.4
 intro_seal   | intro=6,clip=2                    | 5
 intro_victory | intro=7,clip=3                   | 0.9
 intro_reward | intro=7,clip=3                    | 3
-intro_town   | intro=8,clip=4                    | 3.6
-intro_quests | intro=9,clip=4                    | 5
+intro_town   | intro=8,clip=4                    | 6.2
+intro_quests | intro=9,clip=5                    | 6
 intro_world  | intro=10                          | 6
 intro_ja     | intro,lang=ja                     | 6
 # To check the onboarding's animation frame by frame, film it: a scene with record=<seconds> is saved as

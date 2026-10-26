@@ -1,3 +1,4 @@
+import CoreImage
 import Observation
 import SpriteKit
 import SwiftUI
@@ -36,8 +37,8 @@ struct VignetteView: View {
             SpriteView(scene: scene, isPaused: reduceMotion, options: [.allowsTransparency])
                 .progressiveFade(fade)
                 .overlay { VignetteHUDView(hud: scene.hud, clear: EdgeInsets(fade, reach)) }
-                .onAppear { scene.fit(proxy.size) }
-                .onChange(of: proxy.size) { scene.fit(proxy.size) }
+                .onAppear { scene.fit(proxy.size, clear: EdgeInsets(fade, reach), blurring: fade) }
+                .onChange(of: proxy.size) { scene.fit(proxy.size, clear: EdgeInsets(fade, reach), blurring: fade) }
         }
         .accessibilityHidden(true)
     }
@@ -251,17 +252,17 @@ final class StoryScene: SKScene {
 
     /// The parts of the How to play reel; each plays over and over while its slide is open.
     enum Clip: Int, CaseIterable {
-        case walk, battle, seal, victory, town
+        case walk, battle, seal, victory, town, quest
 
-        /// The How to play slides it plays on (IntroView), by their place among them: the town is
-        /// both Towns and Quests.
+        /// The How to play slides it plays on (IntroView), by their place among them.
         var steps: [Int] {
             switch self {
             case .walk: [0]
             case .battle: [1]
             case .seal: [2]
             case .victory: [3]
-            case .town: [4, 5]
+            case .town: [4]
+            case .quest: [5]
             }
         }
 
@@ -291,8 +292,15 @@ final class StoryScene: SKScene {
     /// onboarding's window, on a phone held upright) wherever the camera looks on the layout.
     private static let margin = 10
 
-    /// Everything laid out on the stage, kept in the middle of the scene.
+    /// Where the camera keeps you on the stage while you walk: a little below its middle, so more
+    /// of the way ahead (up the picture) shows.
+    private static let heroFocus = CGPoint(x: 180, y: 72)
+
+    /// Everything laid out on the stage, kept in the middle of the scene's clear part (`fit`).
     private let stageRoot = SKNode()
+    /// How far the stage sits off the scene's middle: half of what fades out along one edge, so it's
+    /// in the middle of what shows clearly.
+    private var shift = CGVector.zero
     /// The ambiences' particles, over the whole scene.
     private var particleLayers: [SKNode] = []
     /// What the HUD over the picture shows (VignetteView draws it).
@@ -340,13 +348,9 @@ final class StoryScene: SKScene {
         let patch: MapPatch
         let elder: Walker
         let marker: SKNode
+        let healer: Walker
         let hero: Walker
         let pet: Walker
-
-        /// Where the camera looks: by the fountain, which puts Elder Oak low enough for his "!", and what
-        /// he says (four lines in French), to fit in the picture above him, and Nurse Mira clear of
-        /// the joystick.
-        var view: CGPoint { patch.point(12.9, 13.5) }
     }
 
     /// The fight's moments the reel's parts start from.
@@ -383,10 +387,21 @@ final class StoryScene: SKScene {
         layOut()
     }
 
-    /// Takes the shape of the view it's shown in (`size(for:)`).
-    func fit(_ view: CGSize) {
+    /// Takes the shape of the view it's shown in (`size(for:)`), its stage in the middle of what
+    /// isn't faded out (`clear`, in the view's points), and blurs toward the faded edge (`EdgeBlur`).
+    func fit(_ view: CGSize, clear: EdgeInsets, blurring edge: SwiftUI.Edge) {
         let fitted = Self.size(for: view)
-        if size != fitted { size = fitted }
+        let scale = view.width > 0 ? fitted.width / view.width : 1
+        shift = CGVector(dx: (clear.leading - clear.trailing) / 2 * scale, dy: (clear.bottom - clear.top) / 2 * scale)
+        if size != fitted {
+            size = fitted
+        } else {
+            layOut()
+        }
+        if (filter as? EdgeBlur)?.edge != edge {
+            filter = EdgeBlur(edge: edge, reach: ProgressiveFade.blurReach)
+            shouldEnableEffects = true
+        }
     }
 
     override func didChangeSize(_ oldSize: CGSize) {
@@ -396,9 +411,9 @@ final class StoryScene: SKScene {
 
     /// The stage in the middle of the scene, and what covers the whole scene stretched over it.
     private func layOut() {
-        stageRoot.position = CGPoint(x: (size.width - Self.stage.width) / 2, y: (size.height - Self.stage.height) / 2)
+        stageRoot.position = CGPoint(x: (size.width - Self.stage.width) / 2 + shift.dx, y: (size.height - Self.stage.height) / 2 + shift.dy)
         // The scene's middle, in the stage's points.
-        let middle = CGPoint(x: Self.stage.width / 2, y: Self.stage.height / 2)
+        let middle = CGPoint(x: Self.stage.width / 2 - shift.dx, y: Self.stage.height / 2 - shift.dy)
         for node in [tint, shade] {
             node.position = middle
             node.size = size
@@ -546,6 +561,7 @@ final class StoryScene: SKScene {
             ("daisy", 11, 8), ("daisy_yellow", 13, 12), ("sunflower", 15, 11), ("bush", 6, 6),
         ]
         for (id, col, row) in scenery { meadow.prop(id, col, row) }
+        meadow.scatter(["tree", "big_tree", "bush", "blossom_tree", "daisy", "mushroom"], every: 14)
         meadow.walker("monster_jelly", 10, 10)
         meadow.walker("monster_pineapple", 13, 11, facing: .left)
         meadow.walker("monster_yellow_butterfly", 9, 11)
@@ -646,6 +662,7 @@ final class StoryScene: SKScene {
             ("frost_pine", 13, 6), ("big_snow_pine", 18, 11), ("dead_tree", 7, 10), ("boulder", 15, 9), ("snow_pine", 11, 5),
         ]
         for (id, col, row) in scenery { forest.prop(id, col, row) }
+        forest.scatter(["big_snow_pine", "snow_pine", "snow_tree", "frost_pine", "snow_bush"], every: 10)
         return (forest, UIColor(red: 0.05, green: 0.04, blue: 0.2, alpha: 0.5))
     }
 
@@ -662,6 +679,7 @@ final class StoryScene: SKScene {
             ("crystal_shard", 15, 9), ("stalagmite", 17, 7), ("small_stalagmite", 11, 6), ("ore_vein", 6, 6),
         ]
         for (id, col, row) in scenery { cavern.prop(id, col, row) }
+        cavern.scatter(["stalagmite", "small_stalagmite", "boulder", "crystal_shard"], every: 14)
         return (cavern, UIColor(red: 0.03, green: 0.04, blue: 0.12, alpha: 0.55))
     }
 
@@ -678,6 +696,7 @@ final class StoryScene: SKScene {
             ("desert_pot", 9, 10), ("dry_bush", 11, 7), ("flying_carpet", 17, 10), ("red_rock", 5, 6),
         ]
         for (id, col, row) in scenery { oasis.prop(id, col, row) }
+        oasis.scatter(["palm_tree", "cactus", "small_cactus", "dry_bush", "red_rock"], every: 16)
         return (oasis, UIColor(red: 0.35, green: 0.1, blue: 0.2, alpha: 0.3))
     }
 
@@ -691,7 +710,6 @@ final class StoryScene: SKScene {
     private func buildArrival() {
         guard let square = makeSquare(companion: "bunny", staff: false) else { return }
         self.square = square
-        show(square.patch, zoom: 0.8, looking: square.view)
         run(.repeatForever(.sequence([greeting(steer: false), .wait(forDuration: 0.4)])))
     }
 
@@ -721,7 +739,7 @@ final class StoryScene: SKScene {
         let pulse = SKAction.sequence([.scale(to: 1.15, duration: 0.4), .scale(to: 1, duration: 0.4)])
         marker.run(.repeatForever(.group([bob, pulse])))
         elder.addChild(marker)
-        patch.walker("npc_healer", 8.6, 12.6, facing: .right, label: content.npc("healer")?.name)
+        let healer = patch.walker("npc_healer", 8.6, 12.6, facing: .right, label: content.npc("healer")?.name)
         patch.walker("npc_trader", 14.2, 8.6, facing: .left, label: content.npc("shop")?.name)
         let hero = patch.walker("player_walk", 11, 4.5, facing: .left, label: L("Hero"))
         hero.tagMode = .whenStill
@@ -730,34 +748,53 @@ final class StoryScene: SKScene {
         let pet = patch.walker(content.monster(species)?.art ?? "pet_walk", 10.4, 3.9, facing: .left, label: content.monster(species)?.name)
         pet.tagMode = .whenClear
         pet.walkSpeed = 110
-        return Square(patch: patch, elder: elder, marker: marker, hero: hero, pet: pet)
+        patch.scatter(["blossom_tree", "tree", "flowering_bush", "daisy", "daisy_blue", "tulip_patch"], every: 16)
+        return Square(patch: patch, elder: elder, marker: marker, healer: healer, hero: hero, pet: pet)
     }
 
-    /// You and your companion come up the street to Elder Oak, and he greets you. Starts over each
-    /// time it plays; with `steer` the joystick shows the way.
-    private func greeting(steer: Bool) -> SKAction {
+    /// You and your companion back at the foot of Meadowbrook's street, the camera on you, ready to
+    /// walk in (with `steer`, the joystick out).
+    private func enterSquare(steer: Bool) -> SKAction {
+        .run { [weak self] in
+            guard let self, let square = self.square else { return }
+            square.hero.removeAction(forKey: "move")
+            square.hero.setWalking(false)
+            square.hero.position = square.patch.point(11, 4.5)
+            square.hero.face(.left)
+            square.pet.position = square.patch.point(10.4, 3.9)
+            square.pet.face(.left)
+            for walker in [square.hero, square.pet] {
+                walker.alpha = 0
+                walker.run(.fadeIn(withDuration: 0.4))
+            }
+            square.marker.alpha = 1
+            self.battleRoot.isHidden = true
+            self.show(square.patch, zoom: 0.8, looking: square.hero.position, focus: Self.heroFocus)
+            self.followed = square.hero
+            self.trail = (square.hero, square.pet)
+            if steer { self.hud.stick = .zero }
+        }
+    }
+
+    /// You and your companion fade out at the end of a visit, to come in again.
+    private func leaveSquare() -> SKAction {
+        .run { [weak self] in
+            guard let square = self?.square else { return }
+            for walker in [square.hero, square.pet] { walker.run(.fadeOut(withDuration: 0.4)) }
+        }
+    }
+
+    /// You and your companion come up the street to Elder Oak, and he greets you; with `quest`, he
+    /// has his first quest for you, and you take it. Starts over each time it plays; with `steer`
+    /// the joystick shows the way.
+    private func greeting(steer: Bool, quest: Bool = false) -> SKAction {
         guard let square else { return .wait(forDuration: 1) }
         let start = square.patch.point(11, 4.5), stop = square.patch.point(11.9, 9.9)
         let walk = walking(square.hero, through: [start, stop], steer: steer)
         let words = Content.shared.npc("elder")?.greeting ?? ""
-        return .sequence([
-            .run { [weak self] in
-                guard let self, let square = self.square else { return }
-                square.hero.removeAction(forKey: "move")
-                square.hero.setWalking(false)
-                square.hero.position = start
-                square.hero.face(.left)
-                square.pet.position = square.patch.point(10.4, 3.9)
-                square.pet.face(.left)
-                for walker in [square.hero, square.pet] {
-                    walker.alpha = 0
-                    walker.run(.fadeIn(withDuration: 0.4))
-                }
-                square.marker.alpha = 1
-                self.trail = (square.hero, square.pet)
-                self.followed = nil
-                if steer { self.hud.stick = .zero }
-            },
+        let title = Content.shared.quest("hope_of_meadowbrook")?.title ?? ""
+        var steps: [SKAction] = [
+            enterSquare(steer: steer),
             .wait(forDuration: 0.6),
             .run { [weak hero = square.hero] in hero?.run(walk.action, withKey: "move") },
             .wait(forDuration: walk.time + 0.4),
@@ -767,19 +804,65 @@ final class StoryScene: SKScene {
                 square.marker.run(.fadeOut(withDuration: 0.2))
                 square.elder.say(words, for: 3.4)
             },
-            .wait(forDuration: 4.2),
+        ]
+        if quest {
+            steps += [
+                .wait(forDuration: 2.6),
+                // Taken, as the quest log says it.
+                .run { [weak self] in self?.hud.banner = L("Quest accepted: {quest}", ["quest": title]) },
+                .wait(forDuration: 2.6),
+            ]
+        } else {
+            steps += [
+                .wait(forDuration: 4.2),
+                .run { [weak self] in self?.square?.marker.run(.fadeIn(withDuration: 0.4)) },
+            ]
+        }
+        steps += [leaveSquare(), .wait(forDuration: 0.5)]
+        return .sequence(steps)
+    }
+
+    /// Towns: you and your companion come up Meadowbrook's street, past its shops, to Nurse Mira,
+    /// who has you rested in no time; and the town's checkpoint saves your game.
+    private func healerVisit() -> SKAction {
+        guard let square else { return .wait(forDuration: 1) }
+        let path = [square.patch.point(11, 4.5), square.patch.point(11, 9.4), square.patch.point(9.7, 11.7)]
+        let walk = walking(square.hero, through: path, steer: true)
+        let words = Content.shared.npc("healer")?.greeting ?? ""
+        let town = Content.shared.map("meadowbrook")?.name ?? ""
+        return .sequence([
+            enterSquare(steer: true),
+            .wait(forDuration: 0.6),
+            .run { [weak hero = square.hero] in hero?.run(walk.action, withKey: "move") },
+            .wait(forDuration: walk.time + 0.3),
+            .run { [weak self] in self?.square?.healer.say(words, for: 2.6) },
+            .wait(forDuration: 1.8),
             .run { [weak self] in
-                guard let square = self?.square else { return }
-                for walker in [square.hero, square.pet] { walker.run(.fadeOut(withDuration: 0.4)) }
-                square.marker.run(.fadeIn(withDuration: 0.4))
+                guard let self, let square = self.square else { return }
+                self.restore(square.hero, in: square.patch)
+                self.hud.banner = L("HP and MP fully restored")
             },
+            .wait(forDuration: 2.2),
+            .run { [weak self] in self?.hud.banner = L("Checkpoint saved at {place}.", ["place": town]) },
+            .wait(forDuration: 2.4),
+            leaveSquare(),
             .wait(forDuration: 0.5),
         ])
     }
 
+    /// A healer's touch: a soft green light round you and sparks rising off you.
+    private func restore(_ walker: Walker, in patch: MapPatch) {
+        let middle = walker.position + CGVector(dx: 0, dy: 16)
+        let light = glow(UIColor(red: 0.55, green: 1, blue: 0.62, alpha: 1), size: 80, at: middle, in: patch)
+        light.zPosition = 10_000
+        light.alpha = 0
+        light.run(.sequence([.fadeAlpha(to: 0.9, duration: 0.25), .wait(forDuration: 0.5), .fadeOut(withDuration: 0.7), .removeFromParent()]))
+        SkillEffects.burst(at: middle, color: UIColor(red: 0.7, green: 1, blue: 0.75, alpha: 1), count: 14, speed: 60, in: patch)
+    }
+
     // MARK: - How to play
 
-    /// Plays a part of the reel (0 walk, 1 battle, 2 seal, 3 victory, 4 town) over and over: How to
+    /// Plays a part of the reel (0 walk, 1 battle, 2 seal, 3 victory, 4 town, 5 quest) over and over: How to
     /// play's slides call it as you turn to one (IntroView).
     func play(clip index: Int) {
         let count = Clip.allCases.count
@@ -798,6 +881,7 @@ final class StoryScene: SKScene {
         case .seal: sealClip()
         case .victory: victoryClip()
         case .town: townClip()
+        case .quest: questClip()
         }
         // It starts again outside SpriteKit's frame, as a map's fights do (WorldScene.startEncounter):
         // a fight snapshots the map for its backdrop. From the top of its fight, not where it ended.
@@ -836,6 +920,7 @@ final class StoryScene: SKScene {
             ("tree_stump", 3, 9),
         ]
         for (id, col, row) in scenery { meadow.prop(id, col, row) }
+        meadow.scatter(["tree", "big_tree", "bush", "flowering_bush", "autumn_tree", "daisy", "daisy_yellow"], every: 14)
         let content = Content.shared
         let hero = meadow.walker("player_walk", 6, 10, facing: .right, label: L("Hero"))
         hero.tagMode = .whenStill
@@ -865,7 +950,7 @@ final class StoryScene: SKScene {
         pet.face(.right)
         followed = hero
         trail = (hero, pet)
-        show(meadow, zoom: 0.85, looking: hero.position, focus: CGPoint(x: 160, y: 72))
+        show(meadow, zoom: 0.85, looking: hero.position, focus: Self.heroFocus)
         hud.stick = .zero
         let stroll = walking(hero, through: road, steer: true)
         let detour = walking(hero, through: [road[2], tapped], steer: false)
@@ -965,14 +1050,16 @@ final class StoryScene: SKScene {
         ])
     }
 
-    /// Quests and towns: back in Meadowbrook, the joystick takes you up the street to Elder Oak and
-    /// his gold "!", and he has something to ask.
+    /// Towns: back in Meadowbrook, the joystick takes you up the street to Nurse Mira (`healerVisit`).
     private func townClip() -> SKAction {
-        guard let square else { return .wait(forDuration: 1) }
-        battleRoot.isHidden = true
         fight = nil
-        show(square.patch, zoom: 0.8, looking: square.view)
-        return greeting(steer: true)
+        return healerVisit()
+    }
+
+    /// Quests: up the street to Elder Oak and his gold "!", who has a quest for you, and you take it.
+    private func questClip() -> SKAction {
+        fight = nil
+        return greeting(steer: true, quest: true)
     }
 
     // MARK: - The fight
@@ -1075,7 +1162,7 @@ final class StoryScene: SKScene {
         if patch !== meadow || mapRoot.isHidden {
             guard backdrop.texture == nil else { return }
             // Straight to a fight: the meadow where the walk ends.
-            show(meadow, zoom: 0.85, looking: meadow.point(15, 9.2), focus: CGPoint(x: 160, y: 72))
+            show(meadow, zoom: 0.85, looking: meadow.point(15, 9.2), focus: Self.heroFocus)
         }
         let party: [SKNode] = [meadowHero, meadowPet].compactMap { $0 }
         party.forEach { $0.isHidden = true }
@@ -1537,5 +1624,49 @@ final class StoryScene: SKScene {
             .group([fly, .sequence([.wait(forDuration: 1.2), .fadeOut(withDuration: 0.5)])]),
             .removeFromParent(),
         ]))
+    }
+}
+
+/// A blur that deepens toward one edge of the picture, with none of a frosted material's tint
+/// (that muddied the colours where the picture melts into the window): Core Image's masked variable
+/// blur over the whole scene, its mask a ramp from sharp, `reach` of the way in, to most blurred at
+/// the edge. Its input's size isn't known till it's drawn, so it makes the ramp then.
+nonisolated final class EdgeBlur: CIFilter {
+    @objc dynamic var inputImage: CIImage?
+    let edge: SwiftUI.Edge
+    let reach: CGFloat
+    /// The blur at the edge itself, in the drawn picture's pixels.
+    private let radius: CGFloat = 14
+
+    init(edge: SwiftUI.Edge, reach: CGFloat) {
+        self.edge = edge
+        self.reach = reach
+        super.init()
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
+    }
+
+    override var outputImage: CIImage? {
+        guard let input = inputImage else { return nil }
+        let box = input.extent
+        guard box.width.isFinite, box.height.isFinite, box.width > 0, box.height > 0 else { return input }
+        // Core Image's y runs up: the picture's foot is the box's minY.
+        let (sharp, blurred): (CGPoint, CGPoint) = switch edge {
+        case .bottom: (CGPoint(x: box.midX, y: box.minY + box.height * reach), CGPoint(x: box.midX, y: box.minY))
+        case .top: (CGPoint(x: box.midX, y: box.maxY - box.height * reach), CGPoint(x: box.midX, y: box.maxY))
+        case .leading: (CGPoint(x: box.minX + box.width * reach, y: box.midY), CGPoint(x: box.minX, y: box.midY))
+        case .trailing: (CGPoint(x: box.maxX - box.width * reach, y: box.midY), CGPoint(x: box.maxX, y: box.midY))
+        }
+        guard let ramp = CIFilter(name: "CILinearGradient", parameters: [
+            "inputPoint0": CIVector(cgPoint: sharp), "inputColor0": CIColor.black,
+            "inputPoint1": CIVector(cgPoint: blurred), "inputColor1": CIColor.white,
+        ])?.outputImage?.cropped(to: box),
+            let blur = CIFilter(name: "CIMaskedVariableBlur", parameters: [
+                kCIInputImageKey: input, "inputMask": ramp, kCIInputRadiusKey: radius,
+            ])?.outputImage
+        else { return input }
+        return blur.cropped(to: box)
     }
 }

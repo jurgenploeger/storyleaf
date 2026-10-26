@@ -276,32 +276,17 @@ private extension View {
     }
 }
 
-/// A picture melting into the window along one edge (the onboarding's slides): blurred more and
-/// more toward it, as through frosted glass, then fading out so the window's glass shows through.
+/// A picture melting into the window along one edge (the onboarding's slides): fading out so the
+/// window's glass shows through. The story's pictures blur toward that edge first, in their own
+/// colours (`EdgeBlur`, `blurReach`); a frosted material there tinted them a muddy grey-brown.
 struct ProgressiveFade: ViewModifier {
     let edge: SwiftUI.Edge
     /// How far in from the edge the blur reaches, and the fade, as fractions of the picture across it.
     static let blurReach: CGFloat = 0.42
     static let fadeReach: CGFloat = 0.24
-    /// Frosted layers, each starting a little nearer the edge, so the blur deepens toward it.
-    private static let layers = 4
 
     func body(content: Self.Content) -> some View {
         content
-            .overlay {
-                ZStack {
-                    ForEach(0..<Self.layers, id: \.self) { layer in
-                        let step = Self.blurReach / CGFloat(Self.layers)
-                        let start = 1 - Self.blurReach + CGFloat(layer) * step
-                        Rectangle()
-                            .fill(.ultraThinMaterial)
-                            .mask(ramp(from: .clear, at: start, to: .black, at: min(1, start + step)))
-                    }
-                }
-                // Frosted toward the glass's own deep blue, not a milky white.
-                .environment(\.colorScheme, .dark)
-                .allowsHitTesting(false)
-            }
             .mask(ramp(from: .black, at: 1 - Self.fadeReach, to: .clear, at: 1))
     }
 

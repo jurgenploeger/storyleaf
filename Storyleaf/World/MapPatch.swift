@@ -208,6 +208,30 @@ final class MapPatch: SKNode {
         return squash
     }
 
+    /// Scatters `ids` over the margin, about one cell in `every`, the same way each time (seeded by
+    /// the map), off its roads and water: the land carrying on round the layout.
+    func scatter(_ ids: [String], every: Int) {
+        guard !ids.isEmpty, every > 0, margin > 0 else { return }
+        // A seed of the map's id, the same on every launch (Swift's own hashes aren't).
+        var state = def.id.utf8.reduce(UInt64(5381)) { ($0 &* 33) &+ UInt64($1) }
+        func next() -> UInt64 {
+            state &+= 0x9E37_79B9_7F4A_7C15
+            var mixed = state
+            mixed = (mixed ^ (mixed >> 30)) &* 0xBF58_476D_1CE4_E5B9
+            mixed = (mixed ^ (mixed >> 27)) &* 0x94D0_49BB_1331_11EB
+            return mixed ^ (mixed >> 31)
+        }
+        for row in 0..<allRows {
+            for col in 0..<allColumns {
+                let inside = (margin..<margin + columns).contains(col) && (margin..<margin + rows).contains(row)
+                guard !inside, kinds[row][col] == .ground, next() % UInt64(every) == 0 else { continue }
+                let id = ids[Int(next() % UInt64(ids.count))]
+                let jitter = { CGFloat(next() % 100) / 100 - 0.5 }
+                prop(id, CGFloat(col - margin) + jitter() * 0.6, CGFloat(row - margin) + jitter() * 0.6)
+            }
+        }
+    }
+
     // MARK: - Standing on it
 
     /// The middle of a cell of the layout (fractions for in between), where people stand.
