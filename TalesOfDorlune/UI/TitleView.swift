@@ -114,7 +114,7 @@ struct TitleView: View {
         }
         // The sky, its soft light behind the logo wherever the logo is (the story pages have
         // none: there, near the top).
-        .storyleafSky(fallback: UnitPoint(x: 0.5, y: 0.18))
+        .talesOfDorluneSky(fallback: UnitPoint(x: 0.5, y: 0.18))
         .onAppear {
             MusicPlayer.shared.play("title")
             if saves.isEmpty { seenRelease = newestRelease }
@@ -490,18 +490,20 @@ private struct SavedHeroCard: View {
         // The companion walking with them, if one is out.
         let pet = save.pets.first { $0.id == save.activePetID }
         let petArt = pet.flatMap { content.monster($0.speciesID)?.art }
-        VStack(spacing: 4) {
+        // Big enough to read at a glance which game it is (playtesting 2026-10-26: the lines were small).
+        VStack(spacing: 6) {
             IdlePair(hero: art, pet: petArt)
             Text(L("Lv {level} {class} · {map}", ["level": save.hero.level, "class": content.classDef(save.hero.classID).name, "map": content.map(save.mapID)?.name ?? ""]))
-                .font(HUDStyle.font(10))
-                .foregroundStyle(Brand.skyText.opacity(0.65))
+                .font(HUDStyle.font(17))
+                .foregroundStyle(Brand.skyText.opacity(0.9))
             // When you last played it, so you can tell your games apart.
             if let savedAt = save.savedAt {
                 Text(L("Played {time}", ["time": savedAt.formatted(.relative(presentation: .named).locale(Localizer.shared.locale))]))
-                    .font(HUDStyle.font(9))
-                    .foregroundStyle(Brand.skyText.opacity(0.5))
+                    .font(HUDStyle.font(14))
+                    .foregroundStyle(Brand.skyText.opacity(0.7))
             }
         }
+        .multilineTextAlignment(.center)
         .padding(.bottom, 28)   // room for the page dots
     }
 }

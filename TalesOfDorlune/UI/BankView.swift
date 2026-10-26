@@ -53,11 +53,6 @@ struct BankView: View {
     }
 }
 
-/// Which side of the bank something was tapped on: in the bag, or in the bank.
-enum BankSide: String {
-    case bag, bank
-}
-
 /// Something tapped in the bank window: an item, or the coins (`item` nil), on one side.
 struct BankPick: Identifiable {
     let item: ItemDef?
@@ -67,18 +62,28 @@ struct BankPick: Identifiable {
 
 /// The bank's insides: your bag over the bank, RuneScape-style. Tap something, coins too, for its card
 /// (`onPick`; playtesting 2026-10-26: "tap on an item to open its details in another modal"): how many
-/// to put in or take out, or to delete. Deposit all empties the bag. Nothing in the bank is lost to a
+/// to put in or take out, or to delete. Deposit all empties the bag. Hold a slot and drag it onto
+/// another on its side to move it there (`ItemSlotMover`; "In the bank and inventory I should be able
+/// to reorder any items"). The bank's search, sort and kinds ("Also add sorting and filtering to the
+/// bank") are a way of looking, as the Bag's are: what's filtered out is still there, and a sort
+/// leaves your order as it is till you move something while it's on. Nothing in the bank is lost to a
 /// defeat.
 struct BankPanel: View {
     let session: GameSession
     @Binding var reply: String?
     let onPick: (BankPick) -> Void
 
+    /// The bag as the Bag tab sorts it.
+    @AppStorage("bagSort") private var bagSort: ItemSort = .standard
+    @AppStorage("bankSort") private var bankSort: ItemSort = .standard
+    @State private var search = ""
+    @State private var shelf: ItemShelf = .all
+
     private static let slot: CGFloat = 48
     private let columns = [GridItem(.adaptive(minimum: BankPanel.slot + 6, maximum: BankPanel.slot + 12), spacing: 6)]
 
     var body: some View {
-        let bag = session.content.items.filter { session.count(of: $0.id) > 0 }
+        let bag = ItemFinder.arrange(session.bagItems, search: "", sort: bagSort, session: session)
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 SectionTitle(text: L("Bag {used}/{slots}", ["used": session.bagSlotsUsed, "slots": GameSession.bagSlots]))
@@ -102,34 +107,78 @@ struct BankPanel: View {
                     .buttonStyle(PressScaleStyle())
                 }
                 ForEach(bag) { item in
-                    Button { onPick(BankPick(item: item, side: .bag)) } label: {
-                        ItemIcon(item: item, size: Self.slot, count: session.count(of: item.id))
-                    }
-                    .buttonStyle(PressScaleStyle())
-                    .accessibilityLabel(item.name)
+                    tile(item, in: bag, side: .bag)
                 }
             }
             SectionTitle(text: L("Bank"))
-            let banked = session.bankItems
-            if banked.isEmpty && session.bankGold == 0 {
+            let all = session.bankItems
+            if all.isEmpty && session.bankGold == 0 {
                 EmptyNote(L("Nothing in the bank yet. Tap something in your bag to keep it here."), size: 11)
             }
+            if !all.isEmpty {
+                finder
+            }
+            let narrowed = !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || shelf != .all
+            let banked = ItemFinder.arrange(all.filter { shelf.holds($0) }, search: search, sort: bankSort, session: session, on: .bank)
+            if narrowed && banked.isEmpty && !all.isEmpty {
+                EmptyNote(L("Nothing in the bank matches."), size: 11)
+                    .padding(.vertical, 8)
+            }
             LazyVGrid(columns: columns, alignment: .leading, spacing: 6) {
-                if session.bankGold > 0 {
+                // The coins in the first slot, while you're not looking for something.
+                if session.bankGold > 0 && !narrowed {
                     Button { onPick(BankPick(item: nil, side: .bank)) } label: {
                         CoinsTile(amount: session.bankGold, size: Self.slot)
                     }
                     .buttonStyle(PressScaleStyle())
                 }
                 ForEach(banked) { item in
-                    Button { onPick(BankPick(item: item, side: .bank)) } label: {
-                        ItemIcon(item: item, size: Self.slot, count: session.banked(item.id))
-                    }
-                    .buttonStyle(PressScaleStyle())
-                    .accessibilityLabel(item.name)
+                    tile(item, in: banked, side: .bank)
                 }
             }
         }
+    }
+
+    /// The bank's search, sort, and the kinds to show.
+    private var finder: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                ItemSearchField(text: $search)
+                ItemSortMenu(sort: $bankSort, options: ItemSort.allCases, bank: true)
+            }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(ItemShelf.allCases, id: \.self) { kind in
+                        FilterChip(title: kind.title, on: shelf == kind) { shelf = kind }
+                    }
+                }
+            }
+            Text(L("Hold a slot and drag it onto another to move it."))
+                .font(HUDStyle.font(10))
+                .foregroundStyle(HUDStyle.dim)
+        }
+    }
+
+    /// One thing on one side: a tap for its card; held and dragged, it moves.
+    private func tile(_ item: ItemDef, in shown: [ItemDef], side: BankSide) -> some View {
+        let count = session.held(item.id, on: side)
+        return Button { onPick(BankPick(item: item, side: side)) } label: {
+            ItemIcon(item: item, size: Self.slot, count: count)
+        }
+        .buttonStyle(PressScaleStyle())
+        .movableSlot(item, in: shown, side: side, size: Self.slot) { move($0, onto: $1, on: side) }
+        .accessibilityLabel(count > 1 ? L("{item}, {count}", ["item": item.name, "count": count]) : item.name)
+    }
+
+    /// Puts what was dragged where `target` is; sorted another way, the order you see is yours from
+    /// then on, so the sort goes back to your order.
+    private func move(_ id: String, onto target: String, on side: BankSide) {
+        let sort = side == .bag ? bagSort : bankSort
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            guard session.moveItem(id, onto: target, on: side, sortedBy: sort) else { return }
+            if side == .bag { bagSort = .standard } else { bankSort = .standard }
+        }
+        session.save()
     }
 }
 

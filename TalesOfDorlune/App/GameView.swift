@@ -5,8 +5,6 @@ struct GameView: View {
     let coordinator: GameCoordinator
     /// The first-play tour of the HUD (see CoachMarks).
     @State private var touring = CoachMarks.shouldShow
-    /// The chat window over a battle (the fight waits while you type).
-    @State private var battleChat = false
     @Environment(\.scenePhase) private var scenePhase
     /// Switching language (Settings) redraws the HUD in it; the menu redraws itself.
     @State private var localizer = Localizer.shared
@@ -17,13 +15,9 @@ struct GameView: View {
                 .ignoresSafeArea()
 
             if let battle = coordinator.battle {
-                // Chat stays one tap away mid-fight, at the right end of the battle's top row.
-                BattleView(controller: battle, unreadChat: coordinator.session.unreadChat > 0,
-                           onChat: battleChat ? nil : { openBattleChat() })
+                // No chat in a fight: the map's chat button brings it back once the fight is over.
+                BattleView(controller: battle)
                     .id(localizer.language)
-                if battleChat {
-                    ChatView(session: coordinator.session, onSay: coordinator.say) { battleChat = false }
-                }
             } else {
                 if !DebugLaunch.hidesHUD {
                     WorldHUD(coordinator: coordinator)
@@ -97,10 +91,7 @@ struct GameView: View {
             }
         }
         .animation(.easeOut(duration: 0.4), value: coordinator.isReady)
-        .onChange(of: coordinator.battle == nil) { battleChat = false }
-        // The fight waits while you type, turn clock and all.
-        .onChange(of: battleChat) { coordinator.battle?.holdTurnClock(battleChat, for: "chat") }
-        // And while the app isn't in front (another app, the lock screen, a call, Control Centre).
+        // The fight waits while the app isn't in front (another app, the lock screen, a call, Control Centre).
         .onChange(of: scenePhase == .active) { _, active in
             coordinator.battle?.holdTurnClock(!active, for: "away")
             if active { coordinator.welcomeBack() }
@@ -110,11 +101,5 @@ struct GameView: View {
         // A swipe up from the bottom edge (the joystick and the buttons sit close to it on a phone on
         // its side) moves the joystick first; a second one goes home.
         .defersSystemGestures(on: .bottom)
-    }
-
-    /// The chat over a fight: read, so the dot goes.
-    private func openBattleChat() {
-        coordinator.session.unreadChat = 0
-        battleChat = true
     }
 }

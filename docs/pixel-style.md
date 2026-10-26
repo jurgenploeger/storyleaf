@@ -1,6 +1,6 @@
-# Pixel style: Storyleaf's look, without Retro Diffusion
+# Pixel style: Tales of Dorlune's look, without Retro Diffusion
 
-What makes a sprite look like the rest of Storyleaf, measured, so art drawn in code can be held to it. The
+What makes a sprite look like the rest of Tales of Dorlune, measured, so art drawn in code can be held to it. The
 reference is every sprite Retro Diffusion (RD) drew that the game ships; the goal is new sprites nobody can
 tell apart from them, made for free and rebuilt from source. Read it before drawing a sprite in code; read
 [sprite-acceptance.md](sprite-acceptance.md) too for anything worn by a hero. Add what you learn, with the
@@ -22,7 +22,7 @@ date: this is meant to get stricter as we go.
 
 ## The look, in words
 
-These are the rules the numbers measure. A sprite that keeps them looks like Storyleaf.
+These are the rules the numbers measure. A sprite that keeps them looks like Tales of Dorlune.
 
 1. **Hard pixels.** No anti-aliasing, no partial transparency, except a light effect (a magic staff's glow).
    Shrinking is done offline, each pixel the colour covering most of it, never by the game.

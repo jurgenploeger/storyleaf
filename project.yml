@@ -1,6 +1,6 @@
 # Source of truth for the Xcode project. Regenerate with `make project`
-# (Storyleaf.xcodeproj is generated and not checked in).
-name: Storyleaf
+# (TalesOfDorlune.xcodeproj is generated and not checked in).
+name: TalesOfDorlune
 
 options:
   deploymentTarget:
@@ -14,7 +14,7 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
 
 targets:
-  Storyleaf:
+  TalesOfDorlune:
     type: application
     platform: iOS
     # Signing team and bundle ID prefix live in Config/*.xcconfig.
@@ -22,7 +22,7 @@ targets:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig
     sources:
-      - path: Storyleaf
+      - path: TalesOfDorlune
       # Folder reference: everything in art/ (manifest + generated sprites) is
       # copied into the app bundle as-is, so new sprites need no project changes.
       - path: art
@@ -37,9 +37,9 @@ targets:
         type: folder
         buildPhase: resources
     info:
-      path: Storyleaf/Info.plist
+      path: TalesOfDorlune/Info.plist
       properties:
-        CFBundleDisplayName: Storyleaf
+        CFBundleDisplayName: Dorlune
         # The game translates itself (content/i18n), with no .lproj folders: this tells iOS and the
         # App Store which languages it speaks, so the store page lists them all and system screens
         # (the Files picker, the keyboard) follow the player's language.
@@ -69,13 +69,13 @@ targets:
         SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
         SWIFT_APPROACHABLE_CONCURRENCY: "YES"
 
-  StoryleafTests:
+  TalesOfDorluneTests:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - path: StoryleafTests
+      - path: TalesOfDorluneTests
     dependencies:
-      - target: Storyleaf
+      - target: TalesOfDorlune
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig
@@ -86,16 +86,16 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
 
 schemes:
-  Storyleaf:
+  TalesOfDorlune:
     build:
       targets:
-        Storyleaf: all
-        StoryleafTests: [test]
+        TalesOfDorlune: all
+        TalesOfDorluneTests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
-        - StoryleafTests
+        - TalesOfDorluneTests
     archive:
       config: Release

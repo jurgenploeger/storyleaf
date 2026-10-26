@@ -1,16 +1,12 @@
 import SwiftUI
 import UIKit
 
-/// Battle HUD: what just happened in a slim line top centre, the chat top right, and the commands
-/// round the big button bottom right, with the time to choose as a ring about it. How fast the
+/// Battle HUD: what just happened in a slim line top centre, and the commands in a row along the
+/// bottom, all one size, with the time to choose as a ring round the first. How fast the
 /// fight plays and Auto wait behind More. Results at the end. Names, levels, HP and MP sit on the
-/// fighters themselves.
+/// fighters themselves. No chat in a fight: it's back on the map once the fight is over.
 struct BattleView: View {
     let controller: BattleController
-    /// Unread chat: a gold dot on the chat button.
-    var unreadChat = false
-    /// Opens the chat over the fight (GameView holds it); nil while it's open, which hides the button.
-    var onChat: (() -> Void)? = nil
     /// A phone on its side: the line of what just happened can run wider.
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
@@ -25,7 +21,8 @@ struct BattleView: View {
                 LockInStrip(controller: controller)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                     .padding(.leading, 14)
-                    .padding(.bottom, 18)
+                    // Upright, above the commands' row, which can reach across the bottom.
+                    .padding(.bottom, verticalSizeClass == .compact ? 18 : 104)
                     .allowsHitTesting(false)
                     .transition(.opacity)
             }
@@ -46,34 +43,22 @@ struct BattleView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.75), value: controller.isAuto)
     }
 
-    /// Along the top: what just happened, centred, and the chat at the right end.
+    /// Along the top: what just happened, centred.
     private var topBar: some View {
-        ZStack(alignment: .topTrailing) {
-            news
-                .frame(maxWidth: verticalSizeClass == .compact ? 520 : 360)
-                // Clear of the chat button whichever side, so it stays centred.
-                .padding(.horizontal, 48)
-                .frame(maxWidth: .infinity)
-            chatButton
-        }
+        news
+            .frame(maxWidth: verticalSizeClass == .compact ? 520 : 360)
+            .frame(maxWidth: .infinity)
     }
 
-    /// The chat, top right as on the map; hidden while it's open and once the fight is over.
-    @ViewBuilder
-    private var chatButton: some View {
-        if controller.phase != .finished, let onChat {
-            FLIconButton(icon: .talk, label: L("Chat"), size: Self.chatSize, badge: unreadChat, action: onChat)
-        }
-    }
-
-    private static let chatSize: CGFloat = 40
+    /// The top row's height: the field below is laid out clear of it (`BattleScene.portraitTopInset`).
+    private static let topRowHeight: CGFloat = 40
 
     /// What just happened, and in a boss fight how far through its waves you are.
     private var news: some View {
         VStack(spacing: 6) {
-            // As tall as the chat button at least, so a one-line message sits level with it.
+            // As tall as the top row at least, so the field below doesn't shift with the message.
             logLine
-                .frame(minHeight: Self.chatSize)
+                .frame(minHeight: Self.topRowHeight)
             if controller.waveCount > 1 {
                 WaveTracker(wave: controller.wave, total: controller.waveCount)
             }
@@ -91,7 +76,7 @@ struct BattleView: View {
     }
 
     /// The commands bottom right; over a list or while picking a target, the time left to choose
-    /// sits on top of it (with the commands it's the ring round the big button).
+    /// sits on top of it (with the commands it's the ring round the row's first button).
     private var commandArea: some View {
         VStack(alignment: .trailing, spacing: 10) {
             if [.skills, .items, .stones, .target].contains(controller.phase),
@@ -117,32 +102,24 @@ struct BattleView: View {
                     .transition(.scale(scale: 0.6, anchor: .bottomTrailing).combined(with: .opacity))
             }
         case .skills where controller.choosingForCompanion:
-            ChoiceCard(title: L("{companion}'s skills", ["companion": controller.companion?.name ?? L("Companion")]), icon: .paw, onBack: controller.back, tall: true) {
-                if controller.companionSkills.isEmpty {
-                    EmptyNote(L("No skills yet."))
-                }
-                SkillTiles {
-                    ForEach(controller.companionSkills) { skill in
-                        let price = controller.companionCost(of: skill)
-                        SkillTileButton(skill: skill, level: controller.companionLevel(of: skill), cost: price,
-                                        affordable: (controller.companion?.mp ?? 0) >= price) { controller.useSkill(skill) }
-                    }
+            SkillBar(title: L("{companion}'s skills", ["companion": controller.companion?.name ?? L("Companion")]), icon: .paw, onBack: controller.back,
+                     empty: controller.companionSkills.isEmpty ? L("No skills yet.") : nil) {
+                ForEach(controller.companionSkills) { skill in
+                    let price = controller.companionCost(of: skill)
+                    SkillTileButton(skill: skill, level: controller.companionLevel(of: skill), cost: price,
+                                    affordable: (controller.companion?.mp ?? 0) >= price) { controller.useSkill(skill) }
                 }
             }
             .transition(.scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity))
         case .skills:
-            ChoiceCard(title: L("Skills"), icon: .sparkles, onBack: controller.back, tall: true) {
-                if controller.skills.isEmpty {
-                    EmptyNote(controller.skills.isEmpty && !controller.session.learnableSkills.isEmpty
-                              ? L("No skills yet.\nLearn one in the Character menu.")
-                              : controller.session.skillHint)
-                }
-                SkillTiles {
-                    ForEach(controller.skills) { skill in
-                        let price = controller.cost(of: skill)
-                        SkillTileButton(skill: skill, level: controller.level(of: skill), cost: price,
-                                        affordable: (controller.hero?.mp ?? 0) >= price) { controller.useSkill(skill) }
-                    }
+            SkillBar(title: L("Skills"), icon: .sparkles, onBack: controller.back,
+                     empty: !controller.skills.isEmpty ? nil
+                         : controller.session.learnableSkills.isEmpty ? controller.session.skillHint
+                         : L("No skills yet.\nLearn one in the Character menu.")) {
+                ForEach(controller.skills) { skill in
+                    let price = controller.cost(of: skill)
+                    SkillTileButton(skill: skill, level: controller.level(of: skill), cost: price,
+                                    affordable: (controller.hero?.mp ?? 0) >= price) { controller.useSkill(skill) }
                 }
             }
             .transition(.scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity))
@@ -321,7 +298,7 @@ private struct LockInStrip: View {
 
 /// The time left to choose, draining on top of a list (Skills, Items) or the target prompt, red
 /// for the last two seconds. When it runs out the hero attacks. With the commands it's a ring
-/// round the big button instead (`TurnClockRing`).
+/// round the row's first button instead (`TurnClockRing`).
 private struct TurnClockBar: View {
     let deadline: Date
     let total: TimeInterval
@@ -350,13 +327,14 @@ private struct TurnClockBar: View {
 
 // MARK: - Commands
 
-/// A big button in the corner (Attack unless you change it), the time to choose as a ring round
-/// it, and the other commands on an arc about it, where a thumb reaches them all alike: Skills,
-/// then whatever else turns up (Capture when there's a monster to befriend, Items when someone is
-/// low on HP), with More straight above the big button. Less-used commands hide behind More, and
-/// with them Auto and the fight's pace. Holding any button makes them all wiggle, like the iPhone
-/// home screen: drag them into any order (onto the big button, or into the "Behind More" tray),
-/// then tap Done.
+/// The commands in one row along the bottom, all the same size (the user, 2026-10-26: "the buttons
+/// to show as the same size at the bottom ... 'More' is all the way on the left"): More at the left
+/// end, your first command (Attack unless you change it) at the right end where the thumb rests,
+/// the time to choose as a ring round it, and between them, right to left, Skills, then whatever
+/// else turns up (Capture when there's a monster to befriend, Items when someone is low on HP).
+/// Less-used commands hide behind More, and with them Auto and the fight's pace. Holding any button
+/// makes them all wiggle, like the iPhone home screen: drag them into any order (onto the first, or
+/// into the "Behind More" tray), then tap Done.
 private struct CommandPad: View {
     let controller: BattleController
     /// Debug `more`: open from the start, for screenshots.
@@ -371,8 +349,7 @@ private struct CommandPad: View {
     /// The button last swapped with, so hovering over it doesn't swap back and forth.
     @State private var lastTarget: String?
 
-    private let mainSize: CGFloat = 88
-    private let buttonSize: CGFloat = 56
+    private let buttonSize = CommandRow.size
     private static let space = "commandPad"
 
     var body: some View {
@@ -392,8 +369,9 @@ private struct CommandPad: View {
         .onDisappear { controller.holdTurnClock(false, for: "arrange") }
     }
 
-    /// Your order (`GameSession.battleButtons`), split into the big button, the column beside it
-    /// (bottom up, above More) and the More menu, leaving out what can't be used right now.
+    /// Your order (`GameSession.battleButtons`), split into the first button (the row's right end),
+    /// the rest of the row (right to left, before More) and the More menu, leaving out what can't be
+    /// used right now.
     private var sections: (main: String?, column: [String], more: [String]) {
         let order = controller.session.battleButtons.filter(isAvailable)
         let divider = order.firstIndex(of: GameSession.moreDivider) ?? order.endIndex
@@ -417,30 +395,36 @@ private struct CommandPad: View {
 
     private var pad: some View {
         let (main, column, more) = sections
-        // While More's open its panel takes their place.
-        let shown = showMore ? [] : column
-        return ThumbArc {
-            if let main {
-                button(main, size: mainSize)
-                    .overlay { TurnClockRing(controller: controller, diameter: mainSize + 16) }
-                    .layoutValue(key: ArcSlot.self, value: 0)
-            }
-            // Left of the big button first, then up and to the left, then on round a wider arc
-            // (slot 3, straight up, is More's).
-            ForEach(Array(shown.enumerated()), id: \.element) { index, id in
-                button(id, size: buttonSize)
-                    .layoutValue(key: ArcSlot.self, value: index < 2 ? index + 1 : index + 2)
-                    .transition(.scale(scale: 0.2).combined(with: .opacity))
-            }
-            // More sits straight above the big button, always in the same spot, and opens there.
-            MoreMenu(controller: controller, commands: more + Self.paceIDs, open: $showMore, size: buttonSize,
-                     onPick: perform, onHold: arrange)
-                .layoutValue(key: ArcSlot.self, value: 3)
+        let count = 1 + column.count + (main == nil ? 0 : 1)
+        // A row with many buttons on a narrow phone (you can bring them all out from behind More)
+        // closes up and shrinks a little to fit.
+        return ViewThatFits(in: .horizontal) {
+            row(main: main, column: column, more: more, size: CommandRow.size, spacing: CommandRow.spacing, count: count)
+            row(main: main, column: column, more: more, size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, count: count)
         }
         .padding(.leading, 14)
         .animation(.spring(response: 0.38, dampingFraction: 0.72), value: showMore)
         .animation(.spring(response: 0.38, dampingFraction: 0.72), value: controller.canCapture)
         .animation(.spring(response: 0.38, dampingFraction: 0.72), value: controller.needsHealing)
+    }
+
+    /// More at the left end, opening up and to the right; the first button at the right end.
+    private func row(main: String?, column: [String], more: [String], size: CGFloat, spacing: CGFloat, count: Int) -> some View {
+        // More's panel reaches as far right as a row of three: a shorter one makes room for it.
+        let short = MoreMenu.width - (CGFloat(count) * size + CGFloat(count - 1) * spacing)
+        return HStack(alignment: .bottom, spacing: spacing) {
+            MoreMenu(controller: controller, commands: more + Self.paceIDs, open: $showMore, size: size,
+                     onPick: perform, onHold: arrange)
+            if short > spacing { Color.clear.frame(width: short - spacing, height: size) }
+            ForEach(Array(column.reversed()), id: \.self) { id in
+                button(id, size: size)
+                    .transition(.scale(scale: 0.2).combined(with: .opacity))
+            }
+            if let main {
+                button(main, size: size, isMain: true)
+                    .overlay { TurnClockRing(controller: controller, diameter: size + CommandRow.ring) }
+            }
+        }
     }
 
     private func arrange() {
@@ -502,28 +486,26 @@ private struct CommandPad: View {
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(Self.space)) } action: { trayFrame = $0 }
             .zIndex(tray.contains { $0 == dragging } ? 1 : 0)
 
-            HStack(alignment: .bottom, spacing: 14) {
-                RightToLeftRows {
-                    ForEach(row, id: \.self) { id in editTile(id, size: buttonSize) }
+            // The row as it plays: More at the left end, the first button at the right, the rest
+            // right to left between them (on up into a second row when they don't fit).
+            HStack(alignment: .bottom, spacing: CommandRow.spacing) {
+                RoundCommandButton(title: L("More"), icon: .more, size: buttonSize, tint: .quiet) {}
+                    .allowsHitTesting(false)
+                    .opacity(0.5)
+                RightToLeftRows(spacing: CommandRow.spacing) {
+                    ForEach(main.map { [$0] + row } ?? row, id: \.self) { id in editTile(id, size: buttonSize, isMain: id == main) }
                 }
-                .zIndex(row.contains { $0 == dragging } ? 1 : 0)
-                VStack(spacing: 26) {
-                    RoundCommandButton(title: L("More"), icon: .more, size: buttonSize, tint: .quiet) {}
-                        .allowsHitTesting(false)
-                        .opacity(0.5)
-                    if let main { editTile(main, size: mainSize) }
-                }
-                .zIndex(main == dragging ? 1 : 0)
+                .zIndex(order[..<divider].contains { $0 == dragging } ? 1 : 0)
             }
             .padding(.leading, 14)
         }
     }
 
     /// A wiggling button that can be dragged; taps do nothing while rearranging.
-    private func editTile(_ id: String, size: CGFloat) -> some View {
+    private func editTile(_ id: String, size: CGFloat, isMain: Bool = false) -> some View {
         let isDragged = dragging == id
         let center = frames[id].map { CGPoint(x: $0.midX, y: $0.midY) } ?? dragPoint
-        return button(id, size: size)
+        return button(id, size: size, isMain: isMain)
             .allowsHitTesting(false)
             .modifier(Wiggle(active: !isDragged))
             .opacity(id == "capture" && !controller.canCapture ? 0.7 : 1)
@@ -568,24 +550,24 @@ private struct CommandPad: View {
             lastTarget = nil
             return
         }
-        // Something always has to be the big button.
+        // Something always has to be the first button.
         if order.first == GameSession.moreDivider, order.count > 1 { order.swapAt(0, 1) }
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { editing = order }
         UISelectionFeedbackGenerator().selectionChanged()
     }
 
-    private func button(_ id: String, size: CGFloat) -> some View {
+    private func button(_ id: String, size: CGFloat, isMain: Bool = false) -> some View {
         let info = BattleCommand(id)
         return RoundCommandButton(title: info.title, icon: id == "items" && controller.needsHealing ? .heartPlus : info.icon,
-                                  size: size, tint: tint(for: id, big: size == mainSize), onHold: arrange) {
+                                  size: size, tint: tint(for: id, main: isMain), onHold: arrange) {
             perform(id)
         }
     }
 
-    private func tint(for id: String, big: Bool) -> RoundCommandButton.Tint {
+    private func tint(for id: String, main: Bool) -> RoundCommandButton.Tint {
         if id == "capture" { return .special }
         if id == "items", controller.needsHealing { return .heal }
-        return big ? .primary : .normal
+        return main ? .primary : .normal
     }
 
     private func perform(_ id: String) {
@@ -601,11 +583,11 @@ private struct CommandPad: View {
     }
 }
 
-/// More, straight above the big button: a round button that, tapped, grows up and to the left into a
-/// panel listing what waits behind it (the commands put there, then Auto and the fight's pace), its
-/// dots turning into a cross that closes it, as the map's menu does (playtesting 2026-10-24: it
-/// scattered more round buttons over the arc). It takes only the button's room. Holding it
-/// rearranges the buttons.
+/// More, at the left end of the row: a round button that, tapped, opens a panel up and to the
+/// right of it, over the field, listing what waits behind it (the commands put there, then Auto and
+/// the fight's pace), its dots turning into a cross that closes it, as the map's menu does
+/// (playtesting 2026-10-24: it scattered more round buttons over the arc). It takes only the
+/// button's room, and the row stays as it is under the panel. Holding it rearranges the buttons.
 private struct MoreMenu: View {
     let controller: BattleController
     let commands: [String]
@@ -614,70 +596,82 @@ private struct MoreMenu: View {
     let onPick: (String) -> Void
     let onHold: () -> Void
 
-    private static let width: CGFloat = 176
+    /// The panel's width (the row makes room for it to the right of More: `CommandPad.row`).
+    static let width: CGFloat = 176
     private static let spring = Animation.spring(response: 0.34, dampingFraction: 0.78)
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: 0) {
-            if open {
-                VStack(alignment: .leading, spacing: 2) {
-                    ForEach(Array(commands.enumerated()), id: \.element) { index, id in
-                        row(id)
-                            // One after another up from the button as it opens.
-                            .transition(.asymmetric(
-                                insertion: .offset(y: 14).combined(with: .opacity)
-                                    .animation(Self.spring.delay(Double(commands.count - 1 - index) * 0.035)),
-                                removal: .opacity.animation(.easeOut(duration: 0.12))))
-                    }
+        PressButton(action: {
+            SoundEffects.shared.play(.tap, volume: 0.7)
+            open.toggle()
+        }, onHold: onHold) {
+            Group {
+                if open {
+                    IconImage(.close, size: size * 0.4)
+                } else {
+                    IconImage(.more, size: size * 0.56)
+                        .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
                 }
-                .padding(.top, 8)
-                .padding(.horizontal, 4)
             }
-            PressButton(action: {
-                SoundEffects.shared.play(.tap, volume: 0.7)
-                open.toggle()
-            }, onHold: onHold) {
-                Group {
-                    if open {
-                        IconImage(.close, size: size * 0.4)
-                    } else {
-                        IconImage(.more, size: size * 0.56)
-                            .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
-                    }
-                }
-                .foregroundStyle(.white)
-                .frame(width: size, height: size)
-            }
-            .accessibilityLabel(open ? L("Close") : L("More"))
+            .foregroundStyle(.white)
+            .frame(width: size, height: size)
         }
-        .frame(width: open ? Self.width : size, alignment: .trailing)
+        .accessibilityLabel(open ? L("Close") : L("More"))
         .background(
-            RoundedRectangle(cornerRadius: open ? 16 : size / 2, style: .continuous)
+            Circle()
                 .fill(LinearGradient(colors: HUDStyle.tile, startPoint: .top, endPoint: .bottom))
-                .overlay(RoundedRectangle(cornerRadius: open ? 16 : size / 2, style: .continuous)
-                    .strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
-                .overlay(alignment: .bottomTrailing) {
+                .overlay(Circle().strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
+                .overlay(
                     // The button's gloss; none on the cross.
                     Ellipse().fill(.white.opacity(open ? 0 : 0.35))
                         .frame(width: size * 0.5, height: size * 0.2)
-                        .padding(.bottom, size * 0.7)
-                        .padding(.trailing, size * 0.25)
-                }
+                        .offset(y: -size * 0.3)
+                )
         )
         .shadow(color: .black.opacity(0.4), radius: 4, x: 0, y: 4)
-        .overlay(alignment: .bottomTrailing) {
+        .overlay(alignment: .bottom) {
             if !open {
                 Text(L("More"))
                     .font(HUDStyle.font(10))
                     .foregroundStyle(HUDStyle.cream)
                     .shadow(color: .black, radius: 0, x: 1, y: 1)
                     .fixedSize()
-                    .frame(width: size)
                     .offset(y: 15)
             }
         }
+        .overlay(alignment: .topLeading) {
+            if open {
+                panel
+                    // Its bottom a little above the button, its left edge level with the button's.
+                    .alignmentGuide(.top) { $0[.bottom] + 10 }
+                    .transition(.scale(scale: 0.4, anchor: .bottomLeading).combined(with: .opacity))
+            }
+        }
         .animation(Self.spring, value: open)
-        .frame(width: size, height: size, alignment: .bottomTrailing)
+    }
+
+    /// What waits behind More, in a window of the button's blue.
+    private var panel: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(Array(commands.enumerated()), id: \.element) { index, id in
+                row(id)
+                    // One after another up from the button as it opens.
+                    .transition(.asymmetric(
+                        insertion: .offset(y: 14).combined(with: .opacity)
+                            .animation(Self.spring.delay(Double(commands.count - 1 - index) * 0.035)),
+                        removal: .opacity.animation(.easeOut(duration: 0.12))))
+            }
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 4)
+        .frame(width: Self.width)
+        .fixedSize(horizontal: false, vertical: true)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(LinearGradient(colors: HUDStyle.tile, startPoint: .top, endPoint: .bottom))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
+        )
+        .shadow(color: .black.opacity(0.4), radius: 4, x: 0, y: 4)
     }
 
     private func row(_ id: String) -> some View {
@@ -727,7 +721,7 @@ private struct MoreMenu: View {
     }
 }
 
-/// The time left to choose, draining round the big button: gold, red for the last two seconds,
+/// The time left to choose, draining round the row's first button: gold, red for the last two seconds,
 /// with the seconds on it. When it runs out the hero attacks. Nothing while no clock is ticking.
 private struct TurnClockRing: View {
     let controller: BattleController
@@ -761,7 +755,7 @@ private struct TurnClockRing: View {
     }
 }
 
-/// Auto at work: the big button's corner turns gold and says so, its ring turning, and a tap takes
+/// Auto at work: the commands' corner turns gold and says so, its ring turning, and a tap takes
 /// the fight back from the next round. (The switch that starts it is behind More.)
 private struct AutoPlaying: View {
     let onTakeOver: () -> Void
@@ -807,7 +801,9 @@ private struct AutoPlaying: View {
     }
 }
 
-/// Which place round the big button a command takes (`ThumbArc`): 0 is the big button.
+/// Which place round the big button a command takes (`ThumbArc`): 0 is the big button. A fight
+/// lays its commands out in a row now (`CommandRow`); the arc is left for the How to play picture
+/// (`StoryScenes`).
 nonisolated struct ArcSlot: LayoutValueKey {
     static let defaultValue = 0
 }
@@ -861,10 +857,10 @@ struct ThumbArc: Layout {
     }
 }
 
-/// Your companion's turn, after the hero's choice: Attack in the big button's spot, and round it
-/// on the same arc its Skills, Guard, and Auto to let it decide for itself. The chip on top shows
-/// whose turn it is. The hero's choice is made by then, so there's no going back to it (that would
-/// start their clock over).
+/// Your companion's turn, after the hero's choice: the same row as the hero's, Auto to let it
+/// decide for itself where More is, then Guard, its Skills, and Attack at the right end. The chip
+/// on top shows whose turn it is. The hero's choice is made by then, so there's no going back to
+/// it (that would start their clock over).
 private struct CompanionPad: View {
     let controller: BattleController
 
@@ -883,22 +879,30 @@ private struct CompanionPad: View {
                 .background(Capsule().fill(HUDStyle.ink.opacity(0.88)).overlay(Capsule().strokeBorder(HUDStyle.gold.opacity(0.7), lineWidth: 1.5)))
             }
 
-            ThumbArc {
-                RoundCommandButton(title: L("Attack"), icon: .tooth, size: 88, tint: .primary) { controller.attack() }
-                    .overlay { TurnClockRing(controller: controller, diameter: 104) }
-                    .layoutValue(key: ArcSlot.self, value: 0)
+            HStack(alignment: .bottom, spacing: CommandRow.spacing) {
+                RoundCommandButton(title: L("Auto"), icon: .paw, size: CommandRow.size, tint: .quiet) { controller.letCompanionDecide() }
+                RoundCommandButton(title: L("Guard"), icon: .shield, size: CommandRow.size, tint: .normal) { controller.defend() }
                 if !controller.companionSkills.isEmpty {
-                    RoundCommandButton(title: L("Skills"), icon: .sparkles, size: 56, tint: .normal) { controller.openSkills() }
-                        .layoutValue(key: ArcSlot.self, value: 1)
+                    RoundCommandButton(title: L("Skills"), icon: .sparkles, size: CommandRow.size, tint: .normal) { controller.openSkills() }
                 }
-                RoundCommandButton(title: L("Guard"), icon: .shield, size: 56, tint: .normal) { controller.defend() }
-                    .layoutValue(key: ArcSlot.self, value: controller.companionSkills.isEmpty ? 1 : 2)
-                RoundCommandButton(title: L("Auto"), icon: .paw, size: 56, tint: .quiet) { controller.letCompanionDecide() }
-                    .layoutValue(key: ArcSlot.self, value: 3)
+                RoundCommandButton(title: L("Attack"), icon: .tooth, size: CommandRow.size, tint: .primary) { controller.attack() }
+                    .overlay { TurnClockRing(controller: controller, diameter: CommandRow.size + CommandRow.ring) }
             }
         }
         .padding(.leading, 14)
     }
+}
+
+/// The commands' row along the bottom (`CommandPad`, `CompanionPad`): every button the same size,
+/// evenly spaced; the labels hang below the buttons, outside the layout.
+nonisolated enum CommandRow {
+    static let size: CGFloat = 56
+    static let spacing: CGFloat = 14
+    /// Closed up, for a row too long for a narrow phone upright.
+    static let narrowSize: CGFloat = 42
+    static let narrowSpacing: CGFloat = 8
+    /// How much wider than its button the turn clock's ring is.
+    static let ring: CGFloat = 14
 }
 
 /// The name and icon of a battle button id (see `GameSession.battleButtons`).
@@ -1154,11 +1158,8 @@ private struct ChoiceCard<Content: View>: View {
     let title: String
     let icon: GameIcon
     let onBack: () -> Void
-    /// Taller upright, for the skills' tiles: three rows of them.
-    var tall = false
     @ViewBuilder let content: () -> Content
     @State private var contentHeight: CGFloat = 0
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -1169,7 +1170,7 @@ private struct ChoiceCard<Content: View>: View {
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
             }
             .scrollBounceBehavior(.basedOnSize)
-            .frame(height: min(max(contentHeight, 1), tall && verticalSizeClass != .compact ? 330 : 220))
+            .frame(height: min(max(contentHeight, 1), 220))
             .padding(12)
         }
         .frame(width: 300)
@@ -1177,12 +1178,42 @@ private struct ChoiceCard<Content: View>: View {
     }
 }
 
-/// The skills as tiles, four to a row, as a game's skill bar shows them.
-private struct SkillTiles<Tiles: View>: View {
+/// The skills as tiles in one row, as a game's skill bar shows them (the user, 2026-10-26: laid
+/// out side by side, as the commands are), sliding sideways when there are more than fit. The
+/// window hugs the row up to the room there is.
+private struct SkillBar<Tiles: View>: View {
+    let title: String
+    let icon: GameIcon
+    let onBack: () -> Void
+    /// What to say instead of the tiles, when there are none.
+    let empty: String?
     @ViewBuilder let tiles: () -> Tiles
+    @State private var rowWidth: CGFloat = 0
+
+    /// No narrower than this, so the title fits.
+    private static let minWidth: CGFloat = 240
+    private static let padding: CGFloat = 12
 
     var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 6, content: tiles)
+        VStack(alignment: .leading, spacing: 0) {
+            FLTitleBar(title: title, icon: icon, onClose: onBack)
+            Group {
+                if let empty {
+                    EmptyNote(empty)
+                        .frame(maxWidth: .infinity)
+                } else {
+                    ScrollView(.horizontal) {
+                        HStack(spacing: 6, content: tiles)
+                            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { rowWidth = $0 }
+                    }
+                    .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(Self.padding)
+        }
+        .frame(maxWidth: empty == nil ? max(Self.minWidth, rowWidth + 2 * Self.padding) : 300)
+        .gameWindow()
     }
 }
 
@@ -1194,6 +1225,9 @@ private struct SkillTileButton: View {
     let cost: Int
     let affordable: Bool
     let action: () -> Void
+
+    /// As wide as four to a row made them on a phone upright.
+    static let width: CGFloat = 68
 
     var body: some View {
         Button(action: action) {
@@ -1231,7 +1265,7 @@ private struct SkillTileButton: View {
             }
             .padding(.vertical, 6)
             .padding(.horizontal, 2)
-            .frame(maxWidth: .infinity)
+            .frame(width: Self.width)
             .background(RoundedRectangle(cornerRadius: 10).fill(affordable ? HUDStyle.cream : HUDStyle.dim))
             .saturation(affordable ? 1 : 0)
             .opacity(affordable ? 1 : 0.6)

@@ -263,6 +263,7 @@ final class GameSession {
         guard !isDeleted else { return }
         data.position = playerPosition.map { [Double($0.x), Double($0.y)] }
         if !seen.isEmpty { data.explored = (data.explored ?? [:]).merging(seen) { $1 } }
+        tidyItemOrders()
         data.savedAt = Date()
         SaveStore.save(data)
         lastSaved = Date()
@@ -1347,8 +1348,10 @@ final class GameSession {
         return true
     }
 
+    /// What you carry to use, in your order of the bag (`GameSession+ItemOrder`), as the gear and
+    /// materials are.
     var consumables: [ItemDef] {
-        content.items.filter { $0.type == .consumable && count(of: $0.id) > 0 }
+        bagItems.filter { $0.type == .consumable }
     }
 
     /// What you can drink or feed in battle (not eggs or Seal Stones).
@@ -1368,11 +1371,11 @@ final class GameSession {
     }
 
     var bagEquipment: [ItemDef] {
-        content.items.filter { ItemType.equipmentSlots.contains($0.type) && count(of: $0.id) > 0 }
+        bagItems.filter { ItemType.equipmentSlots.contains($0.type) }
     }
 
     var bagMaterials: [ItemDef] {
-        content.items.filter { $0.type == .material && count(of: $0.id) > 0 }
+        bagItems.filter { $0.type == .material }
     }
 
     /// Why the hero can't equip `item`, or nil if they can.

@@ -200,6 +200,9 @@ nonisolated struct SaveData: Codable, Sendable {
     var lostPiles: [LostPile]?
     /// What you've put up for trade, by id (`GameSession.forTrade`).
     var forTrade: [String]?
+    /// Your order of the bag and of the bank, by item id (`GameSession+ItemOrder`): nil, the game's.
+    var bagOrder: [String]?
+    var bankOrder: [String]?
 }
 
 /// A day's bounties (the Quests tab): a few small jobs, new each calendar day.
@@ -388,7 +391,7 @@ enum SaveStore {
     }
 
     /// A backup brought back (the title screen's Import a backup) as a game of its own, in a new
-    /// slot so it never overwrites one. Throws when the file isn't a Storyleaf save.
+    /// slot so it never overwrites one. Throws when the file isn't one of this game's saves.
     static func imported(_ raw: Data) throws -> SaveData {
         var data = try JSONDecoder().decode(SaveData.self, from: raw)
         data.slot = "imported-" + UUID().uuidString.prefix(8).lowercased()
