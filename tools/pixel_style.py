@@ -37,7 +37,8 @@ CODE_PROPS = {"candy_cane", "ship", "cave_ladder", "cave_rope", "waystone"}
 
 def reference():
     """{kind: [png paths]}: every shipped sprite RD drew. Icons are the 32 × 32 item icons tools/weapon_art.py
-    and tools/armour_art.py made from picked RD drawings; creatures the monsters; scenery props, buildings
+    and tools/armour_art.py made from picked RD drawings till 2026-10-26 (`legacy_rd_icons`: the game
+    ships them at 64 now, kind `rd_item`); creatures the monsters; scenery props, buildings
     and tiles; buildings also on their own (a 96-pixel house holds fewer colours to its size than a bush,
     so RD's own failed a third of the scenery bands)."""
     assets = json.loads((ROOT / "art" / "assets.json").read_text())["assets"]
@@ -54,12 +55,32 @@ def reference():
             out["scenery"].append(path)
             if a["kind"] == "building":
                 out["building"].append(path)
-    out["icon"] = [SPRITES / f"item_{i}.png" for i in sorted(rd_items()) if (SPRITES / f"item_{i}.png").exists()]
+    out["icon"] = legacy_rd_icons()
+    return out
+
+
+def legacy_rd_icons():
+    """RD's weapon and armour icons as the game had them till 2026-10-26, shrunk to 32 and outlined in the
+    house violet (written to a temporary folder): the reference of the `icon` bands, which judge sprites
+    in the 32-pixel look (`check --kind icon`, `pixel_kit --demo`)."""
+    import tempfile
+    import armour_art
+    import item_art
+    import weapon_art
+    folder = pathlib.Path(tempfile.mkdtemp())
+    out = []
+    for item_id, (path, turn) in sorted(weapon_art.PICKED.items()):
+        icon = weapon_art.shrink(weapon_art.load(weapon_art.VARIANTS / path, turn), item_art.SIZE, weapon_art.ICON_INNER)
+        (folder / f"item_{item_id}.png").write_bytes(icon.png())
+        out.append(folder / f"item_{item_id}.png")
+    for item_id, (shape, mat, tint) in sorted(armour_art.plan().items()):
+        (folder / f"item_{item_id}.png").write_bytes(armour_art.icon(shape, mat, tint, small=True).png())
+        out.append(folder / f"item_{item_id}.png")
     return out
 
 
 def rd_items():
-    """Items whose icon RD drew: the weapons and armour shrunk from picked RD drawings, and any item
+    """Items whose icon RD drew: the weapons and armour made from picked RD drawings, and any item
     sprite generated outright (assets.json, not drawn by tools/item_art.py: the Potion)."""
     import armour_art
     import item_art
@@ -516,6 +537,17 @@ ITEM_RULES = {
 }
 HARD_BY_KIND["item"] = {name for name, (_way, _limit, hard) in ITEM_RULES.items() if hard}
 
+# RD's own item icons (kind `rd_item`: the weapons and armour from tools/weapon_art.py and armour_art.py,
+# the Potion): held to the clean look's size and outline, not its texture, which is RD's painting and
+# stays as drawn (the user, 2026-10-26, option 1; CLAUDE.md: never redraw RD's art). A magic weapon's glow
+# is light round it, so partly clear pixels are allowed here.
+# Only what the code sets: the size and the outline. How full the tile is (an axe RD drew small), the band
+# inside the outline (a cloak's lit edge) and a dark ring there (a dark red axe's shading) are its painting.
+RD_ITEM_RULES = {name: ITEM_RULES[name] for name in ("canvas", "native", "outline_hue", "outline_rel", "line_value")}
+RD_ITEM_RULES["outline_rel"] = ("max", 0.32, True)
+RD_ITEM_RULES["line_value"] = ("max", 0.15, True)
+HARD_BY_KIND["rd_item"] = {name for name, (_way, _limit, hard) in RD_ITEM_RULES.items() if hard}
+
 
 def calibrate():
     ref = reference()
@@ -542,9 +574,9 @@ def calibrate():
 
 def judge(m, kind):
     """[(metric, value, band, ok)] for one sprite's metrics against its kind's bands."""
-    if kind == "item":
+    if kind in ("item", "rd_item"):
         out = []
-        for name, (way, limit, _hard) in ITEM_RULES.items():
+        for name, (way, limit, _hard) in (ITEM_RULES if kind == "item" else RD_ITEM_RULES).items():
             v = m.get(name)
             if v is None:
                 continue
@@ -803,10 +835,13 @@ def compare_items():
     lumps = lumpy_arcs()
     print(f"round shapes off their clean arcs (should be none): {len(lumps)}"
           + (": " + ", ".join(f"{i} {n} px" for i, n in lumps[:12]) if lumps else ""))
-    for label, paths in (("RD's Potion (the reference, should pass)", [SPRITES / "item_potion.png"]),
-                         ("clean item icons (should pass)", clean_icons()),
-                         ("grained finish, 32 and blown up to 64 (should fail)", grained_icons())):
-        res = score(paths, "item")
+    ids = {i["id"] for i in json.loads((ROOT / "content" / "items.json").read_text())["items"]}
+    rd = [SPRITES / f"item_{i}.png" for i in sorted(rd_items() & ids) if (SPRITES / f"item_{i}.png").exists()]
+    for label, paths, kind in (("RD's Potion (the reference, should pass)", [SPRITES / "item_potion.png"], "item"),
+                               ("clean item icons (should pass)", clean_icons(), "item"),
+                               ("RD's own icons, size and outline (kind rd_item, should pass)", rd, "rd_item"),
+                               ("grained finish, 32 and blown up to 64 (should fail)", grained_icons(), "item")):
+        res = score(paths, kind)
         fails = {}
         for _, (_, _, f) in res.items():
             for n, *_ in f:
@@ -819,10 +854,10 @@ def compare_items():
 
 def compare():
     compare_items()
-    # The `icon` bands, calibrated on RD's 32-pixel weapon and armour icons, still judge those, and must
-    # still fail the flat designs.
+    # The `icon` bands, calibrated on RD's weapon and armour icons at 32 (as they were till 2026-10-26),
+    # still pass those, and must still fail the flat designs.
     ref = reference()["icon"]
-    for label, paths in (("RD icons (reference, should pass)", ref),
+    for label, paths in (("RD icons at 32, the icon bands' reference (should pass)", ref),
                          ("flat designs, unfinished (should fail)", flat_designs())):
         res = score(paths, "icon")
         fails = {}

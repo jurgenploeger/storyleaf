@@ -66,18 +66,22 @@ These are the rules the numbers measure. A sprite that keeps them looks like Sto
 ### Acceptance criteria (the checklist)
 
 Every item icon, drawn new or changed, meets all of these. They sum up what the rest of this section found,
-round by round, each with the playtesting that taught it; the sections below say why and how.
+round by round, each with the playtesting that taught it; the sections below say why and how. An icon RD
+drew (the weapons and armour, the potions) is RD's painting and keeps it: it meets 1 as `--kind rd_item`,
+then 2, 3, 4, 5 and 15 to 18; the rest of B is about how code draws, so it isn't held to them.
 
 **A. By the tools** (fail one and it doesn't ship):
 
 1. `python3 tools/pixel_style.py check --kind item <png>`: every hard rule passes, and 80% of the soft ones.
    A soft miss is allowed only where the shape explains it (a whip's thin lash, a necklace's cords, sparkles)
-   and the eye agrees.
+   and the eye agrees. An RD icon: `--kind rd_item`, its size and outline only (64 pixels, drawn there, the
+   outline a deep shade of what it rounds, deep enough); its texture, rim and fill are RD's painting.
 2. `python3 tools/pixel_style.py compare`: no icon comes apart from its design (`detached`: as many pieces as
    its drawing, sparkles aside), no round shape is off its clean arc (`lumpy_arcs`: rim and hole, lower half,
-   as seen), RD's Potion passes, and the old grained finish (at 32 and blown up to 64) still fails every time.
+   as seen), RD's Potion and every RD icon pass, and the old grained finish (at 32 and blown up to 64) still
+   fails every time.
 3. After any change to the finish (`pixel_kit`) or a family's helper: render everything (`item_art.py`,
-   `coin_art.py`, `clean_icon_art.py`), list the icons that changed most against the last commit, and look at
+   `coin_art.py`, `clean_icon_art.py`, `weapon_art.py`, `armour_art.py`), list the icons that changed most against the last commit, and look at
    each of them (B and C). Every icon that changed should be one you meant to change: rendering is repeatable,
    an icon the same however many others were rendered before it, so a stray change is a bug in the finish.
 
@@ -220,9 +224,21 @@ variety=0, wide=True`; `tools/clean_icon_art.py` and `tools/coin_art.py` are the
 
 **Every code-drawn item icon is in the clean look (2026-10-26).** The coins (`coin_art.py`), the Seal Stones
 and the lucky clover (`clean_icon_art.py`) are drawn for it at 64; every other one is `item_art.py`'s
-32-pixel design finished by `pixel_kit.restyle(clean=True)` at 64, palette swaps (`derive`) too. Weapons and
-armour drawn by RD (`weapon_art.py`, `armour_art.py`) are RD's own and stay as they are; the `icon` bands
-still judge them. A new item: design it in `item_art.py` as before (or draw it at 64 in
+32-pixel design finished by `pixel_kit.restyle(clean=True)` at 64, palette swaps (`derive`) too.
+
+**RD's weapons and armour are at 64 too (2026-10-26).** They came from RD drawings made at 64, shrunk to
+32 and outlined in the house violet, and failed every rule (asked "Have you updated all item visuals?",
+the user picked keeping RD's drawing as it is over repainting it in the clean look). Now each is RD's
+drawing at its own size, its own black outline taken off, centred, and outlined in a deep shade of what it
+rounds (`weapon_art.icon`, `pixel_kit.outline_deep`, `deep_line`: about a fifth of the value beside it, never
+over 0.13; lighter, the lines read grey at 0.12 to 0.18): nothing RD drew is moved, resampled or repainted.
+They're held to the clean look's size and outline only (`--kind rd_item`): their dithering, speckle and
+busier colour are RD's, like the Potion's own, and so is their size: 11 weapons RD drew small (some axes,
+staves, the small hatchet) sit smaller in their tiles than the rest, as resampling RD's pixels would ragged
+them. A magic weapon's glow is drawn round its tip at the icon's size; its `glowAt` is in the icon's pixels
+(64 here, 32 for a drawn one), and in hand its glow comes from the held sprite. The held sprites are as they
+were. The `icon` bands, calibrated on these icons at 32, keep that reference (`legacy_rd_icons`) for
+sprites in the 32-pixel look. A new item: design it in `item_art.py` as before (or draw it at 64 in
 `clean_icon_art.py` when its design can't carry it), check it with `--kind item`, and look at it beside the
 Potion at the size the bag shows it, and in the game (`tools/screenshots.txt`: `clean_icons`, `clean_coins`).
 

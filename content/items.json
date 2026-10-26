@@ -133,10 +133,7 @@
       ],
       "description": "Hums faintly with magic.",
       "glow": "#B8FF9A",
-      "glowAt": [
-        22.5,
-        7.5
-      ]
+      "glowAt": [53, 5]
     },
     {
       "id": "iron_axe",
@@ -170,10 +167,7 @@
       "level": 14,
       "description": "Focuses elemental power.",
       "glow": "#9AF4FF",
-      "glowAt": [
-        21,
-        9
-      ]
+      "glowAt": [51, 8]
     },
     {
       "id": "tamer_whip",
@@ -615,10 +609,7 @@
       "level": 31,
       "description": "Carved from the Smiling Forest's oldest oak.",
       "glow": "#7AF0FF",
-      "glowAt": [
-        22.5,
-        7.5
-      ]
+      "glowAt": [52, 6]
     },
     {
       "id": "star_wand",
@@ -636,10 +627,7 @@
       "level": 58,
       "description": "A shooting star, caught and polished.",
       "glow": "#FFE880",
-      "glowAt": [
-        20.5,
-        10.5
-      ]
+      "glowAt": [50, 7]
     },
     {
       "id": "beast_whip",
@@ -6177,10 +6165,7 @@
       ],
       "level": 150,
       "glow": "#FFF3A0",
-      "glowAt": [
-        22,
-        8
-      ],
+      "glowAt": [48, 7],
       "description": "Its tip holds a spark the Fallen Star left behind."
     },
     {
@@ -11419,10 +11404,7 @@
       ],
       "level": 200,
       "glow": "#FFF3C0",
-      "glowAt": [
-        21,
-        8
-      ],
+      "glowAt": [46, 12],
       "description": "Heartwood from Meadowbrook's oldest oak, crowned with gold leaves round a light that never dims."
     },
     {
