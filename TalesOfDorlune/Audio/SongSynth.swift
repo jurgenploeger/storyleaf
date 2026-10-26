@@ -157,7 +157,7 @@ nonisolated struct Tune: Sendable {
     }
 }
 
-/// Storyleaf's music synth. Instrument tracks are additive voices (a few partials each, with their
+/// The game's music synth. Instrument tracks are additive voices (a few partials each, with their
 /// own decay, attack, release, vibrato, chorus and a touch of breath or pluck noise) and a small drum
 /// kit, mixed in stereo through a hall reverb. Notes ring on under the next one, so plucked strings and
 /// bells overlap like real ones. Old chiptune tracks still play as before. Everything here runs off

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Storyleaf art with the Retro Diffusion API.
+"""Generate Tales of Dorlune art with the Retro Diffusion API.
 
 Reads art/assets.json, sends each asset's `request` to Retro Diffusion and saves the
 first image as art/sprites/<id>.png, which the game picks up on its next build.
@@ -76,7 +76,7 @@ def api_key() -> str:
 
 
 def call(method: str, path: str, key: str, body: dict | None = None, idempotency_key: str | None = None) -> dict:
-    headers = {"X-RD-Token": key, "Accept": "application/json", "User-Agent": "storyleaf-art-pipeline/1.0"}
+    headers = {"X-RD-Token": key, "Accept": "application/json", "User-Agent": "tales-of-dorlune-art-pipeline/1.0"}
     data = None
     if body is not None:
         data = json.dumps(body).encode()
@@ -392,7 +392,7 @@ def cmd_use(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Retro Diffusion art pipeline for Storyleaf")
+    parser = argparse.ArgumentParser(description="Retro Diffusion art pipeline for Tales of Dorlune")
     commands = parser.add_subparsers(dest="command", required=True)
 
     commands.add_parser("list", help="show assets and which are generated").set_defaults(run=cmd_list)

@@ -20,7 +20,7 @@ enum SeasonalIcon {
 
     static func update(on date: Date = GameSession.today) {
         let environment = ProcessInfo.processInfo.environment
-        guard environment["XCTestConfigurationFilePath"] == nil, (environment["STORYLEAF_DEBUG"] ?? "").isEmpty else { return }
+        guard environment["XCTestConfigurationFilePath"] == nil, (environment["TALES_OF_DORLUNE_DEBUG"] ?? "").isEmpty else { return }
         let app = UIApplication.shared
         guard app.supportsAlternateIcons, app.applicationState == .active else { return }
         let wanted = icon(on: date)

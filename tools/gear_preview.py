@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Previews worn armour on the hero: the same algorithm as Storyleaf/Art/GearOverlay.swift (chain
+"""Previews worn armour on the hero: the same algorithm as TalesOfDorlune/Art/GearOverlay.swift (chain
 links, open vests, pauldrons, robe hems, capes, helmets and hoods, gloves, boots and necklaces), on
 the same paper-doll layers the game stacks (tools/hero_layers.py), to tune it without a Mac.
 
