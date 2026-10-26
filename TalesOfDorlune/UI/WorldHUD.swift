@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// On-map HUD in Fairyland Online's style: round faces with HP/MP for you (and your EXP), your
+/// On-map HUD in Fairyland Online's style: round faces with HP, MP and XP for you and your
 /// companion and your party top-left (the date is on the map, `MapOverlay`), a framed minimap top-right with what
 /// just happened toasting under it, joystick bottom-left, and Chat and the menu bottom-right (one
 /// button that opens into the menu's pages). While you're talking to someone (or any window is open
@@ -169,7 +169,7 @@ private enum TopLeft {
     static let width: CGFloat = 214
 }
 
-/// Fairyland Online's top-left faces: you in a big round frame with your level, HP and MP; your companion
+/// Fairyland Online's top-left faces: you in a big round frame with your level, HP, MP and XP; your companion
 /// underneath with its own; and the friends in your party, smaller. Once three or more of you travel
 /// together, the others fold into one row of small faces under yours so they don't cover the map:
 /// tap the row to see everyone in full, and the arrow by the last friend to fold them again. Tap a
@@ -190,9 +190,9 @@ private struct StatusCluster: View {
                 PortraitRow(face: ArtLibrary.shared.face(GameSession.heroArt), level: hero.level, name: hero.name,
                             detail: session.heroClass.name, size: 52,
                             glowing: session.canChooseClass || session.canSpendSkillPoint) {
-                    TaggedBar(tag: L("H"), value: hero.hp, maximum: stats.hp, color: HUDStyle.hp)
-                    TaggedBar(tag: L("M"), value: hero.mp, maximum: stats.mp, color: HUDStyle.mp)
-                    // EXP to the next level, thin under the bars (playtesting 2026-10-24: it had a
+                    TaggedBar(tag: L("HP"), value: hero.hp, maximum: stats.hp, color: HUDStyle.hp)
+                    TaggedBar(tag: L("MP"), value: hero.mp, maximum: stats.mp, color: HUDStyle.mp)
+                    // XP to the next level, thin under the bars (playtesting 2026-10-24: it had a
                     // row of its own under the calendar).
                     ExpBar(value: hero.exp, maximum: GameSession.expToNext(level: hero.level))
                 }
@@ -208,8 +208,10 @@ private struct StatusCluster: View {
                     Button { onInspect(.pet(pet.id)) } label: {
                         PortraitRow(face: ArtLibrary.shared.face(session.artID(for: pet)), level: pet.level, name: pet.name,
                                     detail: pet.hp > 0 ? nil : L("Fainted"), size: 38) {
-                            TaggedBar(tag: L("H"), value: pet.hp, maximum: petStats.hp, color: HUDStyle.hp)
-                            TaggedBar(tag: L("M"), value: pet.mp, maximum: petStats.mp, color: HUDStyle.mp)
+                            TaggedBar(tag: L("HP"), value: pet.hp, maximum: petStats.hp, color: HUDStyle.hp)
+                            TaggedBar(tag: L("MP"), value: pet.mp, maximum: petStats.mp, color: HUDStyle.mp)
+                            // Its XP too, as yours (2026-10-26).
+                            ExpBar(value: pet.exp, maximum: GameSession.expToNext(level: pet.level))
                         }
                     }
                     .buttonStyle(.plain)
@@ -302,12 +304,14 @@ private struct FoldArrow: View {
     }
 }
 
-/// One face in the top-left: a round portrait with a level chip, then a name and bars on a panel.
+/// One face in the top-left: a round portrait with a level chip, then a name and bars on a panel,
+/// the portrait as tall as the panel (2026-10-26: "the same height as the block on the right").
 private struct PortraitRow<Bars: View>: View {
     let face: UIImage
     let level: Int
     let name: String
     var detail: String? = nil
+    /// The portrait's least size: it grows to the panel's height (`PortraitBeside`).
     let size: CGFloat
     var glowing = false
     /// The whole row's width, portrait and panel.
@@ -317,26 +321,54 @@ private struct PortraitRow<Bars: View>: View {
     var body: some View {
         // Top-aligned: the panel's top edge lines up with the portrait's, and so with the
         // minimap's across the screen.
-        HStack(alignment: .top, spacing: 5) {
-            Portrait(face: face, level: level, size: size, glowing: glowing)
+        PortraitBeside(width: width, least: size, spacing: 5) {
+            GeometryReader { proxy in
+                Portrait(face: face, level: level, size: min(proxy.size.width, proxy.size.height), glowing: glowing)
+            }
             VStack(alignment: .leading, spacing: 2) {
+                // Names and words in the game's rounded letters; only numbers are monospaced
+                // (2026-10-26).
                 HStack(spacing: 4) {
-                    Text(name).font(HUDStyle.mono(size > 40 ? 11 : 10)).foregroundStyle(HUDStyle.nameYellow).lineLimit(1)
+                    Text(name).font(HUDStyle.font(size > 40 ? 11 : 10)).foregroundStyle(HUDStyle.nameYellow).lineLimit(1)
                     if let detail {
-                        Text(detail).font(HUDStyle.mono(9)).foregroundStyle(HUDStyle.dim).lineLimit(1)
+                        Text(detail).font(HUDStyle.font(9)).foregroundStyle(HUDStyle.dim).lineLimit(1)
                     }
                 }
                 .shadow(color: .black, radius: 0, x: 1, y: 1)
                 bars()
             }
-            // The panel takes what the portrait (and the 5 between) leaves, less its own padding.
-            .frame(width: width - size - 5 - 14, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .padding(.horizontal, 7)
             .padding(.vertical, 4)
-            // As tall as the portrait beside it (playtesting 2026-10-17), its name and bars in the middle.
-            .frame(minHeight: size)
             .background(HUDStyle.panel)
         }
+    }
+}
+
+/// A portrait beside its panel: the panel as tall as its name and bars, the portrait a square as
+/// tall as that (at least `least`), the panel taking the rest of `width`. The panel's height doesn't
+/// hang on its width (one line of name, bars of fixed height), so it's measured first.
+private struct PortraitBeside: Layout {
+    let width: CGFloat
+    let least: CGFloat
+    let spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        CGSize(width: width, height: side(subviews))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard subviews.count == 2 else { return }
+        let length = side(subviews)
+        subviews[0].place(at: bounds.origin, anchor: .topLeading, proposal: ProposedViewSize(width: length, height: length))
+        subviews[1].place(at: CGPoint(x: bounds.minX + length + spacing, y: bounds.minY), anchor: .topLeading,
+                          proposal: ProposedViewSize(width: max(0, width - length - spacing), height: length))
+    }
+
+    private func side(_ subviews: Subviews) -> CGFloat {
+        guard subviews.count == 2 else { return least }
+        let panel = subviews[1].sizeThatFits(ProposedViewSize(width: max(0, width - least - spacing), height: nil)).height
+        return max(least, panel.rounded(.up))
     }
 }
 
@@ -380,19 +412,26 @@ private struct Portrait: View {
     }
 }
 
+/// A bar in the top-left with its tag (HP, MP, XP) on a dark chip after it, the chips one width so
+/// the bars line up. XP's bar is thinner and has no numbers.
 private struct TaggedBar: View {
     let tag: String
     let value: Int
     let maximum: Int
     let color: Color
+    var height: CGFloat = 9
+    var showsNumbers = true
 
     var body: some View {
         HStack(spacing: 3) {
-            StatBar(label: "", value: value, maximum: maximum, color: color, height: 9)
+            StatBar(label: "", value: value, maximum: maximum, color: color, height: height, showsNumbers: showsNumbers)
             Text(tag)
-                .font(HUDStyle.mono(9))
+                .font(HUDStyle.font(9))
                 .foregroundStyle(.white)
-                .frame(width: 14, height: 11)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .padding(.horizontal, 1)
+                .frame(width: 20, height: 11)
                 .background(RoundedRectangle(cornerRadius: 3).fill(HUDStyle.frameDark))
         }
     }
@@ -461,20 +500,16 @@ private struct GameToasts: View {
     }
 }
 
-/// EXP toward the next level: a thin bar under the hero's HP and MP, as long as theirs.
+/// XP toward the next level: a thin bar under HP and MP, tagged as they are and as long as theirs.
 private struct ExpBar: View {
     let value: Int
     let maximum: Int
 
     var body: some View {
-        HStack(spacing: 3) {
-            StatBar(label: "", value: value, maximum: maximum, color: HUDStyle.exp, height: 5, showsNumbers: false)
-            // Where the H and M tags stand beside their bars.
-            Color.clear.frame(width: 14, height: 5)
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(L("EXP"))
-        .accessibilityValue("\(value) / \(maximum)")
+        TaggedBar(tag: L("XP"), value: value, maximum: maximum, color: HUDStyle.exp, height: 6, showsNumbers: false)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(L("XP"))
+            .accessibilityValue("\(value) / \(maximum)")
     }
 }
 

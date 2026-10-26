@@ -111,7 +111,7 @@ struct ItemTargetPicker: View {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text(facts.name).font(HUDStyle.font(13))
-                        Text(L("Lv {level}", ["level": facts.level])).font(HUDStyle.mono(10)).foregroundStyle(HUDStyle.dim)
+                        Text(L("Lv {level}", ["level": facts.level])).font(HUDStyle.font(10).monospacedDigit()).foregroundStyle(HUDStyle.dim)
                         if facts.hp <= 0 {
                             Text(L("Fainted")).font(HUDStyle.font(10)).foregroundStyle(HUDStyle.orange)
                         }

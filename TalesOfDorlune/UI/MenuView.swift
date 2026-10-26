@@ -1136,8 +1136,9 @@ private struct CompanionCard: View {
 
 /// Everything you carry in a grid of slots, like an adventurer's pack: potions and other things to
 /// use, spare gear, and materials, each with how many you have. A tap opens the item's card, with
-/// what it does and the button to use, give, hatch or wear it. Search, sort and pick the kinds to
-/// show at the top; gear better than what you wear has the gold upgrade arrow.
+/// what it does and the button to use, give, hatch or wear it; holding one and dragging it onto another
+/// moves it there (`ItemSlotMover`, your order of the bag). Search, sort and pick the kinds to show at
+/// the top; gear better than what you wear has the gold upgrade arrow.
 private struct BagTab: View {
     let session: GameSession
     @Binding var note: String?
@@ -1153,19 +1154,8 @@ private struct BagTab: View {
     /// Only the gear you can put on now (your class's, at your level).
     @AppStorage("bagWearableOnly") private var wearableOnly = false
 
-    /// Which kinds of thing the Bag shows. Nonisolated like the other enums in a `ForEach(id: \.self)`.
-    private nonisolated enum Shelf: String, CaseIterable {
-        case all, items, gear, materials
-
-        var title: String {
-            switch self {
-            case .all: L("All")
-            case .items: L("Items")
-            case .gear: L("Gear")
-            case .materials: L("Materials")
-            }
-        }
-    }
+    /// Which kinds of thing the Bag shows.
+    private typealias Shelf = ItemShelf
 
     private static let slot: CGFloat = 52
     private let columns = [GridItem(.adaptive(minimum: BagTab.slot + 6, maximum: BagTab.slot + 14), spacing: 8)]
@@ -1261,6 +1251,9 @@ private struct BagTab: View {
                     FilterChip(title: L("Can wear"), on: wearableOnly) { wearableOnly.toggle() }
                 }
             }
+            Text(L("Hold a slot and drag it onto another to move it."))
+                .font(HUDStyle.font(10))
+                .foregroundStyle(HUDStyle.dim)
         }
     }
 
@@ -1268,6 +1261,19 @@ private struct BagTab: View {
 
     private func arranged(_ items: [ItemDef]) -> [ItemDef] {
         ItemFinder.arrange(items, search: search, sort: sort, session: session)
+    }
+
+    /// Puts what was dragged where `target` is; sorted another way, the order you see is yours from
+    /// then on, so the sort goes back to Bag order.
+    private func move(_ id: String, onto target: String) {
+        // Within its own section: a potion dropped on a sword would land somewhere you can't see.
+        guard let moved = session.content.item(id), let there = session.content.item(target),
+              Shelf.allCases.contains(where: { $0 != .all && $0.holds(moved) && $0.holds(there) }) else { return }
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            guard session.moveItem(id, onto: target, on: .bag, sortedBy: sort) else { return }
+            sort = .standard
+        }
+        session.save()
     }
 
     /// One slot per kind of item, its count in the corner from two up, and the upgrade arrow on gear
@@ -1297,6 +1303,7 @@ private struct BagTab: View {
                         .padding(.trailing, 5)
                 }
                 .buttonStyle(PressScaleStyle())
+                .movableSlot(item, in: items, side: .bag, size: Self.slot) { move($0, onto: $1) }
                 .accessibilityLabel(session.count(of: item.id) > 1 ? L("{item}, {count}", ["item": item.name, "count": session.count(of: item.id)]) : item.name)
                 .accessibilityHint(L("Shows what it does and who can use it"))
             }
