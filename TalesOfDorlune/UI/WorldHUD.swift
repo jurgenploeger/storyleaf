@@ -171,8 +171,7 @@ private enum TopLeft {
 }
 
 /// Fairyland Online's top-left faces: you in a big round frame with your level, HP, MP and XP; your companion's
-/// face small on its bottom-right corner, a button of its own (2026-10-26: one stats block, yours; its HP a thin
-/// arc round its face while it's hurt); and the friends in your party, smaller. Once two or more friends travel
+/// face small on its bottom-right corner, a button of its own (2026-10-26: one stats block, yours); and the friends in your party, smaller. Once two or more friends travel
 /// with you, they fold into one row of small faces under yours so they don't cover the map: tap the row to see
 /// everyone in full, and the arrow by the last friend to fold them again. Your face or your stats open the Hero
 /// window, your companion's face the Companions window (`GameCoordinator.open`), a friend's face their card.
@@ -194,8 +193,8 @@ private struct StatusCluster: View {
                             glowing: session.canChooseClass || session.canSpendSkillPoint) {
                     TaggedBar(tag: L("HP"), value: hero.hp, maximum: stats.hp, color: HUDStyle.hp)
                     TaggedBar(tag: L("MP"), value: hero.mp, maximum: stats.mp, color: HUDStyle.mp)
-                    // XP to the next level, thin under the bars (playtesting 2026-10-24: it had a
-                    // row of its own under the calendar).
+                    // XP to the next level under the bars, as tall as they are (playtesting 2026-10-24:
+                    // it had a row of its own under the calendar; 2026-10-26: no thinner).
                     ExpBar(value: hero.exp, maximum: GameSession.expToNext(level: hero.level))
                 }
             }
@@ -266,9 +265,8 @@ private struct CompanionBadgeButton: View {
 
     var body: some View {
         let stats = session.stats(of: pet)
-        let health: CGFloat = stats.hp > 0 ? min(1, max(0, CGFloat(pet.hp) / CGFloat(stats.hp))) : 0
         Button(action: open) {
-            CompanionBadge(face: ArtLibrary.shared.face(session.artID(for: pet)), health: health, fainted: pet.hp <= 0)
+            CompanionBadge(face: ArtLibrary.shared.face(session.artID(for: pet)), fainted: pet.hp <= 0)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(L("{name}, level {level}: stats", ["name": pet.name, "level": pet.level]))
@@ -277,14 +275,11 @@ private struct CompanionBadgeButton: View {
 }
 
 /// Your companion's small round face: a bevelled ring round it and a dark rim outside that, so it
-/// reads as a button apart from your face beneath. While it's hurt, a thin red arc on the ring shows
-/// the HP it has left, from the top round clockwise; at full HP the ring is plain. Grey once it has
-/// fainted. No level chip, as small as it is: its level is in the Companions window, and read out.
+/// reads as a button apart from your face beneath (no HP arc on it: playtesting 2026-10-26; its HP
+/// is read out, and in the Companions window). Grey once it has fainted. No level chip, as small as it is: its level is in the Companions window, and read out.
 /// Drawn `size` across, tapped anywhere in a circle `target` across (44 points, Apple's least).
 private struct CompanionBadge: View {
     let face: UIImage
-    /// Its HP left, 0...1.
-    let health: CGFloat
     let fainted: Bool
 
     static let size: CGFloat = 30
@@ -307,16 +302,6 @@ private struct CompanionBadge: View {
             .clipShape(Circle())
             .saturation(fainted ? 0 : 1)
             .overlay(Circle().strokeBorder(HUDStyle.bevel, lineWidth: 2))
-            .overlay {
-                if !fainted && health < 1 {
-                    // On the bevel: a 2-point stroke on a circle 1 point in.
-                    Circle()
-                        .trim(from: 0, to: health)
-                        .stroke(HUDStyle.hp, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                        .padding(1)
-                }
-            }
             .background(Circle().fill(HUDStyle.frameDark).padding(-1.5))
             .shadow(color: .black.opacity(0.45), radius: 1.5, y: 1)
             .frame(width: Self.target, height: Self.target)
@@ -380,10 +365,14 @@ private struct PortraitRow<Bars: View>: View {
     var width: CGFloat = TopLeft.width
     @ViewBuilder let bars: () -> Bars
 
+    /// A row with no bars, only a name (a friend's).
+    private static var nameOnly: Bool { Bars.self == EmptyView.self }
+
     var body: some View {
         // Top-aligned: the panel's top edge lines up with the portrait's, and so with the
         // minimap's across the screen.
-        PortraitBeside(width: width, least: size, spacing: 5) {
+        // A little air between the face and the panel (playtesting 2026-10-26).
+        PortraitBeside(width: width, least: size, spacing: 9) {
             GeometryReader { proxy in
                 Portrait(face: face, level: level, size: min(proxy.size.width, proxy.size.height), glowing: glowing)
             }
@@ -397,11 +386,16 @@ private struct PortraitRow<Bars: View>: View {
                     }
                 }
                 .shadow(color: .black, radius: 0, x: 1, y: 1)
+                // The name up at the top, the bars down at the bottom, sharing out any room the
+                // portrait leaves (playtesting 2026-10-26: the name sat low, room above it). A friend's
+                // row, a name alone, keeps it in the middle.
+                if !Self.nameOnly { Spacer(minLength: 0) }
                 bars()
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: Self.nameOnly ? .leading : .topLeading)
             .padding(.horizontal, 7)
-            .padding(.vertical, 4)
+            .padding(.top, 2)
+            .padding(.bottom, 5)
             .background(HUDStyle.panel)
         }
     }
@@ -568,7 +562,7 @@ private struct ExpBar: View {
     let maximum: Int
 
     var body: some View {
-        TaggedBar(tag: L("XP"), value: value, maximum: maximum, color: HUDStyle.exp, height: 6, showsNumbers: false)
+        TaggedBar(tag: L("XP"), value: value, maximum: maximum, color: HUDStyle.exp, showsNumbers: false)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(L("XP"))
             .accessibilityValue("\(value) / \(maximum)")
@@ -811,14 +805,16 @@ private struct MinimapWindow: View {
 /// "!" or "?" floating over their head in gold, else a book.
 struct MinimapIcon: View {
     let kind: GameSession.MinimapMark.Kind
+    /// Across, in points: 13 on the minimap, bigger on the world map.
+    var size: CGFloat = 13
 
     var body: some View {
         ZStack {
             Circle().fill(fill)
             sign
         }
-        .frame(width: 13, height: 13)
-        .overlay(Circle().stroke(HUDStyle.ink, lineWidth: 1))
+        .frame(width: size, height: size)
+        .overlay(Circle().stroke(HUDStyle.ink, lineWidth: size > 16 ? 1.5 : 1))
     }
 
     @ViewBuilder private var sign: some View {
@@ -846,12 +842,12 @@ struct MinimapIcon: View {
 
     private func mark(_ text: String) -> some View {
         Text(verbatim: text)
-            .font(.system(size: 10, weight: .black, design: .rounded))
+            .font(.system(size: 10 * size / 13, weight: .black, design: .rounded))
             .foregroundStyle(HUDStyle.ink)
     }
 
     private func glyph(_ icon: GameIcon) -> some View {
-        IconImage(icon, size: 8).foregroundStyle(.white)
+        IconImage(icon, size: 8 * size / 13).foregroundStyle(.white)
     }
 
     private var fill: Color {

@@ -893,6 +893,7 @@
     "Free": "Бесплатно",
     "Checkpoint": "Контрольная точка",
     "Turn the map north up": "Повернуть карту севером вверх",
+    "{count} places": "Мест: {count}",
     "Undiscovered place": "Неоткрытое место",
     "N": "С",
     "E": "В",
