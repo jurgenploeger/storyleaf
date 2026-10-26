@@ -1,5 +1,5 @@
 # Scenes for tools/screenshots.sh (and the Screenshots GitHub Action).
-# name | STORYLEAF_DEBUG flags (see Storyleaf/App/DebugLaunch.swift) | seconds to settle after the first frame
+# name | TALES_OF_DORLUNE_DEBUG flags (see TalesOfDorlune/App/DebugLaunch.swift) | seconds to settle after the first frame
 title        |                                   | 6
 title_de     | lang=de                           | 6
 title_ja     | lang=ja                           | 6

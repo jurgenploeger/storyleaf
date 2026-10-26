@@ -1,7 +1,7 @@
 # Tales of Dorlune
 
 A cozy 2.5D pixel-art RPG for iPhone (portrait and landscape), inspired by Fairyland Online (2007).
-The bundle ID (`com.jurgenploeger.fairyland`) and the save files keep the game's first name, Fairyland; players know the game as Tales of Dorlune (since 0.8.11; Talewild from 0.8.1), set in the land of Dorlune, and the code and project are still called Storyleaf.
+The bundle ID (`com.jurgenploeger.fairyland`) and the save files keep the game's first name, Fairyland; players know the game as Tales of Dorlune (since 0.8.11; Talewild from 0.8.1), set in the land of Dorlune. The code and project are called TalesOfDorlune (Storyleaf until 2026-10-26).
 Built with SwiftUI + SpriteKit. Art is generated with [Retro Diffusion](https://www.retrodiffusion.ai).
 
 ## What's in the game
@@ -40,7 +40,7 @@ Built with SwiftUI + SpriteKit. Art is generated with [Retro Diffusion](https://
 Needs Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
 
 ```bash
-make open        # generates Storyleaf.xcodeproj and opens it in Xcode
+make open        # generates TalesOfDorlune.xcodeproj and opens it in Xcode
 ```
 
 Pick a simulator or your iPhone in the Xcode toolbar and press ⌘R (or run `make sim`).
@@ -83,7 +83,7 @@ Anything not generated yet shows as built-in placeholder pixel art.
 `python3 tools/rd.py generate <id> --force --variants 4` gives you options, and `python3 tools/rd.py use <id> <file>` picks one.
 Every generation is kept in `art-variants/<id>/`.
 
-The app icon and title logo come from the Figma file and live in `Storyleaf/Resources/Assets.xcassets`.
+The app icon and title logo come from the Figma file and live in `TalesOfDorlune/Resources/Assets.xcassets`.
 
 ## Screenshots without a Mac
 
@@ -94,7 +94,7 @@ artifact). On a private repo, macOS runner minutes count 10× against the Action
 
 ## Debug shortcuts
 
-Set `STORYLEAF_DEBUG` in the scheme's environment variables (comma-separated):
+Set `TALES_OF_DORLUNE_DEBUG` in the scheme's environment variables (comma-separated):
 `newgame`, `level=5`, `map=sunny_meadow`, `battle`, `menu=companions`, `npc=elder`, `landscape`.
 
 ## Project layout
@@ -104,14 +104,14 @@ project.yml            XcodeGen spec (source of truth for the Xcode project)
 content/               game data (JSON)
 art/                   sprite manifest + generated PNGs
 tools/rd.py            Retro Diffusion client (Python standard library only)
-Storyleaf/App/         app, coordinator, SpriteKit host, debug launch
-Storyleaf/Model/       save data, session rules (levels, quests, items), calendar
-Storyleaf/World/       isometric maps, walking, NPCs, ambience
-Storyleaf/Battle/      battle engine, controller, scene, skill effects
-Storyleaf/Audio/       storybook synth (additive instruments, drums, reverb) + music player
-Storyleaf/Art/         sprite loading and placeholder art
-Storyleaf/UI/          SwiftUI HUD, menus, dialogs, battle UI
-StoryleafTests/        rules and content tests
+TalesOfDorlune/App/         app, coordinator, SpriteKit host, debug launch
+TalesOfDorlune/Model/       save data, session rules (levels, quests, items), calendar
+TalesOfDorlune/World/       isometric maps, walking, NPCs, ambience
+TalesOfDorlune/Battle/      battle engine, controller, scene, skill effects
+TalesOfDorlune/Audio/       storybook synth (additive instruments, drums, reverb) + music player
+TalesOfDorlune/Art/         sprite loading and placeholder art
+TalesOfDorlune/UI/          SwiftUI HUD, menus, dialogs, battle UI
+TalesOfDorluneTests/        rules and content tests
 ```
 
 ## Working from your phone (no Mac needed)

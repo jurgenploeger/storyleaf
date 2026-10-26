@@ -391,7 +391,7 @@ enum SaveStore {
     }
 
     /// A backup brought back (the title screen's Import a backup) as a game of its own, in a new
-    /// slot so it never overwrites one. Throws when the file isn't a Storyleaf save.
+    /// slot so it never overwrites one. Throws when the file isn't one of this game's saves.
     static func imported(_ raw: Data) throws -> SaveData {
         var data = try JSONDecoder().decode(SaveData.self, from: raw)
         data.slot = "imported-" + UUID().uuidString.prefix(8).lowercased()

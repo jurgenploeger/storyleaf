@@ -5,7 +5,7 @@ import SwiftUI
 /// outlines where dark green was until 0.8.11. The title and loading screens wear them; the game's
 /// windows keep Fairyland's look (`HUDStyle`).
 enum Brand {
-    /// The logo's gold, top to bottom: the loading bar's fill and the travel swirl.
+    /// The logo's gold, top to bottom: the travel swirls (the card's and the map's).
     static let goldLight = Color(red: 1, green: 0.965, blue: 0.745)    // #FFF6BE
     static let gold = Color(red: 1, green: 0.788, blue: 0.235)         // #FFC93C
     static let goldDeep = Color(red: 0.886, green: 0.486, blue: 0.086) // #E27C16
@@ -18,8 +18,14 @@ enum Brand {
 
     /// The icon's sky, top to bottom.
     static let lavender = Color(red: 0.8, green: 0.722, blue: 1)       // #CCB8FF
+    /// The brand's blue: the middle of the sky, and of the loading bar.
     static let sky = Color(red: 0.659, green: 0.859, blue: 1)          // #A8DBFF
     static let mint = Color(red: 0.722, green: 0.961, blue: 0.839)     // #B8F5D6
+    /// The brand blue lighter and deeper, the loading bar's top and foot as the logo's gold has
+    /// its light and deep: the foot leans to indigo, as gold deep leans to red, and stands out from
+    /// the cream track (3:1, as gold deep does) on the day sky and the night sky alike.
+    static let skyLight = Color(red: 0.894, green: 0.957, blue: 1)     // #E4F4FF
+    static let skyDeep = Color(red: 0.29, green: 0.565, blue: 0.91)    // #4A90E8
 
     /// The same sky at night, for Dark Mode (the dark app icon's, `tools/app_icon_art.py`):
     /// deep indigo, navy and teal where the day has lavender, sky blue and mint.
@@ -34,7 +40,7 @@ enum Brand {
 }
 
 /// Where the sky's soft light sits: the middle of the world's name in the logo (Logo.png, drawn by
-/// tools/logo_art.py), or whatever else a screen puts in its middle (the travel card's swirl). Published with `raysAnchor`, read by `storyleafSky`.
+/// tools/logo_art.py), or whatever else a screen puts in its middle (the travel card's swirl). Published with `raysAnchor`, read by `talesOfDorluneSky`.
 struct RaysAnchor: PreferenceKey {
     static var defaultValue: Anchor<CGPoint>? { nil }
     static func reduce(value: inout Anchor<CGPoint>?, nextValue: () -> Anchor<CGPoint>?) {
@@ -54,10 +60,10 @@ extension View {
         anchorPreference(key: RaysAnchor.self, value: .unitPoint(point)) { $0 }
     }
 
-    /// The Storyleaf sky behind this screen, its light exactly where `raysAnchor`
+    /// The Tales of Dorlune sky behind this screen, its light exactly where `raysAnchor`
     /// marks, wherever that lands on this phone and however the screen moves it (scrolling, a
     /// phone on its side); from `fallback` (a share of the screen) where nothing marks it.
-    func storyleafSky(fallback: UnitPoint) -> some View {
+    func talesOfDorluneSky(fallback: UnitPoint) -> some View {
         frame(maxWidth: .infinity, maxHeight: .infinity)
             .backgroundPreferenceValue(RaysAnchor.self) { anchor in
                 // Full screen, like the sky, so the anchor resolves in the sky's own coordinates.
@@ -66,7 +72,7 @@ extension View {
                         let point = proxy[anchor]
                         return UnitPoint(x: point.x / max(1, proxy.size.width), y: point.y / max(1, proxy.size.height))
                     }
-                    StoryleafSky(raysFrom: center ?? fallback)
+                    TalesOfDorluneSky(raysFrom: center ?? fallback)
                 }
                 .ignoresSafeArea()
             }
@@ -77,7 +83,7 @@ extension View {
 /// soft light behind the logo, and clouds along the bottom. No sun rays: fanned out round the
 /// logo they looked cheap. In Dark Mode it's the dark icon's night: indigo through navy to teal,
 /// the light faint, the clouds moonlit and a scatter of stars.
-struct StoryleafSky: View {
+struct TalesOfDorluneSky: View {
     /// Where the soft light sits, as a share of the screen: behind the logo.
     var raysFrom = UnitPoint(x: 0.5, y: 0.3)
     @Environment(\.colorScheme) private var colorScheme
