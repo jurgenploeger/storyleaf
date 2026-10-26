@@ -34,7 +34,8 @@ struct AmountPicker: View {
     private var stepper: some View {
         let count = self.count, top = self.top
         return HStack(spacing: 8) {
-            Button { amount = max(1, count - 1) } label: { Text("-").frame(minWidth: 18) }
+            // −, + and All the same size, the signs big enough to read at a glance (playtesting 2026-10-26).
+            Button { amount = max(1, count - 1) } label: { Self.face(Text(verbatim: "−").font(HUDStyle.font(22))) }
                 .buttonStyle(PixelButtonStyle())
                 .disabled(count <= 1)
                 .opacity(count <= 1 ? 0.5 : 1)
@@ -48,18 +49,25 @@ struct AmountPicker: View {
             .buttonStyle(PressScaleStyle())
             .accessibilityLabel(coins ? L("Price: {gold}g", ["gold": count]) : L("Amount: {count}", ["count": count]))
             .accessibilityHint(coins ? L("Type the price") : L("Type how many"))
-            Button { amount = min(top, count + 1) } label: { Text("+").frame(minWidth: 18) }
+            Button { amount = min(top, count + 1) } label: { Self.face(Text(verbatim: "+").font(HUDStyle.font(22))) }
                 .buttonStyle(PixelButtonStyle())
                 .disabled(count >= top)
                 .opacity(count >= top ? 0.5 : 1)
                 .accessibilityLabel(coins ? L("Higher price") : L("More"))
             if !coins {
-                Button(L("All")) { amount = top }
-                    .buttonStyle(PixelButtonStyle(compact: true))
+                Button { amount = top } label: {
+                    Self.face(Text(L("All")).lineLimit(1).minimumScaleFactor(0.6))
+                }
+                    .buttonStyle(PixelButtonStyle())
                     .disabled(count >= top)
                     .opacity(count >= top ? 0.5 : 1)
             }
         }
+    }
+
+    /// A stepper button's face: all three the same size.
+    private static func face(_ label: some View) -> some View {
+        label.frame(width: 30, height: 22)
     }
 
     /// The amount on a light plate, the coins by it for a price.
