@@ -82,7 +82,11 @@ class Canvas:
                 if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1:
                     self.set(x, y, color)
 
-    def poly(self, points, color):
+    def poly(self, points, color, exact=False):
+        if exact:
+            # A cut shape (a gem, a star): cut along its own straight edges at 64, its corners sharp, its
+            # facets as drawn (`exact="facets"`).
+            self.exact.append(("poly", [tuple(p) for p in points], exact))
         ys = [p[1] for p in points]
         for y in range(int(min(ys)), int(max(ys)) + 1):
             xs = []
@@ -250,7 +254,9 @@ def star_shape(c, cx, cy, r, color, inner=0.45, rotation=-math.pi / 2):
         radius = r if i % 2 == 0 else r * inner
         angle = rotation + i * math.pi / 5
         points.append((cx + radius * math.cos(angle), cy + radius * math.sin(angle)))
-    c.poly(points, color)
+    # A star big enough to read keeps its points sharp at 64 (smoothed, a ring's star went to a blob).
+    # (Points in the drawing's pixel-centre coordinates, as `disc` takes them; `poly` fills pixel squares.)
+    c.poly(points, color, exact="facets" if r >= 4 else False)
 
 
 def ring(c, band, gem=None, gem_color=None):
@@ -259,7 +265,7 @@ def ring(c, band, gem=None, gem_color=None):
     c.shade(lambda x, y, col: col == mid and y > 21, dark)
     c.shade(lambda x, y, col: col == mid and y < 16 and x < 15, light)
     if gem:
-        c.poly([(12, 9), (20, 9), (22, 12), (16, 17), (10, 12)], gem_color[1])
+        c.poly([(12, 9), (20, 9), (22, 12), (16, 17), (10, 12)], gem_color[1], exact="facets")
         c.shade(lambda x, y, col: col == gem_color[1] and x > 16, gem_color[0])
         c.poly([(13, 10), (16, 10), (15, 12), (12, 12)], gem_color[2])
 

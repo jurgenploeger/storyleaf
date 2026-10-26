@@ -166,11 +166,13 @@ still judge them. A new item: design it in `item_art.py` as before (or draw it a
 `clean_icon_art.py` when its design can't carry it), check it with `--kind item`, and look at it beside the
 Potion at the size the bag shows it, and in the game (`tools/screenshots.txt`: `clean_icons`, `clean_coins`).
 
-**Where it stands:** 338 of the 348 code-drawn icons pass (97%), 0 of 106 samples of the old finish do (at
-32 and blown up to 64). The ten that miss pass every hard rule and were looked at by eye; their misses are
+**Where it stands:** 327 of the 348 code-drawn icons pass (94%), 0 of 106 samples of the old finish do (at
+32 and blown up to 64). The 21 that miss pass every hard rule and were looked at by eye; their misses are
 their shapes, not the finish: thin whips (few pixels for their colours, a lash curling away from the light),
-the bubble wand's glow (partly transparent by design), and a quill, a pendant and a tooth charm with sparkles
-or points off the body.
+necklaces whose cords climb to the top left (corner steps count as `kinks`, and the cord pulls
+`light_top_left` the wrong way), the bubble wand's glow (partly transparent by design), and a quill and a
+tooth charm with sparkles or points off the body. Keeping the detail the user asked for costs a few soft
+misses; smoothing that passed more of them is what lost the detail. The eye decides those.
 
 ![RD's Potion, then a dozen icons: the grained finish above, the clean look below](item-icons-clean.png)
 
@@ -201,6 +203,18 @@ or points off the body.
   smudge (an amulet's, a nugget's, a gauntlet's).
 - **Pale colours turn further round the wheel** (`ramp(wide=True)` for a saturation of 0.1 to 0.3): cool in the
   shade, warm in the light, as a grey's do; snow and cream had almost no hue to shift (1.5°).
+- **How much it smooths is one table** (`pixel_kit.CLEAN`), each value with what it was before and why
+  it moved. The first full pass smoothed so hard that items lost their detail ("The items are starting to
+  lose a bit too much detail now"): stars lost their points, a kettle its facets, hoods their folds and fur
+  tufts, a helm its plates. Now: the silhouette smoothed 2.5 times the 32-pixel finish's, region edges
+  lightly (0.4), the drawing's light and dark at twice the strength (0.32) and barely softened, a trim's
+  tufts three times stronger, material presets at full strength. Tune it on a detail-heavy set beside the
+  originals on `main`, not on the rules alone: every step toward smoother passed more icons.
+- **Thin lines keep every pixel:** a cord, a stitch, a crease (one pixel thick in the drawing) keeps its
+  region through the smoothing, pixel by pixel.
+- **Specks are counted with their corners:** a necklace's cord is a diagonal line of single pixels, which
+  touch only at their corners; counted side by side, each was a speck left out of the drawing's size, the
+  pendant was scaled up to fill the tile, and its cords went off it.
 - **What should be round is cut exactly round.** A design drawn at 32 and smoothed at 64 is only as round as
   its 32-pixel staircase: rings, pearls, balls and eggs came out with pixels sticking out of the curve and
   dark notches round a ring's hole (playtesting 2026-10-26: "Items that should be fully rounded like the ring
@@ -214,6 +228,12 @@ or points off the body.
   split down a beetle's wing case. Drawn exact so far: every ring and band, the pearls, the toy ball, the
   golden ball charm, the pet and chocolate eggs, the beetle shell, the spectacles' rims and lenses. A hood's
   fur ring is not: cut exact, its tufts read as a porthole's bolts.
+- **What should be sharp is cut exactly sharp:** a cut gem or a star (`Canvas.poly(exact="facets")`;
+  `star_shape` does it for any star 4 pixels or more across) is cut along its own straight edges at 64,
+  its corners kept (`_exact_poly`); its facets, drawn in colours of their own, stay. Smoothed, a ring's
+  ruby went to a blob and its star lost its points ("Some shapes on the rings like the diamonds and star
+  look very odd"). Where it's cut inside the body (a small star on a big one), a pixel takes what lies
+  round it: left empty, the outline was drawn round each, dark specks round the small star.
 - **Specks off the body don't count toward its size:** a sparkle drawn with an outline kept the Jelly Pearl
   from being scaled up to fill its tile (up to 2× now).
 
@@ -640,6 +660,11 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 
 ## Learned
 
+- **2026-10-26 (detail):** Each smoothing that fixed a rule also took detail with it, and the rules never
+  noticed: they measure the finish, not how much of the design survives. Four rounds in, the user saw what
+  the numbers didn't: stars without points, necklaces without cords, hoods without fur, items flatter than
+  their drawings. Look at every family beside its original after any change to the finish, and treat a
+  rule that only passes when detail is gone as a soft rule.
 - **2026-10-26 (round things):** Smoothing can't make a shape rounder than the drawing it starts from. A
   32-pixel circle is a staircase, and blurred and thresholded at 64 it keeps that staircase's bumps. Where
   the drawing knows the shape (it drew it with `disc` or `ring`), cut it again from the geometry. And "near

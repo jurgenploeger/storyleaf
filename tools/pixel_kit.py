@@ -880,8 +880,25 @@ def dominant_colour(img):
     return "#%02x%02x%02x" % tuple(int(round(c * 255)) for c in mid)
 
 
+# How hard the clean finish (`restyle(clean=True)`) smooths a 32-pixel drawing brought to 64, and how much of
+# the drawing's own light and dark it keeps (2026-10-26). Smoothed too hard, items lost their detail
+# (playtesting: "The items are starting to lose a bit too much detail now"); too little, they read as doubled.
+CLEAN = {
+    "corners": 2.5,          # the silhouette's smoothing, against the 32-pixel finish's (3 lost detail at the edges)
+    "regions": 0.4,          # each region's edge, smoothed (in SS pixels; 0.8 rounded a star's points away)
+    "detail_blur": 0.35,     # the drawing's light and dark, softened (in SS pixels; 0.7 washed it out)
+    "tone": 0.32,            # its light and dark, as detail (0.15 left a kettle's facets and a box's panels faint)
+    "broad": 0.3,            # its broad dark patches (0.12 left a hood's opening without its shadow)
+    "trim": 3.0,             # a trim's (a hood's fur's) drawn light and dark, times `tone`: its tufts and crease
+    "preset": 1.0,           # a material preset's structure (cloth folds, helm plates, stitches) at full strength
+    "preset_blur": 0.6,      # and how much it's softened (in SS pixels; 0.5 read as doubled pixels on a hood)
+}
+
+
 def _specks(mask, most):
-    """The parts of `mask` in 4-connected pieces of `most` pixels or fewer."""
+    """The parts of `mask` in pieces of `most` pixels or fewer, joined at their sides or corners (a necklace's
+    cord, a diagonal line of single pixels, is one piece: counted 4-connected, every pixel of it was a speck,
+    and the pendant was scaled up till its cord went off the tile)."""
     seen = np.zeros(mask.shape, bool)
     out = np.zeros(mask.shape, bool)
     h, w = mask.shape
@@ -893,7 +910,7 @@ def _specks(mask, most):
         while stack:
             y, x = stack.pop()
             piece.append((y, x))
-            for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)):
                 yy, xx = y + dy, x + dx
                 if 0 <= yy < h and 0 <= xx < w and mask[yy, xx] and not seen[yy, xx]:
                     seen[yy, xx] = True
@@ -904,6 +921,72 @@ def _specks(mask, most):
     return out
 
 
+def _inside(points, x, y):
+    """Whether each (x, y) lies inside the polygon `points` (even-odd)."""
+    inside = np.zeros(np.shape(x), bool)
+    for (x0, y0), (x1, y1) in zip(points, points[1:] + points[:1]):
+        crosses = ((y0 > y) != (y1 > y)) & (x < (x1 - x0) * (y - y0) / (y1 - y0 + 1e-12) + x0)
+        inside ^= crosses
+    return inside
+
+
+def _exact_poly(cur, shape, scale, src, dst, kin):
+    """`_exact` for a cut shape (a gem, a star), given as ("poly", points, mode) in the drawing's own
+    coordinates, where a pixel spans x to x + 1 (item_art `Canvas.poly`): cut along its straight edges at the
+    new size, corners sharp. Only its outline changes: its facets, drawn in colours of their own, stay."""
+    _, points, _mode = shape
+    to_hi = lambda v, k: (v * 2 * SS - src[k]) * scale + dst[k] if scale > 1.0 else v * 2 * SS
+    pts = [(to_hi(x, 0), to_hi(y, 1)) for x, y in points]
+    yy, xx = np.mgrid[0:cur.shape[0], 0:cur.shape[1]]
+    hx, hy = xx + 0.5, yy + 0.5
+    # Each sprite pixel wholly in or out, as the drawing's pixels are: by its middle.
+    mx = (np.floor(hx / SS) + 0.5) * SS
+    my = (np.floor(hy / SS) + 0.5) * SS
+    shape_mask = _inside(pts, mx, my)
+    labels, counts = np.unique(cur[shape_mask & (cur >= 0)], return_counts=True)
+    if not len(labels):
+        return cur, np.zeros(cur.shape, bool)
+    own = labels[np.argmax(counts)]
+    cur = cur.copy()
+    # What the shape was drawn on (its pixel squares, taken back to the drawing) outside the cut goes.
+    from_hi = lambda q, k: ((q - dst[k]) / scale + src[k]) if scale > 1.0 else q
+    dx_ = np.floor(from_hi(hx, 0) / (2 * SS)) + 0.5
+    dy_ = np.floor(from_hi(hy, 1) / (2 * SS)) + 0.5
+    drawn = _inside(list(points), dx_, dy_)
+    same, voids = kin(own)
+    cut = ~shape_mask & drawn & np.isin(cur, [own] + list(voids))
+    # Cut inside the body (a small star on a big one), a pixel takes what lies round it, not the air: left
+    # empty, the outline was drawn round each, dark specks round the small star.
+    solid = cur >= 0
+    for _ in range(SS * 2):
+        q = np.pad(solid, 1)
+        solid = solid & q[:-2, 1:-1] & q[2:, 1:-1] & q[1:-1, :-2] & q[1:-1, 2:]
+    cur[cut] = -1
+    inside_cut = cut & solid
+    for _ in range(SS * 4):
+        if not inside_cut.any():
+            break
+        pc = np.pad(cur, 1, constant_values=-1)
+        for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            nb = pc[1 + dy:cur.shape[0] + 1 + dy, 1 + dx:cur.shape[1] + 1 + dx]
+            take = inside_cut & (nb >= 0) & (nb != own)
+            cur[take] = nb[take]
+            inside_cut &= ~take
+    # And inside it, the gaps and the rounding's bites fill from its own colours (the nearest of them).
+    hole = shape_mask & ((cur < 0) | np.isin(cur, list(voids)))
+    for _ in range(SS * 4):
+        if not hole.any():
+            break
+        pc = np.pad(cur, 1, constant_values=-1)
+        for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            nb = pc[1 + dy:cur.shape[0] + 1 + dy, 1 + dx:cur.shape[1] + 1 + dx]
+            take = hole & (nb >= 0) & ~np.isin(nb, list(voids)) & _inside(pts, mx, my)
+            cur[take] = nb[take]
+            hole &= ~take
+    cur[hole] = own
+    return cur, np.zeros(cur.shape, bool)
+
+
 def _exact(cur, shape, scale, src, dst, kin=lambda own: ((), ())):
     """`cur` (the hi-res map of regions) with one round part cut exactly: an ellipse, or a ring between two,
     given in the 32-pixel drawing's own pixels (a pixel's middle at its index), drawn at 64 and moved as the
@@ -912,6 +995,8 @@ def _exact(cur, shape, scale, src, dst, kin=lambda own: ((), ())):
     fill. Other regions over it (a ring's gem) stay as they are, but shades of its own colour split off from
     it, and the old outline's leftovers in it (`kin(own)`: those two lists), become it. Returns the map and
     the shape's mask."""
+    if shape[0] == "poly":
+        return _exact_poly(cur, shape, scale, src, dst, kin)
     cx, cy, rx, ry, irx, iry = shape[:6]
     to_hi = lambda v, k: ((v + 0.5) * 2 * SS - src[k]) * scale + dst[k] if scale > 1.0 else (v + 0.5) * 2 * SS
     # In the 64-pixel sprite's own pixels, then snapped.
@@ -951,7 +1036,8 @@ def _exact(cur, shape, scale, src, dst, kin=lambda own: ((), ())):
     # And its hole is clear: its own colour and the old outline's leftovers go (a ring's).
     cur[inner & np.isin(cur, list(family))] = -1
     cur[band & (cur < 0)] = own
-    return cur, band
+    # (Its own pixels: a gem set over the band keeps its facets' shading.)
+    return cur, band & (cur == own)
 
 
 def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=None, trim=(), clean=False,
@@ -972,7 +1058,7 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
     its own pixels (item_art `Canvas.exact`): cut anew at the new size, snapped to the grid."""
     if clean:
         img = img.convert("RGBA").resize((img.width * 2, img.height * 2), Image.NEAREST)
-        round_corners *= 3
+        round_corners *= CLEAN["corners"]
     a = np.asarray(img.convert("RGBA")).copy()
     h, w = a.shape[:2]
     opaque = a[..., 3] >= 250
@@ -1080,7 +1166,8 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
     nb4 = n_.astype(int) + s_ + w_ + e_
     through = (n_ & s_) | (w_ & e_) | (nw & se) | (ne & sw)
     thin = (g1 >= 0) & (nb4 <= 2) & through
-    sil |= np.kron(thin, np.ones((SS * 2, SS * 2) if clean else (SS, SS), bool))[:sil.shape[0], :sil.shape[1]]
+    thin_hi = np.kron(thin, np.ones((SS * 2, SS * 2) if clean else (SS, SS), bool))[:sil.shape[0], :sil.shape[1]]
+    sil |= thin_hi
     cur = big.copy()
     for _ in range(SS * 3):
         empty = cur < 0
@@ -1099,7 +1186,7 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
         labels = [i for i in range(len(groups)) if (cur == i).any()]
         if len(labels) > 1:
             votes = np.stack([np.asarray(Image.fromarray(((cur == i) * 255).astype(np.uint8)).filter(
-                ImageFilterGaussian(SS * 0.8)), float) for i in labels])
+                ImageFilterGaussian(SS * CLEAN["regions"])), float) for i in labels])
             smooth = np.array(labels)[votes.argmax(0)]
             # A thin region (a line drawn one pixel wide) keeps its pixels: the vote would wash it out.
             for i in labels:
@@ -1108,6 +1195,8 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
                 same = r1[:-2, 1:-1].astype(int) + r1[2:, 1:-1] + r1[1:-1, :-2] + r1[1:-1, 2:]
                 if inner.sum() and (same[inner] <= 2).mean() > 0.6:
                     smooth[cur == i] = i
+            # And a pixel of a thin line anywhere (a cord, a stitch, a crease) keeps its region.
+            smooth[thin_hi & (cur >= 0)] = cur[thin_hi & (cur >= 0)]
             cur = np.where(cur >= 0, smooth, -1)
         # Exact shapes (a ring, a pearl): cut anew; shades of its own colour (hue within 25°) and the old
         # outline's leftovers inside it become it, and the new light alone shades it (below).
@@ -1159,7 +1248,10 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
         broad1 = broad1 | (np.pad(broad1, 1)[:-2, 1:-1] | np.pad(broad1, 1)[2:, 1:-1]
                            | np.pad(broad1, 1)[1:-1, :-2] | np.pad(broad1, 1)[1:-1, 2:]) & dark1
         broad = np.kron(broad1, np.ones((2, 2), bool))[:h, :w]
-        detail = np.kron(np.where(broad, tone * 0.12, np.where(tone < -0.5, tone * 2 * 0.3, tone * 0.15)),
+        trim_cols = {tuple(t[:3]) for t in trim}
+        trim_px = np.isin(gmap, [i for i, (_, cols) in enumerate(groups) if trim_cols & {tuple(c) for c in cols}])
+        tone = np.where(trim_px, tone * CLEAN["trim"], tone)
+        detail = np.kron(np.where(broad, tone * CLEAN["broad"], np.where(tone < -0.5, tone * 2 * 0.3, tone * CLEAN["tone"])),
                          np.ones((SS, SS)))
         if exact:
             # On an exact shape the drawing's own light and dark go (they cut a ring's band in wedges); on
@@ -1169,7 +1261,7 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
             detail = np.where(exact_mask[:detail.shape[0], :detail.shape[1]], 0.0, detail)
         # Softly: the drawing's planes and creases as gentle steps in the light, not doubled pixels.
         detail = np.asarray(Image.fromarray(((detail + 1) * 100).astype(np.uint8)).filter(
-            ImageFilterGaussian(SS * 0.7)), float) / 100 - 1
+            ImageFilterGaussian(SS * CLEAN["detail_blur"])), float) / 100 - 1
     # The main region is the biggest, leaving out a `trim` (colours drawn as a trim, a hood's fur, which
     # can outsize the cloth it edges and would take the set's colour from it).
     trims = {tuple(t[:3]) for t in trim}
@@ -1234,8 +1326,8 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
                 region1 = (gmap[::2, ::2] == i)
                 pattern = np.kron(preset_pattern(preset, region1, clean=True), np.ones((SS * 2, SS * 2)))[:m.shape[0], :m.shape[1]]
                 pattern = np.asarray(Image.fromarray(((pattern + 1) * 100).astype(np.uint8)).filter(
-                    ImageFilterGaussian(SS * 0.9)), float) / 100 - 1
-            s.mask(m, mat, height=height + own, detail=detail + 0.6 * pattern)
+                    ImageFilterGaussian(SS * CLEAN["preset_blur"])), float) / 100 - 1
+            s.mask(m, mat, height=height + own, detail=detail + CLEAN["preset"] * pattern)
         elif preset and i == main:
             pattern, finish = PRESETS[preset]
             mat = Material("#%02x%02x%02x" % tuple(base), shades=mat.shades,
