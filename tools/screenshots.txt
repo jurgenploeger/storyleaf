@@ -746,6 +746,9 @@ hud_gold_m        | newgame,level=125,gold=1457603,weather=clear,hour=22      | 
 # pages, EXP under the hero's bars, and what just happened toasting under the minimap, then in the chat.
 hud_menu          | newgame,level=40,class=fighter,weather=clear,hour=12,hudmenu | 8
 hud_menu_land     | newgame,level=40,class=fighter,weather=clear,hour=12,hudmenu,landscape | 8
+# The Bag's own button left of Chat (playtesting 2026-10-26), its gold dot for an egg to hatch.
+hud_bag           | newgame,level=40,class=fighter,weather=clear,hour=12,bag=pet_egg | 8
+hud_bag_land      | newgame,level=40,class=fighter,weather=clear,hour=12,bag=pet_egg,landscape | 8
 hud_toasts        | newgame,level=40,class=fighter,weather=clear,hour=12,notices | 12
 chat_notices      | newgame,level=40,class=fighter,weather=clear,hour=12,notices,chat | 16
 # Settings with footsteps switched off (the darker switch). `quiet` leaves them off, so this runs last.

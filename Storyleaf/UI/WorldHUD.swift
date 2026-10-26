@@ -117,6 +117,13 @@ struct WorldHUD: View {
                 // a row of four buttons, Chat and Settings up by the minimap), each a window of its own
                 // (2026-10-25), Friends too.
                 HStack(alignment: .bottom, spacing: 7) {
+                    // The Bag a tap away, left of Chat (playtesting 2026-10-26: "Put an inventory button
+                    // on the left of chat, so it's easier accessable"): its window opens as from the menu.
+                    FLIconButton(icon: MenuTab.bag.icon, label: MenuTab.bag.menuTitle, badge: badge(for: .bag)) {
+                        menuOpen = false
+                        coordinator.open(.menu(.bag))
+                    }
+                    .stepsAside(controlsHidden)
                     FLIconButton(icon: .talk, label: L("Chat"), badge: session.unreadChat > 0) {
                         menuOpen = false
                         coordinator.open(.chat)
