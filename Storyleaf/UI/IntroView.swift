@@ -263,7 +263,7 @@ struct ProgressiveFade: ViewModifier {
     /// Frosted layers, each starting a little nearer the edge, so the blur deepens toward it.
     private static let layers = 4
 
-    func body(content: Content) -> some View {
+    func body(content: Self.Content) -> some View {
         content
             .overlay {
                 ZStack {
