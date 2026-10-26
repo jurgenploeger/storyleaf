@@ -63,7 +63,7 @@ TOWNSFOLK = {"dwarf_npc": ("dwarf", "dwarf_npc_walk")}
 # Headgear is drawn in magenta, which no recolour touches (skin 5-45°, hair 12-58°, outfit 85-170°)
 # and no hero sheet uses. The game paints soft magenta (saturation 0.6) in the armour's colour,
 # keeping the shade (value: 0.92 light, 0.7 mid, 0.45 dark), and full magenta in its trim colour.
-# Storyleaf/Art/GearOverlay.swift and tools/gear_preview.py read these.
+# TalesOfDorlune/Art/GearOverlay.swift and tools/gear_preview.py read these.
 MARK_HUE = 300 / 360
 # Sheets whose hair rises well above the skull (a bun): the top of the head is the first row with
 # this many hair pixels instead of four, so the bald scalp sits on the real head, not the bun.

@@ -11,7 +11,7 @@ name: Screenshots
 on:
   push:
     branches: ["claude/**"]
-    paths: ["Storyleaf/**", "StoryleafTests/**", "content/**", "art/**", "project.yml", "tools/screenshots.*", ".github/workflows/screenshots.yml"]
+    paths: ["TalesOfDorlune/**", "TalesOfDorluneTests/**", "content/**", "art/**", "project.yml", "tools/screenshots.*", ".github/workflows/screenshots.yml"]
   workflow_dispatch:
     inputs:
       run:
@@ -25,7 +25,7 @@ on:
         required: false
         default: ""
       tests:
-        description: "Only these tests (comma-separated, e.g. StoryleafTests/ContentTests). Empty = all."
+        description: "Only these tests (comma-separated, e.g. TalesOfDorluneTests/ContentTests). Empty = all."
         required: false
         default: ""
       configuration:
@@ -41,7 +41,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # The unit tests (StoryleafTests) on a simulator, alongside the screenshots: their own check,
+  # The unit tests (TalesOfDorluneTests) on a simulator, alongside the screenshots: their own check,
   # red or green in a few minutes.
   tests:
     if: (github.event_name == 'push' && !github.event.repository.private) || (github.event_name == 'workflow_dispatch' && inputs.run != 'screenshots')
@@ -79,7 +79,7 @@ jobs:
           done
           # Release (by hand, `configuration`) times the maps at a phone build's speed; its tests need
           # testability on to see the game's internals.
-          xcodebuild test -project Storyleaf.xcodeproj -scheme Storyleaf -destination "id=$UDID" -configuration "$CONFIG" \
+          xcodebuild test -project TalesOfDorlune.xcodeproj -scheme TalesOfDorlune -destination "id=$UDID" -configuration "$CONFIG" \
             -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES "${only[@]}" > build/tests.log 2>&1 || status=$?
           # How long each map takes to build (PerformanceTests) and the hills each raised, pass or fail.
           grep -E '⏱|⛰|🚧' build/tests.log || true
@@ -129,12 +129,12 @@ jobs:
         run: |
           xcodebuild -version
           mkdir -p build
-          xcodebuild -project Storyleaf.xcodeproj -scheme Storyleaf -configuration Debug \
+          xcodebuild -project TalesOfDorlune.xcodeproj -scheme TalesOfDorlune -configuration Debug \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath build/DerivedData \
             CODE_SIGNING_ALLOWED=NO build > build/simulator.log 2>&1 \
             || { tools/ci_errors.sh build/simulator.log; exit 1; }
-          # App Store Connect refuses a build without its privacy manifest (Storyleaf/PrivacyInfo.xcprivacy).
-          test -f build/DerivedData/Build/Products/Debug-iphonesimulator/Storyleaf.app/PrivacyInfo.xcprivacy \
+          # App Store Connect refuses a build without its privacy manifest (TalesOfDorlune/PrivacyInfo.xcprivacy).
+          test -f build/DerivedData/Build/Products/Debug-iphonesimulator/TalesOfDorlune.app/PrivacyInfo.xcprivacy \
             || { echo "::error::PrivacyInfo.xcprivacy isn't in the app bundle"; exit 1; }
 
       - name: Boot a simulator
@@ -149,7 +149,7 @@ jobs:
       - name: Take screenshots
         run: |
           tools/screenshots.sh "${{ steps.sim.outputs.udid }}" \
-            build/DerivedData/Build/Products/Debug-iphonesimulator/Storyleaf.app \
+            build/DerivedData/Build/Products/Debug-iphonesimulator/TalesOfDorlune.app \
             shots tools/screenshots.txt "${{ inputs.scenes }}"
 
       # The simulator films at full resolution and a high bitrate (~140 MB a minute), over

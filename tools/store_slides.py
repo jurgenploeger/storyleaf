@@ -26,7 +26,7 @@ TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent
 FONT = TOOLS / "fonts" / "OpenSans-SemiCondensedExtraBold.ttf"
 TITLE_FONT = TOOLS / "fonts" / "LuckiestGuy-Regular.ttf"
-LOGO = ROOT / "Storyleaf" / "Resources" / "Assets.xcassets" / "Logo.imageset" / "Logo.png"
+LOGO = ROOT / "TalesOfDorlune" / "Resources" / "Assets.xcassets" / "Logo.imageset" / "Logo.png"
 
 # The base size the layout is measured in, and the sizes exported.
 BASE = (2622, 1206)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The critters (`ambience.critters`: bunnies, frogs, songbirds...), the birds crossing the sky and the
 butterflies (`ambience.butterflies`), in the game's pixel style (docs/pixel-style.md): each drawing
-`Storyleaf/World/Critters.swift` made pixel by pixel, flat, in one near-black outline, redrawn here with
+`TalesOfDorlune/World/Critters.swift` made pixel by pixel, flat, in one near-black outline, redrawn here with
 tools/pixel_kit.py as the same shapes at the same size, lit from the top left (a lighter edge there, a
 hue-shifted shade at the bottom right), outlined in a deep shade of each part instead of one near-black.
 The butterflies are drawn anew at the critters' size (`Ambience.swift` drew them 7 × 5, three times as big).
