@@ -1477,6 +1477,22 @@ final class BattleActor: SKNode {
         nameTag.alpha = 0
         addChild(nameTag)
         sprite.run(IdleMotion.of(art: fighter.art).action(height: size.height, delay: .random(in: 0..<0.8)), withKey: "idle")
+        // It blinks now and then, if it has eyes to shut: on the sprite, so the actor's own
+        // actions (`hasActions`) still say whether it's moving.
+        if cycle.poses.values.contains(where: { $0.shut != nil }) {
+            sprite.run(EyeBlink.blinking(shut: .run { [weak self] in self?.setEyes(shut: true) },
+                                         open: .run { [weak self] in self?.setEyes(shut: false) }), withKey: "blink")
+        }
+    }
+
+    /// Shuts or opens its eyes while it stands facing the way it was placed (not mid-turn).
+    private func setEyes(shut: Bool) {
+        guard let open = cycle.frames(facing).first, let closed = cycle.poses[facing]?.shut else { return }
+        if shut, sprite.texture === open {
+            sprite.texture = closed
+        } else if !shut, sprite.texture === closed {
+            sprite.texture = open
+        }
     }
 
     required init?(coder aDecoder: NSCoder) { fatalError("init(coder:) is not supported") }

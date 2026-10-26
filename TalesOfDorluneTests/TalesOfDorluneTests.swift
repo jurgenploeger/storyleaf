@@ -930,6 +930,27 @@ struct LookTests {
         #expect(art.walkCycle("monster_tree_snake_sunny").facesRight)
     }
 
+    @Test func everyoneWithEyesBlinks() throws {
+        let art = ArtLibrary.shared
+        // A monster's eyes shut (art/eyes.json); it breathes by its motion, not a pose.
+        let jelly = art.walkCycle("monster_jelly")
+        let open = try #require(jelly.frames(.down).first)
+        let shut = try #require(jelly.poses[.down]?.shut)
+        #expect(jelly.poses[.down]?.out == nil)
+        let width = Int(open.size().width), height = Int(open.size().height)
+        let before = try #require(PixelImage.pixels(of: art.picture(of: open), width: width, height: height))
+        let after = try #require(PixelImage.pixels(of: art.picture(of: shut), width: width, height: height))
+        #expect(before != after)
+        // A townsperson stacked from a body layer blinks too, and breathes out a pixel lower.
+        let elder = art.walkCycle("npc_elder")
+        for direction in [Direction.down, .left, .right] {
+            #expect(elder.poses[direction]?.shut != nil)
+            #expect(elder.poses[direction]?.out != nil)
+        }
+        // With no eyes to shut, nothing blinks.
+        #expect(art.walkCycle("monster_gem_crawler").poses.isEmpty)
+    }
+
     @Test func theSunCrossesTheSkyAndShadowsFollow() throws {
         // Midday's sun is where the hills' light always came from: up the map and to the left, 36° up.
         let noon = Sun.noon

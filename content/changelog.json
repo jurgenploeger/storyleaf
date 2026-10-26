@@ -2,7 +2,7 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
-      "version": "0.9.1",
+      "version": "0.9.2",
       "date": "2026-10-26",
       "title": "A fresh look",
       "notes": [
@@ -10,7 +10,7 @@
         "Arrange, search and sort your bag and the bank, and buy or sell potions and materials several at a time.",
         "Battle buttons sit in one row along the bottom, your skills line up side by side, and chat waits until the fight is over.",
         "Windows open bigger and cleaner, the world map shows the time and where you are, and an Inventory button sits beside Chat.",
-        "Your companion shows its XP too, and the sky and loading bar wear Dorlune's blue."
+        "Your companion shows its XP too, the sky and loading bar wear Dorlune's blue, and everyone blinks and breathes as they stand."
       ]
     },
     {

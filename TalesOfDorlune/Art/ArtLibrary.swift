@@ -42,6 +42,9 @@ struct WalkCycle {
     let size: CGSize
     /// A single picture that looks right (`ArtAsset.faces`); most look left or straight at you.
     var facesRight = false
+    /// Each direction's standing pose breathing out, and with its eyes shut for a blink: none for a
+    /// sprite with no eyes (art/eyes.json) and no walk sheet.
+    var poses: [Direction: IdlePose] = [:]
 
     func frames(_ direction: Direction) -> [SKTexture] {
         frames[direction] ?? frames[.down] ?? []
@@ -52,6 +55,14 @@ struct WalkCycle {
     var mirrors: Bool {
         frames(.left).first === frames(.right).first
     }
+}
+
+/// A standing pose (a walk cycle's first frame) as it breathes and blinks: a pixel lower breathing
+/// out (`out`), its eyes shut (`shut`), or both.
+struct IdlePose {
+    var shut: SKTexture?
+    var out: SKTexture?
+    var outShut: SKTexture?
 }
 
 /// Loads Retro Diffusion sprites from the bundled `art/` folder, falling back to
@@ -220,20 +231,27 @@ final class ArtLibrary {
     }
 
     /// The sprite's own PNG, or — for derived sprites — its base's PNG with the palette swap applied.
-    private func sourceImage(_ id: String, depth: Int = 0) -> CGImage? {
+    /// `shut`: its eyes shut for a blink (art/eyes.json), on its own PNG or on its paper-doll layers
+    /// before they're recoloured and dressed, so whatever is drawn over the face still is.
+    private func sourceImage(_ id: String, depth: Int = 0, shut: Bool = false) -> CGImage? {
         // "raw:<id>": the art as it's drawn, graded for no map (the sea, the same blue round every land).
-        if id.hasPrefix("raw:") { return sourceImage(String(id.dropFirst(4)), depth: depth) }
-        if let url = pngURL(id), let image = UIImage(contentsOfFile: url.path)?.cgImage { return image }
+        if id.hasPrefix("raw:") { return sourceImage(String(id.dropFirst(4)), depth: depth, shut: shut) }
+        if let url = pngURL(id), let image = UIImage(contentsOfFile: url.path)?.cgImage {
+            return shut ? eyesShut(in: image, as: id, frames: sheetFrames(id, width: image.width, height: image.height)) : image
+        }
         guard depth < 3, let derive = asset(id)?.derive else { return nil }
         let base: CGImage
         let recolored: CGImage?
         // Paper-doll layers are recoloured one by one (a layer's own rules, like the hair's, touch
         // only that layer), then stacked.
-        if let layers = layerSets[id] ?? derive.layers, let original = stacked(layers),
-           let dressed = stacked(layers, recolor: derive.recolor) {
+        let layers = layerSets[id] ?? derive.layers
+        // The layers' frames lie as the sprite's do.
+        let frames = shut ? layers?.first.flatMap { pngSize($0.id) }.flatMap { sheetFrames(id, width: $0.width, height: $0.height) } : nil
+        if let layers, let original = stacked(layers, shut: frames),
+           let dressed = stacked(layers, recolor: derive.recolor, shut: frames) {
             base = original
             recolored = dressed
-        } else if let sheet = sourceImage(derive.from, depth: depth + 1) {
+        } else if let sheet = sourceImage(derive.from, depth: depth + 1, shut: shut) {
             base = sheet
             recolored = Recolor.apply(derive.recolor, to: sheet)
         } else {
@@ -255,9 +273,15 @@ final class ArtLibrary {
 
     /// art/sprites PNGs drawn on top of each other, bottom first; nil unless every one exists.
     /// With `rules`, each layer is recoloured first: by its own rules if it has them, else by these.
-    private func stacked(_ layers: [ArtLayer], recolor rules: [RecolorRule]? = nil) -> CGImage? {
+    /// With `shut` (where the frames lie), the body's eyes are shut first, on the body or head layer
+    /// and an armour sheet under it (`EyeBlink.key(forLayer:)`).
+    private func stacked(_ layers: [ArtLayer], recolor rules: [RecolorRule]? = nil, shut frames: SheetFrames? = nil) -> CGImage? {
+        let eyes = frames == nil ? nil : layers.lazy.compactMap { EyeBlink.key(forLayer: $0.id) }.first
         let images = layers.compactMap { layer -> CGImage? in
-            guard let image = pngURL(layer.id).flatMap({ UIImage(contentsOfFile: $0.path)?.cgImage }) else { return nil }
+            guard var image = pngURL(layer.id).flatMap({ UIImage(contentsOfFile: $0.path)?.cgImage }) else { return nil }
+            if let eyes, EyeBlink.key(forLayer: layer.id) != nil || layer.id.hasPrefix("armor_") {
+                image = eyesShut(in: image, as: eyes, frames: frames)
+            }
             guard let rules else { return image }
             return Recolor.apply(layer.recolor ?? rules, to: image)
         }
@@ -780,8 +804,14 @@ final class ArtLibrary {
 
         guard kind == "walk_sheet" else {
             let art = sprite(id)
-            return WalkCycle(frames: Dictionary(uniqueKeysWithValues: Direction.allCases.map { ($0, [art.texture]) }), size: art.size,
-                             facesRight: asset?.faces == "right")
+            var cycle = WalkCycle(frames: Dictionary(uniqueKeysWithValues: Direction.allCases.map { ($0, [art.texture]) }), size: art.size,
+                                  facesRight: asset?.faces == "right")
+            // A single picture blinks; it breathes by its `motion` (IdleMotion).
+            if hasEyes(id), let shut = sourceImage(id, shut: true) {
+                let pose = IdlePose(shut: poseTexture(shut))
+                cycle.poses = Dictionary(uniqueKeysWithValues: Direction.allCases.map { ($0, pose) })
+            }
+            return cycle
         }
 
         guard let sheet = generatedTexture(id) else {
@@ -810,7 +840,73 @@ final class ArtLibrary {
                 return texture
             }
         }
-        return WalkCycle(frames: frames, size: CGSize(width: frameSize, height: frameSize) * scale)
+        var cycle = WalkCycle(frames: frames, size: CGSize(width: frameSize, height: frameSize) * scale)
+        cycle.poses = idlePoses(id, sheet: picture(of: sheet), layout: layout, frame: Int(frameSize))
+        return cycle
+    }
+
+    /// Where a sheet's frames lie, to find each direction's first.
+    private struct SheetFrames {
+        let layout: SheetLayout
+        let frame: Int
+    }
+
+    private func sheetFrames(_ id: String, width: Int, height: Int) -> SheetFrames? {
+        let asset = asset(id)
+        guard asset?.kind == "walk_sheet" else { return nil }
+        return SheetFrames(layout: SheetLayout(asset: asset, width: CGFloat(width), height: CGFloat(height)), frame: asset?.frame ?? 48)
+    }
+
+    private func pngSize(_ id: String) -> (width: Int, height: Int)? {
+        pngURL(id).flatMap { UIImage(contentsOfFile: $0.path)?.cgImage }.map { ($0.width, $0.height) }
+    }
+
+    /// Whether `id` has eyes to shut (art/eyes.json): its own, its layers' or its base's.
+    private func hasEyes(_ id: String, depth: Int = 0) -> Bool {
+        let blink = EyeBlink.shared
+        if blink.pictures[id] != nil || blink.sheets[id] != nil { return true }
+        guard pngURL(id) == nil, depth < 3, let derive = asset(id)?.derive else { return false }
+        if let layers = layerSets[id] ?? derive.layers,
+           layers.contains(where: { EyeBlink.key(forLayer: $0.id).map { blink.sheets[$0] != nil } ?? false }) {
+            return true
+        }
+        return hasEyes(derive.from, depth: depth + 1)
+    }
+
+    /// `image`, a sprite's own PNG or one of its paper-doll layers, with the eyes `key` has in
+    /// art/eyes.json shut: a single picture's on it, a walk sheet's in each direction's first frame.
+    private func eyesShut(in image: CGImage, as key: String, frames: SheetFrames?) -> CGImage {
+        let blink = EyeBlink.shared
+        if let eyes = blink.pictures[key] { return EyeBlink.shut(image, eyes: eyes, lash: true) ?? image }
+        guard let frames, let directions = blink.sheets[key] else { return image }
+        let eyes = directions.flatMap { direction, eyes -> [Eye] in
+            guard let cell = frames.layout.cells(for: direction).first else { return [] }
+            return eyes.map { $0.moved(to: (cell.column * frames.frame, cell.row * frames.frame)) }
+        }
+        return EyeBlink.shut(image, eyes: eyes, lash: false) ?? image
+    }
+
+    /// Each direction's standing pose (its first frame) breathing out, and with its eyes shut when it
+    /// has any: drawn from the sprite again with them shut, as it's dressed and recoloured.
+    private func idlePoses(_ id: String, sheet: CGImage, layout: SheetLayout, frame: Int) -> [Direction: IdlePose] {
+        let shutSheet = hasEyes(id) ? sourceImage(id, shut: true) : nil
+        var poses: [Direction: IdlePose] = [:]
+        for direction in layout.directions {
+            guard let cell = layout.cells(for: direction).first else { continue }
+            let rect = CGRect(x: cell.column * frame, y: cell.row * frame, width: frame, height: frame)
+            guard let open = sheet.cropping(to: rect) else { continue }
+            let shut = shutSheet?.cropping(to: rect)
+            poses[direction] = IdlePose(shut: shut.map(poseTexture), out: EyeBlink.exhaled(open).map(poseTexture),
+                                        outShut: shut.flatMap(EyeBlink.exhaled).map(poseTexture))
+        }
+        return poses
+    }
+
+    private func poseTexture(_ image: CGImage) -> SKTexture {
+        let texture = SKTexture(cgImage: image)
+        texture.filteringMode = .nearest
+        remember(image, for: texture)
+        return texture
     }
 
     /// A portrait for SwiftUI screens (unscaled pixels — draw with `.interpolation(.none)`).

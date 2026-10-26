@@ -69,6 +69,13 @@ people, bosses, quests) in player-facing text: `docs/fairyland-online.md` → Na
   Never swap a hero's whole sheet for a townsperson: hair shares its shades with skin and boots, so the deep reds and
   pale tips stay ginger. Derive them with `layers` instead (body, locks, hair from `tools/hero_layers.py`, the hair's
   rules widened to appearance.json `hairLayer`), as every quest giver is; `check_content.py` insists.
+- `art/eyes.json`: where every sprite's eyes are, so it blinks (`EyeBlink`, `TalesOfDorlune/Art/IdlePoses.swift`):
+  a single picture's (a lash drawn across each shut eye), a walk sheet's in each direction's standing pose (shut
+  under its own lid); a body layer's stand for its head layer and an armour sheet stacked with it, a copy shuts
+  its base's. The eyes are shut on the PNG or layer before it's recoloured and dressed (`ArtLibrary.idlePoses`),
+  so hair, helmets and masks drawn over them still are. Standing still, a walk sheet also breathes in whole
+  pixels (`EyeBlink.exhaled`: everything above the waist a pixel lower). A new monster or body needs its eyes
+  here; `check_content.py` checks each box and fill pixel.
 - `TalesOfDorlune/`: Swift code (World = maps and walking, Battle = combat, UI = SwiftUI HUD and menus).
 - Item icons are in the clean look (2026-10-26, docs/pixel-style.md *Item icons*: RD's Potion, the user's pick;
   its *Acceptance criteria* checklist is what every new or changed icon must meet):
