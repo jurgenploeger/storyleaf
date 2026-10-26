@@ -1734,11 +1734,12 @@ struct RulesTests {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         #expect(session.battleButtons == GameSession.defaultBattleButtons)
         // Your own order sticks.
-        session.data.battleButtons = ["skills", "more", "attack", "items", "guard", "run", "capture"]
-        #expect(session.battleButtons == ["skills", "more", "attack", "items", "guard", "run", "capture"])
-        // Skills pinned beside Attack in older versions drop out; a missing command comes back at the end.
+        session.data.battleButtons = ["guard", "more", "attack", "items", "run", "capture"]
+        #expect(session.battleButtons == ["guard", "more", "attack", "items", "run", "capture"])
+        // Skills pinned beside Attack in older versions drop out, and so does the old Skills button
+        // (the skills are buttons of their own now); a missing command comes back at the end.
         session.data.battleButtons = ["skill:bash", "attack", "skills", "more", "items", "skill:first_aid", "guard"]
-        #expect(session.battleButtons == ["attack", "skills", "more", "items", "guard", "capture", "run"])
+        #expect(session.battleButtons == ["attack", "more", "items", "guard", "capture", "run"])
     }
 
     @Test func questFlow() {

@@ -587,10 +587,13 @@ final class GameSession {
 
     /// In `battleButtons`, everything after this sits in the More menu.
     static let moreDivider = "more"
-    static let defaultBattleButtons = ["attack", "skills", "capture", moreDivider, "items", "guard", "run"]
+    /// No Skills: each skill is a button of its own in the row, between More and the rest
+    /// (BattleView's `SkillRow`), so they aren't moved about with these.
+    static let defaultBattleButtons = ["attack", "capture", moreDivider, "items", "guard", "run"]
 
     /// The battle buttons in your order: the first is the big one, those after `moreDivider` wait
-    /// in the More menu. Only real commands: older saves can hold skills once pinned there ("skill:<id>").
+    /// in the More menu. Only real commands: older saves can hold skills once pinned there
+    /// ("skill:<id>"), and the Skills button that opened a list of them ("skills").
     var battleButtons: [String] {
         var order = (data.battleButtons ?? Self.defaultBattleButtons).filter { Self.defaultBattleButtons.contains($0) }
         for command in Self.defaultBattleButtons where !order.contains(command) { order.append(command) }

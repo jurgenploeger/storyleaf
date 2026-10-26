@@ -61,7 +61,7 @@ final class BattleScene: SKScene {
 
     override func update(_ currentTime: TimeInterval) {
         // Checked each frame: the controller decides whose choice it is, and when.
-        let deciding: [BattleController.Phase] = [.command, .skills, .items, .stones, .target]
+        let deciding: [BattleController.Phase] = [.command, .items, .stones, .target]
         let chooser = controller.choosingForCompanion ? controller.companion : controller.hero
         let choosing = controller.hasBegun && deciding.contains(controller.phase) && chooser?.isAlive == true ? chooser?.id : nil
         guard choosing != chooserID else { return }
@@ -165,9 +165,9 @@ final class BattleScene: SKScene {
     /// between them (`layout` works it out).
     private var fieldScale: CGFloat = 1
 
-    /// Upright, room at the top for the HUD: below the Dynamic Island (or the clock), the message
-    /// line, and in a boss fight its waves under that, with the field kept well clear
-    /// of them.
+    /// Upright, room at the top for the HUD: below the Dynamic Island (or the clock), the time to
+    /// choose's pill, the message line, and in a boss fight its waves under that, with the field
+    /// kept well clear of them.
     private var portraitTopInset: CGFloat {
         (view?.safeAreaInsets.top ?? 0) + (controller.waveCount > 1 ? 176 : 150) + bossBarRoom
     }

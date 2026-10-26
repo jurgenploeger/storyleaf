@@ -70,6 +70,8 @@ ICONS = {
     "lock": ("essential/lock", "solid"),
     "search": ("essential/search", "solid"),
     "sort": ("arrows/arrows-up-down", "solid"),
+    # The time left to choose in a fight (BattleView's TurnClockPill).
+    "hourglass": ("time/hourglass", "solid"),
     # Items
     "potion": ("gaming/health-potion", "solid"),
     "flask": ("education/flask", "solid"),

@@ -698,14 +698,21 @@ card_duel    | newgame,level=45,class=fighter,map=wolf_lair,meet=1 | 10
 card_duel_fr | newgame,level=45,class=fighter,map=wolf_lair,meet=1,lang=fr | 10
 # Seal Stones in a fight's Items list, with three monsters standing (any of them can be sealed now).
 battle_items      | newgame,level=30,bag=seal_stone+seal_stone,map=sunny_meadow,battle=3,items | 15
-battle_skills     | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,map=sunny_meadow,battle=3,skills | 15
 # The commands in one row along the bottom, all one size, More at the left end (2026-10-26): with
-# Capture and Items (low on HP) out in the row too, upright and on its side; and the skills in one
-# row of tiles, sliding sideways when there are more than fit.
-battle_row        | newgame,level=30,hp=0.3,bag=seal_stone+seal_stone,map=sunny_meadow,battle=3 | 15
-battle_row_land   | newgame,level=30,hp=0.3,bag=seal_stone+seal_stone,map=sunny_meadow,battle=3,landscape | 15
-battle_skills_land | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,map=sunny_meadow,battle=3,skills,landscape | 15
-battle_skills_many | newgame,level=60,class=mage,learn=fire_bolt+stone_spike+leaf_storm+curse+poison+recovery+blessing+bubble,map=sunny_meadow,battle=3,skills | 15
+# Capture and Items (low on HP) out in the row too, upright and on its side. Each skill a button of
+# its own between More and the rest, the time to choose in a pill at the top (turntimer); `skills`
+# holds the first one down for its card (level, MP, what it does). Too many to fit, they close up,
+# then slide sideways between More and Attack; without the MP for them they're grey (mp=).
+battle_row        | newgame,level=30,hp=0.3,bag=seal_stone+seal_stone,map=sunny_meadow,battle=3,turntimer=40 | 15
+battle_row_land   | newgame,level=30,hp=0.3,bag=seal_stone+seal_stone,map=sunny_meadow,battle=3,landscape,turntimer=40 | 15
+battle_skills     | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,map=sunny_meadow,battle=3,skills,turntimer=40 | 15
+battle_skills_land | newgame,level=60,class=fighter,learn=bash+first_aid+power_strike+whirlwind,map=sunny_meadow,battle=3,skills,landscape,turntimer=40 | 15
+battle_skills_many | newgame,level=60,class=mage,learn=fire_bolt+stone_spike+leaf_storm+curse+poison+recovery+blessing+bubble,map=sunny_meadow,battle=3,turntimer=40 | 15
+battle_skills_many_land | newgame,level=60,class=mage,learn=fire_bolt+stone_spike+leaf_storm+curse+poison+recovery+blessing+bubble,map=sunny_meadow,battle=3,landscape | 15
+battle_skills_low | newgame,level=60,class=mage,learn=fire_bolt+stone_spike+leaf_storm+recovery+bubble,mp=0.05,map=sunny_meadow,battle=3 | 15
+# The time to choose running out: red, its seconds beating (the clock starts once everyone is in,
+# so a second or two of the nine are left by the shot).
+battle_clock_urgent | newgame,level=30,map=sunny_meadow,battle=3,turntimer=9 | 8
 # Every window in landscape (402 pt tall on the simulator): nothing may run off the top or bottom.
 worldmap_land     | newgame,level=30,map=pineapple_shore,visited=all,worldmap,landscape | 8
 cavemap      | newgame,level=152,map=glimmerdeep,from=starfall_isle,worldmap | 12

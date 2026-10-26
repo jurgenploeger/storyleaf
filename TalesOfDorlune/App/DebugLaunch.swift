@@ -167,6 +167,8 @@ enum DebugLaunch {
     static var arrangesButtons: Bool { flags["arrange"] != nil }
     /// `more`: battles open with the More buttons out (Auto and the pace among them).
     static var opensMore: Bool { flags["more"] != nil }
+    /// `skills`: battles open with the first skill's card over the row, as when its button is held.
+    static var showsSkillCard: Bool { flags["skills"] != nil }
 
     /// A debug game (tests, screenshots): the first-play tour stays hidden unless `coach` is set.
     static var isActive: Bool { flags["newgame"] != nil }
@@ -285,14 +287,6 @@ enum DebugLaunch {
                 try? await Task.sleep(for: .seconds(2))
                 for _ in 0..<40 where battle.phase != .command { try? await Task.sleep(for: .milliseconds(250)) }
                 battle.capture()
-            }
-        }
-        // `skills`: once everyone is in, the hero's Skills list opens.
-        if flags["skills"] != nil, let battle = coordinator.battle {
-            Task {
-                try? await Task.sleep(for: .seconds(2))
-                for _ in 0..<40 where battle.phase != .command { try? await Task.sleep(for: .milliseconds(250)) }
-                battle.openSkills()
             }
         }
         // `aim=<stone>`: once everyone is in, the hero aims that Seal Stone, its odds over each monster.
@@ -419,7 +413,6 @@ enum DebugLaunch {
                           case let spells = battle.skills.filter({ [.enemy, .allEnemies].contains($0.target) && battle.cost(of: $0) <= hero.mp }),
                           !spells.isEmpty, foes.count > 1 || foe.hp > foe.stats.hp / 2 {
                     // Take turns with the spells you have, so the video shows more than one.
-                    battle.openSkills()
                     await pause(0.7)
                     battle.useSkill(spells[casts % spells.count])
                     casts += 1
@@ -497,6 +490,10 @@ enum DebugLaunch {
         }
         if let fraction = flags["hp"].flatMap(Double.init) {
             session.data.hero.hp = max(1, Int(Double(session.heroStats.hp) * fraction))
+        }
+        // `mp=0.1`: the hero's MP at that share (a fight's skills greyed out for want of it).
+        if let fraction = flags["mp"].flatMap(Double.init) {
+            session.data.hero.mp = max(0, Int(Double(session.heroStats.mp) * fraction))
         }
         if let map = flags["map"], Content.shared.map(map) != nil {
             session.data.mapID = map

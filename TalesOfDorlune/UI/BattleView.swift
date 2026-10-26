@@ -1,10 +1,10 @@
 import SwiftUI
 import UIKit
 
-/// Battle HUD: what just happened in a slim line top centre, and the commands in a row along the
-/// bottom, all one size, with the time to choose as a ring round the first. How fast the
-/// fight plays and Auto wait behind More. Results at the end. Names, levels, HP and MP sit on the
-/// fighters themselves. No chat in a fight: it's back on the map once the fight is over.
+/// Battle HUD: what just happened in a slim line top centre, the time left to choose in a pill by
+/// it, and the commands in a row along the bottom, all one size, your skills among them. How fast
+/// the fight plays and Auto wait behind More. Results at the end. Names, levels, HP and MP sit on
+/// the fighters themselves. No chat in a fight: it's back on the map once the fight is over.
 struct BattleView: View {
     let controller: BattleController
     /// A phone on its side: the line of what just happened can run wider.
@@ -27,7 +27,7 @@ struct BattleView: View {
                     .transition(.opacity)
             }
 
-            commandArea
+            commands
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                 .padding(.trailing, 14)
                 .padding(.bottom, 14)
@@ -53,12 +53,23 @@ struct BattleView: View {
     /// The top row's height: the field below is laid out clear of it (`BattleScene.portraitTopInset`).
     private static let topRowHeight: CGFloat = 40
 
-    /// What just happened, and in a boss fight how far through its waves you are.
+    /// What just happened, and in a boss fight how far through its waves you are. With a turn
+    /// clock, the time left to choose in a pill over the line; on its side beside it instead, as
+    /// the fighters' heads come up close under the top row there (`BattleScene.layout`).
     private var news: some View {
         VStack(spacing: 6) {
-            // As tall as the top row at least, so the field below doesn't shift with the message.
-            logLine
-                .frame(minHeight: Self.topRowHeight)
+            if verticalSizeClass == .compact {
+                HStack(spacing: 8) {
+                    clockPill
+                    // As tall as the top row at least, so the field below doesn't shift with the message.
+                    logLine
+                        .frame(minHeight: Self.topRowHeight)
+                }
+            } else {
+                clockPill
+                logLine
+                    .frame(minHeight: Self.topRowHeight)
+            }
             if controller.waveCount > 1 {
                 WaveTracker(wave: controller.wave, total: controller.waveCount)
             }
@@ -75,16 +86,12 @@ struct BattleView: View {
         ToastLabel(text: controller.message)
     }
 
-    /// The commands bottom right; over a list or while picking a target, the time left to choose
-    /// sits on top of it (with the commands it's the ring round the row's first button).
-    private var commandArea: some View {
-        VStack(alignment: .trailing, spacing: 10) {
-            if [.skills, .items, .stones, .target].contains(controller.phase),
-               let deadline = controller.turnDeadline, let total = BattleController.turnSeconds {
-                TurnClockBar(deadline: deadline, total: total)
-                    .transition(.opacity)
-            }
-            commands
+    /// The time left to choose, with a turn clock on (Settings' Time to choose). Its place is kept
+    /// while a round plays, so the line beside it doesn't jump from turn to turn.
+    @ViewBuilder
+    private var clockPill: some View {
+        if BattleController.turnSeconds != nil {
+            TurnClockPill(deadline: controller.turnDeadline)
         }
     }
 
@@ -101,28 +108,6 @@ struct BattleView: View {
                     .padding(.top, 64)   // clear of the log line
                     .transition(.scale(scale: 0.6, anchor: .bottomTrailing).combined(with: .opacity))
             }
-        case .skills where controller.choosingForCompanion:
-            SkillBar(title: L("{companion}'s skills", ["companion": controller.companion?.name ?? L("Companion")]), onBack: controller.back,
-                     empty: controller.companionSkills.isEmpty ? L("No skills yet.") : nil) {
-                ForEach(controller.companionSkills) { skill in
-                    let price = controller.companionCost(of: skill)
-                    SkillTileButton(skill: skill, level: controller.companionLevel(of: skill), cost: price,
-                                    affordable: (controller.companion?.mp ?? 0) >= price) { controller.useSkill(skill) }
-                }
-            }
-            .transition(.scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity))
-        case .skills:
-            SkillBar(title: L("Skills"), onBack: controller.back,
-                     empty: !controller.skills.isEmpty ? nil
-                         : controller.session.learnableSkills.isEmpty ? controller.session.skillHint
-                         : L("No skills yet.\nLearn one in the Character menu.")) {
-                ForEach(controller.skills) { skill in
-                    let price = controller.cost(of: skill)
-                    SkillTileButton(skill: skill, level: controller.level(of: skill), cost: price,
-                                    affordable: (controller.hero?.mp ?? 0) >= price) { controller.useSkill(skill) }
-                }
-            }
-            .transition(.scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity))
         case .items:
             ChoiceCard(title: L("Items"), onBack: controller.back) {
                 if controller.items.isEmpty {
@@ -296,32 +281,49 @@ private struct LockInStrip: View {
     }
 }
 
-/// The time left to choose, draining on top of a list (Skills, Items) or the target prompt, red
-/// for the last two seconds. When it runs out the hero attacks. With the commands it's a ring
-/// round the row's first button instead (`TurnClockRing`).
-private struct TurnClockBar: View {
-    let deadline: Date
-    let total: TimeInterval
+/// The time left to choose, top centre in a dark pill like the map's (`mapPill`): an hourglass and
+/// the seconds, the same in every phase of a turn (the commands, a list, picking a target). Red
+/// for the last three, with a beat as each goes. When it runs out the hero attacks. While no clock
+/// ticks (a round playing, the buttons being rearranged) it keeps its place unseen.
+private struct TurnClockPill: View {
+    let deadline: Date?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private static let urgentSeconds: TimeInterval = 3
+    /// Red that reads on the navy (`HUDStyle.hp` is too deep there).
+    private static let urgentRed = Color(red: 1, green: 0.45, blue: 0.4)
 
     var body: some View {
-        TimelineView(.animation) { context in
-            let left = max(0, deadline.timeIntervalSince(context.date))
-            let urgent = left <= 2
-            HStack(spacing: 6) {
-                IconImage(.sword, size: 12)
-                GlossyBar(fraction: CGFloat(min(1, left / total)), color: urgent ? HUDStyle.hp : HUDStyle.gold, height: 7)
-                    .frame(width: 80)
-                Text("\(Int(left.rounded(.up)))s")
-                    .font(HUDStyle.mono(10))
-                    .frame(width: 24, alignment: .leading)
-            }
-            .foregroundStyle(urgent ? HUDStyle.hp : HUDStyle.cream)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(Capsule().fill(HUDStyle.ink.opacity(0.8)))
+        TimelineView(.animation(minimumInterval: nil, paused: deadline == nil)) { context in
+            let left = deadline.map { max(0, $0.timeIntervalSince(context.date)) } ?? 0
+            let urgent = deadline != nil && left <= Self.urgentSeconds
+            // How much of the second on show is left: 1 just as it shows, down to 0 as it goes.
+            let into = CGFloat(left - left.rounded(.down))
+            pill(seconds: Int(left.rounded(.up)), urgent: urgent)
+                .scaleEffect(urgent && !reduceMotion ? 1 + 0.14 * into * into : 1)
         }
+        .opacity(deadline == nil ? 0 : 1)
+        .animation(.easeOut(duration: 0.2), value: deadline == nil)
+        .allowsHitTesting(false)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(L("Time left to choose before you attack"))
+        .accessibilityHidden(deadline == nil)
+    }
+
+    private func pill(seconds: Int, urgent: Bool) -> some View {
+        HStack(spacing: 5) {
+            IconImage(.hourglass, size: 13)
+                .foregroundStyle(urgent ? Self.urgentRed : HUDStyle.gold)
+            Text(verbatim: String(seconds))
+                .font(HUDStyle.mono(13))
+                .foregroundStyle(urgent ? Self.urgentRed : HUDStyle.cream)
+                // Two digits' room, so the pill keeps its width as they count down.
+                .frame(minWidth: 16)
+        }
+        .padding(.horizontal, 2)
+        .padding(.vertical, 1)
+        .mapPill()
+        .overlay(Capsule().strokeBorder(Self.urgentRed, lineWidth: 1.5).opacity(urgent ? 1 : 0))
     }
 }
 
@@ -329,12 +331,12 @@ private struct TurnClockBar: View {
 
 /// The commands in one row along the bottom, all the same size (the user, 2026-10-26: "the buttons
 /// to show as the same size at the bottom ... 'More' is all the way on the left"): More at the left
-/// end, your first command (Attack unless you change it) at the right end where the thumb rests,
-/// the time to choose as a ring round it, and between them, right to left, Skills, then whatever
-/// else turns up (Capture when there's a monster to befriend, Items when someone is low on HP).
-/// Less-used commands hide behind More, and with them Auto and the fight's pace. Holding any button
+/// end, then a button for each of your skills (`SkillRow`), your first command (Attack unless you
+/// change it) at the right end where the thumb rests, and before it, right to left, whatever else
+/// turns up (Capture when there's a monster to befriend, Items when someone is low on HP).
+/// Less-used commands hide behind More, and with them Auto and the fight's pace. Holding a command
 /// makes them all wiggle, like the iPhone home screen: drag them into any order (onto the first, or
-/// into the "Behind More" tray), then tap Done.
+/// into the "Behind More" tray), then tap Done. The skills keep their place by More.
 private struct CommandPad: View {
     let controller: BattleController
     /// Debug `more`: open from the start, for screenshots.
@@ -393,38 +395,27 @@ private struct CommandPad: View {
     /// Auto and the fight's pace: at the end of what More opens, after the commands behind it.
     private static let paceIDs = ["auto", "pace"]
 
+    /// More at the left end, opening up and to the right; then the skills; the first button at the
+    /// right end. More's panel reaches as far right as a row of three: a shorter one makes room for it.
     private var pad: some View {
         let (main, column, more) = sections
-        let count = 1 + column.count + (main == nil ? 0 : 1)
-        // A row with many buttons on a narrow phone (you can bring them all out from behind More)
-        // closes up and shrinks a little to fit.
-        return ViewThatFits(in: .horizontal) {
-            row(main: main, column: column, more: more, size: CommandRow.size, spacing: CommandRow.spacing, count: count)
-            row(main: main, column: column, more: more, size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, count: count)
-        }
-        .padding(.leading, 14)
-        .animation(.spring(response: 0.38, dampingFraction: 0.72), value: showMore)
-        .animation(.spring(response: 0.38, dampingFraction: 0.72), value: controller.canCapture)
-        .animation(.spring(response: 0.38, dampingFraction: 0.72), value: controller.needsHealing)
-    }
-
-    /// More at the left end, opening up and to the right; the first button at the right end.
-    private func row(main: String?, column: [String], more: [String], size: CGFloat, spacing: CGFloat, count: Int) -> some View {
-        // More's panel reaches as far right as a row of three: a shorter one makes room for it.
-        let short = MoreMenu.width - (CGFloat(count) * size + CGFloat(count - 1) * spacing)
-        return HStack(alignment: .bottom, spacing: spacing) {
+        return SkillRow(controller: controller, skills: controller.skills, others: column.count + (main == nil ? 0 : 1),
+                        least: MoreMenu.width) { size in
             MoreMenu(controller: controller, commands: more + Self.paceIDs, open: $showMore, size: size,
                      onPick: perform, onHold: arrange)
-            if short > spacing { Color.clear.frame(width: short - spacing, height: size) }
+        } tail: { size in
             ForEach(Array(column.reversed()), id: \.self) { id in
                 button(id, size: size)
                     .transition(.scale(scale: 0.2).combined(with: .opacity))
             }
             if let main {
                 button(main, size: size, isMain: true)
-                    .overlay { TurnClockRing(controller: controller, diameter: size + CommandRow.ring) }
             }
         }
+        .padding(.leading, 14)
+        .animation(.spring(response: 0.38, dampingFraction: 0.72), value: showMore)
+        .animation(.spring(response: 0.38, dampingFraction: 0.72), value: controller.canCapture)
+        .animation(.spring(response: 0.38, dampingFraction: 0.72), value: controller.needsHealing)
     }
 
     private func arrange() {
@@ -573,7 +564,6 @@ private struct CommandPad: View {
     private func perform(_ id: String) {
         switch id {
         case "attack": controller.attack()
-        case "skills": controller.openSkills()
         case "items": controller.openItems()
         case "guard": controller.defend()
         case "run": controller.escape()
@@ -721,40 +711,6 @@ private struct MoreMenu: View {
     }
 }
 
-/// The time left to choose, draining round the row's first button: gold, red for the last two seconds,
-/// with the seconds on it. When it runs out the hero attacks. Nothing while no clock is ticking.
-private struct TurnClockRing: View {
-    let controller: BattleController
-    let diameter: CGFloat
-
-    var body: some View {
-        if let deadline = controller.turnDeadline, let total = BattleController.turnSeconds {
-            TimelineView(.animation) { context in
-                let left = max(0, deadline.timeIntervalSince(context.date))
-                let urgent = left <= 2
-                ZStack(alignment: .topTrailing) {
-                    Circle()
-                        .stroke(HUDStyle.ink.opacity(0.75), lineWidth: 5)
-                    Circle()
-                        .trim(from: 0, to: CGFloat(min(1, left / total)))
-                        .stroke(urgent ? HUDStyle.hp : HUDStyle.gold, style: StrokeStyle(lineWidth: 5, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                    Text("\(Int(left.rounded(.up)))")
-                        .font(HUDStyle.mono(11))
-                        .foregroundStyle(urgent ? HUDStyle.hp : HUDStyle.cream)
-                        .frame(minWidth: 22, minHeight: 20)
-                        .background(Capsule().fill(HUDStyle.ink.opacity(0.92)))
-                        .offset(x: 6, y: -4)
-                }
-                .frame(width: diameter, height: diameter)
-            }
-            .allowsHitTesting(false)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(L("Time left to choose before you attack"))
-        }
-    }
-}
-
 /// Auto at work: the commands' corner turns gold and says so, its ring turning, and a tap takes
 /// the fight back from the next round. (The switch that starts it is behind More.)
 private struct AutoPlaying: View {
@@ -802,7 +758,7 @@ private struct AutoPlaying: View {
 }
 
 /// Your companion's turn, after the hero's choice: the same row as the hero's, Auto to let it
-/// decide for itself where More is, then Guard, its Skills, and Attack at the right end. The chip
+/// decide for itself where More is, then its skills, Guard, and Attack at the right end. The chip
 /// on top shows whose turn it is. The hero's choice is made by then, so there's no going back to
 /// it (that would start their clock over).
 private struct CompanionPad: View {
@@ -823,14 +779,11 @@ private struct CompanionPad: View {
                 .background(Capsule().fill(HUDStyle.ink.opacity(0.88)).overlay(Capsule().strokeBorder(HUDStyle.gold.opacity(0.7), lineWidth: 1.5)))
             }
 
-            HStack(alignment: .bottom, spacing: CommandRow.spacing) {
-                RoundCommandButton(title: L("Auto"), icon: .paw, size: CommandRow.size, tint: .quiet) { controller.letCompanionDecide() }
-                RoundCommandButton(title: L("Guard"), icon: .shield, size: CommandRow.size, tint: .normal) { controller.defend() }
-                if !controller.companionSkills.isEmpty {
-                    RoundCommandButton(title: L("Skills"), icon: .sparkles, size: CommandRow.size, tint: .normal) { controller.openSkills() }
-                }
-                RoundCommandButton(title: L("Attack"), icon: .tooth, size: CommandRow.size, tint: .primary) { controller.attack() }
-                    .overlay { TurnClockRing(controller: controller, diameter: CommandRow.size + CommandRow.ring) }
+            SkillRow(controller: controller, skills: controller.companionSkills, others: 2) { size in
+                RoundCommandButton(title: L("Auto"), icon: .paw, size: size, tint: .quiet) { controller.letCompanionDecide() }
+            } tail: { size in
+                RoundCommandButton(title: L("Guard"), icon: .shield, size: size, tint: .normal) { controller.defend() }
+                RoundCommandButton(title: L("Attack"), icon: .tooth, size: size, tint: .primary) { controller.attack() }
             }
         }
         .padding(.leading, 14)
@@ -845,8 +798,273 @@ nonisolated enum CommandRow {
     /// Closed up, for a row too long for a narrow phone upright.
     static let narrowSize: CGFloat = 42
     static let narrowSpacing: CGFloat = 8
-    /// How much wider than its button the turn clock's ring is.
-    static let ring: CGFloat = 14
+}
+
+/// A row of commands with your skills in it (the user, 2026-10-26: skills as buttons in the row,
+/// not behind a menu): `lead` at the left end (More, or Auto on your companion's turn), then a
+/// round button for each skill (`SkillCommandButton`), then `tail`, the other commands, Attack at
+/// the right end. Too long for the phone, the row closes up and its buttons shrink a little, as
+/// it always did; longer still, the skills slide sideways between the two ends, which stay put.
+/// Holding a skill shows its card over the row (`SkillCard`): its level, element, MP and what it
+/// does, as the list of skills once did.
+private struct SkillRow<Lead: View, Tail: View>: View {
+    let controller: BattleController
+    let skills: [SkillDef]
+    /// How many buttons `tail` holds.
+    let others: Int
+    /// The least the row may measure across (More's panel reaches that far right of it).
+    var least: CGFloat = 0
+    @ViewBuilder let lead: (CGFloat) -> Lead
+    @ViewBuilder let tail: (CGFloat) -> Tail
+    /// The skill whose card shows.
+    @State private var card: String?
+    @State private var hideCard: Task<Void, Never>?
+
+    /// Room under the sliding skills for their names, which hang below the buttons and would be cut
+    /// off there, and above them for their MP badges. Computed: a generic type can't store a static.
+    private static var nameRoom: CGFloat { 18 }
+    private static var badgeRoom: CGFloat { 6 }
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            row(size: CommandRow.size, spacing: CommandRow.spacing, slides: false)
+            row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, slides: false)
+            row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, slides: true)
+        }
+        .overlay(alignment: .top) {
+            if let id = card, let skill = skills.first(where: { $0.id == id }) {
+                SkillCard(skill: skill, level: level(of: skill), cost: cost(of: skill), enoughMP: mp >= cost(of: skill))
+                    // Its foot a little above the buttons, over the middle of the row.
+                    .alignmentGuide(.top) { $0[.bottom] + 16 }
+                    .allowsHitTesting(false)
+                    .transition(.scale(scale: 0.85, anchor: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: card)
+        // Debug `skills`: the first skill's card, for screenshots.
+        .onAppear { if DebugLaunch.showsSkillCard, card == nil { card = skills.first?.id } }
+        .onDisappear { hideCard?.cancel() }
+    }
+
+    @ViewBuilder
+    private func row(size: CGFloat, spacing: CGFloat, slides: Bool) -> some View {
+        let count = 1 + skills.count + others
+        let short = least - (CGFloat(count) * size + CGFloat(count - 1) * spacing)
+        HStack(alignment: .bottom, spacing: spacing) {
+            lead(size)
+            if slides {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .bottom, spacing: spacing) {
+                        buttons(size: size)
+                    }
+                    .padding(.top, Self.badgeRoom)
+                    .padding(.bottom, Self.nameRoom)
+                    .padding(.horizontal, 4)
+                }
+                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+                // In the row only as tall as its buttons, level with the rest.
+                .padding(.top, -Self.badgeRoom)
+                .padding(.bottom, -Self.nameRoom)
+            } else {
+                if short > spacing { Color.clear.frame(width: short - spacing, height: size) }
+                buttons(size: size)
+            }
+            tail(size)
+        }
+    }
+
+    private func buttons(size: CGFloat) -> some View {
+        ForEach(skills) { skill in
+            SkillCommandButton(skill: skill, cost: cost(of: skill), usable: controller.canUse(skill), size: size,
+                               picked: card == skill.id) {
+                use(skill)
+            } onHold: {
+                show(skill)
+            }
+            .transition(.scale(scale: 0.2).combined(with: .opacity))
+        }
+    }
+
+    /// Whoever is choosing: your companion on its turn, else your hero.
+    private var mp: Int { (controller.choosingForCompanion ? controller.companion?.mp : controller.hero?.mp) ?? 0 }
+
+    private func level(of skill: SkillDef) -> Int {
+        controller.choosingForCompanion ? controller.companionLevel(of: skill) : controller.level(of: skill)
+    }
+
+    private func cost(of skill: SkillDef) -> Int {
+        controller.choosingForCompanion ? controller.companionCost(of: skill) : controller.cost(of: skill)
+    }
+
+    /// A greyed skill does nothing but say why (`BattleController.useSkill`: not the MP for it,
+    /// nobody fainted to revive).
+    private func use(_ skill: SkillDef) {
+        hideCard?.cancel()
+        card = nil
+        if !controller.canUse(skill) { UINotificationFeedbackGenerator().notificationOccurred(.warning) }
+        controller.useSkill(skill)
+    }
+
+    /// Its card, for a few seconds or until a skill is tapped.
+    private func show(_ skill: SkillDef) {
+        card = skill.id
+        hideCard?.cancel()
+        hideCard = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled else { return }
+            card = nil
+        }
+    }
+}
+
+/// A skill as a round button in the battle's row (`SkillRow`), as big as the commands beside it:
+/// its icon (art/sprites/skill_<id>.png, drawn as light on its tile's colour) cut round in a rim
+/// of that colour, its MP in a badge on the rim and its name under it. Faded and grey when it
+/// can't be used now. Holding it calls `onHold` (its card) instead of `action`.
+struct SkillCommandButton: View {
+    let skill: SkillDef
+    let cost: Int
+    let usable: Bool
+    let size: CGFloat
+    /// Its card is showing: a gold rim.
+    var picked = false
+    let action: () -> Void
+    var onHold: (() -> Void)? = nil
+
+    @State private var pressed = false
+    /// Set by a hold, so letting go afterwards doesn't also count as a tap.
+    @State private var held = false
+
+    var body: some View {
+        face
+            .saturation(usable ? 1 : 0)
+            .opacity(usable ? 1 : 0.45)
+            .contentShape(Circle())
+            .scaleEffect(pressed ? 0.9 : 1)
+            .animation(.spring(response: 0.2, dampingFraction: 0.6), value: pressed)
+            .onTapGesture {
+                if held { held = false } else { action() }
+            }
+            .onLongPressGesture(minimumDuration: 0.4) {
+                guard let onHold else { return }
+                held = true
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                onHold()
+            } onPressingChanged: { pressing in
+                pressed = pressing
+                if pressing { held = false }
+            }
+            .overlay(alignment: .bottom) {
+                // Its name, as the commands have theirs; a long one cut short (the card has it whole).
+                Text(skill.name)
+                    .font(HUDStyle.font(10))
+                    .foregroundStyle(HUDStyle.cream.opacity(usable ? 1 : 0.6))
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .minimumScaleFactor(0.8)
+                    .frame(width: size * 1.15)
+                    .offset(y: 15)
+                    .allowsHitTesting(false)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(skill.name)
+            .accessibilityValue(L("{cost} MP", ["cost": cost]))
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { action() }
+            .accessibilityAction(named: L("Skill details")) { onHold?() }
+    }
+
+    private var face: some View {
+        ZStack {
+            Circle().fill(Color(uiColor: skill.tileColor))
+            if let picture = skill.art.flatMap(ArtLibrary.shared.artImage) {
+                Image(uiImage: picture)
+                    .interpolation(picture.size.width > 64 ? .high : .none)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size - 6, height: size - 6)
+                    .clipShape(Circle())
+            } else {
+                IconImage(skill.icon.flatMap(GameIcon.init) ?? .sparkles, size: size * 0.56)
+                    .foregroundStyle(.white)
+                    .shadow(color: HUDStyle.ink.opacity(0.7), radius: 0, x: 0, y: 1)
+            }
+            // The commands' gloss.
+            Ellipse().fill(.white.opacity(0.28))
+                .frame(width: size * 0.5, height: size * 0.18)
+                .offset(y: -size * 0.3)
+            Circle().strokeBorder(picked ? AnyShapeStyle(HUDStyle.gold) : AnyShapeStyle(Color.white.opacity(0.75)),
+                                  lineWidth: picked ? 3 : 2)
+        }
+        .frame(width: size, height: size)
+        .shadow(color: .black.opacity(0.4), radius: 4, x: 0, y: 4)
+        .overlay(alignment: .topTrailing) {
+            if cost > 0 {
+                Text(verbatim: String(cost))
+                    .font(HUDStyle.mono(max(8, size * 0.17)))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 3)
+                    .frame(minWidth: size * 0.32, minHeight: size * 0.28)
+                    .background(Capsule().fill(HUDStyle.mp).overlay(Capsule().strokeBorder(.white.opacity(0.85), lineWidth: 1)))
+                    .offset(x: 3, y: -3)
+            }
+        }
+    }
+}
+
+/// A held skill's card, over the row: its name, element and level, its MP (red when there isn't
+/// enough) and what it does.
+private struct SkillCard: View {
+    let skill: SkillDef
+    let level: Int
+    let cost: Int
+    let enoughMP: Bool
+
+    /// The MP's blue, lighter to read on the navy.
+    private static let mpLight = Color(red: 0.55, green: 0.78, blue: 1)
+    private static let shortRed = Color(red: 1, green: 0.45, blue: 0.4)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                if let element = skill.element {
+                    ElementIcon(element: element, size: 16)
+                }
+                Text(skill.name)
+                    .font(HUDStyle.font(13))
+                    .foregroundStyle(HUDStyle.gold)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Text(L("Lv{level}", ["level": level]))
+                    .font(HUDStyle.font(10).monospacedDigit())
+                    .foregroundStyle(HUDStyle.cream)
+                    .fixedSize()
+                Spacer(minLength: 6)
+                Text(L("{cost} MP", ["cost": cost]))
+                    .font(HUDStyle.font(11).monospacedDigit())
+                    .foregroundStyle(enoughMP ? Self.mpLight : Self.shortRed)
+                    .fixedSize()
+            }
+            if let description = skill.description, !description.isEmpty {
+                Text(description)
+                    .font(HUDStyle.font(11))
+                    .foregroundStyle(HUDStyle.cream.opacity(0.85))
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(width: 220, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(HUDStyle.ink.opacity(0.92))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(HUDStyle.gold.opacity(0.6), lineWidth: 1.5))
+        )
+        .shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2)
+        .accessibilityElement(children: .combine)
+    }
 }
 
 /// The name and icon of a battle button id (see `GameSession.battleButtons`).
@@ -857,7 +1075,6 @@ private struct BattleCommand {
     init(_ id: String) {
         switch id {
         case "attack": title = L("Attack"); icon = .sword
-        case "skills": title = L("Skills"); icon = .sparkles
         case "items": title = L("Items"); icon = .backpack
         case "guard": title = L("Guard"); icon = .shield
         case "run": title = L("Run"); icon = .wind
@@ -1118,103 +1335,6 @@ private struct ChoiceCard<Content: View>: View {
         }
         .frame(width: 300)
         .gameWindow()
-    }
-}
-
-/// The skills as tiles in one row, as a game's skill bar shows them (the user, 2026-10-26: laid
-/// out side by side, as the commands are), sliding sideways when there are more than fit. The
-/// window hugs the row up to the room there is.
-private struct SkillBar<Tiles: View>: View {
-    let title: String
-    let onBack: () -> Void
-    /// What to say instead of the tiles, when there are none.
-    let empty: String?
-    @ViewBuilder let tiles: () -> Tiles
-    @State private var rowWidth: CGFloat = 0
-
-    /// No narrower than this, so the title fits.
-    // Computed: a generic type can't store a static.
-    private static var minWidth: CGFloat { 240 }
-    private static var padding: CGFloat { 12 }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            WindowTitle(title, onClose: onBack)
-            Group {
-                if let empty {
-                    EmptyNote(empty)
-                        .frame(maxWidth: .infinity)
-                } else {
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 6, content: tiles)
-                            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { rowWidth = $0 }
-                    }
-                    .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
-                    .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(Self.padding)
-        }
-        .frame(maxWidth: empty == nil ? max(Self.minWidth, rowWidth + 2 * Self.padding) : 300)
-        .gameWindow()
-    }
-}
-
-/// A skill as a tile: its icon with its level and element in the corners, its name under it and
-/// what it costs, greyed out when there isn't the MP for it (a tap still says so).
-private struct SkillTileButton: View {
-    let skill: SkillDef
-    let level: Int
-    let cost: Int
-    let affordable: Bool
-    let action: () -> Void
-
-    /// As wide as four to a row made them on a phone upright.
-    static let width: CGFloat = 68
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 3) {
-                SkillIcon(skill: skill, size: 44)
-                    .overlay(alignment: .topTrailing) {
-                        if let element = skill.element {
-                            ElementIcon(element: element, size: 14)
-                                .offset(x: 3, y: -3)
-                        }
-                    }
-                    .overlay(alignment: .bottomLeading) {
-                        Text(L("Lv{level}", ["level": level]))
-                            .font(HUDStyle.font(8).monospacedDigit())
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                            .fixedSize()
-                            .padding(.horizontal, 3)
-                            .frame(minHeight: 13)
-                            .background(Capsule().fill(HUDStyle.frameDark).overlay(Capsule().strokeBorder(HUDStyle.bevel, lineWidth: 1)))
-                            .offset(x: -3, y: 3)
-                    }
-                    .padding(.top, 2)
-                Text(skill.name)
-                    .font(HUDStyle.font(10))
-                    .foregroundStyle(HUDStyle.ink)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.8)
-                    .multilineTextAlignment(.center)
-                    .frame(height: 26, alignment: .top)
-                Text(L("{cost} MP", ["cost": cost]))
-                    .font(HUDStyle.font(9).monospacedDigit())
-                    .foregroundStyle(HUDStyle.mp)
-                    .lineLimit(1)
-            }
-            .padding(.vertical, 6)
-            .padding(.horizontal, 2)
-            .frame(width: Self.width)
-            .background(RoundedRectangle(cornerRadius: 10).fill(affordable ? HUDStyle.cream : HUDStyle.dim))
-            .saturation(affordable ? 1 : 0)
-            .opacity(affordable ? 1 : 0.6)
-        }
-        .buttonStyle(RoundPressStyle())
-        .accessibilityElement(children: .combine)
     }
 }
 
