@@ -240,8 +240,14 @@ misses; smoothing that passed more of them is what lost the detail. The eye deci
 - **The old outline goes wherever it runs on from the edge as a line** (`_edge_outline`), not only where it
   touches the air: between a ring's little gems it ran into the notches, stayed, and was shaded as brown
   lumps. A filled area in the outline's colour (a hood's opening) isn't a line and stays.
+- **A cut shape's colours are its own:** a colour lying mostly in a gem or star is never grouped with one
+  outside it, and gems are cut before a ring's band, which never takes their colours. Under a palette swap
+  the firepeak ring's orange gem and tan band were close enough in hue to be one region, and half the gem
+  came out the band's tan (it had, in the grained finish too).
 - **Nothing floats off a shape as single pixels:** the genie's smoke, specks above its gem at 32, came out
-  as lumps at 64; it now curls on the stone's face.
+  as lumps at 64; it now curls on the stone's face. The tidesong ring's wave, two thin lines over its band,
+  is a crest sitting on it. A ring's band is drawn in one colour: its drawn light and dark wedges were
+  ignored by the exact cut, and under a palette swap one came out as a patch on the gem.
 - **Specks off the body don't count toward its size:** a sparkle drawn with an outline kept the Jelly Pearl
   from being scaled up to fill its tile (up to 2× now).
 

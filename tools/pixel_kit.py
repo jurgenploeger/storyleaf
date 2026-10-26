@@ -970,7 +970,7 @@ def _exact_poly(cur, shape, scale, src, dst, kin):
     shape_mask = _inside(pts, mx, my)
     labels, counts = np.unique(cur[shape_mask & (cur >= 0)], return_counts=True)
     if not len(labels):
-        return cur, np.zeros(cur.shape, bool)
+        return cur, np.zeros(cur.shape, bool), []
     own = labels[np.argmax(counts)]
     cur = cur.copy()
     # What the shape was drawn on (its pixel squares, taken back to the drawing) outside the cut goes.
@@ -1023,7 +1023,9 @@ def _exact_poly(cur, shape, scale, src, dst, kin):
             cur[take] = nb[take]
             hole &= ~take
     cur[hole] = own
-    return cur, np.zeros(cur.shape, bool)
+    # The colours it claims: the ones mostly inside it.
+    took = [lab for lab in family if (cur == lab).any() and ((cur == lab) & shape_mask).sum() >= 0.5 * (cur == lab).sum()]
+    return cur, np.zeros(cur.shape, bool), took
 
 
 def _exact(cur, shape, scale, src, dst, kin=lambda own: ((), ())):
@@ -1034,8 +1036,6 @@ def _exact(cur, shape, scale, src, dst, kin=lambda own: ((), ())):
     fill. Other regions over it (a ring's gem) stay as they are, but shades of its own colour split off from
     it, and the old outline's leftovers in it (`kin(own)`: those two lists), become it. Returns the map and
     the shape's mask."""
-    if shape[0] == "poly":
-        return _exact_poly(cur, shape, scale, src, dst, kin)
     cx, cy, rx, ry, irx, iry = shape[:6]
     to_hi = lambda v, k: ((v + 0.5) * 2 * SS - src[k]) * scale + dst[k] if scale > 1.0 else (v + 0.5) * 2 * SS
     # In the 64-pixel sprite's own pixels, then snapped.
@@ -1134,6 +1134,21 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
     counts = {}
     for k in keys:
         counts[k] = counts.get(k, 0) + 1
+    # A colour that lies (mostly) in a cut shape (a gem, a star: `exact` polygons) is never grouped with one
+    # outside it: under a palette swap the firepeak ring's orange gem and tan band were close enough in hue
+    # to be one region, and the gem took the band's colour.
+    in_cut = set()
+    if clean and exact:
+        cut_mask = np.zeros(body.shape, bool)
+        yy0, xx0 = np.mgrid[0:body.shape[0], 0:body.shape[1]]
+        for shape in exact:
+            if shape[0] == "poly":
+                cut_mask |= _inside([(x * 2, y * 2) for x, y in shape[1]], xx0 + 0.5, yy0 + 0.5)
+        inside_counts = {}
+        for y, x in zip(*np.nonzero(body & cut_mask)):
+            k = tuple(a[y, x, :3])
+            inside_counts[k] = inside_counts.get(k, 0) + 1
+        in_cut = {k for k, n in inside_counts.items() if n >= 0.5 * counts.get(k, 1)}
     groups = []                                      # [base colour, [colours]]
     for col, _ in sorted(counts.items(), key=lambda kv: -kv[1]):
         hh, ss, vv = _hsv(col)
@@ -1141,6 +1156,8 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
         for g in groups:
             if OUTLINE in (tuple(col), tuple(g[0])):
                 continue             # an opening drawn in the outline's colour is its own region, never a purple's
+            if (tuple(col) in in_cut) != (tuple(g[0]) in in_cut):
+                continue
             gh, gs, gv = _hsv(g[0])
             dh = abs((hh - gh + 0.5) % 1 - 0.5) * 360
             grey = ss < 0.14 and gs < 0.14
@@ -1255,8 +1272,18 @@ def restyle(img, round_corners=0.6, texture=0.045, fill=0.84, preset=None, base=
             return same, voids
         exact_mask = np.zeros(cur.shape, bool)       # shaded by the light alone
         lined_mask = np.zeros(cur.shape, bool)       # keeping the drawing's lines (`exact="lines"`)
-        for shape in exact:
-            cur, cut = _exact(cur, shape, scale, src, dst, kin)
+        # Cut shapes (gems, stars) first: their colours are theirs, never a ring band's, though a palette
+        # swap can bring the two close in hue (the firepeak ring's gem and band).
+        claimed = set()
+        def kin_free(own):
+            same, voids = kin(own)
+            return [j for j in same if j not in claimed], voids
+        for shape in sorted(exact, key=lambda sh: sh[0] != "poly"):
+            if shape[0] == "poly":
+                cur, cut, took = _exact_poly(cur, shape, scale, src, dst, kin)
+                claimed |= set(took)
+                continue
+            cur, cut = _exact(cur, shape, scale, src, dst, kin_free)
             if len(shape) > 6 and shape[6] == "lines":
                 lined_mask |= cut
             else:

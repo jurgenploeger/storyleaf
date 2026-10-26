@@ -261,9 +261,10 @@ def star_shape(c, cx, cy, r, color, inner=0.45, rotation=-math.pi / 2):
 
 def ring(c, band, gem=None, gem_color=None):
     dark, mid, light = band
+    # One colour: the clean finish cuts the band exactly round and shades it by its light alone. (Its
+    # drawn light and dark wedges were ignored there, and under a palette swap the light one, beside the
+    # gem, came out as a patch on it: the firepeak ring's, 2026-10-26.)
     c.ring(16, 19, 9, 5.5, mid, ry_scale=0.85, exact=True)
-    c.shade(lambda x, y, col: col == mid and y > 21, dark)
-    c.shade(lambda x, y, col: col == mid and y < 16 and x < 15, light)
     if gem:
         c.poly([(12, 9), (20, 9), (22, 12), (16, 17), (10, 12)], gem_color[1], exact="facets")
         c.shade(lambda x, y, col: col == gem_color[1] and x > 16, gem_color[0])
@@ -2582,7 +2583,11 @@ def draw_offering_shell(c):
 def draw_tidesong_ring(c):
     """A sea-green silver ring with a little wave on top."""
     ring(c, SEAPEARL)
-    c.line(9, 10, 12, 7, SEAPEARL[2]); c.line(12, 7, 15, 10, SEAPEARL[2])
+    # The wave: a crest curling over on top of the band, as the other rings carry their stone. (Drawn as two
+    # thin lines above it, at 64 pixels it was a few specks floating over the ring, 2026-10-26.)
+    c.poly([(10.5, 12.5), (12, 9.5), (14.5, 7.5), (17.5, 7), (20, 8), (21.5, 10.5), (21.5, 12.5)], SEAPEARL[1],
+           exact="facets")
+    c.shade(lambda x, y, col: col == SEAPEARL[1] and y < 9 and 12 <= x <= 20, SEAPEARL[2])     # its foam
     c.line(15, 10, 18, 7, SEAPEARL[2]); c.line(18, 7, 21, 10, SEAPEARL[2])
     c.set(22, 8, WHITE)
 
