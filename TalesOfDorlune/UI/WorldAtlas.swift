@@ -689,7 +689,7 @@ struct WorldAtlas: View {
                     .frame(width: 12, height: 12)
                     .overlay(Circle().strokeBorder(selected == mark.place ? HUDStyle.gold : HUDStyle.cream.opacity(0.8), lineWidth: 1.5))
                 if framing.scale >= 1.2 || selected == mark.place {
-                    label(known ? Content.shared.map(mark.place)?.name ?? "" : "???", size: 8, color: HUDStyle.cream.opacity(known ? 1 : 0.6))
+                    label(known ? Content.shared.map(mark.place)?.name ?? "" : "???", size: 11, color: .white.opacity(known ? 1 : 0.6))
                 }
             }
             .allowsHitTesting(false)
@@ -700,9 +700,10 @@ struct WorldAtlas: View {
                 // Out where the whole continent shows, only where you are and what you tapped.
                 if framing.scale >= 0.45 || state == .here || selected == def.id {
                     HStack(spacing: 3) {
-                        if known, def.fence == true { IconImage(.star, size: 9).foregroundStyle(HUDStyle.gold) }
-                        label(known ? def.name : "???", size: 10,
-                              color: selected == def.id || state == .here ? HUDStyle.gold : HUDStyle.cream.opacity(known ? 1 : 0.7))
+                        if known, def.fence == true { IconImage(.star, size: 12).foregroundStyle(HUDStyle.gold) }
+                        // White and bigger, so they read over any land (playtesting 2026-10-26: gold
+                        // names over the meadows couldn't be read, and they were too small).
+                        label(known ? def.name : "???", size: 14, color: .white.opacity(known ? 1 : 0.7))
                     }
                     .allowsHitTesting(false)
                     .accessibilityLabel(known ? def.name : L("Undiscovered place"))

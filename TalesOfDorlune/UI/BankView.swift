@@ -2,8 +2,8 @@ import SwiftUI
 
 /// A banker's bank (playtesting 2026-10-25: "I want to add a bank to the game"; then "the bank
 /// interface itself should be a bigger modal, just like the other modals"): after a word with the
-/// banker (`NPCDialogView`'s Open the bank), a window as big as a menu window's, the banker and what
-/// they say at the top, your bag and the bank under it. Nothing in the bank is lost to a defeat.
+/// banker (`NPCDialogView`'s Open the bank), a window as big as a menu window's: your bag and the bank
+/// under it, and what the banker says to what you just did. Nothing in the bank is lost to a defeat.
 struct BankView: View {
     let npc: NPCDef
     let session: GameSession
@@ -25,9 +25,10 @@ struct BankView: View {
                 WindowTitle(L("Bank"), onClose: onClose)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
-                        HStack(spacing: 10) {
-                            SpriteImage(art: npc.art, size: 44)
-                            Text(reply ?? npc.greeting)
+                        // No greeting here: the banker said it in their bubble on the way in
+                        // (playtesting 2026-10-26). What they say to what you just did, though.
+                        if let reply {
+                            Text(reply)
                                 .font(HUDStyle.font(12))
                                 .foregroundStyle(HUDStyle.cream)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -225,7 +226,7 @@ struct BankCoinsCard: View {
 
 /// How many to move between the bag and the bank, or to delete (playtesting 2026-10-26: "a stepper to
 /// decide how many you want to deposit or take [...] delete items and click on the item count [...] to
-/// show a numpad"): how many (`AmountPicker`); then Deposit or Withdraw, and Delete behind "…" (items
+/// show a numpad"): how many (`AmountPicker`); then Deposit or Withdraw, and Delete beside it (items
 /// only, not what a quest you're on needs, asked twice). Out of the bank only as many as the bag has
 /// room for. The card closes once none are left on its side.
 struct BankControls: View {
@@ -239,8 +240,6 @@ struct BankControls: View {
     /// Whether the amount's keypad is open (`AmountPicker`).
     @State private var typing = false
     @State private var confirmingDelete = false
-    /// "…" tapped: Delete shows under the buttons. Debug `more` opens it.
-    @State private var showingMore = DebugLaunch.opensMore
 
     /// How many there are on this side.
     private var held: Int {
@@ -288,43 +287,21 @@ struct BankControls: View {
         }
     }
 
-    /// Deposit or Withdraw, and "…" by it for what's seldom wanted (playtesting 2026-10-26, progressive
-    /// disclosure): a tap shows Delete under them, out of the way of a slip of the thumb.
+    /// Delete and Deposit or Withdraw, side by side at the right (playtesting 2026-10-26: Delete
+    /// behind a "…" was one tap too many). Delete still asks first.
     private func buttons(count: Int) -> some View {
-        VStack(alignment: .trailing, spacing: 8) {
-            HStack(spacing: 10) {
-                if deletable {
-                    Button {
-                        SoundEffects.shared.play(.tap, volume: 0.7)
-                        withAnimation(Reveal.animation) { showingMore.toggle() }
-                    } label: {
-                        IconImage(.more, size: 16)
-                            .frame(minWidth: 18)
-                    }
-                    .buttonStyle(PixelButtonStyle(tint: showingMore ? HUDStyle.gold : HUDStyle.buttonFace, compact: true))
-                    .accessibilityLabel(L("More"))
-                    .accessibilityValue(showingMore ? L("Open") : "")
-                }
-                Spacer(minLength: 0)
-                Button(side == .bag ? L("Deposit {count}", ["count": count]) : L("Withdraw {count}", ["count": count])) {
-                    move(count)
-                }
-                .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
-                .disabled(movable < count)
-                .opacity(movable < count ? 0.5 : 1)
+        HStack(spacing: 10) {
+            Spacer(minLength: 0)
+            if deletable {
+                Button(L("Delete")) { confirmingDelete = true }
+                    .buttonStyle(PixelButtonStyle(tint: HUDStyle.orange))
             }
-            if showingMore && deletable {
-                HStack(spacing: 10) {
-                    Spacer(minLength: 0)
-                    Button {
-                        confirmingDelete = true
-                    } label: {
-                        Label(L("Delete {count}", ["count": count]), icon: .close)
-                    }
-                    .buttonStyle(PixelButtonStyle(tint: HUDStyle.orange, compact: true))
-                }
-                .transition(.reveal)
+            Button(side == .bag ? L("Deposit {count}", ["count": count]) : L("Withdraw {count}", ["count": count])) {
+                move(count)
             }
+            .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
+            .disabled(movable < count)
+            .opacity(movable < count ? 0.5 : 1)
         }
     }
 
@@ -339,12 +316,10 @@ struct BankControls: View {
                 Spacer(minLength: 0)
                 Button(L("Keep it")) {
                     confirmingDelete = false
-                    showingMore = false
                 }
                 .buttonStyle(PixelButtonStyle())
                 Button(L("Delete")) {
                     confirmingDelete = false
-                    showingMore = false
                     session.destroy(item.id, count, fromBank: side == .bank)
                     session.save()
                 }

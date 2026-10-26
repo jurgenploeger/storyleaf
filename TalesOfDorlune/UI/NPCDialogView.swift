@@ -23,25 +23,23 @@ struct NPCDialogView: View {
     var body: some View {
         GeometryReader { proxy in
             // Fairyland Online-style: the character stands big in the bottom-right corner, cut off by the
-            // edge of the screen, and talks from a speech bubble on their left.
-            let portrait = min(proxy.size.width * 0.5, proxy.size.height * 0.6, 300)
+            // edge of the screen, over the window they talk from, which runs the width of the screen
+            // (playtesting 2026-10-26: a speech bubble beside them, its tail pointing at them, was
+            // narrow). What's in the window keeps clear of them (`speakerRoom`).
+            let portrait = min(proxy.size.width * 0.42, proxy.size.height * 0.55, 280)
             let bottom = max(16, proxy.safeAreaInsets.bottom)
             ZStack(alignment: .bottomTrailing) {
                 Color.black.opacity(0.35)
                     .onTapGesture(perform: onClose)
 
+                bubble(maxHeight: proxy.size.height * 0.5, speakerRoom: portrait * 0.5)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, bottom)
+
                 SpriteImage(art: npc.art, size: portrait)
                     .offset(x: portrait * 0.22, y: portrait * 0.16)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
-
-                // The tail points at the speaker's mouth, about a third of the picture's height up
-                // from the bottom of the screen.
-                bubble(maxHeight: proxy.size.height * 0.5, tailY: portrait * 0.34 - bottom)
-                    .frame(maxWidth: 520)
-                    .padding(.leading, 12)
-                    .padding(.trailing, portrait * 0.62)
-                    .padding(.bottom, bottom)
 
                 if let finished {
                     QuestCompleteCard(session: session, finished: finished) { self.finished = nil }
@@ -77,9 +75,13 @@ struct NPCDialogView: View {
         .ignoresSafeArea()
     }
 
-    private func bubble(maxHeight: CGFloat, tailY: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+    /// The window they talk from: what they say and its buttons lined up under their name, all
+    /// clear of the `speakerRoom` the character stands in at the right.
+    private func bubble(maxHeight: CGFloat, speakerRoom: CGFloat) -> some View {
+        let window = RoundedRectangle(cornerRadius: HUDStyle.windowRadius)
+        return VStack(alignment: .leading, spacing: 0) {
             WindowTitle(npc.name)
+                .padding(.trailing, speakerRoom)
             VStack(alignment: .leading, spacing: 10) {
                 if npc.role == .quests {
                     QuestConversation(session: session, giver: npc, reply: $reply, finished: $finished,
@@ -88,14 +90,18 @@ struct NPCDialogView: View {
                     talk(maxHeight: maxHeight)
                 }
             }
-            .padding(12)
+            // In line with the name (`WindowTitle`'s 16 points in).
+            .padding(.leading, 16)
+            .padding(.trailing, 12 + speakerRoom)
+            .padding(.top, 10)
+            .padding(.bottom, 14)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .foregroundStyle(HUDStyle.cream)
-        .clipShape(RoundedRectangle(cornerRadius: HUDStyle.windowRadius))
-        // The window is a speech bubble: its glass runs out round the tail, and its frame goes all
-        // the way round, like every window's (`gameWindow`), the close button over its corner.
-        .background(SpeechBubble(tailY: tailY).fill(HUDStyle.glass).shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2))
-        .overlay(HUDStyle.frame(SpeechBubble(tailY: tailY)))
+        .clipShape(window)
+        // The frame all the way round, like every window's (`gameWindow`), the close button over its corner.
+        .background(window.fill(HUDStyle.glass).shadow(color: .black.opacity(0.35), radius: 3, x: 0, y: 2))
+        .overlay(HUDStyle.frame(window))
         .windowCloseButton(onClose)
     }
 
@@ -135,72 +141,6 @@ struct NPCDialogView: View {
             }
         }
         .frame(maxHeight: min(260, max(120, maxHeight - 110)))
-    }
-}
-
-/// A rounded window with a tail on its right edge pointing at the speaker: its middle `tailY`
-/// points up from the bottom edge, the tip a little higher. The tail stands out past the frame.
-/// Insetting moves its sides in too, so a bevel drawn with `strokeBorder` follows it.
-private nonisolated struct SpeechBubble: InsettableShape {
-    var cornerRadius: CGFloat = 10
-    var tailY: CGFloat
-    var tailBase: CGFloat = 24
-    var tailLength: CGFloat = 16
-    var tailRise: CGFloat = 5
-    var insetAmount: CGFloat = 0
-
-    func path(in rect: CGRect) -> Path {
-        let box = rect.insetBy(dx: insetAmount, dy: insetAmount)
-        let radius = max(0, cornerRadius - insetAmount)
-        // The tail at no inset, its base clear of the corners...
-        let half = tailBase / 2
-        let middle = min(max(rect.maxY - tailY, rect.minY + cornerRadius + half), rect.maxY - cornerRadius - half)
-        let upper = CGPoint(x: rect.maxX, y: middle - half)
-        let lower = CGPoint(x: rect.maxX, y: middle + half)
-        let tip = CGPoint(x: rect.maxX + tailLength, y: middle - tailRise)
-        // ...then each side moved in by the inset, meeting the other and the inset edge.
-        let top = Self.side(from: upper, to: tip, moved: insetAmount, toward: lower)
-        let bottom = Self.side(from: lower, to: tip, moved: insetAmount, toward: upper)
-        let edge: Line = (CGPoint(x: box.maxX, y: box.minY), CGVector(dx: 0, dy: 1))
-
-        var path = Path()
-        path.move(to: CGPoint(x: box.midX, y: box.minY))
-        path.addArc(tangent1End: CGPoint(x: box.maxX, y: box.minY), tangent2End: CGPoint(x: box.maxX, y: box.maxY), radius: radius)
-        path.addLine(to: Self.crossing(top, edge) ?? upper)
-        path.addLine(to: Self.crossing(top, bottom) ?? tip)
-        path.addLine(to: Self.crossing(bottom, edge) ?? lower)
-        path.addArc(tangent1End: CGPoint(x: box.maxX, y: box.maxY), tangent2End: CGPoint(x: box.minX, y: box.maxY), radius: radius)
-        path.addArc(tangent1End: CGPoint(x: box.minX, y: box.maxY), tangent2End: CGPoint(x: box.minX, y: box.minY), radius: radius)
-        path.addArc(tangent1End: CGPoint(x: box.minX, y: box.minY), tangent2End: CGPoint(x: box.maxX, y: box.minY), radius: radius)
-        path.closeSubpath()
-        return path
-    }
-
-    func inset(by amount: CGFloat) -> SpeechBubble {
-        var shape = self
-        shape.insetAmount += amount
-        return shape
-    }
-
-    private typealias Line = (point: CGPoint, direction: CGVector)
-
-    /// The line from `start` to `end`, moved `distance` towards `inside`.
-    private static func side(from start: CGPoint, to end: CGPoint, moved distance: CGFloat, toward inside: CGPoint) -> Line {
-        let direction = CGVector(dx: end.x - start.x, dy: end.y - start.y)
-        let length = max((direction.dx * direction.dx + direction.dy * direction.dy).squareRoot(), 0.001)
-        var normal = CGVector(dx: -direction.dy / length, dy: direction.dx / length)
-        if normal.dx * (inside.x - start.x) + normal.dy * (inside.y - start.y) < 0 {
-            normal = CGVector(dx: -normal.dx, dy: -normal.dy)
-        }
-        return (CGPoint(x: start.x + normal.dx * distance, y: start.y + normal.dy * distance), direction)
-    }
-
-    /// Where two lines cross, or nil when they run side by side.
-    private static func crossing(_ a: Line, _ b: Line) -> CGPoint? {
-        let cross = a.direction.dx * b.direction.dy - a.direction.dy * b.direction.dx
-        guard abs(cross) > 0.000_001 else { return nil }
-        let along = ((b.point.x - a.point.x) * b.direction.dy - (b.point.y - a.point.y) * b.direction.dx) / cross
-        return CGPoint(x: a.point.x + a.direction.dx * along, y: a.point.y + a.direction.dy * along)
     }
 }
 
@@ -503,6 +443,8 @@ private struct QuestConversation: View {
     @State private var said: String?
     /// The quest you're on, told again from the start.
     @State private var retelling = false
+    /// The answer picked to a quest's question, not yet confirmed.
+    @State private var picked: String?
 
     var body: some View {
         let quest = session.currentQuest(from: giver.id)
@@ -558,13 +500,14 @@ private struct QuestConversation: View {
             switch session.status(of: quest) {
             case .available:
                 if let question = quest.question {
-                    HStack {
+                    // Cards to pick from, one a row so a long answer reads whole; Confirm, bottom
+                    // right where Next was, takes the one picked (playtesting 2026-10-26: buttons
+                    // that answered at a tap, three a row, broke their words).
+                    VStack(spacing: 6) {
                         ForEach(question.answers, id: \.text) { answer in
-                            Button(answer.text) {
-                                session.acceptQuest(quest.id, answer: answer)
-                                begin(L("{answer}… a fine answer. Here are your gifts. Hatch that egg and come show me!", ["answer": answer.text]))
+                            AnswerCard(text: answer.text, picked: picked == answer.text) {
+                                withAnimation(.easeOut(duration: 0.15)) { picked = answer.text }
                             }
-                            .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
                         }
                     }
                 } else {
@@ -591,10 +534,12 @@ private struct QuestConversation: View {
 
     private func navigation(index: Int, count: Int) -> some View {
         HStack(spacing: 8) {
+            // Back from the second page on (the onboarding's carousel does the same).
             Button { turn(from: index, by: -1, of: count) } label: { Label(L("Back"), icon: .arrowLeft, size: 12) }
                 .buttonStyle(PixelButtonStyle(compact: true))
-                .opacity(index == 0 ? 0.4 : 1)
+                .opacity(index == 0 ? 0 : 1)
                 .disabled(index == 0)
+                .accessibilityHidden(index == 0)
             Spacer(minLength: 0)
             HStack(spacing: 5) {
                 ForEach(0..<count, id: \.self) { dot in
@@ -605,10 +550,36 @@ private struct QuestConversation: View {
             }
             .accessibilityHidden(true)
             Spacer(minLength: 0)
-            Button { turn(from: index, by: 1, of: count) } label: { Label(L("Next"), icon: .arrowRight, size: 12) }
+            if index == count - 1, let quest = session.currentQuest(from: giver.id),
+               session.status(of: quest) == .available, let question = quest.question {
+                // On the question's page: Confirm, once an answer's picked.
+                let answer = question.answers.first { $0.text == picked }
+                Button {
+                    guard let answer else { return }
+                    session.acceptQuest(quest.id, answer: answer)
+                    begin(L("{answer}… a fine answer. Here are your gifts. Hatch that egg and come show me!", ["answer": answer.text]))
+                } label: {
+                    HStack(spacing: 5) {
+                        Text(L("Confirm"))
+                        IconImage(.check, size: 12)
+                    }
+                }
+                .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
+                .opacity(answer == nil ? 0 : 1)
+                .disabled(answer == nil)
+                .accessibilityHidden(answer == nil)
+            } else {
+                // The arrow after the word, pointing the way it goes.
+                Button { turn(from: index, by: 1, of: count) } label: {
+                    HStack(spacing: 5) {
+                        Text(L("Next"))
+                        IconImage(.arrowRight, size: 12)
+                    }
+                }
                 .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
                 .opacity(index == count - 1 ? 0.4 : 1)
                 .disabled(index == count - 1)
+            }
         }
     }
 
@@ -621,6 +592,7 @@ private struct QuestConversation: View {
         reply = nil
         said = line
         retelling = false
+        picked = nil
         page = 0
     }
 
@@ -640,6 +612,46 @@ private struct QuestConversation: View {
         // Thanks, and into the next one's story if they have one for you.
         let thanks = L("Thank you! You've been a great help.")
         begin(session.currentQuest(from: giver.id) == nil ? thanks : thanks + " " + L("There's more, if you'll hear me out."))
+    }
+}
+
+/// One answer to a quest giver's question, as a card: tap to pick it (gold-edged, ticked), then
+/// Confirm takes it.
+private struct AnswerCard: View {
+    let text: String
+    let picked: Bool
+    let pick: () -> Void
+
+    var body: some View {
+        let card = RoundedRectangle(cornerRadius: 10)
+        Button(action: pick) {
+            HStack(spacing: 8) {
+                Text(text)
+                    .font(HUDStyle.font(13))
+                    .foregroundStyle(picked ? HUDStyle.gold : HUDStyle.cream)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                // A ring, filled and ticked once picked.
+                ZStack {
+                    Circle().strokeBorder(picked ? HUDStyle.gold : HUDStyle.cream.opacity(0.45), lineWidth: 1.5)
+                    if picked {
+                        Circle().fill(HUDStyle.gold).padding(1)
+                        IconImage(.check, size: 10).foregroundStyle(HUDStyle.ink)
+                    }
+                }
+                .frame(width: 20, height: 20)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(card.fill(picked ? HUDStyle.gold.opacity(0.18) : HUDStyle.cream.opacity(0.07)))
+            .overlay(card.strokeBorder(picked ? HUDStyle.gold : HUDStyle.cream.opacity(0.2), lineWidth: picked ? 2 : 1))
+            .contentShape(card)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(picked ? .isSelected : [])
+        .onChange(of: picked) { _, now in
+            if now { SoundEffects.shared.play(.tap, volume: 0.7) }
+        }
     }
 }
 
