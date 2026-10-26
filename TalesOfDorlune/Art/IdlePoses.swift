@@ -25,7 +25,8 @@ nonisolated struct Eye: Sendable {
 
 /// Where every sprite's eyes are (art/eyes.json), so it can blink: a walk sheet's in each
 /// direction's standing pose, a single picture's on it. A hero's or a quest giver's come from their
-/// body layer, which stands for its head and an armour sheet stacked with it (`key(forLayer:)`).
+/// body layer, which stands for its head too (`key(forLayer:)`). Both eyes shut or neither: never a
+/// wink (`shut`, `shutsEvenly`, `ArtLibrary.cleanFaces`).
 nonisolated struct EyeBlink: Sendable {
     let sheets: [String: [Direction: [Eye]]]
     let pictures: [String: [Eye]]
@@ -60,34 +61,73 @@ nonisolated struct EyeBlink: Sendable {
     }
 
     /// `image` with `eyes` shut. A single picture's get a lash (`lash`); a walk sheet's shut under
-    /// the lid already drawn over them. An eye whose fill colour is clear (a layer that doesn't
-    /// reach there) is left as it is.
+    /// the lid already drawn over them. All of them or none: where one's fill colour is clear (a
+    /// layer that doesn't reach there, like a head cut off above it), none shut, or one would wink.
     static func shut(_ image: CGImage, eyes: [Eye], lash: Bool) -> CGImage? {
         guard !eyes.isEmpty, var pixels = Pixels(image) else { return nil }
         let open = pixels
+        guard eyes.allSatisfy({ (open.at($0.fill.x, $0.fill.y)?.3 ?? 0) >= 128 }) else { return nil }
         for eye in eyes {
-            guard let fill = open.at(eye.fill.x, eye.fill.y), fill.3 >= 128 else { continue }
-            var darkest: (UInt8, UInt8, UInt8, UInt8)?
-            for y in (eye.y - 1)...(eye.y + eye.height) {
-                for x in (eye.x - 1)...(eye.x + eye.width) {
-                    guard let pixel = open.at(x, y), pixel.3 >= 128 else { continue }
-                    if darkest.map({ Pixels.luma(pixel) < Pixels.luma($0) }) ?? true { darkest = pixel }
+            guard let fill = open.at(eye.fill.x, eye.fill.y) else { continue }
+            // The lash in the eye's own darkest colour, so a pair's match; round it where the eye has
+            // nothing darker than its lid (a white glint in a dark face).
+            func darkest(margin: Int) -> (UInt8, UInt8, UInt8, UInt8)? {
+                var found: (UInt8, UInt8, UInt8, UInt8)?
+                for y in (eye.y - margin)..<(eye.y + eye.height + margin) {
+                    for x in (eye.x - margin)..<(eye.x + eye.width + margin) {
+                        guard let pixel = open.at(x, y), pixel.3 >= 128 else { continue }
+                        if found.map({ Pixels.luma(pixel) < Pixels.luma($0) }) ?? true { found = pixel }
+                    }
                 }
+                return found
+            }
+            let lashColor: (UInt8, UInt8, UInt8, UInt8)?
+            if let inside = darkest(margin: 0), Pixels.luma(inside) < Pixels.luma(fill) - 30 {
+                lashColor = inside
+            } else {
+                lashColor = darkest(margin: 1)
             }
             for y in eye.y..<(eye.y + eye.height) {
                 for x in eye.x..<(eye.x + eye.width) where (open.at(x, y)?.3 ?? 0) >= 128 {
                     pixels.set(x, y, fill)
                 }
             }
-            guard lash, let darkest else { continue }
+            guard lash, let lashColor else { continue }
             // Two-thirds of the way down, as eyelids meet; one pixel wide, it reads as a dash.
             let row = eye.y + min(eye.height - 1, eye.height * 2 / 3)
             let span = eye.width == 1 ? (eye.x - 1)...(eye.x + 1) : eye.x...(eye.x + eye.width - 1)
             for x in span where (open.at(x, row)?.3 ?? 0) >= 128 {
-                pixels.set(x, row, darkest)
+                pixels.set(x, row, lashColor)
             }
         }
         return pixels.image()
+    }
+
+    /// Whether every one of `eyes` shut as the sprite is finally drawn: some of each changed from
+    /// `open` to `shut`. Where one didn't (it lies under a hat or hair drawn over the face, or its
+    /// layer couldn't shut it), the sprite doesn't blink facing that way at all, or it would wink.
+    static func shutsEvenly(open: CGImage, shut: CGImage, eyes: [Eye]) -> Bool {
+        guard !eyes.isEmpty, let before = Pixels(open), let after = Pixels(shut) else { return false }
+        return eyes.allSatisfy { eye in
+            (eye.y..<(eye.y + eye.height)).contains { y in
+                (eye.x..<(eye.x + eye.width)).contains { x in
+                    guard let a = before.at(x, y), let b = after.at(x, y) else { return false }
+                    return a != b
+                }
+            }
+        }
+    }
+
+    /// Whether `top` covers every pixel `lower` draws round `eyes` (their boxes, `margin` out).
+    static func hides(_ top: CGImage, over lower: CGImage, round eyes: [Eye], margin: Int) -> Bool {
+        guard let above = Pixels(top), let below = Pixels(lower) else { return false }
+        return eyes.allSatisfy { eye in
+            ((eye.y - margin)..<(eye.y + eye.height + margin)).allSatisfy { y in
+                ((eye.x - margin)..<(eye.x + eye.width + margin)).allSatisfy { x in
+                    (below.at(x, y)?.3 ?? 0) < 128 || (above.at(x, y)?.3 ?? 0) >= 128
+                }
+            }
+        }
     }
 
     /// A standing frame breathing out: everything above the waist (a little past halfway down what's

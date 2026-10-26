@@ -273,13 +273,13 @@ final class ArtLibrary {
 
     /// art/sprites PNGs drawn on top of each other, bottom first; nil unless every one exists.
     /// With `rules`, each layer is recoloured first: by its own rules if it has them, else by these.
-    /// With `shut` (where the frames lie), the body's eyes are shut first, on the body or head layer
-    /// and an armour sheet under it (`EyeBlink.key(forLayer:)`).
+    /// With `shut` (where the frames lie), the eyes of the body or head layers are shut first
+    /// (`EyeBlink.key(forLayer:)`); an armour sheet's or a helmet's face is left as it is
+    /// (`cleanFaces` says where that shows).
     private func stacked(_ layers: [ArtLayer], recolor rules: [RecolorRule]? = nil, shut frames: SheetFrames? = nil) -> CGImage? {
-        let eyes = frames == nil ? nil : layers.lazy.compactMap { EyeBlink.key(forLayer: $0.id) }.first
         let images = layers.compactMap { layer -> CGImage? in
-            guard var image = pngURL(layer.id).flatMap({ UIImage(contentsOfFile: $0.path)?.cgImage }) else { return nil }
-            if let eyes, EyeBlink.key(forLayer: layer.id) != nil || layer.id.hasPrefix("armor_") {
+            guard var image = pngImage(layer.id) else { return nil }
+            if frames != nil, let eyes = EyeBlink.key(forLayer: layer.id) {
                 image = eyesShut(in: image, as: eyes, frames: frames)
             }
             guard let rules else { return image }
@@ -806,8 +806,9 @@ final class ArtLibrary {
             let art = sprite(id)
             var cycle = WalkCycle(frames: Dictionary(uniqueKeysWithValues: Direction.allCases.map { ($0, [art.texture]) }), size: art.size,
                                   facesRight: asset?.faces == "right")
-            // A single picture blinks; it breathes by its `motion` (IdleMotion).
-            if hasEyes(id), let shut = sourceImage(id, shut: true) {
+            // A single picture blinks, both eyes or none; it breathes by its `motion` (IdleMotion).
+            if let eyes = eyeKey(id).flatMap({ EyeBlink.shared.pictures[$0] }), let shut = sourceImage(id, shut: true),
+               EyeBlink.shutsEvenly(open: picture(of: art.texture), shut: shut, eyes: eyes) {
                 let pose = IdlePose(shut: poseTexture(shut))
                 cycle.poses = Dictionary(uniqueKeysWithValues: Direction.allCases.map { ($0, pose) })
             }
@@ -857,20 +858,25 @@ final class ArtLibrary {
         return SheetFrames(layout: SheetLayout(asset: asset, width: CGFloat(width), height: CGFloat(height)), frame: asset?.frame ?? 48)
     }
 
-    private func pngSize(_ id: String) -> (width: Int, height: Int)? {
-        pngURL(id).flatMap { UIImage(contentsOfFile: $0.path)?.cgImage }.map { ($0.width, $0.height) }
+    private func pngImage(_ id: String) -> CGImage? {
+        pngURL(id).flatMap { UIImage(contentsOfFile: $0.path)?.cgImage }
     }
 
-    /// Whether `id` has eyes to shut (art/eyes.json): its own, its layers' or its base's.
-    private func hasEyes(_ id: String, depth: Int = 0) -> Bool {
+    private func pngSize(_ id: String) -> (width: Int, height: Int)? {
+        pngImage(id).map { ($0.width, $0.height) }
+    }
+
+    /// Whose eyes `id` has in art/eyes.json: its own, its base's, or its layers' (the face on top's);
+    /// nil when it has none.
+    private func eyeKey(_ id: String, depth: Int = 0) -> String? {
         let blink = EyeBlink.shared
-        if blink.pictures[id] != nil || blink.sheets[id] != nil { return true }
-        guard pngURL(id) == nil, depth < 3, let derive = asset(id)?.derive else { return false }
+        if blink.pictures[id] != nil || blink.sheets[id] != nil { return id }
+        guard pngURL(id) == nil, depth < 3, let derive = asset(id)?.derive else { return nil }
         if let layers = layerSets[id] ?? derive.layers,
-           layers.contains(where: { EyeBlink.key(forLayer: $0.id).map { blink.sheets[$0] != nil } ?? false }) {
-            return true
+           let key = layers.reversed().lazy.compactMap({ EyeBlink.key(forLayer: $0.id) }).first(where: { blink.sheets[$0] != nil }) {
+            return key
         }
-        return hasEyes(derive.from, depth: depth + 1)
+        return eyeKey(derive.from, depth: depth + 1)
     }
 
     /// `image`, a sprite's own PNG or one of its paper-doll layers, with the eyes `key` has in
@@ -886,20 +892,50 @@ final class ArtLibrary {
         return EyeBlink.shut(image, eyes: eyes, lash: false) ?? image
     }
 
-    /// Each direction's standing pose (its first frame) breathing out, and with its eyes shut when it
-    /// has any: drawn from the sprite again with them shut, as it's dressed and recoloured.
+    /// Each direction's standing pose (its first frame) breathing out, and with its eyes shut where
+    /// every eye it has that way shut (`EyeBlink.shutsEvenly`) and no other face shows an open one
+    /// (`cleanFaces`): drawn from the sprite again with them shut, as it's dressed and recoloured.
+    /// Never one eye: a wink.
     private func idlePoses(_ id: String, sheet: CGImage, layout: SheetLayout, frame: Int) -> [Direction: IdlePose] {
-        let shutSheet = hasEyes(id) ? sourceImage(id, shut: true) : nil
+        let key = eyeKey(id)
+        let eyes = key.flatMap { EyeBlink.shared.sheets[$0] }
+        let layers = layerSets[id] ?? asset(id)?.derive?.layers
+        let clean = key.flatMap { key in layers.map { cleanFaces($0, key: key, frames: SheetFrames(layout: layout, frame: frame)) } }
+        let shutSheet = eyes == nil ? nil : sourceImage(id, shut: true)
         var poses: [Direction: IdlePose] = [:]
         for direction in layout.directions {
             guard let cell = layout.cells(for: direction).first else { continue }
             let rect = CGRect(x: cell.column * frame, y: cell.row * frame, width: frame, height: frame)
             guard let open = sheet.cropping(to: rect) else { continue }
-            let shut = shutSheet?.cropping(to: rect)
+            let shut = shutSheet?.cropping(to: rect).flatMap { closed in
+                let even = EyeBlink.shutsEvenly(open: open, shut: closed, eyes: eyes?[direction] ?? [])
+                return (clean?.contains(direction) ?? true) && even ? closed : nil
+            }
             poses[direction] = IdlePose(shut: shut.map(poseTexture), out: EyeBlink.exhaled(open).map(poseTexture),
                                         outShut: shut.flatMap(EyeBlink.exhaled).map(poseTexture))
         }
         return poses
+    }
+
+    /// The ways a sprite stacked from `layers` can blink without an open eye left beside the shut
+    /// ones: none with a helmet's or an armour sheet's own face over its head (`hat_`, `armor_`:
+    /// their eyes lie elsewhere), and only where its head hides an armour sheet's face under it
+    /// round its eyes, two pixels out.
+    private func cleanFaces(_ layers: [ArtLayer], key: String, frames: SheetFrames) -> Set<Direction> {
+        let isFace = { (id: String) in id.hasPrefix("hat_") || id.hasPrefix("armor_") }
+        guard let top = layers.lastIndex(where: { EyeBlink.key(forLayer: $0.id) != nil }),
+              !layers[(top + 1)...].contains(where: { isFace($0.id) }),
+              let head = pngImage(layers[top].id) else { return [] }
+        let under = layers[..<top].filter { isFace($0.id) }.compactMap { pngImage($0.id) }
+        var clean = Set<Direction>()
+        for (direction, eyes) in EyeBlink.shared.sheets[key] ?? [:] {
+            guard let cell = frames.layout.cells(for: direction).first else { continue }
+            let placed = eyes.map { $0.moved(to: (cell.column * frames.frame, cell.row * frames.frame)) }
+            if under.allSatisfy({ EyeBlink.hides(head, over: $0, round: placed, margin: 2) }) {
+                clean.insert(direction)
+            }
+        }
+        return clean
     }
 
     private func poseTexture(_ image: CGImage) -> SKTexture {
