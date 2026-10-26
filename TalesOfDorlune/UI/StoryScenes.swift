@@ -68,7 +68,7 @@ final class VignetteHUD {
     /// The battle's buttons while it's your turn; Capture glows in once a monster is weak enough.
     var commands = false
     var capture = false
-    /// The button a finger is on ("attack", "skills", "capture").
+    /// The button a finger is on ("attack", "capture", or a skill's id: "fire_bolt").
     var pressed: String?
     /// A finger tapping the picture, in the scene's points (y up); `taps` counts them, so each shows.
     var tap: CGPoint?
@@ -91,8 +91,8 @@ final class VignetteHUD {
 }
 
 /// The game's own HUD over a vignette, at the picture's scale: the battle's log line, the joystick,
-/// the command buttons in their row (More, Skills and Attack, and Capture once it glows in), a finger's taps and
-/// the victory card.
+/// the command buttons in their row (More, two skills and Attack, and Capture once it glows in), a finger's taps
+/// and the victory card.
 private struct VignetteHUDView: View {
     let hud: VignetteHUD
     /// Where the picture fades into the window: the HUD stays out of it, all but a finger's taps.
@@ -140,17 +140,23 @@ private struct VignetteHUDView: View {
                             .transition(.opacity)
                     }
                     if hud.commands {
-                        // In one row along the foot, as in a fight (`CommandRow`): More at the left
-                        // end, Attack at the right, every button the same size.
+                        // In one row along the foot, as in a fight (`CommandRow`, `SkillRow`): More at
+                        // the left end, the hero's skills, Capture, Attack at the right, every button
+                        // the same size.
                         Color.clear
                             .overlay(alignment: .bottomTrailing) {
                                 HStack(alignment: .bottom, spacing: CommandRow.spacing) {
                                     command("more", title: L("More"), icon: .more, size: CommandRow.size, tint: .quiet)
+                                    ForEach(Self.skills) { skill in
+                                        SkillCommandButton(skill: skill, cost: GameSession.mpCost(of: skill, level: 1), usable: true,
+                                                           size: CommandRow.size) {}
+                                            .scaleEffect(hud.pressed == skill.id ? 0.88 : 1)
+                                            .brightness(hud.pressed == skill.id ? 0.08 : 0)
+                                    }
                                     if hud.capture {
                                         command("capture", title: L("Capture"), icon: .sealStone, size: CommandRow.size, tint: .special)
                                             .transition(.scale(scale: 0.2).combined(with: .opacity))
                                     }
-                                    command("skills", title: L("Skills"), icon: .sparkles, size: CommandRow.size, tint: .normal)
                                     command("attack", title: L("Attack"), icon: .sword, size: CommandRow.size, tint: .primary)
                                 }
                                 // Room for the titles that hang below the buttons.
@@ -199,6 +205,9 @@ private struct VignetteHUDView: View {
         .animation(.spring(response: 0.2, dampingFraction: 0.6), value: hud.pressed)
         .animation(.spring(response: 0.35, dampingFraction: 0.75), value: hud.victory)
     }
+
+    /// The hero's skills in the row: the Fire Bolt the reel casts, and a heal.
+    private static var skills: [SkillDef] { ["fire_bolt", "recovery"].compactMap { Content.shared.skill($0) } }
 
     /// One of BattleView's round buttons, pressed down while a finger is on it.
     private func command(_ id: String, title: String, icon: GameIcon, size: CGFloat, tint: RoundCommandButton.Tint) -> some View {
@@ -973,7 +982,8 @@ final class StoryScene: SKScene {
     }
 
     /// Battle: two monsters appear; Attack, a tap on a monster, your bolt of magic; your companion's
-    /// Pine Needles; the Golden Hamster's Golden Spin; then Skills and a Fire Bolt on its weak spot.
+    /// Pine Needles; the Golden Hamster's Golden Spin; then the Fire Bolt button and a Fire Bolt on
+    /// its weak spot.
     private func battleClip() -> SKAction {
         setUpFight(.opening)
         hud.banner = L("{count} monsters appear!", ["count": 2])
@@ -998,7 +1008,7 @@ final class StoryScene: SKScene {
             .wait(forDuration: 1.2),
             .run { [weak self] in self?.goldenSpin() },
             .wait(forDuration: 1.2),
-            .run { [weak self] in self?.press("skills") },
+            .run { [weak self] in self?.press("fire_bolt") },
             .wait(forDuration: 0.45),
             .run { [weak self] in self?.fireBolt(at: 10) },
             .wait(forDuration: 1.9),

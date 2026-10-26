@@ -44,7 +44,7 @@ struct BossStory {
 final class BattleController {
     enum Phase: Equatable {
         /// `stones`: choosing which Seal Stone to throw (Capture, with more than one kind in the bag).
-        case command, skills, items, stones, target, animating, finished
+        case command, items, stones, target, animating, finished
     }
 
     private enum Pending {
@@ -446,7 +446,7 @@ final class BattleController {
         fighter.speciesID.flatMap { Content.shared.monster($0)?.boss } == true
     }
 
-    /// Its skills, for the Skills list on its turn.
+    /// Its skills, as buttons in the row on its turn.
     var companionSkills: [SkillDef] { companion?.skills.compactMap { session.content.skill($0) } ?? [] }
     func companionLevel(of skill: SkillDef) -> Int { companion?.skillLevel(skill.id) ?? 1 }
     func companionCost(of skill: SkillDef) -> Int { GameSession.mpCost(of: skill, level: companionLevel(of: skill)) }
@@ -583,12 +583,6 @@ final class BattleController {
         beginTargeting(.attack, targets: aliveEnemyIDs, prompt: prompt)
     }
 
-    func openSkills() {
-        guard phase == .command else { return }
-        clearTargets()
-        phase = .skills
-    }
-
     func openItems() {
         guard phase == .command else { return }
         clearTargets()
@@ -612,6 +606,17 @@ final class BattleController {
     }
 
     func cost(of skill: SkillDef) -> Int { GameSession.mpCost(of: skill, level: level(of: skill)) }
+
+    /// Whether whoever is choosing (your hero, or your companion on its turn) can use a skill now:
+    /// the MP for it, and for a revive someone fainted to wake. The row greys out the rest
+    /// (`SkillRow`); `useSkill` says why when one is tapped anyway.
+    func canUse(_ skill: SkillDef) -> Bool {
+        let user = choosingForCompanion ? companion : hero
+        let price = choosingForCompanion ? companionCost(of: skill) : cost(of: skill)
+        guard let user, user.mp >= price else { return false }
+        if skill.target == .fallenAlly { return party.contains { $0.isFallen && !$0.isHero } }
+        return true
+    }
 
     func useSkill(_ skill: SkillDef) {
         let user = choosingForCompanion ? companion : hero
@@ -802,7 +807,7 @@ final class BattleController {
     /// The monster you last went for: a timed-out attack goes for it again.
     @ObservationIgnored private var lastTarget: Int?
 
-    private var isChoosing: Bool { [.command, .skills, .items, .stones, .target].contains(phase) }
+    private var isChoosing: Bool { [.command, .items, .stones, .target].contains(phase) }
 
     /// Starts the clock for a turn: each new one, and the first once the battle is on screen.
     func startTurnClock() {

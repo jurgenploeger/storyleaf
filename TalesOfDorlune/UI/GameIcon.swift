@@ -15,6 +15,8 @@ enum GameIcon: String, CaseIterable {
     case play, dice, map, tap, palette, star, starOutline = "star-outline", gift, coins, egg, edit, lock, globe
     /// Finding things in a list (the Bag, the gear for a slot): search it, sort it.
     case search, sort
+    /// The time left to choose in a fight (BattleView's `TurnClockPill`).
+    case hourglass
     /// Capture in a fight: the Seal Stone you throw.
     case sealStone = "seal-stone"
     // Items (content/items.json `icon`)
