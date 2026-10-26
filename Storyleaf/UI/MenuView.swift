@@ -911,19 +911,21 @@ private struct CompanionsTab: View {
 
 // MARK: - Friends
 
-/// The adventurers you've befriended, and who of them travels with you.
+/// The adventurers you've befriended, and who of them travels with you; the guests in your party
+/// (asked along without befriending them) first.
 private struct FriendsTab: View {
     let session: GameSession
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HowItWorks(L("Befriend adventurers you meet (walk up to one). Up to {count} friends can travel and fight with you, and they bring their companions. They fight on if you faint, and wait where you fell; a friend who faints wakes up at their own checkpoint. Walk up to them to set off together again.", ["count": GameSession.maxAllies])
-                       + "\n" + L("They don't always say yes, and after a while they head off on their own. You can also ask whoever leads a group of adventurers to let you join them, and follow them about."),
+                       + "\n" + L("They don't always say yes, and after a while they head off on their own. You can also ask whoever leads a group of adventurers to let you join them, and follow them about.")
+                       + "\n" + L("You don't have to be friends to party up: invite anyone you meet from their card."),
                        open: session.friends.isEmpty)
-            if session.friends.isEmpty {
+            if session.friends.isEmpty && session.partyGuests.isEmpty {
                 EmptyNote(L("No friends yet.\nSay hi to the adventurers you meet!"))
             }
-            ForEach(session.friends) { friend in
+            ForEach(session.partyGuests + session.friends) { friend in
                 FriendRow(session: session, friend: friend)
             }
         }

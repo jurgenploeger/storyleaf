@@ -78,11 +78,14 @@ extension GameSession {
 
     private var acceptChance: Double { content.crowd.acceptChance ?? 0.75 }
 
-    /// Asks a friend to join your party (from their card, or the Friends list): they join
-    /// (`invite`), or say no. Travelling with friends of their own (`busy`), they're half as keen.
+    /// Asks someone to join your party (a friend from their card or the Friends list, or anyone else
+    /// from theirs, `met`): they join (`invite`), or say no. Travelling with friends of their own
+    /// (`busy`), they're half as keen.
     @discardableResult
-    func askAlong(_ id: UUID, busy: Bool = false, roll: Double = .random(in: 0..<1), now: Date = Date()) -> PartyReply? {
-        guard let friend = friends.first(where: { $0.id == id }), !isInParty(friend), !partyIsFull,
+    func askAlong(_ id: UUID, met: Adventurer? = nil, busy: Bool = false, roll: Double = .random(in: 0..<1),
+                  now: Date = Date()) -> PartyReply? {
+        let stranger = met.flatMap { $0.id == id && !$0.hostile ? $0 : nil }
+        guard let friend = data.friends?.first(where: { $0.id == id }) ?? stranger, !isInParty(friend), !partyIsFull,
               adventurersAround.contains(id) else { return nil }
         let again = (declinedUntil[id] ?? .distantPast) > now || (data.partyRests?[id.uuidString] ?? .distantPast) > now
         guard agrees(friend, chance: acceptChance * (busy ? 0.5 : 1), roll: roll, now: now) else {
@@ -99,7 +102,7 @@ extension GameSession {
             }
             return PartyReply(accepted: false, line: line)
         }
-        invite(id)
+        invite(id, met: friend)
         return PartyReply(accepted: true, line: [L("Sure, let's go!"), L("Count me in!"), L("Let's adventure together!")].randomElement() ?? L("Sure, let's go!"))
     }
 

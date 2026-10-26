@@ -133,7 +133,8 @@ nonisolated struct SaveData: Codable, Sendable {
     var eggSpecies: String?
     /// Where you wake up after fainting.
     var checkpoint: Checkpoint?
-    /// Adventurers you've befriended, and which of them travel with you.
+    /// Adventurers you've befriended, and which of them travel with you; and anyone in your party
+    /// you haven't befriended (`Adventurer.guest`).
     var friends: [Adventurer]?
     var partyIDs: [UUID]?
     /// When each friend in your party heads off on their own (by id; `GameSession.passPartyTime`): a
@@ -276,6 +277,9 @@ nonisolated struct Adventurer: Codable, Equatable, Identifiable, Sendable {
     /// Plain Seal Stones they carry: one without a companion throws them in a fight to catch one
     /// (`BattleEngine.sealAttempt`). nil: the two everyone set out with.
     var sealStones: Int? = nil
+    /// In your party without being your friend (asked along from their card, `GameSession.invite`):
+    /// with you like a friend till they leave, then gone from your list. nil: a friend.
+    var guest: Bool? = nil
 
     var stonesLeft: Int { sealStones ?? 2 }
 }

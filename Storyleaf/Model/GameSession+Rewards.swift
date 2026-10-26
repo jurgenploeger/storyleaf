@@ -17,7 +17,7 @@ extension GameSession {
         case .bosses: have = Set(data.defeatedBosses ?? []).count
         case .boss: return (have: title.target.map { data.defeatedBosses?.contains($0) == true ? 1 : 0 } ?? 0, need: 1)
         case .companions: have = data.pets.count
-        case .friends: have = data.friends?.count ?? 0
+        case .friends: have = friends.count
         case .bounties: have = data.bountiesDone ?? 0
         case .days: have = data.giftDays ?? 0
         case .cards: return (have: cardCount, need: title.count ?? content.monsters.count)

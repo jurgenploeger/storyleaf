@@ -485,11 +485,11 @@ final class GameCoordinator {
         open(.trade(adventurer))
     }
 
-    /// Asks a friend along: they join you, or say why not (`GameSession.askAlong`). One travelling
-    /// with others is less keen.
+    /// Asks an adventurer along, friend or not: they join you, or say why not (`GameSession.askAlong`).
+    /// One travelling with others is less keen.
     func invite(_ adventurer: Adventurer) {
         let busy = session.nearbyGroup.count > 1 && session.nearbyGroup.contains { $0.id == adventurer.id }
-        if let reply = session.askAlong(adventurer.id, busy: busy) { mapScene.adventurerSays(reply.line, adventurer.id) }
+        if let reply = session.askAlong(adventurer.id, met: adventurer, busy: busy) { mapScene.adventurerSays(reply.line, adventurer.id) }
         session.nearbyAdventurer = nil
     }
 

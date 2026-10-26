@@ -2818,6 +2818,37 @@ struct RulesTests {
         #expect(session.friends.count == 1)
     }
 
+    /// You don't have to be friends to party up (playtesting 2026-10-26): anyone about can come
+    /// along as a guest, not in your friends, and gone from your list once they leave.
+    @Test func strangersJoinThePartyAsGuests() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.hero.level = 6
+        let pip = Adventurer(name: "Pip", raceID: "elf", classID: "archer", level: 5, look: .standard)
+        let grump = Adventurer(name: "Grump", raceID: "dwarf", classID: "fighter", level: 7, look: .standard, hostile: true)
+        session.adventurersAround = [pip.id, grump.id]
+        #expect(session.askAlong(grump.id, met: grump, roll: 0)?.accepted == nil)
+        #expect(session.askAlong(pip.id, met: pip, roll: 0)?.accepted == true)
+        #expect(session.partyMembers.map(\.name) == ["Pip"])
+        #expect(session.partyGuests.map(\.name) == ["Pip"])
+        #expect(session.friends.isEmpty)
+        #expect(!session.isFriend(pip))
+        // They fight beside you like a friend.
+        let controller = BattleController.duel(with: grump, session: session)
+        #expect(controller.party.contains { $0.name == "Pip" })
+        // Leaving, they're gone from your list, still about to ask again.
+        session.leaveParty(pip.id)
+        #expect(session.partyMembers.isEmpty)
+        #expect(session.data.friends?.isEmpty != false)
+        #expect(session.partedGuests[pip.id]?.name == "Pip")
+        // Befriended while in your party, they stay a friend after.
+        session.invite(pip.id, met: pip)
+        #expect(session.befriend(pip))
+        #expect(session.friends.map(\.name) == ["Pip"])
+        #expect(session.data.friends?.count == 1)
+        session.leaveParty(pip.id)
+        #expect(session.friends.map(\.name) == ["Pip"])
+    }
+
     /// In a duel the rival's companion can be sealed, as a wild monster can, and joins you (playtesting
     /// 2026-10-24); the rival can't be.
     @Test func aRivalsCompanionCanBeSealed() throws {
