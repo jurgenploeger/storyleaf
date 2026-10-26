@@ -200,6 +200,9 @@ nonisolated struct SaveData: Codable, Sendable {
     var lostPiles: [LostPile]?
     /// What you've put up for trade, by id (`GameSession.forTrade`).
     var forTrade: [String]?
+    /// Your order of the bag and of the bank, by item id (`GameSession+ItemOrder`): nil, the game's.
+    var bagOrder: [String]?
+    var bankOrder: [String]?
 }
 
 /// A day's bounties (the Quests tab): a few small jobs, new each calendar day.

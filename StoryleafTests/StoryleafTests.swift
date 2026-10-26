@@ -1929,6 +1929,94 @@ struct RulesTests {
         #expect(again.banked("potion") == 3 && again.bankGold == 30)
     }
 
+    /// Things in the bag go where you put them: dropped on another, a thing takes its place and the
+    /// rest shift along; something new turns up at the end, and a kind that's gone comes back there
+    /// (playtesting 2026-10-26: "In the bank and inventory I should be able to reorder any items").
+    @Test func theBagKeepsYourOrder() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.inventory = ["potion": 3, "ether": 1, "seal_stone": 2]
+        // Never moved: the game's order.
+        #expect(session.bagItems.map(\.id) == ["potion", "ether", "seal_stone"])
+        #expect(session.moveItem("seal_stone", onto: "potion", on: .bag))
+        #expect(session.bagItems.map(\.id) == ["seal_stone", "potion", "ether"])
+        #expect(session.moveItem("seal_stone", onto: "ether", on: .bag))
+        #expect(session.bagItems.map(\.id) == ["potion", "ether", "seal_stone"])
+        #expect(session.moveItem("ether", onto: "potion", on: .bag))
+        #expect(session.consumables.map(\.id) == ["ether", "potion", "seal_stone"])
+        // Onto itself, or something not in the bag: nothing moves.
+        #expect(!session.moveItem("ether", onto: "ether", on: .bag))
+        #expect(!session.moveItem("ether", onto: "iron_axe", on: .bag))
+        #expect(!session.moveItem("ether", onto: "potion", on: .bank))
+        // Something new goes at the end.
+        session.addItem("bamboo")
+        #expect(session.bagItems.map(\.id) == ["ether", "potion", "seal_stone", "bamboo"])
+        // A kind used up drops out of the order as the game tidies it (on saving), and comes back last.
+        session.removeItem("ether")
+        session.tidyItemOrders()
+        #expect(session.data.bagOrder == ["potion", "seal_stone"])
+        session.addItem("ether")
+        #expect(session.bagItems.map(\.id) == ["potion", "seal_stone", "ether", "bamboo"])
+        // The order goes with the save; one from before it loads in the game's order.
+        let loaded = GameSession(data: session.data)
+        #expect(loaded.bagItems.map(\.id) == session.bagItems.map(\.id))
+        loaded.data.bagOrder = nil
+        #expect(loaded.bagItems.map(\.id) == Content.shared.items.filter { loaded.count(of: $0.id) > 0 }.map(\.id))
+        #expect(loaded.bagItems.first?.id == "potion")
+    }
+
+    /// Saves from before your order (0.8.13 and older) have no `bagOrder` or `bankOrder`: they load,
+    /// in the game's order; one with them keeps them.
+    @Test func savesWithoutAnItemOrderStillLoad() throws {
+        var data = GameSession.newGame(name: "Test", raceID: "human").data
+        data.bagOrder = ["seal_stone", "potion"]
+        data.bankOrder = ["ether"]
+        let raw = try JSONEncoder().encode(data)
+        let kept = try JSONDecoder().decode(SaveData.self, from: raw)
+        #expect(kept.bagOrder == ["seal_stone", "potion"] && kept.bankOrder == ["ether"])
+        var json = try #require(try JSONSerialization.jsonObject(with: raw) as? [String: Any])
+        json["bagOrder"] = nil
+        json["bankOrder"] = nil
+        let old = try JSONDecoder().decode(SaveData.self, from: JSONSerialization.data(withJSONObject: json))
+        #expect(old.bagOrder == nil && old.bankOrder == nil)
+        let session = GameSession(data: old)
+        #expect(session.bagItems.map(\.id) == Content.shared.items.filter { session.count(of: $0.id) > 0 }.map(\.id))
+    }
+
+    /// The bank sorts and filters as a way of looking (playtesting 2026-10-26: "Also add sorting and
+    /// filtering to the bank"): your order stays till you move something while sorted, which keeps
+    /// the order you saw. Kind is the game's order whatever yours; How many counts the bank's.
+    @Test func theBankSortsFiltersAndKeepsYourOrder() {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.bank = ["potion": 1, "ether": 9, "wooden_sword": 2, "bamboo": 4]
+        #expect(session.bankItems.map(\.id) == ["potion", "ether", "wooden_sword", "bamboo"])
+        #expect(session.moveItem("bamboo", onto: "potion", on: .bank))
+        #expect(session.bankItems.map(\.id) == ["bamboo", "potion", "ether", "wooden_sword"])
+        let arrange = { (sort: ItemSort, search: String) in
+            ItemFinder.arrange(session.bankItems, search: search, sort: sort, session: session, on: .bank).map(\.id)
+        }
+        #expect(arrange(.standard, "") == ["bamboo", "potion", "ether", "wooden_sword"])
+        #expect(arrange(.kind, "") == ["potion", "ether", "wooden_sword", "bamboo"])
+        #expect(arrange(.count, "") == ["ether", "bamboo", "wooden_sword", "potion"])
+        #expect(arrange(.name, "") == ["bamboo", "ether", "potion", "wooden_sword"])
+        #expect(arrange(.price, "") == ["wooden_sword", "ether", "potion", "bamboo"])
+        #expect(arrange(.standard, "sword") == ["wooden_sword"])
+        // Sorting is only a look: your order is as it was.
+        #expect(session.bankItems.map(\.id) == ["bamboo", "potion", "ether", "wooden_sword"])
+        // Moved while sorted by name, the order you saw is yours.
+        #expect(session.moveItem("wooden_sword", onto: "bamboo", on: .bank, sortedBy: .name))
+        #expect(session.bankItems.map(\.id) == ["wooden_sword", "bamboo", "ether", "potion"])
+        // The kinds to show.
+        #expect(session.bankItems.filter { ItemShelf.items.holds($0) }.map(\.id) == ["ether", "potion"])
+        #expect(session.bankItems.filter { ItemShelf.gear.holds($0) }.map(\.id) == ["wooden_sword"])
+        #expect(session.bankItems.filter { ItemShelf.materials.holds($0) }.map(\.id) == ["bamboo"])
+        #expect(session.bankItems.filter { ItemShelf.all.holds($0) }.count == 4)
+        // The bag's order is its own.
+        #expect(session.data.bagOrder == nil)
+        session.withdraw("potion")
+        session.tidyItemOrders()
+        #expect(session.data.bankOrder == ["wooden_sword", "bamboo", "ether"])
+    }
+
     /// A quest giver gives one quest at a time (playtesting 2026-10-25): while you're on one of theirs,
     /// they offer no other and show no "!", and they talk about the one you're on; handed in, the next.
     @Test func oneQuestAtATimeFromAGiver() throws {
