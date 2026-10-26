@@ -50,12 +50,14 @@ GLINT = (68, 71)
 FIREFLY, FIREFLY_GLOW = (1.0, 0.97, 0.75), (0.88, 0.93, 0.5)
 PETAL, STAR = (1.0, 0.86, 0.95), (0.95, 0.96, 1.0)
 
-# The night sky, top to bottom, where the day's blue was.
-NIGHT = [(0.17, 0.12, 0.38), (0.07, 0.13, 0.33), (0.04, 0.2, 0.25)]
-# The day sky, top to bottom, in the drawing's pixels: RD painted it one flat blue, so it's graded from a
-# deeper blue overhead to a pale haze at the horizon, the hue turning from a touch of violet to a touch of
-# cyan as it pales (docs/pixel-style.md: hue-shifted ramps), in hard bands with a dithered seam (`day_sky`).
-DAY = ["#4f98e4", "#68acec", "#82bff2", "#9ccff5", "#b6def8", "#cfeafb"]
+# The night sky, top to bottom, where the day's blue was: the brand's night (Brand.nightTop, night,
+# nightBottom in TalesOfDorlune/UI/BrandSky.swift), deep navy overhead to a lighter blue at the horizon.
+NIGHT = [(0.043, 0.082, 0.22), (0.07, 0.13, 0.33), (0.114, 0.227, 0.439)]
+# The day sky, top to bottom, in the drawing's pixels: RD painted it one flat blue, so it's graded from the
+# brand's sky deep overhead through its sky to its haze at the horizon (Brand.skyDeep at 0, sky at 0.6,
+# skyHaze at 1, as TalesOfDorluneSky draws it), sampled at each band's middle, in hard bands with a
+# dithered seam (`day_sky`).
+DAY = ["#579aeb", "#71aff2", "#8bc4f8", "#a5d9fe", "#b4e0ff", "#c2e6ff"]
 SKY_ROWS = (62, 160)
 
 
