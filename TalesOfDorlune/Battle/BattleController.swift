@@ -530,7 +530,7 @@ final class BattleController {
     }
 
     /// Plays the next round on Auto after a short pause (or hands back to you if Auto was switched
-    /// off meanwhile). The chat holds it, as it holds the turn clock.
+    /// off meanwhile). Whatever holds the turn clock (the app in the background) holds it too.
     private func playOnAuto(after milliseconds: Int = 500) {
         phase = .animating
         message = L("Auto: {hero} fights on…", ["hero": hero?.name ?? L("you")])
@@ -684,7 +684,7 @@ final class BattleController {
     func escape() { submit(.escape) }
 
     /// A target was tapped in the scene or picked in the menu (on a turn's command menu, a monster
-    /// tapped is attacked: `armAttack`, unless the chat or rearranging the buttons has your attention).
+    /// tapped is attacked: `armAttack`, unless rearranging the buttons has your attention).
     func select(_ id: Int) {
         guard phase == .target || (phase == .command && holds.isEmpty), validTargets.contains(id), let pending else { return }
         switch pending {
@@ -796,7 +796,7 @@ final class BattleController {
     /// When the time to choose runs out; nil while no clock is ticking.
     private(set) var turnDeadline: Date?
     @ObservationIgnored private var turnClock: Task<Void, Never>?
-    /// Time left on a clock that's on hold, and what's holding it (the chat, moving the buttons).
+    /// Time left on a clock that's on hold, and what's holding it (moving the buttons, the app away).
     @ObservationIgnored private var heldTime: TimeInterval?
     @ObservationIgnored private var holds: Set<String> = []
     /// The monster you last went for: a timed-out attack goes for it again.
@@ -1100,7 +1100,7 @@ final class BattleController {
 
     /// While you lie fainted, the friends still standing fight on. The rounds play by themselves
     /// (your companion decides for itself), a moment apart so you can follow, until the fight is won
-    /// or lost or someone wakes you. The chat holds them, as it holds the turn clock.
+    /// or lost or someone wakes you. Whatever holds the turn clock holds them too.
     private func fightOnWithoutYou() {
         let standing = party.filter { $0.isAlly && $0.isAlive }.map(\.name)
         let fallen = hero?.name ?? L("You")
