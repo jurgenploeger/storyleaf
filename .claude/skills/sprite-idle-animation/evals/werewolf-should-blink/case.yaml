@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: werewolf-should-blink
+expected_outcome: |
+  Either both of the werewolf's eyes are boxed in art/eyes.json pictures (a matching pair, fills in its fur colour), its skipped entry removed, with a zoomed open/shut preview looked at; or, if its eyes really can't be told from the fur, it stays skipped with a sharper reason and the user is told why. Either way eyes.py check and check_content.py pass.
