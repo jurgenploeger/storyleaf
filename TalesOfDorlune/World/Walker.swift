@@ -2,7 +2,7 @@ import SpriteKit
 
 /// Anything that walks around a map: the hero, a companion, an NPC or a passer-by.
 /// Walk sheets animate per direction; single-image sprites hop instead. Standing still,
-/// everyone breathes gently so the world never looks frozen.
+/// everyone breathes gently and blinks now and then, so the world never looks frozen.
 final class Walker: SKNode {
     let sprite: SKSpriteNode
     var walkSpeed: CGFloat = 88
@@ -49,6 +49,9 @@ final class Walker: SKNode {
     }
     /// So a crowd doesn't breathe in unison.
     private let breathOffset = TimeInterval.random(in: 0..<1.6)
+    /// Standing still: breathing out (a pixel lower) and blinking, shown by `showPose`.
+    private var breathingOut = false
+    private var eyesShut = false
     /// The current map's light, cast softly on everyone standing in it (`theme.palette.light`).
     static var light: (color: UIColor, strength: CGFloat)?
 
@@ -123,6 +126,7 @@ final class Walker: SKNode {
             self.tag = tag
         }
         animate()
+        blink()
     }
 
     /// Swaps the look (after customising the hero or recolouring a companion).
@@ -131,6 +135,35 @@ final class Walker: SKNode {
         sprite.size = cycle.size
         mirror()
         animate()
+        blink()
+    }
+
+    /// Shuts its eyes a moment every few seconds while it stands still, if it has any to shut.
+    private func blink() {
+        removeAction(forKey: "blink")
+        eyesShut = false
+        guard cycle.poses.values.contains(where: { $0.shut != nil }) else { return }
+        run(EyeBlink.blinking(shut: .run { [weak self] in self?.setEyes(shut: true) },
+                              open: .run { [weak self] in self?.setEyes(shut: false) }), withKey: "blink")
+    }
+
+    private func setEyes(shut: Bool) {
+        guard idles else { return }
+        eyesShut = shut
+        showPose()
+    }
+
+    /// Standing still, the pose it's in: its first frame, breathing out or not, its eyes open or shut.
+    private func showPose() {
+        guard !isWalking, let open = cycle.frames(facing).first else { return }
+        let pose = cycle.poses[facing]
+        let texture = switch (breathingOut, eyesShut) {
+        case (false, false): open
+        case (false, true): pose?.shut ?? open
+        case (true, false): pose?.out ?? open
+        case (true, true): pose?.outShut ?? pose?.out ?? open
+        }
+        if sprite.texture !== texture { sprite.texture = texture }
     }
 
     /// Turns a single picture to look the way it's going across the screen (`dx`, ignored when it
@@ -459,6 +492,7 @@ final class Walker: SKNode {
         sprite.xScale = 1
         sprite.yScale = 1
         sprite.zRotation = 0
+        breathingOut = false
         let frames = cycle.frames(facing)
         sprite.texture = frames.first
         poseGear()
@@ -477,9 +511,26 @@ final class Walker: SKNode {
         }
     }
 
-    /// Standing still: breathing for people, a squish, hop or sway for monsters.
+    /// Standing still: breathing for people, a squish, hop or sway for monsters. A walk sheet
+    /// breathes in whole pixels (`IdlePose.out`), where stretching the sprite smeared them.
     private func breathe() {
         guard idles else { return }
-        sprite.run(motion.action(height: sprite.size.height, delay: breathOffset), withKey: "idle")
+        if eyesShut { showPose() }
+        guard motion == .breathe, cycle.poses[facing]?.out != nil else {
+            sprite.run(motion.action(height: sprite.size.height, delay: breathOffset), withKey: "idle")
+            return
+        }
+        let breath = SKAction.sequence([
+            .wait(forDuration: 0.9),
+            .run { [weak self] in self?.setBreath(out: true) },
+            .wait(forDuration: 0.9),
+            .run { [weak self] in self?.setBreath(out: false) },
+        ])
+        sprite.run(.sequence([.wait(forDuration: breathOffset), .repeatForever(breath)]), withKey: "idle")
+    }
+
+    private func setBreath(out: Bool) {
+        breathingOut = out
+        showPose()
     }
 }

@@ -992,6 +992,37 @@ for map_def in maps.values():
 for item in items.values():
     check_rules((item.get("recolor") or []) + (item.get("tint") or []), f"item {item['id']}")
 
+# Eyes that blink (art/eyes.json, EyeBlink): each on an art/sprites PNG, inside its frame, painted over
+# with an opaque pixel beside it. With Pillow, every fill pixel is checked opaque on the PNG itself.
+eyes = load("art/eyes.json")
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+SHEET_ROWS = ["up", "right", "down", "left"]
+for group, size in (("sheets", 48), ("pictures", None)):
+    for sprite, entry in eyes.get(group, {}).items():
+        png = ROOT / "art" / "sprites" / f"{sprite}.png"
+        if not png.exists():
+            errors.append(f"art/eyes.json {group} {sprite} → no art/sprites/{sprite}.png")
+            continue
+        picture = Image.open(png).convert("RGBA") if Image else None
+        frame = size or (picture.width if picture else 64)
+        for direction, list_ in (entry.items() if group == "sheets" else [(None, entry)]):
+            check(direction in (None, "right", "down", "left"), f"art/eyes.json {sprite} → {direction}: right, down or left (a back has no eyes)")
+            for eye in list_:
+                where = f"art/eyes.json {sprite} {direction or ''} {eye}"
+                if not (isinstance(eye, list) and len(eye) == 6 and all(isinstance(n, int) for n in eye)):
+                    errors.append(f"{where} → [x, y, w, h, fx, fy], whole numbers")
+                    continue
+                x, y, w, h, fx, fy = eye
+                check(w > 0 and h > 0 and x >= 0 and y >= 0 and x + w <= frame and y + h <= frame, f"{where} → the eye's box leaves the frame")
+                check(0 <= fx < frame and 0 <= fy < frame, f"{where} → the fill pixel leaves the frame")
+                if picture and direction in SHEET_ROWS + [None]:
+                    oy = SHEET_ROWS.index(direction) * frame if direction else 0
+                    if 0 <= fx < picture.width and 0 <= oy + fy < picture.height:
+                        check(picture.getpixel((fx, oy + fy))[3] >= 128, f"{where} → the fill pixel ({fx}, {fy}) is clear")
+
 # Crowds and announcements: whole-number counts, and only placeholders the game fills in.
 crowd = load("content/crowd.json")
 check(0 <= crowd.get("botDensity", 1) <= 1, "crowd botDensity → between 0 and 1")
