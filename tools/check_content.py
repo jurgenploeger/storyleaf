@@ -999,6 +999,15 @@ try:
     from PIL import Image
 except ImportError:
     Image = None
+# Every monster drawn as a picture of its own blinks, or says why not (`skipped`): a new monster
+# can't be left staring by forgetting it (.claude/skills/sprite-idle-animation).
+for asset in art.values():
+    if asset["kind"] == "monster" and not asset.get("derive") and (ROOT / "art" / "sprites" / f"{asset['id']}.png").exists():
+        check(asset["id"] in eyes.get("pictures", {}) or asset["id"] in eyes.get("skipped", {}),
+              f"art/eyes.json → {asset['id']} has no eyes and isn't in `skipped` (box them, or say why it has none)")
+for skipped in eyes.get("skipped", {}):
+    check(skipped not in eyes.get("pictures", {}) and skipped not in eyes.get("sheets", {}),
+          f"art/eyes.json → {skipped} is both `skipped` and given eyes")
 SHEET_ROWS = ["up", "right", "down", "left"]
 for group, size in (("sheets", 48), ("pictures", None)):
     for sprite, entry in eyes.get(group, {}).items():
