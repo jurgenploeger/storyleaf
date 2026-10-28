@@ -33,9 +33,7 @@ struct TradeView: View {
                                 .foregroundStyle(HUDStyle.cream)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        Label(L("{gold} gold", ["gold": session.data.gold]), icon: .coins)
-                            .font(HUDStyle.font(12))
-                            .foregroundStyle(HUDStyle.gold)
+                        GoldPill(amount: session.data.gold, size: 12)
 
                         Text(L("They'd buy")).font(HUDStyle.font(13)).foregroundStyle(HUDStyle.gold)
                         if buying.isEmpty {
@@ -181,9 +179,7 @@ struct TradeBidCard: View {
                     }
                     HStack(spacing: 14) {
                         ItemIcon(item: bid.item, size: 38, count: session.count(of: bid.item.id))
-                        Label("\(bid.price)", icon: .coins, size: 18)
-                            .font(HUDStyle.font(15))
-                            .foregroundStyle(HUDStyle.gold)
+                        GoldPill(amount: bid.price, size: 15)
                     }
                     Text(L("A shop pays {gold}g", ["gold": shop]))
                         .font(HUDStyle.font(11))

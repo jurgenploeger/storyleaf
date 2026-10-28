@@ -1662,7 +1662,7 @@ struct QuestRewardLine: View {
         HStack(spacing: 4) {
             WrapRows(spacing: 10) {
                 if pay.gold > 0 {
-                    Label("\(pay.gold)", icon: .coins, size: 12)
+                    GoldPill(amount: pay.gold, size: 11)
                         .frame(height: 22)
                 }
                 if pay.exp > 0 {
@@ -1733,7 +1733,7 @@ struct QuestRewardsView: View {
                 .foregroundStyle(HUDStyle.gold)
             HStack(spacing: 12) {
                 if pay.gold > 0 {
-                    Label("\(pay.gold)", icon: .coins, size: 14)
+                    GoldPill(amount: pay.gold, size: 13)
                 }
                 if pay.exp > 0 {
                     Label(L("{exp} EXP", ["exp": pay.exp]), icon: .star, size: 14)

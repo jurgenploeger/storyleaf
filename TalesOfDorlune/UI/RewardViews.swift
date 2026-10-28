@@ -28,8 +28,7 @@ struct DailyGiftCard: View {
                     }
                     HStack(spacing: 14) {
                         if gift.gold > 0 {
-                            Label("\(gift.gold)", icon: .coins, size: 18)
-                                .font(HUDStyle.font(15))
+                            GoldPill(amount: gift.gold, size: 15)
                         }
                         ForEach(RewardList.group(gift.items, in: session), id: \.item.id) { entry in
                             ItemIcon(item: entry.item, size: 38, count: entry.count)
@@ -199,7 +198,7 @@ private struct BountyRow: View {
                           color: bounty.isDone ? HUDStyle.green : HUDStyle.gold, height: 6)
                 HStack(spacing: 10) {
                     Text("\(bounty.progress)/\(bounty.count)")
-                    Label("\(bounty.gold)", icon: .coins, size: 12)
+                    GoldPill(amount: bounty.gold, size: 10)
                     Label(L("{exp} EXP", ["exp": bounty.exp]), icon: .star, size: 12)
                 }
                 .font(HUDStyle.font(10))
