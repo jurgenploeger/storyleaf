@@ -16,3 +16,4 @@ Config/Local.xcconfig
 # Python
 __pycache__/
 music-preview/
+.claude/worktrees/
