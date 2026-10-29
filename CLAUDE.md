@@ -76,7 +76,9 @@ people, bosses, quests) in player-facing text: `docs/fairyland-online.md` → Na
   still are. Never a wink: both eyes shut or neither (`EyeBlink.shutsEvenly`), and no blink where a helmet's or
   an armour sheet's own face shows round the eyes (`ArtLibrary.cleanFaces`). Standing still, a walk sheet also breathes in whole
   pixels (`EyeBlink.exhaled`: everything above the waist a pixel lower). A new monster or body needs its eyes
-  here; `check_content.py` checks each box and fill pixel.
+  here, or a reason in `skipped`; `check_content.py` checks each box and fill pixel. How to box them, the
+  acceptance criteria and what went wrong before: the skill `.claude/skills/sprite-idle-animation` (its
+  `scripts/eyes.py dump | zoom | fills | check` previews and checks every body, hairstyle, helmet and armour).
 - `TalesOfDorlune/`: Swift code (World = maps and walking, Battle = combat, UI = SwiftUI HUD and menus).
 - Item icons are in the clean look (2026-10-26, docs/pixel-style.md *Item icons*: RD's Potion, the user's pick;
   its *Acceptance criteria* checklist is what every new or changed icon must meet):

@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: new-body-eyes
+expected_outcome: |
+  body_human_female is back in art/eyes.json sheets with boxes for right, down and left: every eye pixel inside a box, the lid line above left out, a pair boxed alike, fills on the main skin colour beside each eye. Zoomed previews of the body and of a hair stack were made and looked at. eyes.py check and check_content.py pass, and the boxes agree with the original entry within a pixel.
