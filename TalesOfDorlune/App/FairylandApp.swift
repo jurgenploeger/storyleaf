@@ -44,12 +44,9 @@ struct RootView: View {
         case loading
         /// The game's ready: the clouds rise over the screen.
         case landing
-        /// The clouds fade, the game showing through them.
+        /// The clouds rise on past and thin out, the game showing through them.
         case clearing
     }
-
-    /// How long the clouds take to fade off the game.
-    private static let clearingTime = 0.8
 
     var body: some View {
         Group {
@@ -68,8 +65,7 @@ struct RootView: View {
                     }
                     if let pending {
                         LoadingCurtain(progress: coordinator?.loadProgress ?? 0, logoSpot: .loading, logoHidden: handingOff,
-                                       landing: opening != .loading)
-                            .opacity(opening == .clearing ? 0 : 1)
+                                       landing: opening != .loading, clearing: opening == .clearing)
                             .zIndex(1)
                             // There at once, under the title fading off it: only its bar fades in.
                             .transition(.identity)
@@ -168,14 +164,14 @@ struct RootView: View {
     }
 
     /// The game is ready under the loading screen: the clouds rush up over it, as if the logo fell
-    /// through them to the ground, then fade off the game.
+    /// through them, then rise on past and thin out, the game coming through: down to the ground.
     private func land() {
         opening = .landing
         SoundEffects.shared.play(.whoosh, volume: 0.6)
         Task {
             try? await Task.sleep(for: .seconds(LoadingCurtain.landingTime))
-            withAnimation(.easeInOut(duration: Self.clearingTime)) { opening = .clearing }
-            try? await Task.sleep(for: .seconds(Self.clearingTime))
+            opening = .clearing
+            try? await Task.sleep(for: .seconds(LoadingCurtain.clearingTime))
             pending = nil
             opening = .loading
         }
