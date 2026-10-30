@@ -22,7 +22,7 @@ struct LoadingCurtain: View {
     /// How long the logo takes to move here from the title.
     static let handOff = 0.6
     /// How long the clouds take to cover the screen.
-    static let landingTime = 1.6
+    static let landingTime = 1.3
 
     var body: some View {
         ZStack {
@@ -92,70 +92,31 @@ extension View {
     }
 }
 
-/// The clouds that come up over the loading screen once the game is ready, as if the logo fell
-/// through them to the ground: five banks of cumulus, one behind the other, rising from under the
-/// sky's own and faster as they come. The far ones are smaller, paler and bluer (the haze between),
-/// stop lower and set off first; the nearest is the biggest and covers the screen. Each is lit from
-/// above, its puffs bright on top and its body shaded lower down, and casts a soft shadow up onto
-/// the one behind; they drift a little sideways each their own way as they rise.
+/// The clouds that come up over the loading screen once the game is ready: banks of them rising
+/// from under the sky's own, faster as they come, the far ones paler and slower, till the nearest
+/// covers the screen, as if the logo fell through them to the ground. Each bank is a row of puffs
+/// on a body of cloud.
 struct CloudCover: View {
     let risen: Bool
     @Environment(\.colorScheme) private var colorScheme
 
     private struct Bank {
-        /// Its puffs along the top: where across, as a share of the screen's width; how big, as a
-        /// share of its shorter side (the sky's own are 0.24 to 0.6); and how far below the bank's
-        /// top their middle sits, as a share of their size, so the top is lumpy.
-        let puffs: [(x: CGFloat, size: CGFloat, drop: CGFloat)]
+        /// Its puffs along the top: where across, as a share of the screen's width, and how big, as
+        /// a share of its shorter side (the sky's own puffs are 0.24 to 0.6).
+        let puffs: [(x: CGFloat, size: CGFloat)]
         /// Where its top comes up to, as a share of the screen's height (below 0: past the top).
         let reach: CGFloat
+        let opacity: Double
         /// How long after the first it sets off; every bank arrives together.
         let delay: Double
-        /// How far it drifts sideways as it comes, as a share of the width.
-        let drift: CGFloat
-        /// 0 the farthest, 1 the nearest.
-        let near: Double
     }
 
     /// Far to near.
     private static let banks: [Bank] = [
-        Bank(puffs: [(-0.02, 0.4, 0.1), (0.16, 0.28, 0.2), (0.33, 0.38, 0.05), (0.52, 0.26, 0.25), (0.7, 0.4, 0.1), (0.9, 0.3, 0.2), (1.04, 0.38, 0.05)],
-             reach: 0.52, delay: 0, drift: 0.04, near: 0),
-        Bank(puffs: [(0.06, 0.46, 0.1), (0.27, 0.32, 0.25), (0.45, 0.44, 0.05), (0.66, 0.3, 0.2), (0.85, 0.46, 0.08), (1.06, 0.34, 0.2)],
-             reach: 0.36, delay: 0.1, drift: -0.05, near: 0.25),
-        Bank(puffs: [(-0.04, 0.54, 0.05), (0.2, 0.38, 0.2), (0.4, 0.5, 0), (0.62, 0.36, 0.22), (0.83, 0.52, 0.06), (1.04, 0.4, 0.2)],
-             reach: 0.2, delay: 0.2, drift: 0.06, near: 0.5),
-        Bank(puffs: [(0.04, 0.6, 0.06), (0.3, 0.44, 0.2), (0.52, 0.58, 0), (0.76, 0.42, 0.24), (0.98, 0.62, 0.05)],
-             reach: 0.03, delay: 0.3, drift: -0.04, near: 0.75),
-        Bank(puffs: [(-0.06, 0.7, 0.05), (0.22, 0.52, 0.2), (0.48, 0.68, 0), (0.74, 0.5, 0.22), (1.02, 0.72, 0.04)],
-             reach: -0.4, delay: 0.4, drift: 0.03, near: 1),
+        Bank(puffs: [(0.08, 0.5), (0.34, 0.36), (0.6, 0.46), (0.9, 0.42)], reach: 0.32, opacity: 0.5, delay: 0),
+        Bank(puffs: [(0, 0.56), (0.24, 0.4), (0.5, 0.5), (0.76, 0.38), (1, 0.58)], reach: 0.1, opacity: 0.75, delay: 0.15),
+        Bank(puffs: [(0.04, 0.6), (0.3, 0.46), (0.56, 0.56), (0.82, 0.44), (1.02, 0.6)], reach: -0.3, opacity: 1, delay: 0.3),
     ]
-
-    /// A cloud's colours, from its lit top to its shaded body: by day the far banks hazy blue, the
-    /// near ones white; at night all moonlit.
-    private struct Shades {
-        let light: Color
-        let base: Color
-        let shade: Color
-    }
-
-    private typealias RGB = (r: Double, g: Double, b: Double)
-
-    private static func mix(_ far: RGB, _ near: RGB, _ amount: Double) -> Color {
-        Color(red: far.r + (near.r - far.r) * amount, green: far.g + (near.g - far.g) * amount,
-              blue: far.b + (near.b - far.b) * amount)
-    }
-
-    private func shades(_ near: Double, night: Bool) -> Shades {
-        if night {
-            return Shades(light: Self.mix((0.3, 0.37, 0.52), (0.55, 0.63, 0.78), near),
-                          base: Self.mix((0.21, 0.27, 0.42), (0.37, 0.45, 0.61), near),
-                          shade: Self.mix((0.14, 0.19, 0.33), (0.25, 0.32, 0.47), near))
-        }
-        return Shades(light: Self.mix((0.92, 0.96, 1), (1, 1, 1), near),
-                      base: Self.mix((0.82, 0.9, 0.99), (0.96, 0.98, 1), near),
-                      shade: Self.mix((0.68, 0.8, 0.94), (0.83, 0.89, 0.97), near))
-    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -165,35 +126,23 @@ struct CloudCover: View {
             ZStack {
                 ForEach(Self.banks.indices, id: \.self) { index in
                     let bank = Self.banks[index]
-                    let tone = shades(bank.near, night: night)
                     ZStack {
-                        // The body under the puffs, shaded deeper down.
-                        Rectangle()
-                            .fill(LinearGradient(stops: [
-                                .init(color: tone.base, location: 0),
-                                .init(color: tone.shade, location: 0.35),
-                            ], startPoint: .top, endPoint: .bottom))
-                            .frame(width: size.width, height: size.height * 1.6)
-                            .position(x: size.width / 2, y: size.height * 0.8)
-                        // The puffs, each lit from above on the left and shading into the body.
                         ForEach(bank.puffs.indices, id: \.self) { puffIndex in
                             let puff = bank.puffs[puffIndex]
-                            let diameter = side * puff.size
                             Circle()
-                                .fill(RadialGradient(colors: [tone.light, tone.base, tone.shade],
-                                                     center: UnitPoint(x: 0.42, y: 0.28),
-                                                     startRadius: 0, endRadius: diameter * 0.75))
-                                .frame(width: diameter, height: diameter)
-                                .position(x: size.width * puff.x, y: diameter * puff.drop)
+                                .frame(width: side * puff.size, height: side * puff.size)
+                                .position(x: size.width * puff.x, y: 0)
                         }
+                        Rectangle()
+                            .frame(width: size.width, height: size.height * 1.5)
+                            .position(x: size.width / 2, y: size.height * 0.75)
                     }
-                    // One mass of cloud, its soft shadow cast up onto the bank behind.
+                    .foregroundStyle(night ? Brand.moonCloud : .white)
+                    // One sheet of cloud, not puffs see-through where they overlap.
                     .compositingGroup()
-                    .shadow(color: night ? .black.opacity(0.35) : Color(red: 0.42, green: 0.58, blue: 0.84).opacity(0.3),
-                            radius: side * 0.035, y: -side * 0.012)
-                    // Down out of sight under the screen, then up to its reach, drifting as it comes.
-                    .offset(x: risen ? size.width * bank.drift : 0,
-                            y: risen ? size.height * bank.reach : size.height + side * 0.45)
+                    .opacity(bank.opacity)
+                    // Down out of sight under the screen, then up to its reach.
+                    .offset(y: risen ? size.height * bank.reach : size.height + side * 0.4)
                     .animation(.easeIn(duration: LoadingCurtain.landingTime - bank.delay).delay(bank.delay), value: risen)
                 }
             }
