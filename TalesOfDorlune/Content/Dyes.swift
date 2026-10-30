@@ -98,11 +98,12 @@ nonisolated extension ItemDef {
     var dyeID: String? { Self.dyeID(of: id) }
     var isDyed: Bool { dyeID != nil }
 
-    /// Armour, a hat that goes with armour, gloves and boots take a dye; a festive hat (`hat`), a cape,
-    /// a weapon or a trinket doesn't.
+    /// Armour, a hat that goes with armour, gloves, boots and a weapon (playtesting 2026-10-30: "Also
+    /// weapons should be dyed") take a dye; a festive hat (`hat`), a cape or a trinket doesn't. A weapon's
+    /// icon and its held sprites (`GearArt`) are recoloured toward the dye from their own main colour.
     var canBeDyed: Bool {
         switch type {
-        case .armor, .gloves, .boots: true
+        case .armor, .gloves, .boots, .weapon: true
         case .head: hat == nil
         default: false
         }

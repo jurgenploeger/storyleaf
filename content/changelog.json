@@ -2,12 +2,12 @@
   "_note": "Newest first, one entry per big update with at most five lines that sum it up. The top version must match MARKETING_VERSION in project.yml (tools/check_content.py checks): a small change moves the top entry's version and date along and adds a line only if it's big enough to tell players. 1.0.0 is the App Store release.",
   "releases": [
     {
-      "version": "0.9.7",
+      "version": "0.9.8",
       "date": "2026-10-30",
       "title": "A fresh look",
       "notes": [
         "A new welcome: the story and How to play in slides, each step played out in a little scene.",
-        "Dye your armour: mix a dye from a gem and a sheepskin, then ask the weaver or a barber to colour one piece.",
+        "Dye your gear: mix a dye from a gem and a sheepskin, then ask the weaver or a barber to colour your armour or a weapon.",
         "Battle buttons sit in one row along the bottom, your skills line up side by side, and chat waits until the fight is over.",
         "Windows open bigger and cleaner, the world map shows the time and where you are, and an Inventory button sits beside Chat.",
         "Your companion shows its XP too, the sky and loading bar wear Dorlune's blue, and everyone blinks and breathes as they stand."

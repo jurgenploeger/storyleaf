@@ -1416,9 +1416,13 @@ struct RulesTests {
         let helm = try #require(content.item("copper_helm~azure_dye"))
         #expect(helm.tint?.allSatisfy { $0.to == content.item("azure_dye")?.dye?.hue } == true)
         #expect(helm.baseID == plate.headpiece)
-        // Not a festive hat, a weapon or a cape; not with something that isn't a dye.
+        // A weapon too, its held sprites recoloured with its icon (`GearArt`).
+        let sword = try #require(content.item("wooden_sword~crimson_dye"))
+        #expect(sword.type == .weapon && sword.baseID == "wooden_sword" && sword.art == "item_wooden_sword~crimson_dye")
+        #expect(ArtLibrary.shared.artImage("held_wooden_sword_side~crimson_dye") != nil)
+        #expect(GearArt.heldImage(sword) != nil)
+        // Not a festive hat or a cape; not with something that isn't a dye.
         #expect(content.item("santa_hat~crimson_dye") == nil)
-        #expect(content.item("wooden_sword~crimson_dye") == nil)
         #expect(content.item("copper_plate~agate") == nil)
         #expect(content.isTreasure("goldleaf_plate~crimson_dye") == content.isTreasure("goldleaf_plate"))
     }

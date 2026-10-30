@@ -179,7 +179,7 @@ struct NPCDialogView: View {
                     Button {
                         dyeing = true
                     } label: {
-                        Label(L("Dye armour"), icon: .palette)
+                        Label(L("Dye gear"), icon: .palette)
                     }
                     .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
                     .padding(.top, 10)

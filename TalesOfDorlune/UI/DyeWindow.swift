@@ -26,7 +26,7 @@ struct DyeWindow: View {
                 .ignoresSafeArea()
                 .onTapGesture { onClose(nil) }
             VStack(spacing: 0) {
-                WindowTitle(L("Dye armour"), onClose: { onClose(nil) })
+                WindowTitle(L("Dye gear"), onClose: { onClose(nil) })
                 // Scrolls only when it can't all fit (a phone on its side).
                 FitOrScroll {
                     VStack(alignment: .leading, spacing: 12) {
@@ -35,7 +35,7 @@ struct DyeWindow: View {
                             .foregroundStyle(HUDStyle.dim)
                             .fixedSize(horizontal: false, vertical: true)
                         if pieces.isEmpty {
-                            Text(L("You have no armour, hat, gloves or boots to dye."))
+                            Text(L("You have no weapon, armour, hat, gloves or boots to dye."))
                                 .font(HUDStyle.font(12))
                                 .fixedSize(horizontal: false, vertical: true)
                         } else {

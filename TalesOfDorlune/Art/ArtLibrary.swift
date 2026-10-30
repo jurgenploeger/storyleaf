@@ -213,9 +213,11 @@ final class ArtLibrary {
     private func dyedAsset(_ id: String) -> ArtAsset? {
         guard let mark = id.firstIndex(of: ItemDef.dyeMark) else { return nil }
         let base = String(id[..<mark]), dyeID = String(id[id.index(after: mark)...])
-        guard let dye = Content.shared.item(dyeID)?.dye, let from = manifest.assets.first(where: { $0.id == base }),
+        // A weapon's held sprites (held_<id>_side, _front) are PNGs with no entry in the manifest.
+        guard let dye = Content.shared.item(dyeID)?.dye,
+              let kind = manifest.assets.first(where: { $0.id == base })?.kind ?? (pngURL(base) != nil ? "item" : nil),
               let picture = sourceImage(base) else { return nil }
-        let made = ArtAsset(id: id, kind: from.kind, frame: nil, directions: nil, scale: nil,
+        let made = ArtAsset(id: id, kind: kind, frame: nil, directions: nil, scale: nil,
                             derive: Derivation(from: base, recolor: Recolor.dyeRules(for: picture, dye: dye)), faces: nil)
         runtime[id] = (made, id)
         return made
