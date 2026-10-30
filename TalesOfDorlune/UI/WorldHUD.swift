@@ -865,7 +865,6 @@ struct MinimapIcon: View {
         case .bank: glyph(.coins)
         case .guild: glyph(.shield)
         case .chest: glyph(.gift)
-        case .boss: glyph(.sword)
         case .stairsDown: glyph(.arrowDown)
         case .stairsUp: glyph(.arrowUp)
         case .waystone: glyph(.sparkles)
@@ -896,7 +895,6 @@ struct MinimapIcon: View {
         case .bank: Color(red: 0.86, green: 0.62, blue: 0.1)
         case .guild: Color(red: 0.58, green: 0.4, blue: 0.86)
         case .chest: Color(red: 0.74, green: 0.47, blue: 0.2)
-        case .boss: Color(red: 0.62, green: 0.1, blue: 0.16)
         case .stairsDown, .stairsUp: Color(red: 0.42, green: 0.42, blue: 0.5)
         // A portal's own bright cyan: in the quest givers' blue it read as one of them (playtesting
         // 2026-10-23).
