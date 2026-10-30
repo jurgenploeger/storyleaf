@@ -411,11 +411,13 @@ private struct CommandPad: View {
 
     /// More at the left end, opening up and to the right; then the skills; the first button at the
     /// right end. More's panel reaches as far right as a row of three: a shorter one makes room for it.
+    /// Skills the row has no room for wait behind More, at the top of its panel (playtesting
+    /// 2026-10-30: "If it doesn't fit, the buttons will go in the more button").
     private var pad: some View {
         let (main, column, more) = sections
         return SkillRow(controller: controller, skills: controller.skills, others: column.count + (main == nil ? 0 : 1),
-                        least: MoreMenu.width) { size in
-            MoreMenu(controller: controller, commands: more + Self.paceIDs, open: $showMore, size: size,
+                        least: MoreMenu.width, overflowsToLead: true) { size, behind in
+            MoreMenu(controller: controller, skills: behind, commands: more + Self.paceIDs, open: $showMore, size: size,
                      onPick: perform, onHold: arrange)
         } tail: { size in
             ForEach(Array(column.reversed()), id: \.self) { id in
@@ -588,12 +590,14 @@ private struct CommandPad: View {
 }
 
 /// More, at the left end of the row: a round button that, tapped, opens a panel up and to the
-/// right of it, over the field, listing what waits behind it (the commands put there, then Auto and
-/// the fight's pace), its dots turning into a cross that closes it, as the map's menu does
+/// right of it, over the field, listing what waits behind it (the skills the row had no room for,
+/// the commands put there, then Auto and the fight's pace), its dots turning into a cross that closes it, as the map's menu does
 /// (playtesting 2026-10-24: it scattered more round buttons over the arc). It takes only the
 /// button's room, and the row stays as it is under the panel. Holding it rearranges the buttons.
 private struct MoreMenu: View {
     let controller: BattleController
+    /// Your skills the row had no room for.
+    var skills: [SkillDef] = []
     let commands: [String]
     @Binding var open: Bool
     let size: CGFloat
@@ -657,6 +661,10 @@ private struct MoreMenu: View {
     /// What waits behind More, in a window of the button's blue.
     private var panel: some View {
         VStack(alignment: .leading, spacing: 2) {
+            ForEach(skills) { skill in
+                skillRow(skill)
+                    .transition(.opacity)
+            }
             ForEach(Array(commands.enumerated()), id: \.element) { index, id in
                 row(id)
                     // One after another up from the button as it opens.
@@ -676,6 +684,59 @@ private struct MoreMenu: View {
                 .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
         )
         .shadow(color: .black.opacity(0.4), radius: 4, x: 0, y: 4)
+    }
+
+    /// A skill the row had no room for: its picture, name and MP, greyed when it can't be used (a
+    /// tap then only says why, as the row's buttons do).
+    private func skillRow(_ skill: SkillDef) -> some View {
+        let usable = controller.canUse(skill)
+        let cost = controller.cost(of: skill)
+        return Button {
+            SoundEffects.shared.play(.tap, volume: 0.7)
+            open = false
+            if !usable { UINotificationFeedbackGenerator().notificationOccurred(.warning) }
+            controller.useSkill(skill)
+        } label: {
+            HStack(spacing: 9) {
+                ZStack {
+                    Circle().fill(Color(uiColor: skill.tileColor))
+                    if let picture = skill.art.flatMap(ArtLibrary.shared.artImage) {
+                        Image(uiImage: picture)
+                            .interpolation(picture.size.width > 64 ? .high : .none)
+                            .resizable()
+                            .scaledToFill()
+                            .clipShape(Circle())
+                    } else {
+                        IconImage(skill.icon.flatMap(GameIcon.init) ?? .sparkles, size: 14)
+                            .foregroundStyle(.white)
+                    }
+                }
+                .frame(width: 24, height: 24)
+                Text(skill.name)
+                    .font(HUDStyle.font(13))
+                    .foregroundStyle(.white)
+                    .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Spacer(minLength: 0)
+                if cost > 0 {
+                    Text(L("{cost} MP", ["cost": cost]))
+                        .font(HUDStyle.font(11))
+                        .monospacedDigit()
+                        .foregroundStyle(HUDStyle.cream)
+                        .lineLimit(1)
+                        .fixedSize()
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressScaleStyle())
+        .saturation(usable ? 1 : 0)
+        .opacity(usable ? 1 : 0.5)
+        .accessibilityLabel(skill.name)
+        .accessibilityValue(L("{cost} MP", ["cost": cost]))
     }
 
     private func row(_ id: String) -> some View {
@@ -793,7 +854,7 @@ private struct CompanionPad: View {
                 .background(Capsule().fill(HUDStyle.ink.opacity(0.88)).overlay(Capsule().strokeBorder(HUDStyle.gold.opacity(0.7), lineWidth: 1.5)))
             }
 
-            SkillRow(controller: controller, skills: controller.companionSkills, others: 2) { size in
+            SkillRow(controller: controller, skills: controller.companionSkills, others: 2) { size, _ in
                 RoundCommandButton(title: L("Auto"), icon: .paw, size: size, tint: .quiet) { controller.letCompanionDecide() }
             } tail: { size in
                 RoundCommandButton(title: L("Guard"), icon: .shield, size: size, tint: .normal) { controller.defend() }
@@ -818,7 +879,9 @@ nonisolated enum CommandRow {
 /// not behind a menu): `lead` at the left end (More, or Auto on your companion's turn), then a
 /// round button for each skill (`SkillCommandButton`), then `tail`, the other commands, Attack at
 /// the right end. Too long for the phone, the row closes up and its buttons shrink a little, as
-/// it always did; longer still, the skills slide sideways between the two ends, which stay put.
+/// it always did; longer still, the last skills go behind More (`overflowsToLead`: `lead` is told
+/// which), as few as will do, or, where there's no More (your companion's turn), the skills slide
+/// sideways between the two ends, which stay put.
 /// Holding a skill shows its card over the row (`SkillCard`): its level, element, MP and what it
 /// does, as the list of skills once did.
 private struct SkillRow<Lead: View, Tail: View>: View {
@@ -828,7 +891,10 @@ private struct SkillRow<Lead: View, Tail: View>: View {
     let others: Int
     /// The least the row may measure across (More's panel reaches that far right of it).
     var least: CGFloat = 0
-    @ViewBuilder let lead: (CGFloat) -> Lead
+    /// Skills the row has no room for go to `lead` (More) rather than sliding.
+    var overflowsToLead = false
+    /// The left end, at a button size, with the skills the row had no room for.
+    @ViewBuilder let lead: (CGFloat, [SkillDef]) -> Lead
     @ViewBuilder let tail: (CGFloat) -> Tail
     /// The skill whose card shows.
     @State private var card: String?
@@ -841,9 +907,16 @@ private struct SkillRow<Lead: View, Tail: View>: View {
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
-            row(size: CommandRow.size, spacing: CommandRow.spacing, slides: false)
-            row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, slides: false)
-            row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, slides: true)
+            row(size: CommandRow.size, spacing: CommandRow.spacing, shown: skills.count, slides: false)
+            row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, shown: skills.count, slides: false)
+            if overflowsToLead {
+                // One skill fewer at a time, the rest behind More, till the row fits.
+                ForEach(Array((0..<skills.count).reversed()), id: \.self) { shown in
+                    row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, shown: shown, slides: false)
+                }
+            } else {
+                row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, shown: skills.count, slides: true)
+            }
         }
         .overlay(alignment: .top) {
             if let id = card, let skill = skills.first(where: { $0.id == id }) {
@@ -860,16 +933,18 @@ private struct SkillRow<Lead: View, Tail: View>: View {
         .onDisappear { hideCard?.cancel() }
     }
 
+    /// The row with the first `shown` skills in it, the rest handed to `lead`.
     @ViewBuilder
-    private func row(size: CGFloat, spacing: CGFloat, slides: Bool) -> some View {
-        let count = 1 + skills.count + others
+    private func row(size: CGFloat, spacing: CGFloat, shown: Int, slides: Bool) -> some View {
+        let visible = Array(skills.prefix(shown))
+        let count = 1 + visible.count + others
         let short = least - (CGFloat(count) * size + CGFloat(count - 1) * spacing)
         HStack(alignment: .bottom, spacing: spacing) {
-            lead(size)
+            lead(size, Array(skills.dropFirst(shown)))
             if slides {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(alignment: .bottom, spacing: spacing) {
-                        buttons(size: size)
+                        buttons(visible, size: size)
                     }
                     .padding(.top, Self.badgeRoom)
                     .padding(.bottom, Self.nameRoom)
@@ -881,13 +956,13 @@ private struct SkillRow<Lead: View, Tail: View>: View {
                 .padding(.bottom, -Self.nameRoom)
             } else {
                 if short > spacing { Color.clear.frame(width: short - spacing, height: size) }
-                buttons(size: size)
+                buttons(visible, size: size)
             }
             tail(size)
         }
     }
 
-    private func buttons(size: CGFloat) -> some View {
+    private func buttons(_ skills: [SkillDef], size: CGFloat) -> some View {
         ForEach(skills) { skill in
             SkillCommandButton(skill: skill, cost: cost(of: skill), usable: controller.canUse(skill), size: size,
                                picked: card == skill.id) {
