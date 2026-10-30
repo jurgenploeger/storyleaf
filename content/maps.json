@@ -15333,13 +15333,13 @@
         },
         {
           "art": "sleepy_cottage",
-          "x": 31,
-          "y": -8
+          "x": -15,
+          "y": -13
         },
         {
           "art": "inn",
-          "x": 7,
-          "y": -29
+          "x": -4,
+          "y": -13
         },
         {
           "art": "sleepy_cottage_lilac",
@@ -15462,8 +15462,8 @@
           "name": "Night-Owl Nettie",
           "role": "quests",
           "art": "npc_nightowl_nettie",
-          "x": 30,
-          "y": -10,
+          "x": -16,
+          "y": -15,
           "greeting": "Can't sleep? Neither can we. Welcome to Wakewell, where nobody has yawned in a year."
         },
         {
@@ -15481,8 +15481,8 @@
           "name": "Coffee-Roaster Bastian",
           "role": "quests",
           "art": "npc_roaster_bastian",
-          "x": 6,
-          "y": -31,
+          "x": -5,
+          "y": -15,
           "greeting": "Coffee? Tea? A second coffee? We've got all night. We always have all night."
         }
       ]
@@ -18542,13 +18542,13 @@
         },
         {
           "art": "item_shop",
-          "x": 7,
-          "y": -29
+          "x": -4,
+          "y": -11
         },
         {
           "art": "house_green",
-          "x": 31,
-          "y": -8
+          "x": 7,
+          "y": -11
         },
         {
           "art": "forest_lodge",
@@ -18698,8 +18698,8 @@
           "name": "Spectacle-Maker Fennimore",
           "role": "quests",
           "art": "npc_spectacle_fennimore",
-          "x": 6,
-          "y": -31,
+          "x": -5,
+          "y": -13,
           "greeting": "Everyone who goes through the gate wears green spectacles. Who do you think makes them?"
         },
         {
@@ -18707,8 +18707,8 @@
           "name": "Poppy-Farmer Dell",
           "role": "quests",
           "art": "npc_poppyfarmer_dell",
-          "x": 30,
-          "y": -10,
+          "x": 6,
+          "y": -13,
           "greeting": "Mind the poppies. They make you sleepy. I've been yawning since I was four."
         },
         {
