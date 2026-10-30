@@ -579,9 +579,30 @@ final class GameSession {
     // a point either learns one of those or raises a skill you know (up to level 10).
 
     /// Skills you've learned that your current class uses.
+    /// The skills you've learned, in your order (`skillOrder`, set on the Skills page: playtesting
+    /// 2026-10-30, "so you can decide which ones are one tap"), the battle row's from More rightward
+    /// (what it has no room for waits behind More); ones you haven't placed after, in your class's order.
     var heroSkills: [SkillDef] {
         let learned = Set(data.hero.learnedSkills ?? [])
-        return classSkills(upTo: data.hero.level).filter { learned.contains($0.id) }
+        let skills = classSkills(upTo: data.hero.level).filter { learned.contains($0.id) }
+        guard let order = data.skillOrder else { return skills }
+        let place = Dictionary(order.enumerated().map { ($0.element, $0.offset) }) { first, _ in first }
+        return skills.enumerated()
+            .sorted { (place[$0.element.id] ?? order.count + $0.offset, $0.offset) < (place[$1.element.id] ?? order.count + $1.offset, $1.offset) }
+            .map(\.element)
+    }
+
+    /// Puts skill `id` where `target` is in your order, the rest shifting along. False when either
+    /// isn't one you know, or they're the same.
+    @discardableResult
+    func moveSkill(_ id: String, onto target: String) -> Bool {
+        var order = heroSkills.map(\.id)
+        guard id != target, let from = order.firstIndex(of: id), let to = order.firstIndex(of: target) else { return false }
+        order.remove(at: from)
+        order.insert(id, at: to)
+        data.skillOrder = order
+        SoundEffects.shared.play(.tap, volume: 0.7)
+        return true
     }
 
     // MARK: - Battle buttons

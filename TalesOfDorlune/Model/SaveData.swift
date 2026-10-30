@@ -156,6 +156,8 @@ nonisolated struct SaveData: Codable, Sendable {
     var armourHatsGiven: Bool?
     /// Your order of the battle buttons (see `GameSession.battleButtons`).
     var battleButtons: [String]?
+    /// Your order of your skills, by id, as the battle row shows them (`GameSession.heroSkills`).
+    var skillOrder: [String]?
     /// Trades already made with adventurers (`GameSession.TradeOffer.id`), so each offer is done once.
     var tradesDone: [String]?
     /// The Monster Book: every species met in battle, by id.

@@ -1531,6 +1531,25 @@ struct RulesTests {
     /// What a beaten monster counts for in drops comes with its level next to yours (playtesting
     /// 2026-10-30: a level 2 monster at level 179 left five things): in full near your level, more
     /// over it, little far under it.
+    /// Your skills keep the order you give them on the Skills page, which is the battle row's
+    /// (playtesting 2026-10-30); ones not in your order (learned since) come after it.
+    @Test func skillsKeepYourOrder() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.data.hero.level = 20
+        for skill in session.learnableSkills { session.learnSkill(skill.id) }
+        let learned = session.heroSkills.map(\.id)
+        try #require(learned.count >= 2)
+        #expect(session.moveSkill(learned[1], onto: learned[0]))
+        #expect(Array(session.heroSkills.map(\.id).prefix(2)) == [learned[1], learned[0]])
+        #expect(!session.moveSkill(learned[0], onto: learned[0]))
+        #expect(!session.moveSkill("not_a_skill", onto: learned[0]))
+        let again = GameSession(data: session.data)
+        #expect(Array(again.heroSkills.map(\.id).prefix(2)) == [learned[1], learned[0]])
+        // A skill your order doesn't have yet goes after the ones it does.
+        session.data.skillOrder = [learned[1]]
+        #expect(Array(session.heroSkills.map(\.id).prefix(2)) == [learned[1], learned[0]])
+    }
+
     @Test func dropsComeWithWhatAFightIsWorth() {
         #expect(GameSession.dropWorth(level: 30, heroLevel: 30) == 1)
         #expect(GameSession.dropWorth(level: 25, heroLevel: 30) == 1)
