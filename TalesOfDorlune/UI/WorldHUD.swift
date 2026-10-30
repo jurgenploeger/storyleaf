@@ -359,7 +359,8 @@ private struct FoldedParty: View {
             }
             .padding(.horizontal, 7)
             .padding(.vertical, 4)
-            .frame(width: TopLeft.width, alignment: .leading)
+            // As wide as the faces and the arrow (playtesting 2026-10-30: "The width of the bar of the
+            // party should be auto width"), not the row above's.
             .background(HUDStyle.panel(shape: HUDStyle.hudPanelShape))
         }
         .buttonStyle(.plain)
