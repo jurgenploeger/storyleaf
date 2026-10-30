@@ -594,7 +594,7 @@ village_mysterious_cave     | newgame,level=176,map=mysterious_cave,at=-1_-6,wea
 village_emerald_road        | newgame,level=195,map=emerald_road,at=1_-18,weather=clear,hour=12 | 10
 village_icemoor_night       | newgame,level=150,map=rosen_lake,at=14_-9,landscape,weather=clear,hour=22 | 10
 quest_selene                | newgame,level=97,map=moonglow,at=-40_-7,npc=festival_selene,done=silvermoon_rice+silvermoon_bones,weather=clear,hour=12 | 8
-quest_fennimore             | newgame,level=195,map=emerald_road,at=6_-34,npc=spectacle_fennimore,done=greenglass_pegasi+greenglass_glass,weather=clear,hour=12 | 8
+quest_fennimore             | newgame,level=195,map=emerald_road,at=-5_-16,npc=spectacle_fennimore,done=greenglass_pegasi+greenglass_glass,weather=clear,hour=12 | 8
 # The people who live on the maps (`MapDef.Local`, `Crowd`): a couple of steps from one, who starts on
 # their story (a fisher at the end of a jetty, a girl at a bridge, a farmer among his things, a dancer
 # on an island, a mapmaker up a mountain, a mole by a cave's mouth, a tin man), in German and Japanese too.
