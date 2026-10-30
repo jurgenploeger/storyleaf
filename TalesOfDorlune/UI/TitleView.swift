@@ -4,6 +4,8 @@ import UniformTypeIdentifiers
 
 /// Title screen: continue a saved game, or create a hero (name + race, like Fairyland Online).
 struct TitleView: View {
+    /// The logo's place, shared with the loading screen: starting a game carries it there (`RootView`).
+    var logoSpace: Namespace.ID? = nil
     let onStart: (GameSession) -> Void
 
     @State private var creating = DebugLaunch.titlePage == "create"
@@ -220,12 +222,14 @@ struct TitleView: View {
         }
     }
 
+    /// As big as on the loading screen, so starting a game only moves it there.
     private var logo: some View {
         Image("Logo")
             .resizable()
             .scaledToFit()
             .raysAnchor(Brand.raysInLogo)
-            .frame(maxWidth: 360, maxHeight: wide ? 190 : 260)
+            .frame(maxWidth: LoadingCurtain.logoWidth, maxHeight: wide ? 190 : 260)
+            .matchedLogo(logoSpace)
             .accessibilityLabel(L("Tales of Dorlune"))
     }
 
@@ -496,7 +500,7 @@ private struct SaveCarousel: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
-            .frame(height: 234)
+            .frame(height: 248)
             // The games either side fade out toward the edges as they slide by, instead of
             // being cut off sharp.
             .mask(
@@ -540,7 +544,9 @@ private struct SavedHeroCard: View {
             }
         }
         .multilineTextAlignment(.center)
-        .padding(.bottom, 28)   // room for the page dots
+        // Room for the page dots, a little apart from the lines over them (playtesting 2026-10-30:
+        // they sat right under "Played yesterday").
+        .padding(.bottom, 42)
     }
 }
 
