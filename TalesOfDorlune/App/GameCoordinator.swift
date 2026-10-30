@@ -574,7 +574,7 @@ final class GameCoordinator {
         // Your face or your companion's (top left, or tapped on the map) opens the same big window as
         // the menu's Hero or Companions (playtesting 2026-10-26: "Tapping the hero or companion from
         // the top left corner should open this same bigger modal"). The Companions window leads with
-        // the companion you have out. A friend's face keeps their card.
+        // the companion you have out. Another adventurer's opens a window of theirs as big (`ProfileWindow`).
         switch overlay {
         case .profile(.hero):
             return show(.menu(.character))
