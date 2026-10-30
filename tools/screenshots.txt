@@ -38,7 +38,7 @@ battle_dark  | newgame,map=sunny_meadow,battle,dark | 15
 npc_dark     | newgame,npc=elder,dark            | 8
 battle_ru    | newgame,lang=ru,map=sunny_meadow,battle | 15
 npc_ko       | newgame,lang=ko,npc=elder         | 8
-barber       | newgame,npc=barber,gold=2000      | 8
+barber       | newgame,npc=barber,gold=2000,wares | 8
 # Dyeing armour (playtesting 2026-10-30): the barber's Dye armour window, a dyed plate worn, plates and dyes
 # in the bag; the hero in dyed copper on the map; a gem's card with Mix, and the Bag with dyes and a dyed piece.
 dye_window   | newgame,level=12,npc=barber,equip=copper_plate~crimson_dye+copper_gauntlets,bag=copper_plate+copper_helm+azure_dye+crimson_dye+golden_dye,dyeing | 8
@@ -203,7 +203,7 @@ pet_late_b | newgame,level=150,map=rosen_lake,pet=frost_bear,weather=clear,hour=
 pet_late_c | newgame,level=150,map=glimmerdeep,pet=crystal_widow | 8
 # Its whole map once Pip's A Map of the Deep is done (playtesting 2026-10-19), and Pip offering it.
 depths_charted     | newgame,level=162,map=glimmerdeep_depths,from=glimmerdeep,done=the_fallen_star+glimmerdeep_crabs+a_map_of_the_deep,worldmap | 12
-quest_pip_map      | newgame,level=152,map=starfall_isle,at=-5_-3,npc=pip_lamplighter,done=lanterns_of_glimmerbough+sleeping_moonflowers+the_crystal_garden+a_lantern_for_lune+the_fallen_star+glimmerdeep_crabs,weather=clear,hour=12 | 8
+quest_pip_map      | newgame,level=152,map=starfall_isle,at=3_-28,npc=pip_lamplighter,done=lanterns_of_glimmerbough+sleeping_moonflowers+the_crystal_garden+a_lantern_for_lune+the_fallen_star+glimmerdeep_crabs,weather=clear,hour=12 | 8
 behind_tree  | newgame,map=smiling_forest,at=0_-14   | 15
 intro_story  | intro                             | 6
 intro_shadows | intro=2                          | 6
@@ -243,7 +243,7 @@ tiers_onyx_her | newgame,gender=female,level=45,class=fighter,equip=onyx_plate+o
 tiers_mage     | newgame,race=elf,level=150,class=mage,equip=amethyst_robe+amethyst_gauntlets+amethyst_boots,weather=clear,hour=12 | 8
 tiers_tamer    | newgame,race=dwarf,gender=female,level=80,class=tamer,equip=jade_hide+jade_gauntlets+jade_boots,weather=clear,hour=12 | 8
 tiers_sapphire | newgame,race=elf,gender=male,level=60,class=fighter,equip=sapphire_plate+sapphire_gauntlets+sapphire_boots,weather=clear,hour=12 | 8
-tiers_shop     | newgame,level=60,npc=goldburg_shop | 8
+tiers_shop     | newgame,level=60,npc=goldburg_shop,wares | 8
 # Festive seasons and their hats, like RuneScape's holiday events (0.7.30, playtesting 2026-10-17: "Also
 # add festive items like party, halloween, Christmas and Easter"): the season's first gift brings a hat
 # (`date=` sets the day), the hats on every body, and the crowd wearing them in town.
@@ -495,7 +495,7 @@ bot_goodbye    | newgame,level=49,class=fighter,friends=2,map=sunny_meadow,stay=
 # the weaver's list with two to weave, the cape's slot on the paper doll, and a cape's card.
 cape_back      | newgame,level=60,map=meadowbrook,equip=swan_lake_cape,facing=up,hour=12,weather=clear | 8
 cape_plate     | newgame,class=fighter,level=60,map=sunny_meadow,equip=iron_plate+bossbane_cape,facing=left,hour=12,weather=clear | 8
-cape_weaver    | newgame,level=60,map=meadowbrook,beaten=sunny_meadow+northern_grassland,npc=weaver,hour=12,weather=clear | 8
+cape_weaver    | newgame,level=60,map=meadowbrook,beaten=sunny_meadow+northern_grassland,npc=weaver,hour=12,weather=clear,wares | 8
 cape_doll      | newgame,level=60,map=meadowbrook,equip=storyleaf_cape,menu=character | 8
 cape_card      | newgame,level=60,map=meadowbrook,bag=quest_cape,menu=bag,inspect=quest_cape | 8
 # Where a road leads into a cave it ends inland, at a rocky hill with the cave's dark mouth in a wall
@@ -542,7 +542,7 @@ glimmerdeep_land | newgame,level=152,map=glimmerdeep,from=starfall_isle,landscap
 glimmerdeep_singer | newgame,level=152,map=glimmerdeep,at=0_0 | 8
 glimmerdeep_lair | newgame,level=158,map=glimmerdeep,at=0_10 | 8
 battle_glimmerdeep | newgame,level=152,map=glimmerdeep,battle=5 | 15
-quest_pip_glimmerdeep | newgame,level=150,map=starfall_isle,at=-5_-3,npc=pip_lamplighter,done=lanterns_of_glimmerbough+sleeping_moonflowers+the_crystal_garden+a_lantern_for_lune+the_fallen_star,weather=clear,hour=12 | 8
+quest_pip_glimmerdeep | newgame,level=150,map=starfall_isle,at=3_-28,npc=pip_lamplighter,done=lanterns_of_glimmerbough+sleeping_moonflowers+the_crystal_garden+a_lantern_for_lune+the_fallen_star,weather=clear,hour=12 | 8
 quest_lumen_drake | newgame,level=158,map=starfall_isle,at=-1_5,npc=mother_lumen,done=lanterns_of_glimmerbough+sleeping_moonflowers+the_crystal_garden+a_lantern_for_lune+the_fallen_star+glimmerdeep_crabs+glimmerstone_lanterns,weather=clear,hour=12 | 8
 # Quest givers talk a page at a time, one quest at a time (playtesting 2026-10-25): the story's first
 # page with Back and Next, its last with the quest and Accept, and the elder while you're on his quest.
@@ -568,7 +568,7 @@ village_candy_mountain      | newgame,level=25,map=candy_mountain,at=14_-16,weat
 village_frog_swamp          | newgame,level=31,map=frog_swamp,at=-9_-28,weather=clear,hour=12 | 10
 village_wolf_lair           | newgame,level=33,map=wolf_lair,at=-13_2,weather=clear,hour=12 | 10
 village_land                | newgame,level=25,map=candy_mountain,at=14_-16,landscape,weather=clear,hour=12 | 10
-quest_rosie                 | newgame,level=4,map=sunny_meadow,at=-17_7,npc=miller_rosie,done=cloverdale_hamsters+cloverdale_clover,weather=clear,hour=12 | 8
+quest_rosie                 | newgame,level=4,map=sunny_meadow,at=10_-49,npc=miller_rosie,done=cloverdale_hamsters+cloverdale_clover,weather=clear,hour=12 | 8
 quest_little_red            | newgame,level=27,map=wolf_lair,at=-7_4,npc=little_red,weather=clear,hour=12 | 8
 # The villages of the middle lands (0.7.24): standing in each one at noon, Wakewell by night and two quest givers.
 village_swan_lake           | newgame,level=40,map=swan_lake,at=-14_-5,weather=clear,hour=12 | 10
@@ -582,7 +582,7 @@ village_crystal_mountain    | newgame,level=82,map=crystal_mountain,at=-14_-4,we
 village_sleepy_town         | newgame,level=84,map=sleepy_town,at=-10_-20,weather=clear,hour=12 | 10
 village_snow_white_forest   | newgame,level=88,map=snow_white_forest,at=8_-12,weather=clear,hour=12 | 10
 village_wakewell_night      | newgame,level=84,map=sleepy_town,at=-10_-20,landscape,weather=clear,hour=22 | 10
-quest_pipkin                | newgame,level=48,map=lotus_land,at=-29_9,npc=mayor_pipkin,done=lily_dew+lily_slugs,weather=clear,hour=12 | 8
+quest_pipkin                | newgame,level=48,map=lotus_land,at=14_21,npc=mayor_pipkin,done=lily_dew+lily_slugs,weather=clear,hour=12 | 8
 quest_blanche               | newgame,level=80,map=snow_white_forest,at=3_-10,npc=housekeeper_blanche,weather=clear,hour=12 | 8
 # The villages of the late lands (0.7.25): standing in each one at noon, Icemoor by night and two quest givers.
 village_moonglow            | newgame,level=97,map=moonglow,at=-7_-16,weather=clear,hour=12 | 10
@@ -593,8 +593,8 @@ village_water_temple        | newgame,level=164,map=water_temple,at=-13_2,weathe
 village_mysterious_cave     | newgame,level=176,map=mysterious_cave,at=-1_-6,weather=clear,hour=12 | 10
 village_emerald_road        | newgame,level=195,map=emerald_road,at=1_-18,weather=clear,hour=12 | 10
 village_icemoor_night       | newgame,level=150,map=rosen_lake,at=14_-9,landscape,weather=clear,hour=22 | 10
-quest_selene                | newgame,level=97,map=moonglow,at=-13_-14,npc=festival_selene,done=silvermoon_rice+silvermoon_bones,weather=clear,hour=12 | 8
-quest_fennimore             | newgame,level=195,map=emerald_road,at=-5_-16,npc=spectacle_fennimore,done=greenglass_pegasi+greenglass_glass,weather=clear,hour=12 | 8
+quest_selene                | newgame,level=97,map=moonglow,at=-40_-7,npc=festival_selene,done=silvermoon_rice+silvermoon_bones,weather=clear,hour=12 | 8
+quest_fennimore             | newgame,level=195,map=emerald_road,at=6_-34,npc=spectacle_fennimore,done=greenglass_pegasi+greenglass_glass,weather=clear,hour=12 | 8
 # The people who live on the maps (`MapDef.Local`, `Crowd`): a couple of steps from one, who starts on
 # their story (a fisher at the end of a jetty, a girl at a bridge, a farmer among his things, a dancer
 # on an island, a mapmaker up a mountain, a mole by a cave's mouth, a tin man), in German and Japanese too.
@@ -762,10 +762,13 @@ bounties_land     | newgame,level=12,map=northern_grassland,bounties=1,menu=ques
 settings_land     | newgame,menu=settings,weather=clear,landscape | 8
 npc_land          | newgame,npc=elder,landscape | 8
 shop_land         | newgame,level=12,npc=shop,landscape | 8
+# What the shop has, in its own window from the dialog's View the wares (2026-10-30).
+shop_wares        | newgame,level=12,npc=shop,wares | 8
+shop_wares_land   | newgame,level=12,npc=shop,wares,landscape | 8
 item_info_land    | newgame,level=12,npc=shop,info=iron_axe,landscape | 8
-smith_land        | newgame,level=30,npc=smith,landscape | 8
-smith_ingot       | newgame,level=90,class=fighter,map=goldburg,npc=goldburg_smith | 8
-smith_ingot_de    | newgame,level=90,class=fighter,map=goldburg,npc=goldburg_smith,lang=de | 8
+smith_land        | newgame,level=30,npc=smith,landscape,wares | 8
+smith_ingot       | newgame,level=90,class=fighter,map=goldburg,npc=goldburg_smith,wares | 8
+smith_ingot_de    | newgame,level=90,class=fighter,map=goldburg,npc=goldburg_smith,lang=de,wares | 8
 healer_land       | newgame,level=30,hp=0.5,npc=healer,landscape | 8
 guild_land        | newgame,level=10,npc=guild_warrior,landscape | 8
 boss_oak_land     | newgame,level=28,map=smiling_forest,at=-66_-36,npc=oak_grove,landscape | 15
@@ -799,6 +802,8 @@ book_card_missing | newgame,cards=12,book,page=hedgehog                      | 8
 victory_cards     | newgame,level=5,map=sunny_meadow,battle=2,win,card       | 30
 # Upright with every skill a fighter has by 180: the row fits the screen, the battle not stretched past it (2026-10-30).
 battle_many_skills | newgame,level=180,class=fighter,pet=pineapple,friends=4,map=snow_white_forest,battle=3 | 15
+# A big win: five-figure EXP beside the coins, on one line (2026-10-30).
+victory_big       | newgame,level=179,map=starfall_isle,battle=3,win          | 30
 # Companion toys: in the bag, played with (Toys 4/10 on its card), a toy's details in the shop, Tilly the
 # Toymaker's card quests, and Tilly in Prismhaven.
 toys_bag          | newgame,level=30,pet=jelly,bag=toy_soldier+toy_bear+toy_music_box,menu=bag | 8
