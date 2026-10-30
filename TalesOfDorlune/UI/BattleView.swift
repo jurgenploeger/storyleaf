@@ -408,7 +408,8 @@ private struct CommandPad: View {
     private var pad: some View {
         let (main, column, more) = sections
         return SkillRow(controller: controller, skills: controller.skills, others: column.count + (main == nil ? 0 : 1),
-                        least: MoreMenu.width, overflowsToLead: true) { size, behind in
+                        least: MoreMenu.width, overflowsToLead: true,
+                        onSize: { controller.commandButtonSize = $0 }) { size, behind in
             MoreMenu(controller: controller, skills: behind, commands: more + Self.paceIDs, open: $showMore, size: size,
                      onPick: perform, onHold: arrange)
         } tail: { size in
@@ -858,7 +859,9 @@ private struct CompanionPad: View {
                 .background(Capsule().fill(HUDStyle.ink.opacity(0.88)).overlay(Capsule().strokeBorder(HUDStyle.gold.opacity(0.7), lineWidth: 1.5)))
             }
 
-            SkillRow(controller: controller, skills: controller.companionSkills, others: 2) { size, _ in
+            // Its buttons the size of the hero's (`commandButtonSize`), spaced out to fill the row.
+            SkillRow(controller: controller, skills: controller.companionSkills, others: 2,
+                     matching: controller.commandButtonSize) { size, _ in
                 RoundCommandButton(title: L("Auto"), icon: .paw, size: size, tint: .quiet) { controller.letCompanionDecide() }
             } tail: { size in
                 RoundCommandButton(title: L("Guard"), icon: .shield, size: size, tint: .normal) { controller.defend() }
@@ -902,6 +905,11 @@ private struct SkillRow<Lead: View, Tail: View>: View {
     var least: CGFloat = 0
     /// Skills the row has no room for go to `lead` (More) rather than sliding.
     var overflowsToLead = false
+    /// A button size to keep to where it fits (the hero's, on the companion's turn), the row spaced out
+    /// to fill the room instead of its buttons growing.
+    var matching: CGFloat? = nil
+    /// Told the button size the row settles on (the hero's row tells `BattleController.commandButtonSize`).
+    var onSize: ((CGFloat) -> Void)? = nil
     /// The left end, at a button size, with the skills the row had no room for.
     @ViewBuilder let lead: (CGFloat, [SkillDef]) -> Lead
     @ViewBuilder let tail: (CGFloat) -> Tail
@@ -956,6 +964,9 @@ private struct SkillRow<Lead: View, Tail: View>: View {
             row(size: layout.size, spacing: layout.spacing, shown: layout.shown, slides: layout.slides)
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
+        .onChange(of: width > 0 ? layout.size : nil, initial: true) { _, size in
+            if let size { onSize?(size) }
+        }
     }
 
     private func filled(in width: CGFloat) -> (size: CGFloat, spacing: CGFloat, shown: Int, slides: Bool) {
@@ -971,7 +982,8 @@ private struct SkillRow<Lead: View, Tail: View>: View {
         }
         let count = 1 + shown + others
         guard fitted(count) >= CommandRow.narrowSize else { return (CommandRow.narrowSize, gap, shown, true) }
-        let size = min(Self.largest, fitted(count)).rounded(.down)
+        // The size asked for, if the row has room for it; spaced out to fill the rest.
+        let size = matching.map { min($0, fitted(count)) } ?? min(Self.largest, fitted(count)).rounded(.down)
         let spacing = count > 1 ? (width - CGFloat(count) * size) / CGFloat(count - 1) : 0
         return (size, spacing, shown, false)
     }
@@ -979,12 +991,20 @@ private struct SkillRow<Lead: View, Tail: View>: View {
     /// On its side: the biggest of a few fixed sizes that fits, at the right.
     private var fitting: some View {
         ViewThatFits(in: .horizontal) {
+            // The size asked for first (the hero's, on the companion's turn), if every button fits at it.
+            if let matching {
+                row(size: matching, spacing: matching < CommandRow.size ? CommandRow.narrowSpacing : CommandRow.spacing,
+                    shown: skills.count, slides: false)
+            }
             row(size: CommandRow.size, spacing: CommandRow.spacing, shown: skills.count, slides: false)
+                .onAppear { onSize?(CommandRow.size) }
             row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, shown: skills.count, slides: false)
+                .onAppear { onSize?(CommandRow.narrowSize) }
             if overflowsToLead {
                 // One skill fewer at a time, the rest behind More, till the row fits.
                 ForEach(Array((0..<skills.count).reversed()), id: \.self) { shown in
                     row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, shown: shown, slides: false)
+                        .onAppear { onSize?(CommandRow.narrowSize) }
                 }
             } else {
                 row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, shown: skills.count, slides: true)
