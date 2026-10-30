@@ -86,7 +86,7 @@ final class GameSession {
     /// still to open, a boss still to beat, and a cave's stairs down or up.
     struct MinimapMark: Hashable {
         /// `lost`: what you lost when you fell, where it lies (`LostPile`).
-        enum Kind { case quest, questNew, questReady, healer, shop, smith, weaver, barber, bank, guild, chest, boss, stairsDown, stairsUp, waystone, lost }
+        enum Kind { case quest, questNew, questReady, healer, shop, smith, weaver, barber, bank, guild, chest, stairsDown, stairsUp, waystone, lost }
         let cell: GridPoint
         let kind: Kind
     }
@@ -2128,7 +2128,9 @@ final class GameSession {
 
     /// What someone shows as on the minimap and the world map (`MinimapIcon`): a quest giver as their
     /// mark says ("!" news, "?" done), the healer, the shop, the smith, the weaver (or her news), the
-    /// barber, a guild, a boss, stairs, a waystone, and a chest still to open; nil for an opened chest.
+    /// barber, a guild, stairs, a waystone, and a chest still to open; nil for an opened chest, and for a
+    /// boss (playtesting 2026-10-30: "The bosses shouldn't be shown on the map": they're found, not
+    /// pointed to; a quest that sends you to one says where).
     func minimapKind(for npc: NPCDef) -> MinimapMark.Kind? {
         if !errands(for: npc.id).isEmpty { return .questReady }
         switch npc.role {
@@ -2139,7 +2141,7 @@ final class GameSession {
         case .barber: return .barber
         case .bank: return .bank
         case .guild: return .guild
-        case .boss: return .boss
+        case .boss: return nil
         case .stairs: return Content.shared.leadsDown(npc) ? .stairsDown : .stairsUp
         case .chest: return isOpened(npc.id) ? nil : .chest
         case .waystone: return .waystone

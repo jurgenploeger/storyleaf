@@ -559,11 +559,11 @@ struct WorldAtlas: View {
     /// Badges that would overlap at this zoom group into one showing how many (playtesting
     /// 2026-10-26: "If you're zoomed out, they should group together in a badge that shows a
     /// number"); a group of one shows its badge, the one that matters most leading the group (a
-    /// quest to hand in or news first, a boss, then the town's services). Tapping a group zooms in.
+    /// quest to hand in or news first, then the town's services). Tapping a group zooms in.
     private var badges: [Mark] {
         guard framing.scale > 0 else { return [] }
         let filter = self.filter
-        let order: [GameSession.MinimapMark.Kind] = [.lost, .questReady, .questNew, .boss, .healer, .bank, .shop, .smith, .weaver,
+        let order: [GameSession.MinimapMark.Kind] = [.lost, .questReady, .questNew, .healer, .bank, .shop, .smith, .weaver,
                                                      .barber, .guild, .waystone, .quest, .chest]
         var found: [Mark] = []
         for land in lands where session.hasVisited(land.def.id) {
@@ -913,13 +913,12 @@ private nonisolated struct CompassTriangle: Shape {
 /// you're looking for stands out and doesn't hide in a group's number. Names, caves, locked roads
 /// and where you are always show.
 nonisolated enum MapFilter: String, CaseIterable {
-    case all, quests, bosses, town, waystones, treasure
+    case all, quests, town, waystones, treasure
 
     var title: String {
         switch self {
         case .all: L("All")
         case .quests: L("Quests")
-        case .bosses: L("Bosses")
         case .town: L("Town")
         case .waystones: L("Waystones")
         case .treasure: L("Treasure")
@@ -930,7 +929,6 @@ nonisolated enum MapFilter: String, CaseIterable {
         switch self {
         case .all: true
         case .quests: [.quest, .questNew, .questReady].contains(kind)
-        case .bosses: kind == .boss
         case .town: [.healer, .bank, .shop, .smith, .weaver, .barber, .guild].contains(kind)
         case .waystones: kind == .waystone
         case .treasure: kind == .chest || kind == .lost
