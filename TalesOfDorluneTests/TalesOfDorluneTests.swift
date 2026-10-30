@@ -1521,9 +1521,23 @@ struct RulesTests {
         let above = GameSession.equipmentDropChance(level: 45, heroLevel: 30, rare: false, boss: false)
         let below = GameSession.equipmentDropChance(level: 10, heroLevel: 30, rare: false, boss: false)
         #expect(below < even && even < above)
-        #expect(abs(above - 0.16) < 1e-9 && abs(below - 0.02) < 1e-9)
+        // Far under you, next to nothing (`dropWorth`: 20 under is a quarter).
+        #expect(abs(above - 0.16) < 1e-9 && abs(below - 0.005) < 1e-9)
+        #expect(abs(GameSession.equipmentDropChance(level: 26, heroLevel: 30, rare: false, boss: false) - 0.02) < 1e-9)
         #expect(GameSession.equipmentDropChance(level: 30, heroLevel: 30, rare: true, boss: false) > above)
         #expect(GameSession.equipmentDropChance(level: 30, heroLevel: 30, rare: false, boss: true) == 1)
+    }
+
+    /// What a beaten monster counts for in drops comes with its level next to yours (playtesting
+    /// 2026-10-30: a level 2 monster at level 179 left five things): in full near your level, more
+    /// over it, little far under it.
+    @Test func dropsComeWithWhatAFightIsWorth() {
+        #expect(GameSession.dropWorth(level: 30, heroLevel: 30) == 1)
+        #expect(GameSession.dropWorth(level: 25, heroLevel: 30) == 1)
+        #expect(abs(GameSession.dropWorth(level: 40, heroLevel: 30) - 1.5) < 1e-9)
+        #expect(GameSession.dropWorth(level: 60, heroLevel: 30) == 1.5)
+        #expect(abs(GameSession.dropWorth(level: 15, heroLevel: 30) - 0.5) < 1e-9)
+        #expect(GameSession.dropWorth(level: 2, heroLevel: 179) == 0.1)
     }
 
     @Test func goldShortensFromTenThousandUp() {
@@ -3344,8 +3358,9 @@ struct RulesTests {
             #expect(content.map(point.mapID)?.fence == true, "\(map.id) → \(point.mapID)")
         }
         // Feathers for the way home: now and then after a fight, always after a boss.
-        #expect(GameSession.featherDropChance(boss: true) == 1)
-        #expect((0.03...0.2).contains(GameSession.featherDropChance(boss: false)))
+        #expect(GameSession.featherDropChance(boss: true, worth: 0) == 1)
+        #expect((0.03...0.2).contains(GameSession.featherDropChance(boss: false, worth: 3)))
+        #expect(GameSession.featherDropChance(boss: false, worth: 0.1) < 0.01)
         #expect(content.item(GameSession.featherID)?.travel == true)
     }
 

@@ -1656,17 +1656,31 @@ final class GameSession {
     /// The Homeward Feather: sold in every town shop, and now and then dropped after a won fight.
     static let featherID = "homeward_feather"
 
-    /// How likely a won fight is to leave a Homeward Feather: about one in twelve, and always after a
-    /// boss, so a hard zone always gives you a way home.
-    static func featherDropChance(boss: Bool) -> Double { boss ? 1 : 0.08 }
+    /// What a beaten monster counts for in what a fight drops, by its level next to yours
+    /// (playtesting 2026-10-30: a level 2 monster beaten at level 179 left five things and gold): in
+    /// full from five levels under you up, a twentieth more for each level over (half again at most),
+    /// a twentieth less for each level further under, down to a tenth. A fight is worth what its
+    /// monsters are together, so more of them, and stronger ones, drop more.
+    static func dropWorth(level: Int, heroLevel: Int) -> Double {
+        let gap = level - heroLevel
+        if gap >= 0 { return min(1.5, 1 + 0.05 * Double(gap)) }
+        return max(0.1, min(1, 1 - 0.05 * Double(-gap - 5)))
+    }
+
+    /// How likely a won fight is to leave a Homeward Feather: about one in twelve for three monsters
+    /// at your level (`worth`, `dropWorth`), more for more and stronger ones, and always after a boss,
+    /// so a hard zone always gives you a way home.
+    static func featherDropChance(boss: Bool, worth: Double) -> Double { boss ? 1 : min(0.2, 0.027 * worth) }
 
     /// How likely a beaten wild monster is to drop a piece of equipment: 6%, a point more for each
-    /// level it has over you (up to 16%) and a point less for each below (down to 2%), so stronger
-    /// fights pay better; a rare monster 35%, and a boss always.
+    /// level it has over you (up to 16%) and a point less for each below, down to 2% of what it's
+    /// worth (`dropWorth`: 2% to a few levels under, a fifth of a point far under), so stronger fights
+    /// pay better; a rare monster 35%, and a boss always.
     static func equipmentDropChance(level: Int, heroLevel: Int, rare: Bool, boss: Bool) -> Double {
         if boss { return 1 }
         if rare { return 0.35 }
-        return min(0.16, max(0.02, 0.06 + 0.01 * Double(level - heroLevel)))
+        let floor = 0.02 * dropWorth(level: level, heroLevel: heroLevel)
+        return min(0.16, max(floor, 0.06 + 0.01 * Double(level - heroLevel)))
     }
 
     /// How many equipment drops are trinkets (gloves, necklaces, boots, rings and charms). There
