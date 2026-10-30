@@ -226,12 +226,12 @@ struct WorldAtlas: View {
 
     /// Along the map's top or bottom edge, under what's written there: the map blurred more the
     /// nearer the edge (`edgeBlurs`, as the story's pictures blur toward where they melt into the
-    /// window, `EdgeBlur`), and over it the window's own blue (`HUDStyle.glassTop`, the same at both
-    /// edges: the foot's deeper blue read as a different colour, playtesting 2026-10-26) melting to
-    /// clear, with no dark tint to muddy the map's colours.
+    /// window, `EdgeBlur`), and over it the window's own glass melting to clear: the very gradient the
+    /// window is filled with (`HUDStyle.glass`), as it lies behind that edge, so the band is the
+    /// window's blue wherever it is (playtesting 2026-10-30: one blue at both edges, a top's
+    /// `glassTop`, wasn't the window's at its foot), with no dark tint to muddy the map's colours.
     private func edgeBand(_ edge: SwiftUI.Edge, marks: [Mark]) -> some View {
         let top = edge == .top
-        let blue = HUDStyle.glassTop
         let size = viewSize
         return GeometryReader { band in
             ZStack {
@@ -255,8 +255,16 @@ struct WorldAtlas: View {
                             .accessibilityHidden(true)
                     }
                 }
-                Self.ramp(edge, [.init(color: blue.opacity(0.92), location: 0), .init(color: blue.opacity(0.7), location: 0.3),
-                                 .init(color: blue.opacity(0.32), location: 0.65), .init(color: blue.opacity(0), location: 1)])
+                // The window's glass as tall as the map, its own end of it showing in the band.
+                Rectangle()
+                    .fill(HUDStyle.glass)
+                    .frame(width: band.size.width, height: max(band.size.height, size.height))
+                    .frame(width: band.size.width, height: band.size.height, alignment: top ? .top : .bottom)
+                    .clipped()
+                    .mask {
+                        Self.ramp(edge, [.init(color: .black, location: 0), .init(color: .black.opacity(0.75), location: 0.3),
+                                         .init(color: .black.opacity(0.35), location: 0.65), .init(color: .black.opacity(0), location: 1)])
+                    }
             }
         }
     }
