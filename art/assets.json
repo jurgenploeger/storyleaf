@@ -9211,14 +9211,7 @@
     },
     {
       "id": "waystone",
-      "kind": "prop",
-      "request": {
-        "prompt": "old grey standing stone carved with glowing blue runes, on a ring of flat stones in the grass",
-        "prompt_style": "rd_tile__tile_object",
-        "width": 32,
-        "height": 48,
-        "remove_bg": true
-      }
+      "kind": "prop"
     },
     {
       "id": "tile_crystal_rock",

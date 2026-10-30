@@ -343,6 +343,9 @@ lair_wolf_sign | newgame,level=95,map=snow_white_forest,at=2_5,weather=clear,hou
 lair_wisp    | newgame,level=50,map=valley_of_fear,at=74_3,weather=clear,hour=12 | 8
 lair_dragon  | newgame,level=80,map=genie_desert,at=74_46,weather=clear,hour=12 | 8
 lair_morvane | newgame,level=130,map=secret_plain,at=-13_34,weather=clear,hour=12 | 8
+# The waystone (tools/prop_art.py, 0.9.6): asleep, faded, then woken by its quest.
+waystone_asleep | newgame,level=20,map=twilight_woods,at=15_5,weather=clear,hour=12 | 8
+waystone_awake  | newgame,level=20,map=twilight_woods,at=15_5,done=dusk_waystone,weather=clear,hour=12 | 8
 lair_tide    | newgame,level=170,map=water_temple,at=-37_6,weather=clear,hour=12 | 8
 lair_emerald | newgame,level=200,map=emerald_road,at=29_-24,weather=clear,hour=12 | 8
 lair_rock    | newgame,level=90,map=sleepy_town,summit=0,weather=clear,hour=12 | 8

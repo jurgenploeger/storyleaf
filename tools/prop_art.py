@@ -573,47 +573,58 @@ def draw_cave_rope():
     return c
 
 
+WAYSTONE_RUNES = [(15, 16), (14, 17), (16, 17), (13, 18), (17, 18)] + [(15, y) for y in range(17, 23)] + \
+    [(12, 25), (13, 26), (14, 27), (15, 28), (16, 27), (17, 26), (18, 25)] + \
+    [(15, 31), (14, 32), (16, 32), (13, 33), (17, 33), (14, 34), (16, 34), (15, 35), (15, 33)]
+WAYSTONE_GEM = {(15, 8): "e8f8ff", (16, 8): "9ad8ff", (14, 9): "e8f8ff", (15, 9): "7cd0ff", (16, 9): "4aa8f0",
+                (17, 9): "2e78d0", (14, 10): "6cc4ff", (15, 10): "4aa8f0", (16, 10): "2e78d0", (17, 10): "1f5cb0",
+                (15, 11): "2e78d0", (16, 11): "1f4c98"}
+
+
 def draw_waystone():
-    """A waystone (NPC role `waystone`): a standing stone out in the wild, rounded at the top and
-    leaning in a little, lit from the top left, its runes a glowing blue (the game fades the whole
-    stone while it sleeps), on a ring of flat stones in the grass."""
+    """A waystone (NPC role `waystone`): a tall dressed stone with shoulders and a pointed head, its right
+    side in shade, on a round two-step plinth of cut stone with moss at its foot; a blue crystal set in
+    its head and three runes cut down its face, glowing, their light on the stone round them, and a few
+    sparks in the air (the game fades the whole stone while it sleeps). The stone is drawn with
+    tools/pixel_kit.py as the lairs' standing stone is (lit from the top left, a tinted outline); the
+    runes, the crystal and the sparks are set pixel by pixel after, as drawn shapes they blurred."""
+    import numpy as np
+    from pixel_kit import Material, Sprite
+    from scenery_art import SIDE_LIGHT, foliage
+
+    s = Sprite(32, 48)
+    s.light, s.rim, s.seams = SIDE_LIGHT, "lower", False
+    plinth, plinth_top = Material("#7e7a6c", texture=0.05), Material("#a29e8a", texture=0.04)
+    stone, side = Material("#7a7f96", texture=0.05), Material("#565a70", texture=0.04)
+    moss = foliage("#6a9a3e")
+    s.ellipse(16, 43.5, 14.5, 4.2, plinth, profile="flat")
+    s.ellipse(16, 42, 14.5, 3.6, plinth_top, profile="flat")
+    s.ellipse(16, 40.2, 10.5, 2.8, plinth, profile="flat")
+    s.ellipse(16, 39.2, 10.5, 2.4, plinth_top, profile="flat")
+    s.poly([(8.5, 40), (9.5, 14), (12, 8), (16, 3), (20, 8), (22.5, 14), (23.5, 40)], stone, bulge=1.0)
+    s.poly([(20.5, 40), (21, 14), (20, 8), (22.5, 14), (23.5, 40)], side, profile="flat")
+    for x, y, r in ((10, 40.5, 2.6), (22.5, 41, 2.0), (5.5, 43, 1.7), (27, 43.5, 1.8)):
+        s.ellipse(x, y, r, r * 0.6, moss[1 if x < 16 else 2])
+    a = np.array(s.render(outline="tinted"))
+    rgba = lambda h: hexc(h)[:3] + (255,)
+    # The runes' light on the stone round them, then the cuts themselves.
+    glow = np.array([70, 160, 240], float)
+    near = {(x + dx, y + dy) for x, y in WAYSTONE_RUNES for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1))}
+    for x, y in near - set(WAYSTONE_RUNES):
+        a[y, x, :3] = (a[y, x, :3] * 0.45 + glow * 0.55).astype(np.uint8)
+    for x, y in WAYSTONE_RUNES:
+        a[y, x] = rgba("c4f4ff" if (x + y) % 3 else "7ad8ff")
+    # The crystal in its head, in a dark socket.
+    for x, y in WAYSTONE_GEM:
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            if (x + dx, y + dy) not in WAYSTONE_GEM:
+                a[y + dy, x + dx] = rgba("1c2648")
+    for (x, y), color in WAYSTONE_GEM.items():
+        a[y, x] = rgba(color)
+    for x, y in ((6, 13), (26, 8), (25, 24), (6, 29), (11, 5)):
+        a[y, x] = rgba("e4f6ff")
     c = Canvas(32, 48)
-    stone = [hexc("4a4a5c"), hexc("75768a"), hexc("a4a6b8")]
-    base = [hexc("55554a"), hexc("86846f"), hexc("b4b09a")]
-    glow = [hexc("2e7fd8"), hexc("6cc4ff"), hexc("e4f6ff")]
-    # The flat stones round its foot: an ellipse, lit at the top left.
-    for y in range(c.height):
-        for x in range(c.width):
-            u, v = (x + 0.5 - 16) / 14.5, (y + 0.5 - 42) / 4.5
-            if u * u + v * v <= 1:
-                c.px[y][x] = base[2 if u + v < -0.6 else 0 if u + v > 0.6 else 1]
-    # The stone: wider at its foot than its head, the head an arc.
-    for y in range(4, 43):
-        t = (y - 4) / 38
-        half = 6.5 + 2.5 * t
-        if y < 10:
-            half *= math.sqrt(max(0.0, 1 - ((10 - y) / 6.5) ** 2))
-        middle = 16 + 0.8 * (1 - t)
-        for x in range(c.width):
-            d = (x + 0.5 - middle) / max(half, 0.1)
-            if abs(d) <= 1:
-                c.px[y][x] = stone[2 if d < -0.45 else 0 if d > 0.5 else 1]
-    # Its runes: a circle and the strokes through it, carved deep and glowing.
-    runes = [(16, 14), (16, 15), (16, 16), (16, 17), (16, 18), (16, 19), (16, 20), (16, 21), (16, 22),
-             (14, 15), (13, 16), (18, 15), (19, 16), (14, 24), (15, 25), (16, 26), (17, 25), (18, 24),
-             (13, 29), (14, 30), (15, 31), (16, 32), (17, 31), (18, 30), (19, 29), (16, 33), (16, 34), (16, 35)]
-    for (x, y) in runes:
-        c.px[y][x] = glow[1]
-    for (x, y) in ((16, 14), (16, 26), (16, 32)):
-        c.px[y][x] = glow[2]
-    for (x, y) in runes:
-        if c.get(x + 1, y + 1) in stone:
-            c.px[y + 1][x + 1] = glow[0]
-    # Moss on its shaded side, low down.
-    for (x, y) in ((21, 36), (22, 37), (21, 38), (22, 39), (20, 40), (23, 40)):
-        if c.get(x, y) in stone:
-            c.px[y][x] = hexc("4f7a3a")
-    c.outline()
+    c.px = [[tuple(int(v) for v in a[y, x]) if a[y, x, 3] else None for x in range(32)] for y in range(48)]
     return c
 
 
