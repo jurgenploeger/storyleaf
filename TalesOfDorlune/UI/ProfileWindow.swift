@@ -166,7 +166,7 @@ struct ProfileWindow: View {
     private var gear: [ItemDef] {
         let armor = GameSession.armor(for: person)
         let festive = GameSession.hat(for: person)
-        let headpiece = festive?.type == .head ? nil : armor?.headpiece.flatMap(Content.shared.item)
+        let headpiece = festive?.type == .head ? nil : GameSession.headpiece(of: armor)
         return [GameSession.weapon(for: person), armor, headpiece, festive].compactMap { $0 }
             + GameSession.trinkets(for: person).filter { $0.type != festive?.type }
     }
