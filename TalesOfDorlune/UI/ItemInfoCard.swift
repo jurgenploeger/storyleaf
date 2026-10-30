@@ -96,7 +96,9 @@ struct ItemInfoCard: View {
                         }
                         effects
                         // A quest's piece drops only for its quest, and no smith wants it.
-                        if item.type == .material && item.material != "quest" {
+                        if item.dye != nil {
+                            dyeUse
+                        } else if item.type == .material && item.material != "quest" {
                             materialUse
                         }
                         footer
@@ -333,6 +335,7 @@ struct ItemInfoCard: View {
             case "metal": L("Metal")
             case "wood": L("Wood")
             case "quest": L("Quest")
+            case "dye": L("Dye")
             default: material.capitalized
             }
             return L("Material · {material}", ["material": name])
@@ -468,14 +471,39 @@ struct ItemInfoCard: View {
         }
     }
 
-    /// Where it drops and what the smith makes of it.
+    /// A dye: what it's mixed from, and who dyes with it (Dyes.swift).
+    private var dyeUse: some View {
+        let parts = session.ingredients(of: item).map(\.material.name).joined(separator: ", ")
+        return VStack(alignment: .leading, spacing: 10) {
+            section(L("Mixed from")) {
+                Text(parts).font(HUDStyle.font(12)).foregroundStyle(HUDStyle.cream)
+            }
+            section(L("Used for")) {
+                Text(L("A weaver or a barber dyes one piece of armour, a hat, gloves or boots with it."))
+                    .font(HUDStyle.font(12))
+                    .foregroundStyle(HUDStyle.cream)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    /// Where it drops and what the smith makes of it (and a gem, the dye it mixes into).
     private var materialUse: some View {
         let uses = session.recipes.filter { $0.recipe?[item.id] != nil }.map(\.name)
         let shown = uses.count > 4 ? L("{items} and {count} more", ["items": uses.prefix(4).joined(separator: ", "), "count": uses.count - 4]) : uses.joined(separator: ", ")
+        let dye = session.content.items.first { $0.dye != nil && $0.recipe?[item.id] != nil && item.material == "gem" }
         return VStack(alignment: .leading, spacing: 10) {
             if let level = item.level {
                 section(L("Found on")) {
                     Text(L("Monsters of level {level} and up", ["level": level])).font(HUDStyle.font(12)).foregroundStyle(HUDStyle.cream)
+                }
+            }
+            if let dye {
+                section(L("Mixes into")) {
+                    Text(L("{dye}, with a Sheepskin, in your Bag", ["dye": dye.name]))
+                        .font(HUDStyle.font(12))
+                        .foregroundStyle(HUDStyle.cream)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             section(L("A smith forges it into")) {

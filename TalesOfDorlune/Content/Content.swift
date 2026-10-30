@@ -282,8 +282,9 @@ nonisolated enum ItemType: String, Decodable, Sendable {
 }
 
 nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
-    let id: String
-    let name: String
+    // `var` where a dyed copy differs from its piece (`dyed(with:dyeID:)`, Dyes.swift).
+    var id: String
+    var name: String
     let type: ItemType
     let price: Int
     let heal: Int?
@@ -295,7 +296,7 @@ nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
     /// For eggs: the species that can hatch from it.
     let hatches: [String]?
     /// Its sprite in art/assets.json (item_<id>, drawn by tools/item_art.py).
-    let art: String?
+    var art: String?
     /// A GameIcon name for the bag and shops when there's no sprite.
     let icon: String?
     /// Seal Stones: thrown in battle to befriend a weakened monster.
@@ -311,8 +312,9 @@ nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
     /// its `stats` for good, up to `GameSession.toysPerCompanion` toys each.
     let toy: Bool?
     /// Armour: how it recolours the hero's outfit while worn (same rules as looks).
-    let recolor: [RecolorRule]?
-    /// Materials: wood | metal | gem | hide. Monsters of at least `level` drop them.
+    var recolor: [RecolorRule]?
+    /// Materials: wood | metal | gem | hide. Monsters of at least `level` drop them. A dye is `dye`
+    /// (never dropped: mixed from a gem and a Sheepskin, `make` mix).
     let material: String?
     /// What a blacksmith needs to forge it: material id → how many.
     let recipe: [String: Int]?
@@ -324,7 +326,7 @@ nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
     /// Whole walk sheets (art/sprites) per race id, worn instead of the paper-doll layers.
     let sheets: [String: String]?
     /// A rare colour variant's recolour of those sheets.
-    let tint: [RecolorRule]?
+    var tint: [RecolorRule]?
     /// Its sheets leave the head bare (tools/wear_art.py BARE_HEADED): the hero's own head, beard and
     /// hair are drawn over them, as the hat slot is what goes on the head.
     let bareHead: Bool?
@@ -340,7 +342,7 @@ nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
     let accent: String?
     /// A cape's colour, or how gloves, boots and a necklace look worn (a necklace's chain is its
     /// `accent`), "#RRGGBB".
-    let color: String?
+    var color: String?
     /// A festive hat (type head): how it's drawn on the hero's head (GearOverlay.hat): crown (a paper
     /// party crown), santa, ears (a bunny's, pink inside: `accent`) or mask (the face in `color`).
     let hat: String?
@@ -348,11 +350,14 @@ nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
     let glow: String?
     let glowAt: [Double]?
     /// Made by hand from the bag rather than at a smith (a quest's: RuneScape's quests have you
-    /// carve a staff from a branch, piece a map together): from its `recipe`, carved or joined.
+    /// carve a staff from a branch, piece a map together): from its `recipe`, carved or joined. Or a
+    /// dye, mixed from a gem and a Sheepskin.
     let make: Make?
+    /// A dye's colour (`DyeDef`): what it dyes a piece of armour at a weaver or a barber.
+    let dye: DyeDef?
 
     nonisolated enum Make: String, Decodable, Sendable {
-        case carve, join
+        case carve, join, mix
     }
 }
 
@@ -1310,6 +1315,8 @@ final class Content {
 
     private let bundle: Bundle
     private var loaded: Loaded
+    /// Dyed pieces made so far (`item`), in the language they were made in.
+    private var dyedItems: [String: ItemDef] = [:]
 
     var classChoiceLevel: Int { loaded.classChoiceLevel }
     var races: [RaceDef] { loaded.races }
@@ -1353,6 +1360,7 @@ final class Content {
     /// Reads everything again in the language now chosen (`Localizer.choose`).
     func reload() {
         loaded = Self.read(bundle, strings: Strings.table)
+        dyedItems = [:]
     }
 
     private static func read(_ bundle: Bundle, strings: [String: String]) -> Loaded {
@@ -1493,7 +1501,16 @@ final class Content {
     func classDef(_ id: String) -> ClassDef { classes.first { $0.id == id } ?? classes[0] }
     func skill(_ id: String) -> SkillDef? { skills.first { $0.id == id } }
     func monster(_ id: String) -> MonsterDef? { monsters.first { $0.id == id } }
-    func item(_ id: String) -> ItemDef? { items.first { $0.id == id } }
+    /// An item by its id, or a dyed piece by "<its id>~<the dye's id>" (`ItemDef.dyed`, made once and kept).
+    func item(_ id: String) -> ItemDef? {
+        guard id.contains(ItemDef.dyeMark) else { return items.first { $0.id == id } }
+        if let made = dyedItems[id] { return made }
+        guard let dyeID = ItemDef.dyeID(of: id), let dye = items.first(where: { $0.id == dyeID })?.dye,
+              let base = items.first(where: { $0.id == ItemDef.baseID(of: id) }), base.canBeDyed else { return nil }
+        let made = base.dyed(with: dye, dyeID: dyeID)
+        dyedItems[id] = made
+        return made
+    }
     func quest(_ id: String) -> QuestDef? { quests.first { $0.id == id } }
     func title(_ id: String) -> TitleDef? { titles.first { $0.id == id } }
     func map(_ id: String) -> MapDef? { maps.first { $0.id == id } }
@@ -1535,16 +1552,17 @@ final class Content {
 
     /// The quest that gives a quest treasure: gear only that quest gives, that no shop sells, no
     /// monster drops, no smith forges and no adventurer carries (content/quests.json rewards).
+    /// A dyed piece is its piece's treasure still.
     func questGiving(_ itemID: String) -> QuestDef? {
-        loaded.questTreasures[itemID].flatMap(quest)
+        loaded.questTreasures[ItemDef.baseID(of: itemID)].flatMap(quest)
     }
 
-    func isQuestTreasure(_ itemID: String) -> Bool { loaded.questTreasures[itemID] != nil }
+    func isQuestTreasure(_ itemID: String) -> Bool { loaded.questTreasures[ItemDef.baseID(of: itemID)] != nil }
 
     /// The chest that holds a chest treasure: gear only that chest holds, like a quest treasure
     /// (no shop, monster, smith or adventurer has one), up where it stands (a summit's).
     func chestHolding(_ itemID: String) -> NPCDef? {
-        loaded.chestTreasures[itemID].flatMap(npc)
+        loaded.chestTreasures[ItemDef.baseID(of: itemID)].flatMap(npc)
     }
 
     /// A festive season's hat or scarf (rewards.json `seasons`): only the seasons give them, so no
@@ -1552,7 +1570,9 @@ final class Content {
     func isFestive(_ itemID: String) -> Bool { rewards.seasons?.contains { $0.hats.contains(itemID) } ?? false }
 
     /// A quest's or a chest's treasure, or a weaver's cape: yours alone, found only there.
-    func isTreasure(_ itemID: String) -> Bool { isQuestTreasure(itemID) || loaded.chestTreasures[itemID] != nil || prize(for: itemID) != nil }
+    func isTreasure(_ itemID: String) -> Bool {
+        isQuestTreasure(itemID) || loaded.chestTreasures[ItemDef.baseID(of: itemID)] != nil || prize(for: itemID) != nil
+    }
 
     /// The status cape an item is (rewards.json `prizes`), if it's one.
     func prize(for itemID: String) -> RewardsDef.Prize? { rewards.prizes?.first { $0.item == itemID } }

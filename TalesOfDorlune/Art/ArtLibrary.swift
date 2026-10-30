@@ -199,12 +199,26 @@ final class ArtLibrary {
     }
 
     func asset(_ id: String) -> ArtAsset? {
-        guard let own = manifest.assets.first(where: { $0.id == id }) ?? runtime[id]?.asset else { return nil }
+        guard let own = manifest.assets.first(where: { $0.id == id }) ?? runtime[id]?.asset ?? dyedAsset(id) else { return nil }
         // The base can itself be derived (hero → human_female_walk → player_walk): resolve it fully, or
         // the frame size and direction order are lost and the wrong row shows (her back for "down").
         guard let derive = own.derive, derive.from != id, let base = asset(derive.from) else { return own }
         return ArtAsset(id: own.id, kind: own.kind, frame: own.frame ?? base.frame, directions: own.directions ?? base.directions,
                         scale: own.scale ?? base.scale, derive: derive, faces: own.faces ?? base.faces)
+    }
+
+    /// A dyed piece's icon (`ItemDef.dyed`): "<its piece's art>~<dye id>", that art recoloured toward the
+    /// dye (`Recolor.dyeRules`, from the picture's own main colour), made the first time it's asked for
+    /// and kept like the hero's.
+    private func dyedAsset(_ id: String) -> ArtAsset? {
+        guard let mark = id.firstIndex(of: ItemDef.dyeMark) else { return nil }
+        let base = String(id[..<mark]), dyeID = String(id[id.index(after: mark)...])
+        guard let dye = Content.shared.item(dyeID)?.dye, let from = manifest.assets.first(where: { $0.id == base }),
+              let picture = sourceImage(base) else { return nil }
+        let made = ArtAsset(id: id, kind: from.kind, frame: nil, directions: nil, scale: nil,
+                            derive: Derivation(from: base, recolor: Recolor.dyeRules(for: picture, dye: dye)), faces: nil)
+        runtime[id] = (made, id)
+        return made
     }
 
     private func kind(of id: String) -> String {

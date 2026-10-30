@@ -3063,6 +3063,37 @@ def draw_ice_rose(c):
     c.set(8, 8, WHITE); c.set(17, 6, WHITE)
 
 
+# ---------------------------------------------------------------- dyes
+# Mixed in the Bag from a gem and a Sheepskin, for a weaver or a barber to dye a piece of armour with
+# (items.json `dye`, playtesting 2026-10-30). One drawing, in each dye's own colour.
+
+# Paler than GLASS: a bluer glass chained with a lavender dye's shades into one ramp (pixel_style's
+# `hue_shift` read the two as one, its shadows turned toward yellow).
+JAR_GLASS = [hexc("788f94"), hexc("cbe0e3"), hexc("f2f9fa")]
+
+
+def dye_jar(c, dye):
+    """A round glass jar of dye, full to the shoulders, a wooden stirring stick standing in its mouth and a
+    drip run down its neck."""
+    dark, mid, light = dye
+    c.ellipse(16, 20, 11, 9, JAR_GLASS[1])                                         # the jar
+    c.rect(11, 8, 21, 12, JAR_GLASS[1])                                            # its neck
+    c.shade(lambda x, y, col: col == JAR_GLASS[1] and y >= 14, mid)                # the dye, filling it
+    c.shade(lambda x, y, col: col == mid and y == 14, light)                   # its surface, seen through the glass
+    c.shade(lambda x, y, col: col == mid and (x - 16) + (y - 20) > 6, dark)
+    c.shade(lambda x, y, col: col == JAR_GLASS[1] and x > 18, JAR_GLASS[0])            # the glass in shadow
+    c.ellipse(16, 8, 6, 1.6, JAR_GLASS[2])                                         # the rim
+    c.ellipse(16, 8, 4, 0.8, dark)                                             # the mouth
+    c.line(18, 8, 23, 1, WOOD[1], width=2)                                     # the stick
+    c.line(12, 9, 12, 12, mid); c.set(12, 13, mid)                             # a drip down the neck
+    c.set(8, 17, WHITE); c.set(8, 18, WHITE)                                   # a glint
+
+
+for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
+    if _item.get("dye"):
+        globals()["draw_" + _item["id"]] = (lambda colour: lambda c: dye_jar(c, ramp(colour)))(_item["dye"]["color"])
+
+
 DRAWINGS = {name[5:]: fn for name, fn in globals().items() if name.startswith("draw_")}
 # Not drawn here: the Potion is a Retro Diffusion sprite (rd_pro__fantasy) and the Hi-Potion,
 # Ether and Hi-Ether are palette swaps of it (`derive` in art/assets.json).

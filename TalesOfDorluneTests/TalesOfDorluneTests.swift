@@ -1378,6 +1378,87 @@ struct RulesTests {
         #expect(!session.recipes.contains { $0.make != nil })
     }
 
+    /// A gem and a Sheepskin mix into the gem's dye, offered on the gem's card in the Bag (playtesting
+    /// 2026-10-30: dyeing armour), never at a smith's and never dropped.
+    @Test func dyesAreMixedFromAGemAndASheepskin() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        let agate = try #require(Content.shared.item("agate"))
+        let crimson = try #require(Content.shared.item("crimson_dye"))
+        let sheepskin = try #require(Content.shared.item("sheepskin"))
+        #expect(crimson.make == .mix && crimson.dye?.name == "Crimson")
+        #expect(session.handmade(using: agate)?.id == crimson.id)
+        #expect(session.handmade(using: sheepskin) == nil)
+        #expect(!session.make(crimson.id))
+        session.addItem("agate")
+        session.addItem("sheepskin", 2)
+        #expect(session.make(crimson.id))
+        #expect(session.count(of: crimson.id) == 1 && session.count(of: "agate") == 0 && session.count(of: "sheepskin") == 1)
+        #expect(!session.recipes.contains { $0.dye != nil })
+        for _ in 0..<300 { #expect(session.materialDrop(level: 200)?.material != "dye") }
+    }
+
+    /// A dyed piece is a kind of its own, "<piece>~<dye>": the piece in the dye's colours, its name with
+    /// the colour, its icon recoloured too; and a dyed hat is still its armour's hat.
+    @Test func aDyedPieceResolvesInTheDyesColours() throws {
+        let content = Content.shared
+        let plate = try #require(content.item("copper_plate"))
+        let dyed = try #require(content.item("copper_plate~crimson_dye"))
+        let dye = try #require(content.item("crimson_dye")?.dye)
+        #expect(dyed.id == "copper_plate~crimson_dye" && dyed.baseID == plate.id && dyed.isDyed && !plate.isDyed)
+        #expect(dyed.name.contains(plate.name) && dyed.name.contains(dye.name))
+        #expect(dyed.type == plate.type && dyed.stats == plate.stats && dyed.price == plate.price && dyed.headpiece == plate.headpiece)
+        #expect(dyed.tint?.isEmpty == false && dyed.tint?.allSatisfy { $0.to == dye.hue } == true)
+        #expect(dyed.recolor?.allSatisfy { $0.to == dye.hue } == true && dyed.color == dye.color)
+        #expect(dyed.art == "item_copper_plate~crimson_dye")
+        #expect(ArtLibrary.shared.artImage("item_copper_plate~crimson_dye") != nil)
+        // Gloves and boots in its colour; a hat's sheet recoloured.
+        #expect(content.item("copper_gauntlets~azure_dye")?.color == content.item("azure_dye")?.dye?.color)
+        let helm = try #require(content.item("copper_helm~azure_dye"))
+        #expect(helm.tint?.allSatisfy { $0.to == content.item("azure_dye")?.dye?.hue } == true)
+        #expect(helm.baseID == plate.headpiece)
+        // Not a festive hat, a weapon or a cape; not with something that isn't a dye.
+        #expect(content.item("santa_hat~crimson_dye") == nil)
+        #expect(content.item("wooden_sword~crimson_dye") == nil)
+        #expect(content.item("copper_plate~agate") == nil)
+        #expect(content.isTreasure("goldleaf_plate~crimson_dye") == content.isTreasure("goldleaf_plate"))
+    }
+
+    /// One dye colours one piece: of three Copper Plates one turns Crimson and two stay copper; a worn
+    /// piece is dyed where it's worn; dyeing again takes the new colour; washing out gives the piece back.
+    @Test func dyeingChangesOnePieceOnly() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.addItem("copper_plate", 3)
+        session.addItem("crimson_dye", 2)
+        session.addItem("azure_dye")
+        let used = session.bagSlotsUsed
+        let bag = GameSession.DyePiece(itemID: "copper_plate", worn: false)
+        #expect(session.dyeablePieces.contains(bag))
+        let dyed = try #require(session.dye(bag, with: "crimson_dye"))
+        #expect(dyed.id == "copper_plate~crimson_dye")
+        #expect(session.count(of: "copper_plate") == 2 && session.count(of: dyed.id) == 1 && session.count(of: "crimson_dye") == 1)
+        #expect(session.bagSlotsUsed == used - 1)
+        #expect(session.bagItems.contains { $0.id == dyed.id } && session.sellableItems.contains { $0.id == dyed.id })
+        // Not with a dye you haven't got, and not the colour it has.
+        #expect(session.dye(bag, with: "golden_dye") == nil)
+        #expect(session.dye(GameSession.DyePiece(itemID: dyed.id, worn: false), with: "crimson_dye") == nil)
+        // Again, in another colour: the dye replaced, not stacked.
+        let azure = try #require(session.dye(GameSession.DyePiece(itemID: dyed.id, worn: false), with: "azure_dye"))
+        #expect(azure.id == "copper_plate~azure_dye" && session.count(of: dyed.id) == 0 && session.count(of: azure.id) == 1)
+        #expect(session.count(of: "azure_dye") == 0)
+        // Washed out: a copper plate again, free.
+        let plain = try #require(session.washOut(GameSession.DyePiece(itemID: azure.id, worn: false)))
+        #expect(plain.id == "copper_plate" && session.count(of: "copper_plate") == 3 && session.count(of: azure.id) == 0)
+        #expect(session.washOut(bag) == nil)
+        // Worn: the slot takes the dyed piece, the bag's stay as they are.
+        session.data.hero.equipment[.armor] = "copper_plate"
+        let worn = try #require(session.dye(GameSession.DyePiece(itemID: "copper_plate", worn: true), with: "crimson_dye"))
+        #expect(session.data.hero.equipment[.armor] == worn.id && session.equipped(.armor)?.id == worn.id)
+        #expect(session.count(of: "copper_plate") == 3 && session.count(of: "crimson_dye") == 0)
+        #expect(session.heroLookKey.contains(worn.id))
+        #expect(session.washOut(GameSession.DyePiece(itemID: worn.id, worn: true))?.id == "copper_plate")
+        #expect(session.data.hero.equipment[.armor] == "copper_plate")
+    }
+
     /// The ship to Starfall Isle sails once Captain Brine's last quest is done; the one back always
     /// does, so you're never stranded. Brine stands by the pier.
     @Test func theShipWaitsOnItsQuest() throws {

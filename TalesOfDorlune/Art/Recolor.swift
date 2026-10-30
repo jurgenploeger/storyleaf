@@ -135,6 +135,51 @@ enum Recolor {
         return PixelImage.make(pixels, width: width, height: height)
     }
 
+    /// How a dyed piece's icon is recoloured (`ArtLibrary`, a dyed item's art): its main colour, found on
+    /// the picture itself, brought to the dye's. A coloured icon: the hues within 40° of its commonest,
+    /// turned to the dye's hue (keeping half their shift), their middle saturation and brightness made the
+    /// dye's. A grey one (plate, mail: mostly unsaturated): its tinted greys coloured, white and black kept.
+    nonisolated static func dyeRules(for image: CGImage, dye: DyeDef) -> [RecolorRule] {
+        let width = image.width, height = image.height
+        guard let pixels = PixelImage.pixels(of: image, width: width, height: height) else { return [] }
+        var hues = [Double](repeating: 0, count: 36)
+        var coloured: [(h: Double, s: Double, v: Double)] = []
+        var greys: [(s: Double, v: Double)] = []
+        for index in stride(from: 0, to: pixels.count, by: 4) {
+            let alpha = Double(pixels[index + 3])
+            guard alpha >= 128 else { continue }
+            let (h, s, v) = hsv(Double(pixels[index]) / alpha, Double(pixels[index + 1]) / alpha, Double(pixels[index + 2]) / alpha)
+            guard v >= 0.2 else { continue }
+            if s >= 0.25 {
+                coloured.append((h: h, s: s, v: v))
+                hues[min(35, Int(h / 10))] += 1
+            } else {
+                greys.append((s: s, v: v))
+            }
+        }
+        if !coloured.isEmpty, Double(coloured.count) >= 0.35 * Double(coloured.count + greys.count) {
+            let smoothed = (0..<36).map { bin in (-2...2).reduce(0.0) { $0 + hues[(bin + $1 + 36) % 36] } }
+            let peak = smoothed.indices.max { smoothed[$0] < smoothed[$1] } ?? 0
+            let middle = Double(peak) * 10 + 5
+            let inside = coloured.filter { abs(($0.h - middle + 540).truncatingRemainder(dividingBy: 360) - 180) <= 40 }
+            let s = median(inside.map(\.s)) ?? 0.5, v = median(inside.map(\.v)) ?? 0.6
+            let low = (middle - 40 + 360).truncatingRemainder(dividingBy: 360), high = (middle + 40).truncatingRemainder(dividingBy: 360)
+            return [RecolorRule(hue: [low, high], minSaturation: 0.2, maxSaturation: nil, minValue: nil, maxValue: nil,
+                                to: dye.hue, shift: nil, spread: 0.5,
+                                saturation: min(3, max(0.05, dye.saturation / s)), value: min(2.5, max(0.35, dye.value / v)))]
+        }
+        let s = max(0.05, median(greys.filter { $0.s >= 0.02 }.map(\.s)) ?? 0.1)
+        let v = max(0.05, median(greys.map(\.v)) ?? 0.6)
+        return [RecolorRule(hue: nil, minSaturation: 0.02, maxSaturation: 0.25, minValue: nil, maxValue: nil,
+                            to: dye.hue, shift: nil, spread: nil,
+                            saturation: min(8, max(0.05, dye.saturation / s)), value: min(2, max(0.35, 0.4 + 0.6 * dye.value / v)))]
+    }
+
+    nonisolated private static func median(_ values: [Double]) -> Double? {
+        guard !values.isEmpty else { return nil }
+        return values.sorted()[values.count / 2]
+    }
+
     /// A hex colour's difference from the grey of the same brightness.
     nonisolated private static func offset(_ hex: String?) -> (r: Double, g: Double, b: Double) {
         guard let hex, let value = UInt32(hex.trimmingCharacters(in: CharacterSet(charactersIn: "#")), radix: 16) else { return (0, 0, 0) }

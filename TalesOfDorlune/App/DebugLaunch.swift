@@ -231,6 +231,8 @@ enum DebugLaunch {
     static var opensSort: Bool { flags["sortopen"] != nil }
     /// `compare`: a piece of gear's card opens with its Compare row open, each stat against what you wear.
     static var opensComparison: Bool { flags["compare"] != nil }
+    /// `dyeing`: with npc=<the weaver or a barber>, the window for dyeing armour is open (`DyeWindow`).
+    static var opensDyeing: Bool { flags["dyeing"] != nil }
     /// `deal=<item>`: with npc=<a shop>, the window for how many of it to buy is open (`sell=<item>`:
     /// to sell).
     static var shopDeal: (item: String, selling: Bool)? {

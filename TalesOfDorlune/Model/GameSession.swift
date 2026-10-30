@@ -1525,9 +1525,9 @@ final class GameSession {
     /// Shops buy things back for half their price, like Fairyland Online's NPC shops.
     static func sellPrice(of item: ItemDef) -> Int { max(1, item.price / 2) }
 
-    /// What a shop will take: anything in the bag with a price (eggs have none).
+    /// What a shop will take: anything in the bag with a price (eggs have none), dyed pieces last.
     var sellableItems: [ItemDef] {
-        content.items.filter { $0.price > 0 && count(of: $0.id) > 0 }
+        content.items.filter { $0.price > 0 && count(of: $0.id) > 0 } + dyedInBag.filter { $0.price > 0 }
     }
 
     /// Sells `amount` to a shop. Returns the gold paid, or nil if there weren't that many to sell.
@@ -1578,7 +1578,8 @@ final class GameSession {
         // They want a few of your things, each of a different kind (gear, potions, materials...; playtesting
         // 2026-10-25: "they should buy a lot of different items, currently they only buy materials"), and
         // pay half again what a shop would.
-        let byKind = Dictionary(grouping: sellableItems, by: \.type)
+        // Not a dyed piece: it's yours, in your colour.
+        let byKind = Dictionary(grouping: sellableItems.filter { !$0.isDyed }, by: \.type)
         let kinds = byKind.keys.sorted { $0.rawValue < $1.rawValue }.shuffled(using: &rng)
         let wanted = kinds.prefix(3).compactMap { byKind[$0]?.randomElement(using: &rng) }
         // And they carry a few things around their level.
@@ -2093,13 +2094,17 @@ final class GameSession {
         return found
     }
 
-    /// What you could make by hand from the bag with `item` for a quest you're on (`ItemDef.make`):
-    /// the thing a quest asks you to bring, carved or joined from it, if you haven't got it yet.
+    /// What you could make by hand from the bag with `item` (`ItemDef.make`): the thing a quest you're
+    /// on asks you to bring, carved or joined from it, if you haven't got it yet; or, from a gem, its dye
+    /// (mixed with a Sheepskin: offered on the gem's card, not the Sheepskin's, which goes into them all).
     func handmade(using item: ItemDef) -> ItemDef? {
         for quest in activeQuests where quest.objective.type == .bring {
             guard let id = quest.objective.target, let made = content.item(id), made.make != nil,
                   made.recipe?[item.id] != nil, count(of: id) < goal(of: quest) else { continue }
             return made
+        }
+        if item.material == "gem" {
+            return content.items.first { $0.dye != nil && $0.make == .mix && $0.recipe?[item.id] != nil }
         }
         return nil
     }
@@ -2114,6 +2119,7 @@ final class GameSession {
         switch how {
         case .carve: post(L("You carved {item}.", ["item": item.name]), .reward)
         case .join: post(L("You pieced together {item}.", ["item": item.name]), .reward)
+        case .mix: post(L("You mixed {item}.", ["item": item.name]), .reward)
         }
         return true
     }
