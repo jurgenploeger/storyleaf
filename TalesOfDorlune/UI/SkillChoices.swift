@@ -20,9 +20,28 @@ struct SkillChoices: View {
                 ForEach(learnable) { skill in
                     SkillTileButton(session: session, skill: skill, isNew: true, isSelected: skill.id == shown?.id) { selected = skill.id }
                 }
-                ForEach(known) { skill in
+                ForEach(Array(known.enumerated()), id: \.element.id) { index, skill in
                     SkillTileButton(session: session, skill: skill, isNew: false, isSelected: skill.id == shown?.id) { selected = skill.id }
+                        // Held and dragged onto another, it takes that one's place: your order is the
+                        // battle row's (`GameSession.heroSkills`).
+                        .draggable(skill.id) { SkillIcon(skill: skill, size: 54) }
+                        .dropDestination(for: String.self) { ids, _ in
+                            guard let id = ids.first else { return false }
+                            return move(id, onto: skill.id)
+                        }
+                        .accessibilityAction(named: L("Move earlier")) {
+                            if index > 0 { move(skill.id, onto: known[index - 1].id) }
+                        }
+                        .accessibilityAction(named: L("Move later")) {
+                            if index + 1 < known.count { move(skill.id, onto: known[index + 1].id) }
+                        }
                 }
+            }
+            if known.count > 1 {
+                Text(L("Hold a skill and drag it to reorder. In battle the first ones are buttons of their own; the rest wait behind More."))
+                    .font(HUDStyle.font(10))
+                    .foregroundStyle(HUDStyle.dim)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             if let shown {
                 SkillDetail(session: session, skill: shown, isNew: learnable.contains { $0.id == shown.id })
@@ -31,6 +50,13 @@ struct SkillChoices: View {
             }
         }
         .animation(.easeOut(duration: 0.15), value: shown?.id)
+    }
+
+    @discardableResult
+    private func move(_ id: String, onto target: String) -> Bool {
+        let moved = withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { session.moveSkill(id, onto: target) }
+        if moved { session.save() }
+        return moved
     }
 }
 

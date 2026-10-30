@@ -1035,7 +1035,7 @@ private struct CompanionCard: View {
     private func overview(species: MonsterDef?, stats: Stats, isActive: Bool) -> some View {
         AdaptiveStack(spacing: 18) {
             VStack(spacing: 6) {
-                CompanionDoll(art: session.artID(for: pet), skills: species?.skills.compactMap { session.content.skill($0) } ?? [])
+                CompanionDoll(art: session.artID(for: pet), skills: session.skills(of: pet))
                 nameLine(species: species, size: 18)
                 if let kind = renamed(species) {
                     Text(kind)
@@ -1050,8 +1050,18 @@ private struct CompanionCard: View {
             .frame(minWidth: 250)
             .frame(maxWidth: .infinity)
 
-            StatsPanel(level: L("Level {level}", ["level": pet.level]),
-                       exp: pet.exp, expToNext: GameSession.expToNext(level: pet.level), hp: pet.hp, mp: pet.mp, stats: stats)
+            VStack(alignment: .leading, spacing: 10) {
+                StatsPanel(level: L("Level {level}", ["level": pet.level]),
+                           exp: pet.exp, expToNext: GameSession.expToNext(level: pet.level), hp: pet.hp, mp: pet.mp, stats: stats)
+                // Its skills in your order, to drag about: its battle row's.
+                if session.skills(of: pet).count > 1 {
+                    chips()
+                    Text(L("Hold a skill and drag it to reorder: in battle its row shows them in this order."))
+                        .font(HUDStyle.font(10))
+                        .foregroundStyle(HUDStyle.dim)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
         }
     }
 
@@ -1133,12 +1143,14 @@ private struct CompanionCard: View {
         }
     }
 
-    /// What it can do in a fight, a chip each.
+    /// What it can do in a fight, a chip each, in your order: held and dragged onto another, a chip
+    /// takes its place (`GameSession.moveSkill(_:onto:of:)`).
     @ViewBuilder
-    private func chips(species: MonsterDef?) -> some View {
-        if let skills = species?.skills.compactMap({ session.content.skill($0) }), !skills.isEmpty {
+    private func chips() -> some View {
+        let skills = session.skills(of: pet)
+        if !skills.isEmpty {
             WrapRows(spacing: 6) {
-                ForEach(skills) { skill in
+                ForEach(Array(skills.enumerated()), id: \.element.id) { index, skill in
                     HStack(spacing: 4) {
                         SkillIcon(skill: skill, size: 18)
                         Text(skill.name)
@@ -1150,9 +1162,28 @@ private struct CompanionCard: View {
                     .padding(.trailing, 9)
                     .padding(.vertical, 3)
                     .background(Capsule().fill(.white.opacity(0.07)))
+                    .contentShape(Capsule())
+                    .draggable(skill.id) { SkillIcon(skill: skill, size: 28) }
+                    .dropDestination(for: String.self) { ids, _ in
+                        guard let id = ids.first else { return false }
+                        return moveSkill(id, onto: skill.id)
+                    }
+                    .accessibilityAction(named: L("Move earlier")) {
+                        if index > 0 { moveSkill(skill.id, onto: skills[index - 1].id) }
+                    }
+                    .accessibilityAction(named: L("Move later")) {
+                        if index + 1 < skills.count { moveSkill(skill.id, onto: skills[index + 1].id) }
+                    }
                 }
             }
         }
+    }
+
+    @discardableResult
+    private func moveSkill(_ id: String, onto target: String) -> Bool {
+        let moved = withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { session.moveSkill(id, onto: target, of: pet.id) }
+        if moved { session.save() }
+        return moved
     }
 
     /// One of the others: its face, its name (and pencil) over what it is and its level, its HP
@@ -1173,7 +1204,7 @@ private struct CompanionCard: View {
                     .font(HUDStyle.font(10))
                     .foregroundStyle(HUDStyle.dim)
                 notes(stats: stats, isActive: isActive, hint: false)
-                chips(species: species)
+                chips()
                 status(isActive: isActive)
                     .padding(.top, 2)
             }

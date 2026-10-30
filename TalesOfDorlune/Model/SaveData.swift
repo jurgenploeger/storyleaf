@@ -92,6 +92,8 @@ nonisolated struct Pet: Codable, Equatable, Identifiable, Sendable {
     /// Toys it has played with (`GameSession.giveToy`), and what they've raised for good.
     var toys: Int?
     var toyStats: Stats?
+    /// Your order of its skills, by id, as its battle row shows them (`GameSession.skills(of:)`).
+    var skillOrder: [String]?
 }
 
 nonisolated struct QuestProgress: Codable, Equatable, Sendable {
@@ -156,6 +158,8 @@ nonisolated struct SaveData: Codable, Sendable {
     var armourHatsGiven: Bool?
     /// Your order of the battle buttons (see `GameSession.battleButtons`).
     var battleButtons: [String]?
+    /// Your order of your skills, by id, as the battle row shows them (`GameSession.heroSkills`).
+    var skillOrder: [String]?
     /// Trades already made with adventurers (`GameSession.TradeOffer.id`), so each offer is done once.
     var tradesDone: [String]?
     /// The Monster Book: every species met in battle, by id.
