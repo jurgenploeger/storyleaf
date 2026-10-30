@@ -34,10 +34,14 @@ struct WorldHUD: View {
     var body: some View {
         ZStack {
             VStack(alignment: .leading, spacing: 6) {
-                VStack(alignment: .leading, spacing: 6) {
+                // On its side, your face, the party and the gold in one row, so the toasts under them
+                // sit near the top, not in the middle of the screen (playtesting 2026-10-30); upright, a column.
+                let panels = onItsSide ? AnyLayout(HStackLayout(alignment: .top, spacing: 8))
+                                       : AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+                panels {
                     // The faces open their stats, and the party folds and unfolds; the rest lets taps
                     // through to the map.
-                    StatusCluster(session: session, onInspect: { coordinator.open(.profile($0)) })
+                    StatusCluster(session: session, beside: onItsSide, onInspect: { coordinator.open(.profile($0)) })
                         .coachTarget(.status)
                     // The gold you carry under your face, as Pixel Heroes shows it (playtesting 2026-10-26;
                     // by the minimap till 2026-10-30); a tap opens the Bag, where the coins are.
@@ -201,6 +205,8 @@ private enum TopLeft {
 /// window, your companion's face the Companions window (`GameCoordinator.open`), a friend's face their card.
 private struct StatusCluster: View {
     let session: GameSession
+    /// On a phone on its side: the party beside your face, not under it.
+    var beside = false
     let onInspect: (Profile) -> Void
     @AppStorage(GameSettings.partyFoldedKey) private var folded = true
 
@@ -211,7 +217,9 @@ private struct StatusCluster: View {
         let pet = session.activePet.flatMap { $0.hp > 0 ? $0 : nil }
         let friends = session.partyMembers
         let crowded = friends.count >= 2
-        VStack(alignment: .leading, spacing: 4) {
+        let layout = beside ? AnyLayout(HStackLayout(alignment: .top, spacing: 8))
+                            : AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+        layout {
             Button { onInspect(.hero) } label: {
                 PortraitRow(face: ArtLibrary.shared.face(GameSession.heroArt), level: hero.level, name: hero.name,
                             detail: session.heroClass.name, size: HeroFace.size,
@@ -243,6 +251,15 @@ private struct StatusCluster: View {
             }
             // Room under your row for the rest of the badge's tap area, clear of whatever comes next.
             .padding(.bottom, pet == nil ? 0 : CompanionBadge.overhang)
+            if !friends.isEmpty {
+                party(friends, crowded: crowded)
+            }
+        }
+    }
+
+    /// Your friends: folded into one row, or each in full.
+    private func party(_ friends: [Adventurer], crowded: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
             if crowded && folded {
                 FoldedParty(session: session, friends: friends) { setFolded(false) }
                     .transition(.opacity)
