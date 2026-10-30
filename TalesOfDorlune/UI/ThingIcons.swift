@@ -136,10 +136,8 @@ struct GoldPill: View {
             .padding(.leading, coin * 0.62)
             .padding(.trailing, size * 0.75)
             .frame(height: (size * 1.6).rounded())
-            .background(
-                Capsule().fill(Color.black.opacity(0.55))
-                    .overlay(Capsule().strokeBorder(HUDStyle.gold.opacity(0.55), lineWidth: 1))
-            )
+            // No outline (playtesting 2026-10-30: the gold rim can go).
+            .background(Capsule().fill(Color.black.opacity(0.55)))
             // The coin hangs over the pill's left end, its middle on the end's.
             .padding(.leading, coin * 0.38)
             .overlay(alignment: .leading) {

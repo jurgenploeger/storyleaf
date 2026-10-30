@@ -39,6 +39,17 @@ struct WorldHUD: View {
                     // through to the map.
                     StatusCluster(session: session, onInspect: { coordinator.open(.profile($0)) })
                         .coachTarget(.status)
+                    // The gold you carry under your face, as Pixel Heroes shows it (playtesting 2026-10-26;
+                    // by the minimap till 2026-10-30); a tap opens the Bag, where the coins are.
+                    Button {
+                        menuOpen = false
+                        coordinator.open(.menu(.bag))
+                    } label: {
+                        GoldPill(amount: session.data.gold, size: 13, short: true)
+                            .frame(minHeight: 30)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                     // The party you've joined: whose it is, and a way out of it.
                     if let joined = session.joinedParty, let leader = joined.leader {
                         JoinedPartyPlate(leader: leader, count: joined.members.count) { coordinator.leaveJoinedParty() }
@@ -68,17 +79,6 @@ struct WorldHUD: View {
                     onOpen: { coordinator.open(.worldMap) }
                 )
                 .coachTarget(.minimap)
-                // The gold you carry under it, as Pixel Heroes shows it (playtesting 2026-10-26); a tap
-                // opens the Bag, where the coins are.
-                Button {
-                    menuOpen = false
-                    coordinator.open(.menu(.bag))
-                } label: {
-                    GoldPill(amount: session.data.gold, size: 13, short: true)
-                        .frame(minHeight: 30)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { minimapHeight = $0 }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
@@ -136,26 +136,27 @@ struct WorldHUD: View {
                         .transition(.scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity))
                         .stepsAside(controlsHidden || following)
                 }
-                // Chat, then the menu: one button that opens into its pages (playtesting 2026-10-24:
-                // a row of four buttons, Chat and Settings up by the minimap), each a window of its own
-                // (2026-10-25), Friends too.
+                // Chat, the Bag, then the menu: one button that opens into its pages (playtesting
+                // 2026-10-24: a row of four buttons, Chat and Settings up by the minimap), each a window
+                // of its own (2026-10-25), Friends too.
                 HStack(alignment: .bottom, spacing: 7) {
-                    // The Bag a tap away, left of Chat (playtesting 2026-10-26: "Put an inventory button
-                    // on the left of chat, so it's easier accessable"): its window opens as from the menu.
-                    FLIconButton(icon: MenuTab.bag.icon, label: MenuTab.bag.menuTitle, badge: badge(for: .bag)) {
-                        menuOpen = false
-                        coordinator.open(.menu(.bag))
-                    }
-                    .stepsAside(controlsHidden)
                     FLIconButton(icon: .talk, label: L("Chat"), badge: session.unreadChat > 0) {
                         menuOpen = false
                         coordinator.open(.chat)
                     }
                     .coachTarget(.chat)
                     .stepsAside(controlsHidden)
+                    // The Bag a tap away beside Chat (playtesting 2026-10-26: "Put an inventory button
+                    // on the left of chat, so it's easier accessable"; 2026-10-30: right of it, by the
+                    // menu): its window opens as from the menu.
+                    FLIconButton(icon: MenuTab.bag.icon, label: MenuTab.bag.menuTitle, badge: badge(for: .bag)) {
+                        menuOpen = false
+                        coordinator.open(.menu(.bag))
+                    }
+                    .stepsAside(controlsHidden)
                     // A window chosen from it just opens, the menu closing behind it: closing the window
                     // closes everything (playtesting 2026-10-26). The Bag isn't in it: it has its own
-                    // button, left of Chat (playtesting 2026-10-26).
+                    // button, beside Chat (playtesting 2026-10-26).
                     GameMenu(items: [.character, .companions, .friends, .quests, .settings], open: $menuOpen,
                              badge: { badge(for: $0) }) { tab in
                         menuOpen = false
@@ -424,7 +425,9 @@ private struct PortraitRow<Bars: View>: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: Self.nameOnly ? .leading : .topLeading)
             .padding(.horizontal, 7)
-            .padding(.top, 2)
+            // Your name a little down from the panel's top edge (playtesting 2026-10-30: it sat
+            // against it); a friend's, a name alone, is in the middle anyway.
+            .padding(.top, Self.nameOnly ? 2 : 6)
             .padding(.bottom, 5)
             .background(HUDStyle.panel(shape: HUDStyle.hudPanelShape))
         }
