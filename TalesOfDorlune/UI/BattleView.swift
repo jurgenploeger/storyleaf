@@ -945,13 +945,23 @@ private struct SkillRow<Lead: View, Tail: View>: View {
     /// which the last skills go behind More (or, with no More, slide).
     private var filling: some View {
         let layout = filled(in: width)
-        return row(size: layout.size, spacing: layout.spacing, shown: layout.shown, slides: layout.slides)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        return VStack(spacing: 0) {
+            // The room across, measured apart from the row: measured on the row itself, a row wider
+            // than the screen measured itself as the room it had, and stayed that wide, stretching
+            // the whole battle past the screen's edges (playtesting 2026-10-30).
+            Color.clear
+                .frame(maxWidth: .infinity)
+                .frame(height: 0)
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+            row(size: layout.size, spacing: layout.spacing, shown: layout.shown, slides: layout.slides)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
     }
 
     private func filled(in width: CGFloat) -> (size: CGFloat, spacing: CGFloat, shown: Int, slides: Bool) {
-        guard width > 0 else { return (CommandRow.size, CommandRow.spacing, skills.count, false) }
+        // Not measured yet: as small as the row goes, its skills behind More (or sliding), so it
+        // never starts out wider than the screen.
+        guard width > 0 else { return (CommandRow.narrowSize, CommandRow.narrowSpacing, overflowsToLead ? 0 : skills.count, !overflowsToLead) }
         let gap = CommandRow.narrowSpacing
         // How big each of `count` buttons would be, the least gap between them.
         func fitted(_ count: Int) -> CGFloat { (width - CGFloat(count - 1) * gap) / CGFloat(count) }
