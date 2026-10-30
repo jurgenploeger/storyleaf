@@ -589,11 +589,12 @@ private struct CommandPad: View {
     }
 }
 
-/// More, at the left end of the row: a round button that, tapped, opens a panel up and to the
-/// right of it, over the field, listing what waits behind it (the skills the row had no room for,
-/// the commands put there, then Auto and the fight's pace), its dots turning into a cross that closes it, as the map's menu does
-/// (playtesting 2026-10-24: it scattered more round buttons over the arc). It takes only the
-/// button's room, and the row stays as it is under the panel. Holding it rearranges the buttons.
+/// More, at the left end of the row: a round button that, tapped, grows into a panel up and to the
+/// right of it, over the row and the field, as the map's menu does (`GameMenu`), listing what waits
+/// behind it (the skills the row had no room for, the commands put there, then Auto and the fight's
+/// pace), the orange close button on its top right corner (playtesting 2026-10-24: it scattered more
+/// round buttons over the arc). It takes only the button's room, and the row stays as it is under the
+/// panel. Holding it rearranges the buttons.
 private struct MoreMenu: View {
     let controller: BattleController
     /// Your skills the row had no room for.
@@ -609,53 +610,53 @@ private struct MoreMenu: View {
     private static let spring = Animation.spring(response: 0.34, dampingFraction: 0.78)
 
     var body: some View {
+        // As the map's menu opens (`GameMenu`): the button grows into the panel from its corner,
+        // up and to the right over the row, the close button on the panel's top right corner
+        // (playtesting 2026-10-30: it opened downward, under the skills).
+        ZStack(alignment: .bottomLeading) {
+            if open {
+                panel
+                    .transition(.scale(scale: 0.4, anchor: .bottomLeading).combined(with: .opacity))
+            } else {
+                button
+                    .transition(.opacity)
+            }
+        }
+        .animation(Self.spring, value: open)
+        .frame(width: size, height: size, alignment: .bottomLeading)
+    }
+
+    private var button: some View {
         PressButton(action: {
             SoundEffects.shared.play(.tap, volume: 0.7)
-            open.toggle()
+            open = true
         }, onHold: onHold) {
-            Group {
-                if open {
-                    IconImage(.close, size: size * 0.4)
-                } else {
-                    IconImage(.more, size: size * 0.56)
-                        .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
-                }
-            }
-            .foregroundStyle(.white)
-            .frame(width: size, height: size)
+            IconImage(.more, size: size * 0.56)
+                .shadow(color: HUDStyle.frameDark, radius: 0, x: 1, y: 1)
+                .foregroundStyle(.white)
+                .frame(width: size, height: size)
         }
-        .accessibilityLabel(open ? L("Close") : L("More"))
+        .accessibilityLabel(L("More"))
         .background(
             Circle()
                 .fill(LinearGradient(colors: HUDStyle.tile, startPoint: .top, endPoint: .bottom))
                 .overlay(Circle().strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
                 .overlay(
-                    // The button's gloss; none on the cross.
-                    Ellipse().fill(.white.opacity(open ? 0 : 0.35))
+                    // The button's gloss.
+                    Ellipse().fill(.white.opacity(0.35))
                         .frame(width: size * 0.5, height: size * 0.2)
                         .offset(y: -size * 0.3)
                 )
         )
         .shadow(color: .black.opacity(0.4), radius: 4, x: 0, y: 4)
         .overlay(alignment: .bottom) {
-            if !open {
-                Text(L("More"))
-                    .font(HUDStyle.font(10))
-                    .foregroundStyle(HUDStyle.cream)
-                    .shadow(color: .black, radius: 0, x: 1, y: 1)
-                    .fixedSize()
-                    .offset(y: 15)
-            }
+            Text(L("More"))
+                .font(HUDStyle.font(10))
+                .foregroundStyle(HUDStyle.cream)
+                .shadow(color: .black, radius: 0, x: 1, y: 1)
+                .fixedSize()
+                .offset(y: 15)
         }
-        .overlay(alignment: .topLeading) {
-            if open {
-                panel
-                    // Its bottom a little above the button, its left edge level with the button's.
-                    .alignmentGuide(.top) { $0[.bottom] + 10 }
-                    .transition(.scale(scale: 0.4, anchor: .bottomLeading).combined(with: .opacity))
-            }
-        }
-        .animation(Self.spring, value: open)
     }
 
     /// What waits behind More, in a window of the button's blue.
@@ -684,6 +685,14 @@ private struct MoreMenu: View {
                 .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(HUDStyle.bevel, lineWidth: 2.5))
         )
         .shadow(color: .black.opacity(0.4), radius: 4, x: 0, y: 4)
+        .overlay(alignment: .topTrailing) {
+            OrangeCloseButton {
+                SoundEffects.shared.play(.tap, volume: 0.7)
+                open = false
+            }
+            .accessibilityLabel(L("Close"))
+            .offset(x: OrangeCloseButton.overhang, y: -OrangeCloseButton.overhang)
+        }
     }
 
     /// A skill the row had no room for: its picture, name and MP, greyed when it can't be used (a
@@ -941,6 +950,8 @@ private struct SkillRow<Lead: View, Tail: View>: View {
         let short = least - (CGFloat(count) * size + CGFloat(count - 1) * spacing)
         HStack(alignment: .bottom, spacing: spacing) {
             lead(size, Array(skills.dropFirst(shown)))
+                // Over the rest of the row: More's panel opens across it.
+                .zIndex(1)
             if slides {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(alignment: .bottom, spacing: spacing) {
