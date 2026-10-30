@@ -371,9 +371,11 @@ extension GameSession {
     }
 
     /// What a won fight leaves in a festive season, if anything: one of its treats `chance` of the
-    /// time, one of its hats instead `hatChance` of those.
-    func seasonDrop(on date: Date = GameSession.today) -> ItemDef? {
-        guard let festive = Self.season(on: date)?.season, Double.random(in: 0..<1) < festive.chance else { return nil }
+    /// time, one of its hats instead `hatChance` of those; less often for a fight worth less than three
+    /// monsters at your level (`worth`, `dropWorth`).
+    func seasonDrop(on date: Date = GameSession.today, worth: Double = 3) -> ItemDef? {
+        guard let festive = Self.season(on: date)?.season,
+              Double.random(in: 0..<1) < festive.chance * min(1, worth / 3) else { return nil }
         let pool = Double.random(in: 0..<1) < festive.hatChance ? festive.hats : festive.treats
         return pool.randomElement().flatMap(content.item)
     }

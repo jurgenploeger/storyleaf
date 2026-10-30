@@ -1330,14 +1330,24 @@ final class BattleController {
 
         lines += handOverSealed()
 
-        // Whatever doesn't fit in the bag is left behind (`GameSession.addItem`), so only what does is found.
-        if Double.random(in: 0..<1) < 0.25, session.addItem("potion") {
+        // What the wild monsters beaten are worth next to you (`GameSession.dropWorth`): what drops
+        // comes with how many there were and how strong; a pack far under you leaves little.
+        let heroLevel = session.data.hero.level
+        let defeatedWild = engine.combatants.filter { foe in
+            guard foe.side == .enemies, !foe.isCaptured, !foe.hasFled, case .wild = foe.source else { return false }
+            return true
+        }
+        let worth = defeatedWild.reduce(0) { $0 + GameSession.dropWorth(level: $1.level, heroLevel: heroLevel) }
+
+        // Whatever doesn't fit in the bag is left behind (`GameSession.addItem`), so only what does is
+        // found. A potion about one fight in four, for three monsters at your level.
+        if Double.random(in: 0..<1) < min(0.5, 0.08 * worth), session.addItem("potion") {
             loot["potion", default: 0] += 1
         }
 
         // Now and then a Homeward Feather for the way back to town; a boss always leaves one.
         let bossBeaten = engine.combatants.contains { $0.side == .enemies && $0.speciesID.flatMap { content.monster($0) }?.boss == true }
-        if Double.random(in: 0..<1) < GameSession.featherDropChance(boss: bossBeaten),
+        if Double.random(in: 0..<1) < GameSession.featherDropChance(boss: bossBeaten, worth: worth),
            content.item(GameSession.featherID) != nil, session.addItem(GameSession.featherID) {
             loot[GameSession.featherID, default: 0] += 1
         }
@@ -1354,11 +1364,13 @@ final class BattleController {
             lines.append(L("A hard-won {item}!", ["item": seal.name]))
         }
 
-        // Materials for the blacksmith: about one wild monster in three drops something, bosses three.
-        for foe in engine.combatants where foe.side == .enemies && !foe.isCaptured && !foe.hasFled {
-            guard case .wild = foe.source, let id = foe.speciesID else { continue }
+        // Materials for the blacksmith: about one wild monster in three at your level drops something
+        // (fewer the further under you, up to half over you), bosses three.
+        for foe in defeatedWild {
+            guard let id = foe.speciesID else { continue }
             let isBoss = content.monster(id)?.boss == true
-            for _ in 0..<(isBoss ? 3 : 1) where isBoss || Double.random(in: 0..<1) < 0.35 {
+            let chance = min(0.5, 0.35 * GameSession.dropWorth(level: foe.level, heroLevel: heroLevel))
+            for _ in 0..<(isBoss ? 3 : 1) where isBoss || Double.random(in: 0..<1) < chance {
                 guard let material = session.materialDrop(level: foe.level), session.addItem(material.id) else { continue }
                 loot[material.id, default: 0] += 1
             }
@@ -1396,7 +1408,7 @@ final class BattleController {
         }
 
         // A festive season's treat now and then, or once in a long while one of its hats.
-        if !wildFoes.isEmpty, let treat = session.seasonDrop(), session.addItem(treat.id) {
+        if !defeatedWild.isEmpty, let treat = session.seasonDrop(worth: worth), session.addItem(treat.id) {
             loot[treat.id, default: 0] += 1
             lines.append(L("A festive find: {item}!", ["item": treat.name]))
         }
