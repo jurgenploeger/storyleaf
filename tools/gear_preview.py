@@ -548,9 +548,17 @@ def painted(t, colour, trim=None, floor=0.25):
         return out
     middle = sorted(v for _, _, v in shades)[len(shades) // 2]
     for y, x, v in shades:
-        out[y, x, :3] = np.clip(tone * (v / middle), 0, 1)
+        out[y, x, :3] = shade(tone, v / middle)
         out[y, x, 3] = 1
     return out
+
+
+def shade(colour, k):
+    """GearOverlay.shade: `colour` as a shade `k` times as light as the middle one, by a softened `k`, a
+    little paler and a few degrees toward yellow where lit, toward red in shadow."""
+    h, s, v = hsv(tuple(colour))
+    hue = (h * 360 + 6 * (k - 1)) % 360 if s > 0.1 else h * 360
+    return np.array(colorsys.hsv_to_rgb(hue / 360, s * (1 - 0.12 * max(0, k - 1)), min(1, v * k ** 0.45)))
 
 
 def face(f, cells, top, chin, eyes_at=None):

@@ -629,7 +629,7 @@ private struct DollSlot: View {
 }
 
 /// Another adventurer in the middle of the same ring as your paper doll (`ProfileWindow`): what they
-/// hold and wear in its slot, an empty slot's shape faded, each slot's name under it. A tap on a piece
+/// hold and wear in its slot, an empty slot a dashed outline, each slot's name under it. A tap on a piece
 /// opens its card (`inspect`).
 struct WornDoll: View {
     let session: GameSession
@@ -670,10 +670,12 @@ struct WornDoll: View {
                 Group {
                     if let item {
                         ItemIcon(item: item, size: Self.size)
-                    } else if let shape = DollSlot.silhouettes[type].flatMap(session.content.item) {
-                        ItemIcon(item: shape, size: Self.size)
-                            .saturation(0)
-                            .opacity(0.3)
+                    } else {
+                        // Plainly empty: a dashed outline of a tile, not a faded piece (playtesting
+                        // 2026-10-30: a bot's faded cape read as a cape they wore).
+                        RoundedRectangle(cornerRadius: Self.size * 0.26)
+                            .strokeBorder(.white.opacity(0.22), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                            .frame(width: Self.size, height: Self.size)
                     }
                 }
                 Text(type.displayName)

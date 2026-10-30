@@ -799,8 +799,33 @@ enum GearOverlay {
         }
         guard !lit.isEmpty else { return piece }
         let middle = lit.map { $0.v }.sorted()[lit.count / 2]
-        for (i, v) in lit { piece.pixels[i] = colour.scaled(v / middle) }
+        for (i, v) in lit { piece.pixels[i] = shade(colour, v / middle) }
         return piece
+    }
+
+    /// `colour` as a shade `k` times as light as the middle one, as a drawn ramp goes: brighter or
+    /// darker by a softened `k` (a cape's lit back is twice its middle), a little paler and turned a
+    /// few degrees toward yellow where lit, toward red in shadow. Its red, green and blue each scaled
+    /// by `k` instead, the lit side ran out of red first and a topaz cloak came out yellow, an azure
+    /// cape cyan, an amethyst one pink (playtesting 2026-10-30). tools/gear_preview.py `shade`.
+    nonisolated private static func shade(_ colour: RGB, _ k: Double) -> RGB {
+        let (h, s, v) = hsv(colour)
+        let hue = s > 0.1 ? (h + 6 * (k - 1) + 360).truncatingRemainder(dividingBy: 360) : h
+        return rgb(hue: hue, saturation: s * (1 - 0.12 * max(0, k - 1)), value: min(1, v * pow(k, 0.45)))
+    }
+
+    /// The colour of a hue in degrees, saturation and value in 0...1.
+    nonisolated private static func rgb(hue: Double, saturation s: Double, value v: Double) -> RGB {
+        let c = v * s, x = c * (1 - abs((hue / 60).truncatingRemainder(dividingBy: 2) - 1)), m = v - c
+        let (r, g, b): (Double, Double, Double) = switch hue {
+        case ..<60: (c, x, 0)
+        case ..<120: (x, c, 0)
+        case ..<180: (0, c, x)
+        case ..<240: (0, x, c)
+        case ..<300: (x, 0, c)
+        default: (c, 0, x)
+        }
+        return RGB(r + m, g + m, b + m)
     }
 
     /// The face on a frame as drawn (tools/gear_preview.py `face`).
