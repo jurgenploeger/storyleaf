@@ -446,6 +446,10 @@ final class BattleController {
         fighter.speciesID.flatMap { Content.shared.monster($0)?.boss } == true
     }
 
+    /// How big the hero's row of commands last made its buttons (`SkillRow`), so the companion's row
+    /// on its turn makes its own the same size (playtesting 2026-10-30), however few it has.
+    var commandButtonSize: CGFloat?
+
     /// Its skills, as buttons in the row on its turn.
     var companionSkills: [SkillDef] { companion?.skills.compactMap { session.content.skill($0) } ?? [] }
     func companionLevel(of skill: SkillDef) -> Int { companion?.skillLevel(skill.id) ?? 1 }
