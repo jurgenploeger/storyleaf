@@ -9,6 +9,11 @@ struct JoystickView: View {
     @State private var offset: CGSize = .zero
     @State private var isPressed = false
     @State private var direction: Direction?
+    /// True while a finger holds the stick, and false again however the drag ends: cancelled too
+    /// (the app leaving the front, a swipe home from the bottom edge), when `onEnded` never comes
+    /// and the push was left in `input` (playtesting 2026-10-30: "every time I switch back to the
+    /// app, the hero just randomly walks somewhere").
+    @GestureState private var holding = false
 
     private let radius: CGFloat = 62
     private let capRadius: CGFloat = 30
@@ -28,6 +33,9 @@ struct JoystickView: View {
         .opacity(isPressed ? 1 : 0.9)
         .contentShape(Circle().inset(by: -30))
         .gesture(drag)
+        .onChange(of: holding) { _, held in
+            if !held { release() }
+        }
         .sensoryFeedback(.impact(weight: .light), trigger: isPressed) { _, pressed in pressed && GameSettings.haptics }
         .sensoryFeedback(.selection, trigger: direction) { _, new in new != nil && GameSettings.haptics }
         .accessibilityLabel(L("Movement joystick"))
@@ -42,6 +50,7 @@ struct JoystickView: View {
 
     private var drag: some Gesture {
         DragGesture(minimumDistance: 0)
+            .updating($holding) { _, held, _ in held = true }
             .onChanged { value in
                 if !isPressed { isPressed = true }
                 var next = CGSize(width: value.location.x - radius, height: value.location.y - radius)
@@ -54,12 +63,15 @@ struct JoystickView: View {
                 let vector = CGVector(dx: next.width, dy: -next.height)
                 direction = vector.length > travel * 0.3 ? Direction(vector, current: direction) : nil
             }
-            .onEnded { _ in
-                input.move = .zero
-                direction = nil
-                isPressed = false
-                withAnimation(.spring(response: 0.28, dampingFraction: 0.5)) { offset = .zero }
-            }
+            .onEnded { _ in release() }
+    }
+
+    /// Let go: the hero stops and the cap springs back.
+    private func release() {
+        input.move = .zero
+        direction = nil
+        isPressed = false
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.5)) { offset = .zero }
     }
 }
 
