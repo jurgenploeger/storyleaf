@@ -39,6 +39,12 @@ npc_dark     | newgame,npc=elder,dark            | 8
 battle_ru    | newgame,lang=ru,map=sunny_meadow,battle | 15
 npc_ko       | newgame,lang=ko,npc=elder         | 8
 barber       | newgame,npc=barber,gold=2000      | 8
+# Dyeing armour (playtesting 2026-10-30): the barber's Dye armour window, a dyed plate worn, plates and dyes
+# in the bag; the hero in dyed copper on the map; a gem's card with Mix, and the Bag with dyes and a dyed piece.
+dye_window   | newgame,level=12,npc=barber,equip=copper_plate~crimson_dye+copper_gauntlets,bag=copper_plate+copper_helm+azure_dye+crimson_dye+golden_dye,dyeing | 8
+dye_hero     | newgame,class=fighter,level=12,map=meadowbrook,equip=copper_plate~crimson_dye+copper_helm~crimson_dye+copper_gauntlets~azure_dye+copper_boots~azure_dye,hour=12,weather=clear | 8
+dye_gem_card | newgame,menu=bag,bag=agate+sheepskin,inspect=agate | 8
+dye_bag      | newgame,class=fighter,level=12,menu=bag,bag=amber_dye+olive_dye+emerald_dye+azure_dye+golden_dye+crimson_dye+snow_white_dye+lavender_dye+midnight_dye+copper_plate+copper_plate~crimson_dye+silver_plate~golden_dye+iron_plate~emerald_dye+mage_robe~crimson_dye+copper_hide~midnight_dye+leather_vest~azure_dye | 8
 # A banker's word, Open the bank under it; and the bank in its own window, the bag over the bank.
 banker       | newgame,npc=meadow_banker,bag=potion+seal_stone,gold=500 | 8
 bank         | newgame,bank=meadow_banker,bag=potion+seal_stone,gold=500 | 8

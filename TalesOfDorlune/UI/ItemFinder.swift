@@ -68,7 +68,7 @@ enum ItemFinder {
         case .standard: return found
         case .kind:
             let rank = Dictionary(session.content.items.enumerated().map { ($0.element.id, $0.offset) }) { first, _ in first }
-            value = { -Double(rank[$0.id] ?? Int.max) }
+            value = { -Double(rank[$0.baseID] ?? Int.max) }
         case .name: return found.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         // What you can wear comes first, however good the rest is: no gear is worth anywhere near this.
         case .best: value = { (session.equipIssue($0) == nil ? 1_000_000 : 0) + session.gearValue($0) }

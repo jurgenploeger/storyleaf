@@ -17,9 +17,16 @@ extension GameSession {
     /// How many of a kind there are on one side.
     func held(_ id: String, on side: BankSide) -> Int { side == .bag ? count(of: id) : banked(id) }
 
-    /// Everything on one side, in your order.
+    /// Everything on one side, in your order. A dyed piece (`ItemDef.dyed`) comes after its own kind.
     func items(on side: BankSide) -> [ItemDef] {
-        let found = content.items.filter { held($0.id, on: side) > 0 }
+        let pile = side == .bag ? data.inventory : (data.bank ?? [:])
+        let dyed = Dictionary(grouping: pile.keys.filter { $0.contains(ItemDef.dyeMark) && held($0, on: side) > 0 }.sorted(),
+                              by: { ItemDef.baseID(of: $0) })
+        var found: [ItemDef] = []
+        for item in content.items {
+            if held(item.id, on: side) > 0 { found.append(item) }
+            if let pieces = dyed[item.id] { found += pieces.compactMap { content.item($0) } }
+        }
         return Self.arrange(found, by: side == .bag ? data.bagOrder : data.bankOrder)
     }
 

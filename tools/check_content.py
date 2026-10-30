@@ -198,7 +198,7 @@ for item in items.values():
         check(isinstance(item.get("stats"), dict) and any(v > 0 for v in item["stats"].values()),
               f"toy {item['id']} → needs the stats it raises")
     if item["type"] == "material":
-        check(item.get("material") in ("wood", "metal", "gem", "hide", "quest"), f"material {item['id']} → unknown kind {item.get('material')}")
+        check(item.get("material") in ("wood", "metal", "gem", "hide", "quest", "dye"), f"material {item['id']} → unknown kind {item.get('material')}")
         check(isinstance(item.get("level"), int), f"material {item['id']} needs a level (when monsters start dropping it)")
     for material, count in (item.get("recipe") or {}).items():
         check(material in materials, f"recipe for {item['id']} → {material} isn't a material")
@@ -208,12 +208,48 @@ for item in items.values():
             check(materials[material]["level"] <= max(item.get("level", 1), 1),
                   f"recipe for {item['id']} (Lv {item.get('level', 1)}) → {material} only drops from Lv {materials[material]['level']}")
 
-# Made by hand from the bag (items.json `make`): a quest's piece, from its recipe.
+# Made by hand from the bag (items.json `make`): a quest's piece, from its recipe, or a dye.
 for item in items.values():
     if "make" in item:
-        check(item["make"] in ("carve", "join"), f"item {item['id']} → make is carve or join")
+        check(item["make"] in ("carve", "join", "mix"), f"item {item['id']} → make is carve, join or mix")
         check(bool(item.get("recipe")), f"item {item['id']} → made by hand from what? (needs a recipe)")
-        check(item.get("material") == "quest", f"item {item['id']} → only a quest's piece is made by hand")
+        check(item.get("material") == ("dye" if item["make"] == "mix" else "quest"),
+              f"item {item['id']} → only a quest's piece is carved or joined, and only a dye mixed")
+
+# Dyes (material dye, playtesting 2026-10-30: "I want to be able to dye armor in some way"): each mixed
+# from one gem and a Sheepskin (GameSession.handmade offers it on the gem's card), one dye a gem, with
+# its colour (`dye`: the colour word, #RRGGBB, and the same in HSV for DyeDef.rules). A weaver or a barber
+# dyes a piece with it (GameSession.dye); a dyed piece's id is "<item>~<dye>", so no id may hold a "~".
+dye_gems = []
+for item in items.values():
+    check("~" not in item["id"], f"item {item['id']} → no \"~\" in an id: it joins a dyed piece to its dye")
+    if item.get("material") == "dye":
+        where = f"dye {item['id']}"
+        recipe = item.get("recipe") or {}
+        gems_in = [k for k in recipe if items.get(k, {}).get("material") == "gem"]
+        check(item.get("make") == "mix" and len(recipe) == 2 and recipe.get("sheepskin") == 1 and len(gems_in) == 1
+              and recipe.get(gems_in[0] if gems_in else "") == 1, f"{where} → mixed (make mix) from one gem and one sheepskin")
+        dye_gems += gems_in
+        gem = items.get(gems_in[0], {}) if gems_in else {}
+        check(item.get("level") == gem.get("level"), f"{where} → the level of its gem")
+        colour = item.get("dye") or {}
+        check(isinstance(colour.get("name"), str) and bool(colour.get("name")), f"{where} → its dye needs a name (the colour word)")
+        hexc = colour.get("color", "")
+        ok = isinstance(hexc, str) and len(hexc) == 7 and hexc.startswith("#")
+        check(ok, f"{where} → its dye needs a color, #RRGGBB")
+        check(all(isinstance(colour.get(k), (int, float)) for k in ("hue", "saturation", "value"))
+              and 0 <= colour.get("hue", -1) < 360 and 0 <= colour.get("saturation", -1) <= 1 and 0 <= colour.get("value", -1) <= 1,
+              f"{where} → its dye needs hue (0 to 360), saturation and value (0 to 1)")
+        if ok and all(isinstance(colour.get(k), (int, float)) for k in ("hue", "saturation", "value")):
+            import colorsys
+            h, s, v = colorsys.rgb_to_hsv(*(int(hexc[i:i + 2], 16) / 255 for i in (1, 3, 5)))
+            check(abs(s - colour["saturation"]) < 0.02 and abs(v - colour["value"]) < 0.02
+                  and (s < 0.05 or min(abs(h * 360 - colour["hue"]), 360 - abs(h * 360 - colour["hue"])) < 2),
+                  f"{where} → hue, saturation and value are its color's ({h * 360:.0f}, {s:.2f}, {v:.2f})")
+    else:
+        check("dye" not in item, f"item {item['id']} → only a dye (material dye) has a dye")
+check(sorted(dye_gems) == sorted(i["id"] for i in items.values() if i.get("material") == "gem"),
+      "dyes → one dye for every gem, mixed from it")
 
 # Where a quest's pieces come from: its monsters (`drops`), a chest it opens, a shop, a boss, the
 # monsters' own materials, or made by hand from those.

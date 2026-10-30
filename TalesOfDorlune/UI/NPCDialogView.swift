@@ -19,6 +19,8 @@ struct NPCDialogView: View {
     @State private var deal: ShopDeal? = DebugLaunch.shopDeal.flatMap { wanted in
         Content.shared.item(wanted.item).map { ShopDeal(item: $0, selling: wanted.selling) }
     }
+    /// The weaver's or a barber's dyeing, in a window over the dialog (`DyeWindow`).
+    @State private var dyeing = DebugLaunch.opensDyeing
 
     var body: some View {
         GeometryReader { proxy in
@@ -66,8 +68,18 @@ struct NPCDialogView: View {
                         .frame(width: proxy.size.width, height: proxy.size.height)
                         .transition(.opacity)
                 }
+
+                if dyeing {
+                    DyeWindow(session: session) { said in
+                        if let said { reply = said }
+                        dyeing = false
+                    }
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .transition(.opacity)
+                }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
+            .animation(.easeOut(duration: 0.15), value: dyeing)
             .animation(.easeOut(duration: 0.2), value: finished?.quest.id)
             .animation(.easeOut(duration: 0.15), value: info?.id)
             .animation(.easeOut(duration: 0.15), value: deal?.id)
@@ -138,6 +150,16 @@ struct NPCDialogView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                // The weaver and every barber dye armour too (Dyes.swift), a piece at a time.
+                if npc.role == .weaver || npc.role == .barber {
+                    Button {
+                        dyeing = true
+                    } label: {
+                        Label(L("Dye armour"), icon: .palette)
+                    }
+                    .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
+                    .padding(.top, 10)
+                }
             }
         }
         .frame(maxHeight: min(260, max(120, maxHeight - 110)))
