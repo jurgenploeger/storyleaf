@@ -4,8 +4,10 @@ import UniformTypeIdentifiers
 
 /// Title screen: continue a saved game, or create a hero (name + race, like Fairyland Online).
 struct TitleView: View {
-    /// The logo's place, shared with the loading screen: starting a game carries it there (`RootView`).
-    var logoSpace: Namespace.ID? = nil
+    /// Where its logo stands, published for RootView's logo to move from when a game starts.
+    var logoSpot: LogoSpot? = nil
+    /// Its own logo hidden while RootView's is on its way to the loading screen.
+    var logoHidden = false
     let onStart: (GameSession) -> Void
 
     @State private var creating = DebugLaunch.titlePage == "create"
@@ -227,9 +229,10 @@ struct TitleView: View {
         Image("Logo")
             .resizable()
             .scaledToFit()
+            .logoSpot(logoSpot)
+            .opacity(logoHidden ? 0 : 1)
             .raysAnchor(Brand.raysInLogo)
             .frame(maxWidth: LoadingCurtain.logoWidth, maxHeight: wide ? 190 : 260)
-            .matchedLogo(logoSpace)
             .accessibilityLabel(L("Tales of Dorlune"))
     }
 
