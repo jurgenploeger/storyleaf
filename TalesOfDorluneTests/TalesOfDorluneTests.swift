@@ -1548,6 +1548,16 @@ struct RulesTests {
         // A skill your order doesn't have yet goes after the ones it does.
         session.data.skillOrder = [learned[1]]
         #expect(Array(session.heroSkills.map(\.id).prefix(2)) == [learned[1], learned[0]])
+        // A companion keeps its own order, which its battle row follows.
+        let species = try #require(Content.shared.monsters.first { $0.skills.count >= 2 && $0.boss != true })
+        let pet = try #require(session.makePet(species: species.id, level: 5))
+        #expect(session.addPet(pet))
+        let kept = try #require(session.data.pets.first { $0.id == pet.id })
+        let own = session.skills(of: kept).map(\.id)
+        #expect(own == species.skills)
+        #expect(session.moveSkill(own[1], onto: own[0], of: pet.id))
+        let moved = try #require(session.data.pets.first { $0.id == pet.id })
+        #expect(Array(session.skills(of: moved).map(\.id).prefix(2)) == [own[1], own[0]])
     }
 
     @Test func dropsComeWithWhatAFightIsWorth() {

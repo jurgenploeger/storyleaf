@@ -584,22 +584,50 @@ final class GameSession {
     /// (what it has no room for waits behind More); ones you haven't placed after, in your class's order.
     var heroSkills: [SkillDef] {
         let learned = Set(data.hero.learnedSkills ?? [])
-        let skills = classSkills(upTo: data.hero.level).filter { learned.contains($0.id) }
-        guard let order = data.skillOrder else { return skills }
+        return Self.ordered(classSkills(upTo: data.hero.level).filter { learned.contains($0.id) }, by: data.skillOrder)
+    }
+
+    /// `skills` in `order`, those it doesn't have after, as they came.
+    static func ordered(_ skills: [SkillDef], by order: [String]?) -> [SkillDef] {
+        guard let order else { return skills }
         let place = Dictionary(order.enumerated().map { ($0.element, $0.offset) }) { first, _ in first }
         return skills.enumerated()
             .sorted { (place[$0.element.id] ?? order.count + $0.offset, $0.offset) < (place[$1.element.id] ?? order.count + $1.offset, $1.offset) }
             .map(\.element)
     }
 
+    /// `order` with `id` put where `target` is, the rest shifting along; nil when either isn't in
+    /// it, or they're the same.
+    private static func moved(_ id: String, onto target: String, in order: [String]) -> [String]? {
+        var order = order
+        guard id != target, let from = order.firstIndex(of: id), let to = order.firstIndex(of: target) else { return nil }
+        order.remove(at: from)
+        order.insert(id, at: to)
+        return order
+    }
+
+    /// A companion's skills, its species', in your order of them (the Companions page: playtesting
+    /// 2026-10-30, "Same for the companion"), as its battle row shows them.
+    func skills(of pet: Pet) -> [SkillDef] {
+        Self.ordered(species(of: pet)?.skills.compactMap { content.skill($0) } ?? [], by: pet.skillOrder)
+    }
+
+    /// Puts a companion's skill `id` where `target` is in its order. False when either isn't one it
+    /// has, or they're the same.
+    @discardableResult
+    func moveSkill(_ id: String, onto target: String, of petID: UUID) -> Bool {
+        guard let index = data.pets.firstIndex(where: { $0.id == petID }),
+              let order = Self.moved(id, onto: target, in: skills(of: data.pets[index]).map(\.id)) else { return false }
+        data.pets[index].skillOrder = order
+        SoundEffects.shared.play(.tap, volume: 0.7)
+        return true
+    }
+
     /// Puts skill `id` where `target` is in your order, the rest shifting along. False when either
     /// isn't one you know, or they're the same.
     @discardableResult
     func moveSkill(_ id: String, onto target: String) -> Bool {
-        var order = heroSkills.map(\.id)
-        guard id != target, let from = order.firstIndex(of: id), let to = order.firstIndex(of: target) else { return false }
-        order.remove(at: from)
-        order.insert(id, at: to)
+        guard let order = Self.moved(id, onto: target, in: heroSkills.map(\.id)) else { return false }
         data.skillOrder = order
         SoundEffects.shared.play(.tap, volume: 0.7)
         return true

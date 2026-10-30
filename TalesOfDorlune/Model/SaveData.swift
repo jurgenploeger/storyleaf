@@ -92,6 +92,8 @@ nonisolated struct Pet: Codable, Equatable, Identifiable, Sendable {
     /// Toys it has played with (`GameSession.giveToy`), and what they've raised for good.
     var toys: Int?
     var toyStats: Stats?
+    /// Your order of its skills, by id, as its battle row shows them (`GameSession.skills(of:)`).
+    var skillOrder: [String]?
 }
 
 nonisolated struct QuestProgress: Codable, Equatable, Sendable {

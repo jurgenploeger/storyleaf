@@ -115,7 +115,7 @@ final class BattleController {
             var companion = Combatant(
                 id: 1, side: .party, source: .pet(pet.id), name: pet.name, art: session.artID(for: pet),
                 level: pet.level, element: species.element, stats: session.stats(of: pet),
-                hp: pet.hp, mp: pet.mp, skills: species.skills, captureRate: 0
+                hp: pet.hp, mp: pet.mp, skills: session.skills(of: pet).map(\.id), captureRate: 0
             )
             // It stands beside you, or right behind you when friends fight with you (BattleScene.arrange).
             companion.ownerID = hero.id
