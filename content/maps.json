@@ -1894,13 +1894,13 @@
         },
         {
           "art": "windmill",
-          "x": -16,
-          "y": 12
+          "x": 11,
+          "y": -44
         },
         {
           "art": "house_green",
-          "x": -5,
-          "y": 12
+          "x": -37,
+          "y": -26
         },
         {
           "art": "house",
@@ -1928,8 +1928,8 @@
           "name": "Miller Rosie",
           "role": "quests",
           "art": "npc_miller_rosie",
-          "x": -17,
-          "y": 10,
+          "x": 10,
+          "y": -46,
           "greeting": "Welcome to Cloverdale! Mind the flour. It gets everywhere, even in the bread."
         },
         {
@@ -1937,8 +1937,8 @@
           "name": "Beekeeper Barnaby",
           "role": "quests",
           "art": "npc_beekeeper_barnaby",
-          "x": -6,
-          "y": 10,
+          "x": -38,
+          "y": -28,
           "greeting": "Shh. Slow movements, please. The bees are watching, and so am I."
         }
       ]
@@ -2370,8 +2370,8 @@
           "name": "Fishwife Marla",
           "role": "quests",
           "art": "npc_fishwife_marla",
-          "x": 0,
-          "y": -8,
+          "x": 50,
+          "y": -33,
           "greeting": "Fresh fish! Well, it was fresh this morning, before the Mud Eagles got to it."
         },
         {
@@ -2379,21 +2379,21 @@
           "name": "Net-Mender Oskar",
           "role": "quests",
           "art": "npc_netmender_oskar",
-          "x": 11,
-          "y": -8,
+          "x": -10,
+          "y": -59,
           "greeting": "Every knot I tie, a crab snips. Every knot!"
         }
       ],
       "buildings": [
         {
           "art": "beach_hut",
-          "x": 1,
-          "y": -6
+          "x": 51,
+          "y": -31
         },
         {
           "art": "fisher_shack",
-          "x": 12,
-          "y": -6
+          "x": -9,
+          "y": -57
         },
         {
           "art": "inn_teal",
@@ -2916,8 +2916,8 @@
           "name": "Lampwright Fenwick",
           "role": "quests",
           "art": "npc_lampwright_fenwick",
-          "x": 11,
-          "y": 1,
+          "x": 37,
+          "y": 41,
           "greeting": "In Duskhollow it's always nearly night. Good for lanterns. Bad for reading."
         },
         {
@@ -2935,21 +2935,21 @@
           "name": "Charcoal-Burner Hettie",
           "role": "quests",
           "art": "npc_charcoal_hettie",
-          "x": 22,
-          "y": 1,
+          "x": 41,
+          "y": -37,
           "greeting": "Soot on your boots? Then you've found Duskhollow."
         }
       ],
       "buildings": [
         {
           "art": "item_shop",
-          "x": 12,
-          "y": 3
+          "x": 38,
+          "y": 43
         },
         {
           "art": "crooked_house",
-          "x": 23,
-          "y": 3
+          "x": 42,
+          "y": -35
         },
         {
           "art": "witch_hut",
@@ -3598,13 +3598,13 @@
         },
         {
           "art": "house_green",
-          "x": -25,
-          "y": -16
+          "x": -52,
+          "y": 7
         },
         {
           "art": "inn_red",
-          "x": -36,
-          "y": -16
+          "x": 25,
+          "y": 50
         },
         {
           "art": "forest_lodge",
@@ -3741,8 +3741,8 @@
           "name": "Orchard-Keeper Moss",
           "role": "quests",
           "art": "npc_orchard_moss",
-          "x": -26,
-          "y": -18,
+          "x": -53,
+          "y": 5,
           "greeting": "Hollyhock's apples are the sweetest in the forest. Ask the monkeys. They'd know."
         },
         {
@@ -3750,8 +3750,8 @@
           "name": "Cooper Beatrix",
           "role": "quests",
           "art": "npc_cooper_beatrix",
-          "x": -37,
-          "y": -18,
+          "x": 24,
+          "y": 48,
           "greeting": "Barrels! Kegs! Tubs! If it holds cider, I made it."
         }
       ]
@@ -5425,8 +5425,8 @@
           "name": "Foreman Barrowby",
           "role": "quests",
           "art": "npc_foreman_barrowby",
-          "x": 14,
-          "y": -7,
+          "x": -18,
+          "y": 42,
           "greeting": "Seven dwarfs, seven hearths, one very small kitchen."
         },
         {
@@ -5547,8 +5547,8 @@
       "buildings": [
         {
           "art": "dwarf_cottage",
-          "x": 15,
-          "y": -5
+          "x": -17,
+          "y": 44
         },
         {
           "art": "snow_cabin",
@@ -6005,8 +6005,8 @@
           "name": "Ugly Duckling",
           "role": "quests",
           "art": "npc_ugly_duckling",
-          "x": -4,
-          "y": -3,
+          "x": -46,
+          "y": -36,
           "greeting": "Oh... hello. You don't think I'm ugly, do you?"
         },
         {
@@ -6014,8 +6014,8 @@
           "name": "Eel-Catcher Ida",
           "role": "quests",
           "art": "npc_eelcatcher_ida",
-          "x": -15,
-          "y": -23,
+          "x": 32,
+          "y": 49,
           "greeting": "Eels? No eels today. Only frogs. It's always frogs."
         },
         {
@@ -6023,21 +6023,21 @@
           "name": "Herbalist Mungo",
           "role": "quests",
           "art": "npc_herbalist_mungo",
-          "x": -4,
-          "y": -23,
+          "x": -48,
+          "y": 33,
           "greeting": "Mind where you step. Half of Bogbottom is medicine and the other half is mud."
         }
       ],
       "buildings": [
         {
           "art": "swamp_stilt_hut",
-          "x": -14,
-          "y": -21
+          "x": 33,
+          "y": 51
         },
         {
           "art": "lily_cottage",
-          "x": -3,
-          "y": -21
+          "x": -47,
+          "y": 35
         },
         {
           "art": "swamp_stilt_hut",
@@ -6577,8 +6577,8 @@
           "name": "Chandler Mabbott",
           "role": "quests",
           "art": "npc_chandler_mabbott",
-          "x": -4,
-          "y": -8,
+          "x": -43,
+          "y": 33,
           "greeting": "Candles! Tall ones, short ones, and ones that don't blow out when a Wisp says boo."
         },
         {
@@ -6586,8 +6586,8 @@
           "name": "Bell-Ringer Prue",
           "role": "quests",
           "art": "npc_bellringer_prue",
-          "x": -15,
-          "y": -8,
+          "x": 53,
+          "y": -12,
           "greeting": "Every hour I ring the bell, so the whole valley knows it isn't alone."
         },
         {
@@ -6620,13 +6620,13 @@
       "buildings": [
         {
           "art": "item_shop",
-          "x": -3,
-          "y": -6
+          "x": -42,
+          "y": 35
         },
         {
           "art": "bell_tower",
-          "x": -14,
-          "y": -6
+          "x": 54,
+          "y": -10
         },
         {
           "art": "crooked_house",
@@ -8419,8 +8419,8 @@
           "name": "Lamp-Seller Kasim",
           "role": "quests",
           "art": "npc_lampseller_kasim",
-          "x": -6,
-          "y": 22,
+          "x": 52,
+          "y": 27,
           "greeting": "Lamps! Old lamps, new lamps, lamps with a genie in, lamps without. Mostly without."
         },
         {
@@ -8428,8 +8428,8 @@
           "name": "Well-Keeper Samira",
           "role": "quests",
           "art": "npc_wellkeeper_samira",
-          "x": 5,
-          "y": 22,
+          "x": 48,
+          "y": -34,
           "greeting": "In the desert, a well is worth more than gold. Ask anyone who's been thirsty."
         },
         {
@@ -8538,13 +8538,13 @@
       "buildings": [
         {
           "art": "market_tent",
-          "x": -5,
-          "y": 24
+          "x": 53,
+          "y": 29
         },
         {
           "art": "pavilion_tent",
-          "x": 6,
-          "y": 24
+          "x": 49,
+          "y": -32
         },
         {
           "art": "adobe_house",
@@ -9007,8 +9007,8 @@
           "name": "Gemcutter Iolanthe",
           "role": "quests",
           "art": "npc_gemcutter_iolanthe",
-          "x": -20,
-          "y": 1,
+          "x": 49,
+          "y": -2,
           "greeting": "Every crystal has a shape hiding inside it. I just let it out."
         },
         {
@@ -9047,8 +9047,8 @@
       "buildings": [
         {
           "art": "gem_workshop",
-          "x": -19,
-          "y": 3
+          "x": 50,
+          "y": 0
         },
         {
           "art": "stone_hut",
@@ -9605,8 +9605,8 @@
           "name": "Festival-Keeper Selene",
           "role": "quests",
           "art": "npc_festival_selene",
-          "x": -13,
-          "y": -11,
+          "x": -40,
+          "y": -4,
           "greeting": "Welcome to Silvermoon Steps. On a full moon, the whole village climbs up to watch it rise."
         },
         {
@@ -9614,8 +9614,8 @@
           "name": "Old Stargazer Bellamy",
           "role": "quests",
           "art": "npc_stargazer_bellamy",
-          "x": -2,
-          "y": -11,
+          "x": -17,
+          "y": -36,
           "greeting": "Lune taught me half of what I know about the stars. I taught her the other half."
         }
       ],
@@ -9638,13 +9638,13 @@
       "buildings": [
         {
           "art": "moon_pagoda",
-          "x": -12,
-          "y": -9
+          "x": -39,
+          "y": -2
         },
         {
           "art": "magic_tower",
-          "x": -1,
-          "y": -9
+          "x": -16,
+          "y": -34
         },
         {
           "art": "snow_cabin",
@@ -10245,8 +10245,8 @@
         },
         {
           "art": "item_shop_red",
-          "x": -16,
-          "y": -10
+          "x": 46,
+          "y": 3
         },
         {
           "art": "house_purple",
@@ -10274,8 +10274,8 @@
           "name": "Kitewright Bryn",
           "role": "quests",
           "art": "npc_kitewright_bryn",
-          "x": -17,
-          "y": -12,
+          "x": 45,
+          "y": 1,
           "greeting": "A kite's only a wish with a string on it. Want to see mine?"
         }
       ]
@@ -11289,8 +11289,8 @@
           "name": "Toffee-Puller Tibbs",
           "role": "quests",
           "art": "npc_toffee_tibbs",
-          "x": 19,
-          "y": -11,
+          "x": -55,
+          "y": -4,
           "greeting": "Pull, fold, pull, fold. Toffee's all in the elbows."
         }
       ],
@@ -11318,8 +11318,8 @@
         },
         {
           "art": "mushroom_house_gold",
-          "x": 20,
-          "y": -9
+          "x": -54,
+          "y": -2
         },
         {
           "art": "candy_cottage",
@@ -11878,8 +11878,8 @@
           "name": "Grandmother Hazel",
           "role": "quests",
           "art": "npc_grandmother_hazel",
-          "x": -18,
-          "y": 7,
+          "x": 25,
+          "y": -22,
           "greeting": "Come in, come in! Don't mind the wolf-shaped dent in the door."
         }
       ],
@@ -11907,8 +11907,8 @@
         },
         {
           "art": "crooked_house",
-          "x": -17,
-          "y": 9
+          "x": 26,
+          "y": -20
         },
         {
           "art": "witch_hut",
@@ -13354,13 +13354,13 @@
         },
         {
           "art": "house",
-          "x": -19,
-          "y": 2
+          "x": -37,
+          "y": 35
         },
         {
           "art": "house_purple",
-          "x": -8,
-          "y": 2
+          "x": -46,
+          "y": -16
         },
         {
           "art": "inn_teal",
@@ -13388,8 +13388,8 @@
           "name": "Ferrywoman Brigid",
           "role": "quests",
           "art": "npc_ferrywoman_brigid",
-          "x": -20,
-          "y": 0,
+          "x": -38,
+          "y": 33,
           "greeting": "Mind the gap between the boat and the jetty. And the frogs. Mostly the frogs."
         },
         {
@@ -13397,8 +13397,8 @@
           "name": "Lacemaker Linnet",
           "role": "quests",
           "art": "npc_lacemaker_linnet",
-          "x": -9,
-          "y": 0,
+          "x": -47,
+          "y": -18,
           "greeting": "Swan Lake lace is the finest anywhere. I learned the pattern from the swans themselves."
         }
       ]
@@ -13822,8 +13822,8 @@
           "name": "Mayor Pipkin",
           "role": "quests",
           "art": "npc_mayor_pipkin",
-          "x": -29,
-          "y": 12,
+          "x": 14,
+          "y": 24,
           "greeting": "Welcome to Lilypad Landing! Mind your feet. We're smaller than we look. Well, we look small too."
         },
         {
@@ -13831,21 +13831,21 @@
           "name": "Dew-Gatherer Sorrel",
           "role": "quests",
           "art": "npc_dewdrop_sorrel",
-          "x": -18,
-          "y": 12,
+          "x": -32,
+          "y": 13,
           "greeting": "Every morning I gather the dew from the lotus petals, before the sprites drink it all."
         }
       ],
       "buildings": [
         {
           "art": "lily_cottage",
-          "x": -28,
-          "y": 14
+          "x": 15,
+          "y": 26
         },
         {
           "art": "swamp_stilt_hut",
-          "x": -17,
-          "y": 14
+          "x": -31,
+          "y": 15
         },
         {
           "art": "lily_cottage",
@@ -14281,13 +14281,13 @@
         },
         {
           "art": "item_shop_red",
-          "x": 8,
-          "y": 18
+          "x": -30,
+          "y": -8
         },
         {
           "art": "blacksmith",
-          "x": -3,
-          "y": 18
+          "x": -20,
+          "y": 27
         },
         {
           "art": "crooked_house",
@@ -14404,8 +14404,8 @@
           "name": "Puppeteer Gianna",
           "role": "quests",
           "art": "npc_puppeteer_gianna",
-          "x": 7,
-          "y": 16,
+          "x": -31,
+          "y": -10,
           "greeting": "Every puppet on this hill was carved in Stringwood. Some of them just forgot to come home."
         },
         {
@@ -14413,8 +14413,8 @@
           "name": "Toymender Otto",
           "role": "quests",
           "art": "npc_toymender_otto",
-          "x": -4,
-          "y": 16,
+          "x": -21,
+          "y": 25,
           "greeting": "Bring me a broken toy and I'll mend it. Bring me a broken puppet and I'll mend it twice."
         }
       ],
@@ -14816,13 +14816,13 @@
         },
         {
           "art": "blacksmith",
-          "x": -7,
-          "y": 4
+          "x": -40,
+          "y": -14
         },
         {
           "art": "fisher_shack",
-          "x": -18,
-          "y": 4
+          "x": 17,
+          "y": -39
         },
         {
           "art": "beach_hut",
@@ -14850,8 +14850,8 @@
           "name": "Smelter Bruna",
           "role": "quests",
           "art": "npc_smelter_bruna",
-          "x": -8,
-          "y": 2,
+          "x": -41,
+          "y": -16,
           "greeting": "The ore comes down the lake on rafts, and I melt it. The crabs come too. I don't melt those."
         },
         {
@@ -14859,8 +14859,8 @@
           "name": "Harbourmaster Fitch",
           "role": "quests",
           "art": "npc_harbourmaster_fitch",
-          "x": -19,
-          "y": 2,
+          "x": 16,
+          "y": -41,
           "greeting": "Rafts in, rafts out, and not one of them on time."
         }
       ]
@@ -15333,13 +15333,13 @@
         },
         {
           "art": "sleepy_cottage",
-          "x": -15,
-          "y": -13
+          "x": 31,
+          "y": -8
         },
         {
           "art": "inn",
-          "x": -4,
-          "y": -13
+          "x": 7,
+          "y": -29
         },
         {
           "art": "sleepy_cottage_lilac",
@@ -15462,8 +15462,8 @@
           "name": "Night-Owl Nettie",
           "role": "quests",
           "art": "npc_nightowl_nettie",
-          "x": -16,
-          "y": -15,
+          "x": 30,
+          "y": -10,
           "greeting": "Can't sleep? Neither can we. Welcome to Wakewell, where nobody has yawned in a year."
         },
         {
@@ -15481,8 +15481,8 @@
           "name": "Coffee-Roaster Bastian",
           "role": "quests",
           "art": "npc_roaster_bastian",
-          "x": -5,
-          "y": -15,
+          "x": 6,
+          "y": -31,
           "greeting": "Coffee? Tea? A second coffee? We've got all night. We always have all night."
         }
       ]
@@ -16029,8 +16029,8 @@
           "name": "Drum-Maker Saba",
           "role": "quests",
           "art": "npc_drummaker_saba",
-          "x": -17,
-          "y": -4,
+          "x": -35,
+          "y": -18,
           "greeting": "On the steppe, you hear a drum before you see the village. Welcome to Tallgrass."
         },
         {
@@ -16038,8 +16038,8 @@
           "name": "Steppe Elder Kestrel",
           "role": "quests",
           "art": "npc_elder_kestrel",
-          "x": -28,
-          "y": -4,
+          "x": -31,
+          "y": 24,
           "greeting": "The grass grows taller than a man here, and the stories grow taller than the grass."
         },
         {
@@ -16056,13 +16056,13 @@
       "buildings": [
         {
           "art": "yurt",
-          "x": -16,
-          "y": -2
+          "x": -34,
+          "y": -16
         },
         {
           "art": "desert_tent",
-          "x": -27,
-          "y": -2
+          "x": -30,
+          "y": 26
         },
         {
           "art": "yurt",
@@ -16510,8 +16510,8 @@
           "name": "Pepper-Farmer Ginger",
           "role": "quests",
           "art": "npc_pepper_ginger",
-          "x": -12,
-          "y": -11,
+          "x": 29,
+          "y": 9,
           "greeting": "Bless you! Oh, you didn't sneeze? You will. Everyone does in Pepperpot Bay."
         },
         {
@@ -16519,8 +16519,8 @@
           "name": "Salt-Panner Morrow",
           "role": "quests",
           "art": "npc_saltpanner_morrow",
-          "x": -1,
-          "y": -11,
+          "x": 20,
+          "y": -23,
           "greeting": "Salt from the sea, pepper from the hill. We season the whole coast, we do."
         }
       ],
@@ -16536,13 +16536,13 @@
       "buildings": [
         {
           "art": "beach_hut",
-          "x": -11,
-          "y": -9
+          "x": 30,
+          "y": 11
         },
         {
           "art": "fisher_shack",
-          "x": 0,
-          "y": -9
+          "x": 21,
+          "y": -21
         },
         {
           "art": "inn_teal",
@@ -17012,13 +17012,13 @@
         },
         {
           "art": "snow_cabin",
-          "x": 21,
-          "y": -2
+          "x": 43,
+          "y": -38
         },
         {
           "art": "inn",
-          "x": 10,
-          "y": -2
+          "x": -59,
+          "y": -13
         },
         {
           "art": "igloo",
@@ -17046,8 +17046,8 @@
           "name": "Ice-Carver Sigrun",
           "role": "quests",
           "art": "npc_icecarver_sigrun",
-          "x": 20,
-          "y": -4,
+          "x": 42,
+          "y": -40,
           "greeting": "Ice is just water that's decided to hold still. I help it decide what shape."
         },
         {
@@ -17065,8 +17065,8 @@
           "name": "Soup-Wife Margery",
           "role": "quests",
           "art": "npc_soupwife_margery",
-          "x": 9,
-          "y": -4,
+          "x": -60,
+          "y": -15,
           "greeting": "Soup! Hot soup! The only thing in Icemoor that isn't frozen solid."
         }
       ]
@@ -17538,8 +17538,8 @@
           "name": "Shrine-Keeper Ondine",
           "role": "quests",
           "art": "npc_shrinekeeper_ondine",
-          "x": -23,
-          "y": -1,
+          "x": 23,
+          "y": -19,
           "greeting": "Pilgrims rest here before they walk the drowned halls. Rest a while too."
         },
         {
@@ -17560,8 +17560,8 @@
         },
         {
           "art": "water_shrine",
-          "x": -22,
-          "y": 1
+          "x": 24,
+          "y": -17
         },
         {
           "art": "stone_hut",
@@ -18542,13 +18542,13 @@
         },
         {
           "art": "item_shop",
-          "x": -4,
-          "y": -11
+          "x": 7,
+          "y": -29
         },
         {
           "art": "house_green",
-          "x": 7,
-          "y": -11
+          "x": 31,
+          "y": -8
         },
         {
           "art": "forest_lodge",
@@ -18698,8 +18698,8 @@
           "name": "Spectacle-Maker Fennimore",
           "role": "quests",
           "art": "npc_spectacle_fennimore",
-          "x": -5,
-          "y": -13,
+          "x": 6,
+          "y": -31,
           "greeting": "Everyone who goes through the gate wears green spectacles. Who do you think makes them?"
         },
         {
@@ -18707,8 +18707,8 @@
           "name": "Poppy-Farmer Dell",
           "role": "quests",
           "art": "npc_poppyfarmer_dell",
-          "x": 6,
-          "y": -13,
+          "x": 30,
+          "y": -10,
           "greeting": "Mind the poppies. They make you sleepy. I've been yawning since I was four."
         },
         {
@@ -19230,8 +19230,8 @@
         },
         {
           "art": "fairy_tree_house_moon",
-          "x": -4,
-          "y": -3
+          "x": 4,
+          "y": -28
         },
         {
           "art": "bluebell_house",
@@ -19331,8 +19331,8 @@
           "name": "Pip the Lamplighter",
           "role": "quests",
           "art": "npc_pip",
-          "x": -5,
-          "y": -5,
+          "x": 3,
+          "y": -30,
           "greeting": "Psst, down here! I'm Pip. I light Glimmerbough's lanterns, when the moths leave me any light."
         },
         {
