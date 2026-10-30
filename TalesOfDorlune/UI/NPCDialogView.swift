@@ -24,8 +24,12 @@ struct NPCDialogView: View {
     /// What a shop, a smith, the weaver or a barber has for you, open in a window of its own
     /// (`waresWindow`).
     @State private var browsing = DebugLaunch.opensWares
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
+        // The screen's safe area, measured outside the dialog (which runs under the notch and the home
+        // indicator, and inside reads none): the wares' window keeps to it, as big as a menu window.
+        GeometryReader { screen in
         GeometryReader { proxy in
             // Fairyland Online-style: the character stands big in the bottom-right corner, cut off by the
             // edge of the screen, over the window they talk from, which runs the width of the screen
@@ -37,17 +41,21 @@ struct NPCDialogView: View {
                 Color.black.opacity(0.35)
                     .onTapGesture(perform: onClose)
 
-                bubble(maxHeight: proxy.size.height * 0.5, speakerRoom: portrait * 0.5)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, bottom)
+                // Out of sight under the wares' window, so what they said doesn't show through it.
+                Group {
+                    bubble(maxHeight: proxy.size.height * 0.5, speakerRoom: portrait * 0.5)
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, bottom)
 
-                SpriteImage(art: npc.art, size: portrait)
-                    .offset(x: portrait * 0.22, y: portrait * 0.16)
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
+                    SpriteImage(art: npc.art, size: portrait)
+                        .offset(x: portrait * 0.22, y: portrait * 0.16)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+                .opacity(browsing && hasWares ? 0 : 1)
 
                 if browsing, hasWares {
-                    waresWindow(safeArea: proxy.safeAreaInsets)
+                    waresWindow(safeArea: screen.safeAreaInsets)
                         .frame(width: proxy.size.width, height: proxy.size.height)
                         .transition(.opacity)
                 }
@@ -95,6 +103,7 @@ struct NPCDialogView: View {
             .animation(.easeOut(duration: 0.15), value: deal?.id)
         }
         .ignoresSafeArea()
+        }
     }
 
     /// The window they talk from: what they say and its buttons lined up under their name, all
@@ -205,7 +214,7 @@ struct NPCDialogView: View {
     /// what they just said, and their wares under it. An item's card and how many to buy or sell open over it.
     private func waresWindow(safeArea: EdgeInsets) -> some View {
         ZStack {
-            Color.black.opacity(0.45)
+            Color.black.opacity(0.5)
                 .onTapGesture { browsing = false }
             VStack(spacing: 0) {
                 WindowTitle(npc.name, onClose: { browsing = false })
@@ -226,12 +235,14 @@ struct NPCDialogView: View {
             .foregroundStyle(HUDStyle.cream)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .gameWindow()
+            .popIn()
             .menuWindowMargins()
             // The dialog runs under the notch and the home indicator; the window keeps clear of them.
             .padding(.top, safeArea.top)
             .padding(.leading, safeArea.leading)
             .padding(.trailing, safeArea.trailing)
-            .padding(.bottom, safeArea.bottom)
+            // On its side, down in the home indicator's strip, as a menu window is (`menuWindowMargins`).
+            .padding(.bottom, verticalSizeClass == .compact ? 0 : safeArea.bottom)
         }
     }
 
