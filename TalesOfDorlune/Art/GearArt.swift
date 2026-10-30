@@ -10,14 +10,14 @@ enum GearArt {
     /// A weapon sprite for `item`, sized for a character `height` points tall.
     static func weapon(_ item: ItemDef, height: CGFloat) -> SKSpriteNode? {
         guard item.type == .weapon else { return nil }
-        let name = "held_\(item.id)"
-        if let side = posed(name + "_side") {
+        let name = "held_\(item.baseID)", dye = dyeSuffix(item)
+        if let side = posed(name + "_side" + dye) {
             // Drawn for holding (tools/item_art.py held_pair), the grip in the middle; `pose` swaps in
             // the front one facing you or away (held up nearly upright, a whip hanging).
             let node = SKSpriteNode(texture: side.texture, size: sized(side.pixels, height: height))
             node.anchorPoint = CGPoint(x: 0.5, y: 0.5)
             node.name = "weapon"
-            node.userData = NSMutableDictionary(dictionary: ["held": name])
+            node.userData = NSMutableDictionary(dictionary: ["held": name, "dye": dye])
             if let hex = item.glow, let color = UIColor(hex: hex) {
                 let light = glow(color, at: .zero, height: height)
                 light.name = "glow"
@@ -52,8 +52,8 @@ enum GearArt {
     /// unit point (y up, like an anchor) and its size as a share of the character's height.
     static func heldImage(_ item: ItemDef, facing: Direction = .right) -> (image: UIImage, grip: CGPoint, scale: CGFloat)? {
         guard item.type == .weapon else { return nil }
-        let name = "held_\(item.id)"
-        for art in [name + (upright(facing) ? "_front" : "_side"), name + "_side"] {
+        let name = "held_\(item.baseID)", dye = dyeSuffix(item)
+        for art in [name + (upright(facing) ? "_front" : "_side") + dye, name + "_side" + dye] {
             if let held = posed(art), let image = ArtLibrary.shared.artImage(art) {
                 return (image, CGPoint(x: 0.5, y: 0.5), held.pixels.width / 48)
             }
@@ -99,6 +99,12 @@ enum GearArt {
         ])
         spark.run(.repeatForever(drift))
         return group
+    }
+
+    /// A dyed weapon's held sprites are its piece's, recoloured: "held_<piece>_side~<dye id>"
+    /// (`ArtLibrary.dyedAsset`). Empty for one that isn't dyed.
+    private static func dyeSuffix(_ item: ItemDef) -> String {
+        item.dyeID.map { String(ItemDef.dyeMark) + $0 } ?? ""
     }
 
     /// Facing you or away, a weapon is held up nearly upright (`_front`), else as drawn (`_side`).
@@ -200,8 +206,10 @@ enum GearArt {
     /// sprite, held up nearly upright (a whip hanging); mirrored facing away or left. `frame`: a frame
     /// other than the one showing (the walk's next, `Walker`).
     static func pose(_ weapon: SKSpriteNode, facing: Direction, height: CGFloat, frame: SKTexture? = nil) {
+        // A dyed weapon's held sprites are its piece's, recoloured (`dyeSuffix`).
+        let dye = weapon.userData?["dye"] as? String ?? ""
         if let name = weapon.userData?["held"] as? String,
-           let held = posed(name + (upright(facing) ? "_front" : "_side")) ?? posed(name + "_side") {
+           let held = posed(name + (upright(facing) ? "_front" : "_side") + dye) ?? posed(name + "_side" + dye) {
             // At the side facing you or away, as drawn walking left or right.
             weapon.xScale = 1
             weapon.texture = held.texture

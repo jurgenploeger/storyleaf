@@ -710,12 +710,14 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   the gem and a Sheepskin (Mix on the gem's card; items.json `dye`, `make` mix, never dropped): Amber, Olive
   (Cat's Eye), Emerald, Azure (Azurite), Golden (Topaz), Crimson (Agate), Snow White (Diamond), Lavender
   (Chalcedony) and Midnight (Dragon Pearl). Orla the Weaver and every barber dye one piece with one dye, in a
-  window of its own (`DyeWindow`): body armour, a hat that goes with armour, gloves or boots, worn or from the
-  bag, not a festive hat, a cape, a weapon or a trinket; washing a dye out is free. One piece only: a dyed piece
+  window of its own (`DyeWindow`): body armour, a hat that goes with armour, gloves, boots or (since 0.9.8,
+  playtesting 2026-10-30: "Also weapons should be dyed") a weapon, worn or from the bag, not a festive hat, a cape
+  or a trinket; washing a dye out is free. One piece only: a dyed piece
   is a kind of its own, "<piece>~<dye>" (`copper_plate~crimson_dye`, `Content.item`, Dyes.swift), its name with
   the colour after it, so of three Copper Plates one turns Crimson and two stay copper. Its sheet and hat take
   the dye as a tier's take theirs (`DyeDef.rules`, the tiers' `tint` numbers worked back from their `color`),
-  gloves and boots are painted in it, and its icon is recoloured from its own main colour (`Recolor.dyeRules`).
+  gloves and boots are painted in it, and its icon is recoloured from its own main colour (`Recolor.dyeRules`), a
+  weapon's held sprites too (`held_<piece>_side~<dye>`, `GearArt`).
   A dyed piece no longer shows its tier by its colour: the colour is the wearer's choice, the stats stay the
   piece's. Adventurers don't buy or sell dyed pieces; shops buy them at the piece's price.
 - Festive seasons and hats, like RuneScape's holiday events (ours, since 0.7.30, playtesting 2026-10-17: "Also

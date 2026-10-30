@@ -45,6 +45,10 @@ dye_window   | newgame,level=12,npc=barber,equip=copper_plate~crimson_dye+copper
 dye_hero     | newgame,class=fighter,level=12,map=meadowbrook,equip=copper_plate~crimson_dye+copper_helm~crimson_dye+copper_gauntlets~azure_dye+copper_boots~azure_dye,hour=12,weather=clear | 8
 dye_gem_card | newgame,menu=bag,bag=agate+sheepskin,inspect=agate | 8
 dye_bag      | newgame,class=fighter,level=12,menu=bag,bag=amber_dye+olive_dye+emerald_dye+azure_dye+golden_dye+crimson_dye+snow_white_dye+lavender_dye+midnight_dye+copper_plate+copper_plate~crimson_dye+silver_plate~golden_dye+iron_plate~emerald_dye+mage_robe~crimson_dye+copper_hide~midnight_dye+leather_vest~azure_dye | 8
+# Weapons take a dye too (0.9.8): the window with a sword in hand and an axe and staff in the bag, and the
+# hero holding a dyed sword.
+dye_weapons  | newgame,class=fighter,level=40,npc=barber,equip=steel_sword~crimson_dye,bag=steel_axe+oak_staff~azure_dye+golden_dye+emerald_dye,dyeing | 8
+dye_held     | newgame,class=fighter,level=40,map=meadowbrook,equip=steel_sword~crimson_dye,hour=12,weather=clear | 8
 # A banker's word, Open the bank under it; and the bank in its own window, the bag over the bank.
 banker       | newgame,npc=meadow_banker,bag=potion+seal_stone,gold=500 | 8
 bank         | newgame,bank=meadow_banker,bag=potion+seal_stone,gold=500 | 8
