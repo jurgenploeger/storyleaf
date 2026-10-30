@@ -800,6 +800,8 @@ book_cards        | newgame,cards=12,book                                    | 8
 book_card_page    | newgame,cards=12,book,page=jelly                         | 8
 book_card_missing | newgame,cards=12,book,page=hedgehog                      | 8
 victory_cards     | newgame,level=5,map=sunny_meadow,battle=2,win,card       | 30
+# Upright with every skill a fighter has by 180: the row fits the screen, the battle not stretched past it (2026-10-30).
+battle_many_skills | newgame,level=180,class=fighter,pet=pineapple,friends=4,map=snow_white_forest,battle=3 | 15
 # A big win: five-figure EXP beside the coins, on one line (2026-10-30).
 victory_big       | newgame,level=179,map=starfall_isle,battle=3,win          | 30
 # Companion toys: in the bag, played with (Toys 4/10 on its card), a toy's details in the shop, Tilly the
