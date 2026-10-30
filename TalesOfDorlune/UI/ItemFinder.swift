@@ -259,16 +259,15 @@ struct FilterChip: View {
 
 /// The slots of the Bag or one side of the bank, one grid for every kind of thing, in your order
 /// (playtesting 2026-10-26: "Make sure 6 grid items fit on the same row"): six to a row on a phone
-/// held upright, the slots as big as the width allows; more on a wider window. Hold a slot and it lifts (a little bigger, a shadow, a tap of the
-/// Taptic Engine) and follows your finger, the others sliding aside to open the place it would land
-/// in; let go and it's there (`onMove`, `GameSession.moveItem`) ("If I tap and hold the item lifts
-/// up, then when I move it around the other item grid cards move aside"). A tap opens its card; a
-/// swipe still scrolls the window, which holds still while a slot is lifted (`dragging`). VoiceOver
-/// moves it a slot at a time.
+/// held upright, the slots as big as the width allows; more on a wider window. A tap opens its card;
+/// held, a slot lifts and goes where you drop it, onto another slot of the same grid, which it takes
+/// the place of (`onMove`, `GameSession.moveItem`: "In the bank and inventory I should be able to
+/// reorder any items"). The lift is iOS's own drag and drop (playtesting 2026-10-30: "I'm not able to
+/// scroll in the bank modal"): the hold-then-drag gesture of our own it replaced, a drag from the first
+/// touch on every slot, kept the window from scrolling under a finger on the slots. VoiceOver moves
+/// a slot a place at a time.
 struct ItemSlotGrid<Tile: View>: View {
     let items: [ItemDef]
-    /// True while a slot is lifted: the window's scroll view holds still meanwhile.
-    let dragging: Binding<Bool>?
     let label: (ItemDef) -> String
     let hint: String?
     let onTap: (ItemDef) -> Void
@@ -276,12 +275,11 @@ struct ItemSlotGrid<Tile: View>: View {
     let onMove: (_ id: String, _ target: String) -> Void
     let tile: (_ item: ItemDef, _ size: CGFloat) -> Tile
 
-    init(items: [ItemDef], dragging: Binding<Bool>? = nil,
+    init(items: [ItemDef],
          label: @escaping (ItemDef) -> String, hint: String? = nil,
          onTap: @escaping (ItemDef) -> Void, onMove: @escaping (_ id: String, _ target: String) -> Void,
          @ViewBuilder tile: @escaping (_ item: ItemDef, _ size: CGFloat) -> Tile) {
         self.items = items
-        self.dragging = dragging
         self.label = label
         self.hint = hint
         self.onTap = onTap
@@ -291,22 +289,14 @@ struct ItemSlotGrid<Tile: View>: View {
 
     /// The room width the grid has, measured.
     @State private var width: CGFloat = 0
-    /// The slot that's lifted, where it was, and where it would land, as places in `items`.
-    @State private var held: String?
-    @State private var start = 0
-    @State private var landing = 0
-    /// How far the finger has moved it since it lifted.
-    @State private var shift: CGSize = .zero
-    @GestureState private var pressing = false
-    /// When a lifted slot was last put down, so its touch doesn't also open it.
-    @State private var putDownAt = Date.distantPast
+    /// What a dragged slot carries besides its item: this grid's own mark, so a slot dropped on
+    /// another grid (the bag's on the bank's) moves nothing there.
+    @State private var scope = UUID().uuidString
 
     /// Between slots, and the most a slot grows to before another fits in the row.
     private static var spacing: CGFloat { 6 }
     private static var widest: CGFloat { 66 }
     private static var settle: Animation { .spring(response: 0.3, dampingFraction: 0.8) }
-    /// The grid's own space, which the finger's moves are measured in: the slot itself moves.
-    private static var space: String { "itemSlotGrid" }
 
     private var columns: Int {
         guard width > 0 else { return 6 }
@@ -324,58 +314,40 @@ struct ItemSlotGrid<Tile: View>: View {
         return CGPoint(x: CGFloat(cell % columns) * step, y: CGFloat(cell / columns) * step)
     }
 
-    /// The items as they show: while one's lifted, the others close up round where it would land.
-    private var shown: [ItemDef] {
-        guard let held, let item = items.first(where: { $0.id == held }) else { return items }
-        var rest = items.filter { $0.id != held }
-        rest.insert(item, at: min(max(0, landing), rest.count))
-        return rest
-    }
-
     var body: some View {
         let slot = self.slot
         let cells = items.count
         let rows = max(1, (cells + columns - 1) / columns)
         let height = CGFloat(rows) * slot + CGFloat(rows - 1) * Self.spacing
         ZStack(alignment: .topLeading) {
-            ForEach(Array(shown.enumerated()), id: \.element.id) { index, item in
+            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                 cell(item, at: index, slot: slot)
             }
         }
         .frame(width: width > 0 ? width : nil, height: height, alignment: .topLeading)
-        .coordinateSpace(name: Self.space)
         .frame(maxWidth: .infinity, alignment: .leading)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
-        // A lift that ends without a lift's end (the window took the touch): it lands where it is.
-        .onChange(of: pressing) { _, now in
-            if !now { putDown() }
-        }
     }
 
     private func cell(_ item: ItemDef, at index: Int, slot: CGFloat) -> some View {
-        let isHeld = held == item.id
-        let home = corner(index)
-        let lifted = corner(start)
-        let place = isHeld ? CGPoint(x: lifted.x + shift.width, y: lifted.y + shift.height) : home
-        let position = items.firstIndex { $0.id == item.id }
-        let before = position.flatMap { $0 > 0 ? items[$0 - 1] : nil }
-        let after = position.flatMap { $0 + 1 < items.count ? items[$0 + 1] : nil }
+        let place = corner(index)
+        let before = index > 0 ? items[index - 1] : nil
+        let after = index + 1 < items.count ? items[index + 1] : nil
         return tile(item, slot)
             .frame(width: slot, height: slot)
             .contentShape(Rectangle())
-            // A tap opens it; held, it lifts. Each a gesture of its own, side by side: as the hold's
-            // fallback (`exclusively(before:)`) the tap never came, in a scroll view (playtesting
-            // 2026-10-26: "Clicking on items in the inventory doesn't work").
-            .onTapGesture {
-                // Not the touch that lifted it, nor the one that just put it down.
-                guard held == nil, Date().timeIntervalSince(putDownAt) > 0.3 else { return }
-                onTap(item)
+            .onTapGesture { onTap(item) }
+            .draggable(scope + "|" + item.id) {
+                tile(item, slot).frame(width: slot, height: slot)
             }
-            .simultaneousGesture(lift(item))
-            .scaleEffect(isHeld ? 1.15 : 1)
-            .shadow(color: .black.opacity(isHeld ? 0.45 : 0), radius: isHeld ? 8 : 0, x: 0, y: isHeld ? 5 : 0)
+            .dropDestination(for: String.self) { payloads, _ in
+                guard let payload = payloads.first, payload.hasPrefix(scope + "|") else { return false }
+                let id = String(payload.dropFirst(scope.count + 1))
+                guard id != item.id, items.contains(where: { $0.id == id }) else { return false }
+                withAnimation(Self.settle) { onMove(id, item.id) }
+                return true
+            }
             .offset(x: place.x, y: place.y)
-            .zIndex(isHeld ? 1 : 0)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(label(item))
             .accessibilityHint(hint ?? "")
@@ -383,59 +355,5 @@ struct ItemSlotGrid<Tile: View>: View {
             .accessibilityAction { onTap(item) }
             .accessibilityAction(named: L("Move earlier")) { if let before { onMove(item.id, before.id) } }
             .accessibilityAction(named: L("Move later")) { if let after { onMove(item.id, after.id) } }
-    }
-
-    /// Held a moment, the slot lifts; then it follows the finger.
-    private func lift(_ item: ItemDef) -> some Gesture {
-        LongPressGesture(minimumDuration: 0.3)
-            .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .named(Self.space)))
-            .updating($pressing) { value, state, _ in
-                if case .second(true, _) = value { state = true }
-            }
-            .onChanged { value in
-                guard case .second(true, let drag) = value else { return }
-                if held != item.id { pickUp(item) }
-                shift = drag?.translation ?? .zero
-                hover()
-            }
-            .onEnded { _ in putDown() }
-    }
-
-    private func pickUp(_ item: ItemDef) {
-        guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
-        held = item.id
-        start = index
-        landing = index
-        shift = .zero
-        dragging?.wrappedValue = true
-        Haptics.impact(.light)
-    }
-
-    /// Where the lifted slot would land: the cell its middle is over, the others sliding aside.
-    private func hover() {
-        guard held != nil, !items.isEmpty else { return }
-        let step = slot + Self.spacing
-        let lifted = corner(start)
-        let middle = CGPoint(x: lifted.x + shift.width + slot / 2, y: lifted.y + shift.height + slot / 2)
-        let column = min(max(Int(middle.x / step), 0), columns - 1)
-        let row = max(Int(middle.y / step), 0)
-        let to = min(max(row * columns + column, 0), items.count - 1)
-        guard to != landing else { return }
-        withAnimation(Self.settle) { landing = to }
-        if GameSettings.haptics { UISelectionFeedbackGenerator().selectionChanged() }
-    }
-
-    /// Let go: it lands where it would, and the order's saved by `onMove`.
-    private func putDown() {
-        guard let id = held else { return }
-        let from = start, to = landing
-        let target = items.indices.contains(to) ? items[to].id : nil
-        withAnimation(Self.settle) {
-            held = nil
-            shift = .zero
-            if from != to, let target { onMove(id, target) }
-        }
-        putDownAt = Date()
-        dragging?.wrappedValue = false
     }
 }

@@ -28,8 +28,6 @@ struct MenuView: View {
     @State private var settingsPage: SettingsPage = DebugLaunch.subTab.flatMap(SettingsPage.init(rawValue:)) ?? .general
     /// An egg to hatch, chosen on its card: the Bag plays the hatching.
     @State private var hatchRequest: ItemDef?
-    /// A slot in the Bag lifted to move it (`ItemSlotGrid`): the page holds still.
-    @State private var dragLock = false
     /// A tap on something in the Bag: its card, over the menu. Debug `inspect=<item>` opens one
     /// (unless it's for the gear grid, `change=`).
     @State private var inspecting: ItemDef? = DebugLaunch.changingSlot == nil ? DebugLaunch.inspectedItem.flatMap { Content.shared.item($0) } : nil
@@ -114,7 +112,7 @@ extension MenuView {
                     case .companions: CompanionsTab(session: session, page: $companionsPage)
                     case .friends: FriendsTab(session: session)
                     case .bag:
-                        BagTab(session: session, note: $bagNote, hatchRequest: $hatchRequest, dragging: $dragLock,
+                        BagTab(session: session, note: $bagNote, hatchRequest: $hatchRequest,
                                onInspect: { item in withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { inspecting = item } })
                     case .quests: QuestsTab(session: session, page: $questsPage)
                     case .settings: SettingsView(session: session, onQuitToTitle: onQuitToTitle, page: settingsPage)
@@ -125,8 +123,6 @@ extension MenuView {
             }
             // Debug `bottom`: opens at the end of the page (screenshots of the skills).
             .defaultScrollAnchor(DebugLaunch.opensMenuAtBottom ? .bottom : nil)
-            // Still while a slot in the Bag is lifted, so the finger moves the slot.
-            .scrollDisabled(dragLock)
         }
         .id(localizer.language)
     }
@@ -1223,16 +1219,14 @@ private struct CompanionCard: View {
 
 /// Everything you carry in one grid of slots, like an adventurer's pack: potions and other things to
 /// use, spare gear, and materials, each with how many you have, in your order. A tap opens the item's
-/// card, with Drop, Trade and the button to use, give, hatch or wear it; holding one lifts it to move
-/// it, the others sliding aside (`ItemSlotGrid`, your order of the bag). Search, sort and pick the
+/// card, with Drop, Trade and the button to use, give, hatch or wear it; holding one lifts it to drop
+/// it onto another, whose place it takes (`ItemSlotGrid`, your order of the bag). Search, sort and pick the
 /// kinds to show at the top; gear better than what you wear has the gold upgrade arrow.
 private struct BagTab: View {
     let session: GameSession
     @Binding var note: String?
     /// An egg chosen on its card: it hatches here.
     @Binding var hatchRequest: ItemDef?
-    /// True while a slot is lifted to move it: the window holds still.
-    @Binding var dragging: Bool
     /// A tap on an item: MenuView shows its card.
     let onInspect: (ItemDef) -> Void
     @State private var hatched: Pet?
@@ -1335,7 +1329,7 @@ private struct BagTab: View {
     /// better than what you wear, gear you can't wear yet (too low a level, another class's) faded,
     /// and a coin on what's up for trade.
     private func grid(_ items: [ItemDef]) -> some View {
-        ItemSlotGrid(items: items, dragging: $dragging,
+        ItemSlotGrid(items: items,
                      label: { item in
                          let count = session.count(of: item.id)
                          let name = count > 1 ? L("{item}, {count}", ["item": item.name, "count": count]) : item.name

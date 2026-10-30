@@ -12,8 +12,6 @@ struct BankView: View {
     /// What you tapped in the bag or the bank: its card, over the bank.
     /// Debug `inspect=<item>`: that item's card, on the bag's side.
     @State private var picked: BankPick? = DebugLaunch.inspectedItem.flatMap { Content.shared.item($0) }.map { BankPick(item: $0, side: .bag) }
-    /// A slot lifted to move it (`ItemSlotGrid`): the window holds still.
-    @State private var dragLock = false
 
     var body: some View {
         ZStack {
@@ -33,11 +31,10 @@ struct BankView: View {
                                 .foregroundStyle(HUDStyle.cream)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        BankPanel(session: session, reply: $reply, onPick: { picked = $0 }, dragging: $dragLock)
+                        BankPanel(session: session, reply: $reply, onPick: { picked = $0 })
                     }
                     .padding(14)
                 }
-                .scrollDisabled(dragLock)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .gameWindow()
@@ -61,8 +58,8 @@ struct BankPick: Identifiable {
 
 /// The bank's insides: your bag over the bank, RuneScape-style. Tap something for its card
 /// (`onPick`; playtesting 2026-10-26: "tap on an item to open its details in another modal"): how many
-/// to put in or take out, or to delete. Deposit all empties the bag. Hold a slot to lift it and move it
-/// about its side, the others sliding aside (`ItemSlotGrid`; "In the bank and inventory I should be
+/// to put in or take out, or to delete. Deposit all empties the bag. Hold a slot to lift it and drop
+/// it onto another of its side, whose place it takes (`ItemSlotGrid`; "In the bank and inventory I should be
 /// able to reorder any items"). The bank's search, sort and kinds ("Also add sorting and filtering to the
 /// bank") are a way of looking, as the Bag's are: what's filtered out is still there, and a sort
 /// leaves your order as it is till you move something while it's on. Nothing in the bank is lost to a
@@ -71,8 +68,6 @@ struct BankPanel: View {
     let session: GameSession
     @Binding var reply: String?
     let onPick: (BankPick) -> Void
-    /// True while a slot is lifted to move it: the window holds still.
-    var dragging: Binding<Bool>? = nil
 
     /// The bag as the Bag tab sorts it.
     @AppStorage("bagSort") private var bagSort: ItemSort = .standard
@@ -139,9 +134,9 @@ struct BankPanel: View {
         }
     }
 
-    /// One side's things: a tap for a thing's card; held, it lifts to move about its side.
+    /// One side's things: a tap for a thing's card; held, it lifts to drop onto another of its side.
     private func grid(_ items: [ItemDef], side: BankSide) -> some View {
-        ItemSlotGrid(items: items, dragging: dragging,
+        ItemSlotGrid(items: items,
                      label: { item in
                          let count = session.held(item.id, on: side)
                          return count > 1 ? L("{item}, {count}", ["item": item.name, "count": count]) : item.name
