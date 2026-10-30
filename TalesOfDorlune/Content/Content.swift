@@ -282,7 +282,7 @@ nonisolated enum ItemType: String, Decodable, Sendable {
 }
 
 nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
-    // `var` where a dyed copy differs from its piece (`dyed(with:dyeID:)`, Dyes.swift).
+    // `var` where a dyed copy differs from its piece (`dyed(main:trim:)`, Dyes.swift).
     var id: String
     var name: String
     let type: ItemType
@@ -339,7 +339,7 @@ nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
     /// cloak's (art/sprites/hood_<body>.png) in `color` and `accent`, lined with fur for `pattern` fur.
     let headgear: String?
     /// Trim colour on the sprite (buttons, clasps, hems), or a necklace's chain, "#RRGGBB".
-    let accent: String?
+    var accent: String?
     /// A cape's colour, or how gloves, boots and a necklace look worn (a necklace's chain is its
     /// `accent`), "#RRGGBB".
     var color: String?
@@ -355,6 +355,10 @@ nonisolated struct ItemDef: Decodable, Identifiable, Sendable {
     let make: Make?
     /// A dye's colour (`DyeDef`): what it dyes a piece of armour at a weaver or a barber.
     let dye: DyeDef?
+    /// A dyed piece's dyes (`dyed(main:trim:)`, never in items.json): its sheet or hat is recoloured in
+    /// the main one (`sheetTint(over:)`), its trim layer drawn in the other (`trimLayer(over:)`).
+    var mainDye: DyeDef? = nil
+    var trimDye: DyeDef? = nil
 
     nonisolated enum Make: String, Decodable, Sendable {
         case carve, join, mix
@@ -1501,13 +1505,27 @@ final class Content {
     func classDef(_ id: String) -> ClassDef { classes.first { $0.id == id } ?? classes[0] }
     func skill(_ id: String) -> SkillDef? { skills.first { $0.id == id } }
     func monster(_ id: String) -> MonsterDef? { monsters.first { $0.id == id } }
-    /// An item by its id, or a dyed piece by "<its id>~<the dye's id>" (`ItemDef.dyed`, made once and kept).
+    /// An item by its id, or a dyed piece by "<its id>~<the dye's id>", its trim's after another
+    /// ("<its id>~<dye>~<trim dye>", "<its id>~~<trim dye>": `ItemDef.dyed`, made once and kept). Only
+    /// the one way of writing each: "<its id>~<dye>~" is nothing.
     func item(_ id: String) -> ItemDef? {
         guard id.contains(ItemDef.dyeMark) else { return items.first { $0.id == id } }
         if let made = dyedItems[id] { return made }
-        guard let dyeID = ItemDef.dyeID(of: id), let dye = items.first(where: { $0.id == dyeID })?.dye,
+        let mainID = ItemDef.dyeID(of: id), trimID = ItemDef.trimDyeID(of: id)
+        guard mainID != nil || trimID != nil,
               let base = items.first(where: { $0.id == ItemDef.baseID(of: id) }), base.canBeDyed else { return nil }
-        let made = base.dyed(with: dye, dyeID: dyeID)
+        var main: (id: String, dye: DyeDef)?
+        if let mainID {
+            guard let dye = items.first(where: { $0.id == mainID })?.dye else { return nil }
+            main = (id: mainID, dye: dye)
+        }
+        var trim: (id: String, dye: DyeDef)?
+        if let trimID {
+            guard base.takesTrim, let dye = items.first(where: { $0.id == trimID })?.dye else { return nil }
+            trim = (id: trimID, dye: dye)
+        }
+        let made = base.dyed(main: main, trim: trim)
+        guard made.id == id else { return nil }
         dyedItems[id] = made
         return made
     }

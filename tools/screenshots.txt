@@ -49,6 +49,11 @@ dye_bag      | newgame,class=fighter,level=12,menu=bag,bag=amber_dye+olive_dye+e
 # hero holding a dyed sword.
 dye_weapons  | newgame,class=fighter,level=40,npc=barber,equip=steel_sword~crimson_dye,bag=steel_axe+oak_staff~azure_dye+golden_dye+emerald_dye,dyeing | 8
 dye_held     | newgame,class=fighter,level=40,map=meadowbrook,equip=steel_sword~crimson_dye,hour=12,weather=clear | 8
+# A trim takes a second dye (0.9.8): the window on Trim with a two-colour plate worn, the hero in midnight
+# plate trimmed in gold, a two-colour sword in hand, and an elf wizard's robe and hat trimmed.
+dye_trim_window | newgame,class=fighter,level=40,npc=barber,equip=copper_plate~crimson_dye~golden_dye+iron_longsword~~golden_dye,bag=copper_helm+leather_vest+golden_dye+azure_dye+snow_white_dye,dyeing=trim | 8
+dye_trim_hero   | newgame,class=fighter,level=40,map=meadowbrook,equip=copper_plate~midnight_dye~golden_dye+copper_helm~midnight_dye~golden_dye+iron_longsword~midnight_dye~golden_dye,hour=12,weather=clear | 8
+dye_trim_robe   | newgame,race=elf,class=mage,level=40,map=meadowbrook,equip=copper_robe~crimson_dye~snow_white_dye+copper_hat~crimson_dye~snow_white_dye+oak_staff~emerald_dye~golden_dye,hour=12,weather=clear | 8
 # A banker's word, Open the bank under it; and the bank in its own window, the bag over the bank.
 banker       | newgame,npc=meadow_banker,bag=potion+seal_stone,gold=500 | 8
 bank         | newgame,bank=meadow_banker,bag=potion+seal_stone,gold=500 | 8

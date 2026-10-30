@@ -3,7 +3,8 @@ import Foundation
 /// Dyeing armour (Dyes.swift): Orla the Weaver or a barber dyes one piece you carry or wear with a dye
 /// you mixed (playtesting 2026-10-30: "I want to be able to dye armor in some way. Maybe by combining
 /// items and then going to a character to do that"). One dye colours one piece: of three Copper Plates,
-/// one turns Crimson (`copper_plate~crimson_dye`) and two stay as they were. Washing it out is free.
+/// one turns Crimson (`copper_plate~crimson_dye`) and two stay as they were. A second dye colours its
+/// trim (`copper_plate~crimson_dye~golden_dye`). Washing it out is free.
 extension GameSession {
     /// A piece that can be dyed, and where it is: on the hero, or in the bag.
     struct DyePiece: Identifiable, Hashable {
@@ -30,26 +31,30 @@ extension GameSession {
         content.items.filter { $0.dye != nil && count(of: $0.id) > 0 }
     }
 
-    /// Dyes one piece (`piece`: on the hero or one of a kind in the bag) with one of `dyeID`, used up.
-    /// Returns the dyed piece, or nil if it can't be: no such dye in the bag, not a piece that takes one,
-    /// or that colour already.
+    /// Dyes one piece (`piece`: on the hero or one of a kind in the bag) with one of `dyeID`, used up: its
+    /// main colour, or with `trim` its trim (one that `takesTrim`; gloves and boots are one colour). The
+    /// other colour stays as it was. Returns the dyed piece, or nil if it can't be: no such dye in the bag,
+    /// not a piece that takes one there, or that colour already.
     @discardableResult
-    func dye(_ piece: DyePiece, with dyeID: String) -> ItemDef? {
-        guard let item = content.item(piece.itemID), item.canBeDyed, content.item(dyeID)?.dye != nil, count(of: dyeID) > 0,
-              item.dyeID != dyeID, let dyed = content.item(ItemDef.dyedID(item.baseID, with: dyeID)),
+    func dye(_ piece: DyePiece, with dyeID: String, trim: Bool = false) -> ItemDef? {
+        guard let item = content.item(piece.itemID), item.canBeDyed, !trim || item.takesTrim,
+              content.item(dyeID)?.dye != nil, count(of: dyeID) > 0, (trim ? item.trimDyeID : item.dyeID) != dyeID,
+              let dyed = content.item(ItemDef.dyedID(item.baseID, with: trim ? item.dyeID : dyeID, trim: trim ? dyeID : item.trimDyeID)),
               swap(piece, to: dyed.id) else { return nil }
         data.inventory[dyeID] = count(of: dyeID) > 1 ? count(of: dyeID) - 1 : nil
         tidyItemOrders()
         return dyed
     }
 
-    /// Washes a dyed piece back to the piece it was, free. Returns it, or nil if it isn't dyed.
+    /// Washes a dyed piece back to the piece it was, free; with `trimOnly` only its trim, its main colour
+    /// kept. Returns what it is now, or nil if there was nothing to wash out.
     @discardableResult
-    func washOut(_ piece: DyePiece) -> ItemDef? {
-        guard let item = content.item(piece.itemID), item.isDyed, let plain = content.item(item.baseID),
-              swap(piece, to: plain.id) else { return nil }
+    func washOut(_ piece: DyePiece, trimOnly: Bool = false) -> ItemDef? {
+        guard let item = content.item(piece.itemID), trimOnly ? item.trimDyeID != nil : item.isDyed,
+              let washed = content.item(trimOnly ? ItemDef.dyedID(item.baseID, with: item.dyeID) : item.baseID),
+              swap(piece, to: washed.id) else { return nil }
         tidyItemOrders()
-        return plain
+        return washed
     }
 
     /// Puts `id` where the piece was: in its slot on the hero, or one of it in the bag (in its place in
