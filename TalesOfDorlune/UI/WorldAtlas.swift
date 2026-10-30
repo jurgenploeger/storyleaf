@@ -20,6 +20,9 @@ struct WorldAtlas: View {
     private let bottomLeading: AnyView
     @State private var selected: String?
     @State private var pulse = false
+    /// Which badges show (playtesting 2026-10-30: "Add filters to the map so you can quickly see
+    /// stuff"), kept for the next time the map opens.
+    @AppStorage("mapFilter") private var filter: MapFilter = .all
     /// How the map lies in the view: its zoom, its turn and the spot in the middle.
     @State private var framing = Framing()
     /// The view's size, for the buttons over it.
@@ -143,11 +146,15 @@ struct WorldAtlas: View {
         .background(Self.sea)
         // Touches go through to the map under them.
         .overlay(alignment: .top) {
-            topLeading
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.bottom, 30)
-                .background { edgeBand(.top, marks: shown) }
-                .allowsHitTesting(false)
+            VStack(alignment: .leading, spacing: 8) {
+                topLeading
+                    .allowsHitTesting(false)
+                // The filters under the title, the one thing up here that takes a touch.
+                filterChips
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.bottom, 30)
+            .background { edgeBand(.top, marks: shown).allowsHitTesting(false) }
         }
         .overlay(alignment: .bottom) {
             bottomLeading
@@ -555,19 +562,21 @@ struct WorldAtlas: View {
     /// quest to hand in or news first, a boss, then the town's services). Tapping a group zooms in.
     private var badges: [Mark] {
         guard framing.scale > 0 else { return [] }
+        let filter = self.filter
         let order: [GameSession.MinimapMark.Kind] = [.lost, .questReady, .questNew, .boss, .healer, .bank, .shop, .smith, .weaver,
                                                      .barber, .guild, .waystone, .quest, .chest]
         var found: [Mark] = []
         for land in lands where session.hasVisited(land.def.id) {
             guard let spots = overview.spots[land.def.id] else { continue }
             for npc in land.def.npcs ?? [] {
-                guard let kind = session.minimapKind(for: npc), order.contains(kind), let spot = spots[npc.id] else { continue }
+                guard let kind = session.minimapKind(for: npc), order.contains(kind), filter.shows(kind),
+                      let spot = spots[npc.id] else { continue }
                 found.append(Mark(id: "badge \(land.def.id) \(npc.id)", kind: .badge, place: land.def.id,
                                   cell: GridPoint(col: land.origin.col + spot.col, row: land.origin.row + spot.row), badge: kind))
             }
         }
         // What you lost when you fell, where it lies (`LostPile`), in whichever land.
-        for pile in session.lostPiles {
+        for pile in session.lostPiles where filter.shows(.lost) {
             guard let land = lands.first(where: { $0.def.id == pile.mapID }), let position = pile.position, position.count == 2 else { continue }
             let grid = WorldMap.unproject(CGPoint(x: position[0], y: position[1]))
             found.append(Mark(id: "lost \(pile.id)", kind: .badge, place: pile.mapID,
@@ -596,6 +605,21 @@ struct WorldAtlas: View {
             leader.spot = CGPoint(x: sum.x / CGFloat(group.count), y: sum.y / CGFloat(group.count))
             return leader
         }
+    }
+
+    /// The filters, a chip each, one on at a time: as the Bag's kinds are.
+    private var filterChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(MapFilter.allCases, id: \.self) { kind in
+                    FilterChip(title: kind.title, on: filter == kind) {
+                        withAnimation(.easeOut(duration: 0.2)) { filter = kind }
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+        .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
     }
 
     private var marks: [Mark] {
@@ -882,5 +906,34 @@ private nonisolated struct CompassTriangle: Shape {
         path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
         path.closeSubpath()
         return path
+    }
+}
+
+/// Which of the world map's badges show (`WorldAtlas.filter`): all of them, or one kind, so what
+/// you're looking for stands out and doesn't hide in a group's number. Names, caves, locked roads
+/// and where you are always show.
+nonisolated enum MapFilter: String, CaseIterable {
+    case all, quests, bosses, town, waystones, treasure
+
+    var title: String {
+        switch self {
+        case .all: L("All")
+        case .quests: L("Quests")
+        case .bosses: L("Bosses")
+        case .town: L("Town")
+        case .waystones: L("Waystones")
+        case .treasure: L("Treasure")
+        }
+    }
+
+    @MainActor func shows(_ kind: GameSession.MinimapMark.Kind) -> Bool {
+        switch self {
+        case .all: true
+        case .quests: [.quest, .questNew, .questReady].contains(kind)
+        case .bosses: kind == .boss
+        case .town: [.healer, .bank, .shop, .smith, .weaver, .barber, .guild].contains(kind)
+        case .waystones: kind == .waystone
+        case .treasure: kind == .chest || kind == .lost
+        }
     }
 }
