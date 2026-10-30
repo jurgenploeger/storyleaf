@@ -99,6 +99,8 @@ struct GameView: View {
         // The fight waits while the app isn't in front (another app, the lock screen, a call, Control Centre).
         .onChange(of: scenePhase == .active) { _, active in
             coordinator.battle?.holdTurnClock(!active, for: "away")
+            // No push left on the stick while away: a thumb on it as the app went was never let go.
+            coordinator.input.move = .zero
             if active { coordinator.welcomeBack() }
         }
         .statusBarHidden()
