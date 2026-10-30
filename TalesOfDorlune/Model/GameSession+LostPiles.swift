@@ -29,11 +29,11 @@ extension GameSession {
 
     /// Leaves what you lost on the ground where you are, with when it'll be gone: picked up by an
     /// adventurer some while after it's anyone's, unless it's just gone first.
-    func dropPile(items: [String: Int], gold: Int, now: Date = Date(), roll: Double = .random(in: 0..<1)) {
-        guard !items.isEmpty || gold > 0 else { return }
+    func dropPile(items: [String: Int], now: Date = Date(), roll: Double = .random(in: 0..<1)) {
+        guard !items.isEmpty else { return }
         let found = now.addingTimeInterval(Self.pileYoursAlone - Self.pileFoundIn * Foundation.log(max(1e-6, 1 - roll)))
         let pile = LostPile(id: UUID(), mapID: data.mapID, position: playerPosition.map { [Double($0.x), Double($0.y)] },
-                            items: items, gold: gold, droppedAt: now,
+                            items: items, gold: 0, droppedAt: now,
                             takenAt: min(found, now.addingTimeInterval(Self.pileLasts)))
         data.lostPiles = Array((lostPiles + [pile]).suffix(Self.maxPiles))
     }
@@ -55,7 +55,7 @@ extension GameSession {
             piles[index].items[id, default: 0] += amount
             data.lostPiles = piles
         } else {
-            dropPile(items: [id: amount], gold: 0, now: now)
+            dropPile(items: [id: amount], now: now)
         }
         let name = content.item(id)?.name ?? id
         post(L("You dropped {item}.", ["item": amount > 1 ? "\(name) ×\(amount)" : name]))
@@ -101,7 +101,8 @@ extension GameSession {
             pile.items[item] = amount > taken ? amount - taken : nil
             got = true
         }
-        if pile.gold > 0, hasRoom(for: [], gold: pile.gold) {
+        // Coins in a pile from before they were never lost (0.9.4 and earlier).
+        if pile.gold > 0 {
             data.gold += pile.gold
             pile.gold = 0
             got = true

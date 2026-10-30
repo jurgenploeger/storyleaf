@@ -729,20 +729,23 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   game [...] so the item limit is 50 items you can hold"), as RuneScape has them; whether Fairyland Online had
   a warehouse isn't verified here. The bag holds 50 slots: every item one, however many of a kind you carry
   (since 0.8.8, the playtester's choice: "repeated items should count to the inventory"; before, a kind took
-  one slot however many), the coins one more (`GameSession.bagSlots`). A save carrying more moves the rest
+  one slot however many; the coins took one more till 0.9.5) (`GameSession.bagSlots`). A save carrying more moves the rest
   to the bank as it loads, a thing at a time from the biggest pile (`fitBag`). What doesn't fit is left behind, loot and rewards too (the
-  playtester's choice); a chest stays shut till there's room. The coins are a slot in the Bag with a pile
-  that grows with them (`CoinsTile`, tools/coin_art.py), RuneScape's way, not a count on the HUD. A bank
+  playtester's choice); a chest stays shut till there's room. Coins are no slot and are never banked or lost
+  (since 0.9.5, playtesting 2026-10-30: "We don't need to deposit coins in bank anymore"; the playtester
+  chose that they're always safe): the HUD's gold pill and the Bag's show them, and coins a game had in the
+  bank came back to its purse once (`returnBankedGold`). From 0.8.0 to 0.9.4 they were a slot in the Bag
+  (`CoinsTile`, tools/coin_art.py), banked, and lost with the bag. A bank
   (tools/building_art.py `bank`) with a banker (NPC role `bank`, a coin on the minimap and the world map)
-  stands in Meadowbrook, Prismhaven, Ingothold, Larkspur and Glimmerbough; what's in it, coins too, is never
-  lost. Beaten by monsters you lose what you carry, coins and all; beaten in a duel, what you wear too
+  stands in Meadowbrook, Prismhaven, Ingothold, Larkspur and Glimmerbough; what's in it is never
+  lost. Beaten by monsters you lose what you carry but your coins; beaten in a duel, what you wear too
   (`loseBelongings`). What a quest you're on needs stays with you (`questKeepsakes`). What's lost is left
   where you fell (asked for in playtesting 2026-10-25: "anything that was lost will be shown on the map
   and for other players to grab"), RuneScape's way: a pile (`LostPile`, tools/prop_art.py `lost_pile`)
   on the ground, the minimap and the world map, yours alone for 5 minutes, then anyone's: an adventurer
   passing picks it up some minutes later (5 on average, rolled as it's dropped), and it's gone after 20
   at most (`GameSession+LostPiles.swift`). Walk up to it and Pick up takes what the bag has room for. A game begun before
-  0.8.0 had its bag and coins moved into the bank once, on first load (`stockBankOnce`).
+  0.8.0 had its bag (and till 0.9.5 its coins) moved into the bank once, on first load (`stockBankOnce`).
 - The weapon in hand (`GearArt.pose`, since 0.4.8, asked for in playtesting 2026-10-12: "when they're wearing a
   weapon, it should look good"): the item's own art, held at the hand as each walk frame has it (beside the
   body, at the side facing you or away or the near hand walking sideways, and part way down that frame's own

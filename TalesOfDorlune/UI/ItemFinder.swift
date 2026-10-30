@@ -259,17 +259,14 @@ struct FilterChip: View {
 
 /// The slots of the Bag or one side of the bank, one grid for every kind of thing, in your order
 /// (playtesting 2026-10-26: "Make sure 6 grid items fit on the same row"): six to a row on a phone
-/// held upright, the slots as big as the width allows; more on a wider window. A slot that doesn't
-/// move may come first (the coins). Hold a slot and it lifts (a little bigger, a shadow, a tap of the
+/// held upright, the slots as big as the width allows; more on a wider window. Hold a slot and it lifts (a little bigger, a shadow, a tap of the
 /// Taptic Engine) and follows your finger, the others sliding aside to open the place it would land
 /// in; let go and it's there (`onMove`, `GameSession.moveItem`) ("If I tap and hold the item lifts
 /// up, then when I move it around the other item grid cards move aside"). A tap opens its card; a
 /// swipe still scrolls the window, which holds still while a slot is lifted (`dragging`). VoiceOver
 /// moves it a slot at a time.
-struct ItemSlotGrid<Lead: View, Tile: View>: View {
+struct ItemSlotGrid<Tile: View>: View {
     let items: [ItemDef]
-    /// Whether `lead` fills the first slot.
-    let leads: Bool
     /// True while a slot is lifted: the window's scroll view holds still meanwhile.
     let dragging: Binding<Bool>?
     let label: (ItemDef) -> String
@@ -277,22 +274,18 @@ struct ItemSlotGrid<Lead: View, Tile: View>: View {
     let onTap: (ItemDef) -> Void
     /// Puts the first id where the second is.
     let onMove: (_ id: String, _ target: String) -> Void
-    let lead: (_ size: CGFloat) -> Lead
     let tile: (_ item: ItemDef, _ size: CGFloat) -> Tile
 
-    init(items: [ItemDef], leads: Bool = false, dragging: Binding<Bool>? = nil,
+    init(items: [ItemDef], dragging: Binding<Bool>? = nil,
          label: @escaping (ItemDef) -> String, hint: String? = nil,
          onTap: @escaping (ItemDef) -> Void, onMove: @escaping (_ id: String, _ target: String) -> Void,
-         @ViewBuilder lead: @escaping (_ size: CGFloat) -> Lead,
          @ViewBuilder tile: @escaping (_ item: ItemDef, _ size: CGFloat) -> Tile) {
         self.items = items
-        self.leads = leads
         self.dragging = dragging
         self.label = label
         self.hint = hint
         self.onTap = onTap
         self.onMove = onMove
-        self.lead = lead
         self.tile = tile
     }
 
@@ -325,8 +318,6 @@ struct ItemSlotGrid<Lead: View, Tile: View>: View {
         return floor((width - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns))
     }
 
-    private var leadCells: Int { leads ? 1 : 0 }
-
     /// The top-left corner of a cell.
     private func corner(_ cell: Int) -> CGPoint {
         let step = slot + Self.spacing
@@ -343,14 +334,10 @@ struct ItemSlotGrid<Lead: View, Tile: View>: View {
 
     var body: some View {
         let slot = self.slot
-        let cells = leadCells + items.count
+        let cells = items.count
         let rows = max(1, (cells + columns - 1) / columns)
         let height = CGFloat(rows) * slot + CGFloat(rows - 1) * Self.spacing
         ZStack(alignment: .topLeading) {
-            if leads {
-                lead(slot)
-                    .frame(width: slot, height: slot)
-            }
             ForEach(Array(shown.enumerated()), id: \.element.id) { index, item in
                 cell(item, at: index, slot: slot)
             }
@@ -367,8 +354,8 @@ struct ItemSlotGrid<Lead: View, Tile: View>: View {
 
     private func cell(_ item: ItemDef, at index: Int, slot: CGFloat) -> some View {
         let isHeld = held == item.id
-        let home = corner(leadCells + index)
-        let lifted = corner(leadCells + start)
+        let home = corner(index)
+        let lifted = corner(start)
         let place = isHeld ? CGPoint(x: lifted.x + shift.width, y: lifted.y + shift.height) : home
         let position = items.firstIndex { $0.id == item.id }
         let before = position.flatMap { $0 > 0 ? items[$0 - 1] : nil }
@@ -428,11 +415,11 @@ struct ItemSlotGrid<Lead: View, Tile: View>: View {
     private func hover() {
         guard held != nil, !items.isEmpty else { return }
         let step = slot + Self.spacing
-        let lifted = corner(leadCells + start)
+        let lifted = corner(start)
         let middle = CGPoint(x: lifted.x + shift.width + slot / 2, y: lifted.y + shift.height + slot / 2)
         let column = min(max(Int(middle.x / step), 0), columns - 1)
         let row = max(Int(middle.y / step), 0)
-        let to = min(max(row * columns + column - leadCells, 0), items.count - 1)
+        let to = min(max(row * columns + column, 0), items.count - 1)
         guard to != landing else { return }
         withAnimation(Self.settle) { landing = to }
         if GameSettings.haptics { UISelectionFeedbackGenerator().selectionChanged() }
