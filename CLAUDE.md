@@ -69,6 +69,9 @@ people, bosses, quests) in player-facing text: `docs/fairyland-online.md` → Na
   Never swap a hero's whole sheet for a townsperson: hair shares its shades with skin and boots, so the deep reds and
   pale tips stay ginger. Derive them with `layers` instead (body, locks, hair from `tools/hero_layers.py`, the hair's
   rules widened to appearance.json `hairLayer`), as every quest giver is; `check_content.py` insists.
+- Making any sprite: the skill `.claude/skills/sprite-creation` (which of the four routes, a palette swap, layers,
+  code or Retro Diffusion, the steps for each, and the gate every new sprite passes: `scripts/sprite_check.py check
+  <ids> --new` and `review` beside its neighbours; Retro Diffusion's styles, prices and prompts in its `references/`).
 - `art/eyes.json`: where every sprite's eyes are, so it blinks (`EyeBlink`, `TalesOfDorlune/Art/IdlePoses.swift`):
   a single picture's (a lash drawn across each shut eye), a walk sheet's in each direction's standing pose (shut
   under its own lid); a body layer's stand for its head layer, a copy shuts its base's. The eyes are shut on the
