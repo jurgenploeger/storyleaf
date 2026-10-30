@@ -887,8 +887,9 @@ nonisolated enum CommandRow {
 /// A row of commands with your skills in it (the user, 2026-10-26: skills as buttons in the row,
 /// not behind a menu): `lead` at the left end (More, or Auto on your companion's turn), then a
 /// round button for each skill (`SkillCommandButton`), then `tail`, the other commands, Attack at
-/// the right end. Too long for the phone, the row closes up and its buttons shrink a little, as
-/// it always did; longer still, the last skills go behind More (`overflowsToLead`: `lead` is told
+/// the right end. Upright it spans the screen, its buttons sized and spaced to fill it (`filling`);
+/// on its side it sits at the right. Too long for the phone, the row closes up and its buttons
+/// shrink a little, as it always did; longer still, the last skills go behind More (`overflowsToLead`: `lead` is told
 /// which), as few as will do, or, where there's no More (your companion's turn), the skills slide
 /// sideways between the two ends, which stay put.
 /// Holding a skill shows its card over the row (`SkillCard`): its level, element, MP and what it
@@ -908,24 +909,21 @@ private struct SkillRow<Lead: View, Tail: View>: View {
     /// The skill whose card shows.
     @State private var card: String?
     @State private var hideCard: Task<Void, Never>?
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    /// Upright, the row's room across, measured: its buttons are sized and spaced to fill it.
+    @State private var width: CGFloat = 0
 
     /// Room under the sliding skills for their names, which hang below the buttons and would be cut
     /// off there, and above them for their MP badges. Computed: a generic type can't store a static.
     private static var nameRoom: CGFloat { 18 }
     private static var badgeRoom: CGFloat { 6 }
+    /// The biggest a button grows to, filling a row of few.
+    private static var largest: CGFloat { 64 }
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            row(size: CommandRow.size, spacing: CommandRow.spacing, shown: skills.count, slides: false)
-            row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, shown: skills.count, slides: false)
-            if overflowsToLead {
-                // One skill fewer at a time, the rest behind More, till the row fits.
-                ForEach(Array((0..<skills.count).reversed()), id: \.self) { shown in
-                    row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, shown: shown, slides: false)
-                }
-            } else {
-                row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, shown: skills.count, slides: true)
-            }
+        Group {
+            // On its side the row stays at the right, clear of the lock-in strip at the bottom left.
+            if verticalSizeClass == .compact { fitting } else { filling }
         }
         .overlay(alignment: .top) {
             if let id = card, let skill = skills.first(where: { $0.id == id }) {
@@ -940,6 +938,49 @@ private struct SkillRow<Lead: View, Tail: View>: View {
         // Debug `skills`: the first skill's card, for screenshots.
         .onAppear { if DebugLaunch.showsSkillCard, card == nil { card = skills.first?.id } }
         .onDisappear { hideCard?.cancel() }
+    }
+
+    /// Upright: the whole width of the screen, edge to edge (playtesting 2026-10-30: "Make sure the
+    /// button sizes always fill the full width of the screen"), the buttons as big as that allows
+    /// (up to `largest`) and spaced to reach both ends; no smaller than the closed-up size, past
+    /// which the last skills go behind More (or, with no More, slide).
+    private var filling: some View {
+        let layout = filled(in: width)
+        return row(size: layout.size, spacing: layout.spacing, shown: layout.shown, slides: layout.slides)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+    }
+
+    private func filled(in width: CGFloat) -> (size: CGFloat, spacing: CGFloat, shown: Int, slides: Bool) {
+        guard width > 0 else { return (CommandRow.size, CommandRow.spacing, skills.count, false) }
+        let gap = CommandRow.narrowSpacing
+        // How big each of `count` buttons would be, the least gap between them.
+        func fitted(_ count: Int) -> CGFloat { (width - CGFloat(count - 1) * gap) / CGFloat(count) }
+        var shown = skills.count
+        if overflowsToLead {
+            while shown > 0, fitted(1 + shown + others) < CommandRow.narrowSize { shown -= 1 }
+        }
+        let count = 1 + shown + others
+        guard fitted(count) >= CommandRow.narrowSize else { return (CommandRow.narrowSize, gap, shown, true) }
+        let size = min(Self.largest, fitted(count)).rounded(.down)
+        let spacing = count > 1 ? (width - CGFloat(count) * size) / CGFloat(count - 1) : 0
+        return (size, spacing, shown, false)
+    }
+
+    /// On its side: the biggest of a few fixed sizes that fits, at the right.
+    private var fitting: some View {
+        ViewThatFits(in: .horizontal) {
+            row(size: CommandRow.size, spacing: CommandRow.spacing, shown: skills.count, slides: false)
+            row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, shown: skills.count, slides: false)
+            if overflowsToLead {
+                // One skill fewer at a time, the rest behind More, till the row fits.
+                ForEach(Array((0..<skills.count).reversed()), id: \.self) { shown in
+                    row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, shown: shown, slides: false)
+                }
+            } else {
+                row(size: CommandRow.narrowSize, spacing: CommandRow.narrowSpacing, shown: skills.count, slides: true)
+            }
+        }
     }
 
     /// The row with the first `shown` skills in it, the rest handed to `lead`.
