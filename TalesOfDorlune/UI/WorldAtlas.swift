@@ -152,11 +152,12 @@ struct WorldAtlas: View {
         .overlay(alignment: .bottom) {
             bottomLeading
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 16)
+                .padding(.leading, 18)
                 // Clear of the zoom buttons on the right.
-                .padding(.trailing, 52)
+                .padding(.trailing, 62)
                 .padding(.top, 30)
-                .padding(.bottom, 12)
+                // Level with the Where you are button beside it, as far in from the corner.
+                .padding(.bottom, 22)
                 .background { edgeBand(.bottom, marks: shown) }
                 .allowsHitTesting(false)
         }
@@ -453,7 +454,9 @@ struct WorldAtlas: View {
             mapButton(Text("−").font(HUDStyle.font(16)), label: L("Zoom out")) { zoom(by: 1 / 1.6) }
             mapButton(IconImage(.user, size: 14), label: L("Where you are")) { centreOnHere() }
         }
-        .padding(6)
+        // Well in from the window's rounded corner (playtesting 2026-10-30: 6 points left them
+        // squeezed into it).
+        .padding(16)
     }
 
     /// Zooms about the middle of the view.
