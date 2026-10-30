@@ -233,6 +233,9 @@ enum DebugLaunch {
     static var opensComparison: Bool { flags["compare"] != nil }
     /// `dyeing`: with npc=<the weaver or a barber>, the window for dyeing armour is open (`DyeWindow`).
     static var opensDyeing: Bool { flags["dyeing"] != nil }
+    /// `wares`: with npc=<a shop, smith, the weaver or a barber>, what they have is open in its window
+    /// (`NPCDialogView.waresWindow`); `deal`, `sell` and `info` open it too.
+    static var opensWares: Bool { flags["wares"] != nil || flags["deal"] != nil || flags["sell"] != nil || flags["info"] != nil }
     /// `deal=<item>`: with npc=<a shop>, the window for how many of it to buy is open (`sell=<item>`:
     /// to sell).
     static var shopDeal: (item: String, selling: Bool)? {
