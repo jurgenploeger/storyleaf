@@ -208,10 +208,15 @@ final class BattleScene: SKScene {
             arrange(controller.enemiesOnField, around: CGPoint(x: area.minX + area.width * 0.28, y: area.midY + 4), facing: .right)
             arrange(controller.party, around: CGPoint(x: area.minX + area.width * 0.6, y: area.midY - 24), facing: .left)
         }
-        // A boss steps out in front of its wave, toward you, its head kept under the HUD.
+        // A boss stands in a row of its own in front of its wave (`arrange`), its head kept under the
+        // HUD and, upright, its feet and nameplate clear of your party's heads.
+        let partyTop = controller.party.compactMap { actors[$0.id] }.map { $0.home.y + $0.height * 0.85 }.max()
         for foe in controller.enemiesOnField {
             guard let actor = actors[foe.id], actor.isBoss else { continue }
-            actor.nudge(by: isPortrait ? CGVector(dx: 18, dy: -44) * fieldScale : CGVector(dx: 56, dy: -8))
+            if isPortrait, let partyTop {
+                let floor = partyTop + Self.plateDepth * fieldScale
+                if actor.home.y < floor { actor.nudge(by: CGVector(dx: 0, dy: floor - actor.home.y)) }
+            }
             let ceiling = area.maxY - actor.height * 0.92
             if actor.home.y > ceiling { actor.nudge(by: CGVector(dx: 0, dy: ceiling - actor.home.y)) }
         }
@@ -219,16 +224,15 @@ final class BattleScene: SKScene {
     }
 
     /// Fighters stand in diagonal lines of up to five, like Fairyland Online's battle formation; a bigger
-    /// group forms a second row behind the first. Someone alone with their companion (you without a
-    /// friend, or a lone rival) stands side by side with it in one line. With friends, companions
-    /// stand right behind whoever they came with: the people make the line, and their companions a
-    /// row back.
+    /// group forms a second row behind the first. A boss stands in a row of its own in front of its
+    /// wave, toward you (`rows(of:)`). Someone alone with their companion (you without a friend, or a
+    /// lone rival) stands side by side with it in one line. With friends, companions stand right
+    /// behind whoever they came with: the people make the line, and their companions a row back.
     private func arrange(_ group: [Combatant], around center: CGPoint, facing: Direction) {
         let ids = Set(group.map(\.id))
         let followers = group.filter { fighter in fighter.ownerID.map { ids.contains($0) } == true }
         guard !followers.isEmpty else {
-            let rows = stride(from: 0, to: group.count, by: 5).map { Array(group[$0..<min($0 + 5, group.count)]) }
-            arrange(rows: rows, around: center, facing: facing)
+            arrange(rows: rows(of: group), around: center, facing: facing)
             return
         }
         let leaders = group.filter { fighter in !followers.contains { $0.id == fighter.id } }
@@ -248,6 +252,17 @@ final class BattleScene: SKScene {
             guard let index = leaders.firstIndex(where: { $0.id == follower.ownerID }) else { continue }
             actors[follower.id]?.place(at: points[index] + behind, facing: Self.profile(facing), scale: fieldScale)
         }
+    }
+
+    /// A group with no companions in rows of up to five, the first at the back; a boss in a row of
+    /// its own at the front (playtesting 2026-10-30: in the middle of a wave of ten it stood among
+    /// them, over the ones behind and under the ones in front).
+    private func rows(of group: [Combatant]) -> [[Combatant]] {
+        let bosses = group.filter { actors[$0.id]?.isBoss == true }
+        let rest = group.filter { actors[$0.id]?.isBoss != true }
+        var rows = stride(from: 0, to: rest.count, by: 5).map { Array(rest[$0..<min($0 + 5, rest.count)]) }
+        if !bosses.isEmpty { rows.append(bosses) }
+        return rows
     }
 
     private func arrange(rows: [[Combatant]], around center: CGPoint, facing: Direction) {
@@ -297,7 +312,7 @@ final class BattleScene: SKScene {
         let ids = Set(group.map(\.id))
         let followers = group.filter { fighter in fighter.ownerID.map { ids.contains($0) } == true }
         guard !followers.isEmpty else {
-            return stride(from: 0, to: group.count, by: 5).map { (count: min(5, group.count - $0), overhang: 0) }
+            return rows(of: group).map { (count: $0.count, overhang: 0) }
         }
         let leaders = group.filter { fighter in !followers.contains { $0.id == fighter.id } }
         if leaders.count == 1 { return [(count: group.count, overhang: 0)] }
@@ -1512,7 +1527,7 @@ final class BattleActor: SKNode {
         }
     }
 
-    /// Moves the fighter's spot by `offset` (a boss stepping out in front of its wave).
+    /// Moves the fighter's spot by `offset` (a boss kept under the HUD and clear of your party).
     func nudge(by offset: CGVector) {
         home = home + offset
         if !hasActions() { position = home }
