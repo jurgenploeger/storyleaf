@@ -1002,7 +1002,7 @@ final class GameSession {
         let festive = Self.hat(for: adventurer)
         let armor = Self.armor(for: adventurer)
         // The hat that goes with their armour, unless a festive one is on their head.
-        let headpiece = festive?.type == .head ? nil : armor?.headpiece.flatMap(Content.shared.item)
+        let headpiece = festive?.type == .head ? nil : Self.headpiece(of: armor)
         return registerPerson(race: adventurer.raceID, look: adventurer.look, armor: armor,
                               worn: Self.trinkets(for: adventurer).filter { $0.type != festive?.type } + [festive, headpiece].compactMap { $0 })
     }
@@ -1030,7 +1030,28 @@ final class GameSession {
         let seed = Self.seed(adventurer.id)
         let tier = tiers.count > 1 && seed % 3 == 0 ? tiers[1] : best
         let choices = wearable.filter { ($0.level ?? 1) == tier }
-        return choices[Int((seed / 3) % UInt64(choices.count))]
+        return dyed(choices[Int((seed / 3) % UInt64(choices.count))], for: adventurer)
+    }
+
+    /// The hat that goes with an armour (`ItemDef.headpiece`), in the armour's dye if it's dyed.
+    static func headpiece(of armor: ItemDef?) -> ItemDef? {
+        guard let id = armor?.headpiece else { return nil }
+        let dyed = armor?.dyeID.flatMap { Content.shared.item(ItemDef.dyedID(id, with: $0)) }
+        return dyed ?? Content.shared.item(id)
+    }
+
+    /// Some adventurers dye their gear, as you can (playtesting 2026-10-30: "The bots in the game should
+    /// also have dyed stuff (not all of them of course)"): about one in four, each in a colour of their
+    /// own on everything of theirs that takes a dye (`ItemDef.canBeDyed`), the hat with the armour; half
+    /// of them leave their weapon as it is. The same colour every time, like the gear itself.
+    private static func dyed(_ item: ItemDef?, for adventurer: Adventurer, weapon: Bool = false) -> ItemDef? {
+        guard let item, item.canBeDyed, !item.isDyed else { return item }
+        let seed = Self.seed(adventurer.id) / 17
+        guard seed % 4 == 0, !(weapon && (seed / 4) % 2 == 0) else { return item }
+        let dyes = Content.shared.items.filter { $0.dye != nil }
+        guard !dyes.isEmpty else { return item }
+        let dye = dyes[Int((seed / 8) % UInt64(dyes.count))]
+        return Content.shared.item(ItemDef.dyedID(item.id, with: dye.id)) ?? item
     }
 
     /// The weapon an adventurer fights with, in their hand on the map and in battle: one for their
@@ -1047,7 +1068,7 @@ final class GameSession {
         let seed = Self.seed(adventurer.id) / 11
         let tier = tiers.count > 1 && seed % 3 == 0 ? tiers[1] : best
         let choices = usable.filter { ($0.level ?? 1) == tier }
-        return choices[Int((seed / 3) % UInt64(choices.count))]
+        return dyed(choices[Int((seed / 3) % UInt64(choices.count))], for: adventurer, weapon: true)
     }
 
     /// The gloves, boots and necklace an adventurer has on, each like their armour: of the best kind
@@ -1066,7 +1087,7 @@ final class GameSession {
             }
             guard let best = wearable.map({ $0.level ?? 1 }).max() else { return nil }
             let choices = wearable.filter { ($0.level ?? 1) == best }
-            return choices[Int((draw / 3) % UInt64(choices.count))]
+            return dyed(choices[Int((draw / 3) % UInt64(choices.count))], for: adventurer)
         }
     }
 

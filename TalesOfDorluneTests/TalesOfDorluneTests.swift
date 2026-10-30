@@ -1429,6 +1429,20 @@ struct RulesTests {
 
     /// One dye colours one piece: of three Copper Plates one turns Crimson and two stay copper; a worn
     /// piece is dyed where it's worn; dyeing again takes the new colour; washing out gives the piece back.
+    /// About one adventurer in four wears dyed gear, in one colour, the hat with the armour; the rest
+    /// wear theirs as it comes. The same adventurer always the same.
+    @Test func someAdventurersWearDyedGear() {
+        let people = (0..<200).map { _ in Adventurer(name: "Bot", raceID: "human", classID: "fighter", level: 60, look: .standard) }
+        let dyed = people.filter { GameSession.armor(for: $0)?.isDyed == true }
+        #expect(dyed.count > 20 && dyed.count < 90)
+        for person in dyed {
+            let armor = GameSession.armor(for: person)
+            #expect(armor?.id == GameSession.armor(for: person)?.id)
+            if let hat = GameSession.headpiece(of: armor) { #expect(hat.dyeID == armor?.dyeID) }
+            for piece in GameSession.trinkets(for: person) where piece.isDyed { #expect(piece.dyeID == armor?.dyeID) }
+        }
+    }
+
     @Test func dyeingChangesOnePieceOnly() throws {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         session.addItem("copper_plate", 3)
