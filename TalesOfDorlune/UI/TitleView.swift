@@ -251,7 +251,8 @@ struct TitleView: View {
                 Button {
                     onStart(GameSession(data: save))
                 } label: {
-                    Label(L("Continue: {hero}, Lv {level}", ["hero": save.hero.name, "level": save.hero.level]), icon: .play, size: 20)
+                    // No icon: the words alone, centred (playtesting 2026-10-30).
+                    Text(L("Continue: {hero}, Lv {level}", ["hero": save.hero.name, "level": save.hero.level]))
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                         .frame(maxWidth: .infinity)
@@ -262,7 +263,7 @@ struct TitleView: View {
                 // A new game gets its own save, next to the others.
                 startNewGame()
             } label: {
-                Label(L("New game"), icon: .sparkles, size: 20)
+                Text(L("New game"))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity)
