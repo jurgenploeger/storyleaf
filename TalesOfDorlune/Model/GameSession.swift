@@ -1497,8 +1497,7 @@ final class GameSession {
         guard amount > 0, let item = content.item(id) else { return false }
         let cost = item.price * amount
         guard data.gold >= cost else { return false }
-        // Spending the last coins frees their slot.
-        guard amount <= bagSlotsFree + (data.gold == cost ? 1 : 0) else {
+        guard amount <= bagSlotsFree else {
             post(L("Your bag is full. Put something in the bank first."), .system)
             return false
         }
@@ -1509,13 +1508,10 @@ final class GameSession {
     }
 
     /// How many you could buy at `price` each: as many as your coins pay for and your bag has room
-    /// for (spending the very last coins frees their slot for one more).
+    /// for (coins take no slot, so spending them frees none).
     func affordable(at price: Int) -> Int {
-        let free = bagSlotsFree
-        guard price > 0 else { return free }
-        let paid = data.gold / price
-        if paid <= free { return paid }
-        return paid == free + 1 && paid * price == data.gold ? paid : free
+        guard price > 0 else { return bagSlotsFree }
+        return min(data.gold / price, bagSlotsFree)
     }
 
     /// Whether a thing is bought and sold several at once (potions, materials, eggs...): anything
@@ -1540,7 +1536,6 @@ final class GameSession {
         guard amount > 0, let item = content.item(id), item.price > 0 else { return nil }
         let held = count(of: id)
         guard held >= amount else { return nil }
-        // The coins go in the slot it leaves, if they need one.
         data.inventory[id] = held > amount ? held - amount : nil
         let paid = Self.sellPrice(of: item) * amount
         gainGold(paid)

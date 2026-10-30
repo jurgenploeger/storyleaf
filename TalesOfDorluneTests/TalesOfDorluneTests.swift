@@ -1774,14 +1774,16 @@ struct RulesTests {
         #expect(session.sell("potion", 3) == GameSession.sellPrice(of: potion) * 3)
         #expect(session.count(of: "potion") == potions + 1)
         #expect(session.sell("potion", potions + 2) == nil && session.count(of: "potion") == potions + 1)
-        // The bag stops it too: two slots free, and spending the very last coins frees theirs for one more.
-        session.data.inventory = ["potion": GameSession.bagSlots - 3]
+        // The bag stops it too: two slots free, however many coins (they take no slot, so spending
+        // the last of them frees none).
+        session.data.inventory = ["potion": GameSession.bagSlots - 2]
         session.data.gold = potion.price * 10
         #expect(session.affordable(at: potion.price) == 2)
         #expect(!session.buy("potion", 3))
         session.data.gold = potion.price * 3
-        #expect(session.affordable(at: potion.price) == 3)
-        #expect(session.buy("potion", 3) && session.bagSlotsFree == 0)
+        #expect(session.affordable(at: potion.price) == 2)
+        #expect(!session.buy("potion", 3))
+        #expect(session.buy("potion", 2) && session.bagSlotsFree == 0)
 
         // An adventurer's deal for a potion or a material is for a few; gear's for one. Made once.
         session.data.inventory = [:]
@@ -1926,8 +1928,8 @@ struct RulesTests {
         #expect(session.bagSlotsUsed == 0 && session.banked("seal_stone") == 2 && session.data.gold == 30)
         // Out of the bank only as many as the bag has room for; the rest stays in.
         session.data.bank = ["potion": 60]
-        #expect(session.withdraw("potion") && session.count(of: "potion") == 49 && session.banked("potion") == 11)
-        #expect(!session.withdraw("potion") && session.banked("potion") == 11)
+        #expect(session.withdraw("potion") && session.count(of: "potion") == 50 && session.banked("potion") == 10)
+        #expect(!session.withdraw("potion") && session.banked("potion") == 10)
     }
 
     /// The bank's card moves as many as you pick, and deletes them for good, from either side; never
