@@ -1650,6 +1650,9 @@ private struct ResultPanel: View {
                         Label { Text(L("+{exp} EXP", ["exp": result.exp])) } icon: {
                             IconImage(.star, size: 18).foregroundStyle(HUDStyle.exp)
                         }
+                        // Always one line (playtesting 2026-10-30: it broke before EXP beside the coins).
+                        .lineLimit(1)
+                        .fixedSize()
                     }
                     GoldPill(amount: result.gold, size: 15, sign: "+")
                 }

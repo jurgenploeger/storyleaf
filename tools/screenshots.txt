@@ -797,6 +797,8 @@ book_cards        | newgame,cards=12,book                                    | 8
 book_card_page    | newgame,cards=12,book,page=jelly                         | 8
 book_card_missing | newgame,cards=12,book,page=hedgehog                      | 8
 victory_cards     | newgame,level=5,map=sunny_meadow,battle=2,win,card       | 30
+# A big win: five-figure EXP beside the coins, on one line (2026-10-30).
+victory_big       | newgame,level=179,map=starfall_isle,battle=3,win          | 30
 # Companion toys: in the bag, played with (Toys 4/10 on its card), a toy's details in the shop, Tilly the
 # Toymaker's card quests, and Tilly in Prismhaven.
 toys_bag          | newgame,level=30,pet=jelly,bag=toy_soldier+toy_bear+toy_music_box,menu=bag | 8
