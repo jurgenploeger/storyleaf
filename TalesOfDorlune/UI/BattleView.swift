@@ -346,9 +346,10 @@ private struct TurnClockPill: View {
 /// The commands in one row along the bottom, all the same size (the user, 2026-10-26: "the buttons
 /// to show as the same size at the bottom ... 'More' is all the way on the left"): More at the left
 /// end, then a button for each of your skills (`SkillRow`), your first command (Attack unless you
-/// change it) at the right end where the thumb rests, and before it, right to left, whatever else
-/// turns up (Capture when there's a monster to befriend, Items when someone is low on HP).
-/// Less-used commands hide behind More, and with them Auto and the fight's pace. Holding a command
+/// change it) at the right end where the thumb rests, and before it, right to left, the rest of the
+/// row. Nothing moves with the fight (playtesting 2026-10-30: "Don't change the order of the battle
+/// buttons based on the state"): Capture stays in its place, faded while there's nothing to seal, and
+/// Items glows green where it is when someone is low on HP. Less-used commands hide behind More, and with them Auto and the fight's pace. Holding a command
 /// makes them all wiggle, like the iPhone home screen: drag them into any order (onto the first, or
 /// into the "Behind More" tray), then tap Done. The skills keep their place by More.
 private struct CommandPad: View {
@@ -386,24 +387,15 @@ private struct CommandPad: View {
     }
 
     /// Your order (`GameSession.battleButtons`), split into the first button (the row's right end),
-    /// the rest of the row (right to left, before More) and the More menu, leaving out what can't be
-    /// used right now.
+    /// the rest of the row (right to left, before More) and the More menu, the same all fight long:
+    /// what can't be used right now is faded in its place, not left out.
     private var sections: (main: String?, column: [String], more: [String]) {
-        let order = controller.session.battleButtons.filter(isAvailable)
+        let order = controller.session.battleButtons
         let divider = order.firstIndex(of: GameSession.moreDivider) ?? order.endIndex
         var front = Array(order[..<divider])
         var more = Array(order[divider...].dropFirst())
-        // Low on HP: Items comes out of More, glowing green.
-        if controller.needsHealing, let index = more.firstIndex(of: "items") {
-            more.remove(at: index)
-            front.insert("items", at: min(1, front.count))
-        }
         if front.isEmpty, !more.isEmpty { front.append(more.removeFirst()) }
         return (front.first, Array(front.dropFirst()), more)
-    }
-
-    private func isAvailable(_ id: String) -> Bool {
-        id == "capture" ? controller.canCapture : true
     }
 
     /// Auto and the fight's pace: at the end of what More opens, after the commands behind it.
@@ -515,7 +507,6 @@ private struct CommandPad: View {
         return button(id, size: size, isMain: isMain)
             .allowsHitTesting(false)
             .modifier(Wiggle(active: !isDragged))
-            .opacity(id == "capture" && !controller.canCapture ? 0.7 : 1)
             .contentShape(Rectangle())
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(Self.space)) } action: { frames[id] = $0 }
             .scaleEffect(isDragged ? 1.15 : 1)
@@ -565,14 +556,17 @@ private struct CommandPad: View {
 
     private func button(_ id: String, size: CGFloat, isMain: Bool = false) -> some View {
         let info = BattleCommand(id)
+        let faded = id == "capture" && !controller.canCapture
         return RoundCommandButton(title: info.title, icon: id == "items" && controller.needsHealing ? .heartPlus : info.icon,
                                   size: size, tint: tint(for: id, main: isMain), onHold: arrange) {
             perform(id)
         }
+        .saturation(faded ? 0 : 1)
+        .opacity(faded ? 0.5 : 1)
     }
 
     private func tint(for id: String, main: Bool) -> RoundCommandButton.Tint {
-        if id == "capture" { return .special }
+        if id == "capture" { return controller.canCapture ? .special : main ? .primary : .normal }
         if id == "items", controller.needsHealing { return .heal }
         return main ? .primary : .normal
     }
@@ -583,7 +577,8 @@ private struct CommandPad: View {
         case "items": controller.openItems()
         case "guard": controller.defend()
         case "run": controller.escape()
-        case "capture": controller.capture()
+        // Faded while there's nothing to seal: a tap does nothing.
+        case "capture": if controller.canCapture { controller.capture() }
         default: break
         }
     }
@@ -787,7 +782,7 @@ private struct MoreMenu: View {
         .buttonStyle(PressScaleStyle())
         // Auto is faded where it can't play (a boss, a duel, monsters too strong for it) and says why
         // when tapped.
-        .opacity(isAuto && !controller.isAuto && !controller.canAuto ? 0.5 : 1)
+        .opacity(isAuto && !controller.isAuto && !controller.canAuto ? 0.5 : id == "capture" && !controller.canCapture ? 0.5 : 1)
         .accessibilityLabel(isAuto
                             ? (controller.isAuto ? L("Auto is on. Tap to choose yourself.") : L("Auto: fight on your own."))
                             : isPace ? (fast ? L("Battle speed: double. Tap for normal.") : L("Battle speed: normal. Tap for double."))
