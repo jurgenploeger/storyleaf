@@ -3,7 +3,8 @@ import SwiftUI
 /// Shown while a map is being built: the logo over the title's sky, and a blue bar filling up.
 /// Opening a game from the title, the logo comes from where it stood there (`RootView` moves one
 /// logo between the two, `logoSpot`), and once the game is ready the clouds come up over everything
-/// (`landing`) before clearing off it.
+/// (`landing`), then rise on past you, thinning, the game showing through them (`clearing`): as if
+/// you came down through them to the ground.
 struct LoadingCurtain: View {
     /// 0...1: how far the map build has got.
     var progress: Double = 0
@@ -13,6 +14,8 @@ struct LoadingCurtain: View {
     var logoHidden = false
     /// The game is ready: the clouds rise over the screen, the logo sinking into them.
     var landing = false
+    /// The clouds part: they rise on up and thin out, the game under them coming through.
+    var clearing = false
     @State private var spin = false
     /// The bar fades in once the logo has come from the title.
     @State private var barShown = false
@@ -23,6 +26,8 @@ struct LoadingCurtain: View {
     static let handOff = 0.6
     /// How long the clouds take to cover the screen.
     static let landingTime = 1.3
+    /// How long the clouds take to rise off the game.
+    static let clearingTime = 1.2
 
     var body: some View {
         ZStack {
@@ -45,10 +50,13 @@ struct LoadingCurtain: View {
                     .animation(.easeOut(duration: 0.3), value: landing)
             }
             .padding(.horizontal, 40)
-            CloudCover(risen: landing)
+            // The sky's soft light sits behind the logo.
+            .talesOfDorluneSky(fallback: UnitPoint(x: 0.5, y: 0.44))
+            // Under the nearest clouds by then: gone at once, so the game is what shows as they part.
+            .opacity(clearing ? 0 : 1)
+            .animation(nil, value: clearing)
+            CloudCover(risen: landing, through: clearing)
         }
-        // The sky's soft light sits behind the logo.
-        .talesOfDorluneSky(fallback: UnitPoint(x: 0.5, y: 0.44))
         .onAppear {
             if logoSpot != nil {
                 withAnimation(.easeOut(duration: 0.35).delay(Self.handOff * 0.6)) { barShown = true }
@@ -98,6 +106,10 @@ extension View {
 /// on a body of cloud.
 struct CloudCover: View {
     let risen: Bool
+    /// Coming down through them: every bank rises on past the top, the nearest fastest, growing as it
+    /// passes and thinning to nothing (playtesting 2026-10-30: "so it looks like you're moving through
+    /// the clouds down to earth").
+    var through = false
     @Environment(\.colorScheme) private var colorScheme
 
     private struct Bank {
@@ -140,10 +152,13 @@ struct CloudCover: View {
                     .foregroundStyle(night ? Brand.moonCloud : .white)
                     // One sheet of cloud, not puffs see-through where they overlap.
                     .compositingGroup()
-                    .opacity(bank.opacity)
-                    // Down out of sight under the screen, then up to its reach.
-                    .offset(y: risen ? size.height * bank.reach : size.height + side * 0.4)
+                    .opacity(through ? 0 : bank.opacity)
+                    .scaleEffect(through ? 1.15 + 0.15 * CGFloat(index) : 1, anchor: .top)
+                    // Down out of sight under the screen, then up to its reach; then on up past the top.
+                    .offset(y: through ? size.height * (bank.reach - 0.8 - 0.4 * CGFloat(index))
+                                : risen ? size.height * bank.reach : size.height + side * 0.4)
                     .animation(.easeIn(duration: LoadingCurtain.landingTime - bank.delay).delay(bank.delay), value: risen)
+                    .animation(.easeOut(duration: LoadingCurtain.clearingTime), value: through)
                 }
             }
         }
