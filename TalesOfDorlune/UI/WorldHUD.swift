@@ -39,6 +39,17 @@ struct WorldHUD: View {
                     // through to the map.
                     StatusCluster(session: session, onInspect: { coordinator.open(.profile($0)) })
                         .coachTarget(.status)
+                    // The gold you carry under your face, as Pixel Heroes shows it (playtesting 2026-10-26;
+                    // by the minimap till 2026-10-30); a tap opens the Bag, where the coins are.
+                    Button {
+                        menuOpen = false
+                        coordinator.open(.menu(.bag))
+                    } label: {
+                        GoldPill(amount: session.data.gold, size: 13, short: true)
+                            .frame(minHeight: 30)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                     // The party you've joined: whose it is, and a way out of it.
                     if let joined = session.joinedParty, let leader = joined.leader {
                         JoinedPartyPlate(leader: leader, count: joined.members.count) { coordinator.leaveJoinedParty() }
@@ -68,17 +79,6 @@ struct WorldHUD: View {
                     onOpen: { coordinator.open(.worldMap) }
                 )
                 .coachTarget(.minimap)
-                // The gold you carry under it, as Pixel Heroes shows it (playtesting 2026-10-26); a tap
-                // opens the Bag, where the coins are.
-                Button {
-                    menuOpen = false
-                    coordinator.open(.menu(.bag))
-                } label: {
-                    GoldPill(amount: session.data.gold, size: 13, short: true)
-                        .frame(minHeight: 30)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { minimapHeight = $0 }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
