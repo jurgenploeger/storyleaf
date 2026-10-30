@@ -44,35 +44,29 @@ struct BankView: View {
             .menuWindowMargins()
 
             if let picked {
-                Group {
-                    if let item = picked.item {
-                        ItemInfoCard(session: session, item: item, onClose: { self.picked = nil }, banking: picked.side)
-                    } else {
-                        BankCoinsCard(session: session, side: picked.side) { self.picked = nil }
-                    }
-                }
-                .transition(.opacity)
+                ItemInfoCard(session: session, item: picked.item, onClose: { self.picked = nil }, banking: picked.side)
+                    .transition(.opacity)
             }
         }
         .animation(.easeOut(duration: 0.15), value: picked?.id)
     }
 }
 
-/// Something tapped in the bank window: an item, or the coins (`item` nil), on one side.
+/// Something tapped in the bank window: an item, on one side.
 struct BankPick: Identifiable {
-    let item: ItemDef?
+    let item: ItemDef
     let side: BankSide
-    var id: String { "\(side.rawValue).\(item?.id ?? "coins")" }
+    var id: String { "\(side.rawValue).\(item.id)" }
 }
 
-/// The bank's insides: your bag over the bank, RuneScape-style. Tap something, coins too, for its card
+/// The bank's insides: your bag over the bank, RuneScape-style. Tap something for its card
 /// (`onPick`; playtesting 2026-10-26: "tap on an item to open its details in another modal"): how many
 /// to put in or take out, or to delete. Deposit all empties the bag. Hold a slot to lift it and move it
 /// about its side, the others sliding aside (`ItemSlotGrid`; "In the bank and inventory I should be
 /// able to reorder any items"). The bank's search, sort and kinds ("Also add sorting and filtering to the
 /// bank") are a way of looking, as the Bag's are: what's filtered out is still there, and a sort
 /// leaves your order as it is till you move something while it's on. Nothing in the bank is lost to a
-/// defeat.
+/// defeat. Coins aren't banked (playtesting 2026-10-30): they stay with you, never lost.
 struct BankPanel: View {
     let session: GameSession
     @Binding var reply: String?
@@ -98,17 +92,16 @@ struct BankPanel: View {
                     reply = L("All safe with me.")
                 }
                 .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
-                .disabled(bag.isEmpty && session.data.gold == 0)
+                .disabled(bag.isEmpty)
             }
-            if bag.isEmpty && session.data.gold == 0 {
+            if bag.isEmpty {
                 EmptyNote(L("Your bag is empty."), size: 11)
-            }
-            if !bag.isEmpty || session.data.gold > 0 {
-                grid(bag, coins: session.data.gold, side: .bag)
+            } else {
+                grid(bag, side: .bag)
             }
             SectionTitle(text: L("Bank"))
             let all = session.bankItems
-            if all.isEmpty && session.bankGold == 0 {
+            if all.isEmpty {
                 EmptyNote(L("Nothing in the bank yet. Tap something in your bag to keep it here."), size: 11)
             }
             if !all.isEmpty {
@@ -121,10 +114,8 @@ struct BankPanel: View {
                 EmptyNote(L("Nothing in the bank matches."), size: 11)
                     .padding(.vertical, 8)
             }
-            // The coins in the first slot, while you're not looking for something.
-            let coins = narrowed ? 0 : session.bankGold
-            if !banked.isEmpty || coins > 0 {
-                grid(banked, coins: coins, side: .bank)
+            if !banked.isEmpty {
+                grid(banked, side: .bank)
             }
         }
     }
@@ -148,24 +139,15 @@ struct BankPanel: View {
         }
     }
 
-    /// One side's things, the coins first: a tap for a thing's card; held, it lifts to move about
-    /// its side.
-    private func grid(_ items: [ItemDef], coins: Int, side: BankSide) -> some View {
-        ItemSlotGrid(items: items, leads: coins > 0, dragging: dragging,
+    /// One side's things: a tap for a thing's card; held, it lifts to move about its side.
+    private func grid(_ items: [ItemDef], side: BankSide) -> some View {
+        ItemSlotGrid(items: items, dragging: dragging,
                      label: { item in
                          let count = session.held(item.id, on: side)
                          return count > 1 ? L("{item}, {count}", ["item": item.name, "count": count]) : item.name
                      },
                      onTap: { onPick(BankPick(item: $0, side: side)) },
                      onMove: { move($0, onto: $1, on: side) },
-                     lead: { size in
-                         Button { onPick(BankPick(item: nil, side: side)) } label: {
-                             CoinsTile(amount: coins, size: size - 5)
-                                 .padding(.top, 5)
-                                 .padding(.trailing, 5)
-                         }
-                         .buttonStyle(PressScaleStyle())
-                     },
                      tile: { item, size in
                          ItemIcon(item: item, size: size - 5, count: session.held(item.id, on: side))
                              .padding(.top, 5)
@@ -185,45 +167,6 @@ struct BankPanel: View {
     }
 }
 
-/// The coins' card in the bank: how many there are, and how many to put in or take out.
-struct BankCoinsCard: View {
-    let session: GameSession
-    let side: BankSide
-    let onClose: () -> Void
-
-    var body: some View {
-        let amount = side == .bag ? session.data.gold : session.bankGold
-        ZStack {
-            Color.black.opacity(0.45)
-                .ignoresSafeArea()
-                .onTapGesture(perform: onClose)
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 12) {
-                    CoinsTile(amount: amount, size: 52)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(L("Coins"))
-                            .font(HUDStyle.font(17))
-                            .foregroundStyle(HUDStyle.gold)
-                        Text(side == .bag ? L("In your bag") : L("In the bank"))
-                            .font(HUDStyle.font(11))
-                            .foregroundStyle(HUDStyle.dim)
-                    }
-                    Spacer(minLength: 0)
-                }
-                .padding(.trailing, 24)
-                BankControls(session: session, item: nil, side: side, onClose: onClose)
-            }
-            .padding(16)
-            .frame(maxWidth: 360, alignment: .leading)
-            .gameWindow()
-            .windowCloseButton(onClose)
-            .padding(24)
-            .popIn()
-            .accessibilityElement(children: .contain)
-        }
-    }
-}
-
 /// How many to move between the bag and the bank, or to delete (playtesting 2026-10-26: "a stepper to
 /// decide how many you want to deposit or take [...] delete items and click on the item count [...] to
 /// show a numpad"): how many (`AmountPicker`); then Deposit or Withdraw, and Delete beside it (items
@@ -231,8 +174,7 @@ struct BankCoinsCard: View {
 /// room for. The card closes once none are left on its side.
 struct BankControls: View {
     let session: GameSession
-    /// Nil: the coins.
-    let item: ItemDef?
+    let item: ItemDef
     let side: BankSide
     let onClose: () -> Void
 
@@ -244,21 +186,19 @@ struct BankControls: View {
     /// How many there are on this side.
     private var held: Int {
         switch side {
-        case .bag: return item.map { session.count(of: $0.id) } ?? session.data.gold
-        case .bank: return item.map { session.banked($0.id) } ?? session.bankGold
+        case .bag: return session.count(of: item.id)
+        case .bank: return session.banked(item.id)
         }
     }
 
     /// How many can move to the other side: all of the bag's; out of the bank, what the bag has room for.
     private var movable: Int {
         guard side == .bank else { return held }
-        guard item != nil else { return session.hasRoom(for: [], gold: held) ? held : 0 }
         return min(held, session.bagSlotsFree)
     }
 
     private var deletable: Bool {
-        guard let item else { return false }
-        return !session.questKeepsakes.contains(item.id)
+        !session.questKeepsakes.contains(item.id)
     }
 
     var body: some View {
@@ -275,7 +215,7 @@ struct BankControls: View {
                     .font(HUDStyle.font(11))
                     .foregroundStyle(HUDStyle.orange)
             }
-            if confirmingDelete, let item {
+            if confirmingDelete {
                 deleteConfirmation(item: item, count: count)
             } else if !typing {
                 buttons(count: count)
@@ -329,11 +269,9 @@ struct BankControls: View {
     }
 
     private func move(_ count: Int) {
-        switch (side, item) {
-        case (.bag, let item?): session.deposit(item.id, count)
-        case (.bag, nil): session.depositGold(count)
-        case (.bank, let item?): session.withdraw(item.id, count)
-        case (.bank, nil): session.withdrawGold(count)
+        switch side {
+        case .bag: session.deposit(item.id, count)
+        case .bank: session.withdraw(item.id, count)
         }
         session.save()
     }

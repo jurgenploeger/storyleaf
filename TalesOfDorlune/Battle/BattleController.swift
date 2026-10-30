@@ -1276,8 +1276,9 @@ final class BattleController {
             session.record(.defeat, target: id)
             session.beatMonster(id, level: foe.level)
         }
-        // Into the bag, if there's a slot for the coins (`GameSession.gainGold`).
-        rewardGold = session.gainGold(gold) ? gold : 0
+        // Into your purse (`GameSession.gainGold`).
+        session.gainGold(gold)
+        rewardGold = gold
 
         if heroIsDown {
             // Out cold, you learn nothing from it, like a fainted companion. The spoils are shared.

@@ -197,6 +197,7 @@ final class GameSession {
         }
         Self.moveGearToItsSlot(&self.data)
         stockBankOnce()
+        returnBankedGold()
         fitBag()
         deliverQuestTreasures()
         applyLook()
@@ -1287,7 +1288,7 @@ final class GameSession {
         } else {
             data.openedChests = (data.openedChests ?? []) + [chest.id]
         }
-        guard hasRoom(for: [found.id], gold: gold) else {
+        guard hasRoom(for: [found.id]) else {
             post(L("Your bag is full. Make room, then open the chest."), .system)
             return nil
         }
@@ -2193,7 +2194,8 @@ final class GameSession {
         Haptics.success()
         post(L("Quest complete: {quest}", ["quest": quest.title]), .quest)
         var lines: [String] = []
-        if pay.gold > 0, gainGold(pay.gold) {
+        if pay.gold > 0 {
+            gainGold(pay.gold)
             lines.append(L("+{gold} gold", ["gold": pay.gold]))
         }
         if pay.exp > 0 {

@@ -290,8 +290,8 @@ extension GameSession {
         let place = (data.giftDays ?? 0) % gifts.count
         let gift = gifts[place]
         let gold = (gift.goldPerLevel ?? 0) * data.hero.level
-        // What doesn't fit in the bag is left behind.
-        let paid = gainGold(gold) ? gold : 0
+        // Items that don't fit in the bag are left behind; coins always fit.
+        gainGold(gold)
         var items = (gift.items ?? []).filter { addItem($0) }
         let festive = seasonGift(on: date)
         if let festive { items.append(festive.hat) }
@@ -300,7 +300,7 @@ extension GameSession {
         SoundEffects.shared.play(.chest)
         checkTitles()
         save()
-        return DailyGift(day: place + 1, days: gifts.count, gold: paid, items: items, greeting: festive?.greeting)
+        return DailyGift(day: place + 1, days: gifts.count, gold: gold, items: items, greeting: festive?.greeting)
     }
 
     // MARK: - Festive seasons
@@ -496,7 +496,8 @@ extension GameSession {
         board.bounties[index].claimed = true
         data.bounties = board
         data.bountiesDone = (data.bountiesDone ?? 0) + 1
-        var lines = gainGold(bounty.gold) ? [L("+{gold} gold", ["gold": bounty.gold])] : []
+        gainGold(bounty.gold)
+        var lines = [L("+{gold} gold", ["gold": bounty.gold])]
         lines.append(L("+{exp} EXP", ["exp": bounty.exp]))
         if gainHeroEXP(bounty.exp) > 0 { lines.append(L("Level up! You're now level {level}.", ["level": data.hero.level])) }
         SoundEffects.shared.play(.coins)

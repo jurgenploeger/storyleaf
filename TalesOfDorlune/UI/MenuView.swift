@@ -167,7 +167,7 @@ extension MenuView {
                 .padding(.bottom, 2)
         case .bag:
             // How full the bag is after its name (playtesting 2026-10-26: "add the x/50 behind the big
-            // 'Inventory' title"): 50 slots, a kind of item each, the coins one (`GameSession+Bank`).
+            // 'Inventory' title"): 50 slots, one for every item (`GameSession+Bank`); coins take none.
             WindowTitle(window.menuTitle, detail: "\(session.bagSlotsUsed)/\(GameSession.bagSlots)",
                         detailTint: session.bagSlotsFree == 0 ? HUDStyle.orange : HUDStyle.dim)
                 .accessibilityValue(L("{used} of {slots} slots", ["used": session.bagSlotsUsed, "slots": GameSession.bagSlots]))
@@ -1217,11 +1217,14 @@ private struct BagTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // How full the bag is shows by the window's title (`MenuView.tabs`); here, when it's full,
-            // what's up for trade (the coin on its slot), and what the last thing used did.
+            // How full the bag is shows by the window's title (`MenuView.tabs`); here, the coins you
+            // carry (no slot of their own since 2026-10-30: "We don't need to deposit coins in bank
+            // anymore"), when it's full, what's up for trade (the coin on its slot), and what the last
+            // thing used did.
             let full = session.bagSlotsFree == 0
-            if full || !session.forTrade.isEmpty || note != nil {
-                HStack {
+            HStack {
+                GoldPill(amount: session.data.gold, size: 13)
+                if full || !session.forTrade.isEmpty || note != nil {
                     if full {
                         Text(L("Full: bank something")).foregroundStyle(HUDStyle.orange)
                     }
@@ -1229,11 +1232,11 @@ private struct BagTab: View {
                         Label(L("{count} for trade", ["count": session.forTrade.count]), icon: .coins)
                             .foregroundStyle(HUDStyle.gold)
                     }
-                    Spacer()
-                    if let note { Text(note).foregroundStyle(HUDStyle.green) }
                 }
-                .font(HUDStyle.font(12))
+                Spacer()
+                if let note { Text(note).foregroundStyle(HUDStyle.green) }
             }
+            .font(HUDStyle.font(12))
 
             if hatching, let pet = hatched {
                 HatchView(session: session, pet: pet) { hatching = false }
@@ -1248,13 +1251,11 @@ private struct BagTab: View {
                 shelf.holds(item) && (!wearableOnly || (ItemType.equipmentSlots.contains(item.type) && session.equipIssue(item) == nil))
             }
             let shown = ItemFinder.arrange(kinds, search: search, sort: sort, session: session)
-            // The coins you carry in the first slot, as RuneScape's pack has them.
-            let coins = !searching && (shelf == .all || shelf == .items) ? session.data.gold : 0
-            if shown.isEmpty && coins == 0 {
+            if shown.isEmpty {
                 EmptyNote(searching || shelf != .all ? L("Nothing in your bag matches.") : L("Your bag is empty."), size: 11)
                     .padding(.vertical, 12)
             } else {
-                grid(shown, coins: coins)
+                grid(shown)
             }
         }
         .onChange(of: hatchRequest?.id) { _, id in
@@ -1302,8 +1303,8 @@ private struct BagTab: View {
     /// One slot per kind of item, its count in the corner from two up, the upgrade arrow on gear
     /// better than what you wear, gear you can't wear yet (too low a level, another class's) faded,
     /// and a coin on what's up for trade.
-    private func grid(_ items: [ItemDef], coins: Int) -> some View {
-        ItemSlotGrid(items: items, leads: coins > 0, dragging: $dragging,
+    private func grid(_ items: [ItemDef]) -> some View {
+        ItemSlotGrid(items: items, dragging: $dragging,
                      label: { item in
                          let count = session.count(of: item.id)
                          let name = count > 1 ? L("{item}, {count}", ["item": item.name, "count": count]) : item.name
@@ -1312,11 +1313,6 @@ private struct BagTab: View {
                      hint: L("Shows what it does and who can use it"),
                      onTap: onInspect,
                      onMove: { move($0, onto: $1) },
-                     lead: { size in
-                         CoinsTile(amount: coins, size: size - 5)
-                             .padding(.top, 5)
-                             .padding(.trailing, 5)
-                     },
                      tile: { item, size in
                          let wearable = !ItemType.equipmentSlots.contains(item.type) || session.equipIssue(item) == nil
                          ItemIcon(item: item, size: size - 5, count: session.count(of: item.id), upgrade: session.isUpgrade(item))

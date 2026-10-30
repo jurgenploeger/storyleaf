@@ -2,22 +2,23 @@ import Foundation
 
 /// The bag's room and the bank (playtesting 2026-10-25: "I want to add a bank to the game [...] so the
 /// item limit is 50 items you can hold"). The bag holds 50 things, each one a slot however many you
-/// carry of a kind ("repeated items should count to the inventory"), the coins one slot however many.
-/// What doesn't fit is left behind (`addItem`, `gainGold`). The bank, at a banker in each town and in Glimmerbough, holds everything else, coins too,
-/// and nothing there is ever lost. What you carry is: beaten by monsters you lose the bag (coins and all),
-/// beaten in a duel your gear too (`loseBelongings`), left where you fell for a while
-/// (`GameSession+LostPiles`); what a quest you're on needs stays with you.
+/// carry of a kind ("repeated items should count to the inventory"). What doesn't fit is left behind
+/// (`addItem`). The bank, at a banker in each town and in Glimmerbough, holds everything else, and
+/// nothing there is ever lost. What you carry is: beaten by monsters you lose the bag, beaten in a duel
+/// your gear too (`loseBelongings`), left where you fell for a while (`GameSession+LostPiles`); what a
+/// quest you're on needs stays with you. Coins are no thing in the bag (playtesting 2026-10-30: "We
+/// don't need to deposit coins in bank anymore"): no slot, never banked, never lost (`gainGold`).
+
 extension GameSession {
     static let bagSlots = 50
 
-    /// Slots the bag's things take: every one of them one; the coins one, however many.
-    var bagSlotsUsed: Int { data.inventory.values.reduce(0) { $0 + max(0, $1) } + (data.gold > 0 ? 1 : 0) }
+    /// Slots the bag's things take: every one of them one.
+    var bagSlotsUsed: Int { data.inventory.values.reduce(0) { $0 + max(0, $1) } }
     var bagSlotsFree: Int { max(0, Self.bagSlots - bagSlotsUsed) }
 
-    /// Whether these would fit in the bag: a slot for each (three potions are three), and one for the
-    /// coins while there are none in it.
-    func hasRoom(for ids: [String], gold: Int = 0) -> Bool {
-        ids.count + (gold > 0 && data.gold == 0 ? 1 : 0) <= bagSlotsFree
+    /// Whether these would fit in the bag: a slot for each (three potions are three).
+    func hasRoom(for ids: [String]) -> Bool {
+        ids.count <= bagSlotsFree
     }
 
     /// A bag over its 50 slots, from when each kind took one however many (before 0.8.8): what doesn't
@@ -39,23 +40,23 @@ extension GameSession {
         post(L("Your bag holds 50 things now, every one a slot: {count} went to the bank.", ["count": moved]), .system)
     }
 
-    /// Coins into the bag, if there's a slot for them (or coins there already). False, and a note,
-    /// when the bag is full: they're left behind.
-    @discardableResult
-    func gainGold(_ amount: Int) -> Bool {
-        guard amount > 0 else { return true }
-        guard data.gold > 0 || bagSlotsFree > 0 else {
-            post(L("Your bag is full: {gold} gold left behind.", ["gold": amount]), .reward)
-            return false
-        }
+    /// Coins into your purse: always room for them, however full the bag.
+    func gainGold(_ amount: Int) {
+        guard amount > 0 else { return }
         data.gold += amount
-        return true
+    }
+
+    /// Coins a game had in the bank, from when they went there (0.8.0 to 0.9.4), back in your purse,
+    /// once, as the game loads.
+    func returnBankedGold() {
+        guard let banked = data.bankGold else { return }
+        data.gold += banked
+        data.bankGold = nil
     }
 
     // MARK: - The bank
 
     var bank: [String: Int] { data.bank ?? [:] }
-    var bankGold: Int { data.bankGold ?? 0 }
     func banked(_ id: String) -> Int { bank[id] ?? 0 }
 
     /// What the bank holds, in your order of it (`GameSession+ItemOrder`).
@@ -71,10 +72,9 @@ extension GameSession {
         SoundEffects.shared.play(.equip)
     }
 
-    /// Everything you carry into the bank, coins too (RuneScape's "Deposit all").
+    /// Everything you carry into the bank (RuneScape's "Deposit all").
     func depositAll() {
         for id in data.inventory.keys { deposit(id) }
-        depositGold(data.gold)
     }
 
     /// Takes `amount` of a kind out of the bank (all of it unless told), or as many as the bag has room
@@ -91,29 +91,6 @@ extension GameSession {
         data.bank?[id] = held > amount ? held - amount : nil
         data.inventory[id, default: 0] += amount
         SoundEffects.shared.play(.equip)
-        return true
-    }
-
-    func depositGold(_ amount: Int) {
-        let amount = min(amount, data.gold)
-        guard amount > 0 else { return }
-        data.gold -= amount
-        data.bankGold = bankGold + amount
-        SoundEffects.shared.play(.coins)
-    }
-
-    /// Takes coins out of the bank, if the bag has a slot for them. False when it hasn't.
-    @discardableResult
-    func withdrawGold(_ amount: Int) -> Bool {
-        let amount = min(amount, bankGold)
-        guard amount > 0 else { return false }
-        guard hasRoom(for: [], gold: amount) else {
-            post(L("Your bag is full. Put something in the bank first."), .system)
-            return false
-        }
-        data.bankGold = bankGold - amount
-        data.gold += amount
-        SoundEffects.shared.play(.coins)
         return true
     }
 
@@ -160,7 +137,7 @@ extension GameSession {
         return keep
     }
 
-    /// Lost a fight: everything you carry is gone, coins and all, but what a quest you're on needs;
+    /// Lost a fight: everything you carry is gone but your coins and what a quest you're on needs;
     /// beaten by another adventurer (a duel), what you wear too. It's left where you fell
     /// (`dropPile`), for you to come back for before someone else picks it up. The bank keeps what's
     /// in it. Returns what it cost, for the battle log.
@@ -174,8 +151,6 @@ extension GameSession {
             dropped[id, default: 0] += amount
             lost.append(amount > 1 ? "\(content.item(id)?.name ?? id) ×\(amount)" : content.item(id)?.name ?? id)
         }
-        let gold = data.gold
-        data.gold = 0
         if worn {
             for slot in ItemType.equipmentSlots {
                 guard let id = data.hero.equipment[slot] else { continue }
@@ -186,9 +161,8 @@ extension GameSession {
             clampHero()
             applyLook()
         }
-        dropPile(items: dropped, gold: gold)
+        dropPile(items: dropped)
         var lines: [String] = []
-        if gold > 0 { lines.append(L("You lost the {gold} gold you carried.", ["gold": gold])) }
         if !lost.isEmpty {
             lines.append(worn ? L("You lost everything you carried and wore: {items}.", ["items": lost.sorted().joined(separator: ", ")])
                               : L("You lost everything you carried: {items}.", ["items": lost.sorted().joined(separator: ", ")]))
@@ -201,8 +175,8 @@ extension GameSession {
     }
 
     /// Games begun before the bank (0.8.0) start with what they carried in it, once (playtesting
-    /// 2026-10-25: "automatically place items in my bank already just for this time"): the bag and the
-    /// coins go in, all but what a quest you're on needs. What's worn stays on.
+    /// 2026-10-25: "automatically place items in my bank already just for this time"): the bag goes in,
+    /// all but what a quest you're on needs. What's worn and the coins stay with you.
     func stockBankOnce() {
         guard data.bankStocked != true else { return }
         data.bankStocked = true
@@ -211,7 +185,5 @@ extension GameSession {
             data.inventory[id] = nil
             data.bank = bank.merging([id: amount]) { $0 + $1 }
         }
-        data.bankGold = bankGold + data.gold
-        data.gold = 0
     }
 }

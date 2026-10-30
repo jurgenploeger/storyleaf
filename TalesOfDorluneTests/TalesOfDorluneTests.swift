@@ -1841,18 +1841,19 @@ struct RulesTests {
     }
 
     /// The bag holds 50 slots, every item one however many of a kind (playtesting 2026-10-25: "repeated
-    /// items should count to the inventory"), the coins one; what doesn't fit is left behind.
+    /// items should count to the inventory"); what doesn't fit is left behind. Coins take none.
     @Test func theBagHoldsFiftySlots() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
-        // A new game: its three potions and its coins.
-        #expect(session.bagSlotsUsed == 4)
-        #expect(session.addItem("potion", 40) && session.bagSlotsUsed == 44)
+        // A new game: its three potions; its coins take no slot.
+        #expect(session.bagSlotsUsed == 3 && session.data.gold == 30)
+        #expect(session.addItem("potion", 41) && session.bagSlotsUsed == 44)
         // Seven ethers don't fit in six slots: none go in.
         #expect(!session.addItem("ether", 7) && session.count(of: "ether") == 0)
         #expect(session.addItem("ether", 6) && session.bagSlotsFree == 0)
-        #expect(!session.addItem("potion") && session.count(of: "potion") == 43)
-        // Coins on coins take no more room.
-        #expect(session.gainGold(10) && session.data.gold == 40)
+        #expect(!session.addItem("potion") && session.count(of: "potion") == 44)
+        // Coins still come in, however full the bag.
+        session.gainGold(10)
+        #expect(session.data.gold == 40)
         // A quest's own things go in regardless.
         #expect(session.addItem("ether", force: true))
     }
@@ -1863,26 +1864,23 @@ struct RulesTests {
         var data = GameSession.newGame(name: "Test", raceID: "human").data
         data.inventory[GameSession.featherID] = 154
         let loaded = GameSession(data: data)
-        // Three potions and the coins stay; the feathers fill the rest.
+        // Three potions stay; the feathers fill the rest.
         #expect(loaded.bagSlotsUsed == GameSession.bagSlots)
         #expect(loaded.count(of: "potion") == 3 && loaded.data.gold == 30)
-        #expect(loaded.count(of: GameSession.featherID) == 46 && loaded.banked(GameSession.featherID) == 108)
+        #expect(loaded.count(of: GameSession.featherID) == 47 && loaded.banked(GameSession.featherID) == 107)
         let again = GameSession(data: loaded.data)
-        #expect(again.count(of: GameSession.featherID) == 46 && again.banked(GameSession.featherID) == 108)
+        #expect(again.count(of: GameSession.featherID) == 47 && again.banked(GameSession.featherID) == 107)
     }
 
-    /// The bank keeps what you put in it, coins too, and gives it back while the bag has room.
+    /// The bank keeps what you put in it and gives it back while the bag has room. Coins stay with you.
     @Test func theBankKeepsThings() {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         session.deposit("potion")
         #expect(session.count(of: "potion") == 0 && session.banked("potion") == 3)
-        session.depositGold(20)
-        #expect(session.data.gold == 10 && session.bankGold == 20)
         #expect(session.withdraw("potion") && session.count(of: "potion") == 3 && session.banked("potion") == 0)
         session.addItem("seal_stone", 2)
         session.depositAll()
-        #expect(session.bagSlotsUsed == 0 && session.banked("seal_stone") == 2 && session.bankGold == 30)
-        #expect(session.withdrawGold(30) && session.data.gold == 30 && session.bankGold == 0)
+        #expect(session.bagSlotsUsed == 0 && session.banked("seal_stone") == 2 && session.data.gold == 30)
         // Out of the bank only as many as the bag has room for; the rest stays in.
         session.data.bank = ["potion": 60]
         #expect(session.withdraw("potion") && session.count(of: "potion") == 49 && session.banked("potion") == 11)
@@ -1905,8 +1903,8 @@ struct RulesTests {
         #expect(!session.destroy("pet_egg", 1, fromBank: false) && session.count(of: "pet_egg") == 1)
     }
 
-    /// Beaten by monsters you lose what you carry, coins too; beaten in a duel what you wear as well.
-    /// The bank, and what a quest you're on needs, stay.
+    /// Beaten by monsters you lose what you carry; beaten in a duel what you wear as well. Your coins,
+    /// the bank, and what a quest you're on needs, stay.
     @Test func aDefeatCostsWhatYouCarry() throws {
         let session = GameSession.newGame(name: "Test", raceID: "human")
         let quest = try #require(Content.shared.quest("hope_of_meadowbrook"))
@@ -1915,14 +1913,14 @@ struct RulesTests {
         session.deposit("seal_stone")
         session.addItem("ether")
         session.loseBelongings(worn: false)
-        #expect(session.count(of: "potion") == 0 && session.count(of: "ether") == 0 && session.data.gold == 0)
+        #expect(session.count(of: "potion") == 0 && session.count(of: "ether") == 0 && session.data.gold == 30)
         #expect(session.banked("seal_stone") == 3)
         // The elder's gifts belong to his quest: kept.
         #expect(session.count(of: "pet_egg") == 1 && session.count(of: "wooden_sword") == 1)
         #expect(session.data.hero.equipment.armor == "cloth_tunic")
         // It lies where you fell, and you can pick it all back up.
         let pile = try #require(session.lostPiles.first)
-        #expect(pile.mapID == session.data.mapID && pile.items["potion"] == 3 && pile.items["ether"] == 1 && pile.gold == 30)
+        #expect(pile.mapID == session.data.mapID && pile.items["potion"] == 3 && pile.items["ether"] == 1 && pile.gold == 0)
         #expect(pile.items["pet_egg"] == nil)
         #expect(!GameSession.isOpen(pile, at: pile.droppedAt.addingTimeInterval(60)))
         #expect(pile.takenAt > pile.droppedAt.addingTimeInterval(GameSession.pileYoursAlone - 1))
@@ -1940,7 +1938,7 @@ struct RulesTests {
         session.watchPiles(now: worn.takenAt)
         #expect(session.lostPiles.isEmpty)
         // A nearly full bag picks up what fits and leaves the rest, part of a pile too.
-        session.dropPile(items: ["potion": 2, "ether": 1], gold: 5)
+        session.dropPile(items: ["potion": 2, "ether": 1])
         var filler = 0
         while session.bagSlotsFree > 1 {
             session.data.inventory["filler_\(filler)"] = 1
@@ -1948,7 +1946,7 @@ struct RulesTests {
         }
         let full = try #require(session.lostPiles.first)
         #expect(session.pickUp(full.id))
-        #expect(session.count(of: "ether") == 1 && session.lostPiles.first?.items["potion"] == 2 && session.lostPiles.first?.gold == 5)
+        #expect(session.count(of: "ether") == 1 && session.lostPiles.first?.items["potion"] == 2)
         session.data.inventory["filler_0"] = nil
         #expect(session.pickUp(full.id))
         #expect(session.count(of: "potion") == 1 && session.lostPiles.first?.items["potion"] == 1)
@@ -2058,7 +2056,8 @@ struct RulesTests {
         #expect(!session.isForTrade("ether") && session.data.tradeAsks?["ether"] == nil)
     }
 
-    /// A game begun before the bank starts with its bag and coins in it, once; what a quest needs stays.
+    /// A game begun before the bank starts with its bag in it, once; what a quest needs and the coins
+    /// stay. Coins a game had in the bank (0.8.0 to 0.9.4) come back to its purse.
     @Test func olderGamesStartWithTheirBagInTheBank() throws {
         let fresh = GameSession.newGame(name: "Test", raceID: "human")
         #expect(fresh.count(of: "potion") == 3 && fresh.data.gold == 30 && fresh.bank.isEmpty)
@@ -2069,10 +2068,14 @@ struct RulesTests {
         data.inventory["pet_egg"] = 1
         let loaded = GameSession(data: data)
         #expect(loaded.count(of: "potion") == 0 && loaded.banked("potion") == 3 && loaded.banked("iron_axe") == 2)
-        #expect(loaded.data.gold == 0 && loaded.bankGold == 30)
+        #expect(loaded.data.gold == 30 && loaded.data.bankGold == nil)
         #expect(loaded.count(of: "pet_egg") == 1)
         let again = GameSession(data: loaded.data)
-        #expect(again.banked("potion") == 3 && again.bankGold == 30)
+        #expect(again.banked("potion") == 3 && again.data.gold == 30)
+        var banked = again.data
+        banked.bankGold = 50
+        let returned = GameSession(data: banked)
+        #expect(returned.data.gold == 80 && returned.data.bankGold == nil)
     }
 
     /// Things in the bag go where you put them: dropped on another, a thing takes its place and the

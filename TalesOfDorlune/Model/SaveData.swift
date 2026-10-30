@@ -190,8 +190,9 @@ nonisolated struct SaveData: Codable, Sendable {
     /// Quest treasures already handed over (`GameSession.deliverQuestTreasures`): a quest finished
     /// before it gave one sends it once.
     var questTreasuresGiven: [String]?
-    /// The bank (`GameSession+Bank`): what's in it by item id, its coins, and whether a game begun
-    /// before it had its bag put in it (`stockBankOnce`).
+    /// The bank (`GameSession+Bank`): what's in it by item id, its coins from before coins stayed
+    /// with you (`returnBankedGold` empties it), and whether a game begun before it had its bag put in
+    /// it (`stockBankOnce`).
     var bank: [String: Int]?
     var bankGold: Int?
     var bankStocked: Bool?
