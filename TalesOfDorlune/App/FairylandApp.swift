@@ -26,12 +26,29 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     }
 }
 
-/// Title screen until a game is started or continued.
+/// Title screen until a game is started or continued. Starting one carries the logo down to the
+/// loading screen; once the game is ready, the clouds come up over it and clear off the game.
 struct RootView: View {
     @State private var coordinator: GameCoordinator?
     @State private var pending: GameSession?
+    /// How far the opening of a game started on the title has got.
+    @State private var opening = Opening.loading
+    /// The logo's place on the title and on the loading screen, so it moves from one to the other.
+    @Namespace private var logoSpace
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(GameSettings.appearanceKey) private var appearance = "system"
+
+    enum Opening {
+        /// The loading screen, the game being built under it.
+        case loading
+        /// The game's ready: the clouds rise over the screen.
+        case landing
+        /// The clouds fade, the game showing through them.
+        case clearing
+    }
+
+    /// How long the clouds take to fade off the game.
+    private static let clearingTime = 0.8
 
     var body: some View {
         Group {
@@ -42,23 +59,45 @@ struct RootView: View {
                 } else {
                     LoadingCurtain(progress: 0.41)
                 }
-            } else if let coordinator {
-                GameView(coordinator: coordinator)
-            } else if let pending {
-                LoadingCurtain()
-                    .task {
-                        // Let the curtain draw before the (heavier) map build starts. The land is laid
-                        // out off the main thread, so the screen still turns with the phone meanwhile.
-                        try? await Task.sleep(for: .milliseconds(60))
-                        let began = Date()
-                        let grid = await GameCoordinator.layOut(GameCoordinator.startingMap(of: pending))
-                        let game = GameCoordinator(session: pending, grid: grid, began: began)
-                        game.onQuitToTitle = { quitToTitle() }
-                        coordinator = game
-                    }
             } else {
-                TitleView { session in
-                    pending = session
+                ZStack {
+                    // The game, once made: under the loading screen till the clouds clear off it.
+                    if let coordinator {
+                        GameView(coordinator: coordinator)
+                    }
+                    if let pending {
+                        LoadingCurtain(progress: coordinator?.loadProgress ?? 0, logoSpace: logoSpace, landing: opening != .loading)
+                            .opacity(opening == .clearing ? 0 : 1)
+                            .zIndex(1)
+                            // There at once, under the title fading off it: only its bar fades in.
+                            .transition(.identity)
+                            .task {
+                                // Let the curtain draw before the (heavier) map build starts. The land is laid
+                                // out off the main thread, so the screen still turns with the phone meanwhile.
+                                let start = Date()
+                                try? await Task.sleep(for: .milliseconds(60))
+                                let began = Date()
+                                let grid = await GameCoordinator.layOut(GameCoordinator.startingMap(of: pending))
+                                // Making the game holds the screen a moment: not while the logo is on its way.
+                                let wait = LoadingCurtain.handOff - Date().timeIntervalSince(start)
+                                if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
+                                let game = GameCoordinator(session: pending, grid: grid, began: began)
+                                game.onQuitToTitle = { quitToTitle() }
+                                coordinator = game
+                            }
+                    } else if coordinator == nil {
+                        // Fading away over the loading screen as the logo moves down onto it.
+                        TitleView(logoSpace: logoSpace) { session in
+                            // Once: the title can still be tapped as it fades.
+                            guard pending == nil else { return }
+                            withAnimation(.easeInOut(duration: LoadingCurtain.handOff)) { pending = session }
+                        }
+                        .zIndex(2)
+                        .transition(.opacity)
+                    }
+                }
+                .onChange(of: coordinator?.isReady == true) { _, ready in
+                    if ready, pending != nil, opening == .loading { land() }
                 }
             }
         }
@@ -97,9 +136,24 @@ struct RootView: View {
         }
     }
 
+    /// The game is ready under the loading screen: the clouds rush up over it, as if the logo fell
+    /// through them to the ground, then fade off the game.
+    private func land() {
+        opening = .landing
+        SoundEffects.shared.play(.whoosh, volume: 0.6)
+        Task {
+            try? await Task.sleep(for: .seconds(LoadingCurtain.landingTime))
+            withAnimation(.easeInOut(duration: Self.clearingTime)) { opening = .clearing }
+            try? await Task.sleep(for: .seconds(Self.clearingTime))
+            pending = nil
+            opening = .loading
+        }
+    }
+
     /// Leaves the game for the title screen (Settings → Back to title; the game is already saved).
     private func quitToTitle() {
         coordinator = nil
         pending = nil
+        opening = .loading
     }
 }

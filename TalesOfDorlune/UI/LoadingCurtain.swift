@@ -1,10 +1,25 @@
 import SwiftUI
 
 /// Shown while a map is being built: the logo over the title's sky, and a blue bar filling up.
+/// Opening a game from the title, the logo comes from where it stood there (`logoSpace`), and once
+/// the game is ready the clouds come up over everything (`landing`) before clearing off it (`RootView`).
 struct LoadingCurtain: View {
     /// 0...1: how far the map build has got.
     var progress: Double = 0
+    /// The logo's place, shared with the title screen: it moves here from there.
+    var logoSpace: Namespace.ID? = nil
+    /// The game is ready: the clouds rise over the screen, the logo sinking into them.
+    var landing = false
     @State private var spin = false
+    /// The bar fades in once the logo has come from the title.
+    @State private var barShown = false
+
+    /// The logo's width, here and on the title screen.
+    static let logoWidth: CGFloat = 300
+    /// How long the logo takes to move here from the title.
+    static let handOff = 0.6
+    /// How long the clouds take to cover the screen.
+    static let landingTime = 1.3
 
     var body: some View {
         ZStack {
@@ -14,17 +29,103 @@ struct LoadingCurtain: View {
                     .resizable()
                     .scaledToFit()
                     .raysAnchor(Brand.raysInLogo)
-                    .frame(maxWidth: 300)
-                    .scaleEffect(spin ? 1.03 : 0.97)
+                    .frame(maxWidth: Self.logoWidth)
+                    .matchedLogo(logoSpace)
+                    // Breathing out from the title's size, so it doesn't jump as it arrives.
+                    .scaleEffect(spin ? 1.04 : 1)
+                    // Falling, faster and faster, as the clouds rush up past it.
+                    .offset(y: landing ? 70 : 0)
+                    .animation(.easeIn(duration: Self.landingTime), value: landing)
                 LoadingBar.talesOfDorlune(progress: progress, label: L("Loading"))
+                    .opacity(landing || (logoSpace != nil && !barShown) ? 0 : 1)
+                    .animation(.easeOut(duration: 0.3), value: landing)
             }
             .padding(.horizontal, 40)
+            CloudCover(risen: landing)
         }
         // The sky's soft light sits behind the logo.
         .talesOfDorluneSky(fallback: UnitPoint(x: 0.5, y: 0.44))
-        .onAppear {
+        .task {
+            if logoSpace != nil {
+                withAnimation(.easeOut(duration: 0.35).delay(Self.handOff * 0.6)) { barShown = true }
+                // The breathing waits till the logo is here: begun on its way, it would wobble as it moved.
+                try? await Task.sleep(for: .seconds(Self.handOff))
+            }
             withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { spin = true }
         }
+    }
+}
+
+extension View {
+    /// The logo carried between the title and the loading screen, where there's one to carry.
+    @ViewBuilder
+    func matchedLogo(_ space: Namespace.ID?) -> some View {
+        if let space {
+            matchedGeometryEffect(id: "logo", in: space)
+        } else {
+            self
+        }
+    }
+}
+
+/// The clouds that come up over the loading screen once the game is ready: banks of them rising
+/// from under the sky's own, faster as they come, the far ones paler and slower, till the nearest
+/// covers the screen, as if the logo fell through them to the ground. Each bank is a row of puffs
+/// on a body of cloud.
+struct CloudCover: View {
+    let risen: Bool
+    @Environment(\.colorScheme) private var colorScheme
+
+    private struct Bank {
+        /// Its puffs along the top: where across, as a share of the screen's width, and how big, as
+        /// a share of its shorter side (the sky's own puffs are 0.24 to 0.6).
+        let puffs: [(x: CGFloat, size: CGFloat)]
+        /// Where its top comes up to, as a share of the screen's height (below 0: past the top).
+        let reach: CGFloat
+        let opacity: Double
+        /// How long after the first it sets off; every bank arrives together.
+        let delay: Double
+    }
+
+    /// Far to near.
+    private static let banks: [Bank] = [
+        Bank(puffs: [(0.08, 0.5), (0.34, 0.36), (0.6, 0.46), (0.9, 0.42)], reach: 0.32, opacity: 0.5, delay: 0),
+        Bank(puffs: [(0, 0.56), (0.24, 0.4), (0.5, 0.5), (0.76, 0.38), (1, 0.58)], reach: 0.1, opacity: 0.75, delay: 0.15),
+        Bank(puffs: [(0.04, 0.6), (0.3, 0.46), (0.56, 0.56), (0.82, 0.44), (1.02, 0.6)], reach: -0.3, opacity: 1, delay: 0.3),
+    ]
+
+    var body: some View {
+        GeometryReader { proxy in
+            let size = proxy.size
+            let side = min(size.width, size.height)
+            let night = colorScheme == .dark
+            ZStack {
+                ForEach(Self.banks.indices, id: \.self) { index in
+                    let bank = Self.banks[index]
+                    ZStack {
+                        ForEach(bank.puffs.indices, id: \.self) { puffIndex in
+                            let puff = bank.puffs[puffIndex]
+                            Circle()
+                                .frame(width: side * puff.size, height: side * puff.size)
+                                .position(x: size.width * puff.x, y: 0)
+                        }
+                        Rectangle()
+                            .frame(width: size.width, height: size.height * 1.5)
+                            .position(x: size.width / 2, y: size.height * 0.75)
+                    }
+                    .foregroundStyle(night ? Brand.moonCloud : .white)
+                    // One sheet of cloud, not puffs see-through where they overlap.
+                    .compositingGroup()
+                    .opacity(bank.opacity)
+                    // Down out of sight under the screen, then up to its reach.
+                    .offset(y: risen ? size.height * bank.reach : size.height + side * 0.4)
+                    .animation(.easeIn(duration: LoadingCurtain.landingTime - bank.delay).delay(bank.delay), value: risen)
+                }
+            }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 
