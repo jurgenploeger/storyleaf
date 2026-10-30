@@ -21,6 +21,9 @@ struct NPCDialogView: View {
     }
     /// The weaver's or a barber's dyeing, in a window over the dialog (`DyeWindow`).
     @State private var dyeing = DebugLaunch.opensDyeing
+    /// What a shop, a smith, the weaver or a barber has for you, open in a window of its own
+    /// (`waresWindow`).
+    @State private var browsing = DebugLaunch.opensWares
 
     var body: some View {
         GeometryReader { proxy in
@@ -42,6 +45,12 @@ struct NPCDialogView: View {
                     .offset(x: portrait * 0.22, y: portrait * 0.16)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
+
+                if browsing, hasWares {
+                    waresWindow(safeArea: proxy.safeAreaInsets)
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                        .transition(.opacity)
+                }
 
                 if let finished {
                     QuestCompleteCard(session: session, finished: finished) { self.finished = nil }
@@ -80,6 +89,7 @@ struct NPCDialogView: View {
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
             .animation(.easeOut(duration: 0.15), value: dyeing)
+            .animation(.easeOut(duration: 0.15), value: browsing)
             .animation(.easeOut(duration: 0.2), value: finished?.quest.id)
             .animation(.easeOut(duration: 0.15), value: info?.id)
             .animation(.easeOut(duration: 0.15), value: deal?.id)
@@ -131,14 +141,19 @@ struct NPCDialogView: View {
                 Group {
                     switch npc.role {
                     case .healer: HealerPanel(session: session, reply: $reply)
-                    case .shop: ShopPanel(session: session, stock: npc.stock ?? [], reply: $reply, info: $info, deal: $deal)
                     case .quests: EmptyView()   // QuestConversation
                     case .guild: GuildPanel(session: session, classID: npc.classId ?? "", reply: $reply)
                     case .chest, .stairs, .waystone: EmptyView()   // straight from the map (GameCoordinator.open)
                     case .boss: BossPanel(session: session, boss: npc, onFight: onFight)
-                    case .smith: SmithPanel(session: session, reply: $reply, info: $info)
-                    case .weaver: CapePanel(session: session, reply: $reply, info: $info)
-                    case .barber: BarberPanel(session: session, price: npc.price ?? 1000, reply: $reply)
+                    case .shop, .smith, .weaver, .barber:
+                        // What they have opens in a window of its own, with room to see it all
+                        // (playtesting 2026-10-30: never squeezed in with what they say).
+                        Button {
+                            browsing = true
+                        } label: {
+                            Label(waresTitle, icon: waresIcon)
+                        }
+                        .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
                     case .bank:
                         // The bank itself opens in a window of its own (`BankView`), with room to see it all.
                         Button {
@@ -163,6 +178,72 @@ struct NPCDialogView: View {
             }
         }
         .frame(maxHeight: min(260, max(120, maxHeight - 110)))
+    }
+
+    /// Whether they have wares to look through in a window (`waresWindow`).
+    private var hasWares: Bool { ([.shop, .smith, .weaver, .barber] as [NPCRole]).contains(npc.role) }
+
+    private var waresTitle: String {
+        switch npc.role {
+        case .smith: L("View the forge")
+        case .weaver: L("View the capes")
+        case .barber: L("Change your look")
+        default: L("View the wares")
+        }
+    }
+
+    private var waresIcon: GameIcon {
+        switch npc.role {
+        case .smith: .hammer
+        case .weaver: .sparkles
+        case .barber: .user
+        default: .backpack
+        }
+    }
+
+    /// What they have, in a window as big as a menu window's (as the bank's is, `BankView`): their name,
+    /// what they just said, and their wares under it. An item's card and how many to buy or sell open over it.
+    private func waresWindow(safeArea: EdgeInsets) -> some View {
+        ZStack {
+            Color.black.opacity(0.45)
+                .onTapGesture { browsing = false }
+            VStack(spacing: 0) {
+                WindowTitle(npc.name, onClose: { browsing = false })
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        if let reply {
+                            Text(reply)
+                                .font(HUDStyle.font(12))
+                                .foregroundStyle(HUDStyle.cream)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        wares
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                }
+            }
+            .foregroundStyle(HUDStyle.cream)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .gameWindow()
+            .menuWindowMargins()
+            // The dialog runs under the notch and the home indicator; the window keeps clear of them.
+            .padding(.top, safeArea.top)
+            .padding(.leading, safeArea.leading)
+            .padding(.trailing, safeArea.trailing)
+            .padding(.bottom, safeArea.bottom)
+        }
+    }
+
+    @ViewBuilder
+    private var wares: some View {
+        switch npc.role {
+        case .shop: ShopPanel(session: session, stock: npc.stock ?? [], reply: $reply, info: $info, deal: $deal)
+        case .smith: SmithPanel(session: session, reply: $reply, info: $info)
+        case .weaver: CapePanel(session: session, reply: $reply, info: $info)
+        case .barber: BarberPanel(session: session, price: npc.price ?? 1000, reply: $reply)
+        default: EmptyView()
+        }
     }
 }
 
