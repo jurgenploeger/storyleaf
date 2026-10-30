@@ -867,7 +867,11 @@ private struct CompanionPad: View {
                 RoundCommandButton(title: L("Auto"), icon: .paw, size: size, tint: .quiet) { controller.letCompanionDecide() }
             } tail: { size in
                 RoundCommandButton(title: L("Guard"), icon: .shield, size: size, tint: .normal) { controller.defend() }
-                RoundCommandButton(title: L("Attack"), icon: .tooth, size: size, tint: .primary) { controller.attack() }
+                // The hero's Attack, sword and all (playtesting 2026-10-30: a tooth "should just be the same as
+                // the hero").
+                RoundCommandButton(title: L("Attack"), icon: BattleCommand("attack").icon, size: size, tint: .primary) {
+                    controller.attack()
+                }
             }
         }
         .padding(.leading, 14)
