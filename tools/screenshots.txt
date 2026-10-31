@@ -604,6 +604,9 @@ village_emerald_road        | newgame,level=195,map=emerald_road,at=1_-18,weathe
 village_icemoor_night       | newgame,level=150,map=rosen_lake,at=14_-9,landscape,weather=clear,hour=22 | 10
 quest_selene                | newgame,level=97,map=moonglow,at=-40_-7,npc=festival_selene,done=silvermoon_rice+silvermoon_bones,weather=clear,hour=12 | 8
 quest_fennimore             | newgame,level=195,map=emerald_road,at=-5_-16,npc=spectacle_fennimore,done=greenglass_pegasi+greenglass_glass,weather=clear,hour=12 | 8
+# Nobody hidden behind the scenery (playtesting 2026-10-31: Fennimore stood behind the shop, only
+# his name showing): he's moved where nothing hides him, and whatever you walk behind fades.
+fennimore_in_view           | newgame,level=195,map=emerald_road,at=-3_-15,weather=clear,hour=12 | 8
 # The people who live on the maps (`MapDef.Local`, `Crowd`): a couple of steps from one, who starts on
 # their story (a fisher at the end of a jetty, a girl at a bridge, a farmer among his things, a dancer
 # on an island, a mapmaker up a mountain, a mole by a cave's mouth, a tin man), in German and Japanese too.
@@ -877,3 +880,7 @@ cape_front      | newgame,level=30,equip=leather_vest+sunny_meadow_cape,facing=d
 # Who of your friends is online, and where (playtesting 2026-10-31: "You should be able to see if your
 # friends are online and where they are"), in lands you've been to and those you haven't.
 friends_list         | newgame,level=60,pals=10,menu=friends,weather=clear,hour=12 | 8
+# A fairy ring in Windswept Downs (playtesting 2026-10-31: its sparkle read as a floating white
+# cross, and horizontal stripes showed in the grass round it): by day and with the sun low.
+fairy_ring_downs     | newgame,level=12,map=northern_grassland,ring=0,weather=clear,hour=12 | 8
+fairy_ring_downs_eve | newgame,level=12,map=northern_grassland,ring=0,weather=clear,hour=18 | 8
