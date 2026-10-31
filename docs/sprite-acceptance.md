@@ -275,6 +275,13 @@ python3 tools/check_content.py
   about half its light), inside the dye's window (`hairLayer`), so every dye turns it a deep shade of the
   new colour. RD drew the ginger's top edge bright, as lit; dyed purple on a dark battle field it read as
   no outline (playtesting 2026-10-23). Check a light dye and a dark one on a dark background.
+- **A dyed piece keeps its shading** (gear dyes, `DyeDef.rule(onto:)`, playtesting 2026-10-31: "make sure
+  that the dyed items don't lose the details like shadows and highlights"). A dye's middle may sit a
+  little under its own brightness (`slack`) rather than squeeze the ramp flat under white, a dark dye's
+  shadows only stay over black (`floor`), and its shine stops short of white (`lightest`); no piece gains
+  contrast it didn't have. `tools/dye_art.py check` fails a piece that keeps under 28% of its light-to-dark
+  spread (`RAMP_KEPT`; the squeezed formula failed 477 cases at 30%). A metal's pure white shine carries a
+  faint tint of its hue (`wear_art.py` `shine`) so a dye takes it, eyes and catchlights left white.
 
 ### Working on it
 

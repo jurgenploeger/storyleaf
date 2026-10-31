@@ -38,6 +38,7 @@ import sys
 
 import numpy as np
 from PIL import Image
+from scipy import ndimage
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
@@ -82,6 +83,13 @@ MATERIAL = {
     "ranger_cloak": dict(hue=(60, 170), min=0.15, to=(110, 0.56, 0.33)),
     "hide_hood": dict(hue=(180, 260), min=0.2, to=(215, 0.60, 0.55), even=True),
 }
+
+# Metals whose shine is drawn pure white: it gets the faintest tint of the metal's own hue (`SHINE_TINT`
+# saturation, the hue here), so a dye takes it with the rest of the metal (DyeDef materials' least
+# saturation is 0.05 and 0.03) and it doesn't stay white on a dark dye (playtesting 2026-10-31: a
+# Midnight plate "has a lot of white highlight"). Undyed it still looks white.
+SHINE = {"iron_plate": 205, "chain_mail": 210}
+SHINE_TINT = 0.08
 
 F = 48
 HAT_BRIM, ANCHOR_X, ANCHOR_Y = 40, 24, 20
@@ -134,6 +142,40 @@ def material(img, hue, min, to, max=1.0, even=False):
             break
         out[..., :3][m] = hsv2rgb((h[m] + turn) % 360, bend(s[m], to[1]), bend(v[m], to[2]))
     return out
+
+
+def shine(img, kind):
+    """`img` with its metal's pure white shine (SHINE) faintly tinted: the white pixels within two of
+    the metal's own and not within two of skin, so the eyes and their catchlights stay white."""
+    if kind not in SHINE:
+        return img
+    out = img.copy()
+    h, s, v = rgb2hsv(out[..., :3])
+    seen = out[..., 3] > 0.5
+    lo, hi = MATERIAL[kind]["hue"]
+    in_hue = ((h >= lo) & (h <= hi)) if lo <= hi else ((h >= lo) | (h <= hi))
+    metal = seen & (s >= 0.05) & in_hue & (v > 0.12)
+    skin = seen & (s > 0.2) & (h >= 5) & (h <= 45) & (v > 0.4)
+    white = seen & (s < 0.05) & (v >= 0.9)
+    m = white & ndimage.binary_dilation(metal, iterations=2) & ~ndimage.binary_dilation(skin, iterations=2)
+    if m.any():
+        out[..., :3][m] = hsv2rgb(np.full(int(m.sum()), float(SHINE[kind])), np.full(int(m.sum()), SHINE_TINT), v[m])
+    return out
+
+
+def shine_existing():
+    """SHINE on the sheets and hats already made, in place (`--shine`): the step `armour` takes, without
+    making every sheet again."""
+    for kind in SHINE:
+        for race in RACES:
+            for name in (f"armor_{kind}_{race}", f"hat_{kind}_{race}"):
+                path = SPRITES / f"{name}.png"
+                if path.exists():
+                    before = load(path)
+                    after = shine(before, kind)
+                    changed = int((np.abs(after - before).sum(axis=2) > 1e-6).sum())
+                    save(after, name)
+                    print(f"art/sprites/{name}.png  {changed} shine pixels tinted")
 
 
 # Armour whose walk sheet leaves the head bare, the hero's own head, beard and hair drawn over it
@@ -206,7 +248,7 @@ def armour():
     for name, source in ARMOUR.items():
         img = load(VARIANTS / source)
         kind = name[len("armor_"):name.rindex("_")]
-        img = material(img, **MATERIAL[kind])
+        img = shine(material(img, **MATERIAL[kind]), kind)
         if kind in BARE_HEADED:
             img, hat = bared(img, name[name.rindex("_") + 1:])
             save(hat, "hat_" + name[len("armor_"):])
@@ -513,7 +555,11 @@ def contact(made, out):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--sheet", help="also write a contact sheet here")
+    parser.add_argument("--shine", action="store_true", help="only tint the metals' shine on the sheets already made")
     args = parser.parse_args()
+    if args.shine:
+        shine_existing()
+        return
     heads()
     made = armour() | wear()
     if args.sheet:

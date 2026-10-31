@@ -3608,10 +3608,10 @@
       "make": "mix",
       "dye": {
         "name": "Midnight",
-        "color": "#222652",
-        "hue": 235,
-        "saturation": 0.59,
-        "value": 0.32
+        "color": "#2E3140",
+        "hue": 230,
+        "saturation": 0.28,
+        "value": 0.25
       }
     },
     {

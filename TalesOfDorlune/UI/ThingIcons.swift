@@ -8,12 +8,18 @@ struct IconTile: View {
     /// Pixel art shown instead of the icon when there is some.
     var picture: UIImage? = nil
 
+    /// The dark edge round it, thicker on a bigger tile.
+    private var edge: CGFloat { max(1, (size * 0.035).rounded()) }
+
     var body: some View {
         RoundedRectangle(cornerRadius: size * 0.26)
             .fill(tint)
             .overlay(RoundedRectangle(cornerRadius: size * 0.26)
                 .fill(LinearGradient(colors: [.white.opacity(0.35), .clear, .black.opacity(0.22)], startPoint: .top, endPoint: .bottom)))
-            .overlay(RoundedRectangle(cornerRadius: size * 0.26).strokeBorder(.white.opacity(0.7), lineWidth: 1.5))
+            // A dark edge round it, then its light rim just inside (playtesting 2026-10-31: "the items
+            // should have a bit more border contrast"): on the windows' blue a pale rim alone washed out.
+            .overlay(RoundedRectangle(cornerRadius: size * 0.26).strokeBorder(HUDStyle.ink.opacity(0.9), lineWidth: edge))
+            .overlay(RoundedRectangle(cornerRadius: size * 0.26).inset(by: edge).strokeBorder(.white.opacity(0.85), lineWidth: 1.5))
             .overlay(alignment: .top) {
                 // Glossy top, like Fairyland Online's inventory icons.
                 Capsule().fill(.white.opacity(0.28)).frame(height: size * 0.22).padding(.horizontal, size * 0.14).padding(.top, size * 0.08)
