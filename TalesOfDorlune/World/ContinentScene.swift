@@ -121,6 +121,8 @@ final class ContinentScene: SKScene {
     static let reach = 2
     static let keep = 3
     private var lookedAround: TimeInterval = 0
+    /// When it last looked for anyone hidden behind the scenery (`LandStage.seeThrough`).
+    private var lookedThrough: TimeInterval = 0
     /// True once the land you're in is drawn round you, its hills and shore too (the loading card
     /// waits); the lands round it come in as they're laid out (`isSettled`).
     private(set) var isReady = false
@@ -492,6 +494,17 @@ final class ContinentScene: SKScene {
                                     isHere: id == here?.id)
         }
         updateAir(dt)
+        // Nobody on screen hides behind a house or a tree: what stands in front of them fades.
+        if currentTime - lookedThrough > 0.12 {
+            lookedThrough = currentTime
+            var ours: [Walker] = [player]
+            if let follower { ours.append(follower) }
+            for ally in allies {
+                ours.append(ally.node)
+                if let pet = ally.pet { ours.append(pet) }
+            }
+            for id in nearLands { lands[id]?.stage.seeThrough(ours) }
+        }
         if currentTime - lookedAround > 0.25 {
             lookedAround = currentTime
             lookAround()

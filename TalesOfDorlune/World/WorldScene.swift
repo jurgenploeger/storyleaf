@@ -52,6 +52,10 @@ final class WorldScene: SKScene {
     private var stepsSinceBattle = 0
     private var lastUpdate: TimeInterval = 0
     private var noticeTimer: TimeInterval = 0
+    /// Its scenery tall enough to hide someone, faded while anyone's behind it (`SeeThrough`), and
+    /// when it last looked.
+    private let see = SeeThrough()
+    private var lookedThrough: TimeInterval = 0
     private var hasLeft = false
     private var ambience: Ambience?
     /// Bunnies, frogs and crabs about the map, and birds crossing the sky.
@@ -290,9 +294,13 @@ final class WorldScene: SKScene {
         for rock in planner.plan.outcrops { addScenery(rock) }
         await breathe()
         await placeProps(planner.plan.props, seams: planner.plan.seamProps)
-        TownFence.placeRoadsides(planner.plan.roadsides, map: map, art: art) { node in self.chunk(at: node.position).addChild(node) }
+        TownFence.placeRoadsides(planner.plan.roadsides, map: map, art: art) { node in
+            self.chunk(at: node.position).addChild(node)
+            if let sprite = node as? SKSpriteNode { self.see.note(sprite) }
+        }
         placeSignposts(planner.plan.signposts)
         placeBorders()
+        bringIntoView()
         // Everyone set down before they were on the map stands up on the ground under them.
         for case let walker as Walker in world.children { walker.settle() }
         await reached(0.9, progress)
@@ -964,7 +972,23 @@ final class WorldScene: SKScene {
 
     private func placeFence() {
         guard !map.fenceCells.isEmpty else { return }
+        let before = Set(world.children.map { ObjectIdentifier($0) })
         TownFence.place(cells: map.fenceCells, map: map, world: world, art: art, stone: def.town?.walls == "stone")
+        // A city's stone walls and towers stand tall enough to hide someone too.
+        for case let node as SKSpriteNode in world.children where !before.contains(ObjectIdentifier(node)) { see.note(node) }
+    }
+
+    /// Moves anyone set down where a building or tall scenery in front of them hides them to the
+    /// nearest cell nothing hides (`SeeThrough.clearSpot`, `LandStage.bringIntoView`).
+    private func bringIntoView() {
+        var taken = Set(npcs.map { map.cell(at: $0.node.position) })
+        for npc in npcs {
+            guard let spot = see.clearSpot(near: npc.node.position, size: npc.node.sprite.size, map: map, taken: taken) else { continue }
+            taken.remove(map.cell(at: npc.node.position))
+            taken.insert(spot)
+            npc.node.position = map.center(of: spot)
+            npc.node.zPosition = -npc.node.position.y
+        }
     }
 
     /// Houses take a 3×2 footprint above their anchor tile.
@@ -1474,6 +1498,7 @@ final class WorldScene: SKScene {
         }
         chunk(at: node.position).addChild(node)
         focus.add(node)
+        see.note(node)
         return node
     }
 
@@ -2366,6 +2391,20 @@ final class WorldScene: SKScene {
         let visible = CGRect(x: cam.position.x - size.width / 2, y: cam.position.y - size.height / 2, width: size.width, height: size.height)
         // The animals keep to their own land.
         critters?.update(dt: dt, player: player.position, visible: visible) { self.map.isWalkable(self.map.rawCell(at: $0)) }
+        // Nobody on screen hides behind a house or a tree: what stands in front of them fades.
+        if currentTime - lookedThrough > 0.12 {
+            lookedThrough = currentTime
+            var walkers: [Walker] = [player]
+            if let follower { walkers.append(follower) }
+            for ally in allies {
+                walkers.append(ally.node)
+                if let pet = ally.pet { walkers.append(pet) }
+            }
+            walkers += npcs.map { $0.node } + (crowd?.walkers ?? [])
+            let seen = CGRect(x: cam.position.x - size.width / 2 * cam.xScale, y: cam.position.y - size.height / 2 * cam.xScale,
+                              width: size.width * cam.xScale, height: size.height * cam.xScale)
+            see.fade(over: [(walkers: walkers, offset: .zero)], visible: seen)
+        }
         noticeTimer -= dt
         if noticeTimer <= 0 {
             noticeTimer = 0.4
