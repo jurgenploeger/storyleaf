@@ -3987,7 +3987,8 @@
             "maxSaturation": 0.25,
             "to": 349.6,
             "spread": 0.67,
-            "saturation": 2.2
+            "saturation": 1.4,
+            "value": 1.04
           }
         ]
       }
@@ -7898,7 +7899,8 @@
             "minSaturation": 0.1,
             "to": 147.9,
             "spread": -0.54,
-            "saturation": 0.9
+            "saturation": 0.9,
+            "value": 1.05
           }
         ]
       }
