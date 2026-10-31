@@ -84,6 +84,12 @@ nonisolated struct MapPalette: Decodable, Sendable {
 }
 
 enum Recolor {
+    /// How far, in degrees, a barely coloured family's hue may lie from the greys' own and still be one
+    /// material with them (`dyeRules`; tools/dye_art.py `GREY_REACH`): a teal steel's blade and its shine.
+    nonisolated static let greyReach: Double = 60
+    /// How big, against the bigger family, the one nearer a weapon's tip has to be to be its main
+    /// colour (`dyeRules`; tools/dye_art.py `TIP_SHARE`).
+    nonisolated static let tipShare: Double = 1.0 / 3
     /// Applies the first matching rule to every opaque pixel. Outlines and greys stay put
     /// unless a rule explicitly asks for low saturation.
     nonisolated static func apply(_ rules: [RecolorRule], to image: CGImage) -> CGImage? {
@@ -192,7 +198,10 @@ enum Recolor {
         }
         let own = families(seen)
         // A metal's tinted greys and its faintly blue shading are one material: a coloured family that's
-        // barely coloured (its middle saturation under 0.45) and of the greys' own hue goes with them.
+        // barely coloured (its middle saturation under 0.45) and of about the greys' own hue (`greyReach`
+        // of its window's middle) goes with them. Only inside its window, a teal steel's blade parted
+        // from its grey shine, and a dye took the shine alone (playtesting 2026-10-31: the Starfall Axe
+        // "isn't that dyed").
         let grey = windows.count - 1
         var group = Array(windows.indices)
         let tinted = own[grey].filter { $0.s >= 0.05 }
@@ -201,7 +210,10 @@ enum Recolor {
             let greyHue = (atan2(y, x) * 180 / .pi + 360).truncatingRemainder(dividingBy: 360)
             for at in 0..<grey where !own[at].isEmpty {
                 let middle = own[at].map(\.s).sorted()[own[at].count / 2]
-                if middle < 0.45, windows[at].matches(hue: greyHue, saturation: 0.5, value: 0.5) { group[at] = grey }
+                guard middle < 0.45, let range = windows[at].hue, range.count == 2 else { continue }
+                let centre = (range[0] + (range[1] - range[0] + 360).truncatingRemainder(dividingBy: 360) / 2).truncatingRemainder(dividingBy: 360)
+                let apart = abs((greyHue - centre + 540).truncatingRemainder(dividingBy: 360) - 180)
+                if apart <= Self.greyReach { group[at] = grey }
             }
         }
         func members(_ found: [[Seen]], _ of: Int) -> [Seen] {
@@ -217,7 +229,11 @@ enum Recolor {
             let all = members(own, of)
             return all.reduce(0) { $0 + $1.x - $1.y } / Double(all.count)
         }
-        if weapon, let other = trimAt, tip(other) > tip(mainAt) {
+        // The family nearer the tip is the blade or the staff's head, so its main colour, if it's a good
+        // part of the picture (`tipShare` of the bigger one's): a small gem or band near the tip is an
+        // accent, its trim (an Aurora Staff's dye went on its tip's spark alone, 7% of it).
+        if weapon, let other = trimAt, tip(other) > tip(mainAt),
+           Double(members(own, other).count) >= Self.tipShare * Double(members(own, mainAt).count) {
             trimAt = mainAt
             mainAt = other
         }

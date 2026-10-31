@@ -689,6 +689,8 @@ character_de_land | newgame,lang=de,menu=character,sub=titles,landscape | 8
 companions_ru | newgame,level=5,lang=ru,menu=companions               | 8
 settings_fr_land | newgame,lang=fr,menu=settings,sub=saves,landscape  | 8
 monster_book | newgame,book                                        | 8
+# Its Search and Sort (playtesting 2026-10-31), the orders open.
+monster_book_sort | newgame,book,sortopen | 8
 bounties     | newgame,level=12,map=northern_grassland,bounties=1,menu=quests,sub=daily | 8
 quests_dot   | newgame,level=12,map=northern_grassland,bounties=1,menu=quests | 8
 titles       | newgame,level=60,class=fighter,title=veteran,menu=character,sub=titles | 8

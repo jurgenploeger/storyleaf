@@ -184,11 +184,50 @@ def dyes():
 
 def rule_onto(dye, m):
     """DyeDef.rule(onto:): the material `m` taken to the dye's colour."""
-    gain = max(0.3, min(dye["value"] / m["value"], (1 - dye["value"]) / max(0.01, m["light"] - m["value"])))
+    top = lightest(dye)
+    # Room to keep the shading: the middle may sit a little under the dye's own (SLACK, a white's more),
+    # so the ramp needn't be squeezed flat under white (playtesting 2026-10-31: "make sure that the dyed
+    # items don't lose the details like shadows and highlights").
+    # A light dye's: a dark one has no white to fit under, its shadows black to stay over.
+    slack = (SLACK_WHITE if dye["saturation"] < 0.1 else SLACK) * min(1, max(0, (dye["value"] - 0.5) / 0.2))
+    # A dark dye's the other way: its middle may sit a little over its own, so its shadows have room
+    # over black (`rise`, DyeDef.rise; a blackish Midnight on a bright blade squeezed it flat).
+    rise = SLACK * min(1, max(0, (0.5 - dye["value"]) / 0.2))
+    middle = dye["value"] + rise
+    # Its darkest (the material's least, `minValue`) no darker than FLOOR, nor its lightest past `top`.
+    least = m["minValue"] if m.get("minValue") is not None else 0.2
+    # Never more contrast than it had, unless brightening a dark one as before (`value` over its middle).
+    gain = max(0.3, min(max(1, dye["value"] / m["value"]),
+                        (middle - FLOOR) / max(0.01, m["value"] - least),
+                        (top - dye["value"] + slack) / max(0.01, m["light"] - m["value"])))
     return dict(hue=m.get("hue"), minSaturation=m.get("minSaturation", 0), maxSaturation=m.get("maxSaturation"),
                 minValue=m.get("minValue"), to=dye["hue"], spread=0.25,
                 saturation=0.5 * dye["saturation"] / m["saturation"], saturationOffset=0.5 * dye["saturation"],
-                value=gain, valueOffset=min(dye["value"] - gain * m["value"], 1 - gain * m["light"]))
+                value=gain, valueOffset=min(middle - gain * m["value"], top - gain * m["light"]))
+
+
+# How far under a dye's own brightness a piece's middle may sit, to keep its shading (DyeDef.slack).
+SLACK = 0.08
+SLACK_WHITE = 0.12
+# The darkest a dyed piece's material goes (DyeDef.floor): just over black, so its deepest shadow still
+# reads as part of it.
+FLOOR = 0.06
+
+
+def lightest(dye):
+    """DyeDef.lightest: the brightest a dye's shine goes. White for a light dye; for a dark one, down
+    toward halfway from its colour to white, the darker the further (from 0.7 down to 0.3): a Midnight
+    plate's shine at 0.8 read as white beside its 0.32 navy (playtesting 2026-10-31)."""
+    darkness = min(1, max(0, (0.7 - dye["value"]) / 0.4))
+    return 1 - 0.5 * (1 - dye["value"]) * darkness
+
+
+# How far, in degrees, a barely coloured family's hue may lie from the greys' own and still be one
+# material with them (Recolor.dyeRules `greyReach`): a teal steel's blade and its grey shine.
+GREY_REACH = 60
+# How big, against the bigger family, the one nearer a weapon's tip has to be to be its main colour
+# (Recolor.dyeRules `tipShare`).
+TIP_SHARE = 1 / 3
 
 
 def icon_rules(picture, main, trim, weapon, target=None):
@@ -238,7 +277,9 @@ def icon_rules(picture, main, trim, weapon, target=None):
         for i in range(grey):
             if own[i].any():
                 middle = float(np.sort(s[own[i]])[int(own[i].sum()) // 2])
-                if middle < 0.45 and matches(windows[i], np.array([grey_hue]), np.array([0.5]), np.array([0.5]))[0]:
+                lo, hi = windows[i]["hue"]
+                centre = np.fmod(lo + (np.fmod(hi - lo + 360, 360)) / 2, 360)
+                if middle < 0.45 and abs(np.fmod(grey_hue - centre + 540, 360) - 180) <= GREY_REACH:
                     group[i] = grey
 
     def members(found, of):
@@ -260,7 +301,10 @@ def icon_rules(picture, main, trim, weapon, target=None):
         m = members(own, i)
         return float(np.mean(xs[m] - ys[m]))
 
-    if weapon and trim_at is not None and tip(trim_at) > tip(main_at):
+    # The family nearer the tip is the blade or the staff's head, so its main colour, if it's a good
+    # part of the picture: a small gem or band near the tip is an accent, its trim.
+    if weapon and trim_at is not None and tip(trim_at) > tip(main_at) \
+            and members(own, trim_at).sum() >= TIP_SHARE * members(own, main_at).sum():
         main_at, trim_at = trim_at, main_at
     if target is not None:
         th, ts, tv, _, _ = colours(target)
@@ -425,6 +469,12 @@ def circular_median(hues):
     return float(np.fmod(angle + np.median(offset) + 360, 360))
 
 
+# How much of a piece's light-to-dark spread a dye has to keep (`verdict`), where it has one to keep
+# (0.05 at least): a quarter let a white or a gold squeeze a piece's shading nearly flat under white
+# (477 cases failed 0.3 before the dyes kept their shading, playtesting 2026-10-31).
+RAMP_KEPT = 0.28
+
+
 def verdict(dye, before, after):
     """Whether the recoloured pixels read as the dye: hue, saturation, brightness, and a ramp kept."""
     solid = before[:, 3] >= 128 if before.shape[1] > 3 else np.ones(len(before), bool)   # a glow's faint halo isn't the material
@@ -445,9 +495,10 @@ def verdict(dye, before, after):
     val_ok = mv >= 0.75 if white else abs(mv - dye["value"]) <= 0.15
     spread0 = np.percentile(v0, 90) - np.percentile(v0, 10)
     spread = np.percentile(v, 90) - np.percentile(v, 10)
-    # A few pixels (a held sprite's clasp) can't hold a ramp; more keep at least a quarter of theirs.
-    ramp_ok = len(v) < 12 or (len(np.unique(np.round(v, 3))) >= min(3, len(np.unique(np.round(v0, 3))))
-                              and spread >= 0.25 * spread0 - 1e-6)
+    # A few pixels (a held sprite's clasp) can't hold a ramp; more keep at least RAMP_KEPT of theirs, so
+    # its shadows and highlights still show (playtesting 2026-10-31).
+    ramp_ok = len(v) < 12 or spread0 < 0.05 or (len(np.unique(np.round(v, 3))) >= min(3, len(np.unique(np.round(v0, 3))))
+                                                 and spread >= RAMP_KEPT * spread0 - 1e-6)
     return dict(ok=bool(hue_ok and sat_ok and val_ok and ramp_ok), hue=mh, sat=ms, val=mv, spread=(spread, spread0),
                 fails="".join(c for c, ok in (("h", hue_ok), ("s", sat_ok), ("v", val_ok), ("r", ramp_ok)) if not ok))
 

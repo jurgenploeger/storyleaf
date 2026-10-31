@@ -22,7 +22,7 @@ final class SeeThrough {
     /// enough to hide someone.
     func note(_ node: SKSpriteNode) {
         let frame = node.frame
-        guard frame.height >= Self.tallEnough else { return }
+        guard frame.height >= Self.tallEnough, Self.isSane(frame) else { return }
         let low = Self.key(frame.minX, frame.minY), high = Self.key(frame.maxX, frame.maxY)
         for col in low.col...high.col {
             for row in low.row...high.row { talls[GridPoint(col: col, row: row), default: []].append(node) }
@@ -42,6 +42,7 @@ final class SeeThrough {
     func covering(feet: CGPoint, size: CGSize, lift: CGFloat) -> Set<SKSpriteNode> {
         let body = Self.body(at: feet, size: size, lift: lift)
         var found = Set<SKSpriteNode>()
+        guard Self.isSane(body) else { return found }
         let low = Self.key(body.minX, body.minY), high = Self.key(body.maxX, body.maxY)
         for col in low.col...high.col {
             for row in low.row...high.row {
@@ -87,7 +88,20 @@ final class SeeThrough {
         return nil
     }
 
+    /// A rectangle with real numbers, a few screens across at most: anything else is a walker or a
+    /// sprite somewhere it shouldn't be, and looking it up would walk a million pieces.
+    private static func isSane(_ rect: CGRect) -> Bool {
+        !rect.isNull && rect.minX.isFinite && rect.minY.isFinite && rect.width.isFinite && rect.height.isFinite
+            && rect.width < piece * 8 && rect.height < piece * 8
+    }
+
+    /// The piece of the screen a point is in. A point that isn't a number (or is past any the world
+    /// has) goes in a piece far off rather than stopping the game: `Int` traps on those.
     private static func key(_ x: CGFloat, _ y: CGFloat) -> GridPoint {
-        GridPoint(col: Int((x / piece).rounded(.down)), row: Int((y / piece).rounded(.down)))
+        func index(_ value: CGFloat) -> Int {
+            let piece = (value / Self.piece).rounded(.down)
+            return piece.isFinite ? Int(max(-1_000_000, min(1_000_000, piece))) : 1_000_000
+        }
+        return GridPoint(col: index(x), row: index(y))
     }
 }

@@ -674,6 +674,12 @@ final class ContinentScene: SKScene {
     /// What's on screen right now, for behind a battle: you (and a boss, `npcID`) and the tap marks
     /// left out, as the battle draws the party itself.
     func battleBackdrop(hiding npcID: String?) -> SKTexture? {
+        // Not while hills or shore on screen are still waiting to be drawn: SpriteKit has crashed
+        // picturing a land half built (#334, on CI), and a party you've joined walks you into lands
+        // faster than you'd go (playtesting 2026-10-31: a crash as a battle began in one). The
+        // battle's own ground then, as when there's nothing to picture.
+        let you = Self.cell(at: cam.position)
+        guard isReady, !waiting.contains(where: { distance(of: $0, from: you) <= Self.screenReach }) else { return nil }
         let visible = CGRect(x: cam.position.x - size.width / 2, y: cam.position.y - size.height / 2, width: size.width, height: size.height)
         let boss: [SKNode] = lands.values.flatMap { land in land.stage.npcs.filter { $0.def.id == npcID }.map(\.node) }
         var hidden: [SKNode] = [player]

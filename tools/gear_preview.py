@@ -271,6 +271,15 @@ def apply(base, recolored, wear=None, accent=None, pattern=None):
     return out
 
 
+# Gloves (GearOverlay.trinkets): the last rows of each arm, the hand, and a cuff over it, as boots take the feet's,
+# and as strongly (playtesting 2026-10-31: "the gloves should change the color of the hero a bit more,
+# similar to the boots"; they had the hand's last 3 rows at lift 0.5, gain 0.6).
+GLOVE_ROWS = 5
+GLOVE_TONE = (0.55, 0.9)
+# Rows of the sleeve over each hand the gloves' cuff takes (the human hand is only two pixels).
+GLOVE_CUFF = 2
+
+
 def trinkets(body, out, gloves=None, boots=None, necklace=None, chain=None):
     """Gloves on the hands, boots on the feet and a necklace under the chin (GearOverlay.trinkets),
     each in its colour (#RRGGBB) at the brightness of what was there. Found on the plain body: its
@@ -333,12 +342,36 @@ def trinkets(body, out, gloves=None, boots=None, necklace=None, chain=None):
             chin = max(y for y, _ in face)
             if gloves is not None:
                 for cells in patches:
-                    if cells is face or min(y for y, _ in cells) < chin - 1:
+                    # A hand: under the chin (not a sliver of the jaw seen from the side) and above the
+                    # knees (not a bare knee): its top at least two rows under the chin, and in the
+                    # body's upper 70%.
+                    top_row = min(y for y, _ in cells)
+                    if cells is face or top_row < chin + 2 or top_row > rows[0] + 0.7 * (feet - rows[0]):
                         continue
                     low = max(y for y, _ in cells)
                     for y, x in cells:
-                        if y >= low - 2:
-                            paint(x, y, gloves, 0.5, 0.6)
+                        if y > low - GLOVE_ROWS:
+                            paint(x, y, gloves, *GLOVE_TONE)
+                    # The pale bits drawn with it (a human's grey-blue fingers, its white ones): what's
+                    # touching the hand and barely coloured, never dark.
+                    hand = set(cells)
+                    for y, x in cells:
+                        for dy in (-1, 0, 1):
+                            for dx in (-1, 0, 1):
+                                ny, nx = y + dy, x + dx
+                                if (ny, nx) in hand or not (0 <= ny < FRAME and 0 <= nx < FRAME) or not a[ny, nx] or skin[ny, nx]:
+                                    continue
+                                _, ps, pv = hsv(tuple(b[ny, nx, :3]))
+                                if ps < 0.3 and pv >= 0.35:
+                                    paint(nx, ny, gloves, *GLOVE_TONE)
+                    # Its cuff: the sleeve's end over the hand, a pixel wider each side, never its outline.
+                    high = min(y for y, _ in cells)
+                    xs = [x for _, x in cells]
+                    for y in range(high - GLOVE_CUFF, high):
+                        for x in range(min(xs) - 1, max(xs) + 2):
+                            if 0 <= y < FRAME and 0 <= x < FRAME and a[y, x] and not skin[y, x] \
+                                    and f[y, x, 3] > 0.5 and hsv(tuple(f[y, x, :3]))[2] >= 0.25:
+                                paint(x, y, gloves, *GLOVE_TONE)
             under = [x for y, x in face if y == chin]
             if necklace is not None and facing == 'down' and under:
                 cx = (min(under) + max(under)) // 2

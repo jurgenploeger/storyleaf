@@ -2130,10 +2130,13 @@ final class GameSession {
                   made.recipe?[item.id] != nil, count(of: id) < goal(of: quest) else { continue }
             return made
         }
-        if item.material == "gem" {
-            return content.items.first { $0.dye != nil && $0.make == .mix && $0.recipe?[item.id] != nil }
-        }
-        return nil
+        return dye(mixedFrom: item)
+    }
+
+    /// The dye a gem mixes into, with a Sheepskin (`ItemDef.make` `.mix`), if it's a gem.
+    func dye(mixedFrom item: ItemDef) -> ItemDef? {
+        guard item.material == "gem" else { return nil }
+        return content.items.first { $0.dye != nil && $0.make == .mix && $0.recipe?[item.id] != nil }
     }
 
     /// Makes an item by hand from the bag (`ItemDef.make`): carves it, or pieces it together, from

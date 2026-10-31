@@ -26,11 +26,12 @@ struct LoadingCurtain: View {
     static let handOff = 0.6
     /// How long the clouds take to cover the screen.
     static let landingTime = 1.3
-    /// How long the clouds take to rise off the game.
-    static let clearingTime = 1.2
+    /// How long the clouds take to rise off the game, and the frosted haze under them to clear.
+    static let clearingTime = 1.4
 
     var body: some View {
         ZStack {
+            CloudHaze(clearing: clearing)
             // The bar keeps a little apart from the logo, and narrower than it.
             VStack(spacing: 30) {
                 Image("Logo")
@@ -100,6 +101,24 @@ extension View {
     }
 }
 
+/// Frosted glass over the game, under a loading screen's sky till the clouds part, then clearing
+/// with them: the game comes into focus as you come down through the clouds, not sharp at once
+/// behind them (playtesting 2026-10-31: "you can see the layers, there should be a bg blur that
+/// fades out").
+struct CloudHaze: View {
+    let clearing: Bool
+
+    var body: some View {
+        Rectangle()
+            .fill(.ultraThinMaterial)
+            .ignoresSafeArea()
+            .opacity(clearing ? 0 : 1)
+            .animation(.easeInOut(duration: LoadingCurtain.clearingTime), value: clearing)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+    }
+}
+
 /// The clouds that come up over the loading screen once the game is ready: banks of them rising
 /// from under the sky's own, faster as they come, the far ones paler and slower, till the nearest
 /// covers the screen, as if the logo fell through them to the ground. Each bank is a row of puffs
@@ -152,6 +171,9 @@ struct CloudCover: View {
                     .foregroundStyle(night ? Brand.moonCloud : .white)
                     // One sheet of cloud, not puffs see-through where they overlap.
                     .compositingGroup()
+                    // Softening as it rises past, so the banks melt into one another and the haze
+                    // instead of showing as sheets with hard edges.
+                    .blur(radius: through ? side * 0.08 : 0)
                     .opacity(through ? 0 : bank.opacity)
                     .scaleEffect(through ? 1.15 + 0.15 * CGFloat(index) : 1, anchor: .top)
                     // Down out of sight under the screen, then up to its reach; then on up past the top.
@@ -171,12 +193,34 @@ struct CloudCover: View {
 /// Shown briefly when travelling to another map, in the brand's colours like the game's own
 /// loading: the title's sky, a gold swirl turning, the destination's name on a cream pill
 /// outlined like the logo's tagline, and the same bar.
+///
+/// Once the land's ready the clouds come up over it and part onto the game, as they do when the
+/// game opens (`landing`, `clearing`; playtesting 2026-10-31: "when teleporting or any other
+/// loading screen during the game, it should have the same animation with the clouds").
 struct MapLoadingCard: View {
     let mapName: String
     var progress: Double = 0
+    /// The land's ready: the clouds rise over the card.
+    var landing = false
+    /// The clouds part: they rise on up and thin out, the game coming through.
+    var clearing = false
     @State private var spin = false
 
     var body: some View {
+        ZStack {
+            CloudHaze(clearing: clearing)
+            card
+                // Under the nearest clouds by then: gone at once, so the game is what shows as they part.
+                .opacity(clearing ? 0 : 1)
+                .animation(nil, value: clearing)
+            CloudCover(risen: landing, through: clearing)
+        }
+        .onAppear {
+            withAnimation(.linear(duration: 1.1).repeatForever(autoreverses: false)) { spin = true }
+        }
+    }
+
+    private var card: some View {
         ZStack {
             VStack(spacing: 18) {
                 ZStack {
@@ -201,13 +245,12 @@ struct MapLoadingCard: View {
                     // The thicker edge under it, like the logo's pill.
                     .background(Capsule().fill(Brand.midnightDeep).offset(y: 3))
                 LoadingBar.talesOfDorlune(progress: progress, label: L("Travelling"))
+                    .opacity(landing ? 0 : 1)
+                    .animation(.easeOut(duration: 0.3), value: landing)
             }
             .padding(.horizontal, 40)
         }
         .talesOfDorluneSky(fallback: UnitPoint(x: 0.5, y: 0.42))
-        .onAppear {
-            withAnimation(.linear(duration: 1.1).repeatForever(autoreverses: false)) { spin = true }
-        }
     }
 }
 
