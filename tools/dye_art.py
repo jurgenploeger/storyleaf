@@ -15,6 +15,7 @@ game lays it over the sheet in the trim's colour when a piece is dyed a trim.
 
     python3 tools/dye_art.py cut              # writes the trim layers, prints each material's numbers
     python3 tools/dye_art.py check            # every dye on every kind, main and trim: pass or fail
+    python3 tools/dye_art.py hafts            # writes each axe's handle layer (<art>_haft.png)
     python3 tools/dye_art.py --sheet out.png  # contact sheet: every dye on every kind, at 4x
 
 Needs pillow, numpy and scipy.
@@ -83,6 +84,10 @@ MAINS = {
     "outfit": dict(hue=[85, 170], minSaturation=0.3),   # the tunic under drawn-on armour
 }
 DARK = 0.2   # outlines and the darkest shadows keep their colour (DyeDef.rule(onto:) `minValue`)
+# The same on an icon or a held sprite (Recolor.dyeRules `outline`), just over the held sprites' own
+# outline, #231834 at 0.204 on all 214 of them: at 0.2 a blue steel's dye took it, and a Crimson axe's
+# handle had a red outline (playtesting 2026-10-31: "The handle of the axe has a weird red outline").
+ICON_DARK = 0.21
 
 
 # MARK: the game's colour maths (Recolor.swift)
@@ -198,7 +203,7 @@ def rule_onto(dye, m):
     least = m["minValue"] if m.get("minValue") is not None else 0.2
     # Never more contrast than it had, unless brightening a dark one as before (`value` over its middle).
     gain = max(0.3, min(max(1, dye["value"] / m["value"]),
-                        (middle - FLOOR) / max(0.01, m["value"] - least),
+                        (middle - slack - FLOOR) / max(0.01, m["value"] - least),
                         (top - dye["value"] + slack) / max(0.01, m["light"] - m["value"])))
     return dict(hue=m.get("hue"), minSaturation=m.get("minSaturation", 0), maxSaturation=m.get("maxSaturation"),
                 minValue=m.get("minValue"), to=dye["hue"], spread=0.25,
@@ -206,9 +211,40 @@ def rule_onto(dye, m):
                 value=gain, valueOffset=min(middle - gain * m["value"], top - gain * m["light"]))
 
 
+def rules_onto(dye, m):
+    """DyeDef.rules(onto:): `rule_onto`, and under it, where that squeezed the ramp to fit a light dye under
+    white, a rule of the material's shadows (its middle and darker) that keeps their contrast: up to
+    SHADOW_GAIN (a white's SHADOW_GAIN_WHITE) and no darker than FLOOR. Squeezed whole, a Snow White
+    plate's deepest shadow sat at 0.76 and it read as one white blob (playtesting 2026-10-31: "This
+    looks too white")."""
+    main = rule_onto(dye, m)
+    least = m["minValue"] if m.get("minValue") is not None else 0.2
+    middle = main["valueOffset"] + main["value"] * m["value"]
+    most = dye.get("shadowGain") or (SHADOW_GAIN_WHITE if dye["saturation"] < 0.1 else SHADOW_GAIN)
+    gain = max(main["value"], min(most, (middle - FLOOR) / max(0.01, m["value"] - least)))
+    if gain <= main["value"] + 1e-6:
+        return [main]
+    shadows = dict(main, maxValue=m["value"], value=gain, valueOffset=middle - gain * m["value"])
+    # A dye's own shadow colour (items.json `shadowHue`, `shadowSaturation`): gold's warmer, toward
+    # amber, white's a cool blue grey, so the ramp turns as it darkens, as drawn shading does.
+    if dye.get("shadowHue") is not None:
+        shadows["to"] = dye["shadowHue"]
+    if dye.get("shadowSaturation") is not None:
+        shadows["saturation"] = 0.5 * dye["shadowSaturation"] / m["saturation"]
+        shadows["saturationOffset"] = 0.5 * dye["shadowSaturation"]
+    return [shadows, main]
+
+
+SHADED = rules_onto   # how an icon's dyed family is recoloured (a preview can swap it)
+
+
 # How far under a dye's own brightness a piece's middle may sit, to keep its shading (DyeDef.slack).
 SLACK = 0.08
 SLACK_WHITE = 0.12
+# How much contrast a light dye's shadows keep where its lights are squeezed under white (`rules_onto`,
+# DyeDef.shadowGain): all they had, a white's more, so its plate still has a deep shadow and an edge.
+SHADOW_GAIN = 1.0
+SHADOW_GAIN_WHITE = 2.0
 # The darkest a dyed piece's material goes (DyeDef.floor): just over black, so its deepest shadow still
 # reads as part of it.
 FLOOR = 0.06
@@ -237,7 +273,7 @@ def icon_rules(picture, main, trim, weapon, target=None):
     def colours(pic):
         a = pic.astype(float) / 255
         h, s, v = hsv(a[..., :3])
-        ys, xs = np.nonzero((a[..., 3] >= 128 / 255) & (v >= DARK))
+        ys, xs = np.nonzero((a[..., 3] >= 128 / 255) & (v >= ICON_DARK))
         return h[ys, xs], s[ys, xs], v[ys, xs], xs, ys
 
     h, s, v, xs, ys = colours(picture)
@@ -253,9 +289,9 @@ def icon_rules(picture, main, trim, weapon, target=None):
         peak = int(np.argmax(smooth))
         middle = peak * 10 + 5
         windows.append(dict(hue=[float(np.fmod(middle - 40 + 360, 360)), float(np.fmod(middle + 40, 360))],
-                            minSaturation=0.25, minValue=DARK))
+                            minSaturation=0.25, minValue=ICON_DARK))
         left = left & (np.abs(np.fmod(h - middle + 540, 360) - 180) > 40)
-    windows.append(dict(hue=None, minSaturation=0.02, maxSaturation=0.25, minValue=DARK))
+    windows.append(dict(hue=None, minSaturation=0.02, maxSaturation=0.25, minValue=ICON_DARK))
 
     def families(h, s, v):
         free = np.ones(h.shape, bool)
@@ -312,20 +348,24 @@ def icon_rules(picture, main, trim, weapon, target=None):
     else:
         th, ts, tv, measured = h, s, v, own
     rules = []
+    at = []   # each window's rules (a dyed one's shadows get one of their own, `rules_onto`)
     for i, w in enumerate(windows):
         of = group[i]
         dye = main if of == main_at else trim if of == trim_at else None
         if dye is None:
+            at.append([len(rules)])
             rules.append(dict(w))
             continue
         found = members(measured, of)
         ss, vv = (np.sort(ts[found]), np.sort(tv[found])) if found.any() else (np.sort(s[members(own, of)]), np.sort(v[members(own, of)]))
         # Its lightest is its very lightest: a picture's few highlights would clip to white.
         m = dict(w, saturation=max(0.02, float(ss[len(ss) // 2])), value=float(vv[len(vv) // 2]), light=float(vv[-1]))
-        rules.append(rule_onto(dye, m))
+        made = SHADED(dye, m)
+        at.append(list(range(len(rules), len(rules) + len(made))))
+        rules.extend(made)
     # Which rules are the main colour's and the trim's (a family can have two windows).
     def rules_of(of, dye):
-        return [i for i in range(len(windows)) if group[i] == of] if dye is not None and of is not None else None
+        return [r for i in range(len(windows)) if group[i] == of for r in at[i]] if dye is not None and of is not None else None
     return rules, rules_of(main_at, main), rules_of(trim_at, trim)
 
 
@@ -475,7 +515,7 @@ def circular_median(hues):
 RAMP_KEPT = 0.28
 
 
-def verdict(dye, before, after):
+def verdict(dye, before, after, held=False):
     """Whether the recoloured pixels read as the dye: hue, saturation, brightness, and a ramp kept."""
     solid = before[:, 3] >= 128 if before.shape[1] > 3 else np.ones(len(before), bool)   # a glow's faint halo isn't the material
     before, after = before[solid], after[solid]
@@ -492,7 +532,9 @@ def verdict(dye, before, after):
     hue_ok = white or abs(np.fmod(mh - dye["hue"] + 540, 360) - 180) <= 15
     sat_ok = ms <= 0.15 if white else ms >= 0.6 * dye["saturation"]
     # White can't sit at its own 0.96 and keep a ramp on a dark, wide one: very pale is what it must read.
-    val_ok = mv >= 0.75 if white else abs(mv - dye["value"]) <= 0.15
+    # A held sprite is a few dozen pixels, most of them its edges' shading, so its middle sits in its
+    # shadows, which keep their depth (`rules_onto`): it reads as the dye a little lower.
+    val_ok = mv >= (0.68 if held else 0.75) if white else abs(mv - dye["value"]) <= (0.2 if held else 0.15)
     spread0 = np.percentile(v0, 90) - np.percentile(v0, 10)
     spread = np.percentile(v, 90) - np.percentile(v, 10)
     # A few pixels (a held sprite's clasp) can't hold a ramp; more keep at least RAMP_KEPT of theirs, so
@@ -510,18 +552,18 @@ def sheet_cases(tables, dye):
         names = ([f"armor_{kind}_{r}" for r in RACES] if kind in KINDS else []) + [f"hat_{kind}_{r}" for r in RACES]
         for name in names:
             a = load(name)
-            out, taken = apply([rule_onto(dye, mains.get(name, mains[kind]))], a)
-            yield f"main {name}", a[taken == 0], out[taken == 0]
+            out, taken = apply(rules_onto(dye, mains.get(name, mains[kind])), a)
+            yield f"main {name}", a[taken >= 0], out[taken >= 0]
     for name in TRIMS:
         if name not in trims:
             continue
         a = load(name + "_trim")
-        out, taken = apply([rule_onto(dye, trims[name])], a)
-        yield f"trim {name}", a[taken == 0], out[taken == 0]
+        out, taken = apply(rules_onto(dye, trims[name]), a)
+        yield f"trim {name}", a[taken >= 0], out[taken >= 0]
     for race in RACES:
         a = load(f"body_{race}")
-        out, taken = apply([rule_onto(dye, mains["outfit"])], a)
-        yield f"main body_{race}", a[taken == 0], out[taken == 0]
+        out, taken = apply(rules_onto(dye, mains["outfit"]), a)
+        yield f"main body_{race}", a[taken >= 0], out[taken >= 0]
 
 
 def painted_cases(dye):
@@ -586,7 +628,7 @@ def check(verbose=False):
     for dye_id, dye in dyes():
         groups = {}
         for label, before, after in list(sheet_cases(tables, dye)) + list(painted_cases(dye)) + list(item_cases(dye)):
-            v = verdict(dye, before, after)
+            v = verdict(dye, before, after, held=" held " in f" {label} ")
             if v is None:
                 continue
             words = label.split()
@@ -611,6 +653,91 @@ def check(verbose=False):
         print(f"  {dye_id:15s} {label:45s} {v['fails']}: hue {v['hue']:.0f} sat {v['sat']:.2f} val {v['val']:.2f} "
               f"spread {v['spread'][0]:.2f}/{v['spread'][1]:.2f}")
     return not failures
+
+
+# MARK: an axe's handle
+
+# How much wider than its haft (across the weapon's long axis) a step has to be to be its head.
+HAFT_WIDE = 1.7
+
+
+def axes():
+    """The axes: every weapon whose id ends in _axe, with its icon and held sprites' art."""
+    items = json.loads((ROOT / "content" / "items.json").read_text())["items"]
+    return [(i["id"], [i["art"], f"held_{i['id']}_side", f"held_{i['id']}_front"])
+            for i in items if i["type"] == "weapon" and i["id"].endswith("_axe") and i.get("art")]
+
+
+def haft_mask(a):
+    """An axe picture's handle (playtesting 2026-10-31: "Make sure that the handles of all axes items won't
+    be changed with the dye"): everything from the grip up to where it widens into the head. The
+    picture's long axis runs from the grip (the solid pixel nearest the bottom-left corner, as
+    GearArt.held holds it) to the tip; across it, the haft is about as wide as halfway up it, the head
+    HAFT_WIDE times that. The head runs down from its widest step in the upper half while it's wide (a
+    gap of two narrow steps allowed); the haft is what's below it, the pommel too."""
+    H, W = a.shape[:2]
+    ys, xs = np.nonzero(a[..., 3] >= 128)
+    pts = np.stack([xs, ys], 1).astype(float)
+    grip = pts[np.argmin(xs ** 2 + (H - 1 - ys) ** 2)]
+    centred = pts - pts.mean(0)
+    _, vectors = np.linalg.eigh(centred.T @ centred)
+    along = vectors[:, -1]
+    if ((pts - grip) @ along).mean() < 0:
+        along = -along
+    p = (pts - grip) @ along
+    q = (pts - grip) @ np.array([-along[1], along[0]])
+    steps = int(np.ceil(p.max())) + 1
+    at = np.clip(np.round(p).astype(int), 0, steps - 1)
+    width = np.zeros(steps)
+    for b in range(steps):
+        m = at == b
+        if m.any():
+            width[b] = q[m].max() - q[m].min() + 1
+    middle = width[int(0.15 * steps):int(0.5 * steps)]
+    haft = np.median(middle[middle > 0]) if (middle > 0).any() else 1
+    top = int(np.argmax(np.where(np.arange(steps) >= steps // 2, width, -1)))
+    start, gap = top, 0
+    for b in range(top, -1, -1):
+        if width[b] > HAFT_WIDE * haft + 0.5:
+            start, gap = b, 0
+        else:
+            gap += 1
+            if gap > 2:
+                break
+    mask = np.zeros((H, W), bool)
+    below = at < start - 1
+    mask[ys[below], xs[below]] = True
+    # Where the haft runs on up into the head (a Battle Axe's, under its blade), it's still the haft: the
+    # pixels along its line, joined to it, in colours of its own that the head doesn't have off its line
+    # (an outline or a shade the two share would carry it on up through the head).
+    if below.any():
+        line = np.median(q[below])
+        near = ~below & (np.abs(q - line) <= haft / 2 + 0.5)
+        head = {tuple(c) for c in a[ys[~below & ~near], xs[~below & ~near], :3]}
+        colours = {tuple(c) for c in a[mask][:, :3]} - head
+        band = np.zeros((H, W), bool)
+        band[ys[near], xs[near]] = [tuple(a[y, x, :3]) in colours for y, x in zip(ys[near], xs[near])]
+        while True:
+            grown = band & ~mask & (np.pad(mask, 1)[:-2, 1:-1] | np.pad(mask, 1)[2:, 1:-1]
+                                    | np.pad(mask, 1)[1:-1, :-2] | np.pad(mask, 1)[1:-1, 2:])
+            if not grown.any():
+                break
+            mask |= grown
+    return mask
+
+
+def hafts():
+    """Writes each axe picture's handle as a layer of its own (art/sprites/<art>_haft.png), which the game
+    lays over the picture dyed (ArtLibrary.dyedAsset), recoloured by its trim dye alone: a dye takes the
+    head, never the handle (RD drew some handles' shading in the head's steel)."""
+    for _, arts in axes():
+        for art in arts:
+            a = load(art)
+            layer = np.zeros_like(a)
+            mask = haft_mask(a)
+            layer[mask] = a[mask]
+            Image.fromarray(layer).save(SPRITES / f"{art}_haft.png")
+            print(f"{art}_haft.png: {int(mask.sum())} of {int((a[..., 3] >= 128).sum())} pixels")
 
 
 # MARK: the contact sheet
@@ -646,10 +773,10 @@ def contact(out_path):
             img = frame
             if main is not None:
                 kind = re.sub(r"^(armor|hat)_|_(human|elf|dwarf)$", "", name)
-                img, _ = apply([rule_onto(main[1], mains.get(name, mains[kind]))], frame)
+                img, _ = apply(rules_onto(main[1], mains.get(name, mains[kind])), frame)
                 if trim is not None and name in trims:
                     layer = load(name + "_trim")[96:144, 0:48]
-                    t, _ = apply([rule_onto(trim[1], trims[name])], layer)
+                    t, _ = apply(rules_onto(trim[1], trims[name]), layer)
                     base = Image.fromarray(img)
                     base.alpha_composite(Image.fromarray(t))
                     img = np.asarray(base)
@@ -691,6 +818,8 @@ def contact(out_path):
 if __name__ == "__main__":
     if sys.argv[1:2] == ["cut"]:
         cut()
+    elif sys.argv[1:2] == ["hafts"]:
+        hafts()
     elif sys.argv[1:2] == ["check"]:
         sys.exit(0 if check("-v" in sys.argv) else 1)
     elif sys.argv[1:2] == ["--sheet"] and len(sys.argv) > 2:

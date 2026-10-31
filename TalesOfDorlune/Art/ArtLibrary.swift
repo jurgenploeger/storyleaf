@@ -222,9 +222,19 @@ final class ArtLibrary {
         let item = Self.heldWeapon(base).flatMap { Content.shared.item($0) } ?? Content.shared.items.first { $0.art == base }
         guard let own = sourceImage(base) else { return nil }
         let icon = item?.art.flatMap { $0 == base ? nil : sourceImage($0) }
-        let rules = Recolor.dyeRules(for: icon ?? own, main: main, trim: trim, weapon: item?.type == .weapon, on: icon == nil ? nil : own)
+        let weapon = item?.type == .weapon
+        let rules = Recolor.dyeRules(for: icon ?? own, main: main, trim: trim, weapon: weapon, on: icon == nil ? nil : own)
+        // An axe's handle is a layer of its own ("<art>_haft", tools/dye_art.py hafts), laid over the
+        // picture dyed and recoloured by its trim dye alone: a dye takes the head, never the handle
+        // (playtesting 2026-10-31: "Make sure that the handles of all axes items won't be changed with the dye").
+        let haft = base + "_haft"
+        var derivation = Derivation(from: base, recolor: rules)
+        if pngURL(haft) != nil {
+            let haftRules = trim == nil ? [] : Recolor.dyeRules(for: icon ?? own, main: nil, trim: trim, weapon: weapon, on: icon == nil ? nil : own)
+            derivation.layers = [ArtLayer(id: base), ArtLayer(id: haft, recolor: haftRules)]
+        }
         let made = ArtAsset(id: id, kind: kind, frame: nil, directions: nil, scale: nil,
-                            derive: Derivation(from: base, recolor: rules), faces: nil)
+                            derive: derivation, faces: nil)
         runtime[id] = (made, id)
         return made
     }

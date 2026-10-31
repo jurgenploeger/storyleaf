@@ -1498,7 +1498,8 @@ struct RulesTests {
         #expect(both.name.contains(crimson.name) && both.name.contains(golden.name))
         #expect(both.sheetTint(over: "armor_iron_plate_human").allSatisfy { $0.to == crimson.hue })
         let layer = try #require(both.trimLayer(over: "armor_iron_plate_human"))
-        #expect(layer.id == "armor_iron_plate_human_trim" && layer.recolor?.allSatisfy { $0.to == golden.hue } == true)
+        // In the trim dye's colour, its shadows in their own (`DyeDef.shadowHue`: Golden's turn toward amber).
+        #expect(layer.id == "armor_iron_plate_human_trim" && layer.recolor?.allSatisfy { $0.to == golden.hue || $0.to == golden.shadowHue } == true)
         #expect(both.accent == golden.color && both.art == "item_copper_plate~crimson_dye~golden_dye")
         #expect(ArtLibrary.shared.artImage("item_copper_plate~crimson_dye~golden_dye") != nil)
         // The trim alone keeps the piece's own colours (its tier's tint).

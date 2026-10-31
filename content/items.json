@@ -3519,7 +3519,9 @@
         "color": "#E8C030",
         "hue": 47,
         "saturation": 0.79,
-        "value": 0.91
+        "value": 0.91,
+        "shadowHue": 38,
+        "shadowGain": 1.4
       }
     },
     {
@@ -3565,7 +3567,9 @@
         "color": "#EEF2F6",
         "hue": 210,
         "saturation": 0.03,
-        "value": 0.96
+        "value": 0.96,
+        "shadowHue": 225,
+        "shadowSaturation": 0.1
       }
     },
     {

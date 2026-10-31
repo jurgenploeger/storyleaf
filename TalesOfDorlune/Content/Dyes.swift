@@ -19,6 +19,17 @@ nonisolated struct DyeDef: Decodable, Sendable {
     let hue: Double
     let saturation: Double
     let value: Double
+    /// Its shadows' own colour, where it has one (playtesting 2026-10-31: "the white and yellow weapons lose
+    /// their depth"): their hue (gold's warmer, toward amber; white's a cool blue grey) and saturation, so
+    /// the ramp turns as it darkens, as drawn shading does; and how much contrast they keep (`shadowGain`).
+    var shadowHue: Double? = nil
+    var shadowSaturation: Double? = nil
+    var shadowContrast: Double? = nil
+
+    private enum CodingKeys: String, CodingKey {
+        case name, color, hue, saturation, value, shadowHue, shadowSaturation
+        case shadowContrast = "shadowGain"
+    }
 }
 
 /// What a dye recolours: a material on a sheet or a picture (where it is, as a `RecolorRule` window) and
@@ -144,13 +155,42 @@ nonisolated extension DyeDef {
         // A dark dye's middle may sit a little over its own (`rise`), so its shadows have room over black.
         let middle = value + rise
         let gain = Swift.max(0.3, Swift.min(Swift.max(1, value / material.value),
-                                            (middle - Self.floor) / Swift.max(0.01, material.value - least),
+                                            (middle - slack - Self.floor) / Swift.max(0.01, material.value - least),
                                             (top - value + slack) / Swift.max(0.01, material.light - material.value)))
         return RecolorRule(hue: material.hue, minSaturation: material.minSaturation, maxSaturation: material.maxSaturation,
                            minValue: material.minValue, maxValue: nil, to: hue, shift: nil, spread: 0.25,
                            saturation: 0.5 * saturation / material.saturation, value: gain,
                            saturationOffset: 0.5 * saturation,
                            valueOffset: Swift.min(middle - gain * material.value, top - gain * material.light))
+    }
+
+    /// `rule(onto:)`, and under it, where that squeezed the ramp to fit a light dye under white, a rule
+    /// of the material's shadows (its middle and darker) that keeps their contrast: up to `shadowGain`
+    /// and no darker than `floor`. Squeezed whole, a Snow White plate's deepest shadow sat at 0.76 and it
+    /// read as one white blob (playtesting 2026-10-31: "This looks too white"). tools/dye_art.py
+    /// `rules_onto` is the same.
+    func rules(onto material: DyeMaterial) -> [RecolorRule] {
+        let main = rule(onto: material)
+        let gain = main.value ?? 1
+        let least = material.minValue ?? 0.2
+        let middle = (main.valueOffset ?? 0) + gain * material.value
+        let shadow = Swift.max(gain, Swift.min(shadowGain, (middle - Self.floor) / Swift.max(0.01, material.value - least)))
+        guard shadow > gain + 1e-6 else { return [main] }
+        let shadows = RecolorRule(hue: main.hue, minSaturation: main.minSaturation, maxSaturation: main.maxSaturation,
+                                  minValue: main.minValue, maxValue: material.value, to: shadowHue ?? main.to, shift: main.shift,
+                                  spread: main.spread,
+                                  saturation: shadowSaturation.map { 0.5 * $0 / material.saturation } ?? main.saturation,
+                                  value: shadow,
+                                  saturationOffset: shadowSaturation.map { 0.5 * $0 } ?? main.saturationOffset,
+                                  valueOffset: middle - shadow * material.value)
+        return [shadows, main]
+    }
+
+    /// How much contrast a light dye's shadows keep where its lights are squeezed under white: all they
+    /// had, a white's more, so its plate still has a deep shadow and an edge (tools/dye_art.py
+    /// `SHADOW_GAIN`, `SHADOW_GAIN_WHITE`).
+    var shadowGain: Double {
+        shadowContrast ?? (saturation < 0.1 ? 2.0 : 1.0)
     }
 
     /// The brightest a dye's shine goes: white for a light dye; for a dark one, down toward halfway
@@ -184,12 +224,12 @@ nonisolated extension DyeDef {
     /// material taken to the dye's colour. A kind to come is taken as chain mail's greyish steel.
     func rules(for kind: String, art: String? = nil) -> [RecolorRule] {
         guard let material = art.flatMap({ Self.mains[$0] }) ?? Self.mains[kind] ?? Self.mains["chain_mail"] else { return [] }
-        return [rule(onto: material)]
+        return rules(onto: material)
     }
 
     /// How it recolours the hero's own outfit under armour drawn on it (`ItemDef.recolor`, the tunic's green).
     func outfitRules() -> [RecolorRule] {
-        Self.mains["outfit"].map { [rule(onto: $0)] } ?? []
+        Self.mains["outfit"].map { rules(onto: $0) } ?? []
     }
 }
 
@@ -287,7 +327,7 @@ nonisolated extension ItemDef {
     /// dyed, or that sheet has none.
     func trimLayer(over art: String) -> ArtLayer? {
         guard let trimDye, let material = DyeDef.trims[art] else { return nil }
-        return ArtLayer(id: art + "_trim", recolor: [trimDye.rule(onto: material)])
+        return ArtLayer(id: art + "_trim", recolor: trimDye.rules(onto: material))
     }
 
     /// How its sheet or hat `art` ("armor_iron_plate_dwarf", "hat_iron_plate_dwarf") is recoloured: in
