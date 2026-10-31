@@ -222,6 +222,14 @@ def lightest(dye):
     return 1 - 0.5 * (1 - dye["value"]) * darkness
 
 
+# How far, in degrees, a barely coloured family's hue may lie from the greys' own and still be one
+# material with them (Recolor.dyeRules `greyReach`): a teal steel's blade and its grey shine.
+GREY_REACH = 60
+# How big, against the bigger family, the one nearer a weapon's tip has to be to be its main colour
+# (Recolor.dyeRules `tipShare`).
+TIP_SHARE = 1 / 3
+
+
 def icon_rules(picture, main, trim, weapon, target=None):
     """Recolor.dyeRules: a picture's main colour and trim, found on it (and measured on `target`, a held
     sprite shrunk from it), taken to the two dyes. Returns the rules, and which are the main colour's and
@@ -269,7 +277,9 @@ def icon_rules(picture, main, trim, weapon, target=None):
         for i in range(grey):
             if own[i].any():
                 middle = float(np.sort(s[own[i]])[int(own[i].sum()) // 2])
-                if middle < 0.45 and matches(windows[i], np.array([grey_hue]), np.array([0.5]), np.array([0.5]))[0]:
+                lo, hi = windows[i]["hue"]
+                centre = np.fmod(lo + (np.fmod(hi - lo + 360, 360)) / 2, 360)
+                if middle < 0.45 and abs(np.fmod(grey_hue - centre + 540, 360) - 180) <= GREY_REACH:
                     group[i] = grey
 
     def members(found, of):
@@ -291,7 +301,10 @@ def icon_rules(picture, main, trim, weapon, target=None):
         m = members(own, i)
         return float(np.mean(xs[m] - ys[m]))
 
-    if weapon and trim_at is not None and tip(trim_at) > tip(main_at):
+    # The family nearer the tip is the blade or the staff's head, so its main colour, if it's a good
+    # part of the picture: a small gem or band near the tip is an accent, its trim.
+    if weapon and trim_at is not None and tip(trim_at) > tip(main_at) \
+            and members(own, trim_at).sum() >= TIP_SHARE * members(own, main_at).sum():
         main_at, trim_at = trim_at, main_at
     if target is not None:
         th, ts, tv, _, _ = colours(target)

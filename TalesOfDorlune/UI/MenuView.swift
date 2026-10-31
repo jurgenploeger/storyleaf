@@ -71,6 +71,7 @@ struct MenuView: View {
                 let equip: (() -> Void)? = wearable ? { session.equip(item.id); close() } : nil
                 ItemInfoCard(session: session, item: item, onClose: close, onEquip: equip,
                              action: fromBag ? bagAction(for: item, close: close) : nil,
+                             extraAction: fromBag ? dyeAction(for: item, close: close) : nil,
                              note: fromBag ? bagNote(for: item) : nil,
                              fromBag: fromBag)
                 .transition(.opacity)
@@ -191,19 +192,30 @@ extension MenuView {
         }
         // A piece of what a quest asks you to bring: carve it or piece it together, once the bag
         // holds all it takes (`ItemDef.make`). A gem: mix its dye, with a Sheepskin.
-        if let made = session.handmade(using: item) {
-            let title: String = switch made.make ?? .carve {
-            case .join: L("Piece together {item}", ["item": made.name])
-            case .mix: L("Mix {item}", ["item": made.name])
-            case .carve: L("Carve {item}", ["item": made.name])
-            }
-            return ItemInfoCard.Action(title: title, icon: made.make == .mix ? .palette : .hammer, enabled: session.canCraft(made)) {
-                close()
-                session.make(made.id)
-                session.save()
-            }
-        }
+        if let made = session.handmade(using: item) { return makeAction(made, close: close) }
         return nil
+    }
+
+    /// A gem a quest wants pieced into something still mixes its dye (playtesting 2026-10-31: "I
+    /// should be able to create a dye even when on a quest"): beside the quest's, when that's the
+    /// card's own action.
+    func dyeAction(for item: ItemDef, close: @escaping () -> Void) -> ItemInfoCard.Action? {
+        guard let dye = session.dye(mixedFrom: item), let made = session.handmade(using: item), made.id != dye.id else { return nil }
+        return makeAction(dye, close: close)
+    }
+
+    /// Carving, piecing together or mixing `made` from the bag.
+    private func makeAction(_ made: ItemDef, close: @escaping () -> Void) -> ItemInfoCard.Action {
+        let title: String = switch made.make ?? .carve {
+        case .join: L("Piece together {item}", ["item": made.name])
+        case .mix: L("Mix {item}", ["item": made.name])
+        case .carve: L("Carve {item}", ["item": made.name])
+        }
+        return ItemInfoCard.Action(title: title, icon: made.make == .mix ? .palette : .hammer, enabled: session.canCraft(made)) {
+            close()
+            session.make(made.id)
+            session.save()
+        }
     }
 
     /// Why an item in the Bag has nothing to do there.
