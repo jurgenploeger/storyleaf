@@ -798,12 +798,16 @@ enum DebugLaunch {
         if flags["battle"] != nil {
             // Like a real encounter, the fight starts once the map is on screen, over the spot
             // you're standing on (WorldScene.battleBackdrop), not on plain grass.
+            // As long as the screenshots wait for a first frame (tools/screenshots.sh, 480 s): a land
+            // slow to build on CI (Starfall Isle took over a minute) was pictured half built after
+            // 60, and SpriteKit crashed drawing its hills (2026-10-30). Not ready by then: no backdrop.
             Task {
-                for _ in 0..<240 {
+                for _ in 0..<1880 {
                     if coordinator.isReady, coordinator.mapScene.view != nil { break }
                     try? await Task.sleep(for: .milliseconds(250))
                 }
-                startBattle(on: coordinator, flags: flags, backdrop: coordinator.mapScene.battleBackdrop(hiding: nil))
+                let ready = coordinator.isReady && coordinator.mapScene.view != nil
+                startBattle(on: coordinator, flags: flags, backdrop: ready ? coordinator.mapScene.battleBackdrop(hiding: nil) : nil)
             }
         }
         #if DEBUG
