@@ -17565,10 +17565,10 @@
             ],
             "minSaturation": 0.03,
             "maxSaturation": 0.25,
-            "to": 232,
+            "to": 228,
             "spread": 0.4,
-            "saturation": 2.6,
-            "value": 0.62
+            "saturation": 2.0,
+            "value": 0.8
           }
         ]
       }
