@@ -157,6 +157,11 @@ enum Recolor {
     /// dyed one that changes nothing, so a dye takes only its own family's colours. The families are
     /// found on `image` (an icon) and measured on `target` (a held sprite shrunk from it), so a weapon's
     /// blade is its blade in the hand too. tools/dye_art.py `icon_rules` is the same.
+    /// The darkest colour a dye takes on an icon or a held sprite: just over the held sprites' own outline,
+    /// #231834 at 0.204 on all of them, which a blue steel's dye took at 0.2 (playtesting 2026-10-31: "The
+    /// handle of the axe has a weird red outline"). tools/dye_art.py `ICON_DARK`.
+    nonisolated static let outline: Double = 0.21
+
     nonisolated static func dyeRules(for image: CGImage, main: DyeDef?, trim: DyeDef?, weapon: Bool, on target: CGImage? = nil) -> [RecolorRule] {
         struct Seen { let h: Double, s: Double, v: Double, x: Double, y: Double }
         func colours(_ picture: CGImage) -> [Seen] {
@@ -167,7 +172,7 @@ enum Recolor {
                 let alpha = Double(pixels[index + 3])
                 guard alpha >= 128 else { continue }
                 let (h, s, v) = hsv(Double(pixels[index]) / alpha, Double(pixels[index + 1]) / alpha, Double(pixels[index + 2]) / alpha)
-                guard v >= 0.2 else { continue }
+                guard v >= Self.outline else { continue }
                 seen.append(Seen(h: h, s: s, v: v, x: Double((index / 4) % width), y: Double((index / 4) / width)))
             }
             return seen
@@ -182,11 +187,11 @@ enum Recolor {
             let peak = smoothed.indices.max { smoothed[$0] < smoothed[$1] } ?? 0
             let middle = Double(peak) * 10 + 5
             windows.append(RecolorRule(hue: [(middle - 40 + 360).truncatingRemainder(dividingBy: 360), (middle + 40).truncatingRemainder(dividingBy: 360)],
-                                       minSaturation: 0.25, maxSaturation: nil, minValue: 0.2, maxValue: nil,
+                                       minSaturation: 0.25, maxSaturation: nil, minValue: Self.outline, maxValue: nil,
                                        to: nil, shift: nil, spread: nil, saturation: nil, value: nil))
             left = left.filter { abs(($0.h - middle + 540).truncatingRemainder(dividingBy: 360) - 180) > 40 }
         }
-        windows.append(RecolorRule(hue: nil, minSaturation: 0.02, maxSaturation: 0.25, minValue: 0.2, maxValue: nil,
+        windows.append(RecolorRule(hue: nil, minSaturation: 0.02, maxSaturation: 0.25, minValue: Self.outline, maxValue: nil,
                                    to: nil, shift: nil, spread: nil, saturation: nil, value: nil))
         // Each colour in the first family whose window it falls in, as `apply` will take it.
         func families(_ seen: [Seen]) -> [[Seen]] {

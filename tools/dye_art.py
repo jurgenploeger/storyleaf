@@ -83,6 +83,10 @@ MAINS = {
     "outfit": dict(hue=[85, 170], minSaturation=0.3),   # the tunic under drawn-on armour
 }
 DARK = 0.2   # outlines and the darkest shadows keep their colour (DyeDef.rule(onto:) `minValue`)
+# The same on an icon or a held sprite (Recolor.dyeRules `outline`), just over the held sprites' own
+# outline, #231834 at 0.204 on all 214 of them: at 0.2 a blue steel's dye took it, and a Crimson axe's
+# handle had a red outline (playtesting 2026-10-31: "The handle of the axe has a weird red outline").
+ICON_DARK = 0.21
 
 
 # MARK: the game's colour maths (Recolor.swift)
@@ -257,7 +261,7 @@ def icon_rules(picture, main, trim, weapon, target=None):
     def colours(pic):
         a = pic.astype(float) / 255
         h, s, v = hsv(a[..., :3])
-        ys, xs = np.nonzero((a[..., 3] >= 128 / 255) & (v >= DARK))
+        ys, xs = np.nonzero((a[..., 3] >= 128 / 255) & (v >= ICON_DARK))
         return h[ys, xs], s[ys, xs], v[ys, xs], xs, ys
 
     h, s, v, xs, ys = colours(picture)
@@ -273,9 +277,9 @@ def icon_rules(picture, main, trim, weapon, target=None):
         peak = int(np.argmax(smooth))
         middle = peak * 10 + 5
         windows.append(dict(hue=[float(np.fmod(middle - 40 + 360, 360)), float(np.fmod(middle + 40, 360))],
-                            minSaturation=0.25, minValue=DARK))
+                            minSaturation=0.25, minValue=ICON_DARK))
         left = left & (np.abs(np.fmod(h - middle + 540, 360) - 180) > 40)
-    windows.append(dict(hue=None, minSaturation=0.02, maxSaturation=0.25, minValue=DARK))
+    windows.append(dict(hue=None, minSaturation=0.02, maxSaturation=0.25, minValue=ICON_DARK))
 
     def families(h, s, v):
         free = np.ones(h.shape, bool)

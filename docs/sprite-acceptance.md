@@ -286,6 +286,8 @@ python3 tools/check_content.py
   rule of their own that keeps their contrast (`DyeDef.rules(onto:)`, `shadowGain`; a white's doubled):
   a Snow White plate squeezed whole had its deepest shadow at 0.76 and read as one white blob, no edge
   (playtesting 2026-10-31: "This looks too white"). Look at white on plate, the widest ramp, from behind.
+  A dye on an icon or a held sprite takes nothing at or under 0.21 (`Recolor.outline`): every held sprite's
+  outline is #231834, 0.204, and at 0.2 a blue steel's dye painted it (a Crimson axe's handle outlined red).
 
 ### Working on it
 
