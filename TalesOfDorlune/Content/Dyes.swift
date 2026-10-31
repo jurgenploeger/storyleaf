@@ -135,7 +135,15 @@ nonisolated extension DyeDef {
     /// where the lightest would pass white. tools/dye_art.py `rule_onto` is the same.
     func rule(onto material: DyeMaterial) -> RecolorRule {
         let top = lightest
-        let gain = Swift.max(0.3, Swift.min(value / material.value, (top - value) / Swift.max(0.01, material.light - material.value)))
+        // Room to keep the shading (playtesting 2026-10-31: "make sure that the dyed items don't lose the
+        // details like shadows and highlights"): a light dye's middle may sit a little under its own
+        // (`slack`), so the ramp needn't be squeezed flat under white; a dark one's darkest only has to
+        // stay over `floor`, not scale down with its middle; and never more contrast than the piece had,
+        // unless brightening a dark one as before. tools/dye_art.py `rule_onto` is the same.
+        let least = material.minValue ?? 0.2
+        let gain = Swift.max(0.3, Swift.min(Swift.max(1, value / material.value),
+                                            (value - Self.floor) / Swift.max(0.01, material.value - least),
+                                            (top - value + slack) / Swift.max(0.01, material.light - material.value)))
         return RecolorRule(hue: material.hue, minSaturation: material.minSaturation, maxSaturation: material.maxSaturation,
                            minValue: material.minValue, maxValue: nil, to: hue, shift: nil, spread: 0.25,
                            saturation: 0.5 * saturation / material.saturation, value: gain,
@@ -147,6 +155,16 @@ nonisolated extension DyeDef {
     /// from its colour to white, the darker the further (from 0.7 down to 0.3). A Midnight plate's
     /// shine at 0.8 read as white beside its 0.32 navy (playtesting 2026-10-31). tools/dye_art.py
     /// `lightest` is the same.
+    /// How far under its own brightness a piece's middle may sit to keep its shading: a light dye's
+    /// (a white's more), none for a dark one, which has no white to fit under (tools/dye_art.py `SLACK`).
+    var slack: Double {
+        (saturation < 0.1 ? 0.12 : 0.08) * Swift.min(1, Swift.max(0, (value - 0.5) / 0.2))
+    }
+
+    /// The darkest a dyed piece's material goes: just over black, so its deepest shadow still reads as
+    /// part of it (tools/dye_art.py `FLOOR`).
+    static let floor = 0.06
+
     var lightest: Double {
         let darkness = Swift.min(1, Swift.max(0, (0.7 - value) / 0.4))
         return 1 - 0.5 * (1 - value) * darkness

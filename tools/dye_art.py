@@ -185,11 +185,29 @@ def dyes():
 def rule_onto(dye, m):
     """DyeDef.rule(onto:): the material `m` taken to the dye's colour."""
     top = lightest(dye)
-    gain = max(0.3, min(dye["value"] / m["value"], (top - dye["value"]) / max(0.01, m["light"] - m["value"])))
+    # Room to keep the shading: the middle may sit a little under the dye's own (SLACK, a white's more),
+    # so the ramp needn't be squeezed flat under white (playtesting 2026-10-31: "make sure that the dyed
+    # items don't lose the details like shadows and highlights").
+    # A light dye's: a dark one has no white to fit under, its shadows black to stay over.
+    slack = (SLACK_WHITE if dye["saturation"] < 0.1 else SLACK) * min(1, max(0, (dye["value"] - 0.5) / 0.2))
+    # Its darkest (the material's least, `minValue`) no darker than FLOOR, nor its lightest past `top`.
+    least = m["minValue"] if m.get("minValue") is not None else 0.2
+    # Never more contrast than it had, unless brightening a dark one as before (`value` over its middle).
+    gain = max(0.3, min(max(1, dye["value"] / m["value"]),
+                        (dye["value"] - FLOOR) / max(0.01, m["value"] - least),
+                        (top - dye["value"] + slack) / max(0.01, m["light"] - m["value"])))
     return dict(hue=m.get("hue"), minSaturation=m.get("minSaturation", 0), maxSaturation=m.get("maxSaturation"),
                 minValue=m.get("minValue"), to=dye["hue"], spread=0.25,
                 saturation=0.5 * dye["saturation"] / m["saturation"], saturationOffset=0.5 * dye["saturation"],
                 value=gain, valueOffset=min(dye["value"] - gain * m["value"], top - gain * m["light"]))
+
+
+# How far under a dye's own brightness a piece's middle may sit, to keep its shading (DyeDef.slack).
+SLACK = 0.08
+SLACK_WHITE = 0.12
+# The darkest a dyed piece's material goes (DyeDef.floor): just over black, so its deepest shadow still
+# reads as part of it.
+FLOOR = 0.06
 
 
 def lightest(dye):
@@ -434,6 +452,12 @@ def circular_median(hues):
     return float(np.fmod(angle + np.median(offset) + 360, 360))
 
 
+# How much of a piece's light-to-dark spread a dye has to keep (`verdict`), where it has one to keep
+# (0.05 at least): a quarter let a white or a gold squeeze a piece's shading nearly flat under white
+# (477 cases failed 0.3 before the dyes kept their shading, playtesting 2026-10-31).
+RAMP_KEPT = 0.28
+
+
 def verdict(dye, before, after):
     """Whether the recoloured pixels read as the dye: hue, saturation, brightness, and a ramp kept."""
     solid = before[:, 3] >= 128 if before.shape[1] > 3 else np.ones(len(before), bool)   # a glow's faint halo isn't the material
@@ -454,9 +478,10 @@ def verdict(dye, before, after):
     val_ok = mv >= 0.75 if white else abs(mv - dye["value"]) <= 0.15
     spread0 = np.percentile(v0, 90) - np.percentile(v0, 10)
     spread = np.percentile(v, 90) - np.percentile(v, 10)
-    # A few pixels (a held sprite's clasp) can't hold a ramp; more keep at least a quarter of theirs.
+    # A few pixels (a held sprite's clasp) can't hold a ramp; more keep at least RAMP_KEPT of theirs, so
+    # its shadows and highlights still show (playtesting 2026-10-31).
     ramp_ok = len(v) < 12 or (len(np.unique(np.round(v, 3))) >= min(3, len(np.unique(np.round(v0, 3))))
-                              and spread >= 0.25 * spread0 - 1e-6)
+                              and (spread0 < 0.05 or spread >= RAMP_KEPT * spread0 - 1e-6))
     return dict(ok=bool(hue_ok and sat_ok and val_ok and ramp_ok), hue=mh, sat=ms, val=mv, spread=(spread, spread0),
                 fails="".join(c for c, ok in (("h", hue_ok), ("s", sat_ok), ("v", val_ok), ("r", ramp_ok)) if not ok))
 
