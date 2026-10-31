@@ -26,11 +26,22 @@ struct LoadingCurtain: View {
     static let handOff = 0.6
     /// How long the clouds take to cover the screen.
     static let landingTime = 1.3
-    /// How long the clouds take to rise off the game.
-    static let clearingTime = 1.2
+    /// How long the clouds take to rise off the game, and the frosted haze under them to clear.
+    static let clearingTime = 1.4
 
     var body: some View {
         ZStack {
+            // Frosted glass over the game, under the sky till the clouds part, then clearing with them:
+            // the game comes into focus as you come down through the clouds, not sharp at once behind
+            // them (playtesting 2026-10-31: "you can see the layers, there should be a bg blur that
+            // fades out").
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .ignoresSafeArea()
+                .opacity(clearing ? 0 : 1)
+                .animation(.easeInOut(duration: Self.clearingTime), value: clearing)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
             // The bar keeps a little apart from the logo, and narrower than it.
             VStack(spacing: 30) {
                 Image("Logo")
@@ -152,6 +163,9 @@ struct CloudCover: View {
                     .foregroundStyle(night ? Brand.moonCloud : .white)
                     // One sheet of cloud, not puffs see-through where they overlap.
                     .compositingGroup()
+                    // Softening as it rises past, so the banks melt into one another and the haze
+                    // instead of showing as sheets with hard edges.
+                    .blur(radius: through ? side * 0.08 : 0)
                     .opacity(through ? 0 : bank.opacity)
                     .scaleEffect(through ? 1.15 + 0.15 * CGFloat(index) : 1, anchor: .top)
                     // Down out of sight under the screen, then up to its reach; then on up past the top.
