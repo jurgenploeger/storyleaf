@@ -198,7 +198,7 @@ def rule_onto(dye, m):
     least = m["minValue"] if m.get("minValue") is not None else 0.2
     # Never more contrast than it had, unless brightening a dark one as before (`value` over its middle).
     gain = max(0.3, min(max(1, dye["value"] / m["value"]),
-                        (middle - FLOOR) / max(0.01, m["value"] - least),
+                        (middle - slack - FLOOR) / max(0.01, m["value"] - least),
                         (top - dye["value"] + slack) / max(0.01, m["light"] - m["value"])))
     return dict(hue=m.get("hue"), minSaturation=m.get("minSaturation", 0), maxSaturation=m.get("maxSaturation"),
                 minValue=m.get("minValue"), to=dye["hue"], spread=0.25,
@@ -206,9 +206,29 @@ def rule_onto(dye, m):
                 value=gain, valueOffset=min(middle - gain * m["value"], top - gain * m["light"]))
 
 
+def rules_onto(dye, m):
+    """DyeDef.rules(onto:): `rule_onto`, and under it, where that squeezed the ramp to fit a light dye under
+    white, a rule of the material's shadows (its middle and darker) that keeps their contrast: up to
+    SHADOW_GAIN (a white's SHADOW_GAIN_WHITE) and no darker than FLOOR. Squeezed whole, a Snow White
+    plate's deepest shadow sat at 0.76 and it read as one white blob (playtesting 2026-10-31: "This
+    looks too white")."""
+    main = rule_onto(dye, m)
+    least = m["minValue"] if m.get("minValue") is not None else 0.2
+    middle = main["valueOffset"] + main["value"] * m["value"]
+    most = SHADOW_GAIN_WHITE if dye["saturation"] < 0.1 else SHADOW_GAIN
+    gain = max(main["value"], min(most, (middle - FLOOR) / max(0.01, m["value"] - least)))
+    if gain <= main["value"] + 1e-6:
+        return [main]
+    return [dict(main, maxValue=m["value"], value=gain, valueOffset=middle - gain * m["value"]), main]
+
+
 # How far under a dye's own brightness a piece's middle may sit, to keep its shading (DyeDef.slack).
 SLACK = 0.08
 SLACK_WHITE = 0.12
+# How much contrast a light dye's shadows keep where its lights are squeezed under white (`rules_onto`,
+# DyeDef.shadowGain): all they had, a white's more, so its plate still has a deep shadow and an edge.
+SHADOW_GAIN = 1.0
+SHADOW_GAIN_WHITE = 2.0
 # The darkest a dyed piece's material goes (DyeDef.floor): just over black, so its deepest shadow still
 # reads as part of it.
 FLOOR = 0.06
@@ -510,18 +530,18 @@ def sheet_cases(tables, dye):
         names = ([f"armor_{kind}_{r}" for r in RACES] if kind in KINDS else []) + [f"hat_{kind}_{r}" for r in RACES]
         for name in names:
             a = load(name)
-            out, taken = apply([rule_onto(dye, mains.get(name, mains[kind]))], a)
-            yield f"main {name}", a[taken == 0], out[taken == 0]
+            out, taken = apply(rules_onto(dye, mains.get(name, mains[kind])), a)
+            yield f"main {name}", a[taken >= 0], out[taken >= 0]
     for name in TRIMS:
         if name not in trims:
             continue
         a = load(name + "_trim")
-        out, taken = apply([rule_onto(dye, trims[name])], a)
-        yield f"trim {name}", a[taken == 0], out[taken == 0]
+        out, taken = apply(rules_onto(dye, trims[name]), a)
+        yield f"trim {name}", a[taken >= 0], out[taken >= 0]
     for race in RACES:
         a = load(f"body_{race}")
-        out, taken = apply([rule_onto(dye, mains["outfit"])], a)
-        yield f"main body_{race}", a[taken == 0], out[taken == 0]
+        out, taken = apply(rules_onto(dye, mains["outfit"]), a)
+        yield f"main body_{race}", a[taken >= 0], out[taken >= 0]
 
 
 def painted_cases(dye):
@@ -646,10 +666,10 @@ def contact(out_path):
             img = frame
             if main is not None:
                 kind = re.sub(r"^(armor|hat)_|_(human|elf|dwarf)$", "", name)
-                img, _ = apply([rule_onto(main[1], mains.get(name, mains[kind]))], frame)
+                img, _ = apply(rules_onto(main[1], mains.get(name, mains[kind])), frame)
                 if trim is not None and name in trims:
                     layer = load(name + "_trim")[96:144, 0:48]
-                    t, _ = apply([rule_onto(trim[1], trims[name])], layer)
+                    t, _ = apply(rules_onto(trim[1], trims[name]), layer)
                     base = Image.fromarray(img)
                     base.alpha_composite(Image.fromarray(t))
                     img = np.asarray(base)

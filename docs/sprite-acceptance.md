@@ -282,6 +282,10 @@ python3 tools/check_content.py
   contrast it didn't have. `tools/dye_art.py check` fails a piece that keeps under 28% of its light-to-dark
   spread (`RAMP_KEPT`; the squeezed formula failed 477 cases at 30%). A metal's pure white shine carries a
   faint tint of its hue (`wear_art.py` `shine`) so a dye takes it, eyes and catchlights left white.
+  Where the lights are still squeezed under white, the shadows (the material's middle and darker) get a
+  rule of their own that keeps their contrast (`DyeDef.rules(onto:)`, `shadowGain`; a white's doubled):
+  a Snow White plate squeezed whole had its deepest shadow at 0.76 and read as one white blob, no edge
+  (playtesting 2026-10-31: "This looks too white"). Look at white on plate, the widest ramp, from behind.
 
 ### Working on it
 
