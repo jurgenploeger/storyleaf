@@ -141,14 +141,16 @@ nonisolated extension DyeDef {
         // stay over `floor`, not scale down with its middle; and never more contrast than the piece had,
         // unless brightening a dark one as before. tools/dye_art.py `rule_onto` is the same.
         let least = material.minValue ?? 0.2
+        // A dark dye's middle may sit a little over its own (`rise`), so its shadows have room over black.
+        let middle = value + rise
         let gain = Swift.max(0.3, Swift.min(Swift.max(1, value / material.value),
-                                            (value - Self.floor) / Swift.max(0.01, material.value - least),
+                                            (middle - Self.floor) / Swift.max(0.01, material.value - least),
                                             (top - value + slack) / Swift.max(0.01, material.light - material.value)))
         return RecolorRule(hue: material.hue, minSaturation: material.minSaturation, maxSaturation: material.maxSaturation,
                            minValue: material.minValue, maxValue: nil, to: hue, shift: nil, spread: 0.25,
                            saturation: 0.5 * saturation / material.saturation, value: gain,
                            saturationOffset: 0.5 * saturation,
-                           valueOffset: Swift.min(value - gain * material.value, top - gain * material.light))
+                           valueOffset: Swift.min(middle - gain * material.value, top - gain * material.light))
     }
 
     /// The brightest a dye's shine goes: white for a light dye; for a dark one, down toward halfway
@@ -159,6 +161,13 @@ nonisolated extension DyeDef {
     /// (a white's more), none for a dark one, which has no white to fit under (tools/dye_art.py `SLACK`).
     var slack: Double {
         (saturation < 0.1 ? 0.12 : 0.08) * Swift.min(1, Swift.max(0, (value - 0.5) / 0.2))
+    }
+
+    /// How far over its own brightness a dark dye's middle may sit, so its shadows have room over black
+    /// (a blackish Midnight on a bright blade squeezed it flat): none for a light dye (tools/dye_art.py
+    /// `rise`).
+    var rise: Double {
+        0.08 * Swift.min(1, Swift.max(0, (0.5 - value) / 0.2))
     }
 
     /// The darkest a dyed piece's material goes: just over black, so its deepest shadow still reads as

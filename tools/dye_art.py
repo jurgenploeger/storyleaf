@@ -190,16 +190,20 @@ def rule_onto(dye, m):
     # items don't lose the details like shadows and highlights").
     # A light dye's: a dark one has no white to fit under, its shadows black to stay over.
     slack = (SLACK_WHITE if dye["saturation"] < 0.1 else SLACK) * min(1, max(0, (dye["value"] - 0.5) / 0.2))
+    # A dark dye's the other way: its middle may sit a little over its own, so its shadows have room
+    # over black (`rise`, DyeDef.rise; a blackish Midnight on a bright blade squeezed it flat).
+    rise = SLACK * min(1, max(0, (0.5 - dye["value"]) / 0.2))
+    middle = dye["value"] + rise
     # Its darkest (the material's least, `minValue`) no darker than FLOOR, nor its lightest past `top`.
     least = m["minValue"] if m.get("minValue") is not None else 0.2
     # Never more contrast than it had, unless brightening a dark one as before (`value` over its middle).
     gain = max(0.3, min(max(1, dye["value"] / m["value"]),
-                        (dye["value"] - FLOOR) / max(0.01, m["value"] - least),
+                        (middle - FLOOR) / max(0.01, m["value"] - least),
                         (top - dye["value"] + slack) / max(0.01, m["light"] - m["value"])))
     return dict(hue=m.get("hue"), minSaturation=m.get("minSaturation", 0), maxSaturation=m.get("maxSaturation"),
                 minValue=m.get("minValue"), to=dye["hue"], spread=0.25,
                 saturation=0.5 * dye["saturation"] / m["saturation"], saturationOffset=0.5 * dye["saturation"],
-                value=gain, valueOffset=min(dye["value"] - gain * m["value"], top - gain * m["light"]))
+                value=gain, valueOffset=min(middle - gain * m["value"], top - gain * m["light"]))
 
 
 # How far under a dye's own brightness a piece's middle may sit, to keep its shading (DyeDef.slack).
@@ -480,8 +484,8 @@ def verdict(dye, before, after):
     spread = np.percentile(v, 90) - np.percentile(v, 10)
     # A few pixels (a held sprite's clasp) can't hold a ramp; more keep at least RAMP_KEPT of theirs, so
     # its shadows and highlights still show (playtesting 2026-10-31).
-    ramp_ok = len(v) < 12 or (len(np.unique(np.round(v, 3))) >= min(3, len(np.unique(np.round(v0, 3))))
-                              and (spread0 < 0.05 or spread >= RAMP_KEPT * spread0 - 1e-6))
+    ramp_ok = len(v) < 12 or spread0 < 0.05 or (len(np.unique(np.round(v, 3))) >= min(3, len(np.unique(np.round(v0, 3))))
+                                                 and spread >= RAMP_KEPT * spread0 - 1e-6)
     return dict(ok=bool(hue_ok and sat_ok and val_ok and ramp_ok), hue=mh, sat=ms, val=mv, spread=(spread, spread0),
                 fails="".join(c for c, ok in (("h", hue_ok), ("s", sat_ok), ("v", val_ok), ("r", ramp_ok)) if not ok))
 
