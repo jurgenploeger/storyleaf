@@ -19,6 +19,17 @@ nonisolated struct DyeDef: Decodable, Sendable {
     let hue: Double
     let saturation: Double
     let value: Double
+    /// Its shadows' own colour, where it has one (playtesting 2026-10-31: "the white and yellow weapons lose
+    /// their depth"): their hue (gold's warmer, toward amber; white's a cool blue grey) and saturation, so
+    /// the ramp turns as it darkens, as drawn shading does; and how much contrast they keep (`shadowGain`).
+    var shadowHue: Double? = nil
+    var shadowSaturation: Double? = nil
+    var shadowContrast: Double? = nil
+
+    private enum CodingKeys: String, CodingKey {
+        case name, color, hue, saturation, value, shadowHue, shadowSaturation
+        case shadowContrast = "shadowGain"
+    }
 }
 
 /// What a dye recolours: a material on a sheet or a picture (where it is, as a `RecolorRule` window) and
@@ -166,9 +177,12 @@ nonisolated extension DyeDef {
         let shadow = Swift.max(gain, Swift.min(shadowGain, (middle - Self.floor) / Swift.max(0.01, material.value - least)))
         guard shadow > gain + 1e-6 else { return [main] }
         let shadows = RecolorRule(hue: main.hue, minSaturation: main.minSaturation, maxSaturation: main.maxSaturation,
-                                  minValue: main.minValue, maxValue: material.value, to: main.to, shift: main.shift,
-                                  spread: main.spread, saturation: main.saturation, value: shadow,
-                                  saturationOffset: main.saturationOffset, valueOffset: middle - shadow * material.value)
+                                  minValue: main.minValue, maxValue: material.value, to: shadowHue ?? main.to, shift: main.shift,
+                                  spread: main.spread,
+                                  saturation: shadowSaturation.map { 0.5 * $0 / material.saturation } ?? main.saturation,
+                                  value: shadow,
+                                  saturationOffset: shadowSaturation.map { 0.5 * $0 } ?? main.saturationOffset,
+                                  valueOffset: middle - shadow * material.value)
         return [shadows, main]
     }
 
@@ -176,7 +190,7 @@ nonisolated extension DyeDef {
     /// had, a white's more, so its plate still has a deep shadow and an edge (tools/dye_art.py
     /// `SHADOW_GAIN`, `SHADOW_GAIN_WHITE`).
     var shadowGain: Double {
-        saturation < 0.1 ? 2.0 : 1.0
+        shadowContrast ?? (saturation < 0.1 ? 2.0 : 1.0)
     }
 
     /// The brightest a dye's shine goes: white for a light dye; for a dark one, down toward halfway

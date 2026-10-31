@@ -51,6 +51,10 @@ dye_weapons  | newgame,class=fighter,level=40,npc=barber,equip=steel_sword~crims
 dye_held     | newgame,class=fighter,level=40,map=meadowbrook,equip=steel_sword~crimson_dye,hour=12,weather=clear | 8
 # Snow White keeps its shading (0.9.22): a white plate's shadows and edge, not one white blob.
 dye_white    | newgame,class=fighter,level=40,map=meadowbrook,equip=silver_plate~snow_white_dye+silver_helm~snow_white_dye+silver_gauntlets~snow_white_dye,hour=12,weather=clear | 8
+# Dyed axes keep their handles; gold and white keep their depth (0.9.22): an axe in hand, and axes and
+# swords in the bag in Crimson, Golden and Snow White.
+dye_axe      | newgame,class=fighter,level=150,map=meadowbrook,equip=starfall_axe~crimson_dye,hour=12,weather=clear | 8
+dye_axe_bag  | newgame,class=fighter,level=150,menu=bag,bag=starfall_axe+starfall_axe~crimson_dye+starfall_axe~golden_dye+starfall_axe~snow_white_dye+battle_axe~crimson_dye+twin_blade_axe~golden_dye+steel_sword~golden_dye+steel_sword~snow_white_dye | 8
 # A trim takes a second dye (0.9.8): the window on Trim with a two-colour plate worn, the hero in midnight
 # plate trimmed in gold, a two-colour sword in hand, and an elf wizard's robe and hat trimmed.
 dye_trim_window | newgame,class=fighter,level=40,npc=barber,equip=copper_plate~crimson_dye~golden_dye+iron_longsword~~golden_dye,bag=copper_helm+leather_vest+golden_dye+azure_dye+snow_white_dye,dyeing=trim | 8

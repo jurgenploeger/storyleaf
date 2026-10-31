@@ -246,6 +246,13 @@ for item in items.values():
             check(abs(s - colour["saturation"]) < 0.02 and abs(v - colour["value"]) < 0.02
                   and (s < 0.05 or min(abs(h * 360 - colour["hue"]), 360 - abs(h * 360 - colour["hue"])) < 2),
                   f"{where} → hue, saturation and value are its color's ({h * 360:.0f}, {s:.2f}, {v:.2f})")
+        # Its own shadow colour and contrast, where it has them (DyeDef.shadowHue, tools/dye_art.py rules_onto).
+        check(colour.get("shadowHue") is None or (isinstance(colour["shadowHue"], (int, float)) and 0 <= colour["shadowHue"] < 360),
+              f"{where} → shadowHue is a hue, 0 to 360")
+        check(colour.get("shadowSaturation") is None or (isinstance(colour["shadowSaturation"], (int, float)) and 0 <= colour["shadowSaturation"] <= 1),
+              f"{where} → shadowSaturation is 0 to 1")
+        check(colour.get("shadowGain") is None or (isinstance(colour["shadowGain"], (int, float)) and 1 <= colour["shadowGain"] <= 3),
+              f"{where} → shadowGain is 1 to 3")
     else:
         check("dye" not in item, f"item {item['id']} → only a dye (material dye) has a dye")
 check(sorted(dye_gems) == sorted(i["id"] for i in items.values() if i.get("material") == "gem"),
@@ -259,6 +266,13 @@ trim_layers = set(re.findall(r'"(\w+)": DyeMaterial\(', trim_table))
 for name in sorted(trim_layers):
     check((ROOT / "art" / "sprites" / f"{name}.png").exists() and (ROOT / "art" / "sprites" / f"{name}_trim.png").exists(),
           f"DyeDef.trims {name} → art/sprites/{name}_trim.png (tools/dye_art.py cut) and its sheet")
+# Every axe's handle is a layer of its own, which a dye leaves alone (tools/dye_art.py hafts).
+axe_arts = [a for i in items.values() if i.get("type") == "weapon" and i["id"].endswith("_axe") and i.get("art")
+            for a in (i["art"], f"held_{i['id']}_side", f"held_{i['id']}_front")]
+for axe_art in axe_arts:
+    check((ROOT / "art" / "sprites" / f"{axe_art}_haft.png").exists(), f"axe {axe_art} → art/sprites/{axe_art}_haft.png (tools/dye_art.py hafts)")
+for path in sorted((ROOT / "art" / "sprites").glob("*_haft.png")):
+    check(path.stem[:-len("_haft")] in axe_arts, f"{path.name} → no axe's picture: rerun tools/dye_art.py hafts")
 for path in sorted((ROOT / "art" / "sprites").glob("*_trim.png")):
     check(path.stem[:-len("_trim")] in trim_layers, f"{path.name} → no trim of DyeDef.trims: rerun tools/dye_art.py cut")
 

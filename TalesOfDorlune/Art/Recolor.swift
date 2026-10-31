@@ -243,17 +243,18 @@ enum Recolor {
             mainAt = other
         }
         let measured = target.map { families(colours($0)) } ?? own
-        return windows.indices.map { at -> RecolorRule in
+        // A dyed family's shadows may get a rule of their own (`DyeDef.rules(onto:)`), before its own.
+        return windows.indices.flatMap { at -> [RecolorRule] in
             let of = group[at]
-            guard let dye = of == mainAt ? main : of == trimAt ? trim : nil else { return windows[at] }
+            guard let dye = of == mainAt ? main : of == trimAt ? trim : nil else { return [windows[at]] }
             let found = members(measured, of)
             let all = found.isEmpty ? members(own, of) : found
             let s = all.map(\.s).sorted(), v = all.map(\.v).sorted()
             let window = windows[at]
             // Its lightest is its very lightest: a picture's few highlights would clip to white.
-            return dye.rule(onto: DyeMaterial(hue: window.hue, minSaturation: window.minSaturation ?? 0, maxSaturation: window.maxSaturation,
-                                              minValue: window.minValue, saturation: max(0.02, s[s.count / 2]), value: v[v.count / 2],
-                                              light: v[v.count - 1]))
+            return dye.rules(onto: DyeMaterial(hue: window.hue, minSaturation: window.minSaturation ?? 0, maxSaturation: window.maxSaturation,
+                                               minValue: window.minValue, saturation: max(0.02, s[s.count / 2]), value: v[v.count / 2],
+                                               light: v[v.count - 1]))
         }
     }
 
