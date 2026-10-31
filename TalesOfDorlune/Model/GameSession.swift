@@ -355,15 +355,21 @@ final class GameSession {
             } else {
                 under = [ArtLayer(id: "nape_\(style)_\(body)", recolor: hair)]
                 back = [ArtLayer(id: "napeback_\(style)_\(body)", recolor: hair)]
-                top = [ArtLayer(id: "hat_\(kind)_\(race.id)", recolor: skin + (hat?.tint ?? [])), locks]
+                // A dyed trim is a layer of its own over the hat (`ItemDef.trimLayer`).
+                let art = "hat_\(kind)_\(race.id)"
+                var worn = [ArtLayer(id: art, recolor: skin + (hat?.sheetTint(over: art) ?? []))]
+                if let trim = hat?.trimLayer(over: art) { worn.append(trim) }
+                top = worn + [locks]
             }
         }
         if let sheet = armor?.sheets?[race.id] {
+            var worn = [ArtLayer(id: sheet)]
+            if let trim = armor?.trimLayer(over: sheet) { worn.append(trim) }
             // Its head is cut off: the hero's own over it, in their skin tone.
             if armor?.bareHead == true {
-                return under + [ArtLayer(id: sheet), ArtLayer(id: "head_\(body)", recolor: skin)] + back + top
+                return under + worn + [ArtLayer(id: "head_\(body)", recolor: skin)] + back + top
             }
-            return [ArtLayer(id: "nape_\(style)_\(body)", recolor: hair), ArtLayer(id: sheet)]
+            return [ArtLayer(id: "nape_\(style)_\(body)", recolor: hair)] + worn
         }
         return under + [ArtLayer(id: "body_\(body)", recolor: bodyRules(for: look, armor: armor))] + back + top
     }
@@ -423,7 +429,7 @@ final class GameSession {
                             scarf: scarf?.color, hood: hood?.color, hoodTrim: hood?.accent, hoodFur: hood?.pattern == "fur",
                             body: "body_\(Self.body(race: race, look: look))")
         var rules = Self.rules(for: look, armor: armor)
-        if let armor, armor.sheets?[race.id] != nil {
+        if let armor, let sheet = armor.sheets?[race.id] {
             // The armour's own sheet is already drawn and coloured: only the skin tone applies, plus a
             // rare colour variant's tint. It's drawn on the race's own body, poses and all.
             gear.wear = nil
@@ -431,7 +437,7 @@ final class GameSession {
             gear.pattern = nil
             gear.cloak = nil
             gear.body = "body_\(race.id)"
-            rules = (Content.shared.appearance.skin.first { $0.id == look.skin }?.recolor ?? []) + (armor.tint ?? [])
+            rules = (Content.shared.appearance.skin.first { $0.id == look.skin }?.recolor ?? []) + armor.sheetTint(over: sheet)
         }
         ArtLibrary.shared.register(id, from: race.sheet(for: look.gender), recolor: rules, key: key,
                                    gear: gear, layers: Self.layers(race: race, look: look, armor: armor, hat: hat))

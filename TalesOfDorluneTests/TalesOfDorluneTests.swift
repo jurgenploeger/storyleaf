@@ -1477,6 +1477,78 @@ struct RulesTests {
         #expect(session.data.hero.equipment[.armor] == "copper_plate")
     }
 
+    /// A second dye colours a piece's trim (playtesting 2026-10-30): "<piece>~<dye>~<trim dye>", or
+    /// "<piece>~~<trim dye>" for the trim alone, while a piece dyed one colour keeps the id saved games
+    /// have. Armour, its hats and weapons take one; gloves and boots, chain mail, a snow cloak and an
+    /// all-wood sword don't.
+    @Test func aTrimTakesASecondDye() throws {
+        let content = Content.shared
+        let golden = try #require(content.item("golden_dye")?.dye)
+        let crimson = try #require(content.item("crimson_dye")?.dye)
+        #expect(ItemDef.dyedID("copper_plate", with: "crimson_dye") == "copper_plate~crimson_dye")
+        #expect(ItemDef.dyedID("copper_plate", with: "crimson_dye", trim: "golden_dye") == "copper_plate~crimson_dye~golden_dye")
+        #expect(ItemDef.dyedID("copper_plate", with: nil, trim: "golden_dye") == "copper_plate~~golden_dye")
+        #expect(ItemDef.dyedID("copper_plate", with: nil) == "copper_plate")
+        // An old saved one reads as before.
+        let old = try #require(content.item("copper_plate~crimson_dye"))
+        #expect(old.dyeID == "crimson_dye" && old.trimDyeID == nil && old.trimDye == nil)
+        // Both colours: the main one on its sheet, the trim on its trim layer, its name with both.
+        let both = try #require(content.item("copper_plate~crimson_dye~golden_dye"))
+        #expect(both.baseID == "copper_plate" && both.dyeID == "crimson_dye" && both.trimDyeID == "golden_dye" && both.isDyed)
+        #expect(both.name.contains(crimson.name) && both.name.contains(golden.name))
+        #expect(both.sheetTint(over: "armor_iron_plate_human").allSatisfy { $0.to == crimson.hue })
+        let layer = try #require(both.trimLayer(over: "armor_iron_plate_human"))
+        #expect(layer.id == "armor_iron_plate_human_trim" && layer.recolor?.allSatisfy { $0.to == golden.hue } == true)
+        #expect(both.accent == golden.color && both.art == "item_copper_plate~crimson_dye~golden_dye")
+        #expect(ArtLibrary.shared.artImage("item_copper_plate~crimson_dye~golden_dye") != nil)
+        // The trim alone keeps the piece's own colours (its tier's tint).
+        let trimOnly = try #require(content.item("copper_plate~~golden_dye"))
+        let plate = try #require(content.item("copper_plate"))
+        #expect(trimOnly.dyeID == nil && trimOnly.trimDyeID == "golden_dye" && trimOnly.isDyed)
+        #expect(trimOnly.sheetTint(over: "armor_iron_plate_human").count == (plate.tint ?? []).count && trimOnly.color == plate.color)
+        // Each way of writing one is the only one.
+        #expect(content.item("copper_plate~crimson_dye~") == nil && content.item("copper_plate~~") == nil)
+        #expect(content.item("copper_plate~crimson_dye~golden_dye~azure_dye") == nil)
+        #expect(content.item("copper_plate~crimson_dye~agate") == nil)
+        // Who takes a trim: a weapon, plate and its helm, drawn-on armour; not gloves, boots, chain mail.
+        #expect(content.item("iron_longsword~~golden_dye") != nil && ArtLibrary.shared.artImage("held_iron_longsword_side~~golden_dye") != nil)
+        #expect(content.item("wooden_sword")?.takesTrim == false && content.item("wooden_sword~~golden_dye") == nil)
+        #expect(content.item("copper_helm~~golden_dye")?.trimLayer(over: "hat_iron_plate_elf") != nil)
+        #expect(content.item("leather_vest~~golden_dye")?.accent == golden.color)
+        #expect(content.item("copper_gauntlets~~golden_dye") == nil && content.item("copper_boots~crimson_dye~golden_dye") == nil)
+        #expect(content.item("chain_mail")?.takesTrim == false && content.item("snow_cloak")?.takesTrim == false)
+        // Every trim layer the table names is there to draw.
+        for art in DyeDef.trims.keys { #expect(ArtLibrary.shared.artImage(art + "_trim") != nil, "\(art)_trim") }
+    }
+
+    /// Main or Trim: one dye each, the other colour kept; gloves refuse a trim; washing out the trim
+    /// keeps the main colour, washing out the whole piece gives it back.
+    @Test func dyeingATrimKeepsTheMainColour() throws {
+        let session = GameSession.newGame(name: "Test", raceID: "human")
+        session.addItem("copper_plate")
+        session.addItem("copper_gauntlets")
+        session.addItem("crimson_dye")
+        session.addItem("golden_dye", 2)
+        let plate = GameSession.DyePiece(itemID: "copper_plate", worn: false)
+        let red = try #require(session.dye(plate, with: "crimson_dye"))
+        let both = try #require(session.dye(GameSession.DyePiece(itemID: red.id, worn: false), with: "golden_dye", trim: true))
+        #expect(both.id == "copper_plate~crimson_dye~golden_dye" && session.count(of: both.id) == 1 && session.count(of: red.id) == 0)
+        #expect(session.count(of: "crimson_dye") == 0 && session.count(of: "golden_dye") == 1)
+        // Not the trim it has; not on gloves.
+        #expect(session.dye(GameSession.DyePiece(itemID: both.id, worn: false), with: "golden_dye", trim: true) == nil)
+        #expect(session.dye(GameSession.DyePiece(itemID: "copper_gauntlets", worn: false), with: "golden_dye", trim: true) == nil)
+        #expect(session.count(of: "golden_dye") == 1)
+        // The trim washed out: crimson still.
+        let washed = try #require(session.washOut(GameSession.DyePiece(itemID: both.id, worn: false), trimOnly: true))
+        #expect(washed.id == red.id && session.count(of: red.id) == 1)
+        #expect(session.washOut(GameSession.DyePiece(itemID: red.id, worn: false), trimOnly: true) == nil)
+        // A trim alone, then the whole piece washed out.
+        let plain = try #require(session.washOut(GameSession.DyePiece(itemID: red.id, worn: false)))
+        let gold = try #require(session.dye(GameSession.DyePiece(itemID: plain.id, worn: false), with: "golden_dye", trim: true))
+        #expect(gold.id == "copper_plate~~golden_dye")
+        #expect(session.washOut(GameSession.DyePiece(itemID: gold.id, worn: false))?.id == "copper_plate")
+    }
+
     /// The ship to Starfall Isle sails once Captain Brine's last quest is done; the one back always
     /// does, so you're never stranded. Brine stands by the pier.
     @Test func theShipWaitsOnItsQuest() throws {

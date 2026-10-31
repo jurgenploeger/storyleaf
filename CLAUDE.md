@@ -139,6 +139,11 @@ people, bosses, quests) in player-facing text: `docs/fairyland-online.md` → Na
 - `tools/armour_art.py`: the same for every armour's icon, from one picked RD drawing per shape (`PICKED`, `rda_<shape>`),
   coloured as it's worn: the sheets' `MATERIAL` and the item's `tint` (a hide cloak its hood's), so icon and hero match;
   at 64 pixels as a weapon's is (`weapon_art.icon`).
+- `tools/dye_art.py`: dyes (`TalesOfDorlune/Content/Dyes.swift`) mirrored: `cut` cuts each armour sheet's and hat's
+  trim into a layer of its own (`<sheet>_trim.png`, its `TRIMS` windows, never a hand, face or a dwarf's gold hair)
+  and measures every material for `DyeDef.mains`/`trims`, and lists the one-colour weapons, `oneColour` (paste them in); `check` reads that table back and holds
+  every dye on every kind, main and trim, gloves, boots, icons and held weapons, to reading as its colour;
+  `--sheet out.png` shows them all. Rerun `cut` and `check` after changing a sheet or a dye rule.
 - `tools/prop_art.py`: the same for the few props a generated sprite got wrong (`candy_cane`, whose hook came out
   as a two-sided arch) or none was made for (the harbors' `ship`, built in 3D and projected as the game's view is,
   then lit and finished as the buildings are and held to their bands, `form_relief` too;

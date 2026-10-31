@@ -250,6 +250,17 @@ for item in items.values():
         check("dye" not in item, f"item {item['id']} → only a dye (material dye) has a dye")
 check(sorted(dye_gems) == sorted(i["id"] for i in items.values() if i.get("material") == "gem"),
       "dyes → one dye for every gem, mixed from it")
+# A second dye colours a piece's trim ("<item>~<dye>~<trim dye>", playtesting 2026-10-30): a sheet's or a
+# hat's trim is a layer of its own, cut out by tools/dye_art.py, each named in Dyes.swift's DyeDef.trims.
+dyes_swift = (ROOT / "TalesOfDorlune" / "Content" / "Dyes.swift").read_text()
+trim_table = dyes_swift[dyes_swift.index("static let trims:"):]
+trim_table = trim_table[:trim_table.index("\n    ]")]
+trim_layers = set(re.findall(r'"(\w+)": DyeMaterial\(', trim_table))
+for name in sorted(trim_layers):
+    check((ROOT / "art" / "sprites" / f"{name}.png").exists() and (ROOT / "art" / "sprites" / f"{name}_trim.png").exists(),
+          f"DyeDef.trims {name} → art/sprites/{name}_trim.png (tools/dye_art.py cut) and its sheet")
+for path in sorted((ROOT / "art" / "sprites").glob("*_trim.png")):
+    check(path.stem[:-len("_trim")] in trim_layers, f"{path.name} → no trim of DyeDef.trims: rerun tools/dye_art.py cut")
 
 # Where a quest's pieces come from: its monsters (`drops`), a chest it opens, a shop, a boss, the
 # monsters' own materials, or made by hand from those.
@@ -884,7 +895,8 @@ for map_def in maps.values():
         spread = prop.get("spread", 1)
         check(isinstance(spread, int) and spread > 0, f"map {map_def['id']} prop {prop['art']} → spread must be a positive whole number")
 
-rule_keys = {"hue", "minSaturation", "maxSaturation", "minValue", "maxValue", "to", "shift", "spread", "saturation", "value"}
+rule_keys = {"hue", "minSaturation", "maxSaturation", "minValue", "maxValue", "to", "shift", "spread", "saturation", "value",
+             "saturationOffset", "valueOffset"}
 def check_rules(rules, where):
     """Recolour rules (Recolor.swift): known keys, a hue window in degrees, and `spread` only with
     `to` and a window narrow enough to have a middle."""

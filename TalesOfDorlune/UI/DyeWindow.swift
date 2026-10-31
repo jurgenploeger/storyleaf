@@ -1,9 +1,10 @@
 import SwiftUI
 
 /// Dyeing armour at Orla the Weaver's or a barber's (Dyes.swift, `GameSession.dye`), in a window over
-/// the dialog: pick one piece (what you wear, or one from the bag) and a dye you carry, see what the
-/// piece becomes, and Dye it uses up one dye on that piece alone. A dyed piece washes out to what it
-/// was, free.
+/// the dialog: pick one piece (what you wear, or one from the bag), its main colour or its trim (Main |
+/// Trim, for a piece that `takesTrim`), and a dye you carry, see what the piece becomes, and Dye it
+/// uses up one dye on that piece alone. A dyed piece washes out to what it was, free: all of it, or
+/// its trim alone.
 struct DyeWindow: View {
     let session: GameSession
     /// Closes the window, with what the dyer says when something was dyed or washed out.
@@ -11,6 +12,8 @@ struct DyeWindow: View {
 
     @State private var piece: GameSession.DyePiece?
     @State private var dyeID: String?
+    /// Dyeing the piece's trim rather than its main colour.
+    @State private var trimming = DebugLaunch.dyesTrim
 
     private static let tiles = [GridItem(.adaptive(minimum: 44, maximum: 52), spacing: 8)]
 
@@ -20,7 +23,10 @@ struct DyeWindow: View {
         let chosen = piece.flatMap { pieces.contains($0) ? $0 : nil }
         let item = chosen.flatMap { session.content.item($0.itemID) }
         let dye = dyeID.flatMap { id in dyes.first { $0.id == id } }
-        let result = item.flatMap { item in dye.flatMap { session.content.item(ItemDef.dyedID(item.baseID, with: $0.id)) } }
+        let trim = trimming && item?.takesTrim == true
+        let result = item.flatMap { item in
+            dye.flatMap { session.content.item(ItemDef.dyedID(item.baseID, with: trim ? item.dyeID : $0.id, trim: trim ? $0.id : item.trimDyeID)) }
+        }
         ZStack {
             Color.black.opacity(0.45)
                 .ignoresSafeArea()
@@ -30,7 +36,7 @@ struct DyeWindow: View {
                 // Scrolls only when it can't all fit (a phone on its side).
                 FitOrScroll {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(L("Pick a piece, then a dye. One dye colours one piece, and washing it out is free."))
+                        Text(L("Pick a piece, its main colour or its trim, then a dye. One dye colours one piece, and washing it out is free."))
                             .font(HUDStyle.font(11))
                             .foregroundStyle(HUDStyle.dim)
                             .fixedSize(horizontal: false, vertical: true)
@@ -43,6 +49,9 @@ struct DyeWindow: View {
                             let carried = pieces.filter { !$0.worn }
                             if !worn.isEmpty { pieceGrid(L("You wear"), worn, chosen: chosen) }
                             if !carried.isEmpty { pieceGrid(L("In your bag"), carried, chosen: chosen) }
+                        }
+                        if item?.takesTrim == true {
+                            parts(trim)
                         }
                         Text(L("Dye")).font(HUDStyle.font(11)).foregroundStyle(HUDStyle.gold)
                         if dyes.isEmpty {
@@ -68,10 +77,20 @@ struct DyeWindow: View {
                                     onClose(L("All washed out: your {item} is as it was.", ["item": plain.name]))
                                 }
                                 .buttonStyle(PixelButtonStyle(compact: true))
+                                // Its trim alone, when it has a main colour to keep.
+                                if item.dyeID != nil, item.trimDyeID != nil {
+                                    Button(L("Wash out trim")) {
+                                        guard let washed = session.washOut(chosen, trimOnly: true) else { return }
+                                        SoundEffects.shared.play(.equip)
+                                        session.save()
+                                        onClose(L("The trim's washed out: your {item}.", ["item": washed.name]))
+                                    }
+                                    .buttonStyle(PixelButtonStyle(compact: true))
+                                }
                             }
                             Spacer(minLength: 0)
                             Button {
-                                guard let chosen, let dye, let dyed = session.dye(chosen, with: dye.id) else { return }
+                                guard let chosen, let dye, let dyed = session.dye(chosen, with: dye.id, trim: trim) else { return }
                                 SoundEffects.shared.play(.equip)
                                 session.save()
                                 onClose(L("There: your {item}.", ["item": dyed.name]))
@@ -94,8 +113,24 @@ struct DyeWindow: View {
             .accessibilityAction(.escape) { onClose(nil) }
             .padding(24)
             .popIn()
+            .onAppear {
+                // A screenshot of the trim (`dyeing=trim`) opens on the first piece, its Main | Trim showing.
+                if trimming, piece == nil { piece = session.dyeablePieces.first }
+            }
         }
         .foregroundStyle(HUDStyle.cream)
+    }
+
+    /// Main | Trim: which of the piece's colours the dye goes on (its trim: a sash, a hem, clasps, a
+    /// hilt or a haft).
+    private func parts(_ trim: Bool) -> some View {
+        HStack(spacing: 8) {
+            ForEach([false, true], id: \.self) { each in
+                Button(each ? L("Trim") : L("Main")) { trimming = each }
+                    .buttonStyle(PixelButtonStyle(tint: each == trim ? HUDStyle.gold : HUDStyle.dim, compact: true))
+                    .accessibilityAddTraits(each == trim ? .isSelected : [])
+            }
+        }
     }
 
     /// Pieces under a heading, each a tile to pick.

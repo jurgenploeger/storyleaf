@@ -207,20 +207,35 @@ final class ArtLibrary {
                         scale: own.scale ?? base.scale, derive: derive, faces: own.faces ?? base.faces)
     }
 
-    /// A dyed piece's icon (`ItemDef.dyed`): "<its piece's art>~<dye id>", that art recoloured toward the
-    /// dye (`Recolor.dyeRules`, from the picture's own main colour), made the first time it's asked for
-    /// and kept like the hero's.
+    /// A dyed piece's icon (`ItemDef.dyed`): "<its piece's art>~<dye id>~<trim dye id>", that art
+    /// recoloured toward the dyes (`Recolor.dyeRules`, from the picture's own main colour and trim), made
+    /// the first time it's asked for and kept like the hero's. A weapon's held sprites ("held_<id>_side",
+    /// "_front": PNGs with no entry in the manifest) take their colours from its icon, so its blade and
+    /// hilt are dyed alike in the hand and in the bag.
     private func dyedAsset(_ id: String) -> ArtAsset? {
-        guard let mark = id.firstIndex(of: ItemDef.dyeMark) else { return nil }
-        let base = String(id[..<mark]), dyeID = String(id[id.index(after: mark)...])
-        // A weapon's held sprites (held_<id>_side, _front) are PNGs with no entry in the manifest.
-        guard let dye = Content.shared.item(dyeID)?.dye,
-              let kind = manifest.assets.first(where: { $0.id == base })?.kind ?? (pngURL(base) != nil ? "item" : nil),
-              let picture = sourceImage(base) else { return nil }
+        guard id.contains(ItemDef.dyeMark) else { return nil }
+        let base = ItemDef.baseID(of: id)
+        let main = ItemDef.dyeID(of: id).flatMap { Content.shared.item($0)?.dye }
+        let trim = ItemDef.trimDyeID(of: id).flatMap { Content.shared.item($0)?.dye }
+        guard main != nil || trim != nil,
+              let kind = manifest.assets.first(where: { $0.id == base })?.kind ?? (pngURL(base) != nil ? "item" : nil) else { return nil }
+        let item = Self.heldWeapon(base).flatMap { Content.shared.item($0) } ?? Content.shared.items.first { $0.art == base }
+        guard let own = sourceImage(base) else { return nil }
+        let icon = item?.art.flatMap { $0 == base ? nil : sourceImage($0) }
+        let rules = Recolor.dyeRules(for: icon ?? own, main: main, trim: trim, weapon: item?.type == .weapon, on: icon == nil ? nil : own)
         let made = ArtAsset(id: id, kind: kind, frame: nil, directions: nil, scale: nil,
-                            derive: Derivation(from: base, recolor: Recolor.dyeRules(for: picture, dye: dye)), faces: nil)
+                            derive: Derivation(from: base, recolor: rules), faces: nil)
         runtime[id] = (made, id)
         return made
+    }
+
+    /// The weapon a held sprite is of: "held_<id>_side" or "held_<id>_front".
+    private static func heldWeapon(_ art: String) -> String? {
+        guard art.hasPrefix("held_") else { return nil }
+        for suffix in ["_side", "_front"] where art.hasSuffix(suffix) {
+            return String(art.dropFirst("held_".count).dropLast(suffix.count))
+        }
+        return nil
     }
 
     private func kind(of id: String) -> String {

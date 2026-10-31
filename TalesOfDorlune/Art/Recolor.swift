@@ -31,6 +31,10 @@ nonisolated struct RecolorRule: Decodable, Sendable {
     /// Multipliers for saturation and brightness.
     let saturation: Double?
     let value: Double?
+    /// Added to the saturation and brightness after the multipliers: with them a dye lays a material's
+    /// ramp round its own colour (`DyeDef.rule(onto:)`), however pale or dark the material was.
+    var saturationOffset: Double? = nil
+    var valueOffset: Double? = nil
 
     func matches(hue h: Double, saturation s: Double, value v: Double) -> Bool {
         guard s >= (minSaturation ?? 0.15), s <= (maxSaturation ?? 1), v >= (minValue ?? 0), v <= (maxValue ?? 1) else { return false }
@@ -51,7 +55,8 @@ nonisolated struct RecolorRule: Decodable, Sendable {
     func within(_ window: RecolorRule) -> RecolorRule {
         RecolorRule(hue: window.hue, minSaturation: window.minSaturation, maxSaturation: window.maxSaturation,
                     minValue: window.minValue, maxValue: window.maxValue,
-                    to: to, shift: shift, spread: spread, saturation: saturation, value: value)
+                    to: to, shift: shift, spread: spread, saturation: saturation, value: value,
+                    saturationOffset: saturationOffset, valueOffset: valueOffset)
     }
 }
 
@@ -95,8 +100,8 @@ enum Recolor {
             if let to = rule.to { h = to + (rule.spread ?? 0) * rule.distanceFromMiddle(of: h) } else if let shift = rule.shift { h += shift }
             h = h.truncatingRemainder(dividingBy: 360)
             if h < 0 { h += 360 }
-            s = min(1, s * (rule.saturation ?? 1))
-            v = min(1, v * (rule.value ?? 1))
+            s = min(1, max(0, s * (rule.saturation ?? 1) + (rule.saturationOffset ?? 0)))
+            v = min(1, max(0, v * (rule.value ?? 1) + (rule.valueOffset ?? 0)))
             let (nr, ng, nb) = rgb(h, s, v)
             pixels[index] = UInt8(max(0, min(255, (nr * alpha).rounded())))
             pixels[index + 1] = UInt8(max(0, min(255, (ng * alpha).rounded())))
@@ -135,44 +140,100 @@ enum Recolor {
         return PixelImage.make(pixels, width: width, height: height)
     }
 
-    /// How a dyed piece's icon is recoloured (`ArtLibrary`, a dyed item's art): its main colour, found on
-    /// the picture itself, brought to the dye's. A coloured icon: the hues within 40° of its commonest,
-    /// turned to the dye's hue (keeping half their shift), their middle saturation and brightness made the
-    /// dye's. A grey one (plate, mail: mostly unsaturated): its tinted greys coloured, white and black kept.
-    nonisolated static func dyeRules(for image: CGImage, dye: DyeDef) -> [RecolorRule] {
-        let width = image.width, height = image.height
-        guard let pixels = PixelImage.pixels(of: image, width: width, height: height) else { return [] }
-        var hues = [Double](repeating: 0, count: 36)
-        var coloured: [(h: Double, s: Double, v: Double)] = []
-        var greys: [(s: Double, v: Double)] = []
-        for index in stride(from: 0, to: pixels.count, by: 4) {
-            let alpha = Double(pixels[index + 3])
-            guard alpha >= 128 else { continue }
-            let (h, s, v) = hsv(Double(pixels[index]) / alpha, Double(pixels[index + 1]) / alpha, Double(pixels[index + 2]) / alpha)
-            guard v >= 0.2 else { continue }
-            if s >= 0.25 {
-                coloured.append((h: h, s: s, v: v))
-                hues[min(35, Int(h / 10))] += 1
-            } else {
-                greys.append((s: s, v: v))
+    /// How a dyed piece's icon, and a weapon's held sprites, are recoloured (`ArtLibrary`, a dyed item's
+    /// art): the picture's main colour and its trim, found on it, taken to the two dyes
+    /// (`DyeDef.rule(onto:)`, as a sheet's are). Its colours (but its outlines) fall in families: its
+    /// commonest hue (the hues within 40° of it), the next commonest, and its greys (with a barely
+    /// coloured family of their hue: a steel's blue shading). The biggest is its main colour and the next
+    /// its trim (each at least a twenty-fifth of it). A weapon, drawn with its grip
+    /// bottom left, has its main colour on whichever of the two lies nearer its tip, top right: the
+    /// blade or the staff's head, the trim on the hilt or the haft. Every family gets a rule, those not
+    /// dyed one that changes nothing, so a dye takes only its own family's colours. The families are
+    /// found on `image` (an icon) and measured on `target` (a held sprite shrunk from it), so a weapon's
+    /// blade is its blade in the hand too. tools/dye_art.py `icon_rules` is the same.
+    nonisolated static func dyeRules(for image: CGImage, main: DyeDef?, trim: DyeDef?, weapon: Bool, on target: CGImage? = nil) -> [RecolorRule] {
+        struct Seen { let h: Double, s: Double, v: Double, x: Double, y: Double }
+        func colours(_ picture: CGImage) -> [Seen] {
+            let width = picture.width
+            guard let pixels = PixelImage.pixels(of: picture, width: width, height: picture.height) else { return [] }
+            var seen: [Seen] = []
+            for index in stride(from: 0, to: pixels.count, by: 4) {
+                let alpha = Double(pixels[index + 3])
+                guard alpha >= 128 else { continue }
+                let (h, s, v) = hsv(Double(pixels[index]) / alpha, Double(pixels[index + 1]) / alpha, Double(pixels[index + 2]) / alpha)
+                guard v >= 0.2 else { continue }
+                seen.append(Seen(h: h, s: s, v: v, x: Double((index / 4) % width), y: Double((index / 4) / width)))
             }
+            return seen
         }
-        if !coloured.isEmpty, Double(coloured.count) >= 0.35 * Double(coloured.count + greys.count) {
+        let seen = colours(image)
+        var windows: [RecolorRule] = []
+        var left = seen.filter { $0.s >= 0.25 }
+        for _ in 0..<2 where !left.isEmpty {
+            var hues = [Double](repeating: 0, count: 36)
+            for each in left { hues[min(35, Int(each.h / 10))] += 1 }
             let smoothed = (0..<36).map { bin in (-2...2).reduce(0.0) { $0 + hues[(bin + $1 + 36) % 36] } }
             let peak = smoothed.indices.max { smoothed[$0] < smoothed[$1] } ?? 0
             let middle = Double(peak) * 10 + 5
-            let inside = coloured.filter { abs(($0.h - middle + 540).truncatingRemainder(dividingBy: 360) - 180) <= 40 }
-            let s = median(inside.map(\.s)) ?? 0.5, v = median(inside.map(\.v)) ?? 0.6
-            let low = (middle - 40 + 360).truncatingRemainder(dividingBy: 360), high = (middle + 40).truncatingRemainder(dividingBy: 360)
-            return [RecolorRule(hue: [low, high], minSaturation: 0.2, maxSaturation: nil, minValue: nil, maxValue: nil,
-                                to: dye.hue, shift: nil, spread: 0.5,
-                                saturation: min(3, max(0.05, dye.saturation / s)), value: min(2.5, max(0.35, dye.value / v)))]
+            windows.append(RecolorRule(hue: [(middle - 40 + 360).truncatingRemainder(dividingBy: 360), (middle + 40).truncatingRemainder(dividingBy: 360)],
+                                       minSaturation: 0.25, maxSaturation: nil, minValue: 0.2, maxValue: nil,
+                                       to: nil, shift: nil, spread: nil, saturation: nil, value: nil))
+            left = left.filter { abs(($0.h - middle + 540).truncatingRemainder(dividingBy: 360) - 180) > 40 }
         }
-        let s = max(0.05, median(greys.filter { $0.s >= 0.02 }.map(\.s)) ?? 0.1)
-        let v = max(0.05, median(greys.map(\.v)) ?? 0.6)
-        return [RecolorRule(hue: nil, minSaturation: 0.02, maxSaturation: 0.25, minValue: nil, maxValue: nil,
-                            to: dye.hue, shift: nil, spread: nil,
-                            saturation: min(8, max(0.05, dye.saturation / s)), value: min(2, max(0.35, 0.4 + 0.6 * dye.value / v)))]
+        windows.append(RecolorRule(hue: nil, minSaturation: 0.02, maxSaturation: 0.25, minValue: 0.2, maxValue: nil,
+                                   to: nil, shift: nil, spread: nil, saturation: nil, value: nil))
+        // Each colour in the first family whose window it falls in, as `apply` will take it.
+        func families(_ seen: [Seen]) -> [[Seen]] {
+            var found = [[Seen]](repeating: [], count: windows.count)
+            for each in seen {
+                if let at = windows.firstIndex(where: { $0.matches(hue: each.h, saturation: each.s, value: each.v) }) { found[at].append(each) }
+            }
+            return found
+        }
+        let own = families(seen)
+        // A metal's tinted greys and its faintly blue shading are one material: a coloured family that's
+        // barely coloured (its middle saturation under 0.45) and of the greys' own hue goes with them.
+        let grey = windows.count - 1
+        var group = Array(windows.indices)
+        let tinted = own[grey].filter { $0.s >= 0.05 }
+        if !tinted.isEmpty {
+            let y = tinted.reduce(0.0) { $0 + sin($1.h * .pi / 180) }, x = tinted.reduce(0.0) { $0 + cos($1.h * .pi / 180) }
+            let greyHue = (atan2(y, x) * 180 / .pi + 360).truncatingRemainder(dividingBy: 360)
+            for at in 0..<grey where !own[at].isEmpty {
+                let middle = own[at].map(\.s).sorted()[own[at].count / 2]
+                if middle < 0.45, windows[at].matches(hue: greyHue, saturation: 0.5, value: 0.5) { group[at] = grey }
+            }
+        }
+        func members(_ found: [[Seen]], _ of: Int) -> [Seen] {
+            windows.indices.filter { group[$0] == of }.flatMap { found[$0] }
+        }
+        let least = max(12, 0.04 * Double(seen.count))
+        // The biggest first (the first found of two the same size).
+        let ranked = windows.indices.filter { group[$0] == $0 && Double(members(own, $0).count) >= least }
+            .sorted { (members(own, $0).count, -$0) > (members(own, $1).count, -$1) }
+        guard var mainAt = ranked.first else { return [] }
+        var trimAt = ranked.count > 1 ? ranked[1] : nil
+        func tip(_ of: Int) -> Double {
+            let all = members(own, of)
+            return all.reduce(0) { $0 + $1.x - $1.y } / Double(all.count)
+        }
+        if weapon, let other = trimAt, tip(other) > tip(mainAt) {
+            trimAt = mainAt
+            mainAt = other
+        }
+        let measured = target.map { families(colours($0)) } ?? own
+        return windows.indices.map { at -> RecolorRule in
+            let of = group[at]
+            guard let dye = of == mainAt ? main : of == trimAt ? trim : nil else { return windows[at] }
+            let found = members(measured, of)
+            let all = found.isEmpty ? members(own, of) : found
+            let s = all.map(\.s).sorted(), v = all.map(\.v).sorted()
+            let window = windows[at]
+            // Its lightest is its very lightest: a picture's few highlights would clip to white.
+            return dye.rule(onto: DyeMaterial(hue: window.hue, minSaturation: window.minSaturation ?? 0, maxSaturation: window.maxSaturation,
+                                              minValue: window.minValue, saturation: max(0.02, s[s.count / 2]), value: v[v.count / 2],
+                                              light: v[v.count - 1]))
+        }
     }
 
     nonisolated private static func median(_ values: [Double]) -> Double? {

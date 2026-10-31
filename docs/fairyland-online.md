@@ -715,9 +715,21 @@ three guilds (M): humans are balanced, elves lean to magic and dwarves to attack
   or a trinket; washing a dye out is free. One piece only: a dyed piece
   is a kind of its own, "<piece>~<dye>" (`copper_plate~crimson_dye`, `Content.item`, Dyes.swift), its name with
   the colour after it, so of three Copper Plates one turns Crimson and two stay copper. Its sheet and hat take
-  the dye as a tier's take theirs (`DyeDef.rules`, the tiers' `tint` numbers worked back from their `color`),
-  gloves and boots are painted in it, and its icon is recoloured from its own main colour (`Recolor.dyeRules`), a
-  weapon's held sprites too (`held_<piece>_side~<dye>`, `GearArt`).
+  the dye on their main material (`DyeDef.rule(onto:)`: the dye's hue, its saturation with half the material's
+  own shading, its brightness in the middle and the ramp round it kept, squeezed where it would pass white;
+  measured on each sheet, `DyeDef.mains`, where the tiers' numbers washed a mid dye out: an olive plate read
+  white), gloves and boots are painted in it, and its icon is recoloured from its own main colour
+  (`Recolor.dyeRules`), a weapon's held sprites too (`held_<piece>_side~<dye>`, `GearArt`). Its trim takes a
+  second dye (since 0.9.8, playtesting 2026-10-30), one dye as the main colour does, the window's Main | Trim:
+  "<piece>~<dye>~<trim dye>", or "<piece>~~<trim dye>" for the trim alone (a piece dyed one colour keeps its
+  id, so saves read as before). A sheet's or hat's trim is a layer of its own cut out of it
+  (`<sheet>_trim.png`, tools/dye_art.py, `DyeDef.trims`): a robe's gold sash and hem, a plate's red sash or an
+  elf's gold collar, a dragon mail's gold, a ranger cloak's clasps, a hide hood's fur lining, never a hand, a
+  face or a dwarf's gold hair. Chain mail (its undershirt is the hands' reds), a snow cloak, a ranger's hood and
+  a dwarf's wizard hat have none. Armour drawn on the hero takes it on its trim (`accent`, a hide cloak's fur),
+  a weapon on its hilt or haft: of the icon's two commonest colours the one nearer the grip (the main colour
+  on the blade or the staff's head; a weapon of one colour, an all-wood sword, takes none, `DyeDef.oneColour`). Gloves and boots are one colour. Washing out the trim alone keeps the main
+  colour. tools/dye_art.py `check` holds every dye on every kind, main and trim, to reading as its colour.
   A dyed piece no longer shows its tier by its colour: the colour is the wearer's choice, the stats stay the
   piece's. Adventurers don't buy or sell dyed pieces; shops buy them at the piece's price.
 - Festive seasons and hats, like RuneScape's holiday events (ours, since 0.7.30, playtesting 2026-10-17: "Also

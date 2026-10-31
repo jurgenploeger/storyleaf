@@ -101,10 +101,10 @@ enum GearArt {
         return group
     }
 
-    /// A dyed weapon's held sprites are its piece's, recoloured: "held_<piece>_side~<dye id>"
-    /// (`ArtLibrary.dyedAsset`). Empty for one that isn't dyed.
+    /// A dyed weapon's held sprites are its piece's, recoloured: "held_<piece>_side~<dye id>~<trim dye
+    /// id>" (`ArtLibrary.dyedAsset`). Empty for one that isn't dyed.
     private static func dyeSuffix(_ item: ItemDef) -> String {
-        item.dyeID.map { String(ItemDef.dyeMark) + $0 } ?? ""
+        item.dyeSuffix
     }
 
     /// Facing you or away, a weapon is held up nearly upright (`_front`), else as drawn (`_side`).
