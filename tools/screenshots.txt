@@ -874,3 +874,7 @@ cape_hide_cloak | newgame,race=elf,gender=female,level=20,equip=copper_hide,faci
 hide_hood_back  | newgame,race=elf,gender=female,level=20,equip=copper_hide+copper_hide_hood,facing=up,weather=clear,hour=12 | 8
 hide_hood_front | newgame,race=dwarf,level=20,equip=jade_hide+jade_hide_hood,facing=down,weather=clear,hour=12 | 8
 cape_front      | newgame,level=30,equip=leather_vest+sunny_meadow_cape,facing=down,weather=clear,hour=12 | 8
+# A fairy ring in Windswept Downs (playtesting 2026-10-31: its sparkle read as a floating white
+# cross, and horizontal stripes showed in the grass round it): by day and with the sun low.
+fairy_ring_downs     | newgame,level=12,map=northern_grassland,ring=0,weather=clear,hour=12 | 8
+fairy_ring_downs_eve | newgame,level=12,map=northern_grassland,ring=0,weather=clear,hour=18 | 8
