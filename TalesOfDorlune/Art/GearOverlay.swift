@@ -531,6 +531,10 @@ enum GearOverlay {
     /// rows are the hands; the boots are its brown near the feet. Armour with a walk sheet of its own
     /// is drawn on the same poses, so they land on its gauntlets and greaves. tools/gear_preview.py
     /// `trinkets`.
+    /// How many of a hand's last rows gloves take, and the rows of sleeve over it their cuff takes.
+    nonisolated private static let gloveRows = 5
+    nonisolated private static let gloveCuff = 2
+
     nonisolated private static func trinkets(_ out: inout Bitmap, body: Bitmap, origin: (x: Int, y: Int), size: Int,
                                              facing: String, gear: GearLook) {
         let gloves = color(hex: gear.gloves), boots = color(hex: gear.boots), necklace = color(hex: gear.necklace)
@@ -581,10 +585,42 @@ enum GearOverlay {
         }
         guard let face = patches.indices.max(by: { patches[$0].count < patches[$1].count }),
               let chin = patches[face].map({ $0.y }).max() else { return }
+        // Gloves take the hand, the pale bits drawn with it and a cuff over it, as strongly as boots take
+        // the feet (playtesting 2026-10-31: "the gloves should change the color of the hero a bit more,
+        // similar to the boots": a human's hand is two pixels of skin, and they took only that, faintly).
+        // tools/gear_preview.py `trinkets` (GLOVE_ROWS, GLOVE_CUFF, GLOVE_TONE).
         if let gloves {
+            let knees = Double(top) + 0.7 * Double(feet - top)
             for (index, cells) in patches.enumerated() where index != face {
-                guard let high = cells.map({ $0.y }).min(), high >= chin - 1, let low = cells.map({ $0.y }).max() else { continue }
-                for cell in cells where cell.y >= low - 2 { paint(cell.x, cell.y, gloves, lift: 0.5, gain: 0.6) }
+                // A hand: under the chin (not a sliver of the jaw seen from the side) and above the knees
+                // (not a bare knee).
+                guard let high = cells.map({ $0.y }).min(), high >= chin + 2, Double(high) <= knees,
+                      let low = cells.map({ $0.y }).max(),
+                      let left = cells.map({ $0.x }).min(), let right = cells.map({ $0.x }).max() else { continue }
+                for cell in cells where cell.y > low - Self.gloveRows { paint(cell.x, cell.y, gloves, lift: 0.55, gain: 0.9) }
+                // The pale bits drawn with it (a human's grey-blue fingers, its white ones): touching the
+                // hand and barely coloured, never dark.
+                var hand = Set<Int>()
+                for cell in cells { hand.insert(cell.y * size + cell.x) }
+                var pale = Set<Int>()
+                for cell in cells {
+                    for dy in -1...1 {
+                        for dx in -1...1 {
+                            let nx = cell.x + dx, ny = cell.y + dy
+                            guard opaque(nx, ny), !hand.contains(ny * size + nx), !skin[ny * size + nx] else { continue }
+                            let (_, s, v) = hsv(body.rgb(origin.x + nx, origin.y + ny))
+                            if s < 0.3, v >= 0.35 { pale.insert(ny * size + nx) }
+                        }
+                    }
+                }
+                for i in pale { paint(i % size, i / size, gloves, lift: 0.55, gain: 0.9) }
+                // Its cuff: the sleeve's end over the hand, a pixel wider each side, never its outline.
+                for y in Swift.max(0, high - Self.gloveCuff)..<high {
+                    for x in (left - 1)...(right + 1) where opaque(x, y) && !skin[y * size + x]
+                        && out.alpha(origin.x + x, origin.y + y) > 0.5 && hsv(out.rgb(origin.x + x, origin.y + y)).2 >= 0.25 {
+                        paint(x, y, gloves, lift: 0.55, gain: 0.9)
+                    }
+                }
             }
         }
         // From the front: a chain in a V under the chin, the stone hanging from it.
