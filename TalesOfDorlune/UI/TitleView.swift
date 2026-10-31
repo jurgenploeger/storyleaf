@@ -504,7 +504,7 @@ private struct SaveCarousel: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
-            .frame(height: 248)
+            .frame(height: 262)
             // The games either side fade out toward the edges as they slide by, instead of
             // being cut off sharp.
             .mask(
@@ -548,9 +548,10 @@ private struct SavedHeroCard: View {
             }
         }
         .multilineTextAlignment(.center)
-        // Room for the page dots, a little apart from the lines over them (playtesting 2026-10-30:
-        // they sat right under "Played yesterday").
-        .padding(.bottom, 42)
+        // Room for the page dots, apart from the lines over them (playtesting 2026-10-30: they sat
+        // right under "Played yesterday"; 2026-10-31: "Add some space between the carousel dots and
+        // the heroes"). The carousel is as much taller (`SaveCarousel`).
+        .padding(.bottom, 56)
     }
 }
 
