@@ -859,7 +859,7 @@ private struct CompanionPad: View {
                 .background(Capsule().fill(HUDStyle.ink.opacity(0.88)).overlay(Capsule().strokeBorder(HUDStyle.gold.opacity(0.7), lineWidth: 1.5)))
             }
 
-            // Its buttons the size of the hero's (`commandButtonSize`), spaced out to fill the row.
+            // Its buttons the size of the hero's (`commandButtonSize`), closed up at the right.
             SkillRow(controller: controller, skills: controller.companionSkills, others: 2,
                      matching: controller.commandButtonSize) { size, _ in
                 RoundCommandButton(title: L("Auto"), icon: .paw, size: size, tint: .quiet) { controller.letCompanionDecide() }
@@ -905,8 +905,9 @@ private struct SkillRow<Lead: View, Tail: View>: View {
     var least: CGFloat = 0
     /// Skills the row has no room for go to `lead` (More) rather than sliding.
     var overflowsToLead = false
-    /// A button size to keep to where it fits (the hero's, on the companion's turn), the row spaced out
-    /// to fill the room instead of its buttons growing.
+    /// A button size to keep to where it fits (the hero's, on the companion's turn), the row closed up
+    /// at the right with the usual gap between its buttons instead of spread out to the left edge
+    /// (playtesting 2026-10-31: "The companion's buttons should be right aligned, without the gaps").
     var matching: CGFloat? = nil
     /// Told the button size the row settles on (the hero's row tells `BattleController.commandButtonSize`).
     var onSize: ((CGFloat) -> Void)? = nil
@@ -984,7 +985,9 @@ private struct SkillRow<Lead: View, Tail: View>: View {
         guard fitted(count) >= CommandRow.narrowSize else { return (CommandRow.narrowSize, gap, shown, true) }
         // The size asked for, if the row has room for it; spaced out to fill the rest.
         let size = matching.map { min($0, fitted(count)) } ?? min(Self.largest, fitted(count)).rounded(.down)
-        let spacing = count > 1 ? (width - CGFloat(count) * size) / CGFloat(count - 1) : 0
+        let spread = count > 1 ? (width - CGFloat(count) * size) / CGFloat(count - 1) : 0
+        // At a size of its own the row spans the screen; at the hero's it closes up at the right.
+        let spacing = matching == nil ? spread : min(spread, CommandRow.spacing)
         return (size, spacing, shown, false)
     }
 
