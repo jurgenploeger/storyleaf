@@ -131,6 +131,15 @@ final class ContinentScene: SKScene {
     /// Debug launches waiting for the lands round you (`isSettled`): the work keeps its longer
     /// slices till they're in.
     var hurries = false
+    /// Till when the work round you waits (`holdWork`).
+    private var heldUntil: ContinuousClock.Instant?
+
+    /// Holds the work round you (laying out and drawing the lands near) for `seconds`, every frame the
+    /// loading clouds' while they part (playtesting 2026-10-31: "The loading animation from the cloud
+    /// to the game is a bit choppy"). It lets go by itself.
+    func holdWork(for seconds: Double) {
+        heldUntil = ContinuousClock.now + .milliseconds(Int(seconds * 1000))
+    }
     /// The sea's picture (`tools/water_art.py`): `seaCells` cells a side that tile as a whole, the
     /// same blue round every land ("raw:", graded for none).
     private let seaSheet = "raw:sea"
@@ -1696,6 +1705,14 @@ final class ContinentScene: SKScene {
     /// every 16: a frame or two dropped while it comes in faster; and while you stand on one, every
     /// 40, the frames slower for a few seconds but the land in sooner.
     private func breathe() async {
+        // The loading clouds parting: wait till they're gone (`holdWork`).
+        if let until = heldUntil {
+            while ContinuousClock.now < until {
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+            heldUntil = nil
+            sliceStart = ContinuousClock.now
+        }
         let slice: Duration = !isReady || hurries ? .milliseconds(120)
             : standsOnUnbuilt ? .milliseconds(40) : isUrgent ? .milliseconds(16) : .milliseconds(6)
         guard ContinuousClock.now - sliceStart > slice else { return }

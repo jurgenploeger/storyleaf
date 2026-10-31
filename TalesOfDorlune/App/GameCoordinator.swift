@@ -393,6 +393,19 @@ final class GameCoordinator {
             let byFeather = arrivesByFeather
             arrivesByFeather = false
             if byFeather { mapScene.awaitFeatherArrival() }
+            // A player's game waits a little longer under the card, for the lands round you to come in
+            // too (`isSettled`, 3 seconds at most), and then holds that work while the clouds part, so
+            // they part smoothly and onto a world that's all there (playtesting 2026-10-31: "it feels
+            // like everything is not loaded yet or very slow").
+            if !DebugLaunch.isActive, showsContinent, !byFeather, let continent {
+                let hurried = continent.hurries
+                continent.hurries = true
+                for _ in 0..<12 where !continent.isSettled {
+                    try? await Task.sleep(for: .milliseconds(250))
+                }
+                continent.hurries = hurried
+                continent.holdWork(for: LoadingCurtain.landingTime + LoadingCurtain.clearingTime + 0.3)
+            }
             isReady = true
             // A debug launch's screenshot of the continent waits, the card gone as a player's would
             // be, for the lands round you to come in too (`isSettled`), a few minutes at most.

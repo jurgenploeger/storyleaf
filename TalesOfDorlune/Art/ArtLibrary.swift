@@ -1021,7 +1021,12 @@ final class ArtLibrary {
         let whole = image(id)
         guard let cgImage = whole.cgImage, let box = Self.visibleBounds(of: cgImage) else { return whole }
         var side = max(8, min(box.width, box.height * 0.62).rounded())
-        var rect = CGRect(x: (box.midX - side / 2).rounded(), y: max(0, box.minY - 1), width: side, height: side)
+        // Centred on the head, not on the whole picture: a sparkle or a tail beside it would pull the
+        // crop off it (playtesting 2026-10-31: "The head of the companion is not perfectly center in
+        // the companion avatar", a Poison Skeleton's green spark).
+        let middle = Self.headMiddle(of: cgImage, top: Int(box.minY), rows: Int(side)) ?? box.midX
+        var rect = CGRect(x: min(max(0, (middle - side / 2).rounded()), max(0, CGFloat(cgImage.width) - side)),
+                          y: max(0, box.minY - 1), width: side, height: side)
         if let plain = plainFrame(id), let body = Self.visibleBounds(of: plain), let head = Self.skinBounds(of: plain) {
             side = max(8, min(body.width, body.height * 0.62).rounded())
             let x = min(max(0, (head.midX - side / 2).rounded()), CGFloat(cgImage.width) - side)
@@ -1094,6 +1099,35 @@ final class ArtLibrary {
     }
 
     /// The box around a picture's opaque pixels, in pixels from its top left.
+    /// The middle of a picture's head: down its top `rows` rows from `top`, the middle of each row's
+    /// drawn pixels (its leftmost to its rightmost), and the median of those, so the few rows a
+    /// sparkle or an ear sticks out on don't move it.
+    private static func headMiddle(of image: CGImage, top: Int, rows: Int) -> CGFloat? {
+        let width = image.width, height = image.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let drawn: Bool = pixels.withUnsafeMutableBytes { buffer in
+            guard let context = CGContext(data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8,
+                                          bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        guard drawn, top >= 0, top < height else { return nil }
+        var middles: [CGFloat] = []
+        for y in top..<min(height, top + max(1, rows)) {
+            var left = -1, right = -1
+            for x in 0..<width where pixels[(y * width + x) * 4 + 3] > 128 {
+                if left < 0 { left = x }
+                right = x
+            }
+            if left >= 0 { middles.append(CGFloat(left + right + 1) / 2) }
+        }
+        guard !middles.isEmpty else { return nil }
+        middles.sort()
+        return middles.count % 2 == 1 ? middles[middles.count / 2]
+            : (middles[middles.count / 2 - 1] + middles[middles.count / 2]) / 2
+    }
+
     private static func visibleBounds(of image: CGImage) -> CGRect? {
         let width = image.width, height = image.height
         var pixels = [UInt8](repeating: 0, count: width * height * 4)
