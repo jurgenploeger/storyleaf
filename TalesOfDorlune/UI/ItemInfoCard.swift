@@ -13,6 +13,9 @@ struct ItemInfoCard: View {
     var onUnequip: (() -> Void)? = nil
     /// From the Bag: what you can do with it there (Use, Give, Hatch), under the details.
     var action: Action? = nil
+    /// A second thing to do with it from the Bag, over the rest: a gem a quest wants still mixes its
+    /// dye (`MenuView.dyeAction`).
+    var extraAction: Action? = nil
     /// From the Bag, when there's nothing to do with it there: why (only in battle, no companions).
     var note: String? = nil
     /// From the Bag (playtesting 2026-10-26: "there should be three buttons: Drop, Trade and Use"):
@@ -219,6 +222,15 @@ struct ItemInfoCard: View {
     /// Drop, Trade, and the item's own action in gold; on a narrow card (a long action, a long
     /// language) the action over the other two.
     private func bagButtons(issue: String?) -> some View {
+        VStack(alignment: .trailing, spacing: 8) {
+            if let extraAction {
+                button(for: extraAction)
+            }
+            bagRow(issue: issue)
+        }
+    }
+
+    private func bagRow(issue: String?) -> some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 10) {
                 Spacer(minLength: 0)
@@ -287,17 +299,7 @@ struct ItemInfoCard: View {
     @ViewBuilder
     private func mainButton(issue: String?) -> some View {
         if let action {
-            Button(action: action.run) {
-                if let icon = action.icon {
-                    Label(action.title, icon: icon)
-                } else {
-                    Text(action.title)
-                }
-            }
-            .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
-            .disabled(!action.enabled)
-            .opacity(action.enabled ? 1 : 0.5)
-            .accessibilityHint(action.enabled ? "" : (note ?? ""))
+            button(for: action)
         } else if let onEquip {
             Button(L("Equip"), action: onEquip)
                 .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
@@ -311,6 +313,21 @@ struct ItemInfoCard: View {
                 .opacity(0.5)
                 .accessibilityHint(note ?? L("Nothing to use it for here."))
         }
+    }
+
+    /// An action's gold button, faded when it can't be done.
+    private func button(for action: Action) -> some View {
+        Button(action: action.run) {
+            if let icon = action.icon {
+                Label(action.title, icon: icon)
+            } else {
+                Text(action.title)
+            }
+        }
+        .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold))
+        .disabled(!action.enabled)
+        .opacity(action.enabled ? 1 : 0.5)
+        .accessibilityHint(action.enabled ? "" : (note ?? ""))
     }
 
     /// Where a quest treasure comes from: the quest, who gives it and where they live.
