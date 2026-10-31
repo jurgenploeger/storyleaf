@@ -17418,6 +17418,220 @@
     {"id": "item_lavender_dye", "kind": "item"},
     {"id": "item_midnight_dye", "kind": "item"},
     {"id": "npc_banker", "kind": "walk_sheet", "derive": {"from": "player_walk", "recolor": [{"hue": [85, 170], "minSaturation": 0.3, "to": 150, "saturation": 0.7, "value": 0.7}], "layers": [{"id": "body_human"}, {"id": "locks_human", "recolor": [{"hue": [340, 70], "minSaturation": 0.3, "minValue": 0.12, "to": 30, "saturation": 0.12, "value": 1.35}, {"hue": [85, 170], "minSaturation": 0.3, "to": 150, "saturation": 0.7, "value": 0.7}]}, {"id": "hair_crop_human", "recolor": [{"hue": [340, 70], "minSaturation": 0.3, "minValue": 0.12, "to": 30, "saturation": 0.12, "value": 1.35}, {"hue": [85, 170], "minSaturation": 0.3, "to": 150, "saturation": 0.7, "value": 0.7}]}]}},
-    {"id": "npc_barber", "kind": "walk_sheet", "derive": {"from": "player_walk", "recolor": [{"hue": [85, 170], "minSaturation": 0.3, "to": 178, "saturation": 0.75, "value": 0.92}], "layers": [{"id": "body_human"}, {"id": "locks_human", "recolor": [{"hue": [340, 70], "minSaturation": 0.3, "minValue": 0.12, "to": 24, "saturation": 0.62, "value": 0.62}, {"hue": [85, 170], "minSaturation": 0.3, "to": 178, "saturation": 0.75, "value": 0.92}]}, {"id": "hair_swept_human", "recolor": [{"hue": [340, 70], "minSaturation": 0.3, "minValue": 0.12, "to": 24, "saturation": 0.62, "value": 0.62}, {"hue": [85, 170], "minSaturation": 0.3, "to": 178, "saturation": 0.75, "value": 0.92}]}]}, "request": {"prompt": "cheerful town barber in a teal smock with a comb behind his ear and scissors in his apron pocket, neat swept brown hair, chibi", "prompt_style": "rd_animation__four_angle_walking", "width": 48, "height": 48, "return_spritesheet": true}}
+    {"id": "npc_barber", "kind": "walk_sheet", "derive": {"from": "player_walk", "recolor": [{"hue": [85, 170], "minSaturation": 0.3, "to": 178, "saturation": 0.75, "value": 0.92}], "layers": [{"id": "body_human"}, {"id": "locks_human", "recolor": [{"hue": [340, 70], "minSaturation": 0.3, "minValue": 0.12, "to": 24, "saturation": 0.62, "value": 0.62}, {"hue": [85, 170], "minSaturation": 0.3, "to": 178, "saturation": 0.75, "value": 0.92}]}, {"id": "hair_swept_human", "recolor": [{"hue": [340, 70], "minSaturation": 0.3, "minValue": 0.12, "to": 24, "saturation": 0.62, "value": 0.62}, {"hue": [85, 170], "minSaturation": 0.3, "to": 178, "saturation": 0.75, "value": 0.92}]}]}, "request": {"prompt": "cheerful town barber in a teal smock with a comb behind his ear and scissors in his apron pocket, neat swept brown hair, chibi", "prompt_style": "rd_animation__four_angle_walking", "width": 48, "height": 48, "return_spritesheet": true}},
+    {
+      "id": "monster_poison_skeleton_frost",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_poison_skeleton",
+        "recolor": [
+          {
+            "hue": [
+              80,
+              190
+            ],
+            "minSaturation": 0.2,
+            "to": 195,
+            "spread": 0.5,
+            "value": 1.1
+          },
+          {
+            "minSaturation": 0.0,
+            "maxSaturation": 0.2,
+            "minValue": 0.35,
+            "to": 200,
+            "saturation": 3.0,
+            "value": 1.05
+          }
+        ]
+      }
+    },
+    {
+      "id": "monster_poison_skeleton_ember",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_poison_skeleton",
+        "recolor": [
+          {
+            "hue": [
+              80,
+              190
+            ],
+            "minSaturation": 0.2,
+            "to": 16,
+            "spread": -0.5,
+            "saturation": 1.25,
+            "value": 1.05
+          },
+          {
+            "minSaturation": 0.0,
+            "maxSaturation": 0.2,
+            "minValue": 0.35,
+            "to": 30,
+            "saturation": 2.6,
+            "value": 1.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "monster_poison_skeleton_grave",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_poison_skeleton",
+        "recolor": [
+          {
+            "hue": [
+              80,
+              190
+            ],
+            "minSaturation": 0.2,
+            "to": 282,
+            "spread": 0.5,
+            "saturation": 1.1
+          },
+          {
+            "minSaturation": 0.0,
+            "maxSaturation": 0.2,
+            "to": 262,
+            "saturation": 1.6,
+            "value": 0.72,
+            "minValue": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "monster_treefrog_snow",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_treefrog",
+        "recolor": [
+          {
+            "hue": [
+              40,
+              170
+            ],
+            "minSaturation": 0.2,
+            "to": 205,
+            "spread": 0.3,
+            "saturation": 0.2,
+            "value": 1.35
+          }
+        ]
+      }
+    },
+    {
+      "id": "monster_treefrog_shadow",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_treefrog",
+        "recolor": [
+          {
+            "hue": [
+              40,
+              170
+            ],
+            "minSaturation": 0.2,
+            "to": 268,
+            "spread": 0.6,
+            "saturation": 0.8,
+            "value": 0.62
+          }
+        ]
+      }
+    },
+    {
+      "id": "monster_pegasus_midnight",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_pegasus",
+        "recolor": [
+          {
+            "hue": [
+              300,
+              60
+            ],
+            "minSaturation": 0.25,
+            "to": 222,
+            "spread": 0.54,
+            "saturation": 1.0,
+            "value": 0.95
+          },
+          {
+            "hue": [
+              0,
+              90
+            ],
+            "minSaturation": 0.03,
+            "maxSaturation": 0.25,
+            "to": 245,
+            "spread": 0.6,
+            "saturation": 3.0,
+            "value": 0.55
+          }
+        ]
+      }
+    },
+    {
+      "id": "monster_pineapple_frost",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_pineapple",
+        "recolor": [
+          {
+            "hue": [
+              10,
+              58
+            ],
+            "minSaturation": 0.3,
+            "to": 196,
+            "spread": 1.0,
+            "saturation": 0.7,
+            "value": 1.05
+          }
+        ]
+      }
+    },
+    {
+      "id": "monster_hedgehog_mossy",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_hedgehog",
+        "recolor": [
+          {
+            "hue": [
+              320,
+              55
+            ],
+            "minSaturation": 0.2,
+            "to": 100,
+            "spread": 0.66,
+            "saturation": 0.9,
+            "value": 0.95
+          }
+        ]
+      }
+    },
+    {
+      "id": "monster_bun_ember",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_bun",
+        "recolor": [
+          {
+            "hue": [
+              160,
+              230
+            ],
+            "minSaturation": 0.2,
+            "to": 22,
+            "spread": -0.86,
+            "saturation": 1.15,
+            "value": 1.05
+          }
+        ]
+      }
+    }
   ]
 }

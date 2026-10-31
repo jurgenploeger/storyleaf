@@ -2835,7 +2835,8 @@
           "pineapple": 1,
           "werewolf": 3,
           "dark_beetle": 2,
-          "night_monkey": 2
+          "night_monkey": 2,
+          "ember_bun": 1
         }
       },
       "ambience": {
@@ -3538,7 +3539,8 @@
           "shadow_wood_monkey": 1,
           "sunny_tree_snake": 1,
           "mint_flame_sheep": 1,
-          "violet_wood_hog": 1
+          "violet_wood_hog": 1,
+          "mossy_hedgehog": 1
         }
       },
       "ambience": {
@@ -5458,7 +5460,9 @@
           "rosy_pegasus": 1,
           "shadow_snowman": 1,
           "frosted_phantom": 1,
-          "frost_puff": 1
+          "frost_puff": 1,
+          "snow_treefrog": 1,
+          "frost_pineapple": 1
         }
       },
       "ambience": {
@@ -5945,7 +5949,8 @@
           "crimson_treefrog": 1,
           "starry_water_slug": 1,
           "blue_treefrog": 2,
-          "golden_treefrog": 1
+          "golden_treefrog": 1,
+          "shadow_treefrog": 1
         }
       },
       "ambience": {
@@ -9453,7 +9458,8 @@
           "snowman": 2,
           "sunny_poison_skeleton": 1,
           "mint_black_kong": 1,
-          "frosted_mud_eagle": 1
+          "frosted_mud_eagle": 1,
+          "frost_skeleton": 1
         }
       },
       "ambience": {
@@ -15312,7 +15318,8 @@
           "dream_phantom": 5,
           "phantom": 2,
           "poison_skeleton": 2,
-          "night_bun": 1
+          "night_bun": 1,
+          "grave_skeleton": 1
         }
       },
       "buildings": [
@@ -15909,7 +15916,8 @@
           "red_bull": 2,
           "black_bull": 2,
           "light_snake": 2,
-          "golden_cloud": 1
+          "golden_cloud": 1,
+          "ember_skeleton": 1
         }
       },
       "trails": [
@@ -19189,7 +19197,8 @@
           "pegasus": 2,
           "dawn_starmoth": 1,
           "dusk_comet_hare": 1,
-          "moonlamp_sprite": 1
+          "moonlamp_sprite": 1,
+          "midnight_pegasus": 1
         }
       },
       "decor": [

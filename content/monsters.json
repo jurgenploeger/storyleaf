@@ -4249,6 +4249,307 @@
         "ember"
       ],
       "motion": "breathe"
+    },
+    {
+      "id": "frost_skeleton",
+      "name": "Frost Skeleton",
+      "art": "monster_poison_skeleton_frost",
+      "element": "water",
+      "lore": "A Poison Skeleton that wandered too far north. Frost creeps through its bones, and its bite numbs.",
+      "base": {
+        "hp": 146,
+        "mp": 46,
+        "attack": 42,
+        "defense": 27,
+        "magic": 27,
+        "speed": 42
+      },
+      "growth": {
+        "hp": 13,
+        "mp": 4,
+        "attack": 4,
+        "defense": 2,
+        "magic": 2,
+        "speed": 2
+      },
+      "exp": 102,
+      "gold": 61,
+      "captureRate": 0.15,
+      "skills": [
+        "shadow_bite",
+        "frost_breath"
+      ],
+      "motion": "hop",
+      "rare": true,
+      "variantOf": "poison_skeleton"
+    },
+    {
+      "id": "ember_skeleton",
+      "name": "Ember Skeleton",
+      "art": "monster_poison_skeleton_ember",
+      "element": "fire",
+      "lore": "Bones baked by the desert sun until they smoulder. It leaves little scorch marks wherever it hops.",
+      "base": {
+        "hp": 146,
+        "mp": 46,
+        "attack": 42,
+        "defense": 27,
+        "magic": 27,
+        "speed": 42
+      },
+      "growth": {
+        "hp": 13,
+        "mp": 4,
+        "attack": 4,
+        "defense": 2,
+        "magic": 2,
+        "speed": 2
+      },
+      "exp": 102,
+      "gold": 61,
+      "captureRate": 0.15,
+      "skills": [
+        "shadow_bite",
+        "ember"
+      ],
+      "motion": "hop",
+      "rare": true,
+      "variantOf": "poison_skeleton"
+    },
+    {
+      "id": "grave_skeleton",
+      "name": "Grave Skeleton",
+      "art": "monster_poison_skeleton_grave",
+      "element": "dark",
+      "lore": "A Poison Skeleton from the oldest graves, its bones gone dark with age. Its curse lingers long after it's gone.",
+      "base": {
+        "hp": 146,
+        "mp": 46,
+        "attack": 42,
+        "defense": 27,
+        "magic": 27,
+        "speed": 42
+      },
+      "growth": {
+        "hp": 13,
+        "mp": 4,
+        "attack": 4,
+        "defense": 2,
+        "magic": 2,
+        "speed": 2
+      },
+      "exp": 102,
+      "gold": 61,
+      "captureRate": 0.15,
+      "skills": [
+        "shadow_bite",
+        "poison_mist",
+        "curse"
+      ],
+      "motion": "hop",
+      "rare": true,
+      "variantOf": "poison_skeleton"
+    },
+    {
+      "id": "snow_treefrog",
+      "name": "Snow Treefrog",
+      "art": "monster_treefrog_snow",
+      "element": "water",
+      "lore": "A Treefrog as white as fresh snow, headband and all. It trains in the cold to toughen up.",
+      "base": {
+        "hp": 60,
+        "mp": 23,
+        "attack": 23,
+        "defense": 12,
+        "magic": 12,
+        "speed": 30
+      },
+      "growth": {
+        "hp": 8,
+        "mp": 2,
+        "attack": 2,
+        "defense": 1,
+        "magic": 1,
+        "speed": 2
+      },
+      "exp": 38,
+      "gold": 22,
+      "captureRate": 0.24,
+      "skills": [
+        "bash",
+        "bubble",
+        "frost_breath"
+      ],
+      "motion": "hop",
+      "rare": true,
+      "variantOf": "treefrog"
+    },
+    {
+      "id": "shadow_treefrog",
+      "name": "Shadow Treefrog",
+      "art": "monster_treefrog_shadow",
+      "element": "dark",
+      "lore": "A Treefrog that only trains at night. You'll hear its battle croak long before you see it.",
+      "base": {
+        "hp": 60,
+        "mp": 23,
+        "attack": 23,
+        "defense": 12,
+        "magic": 12,
+        "speed": 30
+      },
+      "growth": {
+        "hp": 8,
+        "mp": 2,
+        "attack": 2,
+        "defense": 1,
+        "magic": 1,
+        "speed": 2
+      },
+      "exp": 38,
+      "gold": 22,
+      "captureRate": 0.24,
+      "skills": [
+        "bash",
+        "vine_whip",
+        "shadow_bite"
+      ],
+      "motion": "hop",
+      "rare": true,
+      "variantOf": "treefrog"
+    },
+    {
+      "id": "midnight_pegasus",
+      "name": "Midnight Pegasus",
+      "art": "monster_pegasus_midnight",
+      "element": "dark",
+      "lore": "A Pegasus with a coat like the night sky. It only flies when the stars are out.",
+      "base": {
+        "hp": 118,
+        "mp": 46,
+        "attack": 46,
+        "defense": 23,
+        "magic": 23,
+        "speed": 60
+      },
+      "growth": {
+        "hp": 12,
+        "mp": 4,
+        "attack": 4,
+        "defense": 2,
+        "magic": 2,
+        "speed": 4
+      },
+      "exp": 102,
+      "gold": 61,
+      "captureRate": 0.12,
+      "skills": [
+        "gust",
+        "shadow_bite",
+        "recovery"
+      ],
+      "motion": "hop",
+      "rare": true,
+      "variantOf": "pegasus"
+    },
+    {
+      "id": "frost_pineapple",
+      "name": "Frost Pineapple Sprout",
+      "art": "monster_pineapple_frost",
+      "element": "water",
+      "lore": "A Pineapple Sprout that napped in the snow and woke up frozen. Still sweet, just very cold.",
+      "base": {
+        "hp": 47,
+        "mp": 10,
+        "attack": 13,
+        "defense": 9,
+        "magic": 5,
+        "speed": 10
+      },
+      "growth": {
+        "hp": 8,
+        "mp": 1,
+        "attack": 2,
+        "defense": 2,
+        "magic": 1,
+        "speed": 1
+      },
+      "exp": 21,
+      "gold": 14,
+      "captureRate": 0.27,
+      "skills": [
+        "pine_needles",
+        "bubble"
+      ],
+      "motion": "sway",
+      "rare": true,
+      "variantOf": "pineapple"
+    },
+    {
+      "id": "mossy_hedgehog",
+      "name": "Mossy Hedgehog",
+      "art": "monster_hedgehog_mossy",
+      "element": "wood",
+      "lore": "A Hedgehog that sat still so long that moss grew on its spines. It doesn't seem to mind.",
+      "base": {
+        "hp": 77,
+        "mp": 14,
+        "attack": 16,
+        "defense": 18,
+        "magic": 6,
+        "speed": 10
+      },
+      "growth": {
+        "hp": 12,
+        "mp": 1,
+        "attack": 2,
+        "defense": 2,
+        "magic": 1,
+        "speed": 1
+      },
+      "exp": 24,
+      "gold": 14,
+      "captureRate": 0.27,
+      "skills": [
+        "mud_shot",
+        "vine_whip"
+      ],
+      "motion": "hop",
+      "rare": true,
+      "variantOf": "hedgehog"
+    },
+    {
+      "id": "ember_bun",
+      "name": "Ember Bun",
+      "art": "monster_bun_ember",
+      "element": "fire",
+      "lore": "A Bun that bounced too close to a campfire and never cooled down. Mind your fingers.",
+      "base": {
+        "hp": 65,
+        "mp": 13,
+        "attack": 17,
+        "defense": 12,
+        "magic": 8,
+        "speed": 16
+      },
+      "growth": {
+        "hp": 11,
+        "mp": 2,
+        "attack": 4,
+        "defense": 2,
+        "magic": 1,
+        "speed": 2
+      },
+      "exp": 35,
+      "gold": 22,
+      "captureRate": 0.18,
+      "skills": [
+        "bounce",
+        "ember"
+      ],
+      "motion": "bounce",
+      "rare": true,
+      "variantOf": "bun"
     }
   ]
 }
