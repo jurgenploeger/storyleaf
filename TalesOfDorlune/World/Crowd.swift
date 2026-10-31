@@ -162,13 +162,9 @@ final class Crowd {
         let count = Int((Double(def.crowd?.adventurers ?? 0) * density).rounded())
         let traders = market == nil ? 0 : Int((Double(def.crowd?.traders ?? 0) * density).rounded())
         pace = max(1, Double(count + traders) / 8)
-        // Towns welcome anyone; out in the wild, friends roam where the monsters suit them.
-        let nearLevel = (levels.lowerBound - 10)...(levels.upperBound + 10)
-        let visitors: [Adventurer] = count == 0 ? [] : Array(friends
-            .filter { town || nearLevel.contains($0.level) }
-            .filter { _ in Double.random(in: 0..<1) < Self.friendVisitChance }
-            .shuffled()
-            .prefix(min(2, count)))
+        // Your friends who are here now (`GameSession.friendsIn`: where the Friends list says they
+        // are), among its adventurers.
+        let visitors: [Adventurer] = Array(friends.shuffled().prefix(count))
         let groupChance = Self.groupChanceOverride ?? options.groupChance ?? 0
         let fewest = max(1, options.groupSize?.first ?? 2)
         let sizes = fewest...max(fewest, options.groupSize?.last ?? fewest)
@@ -226,8 +222,6 @@ final class Crowd {
         for local in locals { addLocal(local, on: def.id, world: world) }
     }
 
-    /// How likely each friend is to be on a map you enter.
-    static let friendVisitChance = 0.35
 
     /// Debug launches (`group`): how often adventurers travel together, in place of crowd.json's.
     static var groupChanceOverride: Double?

@@ -921,6 +921,19 @@ private struct CompanionsTab: View {
 private struct FriendsTab: View {
     let session: GameSession
 
+    /// Your party first (its guests, then your friends in it), then whoever's near enough to ask
+    /// along, then those online elsewhere, then those away; each in the order you met them.
+    private var listed: [Adventurer] {
+        func rank(_ friend: Adventurer) -> Int {
+            if session.isInParty(friend) { return 0 }
+            if session.adventurersAround.contains(friend.id) { return 1 }
+            return session.status(of: friend) == .offline ? 3 : 2
+        }
+        return (session.partyGuests + session.friends).enumerated()
+            .sorted { (rank($0.element), $0.offset) < (rank($1.element), $1.offset) }
+            .map { $0.element }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HowItWorks(L("Befriend adventurers you meet (walk up to one). Up to {count} friends can travel and fight with you, and they bring their companions. They fight on if you faint, and wait where you fell; a friend who faints wakes up at their own checkpoint. Walk up to them to set off together again.", ["count": GameSession.maxAllies])
@@ -930,7 +943,7 @@ private struct FriendsTab: View {
             if session.friends.isEmpty && session.partyGuests.isEmpty {
                 EmptyNote(L("No friends yet.\nSay hi to the adventurers you meet!"))
             }
-            ForEach(session.partyGuests + session.friends) { friend in
+            ForEach(listed) { friend in
                 FriendRow(session: session, friend: friend)
             }
         }
@@ -977,6 +990,8 @@ private struct FriendRow: View {
                     Text(L("Waiting for you at {map}", ["map": place]))
                         .font(HUDStyle.font(10))
                         .foregroundStyle(HUDStyle.orange)
+                } else if !inParty, friend.guest != true {
+                    presence
                 }
             }
             Spacer()
@@ -984,10 +999,8 @@ private struct FriendRow: View {
                 Button(L("Leave")) { session.leaveParty(friend.id) }
                     .buttonStyle(PixelButtonStyle(compact: true))
             } else if !session.adventurersAround.contains(friend.id) {
-                // Friends have to be here to join you.
-                Text(L("Not around"))
-                    .font(HUDStyle.font(10))
-                    .foregroundStyle(HUDStyle.dim)
+                // Friends have to be near you to join you: where they are says where to find them.
+                EmptyView()
             } else if !session.partyIsFull {
                 Button(L("Invite")) { session.askAlong(friend.id) }
                     .buttonStyle(PixelButtonStyle(tint: HUDStyle.gold, compact: true))
@@ -1000,6 +1013,31 @@ private struct FriendRow: View {
         .font(HUDStyle.font(12))
         .padding(8)
         .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.05)))
+    }
+
+    /// Whether they're online, and where: a green dot and the land they're in (here, if it's yours),
+    /// or a grey one, away (`GameSession.status(of:)`).
+    private var presence: some View {
+        let status = session.status(of: friend)
+        let online: Bool
+        let text: String
+        switch status {
+        case .offline:
+            online = false
+            text = L("Offline")
+        case let .online(mapID):
+            online = true
+            text = mapID == session.data.mapID ? L("Online here")
+                : L("Online in {map}", ["map": session.content.map(mapID)?.name ?? L("somewhere")])
+        }
+        return HStack(spacing: 4) {
+            Circle()
+                .fill(online ? HUDStyle.green : HUDStyle.dim)
+                .frame(width: 7, height: 7)
+            Text(text)
+                .font(HUDStyle.font(10))
+                .foregroundStyle(online ? HUDStyle.green : HUDStyle.dim)
+        }
     }
 }
 

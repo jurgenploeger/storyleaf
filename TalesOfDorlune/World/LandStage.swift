@@ -132,7 +132,9 @@ final class LandStage {
         let market = Crowd.Market(sign: { [weak session] in session?.marketSign(for: $0) },
                                   shout: { [weak session] in session?.marketShout(for: $0) },
                                   level: session.data.hero.level)
-        let crowd = Crowd(def: def, map: map, world: world, heroLevel: session.data.hero.level, market: market, locals: plan.locals)
+        // Your friends who are here now come along among its adventurers (`GameSession.friendsIn`).
+        let crowd = Crowd(def: def, map: map, world: world, heroLevel: session.data.hero.level, friends: session.friendsIn(def.id),
+                          market: market, locals: plan.locals)
         crowd.onChat = { [weak self, weak session] speaker, text, kind in
             guard self?.isHere == true else { return }
             session?.postChat(text, from: speaker, kind: kind)

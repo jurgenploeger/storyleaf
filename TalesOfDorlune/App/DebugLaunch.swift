@@ -36,6 +36,7 @@ import SpriteKit
 ///                  come by post, as for a save from before they gave them)
 ///   pet=<species>  a companion of that species (content/monsters.json), out with you
 ///   friends=n      that many friends (up to GameSession.maxAllies) travelling in your party
+///   pals=n         that many friends who aren't in your party (the Friends list: online, and where)
 ///   away=n         with friends: the first n of them wait for you a few steps east of where you start
 ///   unfold         the top-left HUD shows a big party in full instead of folded into one row
 ///   change=<slot>  open the Character tab's window of gear for weapon | armor | accessory (with menu=character)
@@ -629,6 +630,18 @@ enum DebugLaunch {
             }
             session.data.friends = (session.data.friends ?? []) + friends
             session.data.partyIDs = (session.data.partyIDs ?? []) + friends.map(\.id)
+        }
+        // `pals=n`: that many friends who aren't in your party, at a spread of levels round yours, for
+        // the Friends list (who's online, and where).
+        if let count = flags["pals"].flatMap({ Int($0) }) {
+            let names = ["Biscuit", "Hazel", "Noodle", "Poppy", "Pebble", "Juniper", "Toffee", "Willow", "Bramble", "Mochi"]
+            let classes = ["fighter", "mage", "tamer"], races = ["human", "elf", "dwarf"]
+            let pals = names.prefix(count).enumerated().map { index, name in
+                Adventurer(name: name, raceID: races[index % races.count], classID: classes[(index / 2) % classes.count],
+                           level: max(1, session.data.hero.level + (index % 5 - 2) * 15), look: .standard,
+                           petSpecies: index % 2 == 0 ? "jelly" : nil)
+            }
+            session.data.friends = (session.data.friends ?? []) + pals
         }
         if flags["unfold"] != nil {
             UserDefaults.standard.set(false, forKey: GameSettings.partyFoldedKey)
