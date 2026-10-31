@@ -785,8 +785,8 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
   ones, split by value (the Rosy and Emerald Pegasus); bodies kept light. For a black variant, keep the
   steps between bone and line, and give the eyes a rule of their own: the first Crimson Skeleton lost its
   ribs and its eyes in one dark blob, and the next, its bones a greyed red-brown, was "too dark and
-  becomes muddy": a cool slate over a clean near-black fixed it, the red kept to the aura, eyes and
-  magic. The rules are in the sprite-creation skill, route 1.
+  becomes muddy"; a cool slate over near-black had "a bit too much contrast"; a slate over a dark
+  slate, closer in value, was right, the red kept to the aura, eyes and magic. The rules are in the sprite-creation skill, route 1.
 
 - **2026-10-26 (joins):** A rule that judges each icon alone can't see a gap: a cord ending two pixels short
   of its bail is a fine cord and a fine pendant. Comparing with the design can (`detached`: pieces then and

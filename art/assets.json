@@ -17529,8 +17529,8 @@
             "minSaturation": 0.2,
             "to": 2,
             "spread": 0.2,
-            "saturation": 1.6,
-            "value": 1.15
+            "saturation": 1.45,
+            "value": 1.05
           },
           {
             "hue": [
@@ -17539,8 +17539,8 @@
             ],
             "minSaturation": 0.15,
             "to": 235,
-            "saturation": 0.8,
-            "value": 0.24
+            "saturation": 0.6,
+            "value": 0.34
           },
           {
             "minSaturation": 0.0,
@@ -17548,7 +17548,7 @@
             "minValue": 0.35,
             "to": 225,
             "saturation": 1.2,
-            "value": 0.66
+            "value": 0.58
           }
         ]
       }

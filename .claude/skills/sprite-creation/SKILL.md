@@ -62,9 +62,10 @@ user wants otherwise.
   - **A dark variant (black with red) keeps its value steps.** Darken the light family by about half
     and the shading under it to nearly black, so the inner lines (ribs, joints) still part from the
     body. Darkening both by the same amount lost the skeleton's ribs in one dark blob. Make the
-    "black" a cool slate (hue about 225, value about 0.65) over a clean near-black, not a warm,
-    greyed red: a dull maroon-brown reads as mud ("too dark and becomes muddy"). Keep the accent
-    colour (the red) to the aura, eyes and magic.
+    "black" a cool slate (hue about 225, bone value ×0.58) over a dark slate (value ×0.34,
+    saturation ×0.6), not a warm, greyed red: a dull maroon-brown reads as mud ("too dark and
+    becomes muddy"). Not too far apart either: slate bone at ×0.66 over near-black at ×0.24 had
+    "a bit too much contrast". Keep the accent colour (the red) to the aura, eyes and magic.
   - **The eyes stay visible.** Dark irises read against a light body and vanish against a dark one:
     give them a rule of their own (the Crimson Skeleton's dark-red irises, hue 325 to 15, at value ×2.4
     glow red). Look at the eyes at 4× on every candidate.
