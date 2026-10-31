@@ -17538,17 +17538,17 @@
               320
             ],
             "minSaturation": 0.15,
-            "to": 352,
-            "saturation": 1.3,
-            "value": 0.25
+            "to": 235,
+            "saturation": 0.8,
+            "value": 0.24
           },
           {
             "minSaturation": 0.0,
             "maxSaturation": 0.2,
             "minValue": 0.35,
-            "to": 350,
-            "saturation": 0.8,
-            "value": 0.6
+            "to": 225,
+            "saturation": 1.2,
+            "value": 0.66
           }
         ]
       }
