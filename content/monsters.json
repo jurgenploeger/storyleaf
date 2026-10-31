@@ -4321,7 +4321,7 @@
       "name": "Grave Skeleton",
       "art": "monster_poison_skeleton_grave",
       "element": "dark",
-      "lore": "A Poison Skeleton from the oldest graves, its bones gone dark with age. Its curse lingers long after it's gone.",
+      "lore": "A Poison Skeleton from the oldest graves, its bones tinged violet by an old curse. The curse lingers long after it's gone.",
       "base": {
         "hp": 146,
         "mp": 46,
@@ -4423,7 +4423,7 @@
       "name": "Midnight Pegasus",
       "art": "monster_pegasus_midnight",
       "element": "dark",
-      "lore": "A Pegasus with a coat like the night sky. It only flies when the stars are out.",
+      "lore": "A Pegasus with a mane like the night sky. It only flies when the stars are out.",
       "base": {
         "hp": 118,
         "mp": 46,

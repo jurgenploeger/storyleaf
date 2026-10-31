@@ -17433,16 +17433,17 @@
               190
             ],
             "minSaturation": 0.2,
-            "to": 195,
-            "spread": 0.5,
-            "value": 1.1
+            "to": 215,
+            "spread": 0.4,
+            "saturation": 1.1,
+            "value": 0.8
           },
           {
             "minSaturation": 0.0,
             "maxSaturation": 0.2,
             "minValue": 0.35,
-            "to": 200,
-            "saturation": 3.0,
+            "to": 205,
+            "saturation": 2.2,
             "value": 1.05
           }
         ]
@@ -17460,18 +17461,18 @@
               190
             ],
             "minSaturation": 0.2,
-            "to": 16,
-            "spread": -0.5,
-            "saturation": 1.25,
-            "value": 1.05
+            "to": 12,
+            "spread": 0.4,
+            "saturation": 1.1,
+            "value": 0.85
           },
           {
             "minSaturation": 0.0,
             "maxSaturation": 0.2,
             "minValue": 0.35,
-            "to": 30,
-            "saturation": 2.6,
-            "value": 1.0
+            "to": 25,
+            "saturation": 2.2,
+            "value": 1.05
           }
         ]
       }
@@ -17488,17 +17489,18 @@
               190
             ],
             "minSaturation": 0.2,
-            "to": 282,
-            "spread": 0.5,
-            "saturation": 1.1
+            "to": 278,
+            "spread": 0.4,
+            "saturation": 1.1,
+            "value": 0.7
           },
           {
             "minSaturation": 0.0,
             "maxSaturation": 0.2,
-            "to": 262,
-            "saturation": 1.6,
-            "value": 0.72,
-            "minValue": 0.0
+            "minValue": 0.35,
+            "to": 272,
+            "saturation": 2.2,
+            "value": 1.05
           }
         ]
       }
@@ -17515,10 +17517,22 @@
               170
             ],
             "minSaturation": 0.2,
+            "minValue": 0.42,
             "to": 205,
             "spread": 0.3,
-            "saturation": 0.2,
+            "saturation": 0.25,
             "value": 1.35
+          },
+          {
+            "hue": [
+              40,
+              170
+            ],
+            "minSaturation": 0.2,
+            "to": 214,
+            "spread": 0.3,
+            "saturation": 0.85,
+            "value": 0.8
           }
         ]
       }
@@ -17535,10 +17549,22 @@
               170
             ],
             "minSaturation": 0.2,
-            "to": 268,
-            "spread": 0.6,
-            "saturation": 0.8,
-            "value": 0.62
+            "minValue": 0.42,
+            "to": 266,
+            "spread": 0.3,
+            "saturation": 0.45,
+            "value": 1.25
+          },
+          {
+            "hue": [
+              40,
+              170
+            ],
+            "minSaturation": 0.2,
+            "to": 270,
+            "spread": 0.3,
+            "saturation": 0.95,
+            "value": 0.6
           }
         ]
       }
@@ -17587,10 +17613,22 @@
               58
             ],
             "minSaturation": 0.3,
-            "to": 196,
-            "spread": 1.0,
-            "saturation": 0.7,
-            "value": 1.05
+            "minValue": 0.6,
+            "to": 198,
+            "spread": 0.3,
+            "saturation": 0.35,
+            "value": 1.1
+          },
+          {
+            "hue": [
+              10,
+              58
+            ],
+            "minSaturation": 0.3,
+            "to": 212,
+            "spread": 0.3,
+            "saturation": 0.9,
+            "value": 0.8
           }
         ]
       }
@@ -17607,10 +17645,22 @@
               55
             ],
             "minSaturation": 0.2,
+            "minValue": 0.6,
             "to": 100,
-            "spread": 0.66,
-            "saturation": 0.9,
-            "value": 0.95
+            "spread": 0.3,
+            "saturation": 0.35,
+            "value": 1.1
+          },
+          {
+            "hue": [
+              320,
+              55
+            ],
+            "minSaturation": 0.2,
+            "to": 118,
+            "spread": 0.3,
+            "saturation": 0.85,
+            "value": 0.72
           }
         ]
       }
@@ -17627,10 +17677,22 @@
               230
             ],
             "minSaturation": 0.2,
-            "to": 22,
-            "spread": -0.86,
-            "saturation": 1.15,
-            "value": 1.05
+            "minValue": 0.6,
+            "to": 20,
+            "spread": 0.3,
+            "saturation": 1.05,
+            "value": 1.07
+          },
+          {
+            "hue": [
+              160,
+              230
+            ],
+            "minSaturation": 0.2,
+            "to": 10,
+            "spread": 0.3,
+            "saturation": 1.2,
+            "value": 0.8
           }
         ]
       }
