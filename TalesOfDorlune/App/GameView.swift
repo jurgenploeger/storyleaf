@@ -8,6 +8,19 @@ struct GameView: View {
     @Environment(\.scenePhase) private var scenePhase
     /// Switching language (Settings) redraws the HUD in it; the menu redraws itself.
     @State private var localizer = Localizer.shared
+    /// A loading screen is up: while a land loads, then while the clouds rise over it and part onto
+    /// the game (`curtain`), as they do when the game opens (`land`).
+    @State private var curtainUp = true
+    @State private var curtain = Curtain.waiting
+    /// The land being travelled to, kept for the card while the clouds clear (the coordinator lets
+    /// go of it once the land's ready).
+    @State private var curtainName: String?
+    /// The first load is the opening's: RootView's clouds come down onto the game then.
+    @State private var loadedOnce = false
+    /// Which clouds are on their way, so one cut short by another load lets that one be.
+    @State private var landingID = 0
+
+    private enum Curtain { case waiting, landing, clearing }
 
     var body: some View {
         ZStack {
@@ -87,15 +100,43 @@ struct GameView: View {
             }
         }
         .overlay {
-            if !coordinator.isReady {
-                if let name = coordinator.loadingMapName {
-                    MapLoadingCard(mapName: name, progress: coordinator.loadProgress).transition(.opacity)
-                } else {
-                    LoadingCurtain(progress: coordinator.loadProgress).transition(.opacity)
+            if curtainUp {
+                Group {
+                    if let name = coordinator.loadingMapName ?? curtainName {
+                        MapLoadingCard(mapName: name, progress: coordinator.loadProgress,
+                                       landing: curtain != .waiting, clearing: curtain == .clearing)
+                    } else {
+                        LoadingCurtain(progress: coordinator.loadProgress, landing: curtain != .waiting, clearing: curtain == .clearing)
+                    }
                 }
+                .transition(.opacity)
             }
         }
-        .animation(.easeOut(duration: 0.4), value: coordinator.isReady)
+        .animation(.easeOut(duration: 0.4), value: curtainUp)
+        .onAppear {
+            if coordinator.isReady {
+                curtainUp = false
+                loadedOnce = true
+            }
+        }
+        .onChange(of: coordinator.loadingMapName) { _, name in
+            if let name { curtainName = name }
+        }
+        .onChange(of: coordinator.isReady) { _, ready in
+            guard ready else {
+                // Another load: its card, and any clouds still on their way let be.
+                landingID += 1
+                curtain = .waiting
+                curtainUp = true
+                return
+            }
+            if loadedOnce {
+                land()
+            } else {
+                loadedOnce = true
+                curtainUp = false
+            }
+        }
         // The fight waits while the app isn't in front (another app, the lock screen, a call, Control Centre).
         .onChange(of: scenePhase == .active) { _, active in
             coordinator.battle?.holdTurnClock(!active, for: "away")
@@ -108,5 +149,28 @@ struct GameView: View {
         // A swipe up from the bottom edge (the joystick and the buttons sit close to it on a phone on
         // its side) moves the joystick first; a second one goes home.
         .defersSystemGestures(on: .bottom)
+    }
+
+    /// The land's ready under the loading card: the clouds rush up over it, then rise on past and
+    /// thin out, the game coming through (`RootView.land`, as the game opens).
+    private func land() {
+        landingID += 1
+        let id = landingID
+        curtain = .landing
+        SoundEffects.shared.play(.whoosh, volume: 0.6)
+        Task {
+            try? await Task.sleep(for: .seconds(LoadingCurtain.landingTime))
+            guard id == landingID else { return }
+            curtain = .clearing
+            try? await Task.sleep(for: .seconds(LoadingCurtain.clearingTime))
+            guard id == landingID else { return }
+            var quiet = Transaction()
+            quiet.disablesAnimations = true
+            withTransaction(quiet) {
+                curtainUp = false
+                curtain = .waiting
+            }
+            curtainName = nil
+        }
     }
 }
