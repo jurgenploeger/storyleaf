@@ -44,10 +44,8 @@ final class LandStage {
     /// The walls along its borders that come down once you can cross (`placeBorders`): the border,
     /// and what's taken away (a gate's bar, or the whole fence).
     private var gates: [(neighbour: Continent.Neighbour, bar: [SKNode])] = []
-    /// Its scenery tall enough to hide someone, faded while anyone's behind it (`seeThrough`).
+    /// Its scenery tall enough to hide someone: nobody's set down behind it (`SeeThrough`).
     private let see = SeeThrough()
-    /// What of it the screen showed at the last frame (`update`), in its own points.
-    private var visible: CGRect = .null
     private static let chunkSize: CGFloat = 400
     /// How far past the screen's edges a chunk is kept (`WorldScene.chunkMargin`).
     private static let chunkMargin: CGFloat = 360
@@ -139,7 +137,9 @@ final class LandStage {
                                   level: session.data.hero.level)
         // Your friends who are here now come along among its adventurers (`GameSession.friendsIn`).
         let crowd = Crowd(def: def, map: map, world: world, heroLevel: session.data.hero.level, friends: session.friendsIn(def.id),
-                          market: market, locals: plan.locals)
+                          market: market, locals: plan.locals, hides: { [see, map] in see.hides($0, on: map) })
+        // Its locals stand where the plan put them: off to a spot nothing hides, if something does.
+        crowd.moveOutOfHiding()
         crowd.onChat = { [weak self, weak session] speaker, text, kind in
             guard self?.isHere == true else { return }
             session?.postChat(text, from: speaker, kind: kind)
@@ -158,7 +158,6 @@ final class LandStage {
         let visible = CGRect(x: eye.x - screen.width / 2 * scale, y: eye.y - screen.height / 2 * scale,
                              width: screen.width * scale, height: screen.height * scale)
         critters?.update(dt: dt, player: you, visible: visible, flocks: isHere) { [map] in map.isWalkable(map.rawCell(at: $0)) }
-        self.visible = visible
         show(around: camera, scale: scale, screen: screen)
     }
 
@@ -232,16 +231,6 @@ final class LandStage {
     }
 
     // MARK: Seeing through
-
-    /// Fades whatever stands in front of anyone on screen behind it (a house, a tree, a city's
-    /// wall) while they're there, and brings it back once they've gone (`SeeThrough`): `others`
-    /// (you, your companion, your party, in the continent's points), its own people and passers-by.
-    func seeThrough(_ others: [Walker]) {
-        guard !visible.isNull else { return }
-        let own = npcs.map { $0.node } + (crowd?.walkers ?? [])
-        let groups: [(walkers: [Walker], offset: CGVector)] = [(others, CGVector(dx: -shift.dx, dy: -shift.dy)), (own, .zero)]
-        see.fade(over: groups, visible: visible)
-    }
 
     /// Moves anyone it set down where a building or tall scenery in front of them hides them (put by
     /// hand behind a shop, or a tree planted before them) to the nearest cell nothing hides

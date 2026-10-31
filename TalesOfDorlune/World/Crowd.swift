@@ -127,6 +127,8 @@ final class Crowd {
     private let largestGroup: Int
     private let replies = Content.shared.crowd.replies
     private var rng = SystemRandomNumberGenerator()
+    /// Whether someone standing on a cell would be hidden behind the scenery (`init`).
+    private let hides: ((GridPoint) -> Bool)?
     private let market: Market?
     /// How much longer everyone waits between chats on a busy map, so the chat stays readable.
     private var pace: TimeInterval = 1
@@ -138,10 +140,13 @@ final class Crowd {
     /// `heroLevel`: yours, which a town's adventurers are about. `market`: what the town's traders
     /// (`crowd.traders`) have, if it has any. `locals`: the map's own people, where the scene set them.
     /// `mingle`: how long anyone keeps to how they travel, in seconds (tests; crowd.json `groupMinutes`).
+    /// `hides`: whether someone standing on a cell would be hidden behind the scenery (`SeeThrough`):
+    /// nobody's set down or strolls to such a spot when there's another (playtesting 2026-10-31).
     init(def: MapDef, map: WorldMap, world: SKNode, heroLevel: Int = 1, friends: [Adventurer] = [], market: Market? = nil,
-         locals: [Local] = [], mingle: ClosedRange<TimeInterval>? = nil) {
+         locals: [Local] = [], hides: ((GridPoint) -> Bool)? = nil, mingle: ClosedRange<TimeInterval>? = nil) {
         self.map = map
         self.market = market
+        self.hides = hides
         let options = Content.shared.crowd
         let minutes = options.groupMinutes ?? [3, 10]
         let shortest = (minutes.first ?? 3) * 60
@@ -178,8 +183,7 @@ final class Crowd {
             // (playtesting 2026-10-20: the land round a city stood empty).
             let outside = town && slot % 2 == 1
             let reach = outside ? 14 : roam
-            guard let home = map.strollTarget(near: map.center, radius: outside ? max(map.columns, map.rows) / 2 : spread,
-                                              using: &rng) else { continue }
+            guard let home = spot(near: map.center, radius: outside ? max(map.columns, map.rows) / 2 : spread) else { continue }
             let profile = slot < visitors.count
                 ? visitors[slot]
                 : Self.profile(named: adventurerNames.popLast() ?? L("Traveller"), levels: levels, danger: def.danger == true, climate: def.climate)
@@ -212,7 +216,7 @@ final class Crowd {
             .filter { healer != nil || !$0.contains("{healer}") }
             .map { $0.replacingOccurrences(of: "{town}", with: def.name).replacingOccurrences(of: "{healer}", with: healer ?? "") }
         for _ in 0..<(def.crowd?.villagers ?? 0) {
-            guard let home = map.strollTarget(near: map.center, radius: spread, using: &rng) else { continue }
+            guard let home = spot(near: map.center, radius: spread) else { continue }
             let name = villagerNames.popLast() ?? L("Villager")
             let race = Content.shared.races.randomElement()?.id ?? "human"
             let walker = Self.person(name, art: GameSession.registerPerson(race: race, look: Self.randomLook(race: race)), color: .white)
@@ -677,7 +681,7 @@ final class Crowd {
             // Leading you about: on somewhere further afield each time, from wherever they've got to.
             member.home = map.cell(at: member.walker.position)
             member.wait = .random(in: 1...3, using: &rng)
-            guard let target = map.strollTarget(near: member.home, radius: member.roam * 2, using: &rng) else { return }
+            guard let target = spot(near: member.home, radius: member.roam * 2) else { return }
             let path = map.path(from: member.walker.position, to: map.center(of: target))
             if path.count <= member.roam * 6 { member.walker.path = path }
             return
@@ -706,10 +710,38 @@ final class Crowd {
             return
         }
         member.wait = .random(in: 2...7, using: &rng)
-        guard let target = map.strollTarget(near: member.home, radius: member.roam, using: &rng) else { return }
+        guard let target = spot(near: member.home, radius: member.roam) else { return }
         let path = map.path(from: member.walker.position, to: map.center(of: target))
         // Skip long detours around ponds and fences; they'll pick somewhere else next time.
         if path.count <= member.roam * 3 { member.walker.path = path }
+    }
+
+    /// Somewhere to stand or stroll to near `cell` (`WorldMap.strollTarget`), not behind the scenery
+    /// (`hides`) if a few tries find such a spot.
+    private func spot(near cell: GridPoint, radius: Int) -> GridPoint? {
+        var first: GridPoint?
+        for _ in 0..<6 {
+            guard let candidate = map.strollTarget(near: cell, radius: radius, using: &rng) else { break }
+            if hides?(candidate) != true { return candidate }
+            if first == nil { first = candidate }
+        }
+        return first
+    }
+
+    /// Anyone standing where the scenery hides them (set down before the trees were, or a local where
+    /// the plan put them) moves to a spot near their home that nothing hides, and makes it their home.
+    func moveOutOfHiding() {
+        guard let hides else { return }
+        for member in members where hides(map.cell(at: member.walker.position)) {
+            guard let clear = spot(near: map.cell(at: member.walker.position), radius: Swift.max(3, member.roam)),
+                  !hides(clear) else { continue }
+            member.home = clear
+            member.walker.path = []
+            member.walker.position = map.center(of: clear)
+            member.walker.zPosition = -member.walker.position.y
+            member.pet?.position = member.walker.position
+            member.pet?.zPosition = -member.walker.position.y
+        }
     }
 
     // MARK: - Meeting people

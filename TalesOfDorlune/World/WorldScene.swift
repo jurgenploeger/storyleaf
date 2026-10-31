@@ -52,10 +52,8 @@ final class WorldScene: SKScene {
     private var stepsSinceBattle = 0
     private var lastUpdate: TimeInterval = 0
     private var noticeTimer: TimeInterval = 0
-    /// Its scenery tall enough to hide someone, faded while anyone's behind it (`SeeThrough`), and
-    /// when it last looked.
+    /// Its scenery tall enough to hide someone: nobody's set down behind it (`SeeThrough`).
     private let see = SeeThrough()
-    private var lookedThrough: TimeInterval = 0
     private var hasLeft = false
     private var ambience: Ambience?
     /// Bunnies, frogs and crabs about the map, and birds crossing the sky.
@@ -270,7 +268,7 @@ final class WorldScene: SKScene {
                                   level: session.data.hero.level)
         crowd = Crowd(def: def, map: map, world: world, heroLevel: session.data.hero.level,
                       friends: session.friendsIn(def.id), market: market,
-                      locals: planner.plan.locals)
+                      locals: planner.plan.locals, hides: { [see, map] in see.hides($0, on: map) })
         crowd?.onChat = { [weak session] speaker, text, kind in
             session?.postChat(text, from: speaker, kind: kind)
         }
@@ -301,6 +299,8 @@ final class WorldScene: SKScene {
         placeSignposts(planner.plan.signposts)
         placeBorders()
         bringIntoView()
+        // Its passers-by came before its trees: off to a spot nothing hides, if one now does.
+        crowd?.moveOutOfHiding()
         // Everyone set down before they were on the map stands up on the ground under them.
         for case let walker as Walker in world.children { walker.settle() }
         await reached(0.9, progress)
@@ -2391,20 +2391,6 @@ final class WorldScene: SKScene {
         let visible = CGRect(x: cam.position.x - size.width / 2, y: cam.position.y - size.height / 2, width: size.width, height: size.height)
         // The animals keep to their own land.
         critters?.update(dt: dt, player: player.position, visible: visible) { self.map.isWalkable(self.map.rawCell(at: $0)) }
-        // Nobody on screen hides behind a house or a tree: what stands in front of them fades.
-        if currentTime - lookedThrough > 0.12 {
-            lookedThrough = currentTime
-            var walkers: [Walker] = [player]
-            if let follower { walkers.append(follower) }
-            for ally in allies {
-                walkers.append(ally.node)
-                if let pet = ally.pet { walkers.append(pet) }
-            }
-            walkers += npcs.map { $0.node } + (crowd?.walkers ?? [])
-            let seen = CGRect(x: cam.position.x - size.width / 2 * cam.xScale, y: cam.position.y - size.height / 2 * cam.xScale,
-                              width: size.width * cam.xScale, height: size.height * cam.xScale)
-            see.fade(over: [(walkers: walkers, offset: .zero)], visible: seen)
-        }
         noticeTimer -= dt
         if noticeTimer <= 0 {
             noticeTimer = 0.4

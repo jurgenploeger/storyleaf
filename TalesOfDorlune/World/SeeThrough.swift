@@ -1,21 +1,22 @@
 import SpriteKit
 
-/// Nobody on screen is ever hidden behind the scenery (playtesting 2026-10-31): the scenery tall
-/// enough to hide someone (houses, trees, big rocks, a city's walls), noted as it's set down, and
-/// faded while anyone stands behind it; and a spot nothing hides for those who stand still
-/// (`clearSpot`). Kept by each land on the continent (`LandStage`) and by a cave or a land's own
-/// scene (`WorldScene`), in their own points. A cave's rock (`CaveWalls`) isn't noted: it stays solid.
+/// Nobody is set down behind the scenery (playtesting 2026-10-31): the scenery tall enough to hide
+/// someone (houses, trees, big rocks, a city's walls), noted as it's set down, so the people who stand
+/// about get a spot nothing hides (`clearSpot`) and passers-by stroll to such spots (`hides`, `Crowd`).
+/// Nothing fades: the user, after it did, "The buildings/scenery shouldn't fade out when something is
+/// behind it, I just meant that any characters in the game shouldn't be hidden by it, so their
+/// placement should be different". You can still walk behind a house yourself. Kept by each land on the
+/// continent (`LandStage`) and by a cave or a land's own scene (`WorldScene`), in their own points. A
+/// cave's rock (`CaveWalls`) isn't noted.
 final class SeeThrough {
     /// The tall scenery, in every piece of the screen its picture reaches into.
     private var talls: [GridPoint: [SKSpriteNode]] = [:]
-    /// What's faded now (`fade`).
-    private var faded: Set<SKSpriteNode> = []
     /// How big a piece of the screen `talls` is kept in.
     private static let piece: CGFloat = 400
     /// How tall a picture has to be to hide anyone: about a walker's height.
     private static let tallEnough: CGFloat = 40
-    /// How faded scenery stands while someone's behind it.
-    private static let fadedAlpha: CGFloat = 0.45
+    /// A walker's frame (48 points a side), for a spot someone will stand on.
+    private static let walker = CGSize(width: 48, height: 48)
 
     /// Notes a piece of scenery (its frame in the same points as whoever walks by it), if it's tall
     /// enough to hide someone.
@@ -54,24 +55,10 @@ final class SeeThrough {
         return found
     }
 
-    /// Fades what stands in front of each walker on screen (`visible`), and brings back what no
-    /// one's behind any more. Each group's `offset` brings its walkers' positions into these points.
-    func fade(over groups: [(walkers: [Walker], offset: CGVector)], visible: CGRect) {
-        var now = Set<SKSpriteNode>()
-        for group in groups {
-            for walker in group.walkers where !walker.isHidden && walker.parent != nil {
-                let feet = CGPoint(x: walker.position.x + group.offset.dx, y: walker.position.y + group.offset.dy)
-                guard Self.body(at: feet, size: walker.sprite.size, lift: walker.lift).intersects(visible) else { continue }
-                now.formUnion(covering(feet: feet, size: walker.sprite.size, lift: walker.lift))
-            }
-        }
-        for node in now.subtracting(faded) {
-            node.run(.fadeAlpha(to: Self.fadedAlpha, duration: 0.2), withKey: "seeThrough")
-        }
-        for node in faded.subtracting(now) {
-            node.run(.fadeAlpha(to: 1, duration: 0.3), withKey: "seeThrough")
-        }
-        faded = now
+    /// Whether someone standing on `cell` of `map` would be hidden by something in front of them.
+    func hides(_ cell: GridPoint, on map: WorldMap) -> Bool {
+        let feet = map.center(of: cell)
+        return !covering(feet: feet, size: Self.walker, lift: map.height(at: feet)).isEmpty
     }
 
     /// The nearest cell to `home`, within four, where someone `size` big stands with nothing in
