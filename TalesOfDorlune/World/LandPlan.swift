@@ -434,6 +434,13 @@ final class LandPlanner {
         planRoadsides()
         return plan.roadsides
     }
+
+    /// The middles of its fairy rings, planned as the land plans them (debug `ring=`).
+    func planFairyRingsForDebug() -> [GridPoint] {
+        _ = planRoadsidesForDebug()
+        planFairyRings()
+        return plan.fairyRings
+    }
     #endif
 
     /// How many cells a lined stretch of road runs, fewest to most.

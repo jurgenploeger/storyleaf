@@ -11,6 +11,7 @@ import SpriteKit
 ///   gold=1457603   start with this much gold
 ///   map=<id>       start on a map from content/maps.json
 ///   at=x_y         start at this offset from the map's centre (e.g. at=0_14)
+///   ring=0         beside the land's first fairy ring (debug builds)
 ///   hill=n         start at the foot of the first trail up the map's nth range of hills (0 first);
 ///                  `hill=tallest` the range with the highest top, up its highest trail; `trail=k`
 ///                  its kth trail instead; with `ontop`, where the trail comes out on the top;
@@ -703,6 +704,16 @@ enum DebugLaunch {
                 let road = [Edge.north, .east, .south, .west].map { middle.stepped($0, by: 2) }
                     .first(where: { grid.contains($0) && grid.ground[$0.row][$0.col] == .path }) ?? middle
                 session.playerPosition = grid.center(of: road)
+            }
+        }
+        // `ring=0`: a couple of cells south of the land's first fairy ring (`LandPlanner.planFairyRings`).
+        if let pick = flags["ring"].flatMap({ Int($0) }), let def = Content.shared.map(session.data.mapID) {
+            let grid = WorldMap(def: def)
+            let rings = LandPlanner(def: def, map: grid, art: ArtLibrary.shared).planFairyRingsForDebug()
+            if rings.indices.contains(pick) {
+                let middle = rings[pick]
+                let spot = GridPoint(col: middle.col - 2, row: middle.row - 2)
+                session.playerPosition = grid.center(of: grid.nearestWalkable(to: spot) ?? spot)
             }
         }
         #endif
