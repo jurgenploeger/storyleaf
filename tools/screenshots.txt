@@ -89,6 +89,9 @@ continent_lake | newgame,map=goldburg_lake,weather=clear,hour=12 | 8
 continent_rocky_night | newgame,map=crystal_mountain,at=9_1,weather=clear,hour=23 | 8
 # Each companion a level-160 adventurer walks in the snowy north, at dusk in Snow White Forest (playtesting
 # 2026-10-21: a see-through blue block went about with a party there, a companion's size).
+# The companion's face in its badge, centred on its head (0.9.23): a Poison Skeleton's spark beside its
+# skull pulled the crop off it.
+pet_badge_skeleton | newgame,level=40,map=sunny_meadow,pet=poison_skeleton,weather=clear,hour=12 | 6
 pet_dusk_frost_bear | newgame,level=163,map=snow_white_forest,pet=frost_bear,weather=clear,hour=18 | 6
 pet_dusk_snowman | newgame,level=163,map=snow_white_forest,pet=snowman,weather=clear,hour=18 | 6
 pet_dusk_shadow_snowman | newgame,level=163,map=snow_white_forest,pet=shadow_snowman,weather=clear,hour=18 | 6
