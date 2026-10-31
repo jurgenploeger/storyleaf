@@ -41,7 +41,7 @@ nonisolated extension DyeDef {
     /// (`outfit`, the tunic's green). Outlines and the darkest shadows (`minValue`) keep their colour.
     /// tools/dye_art.py `cut` measures them and reads this table back: run its `check` after a change.
     static let mains: [String: DyeMaterial] = [
-        "iron_plate": DyeMaterial(hue: [140, 260], minSaturation: 0.05, minValue: 0.2, saturation: 0.28, value: 0.45, light: 0.93),
+        "iron_plate": DyeMaterial(hue: [140, 260], minSaturation: 0.05, minValue: 0.2, saturation: 0.26, value: 0.45, light: 1.0),
         "chain_mail": DyeMaterial(hue: [150, 260], minSaturation: 0.03, minValue: 0.2, saturation: 0.19, value: 0.4, light: 0.88),
         "dragon_mail": DyeMaterial(hue: [335, 25], minSaturation: 0.55, minValue: 0.2, saturation: 0.85, value: 0.85, light: 0.99),
         "mage_robe": DyeMaterial(hue: [190, 260], minSaturation: 0.2, minValue: 0.2, saturation: 0.8, value: 0.5, light: 0.98),
@@ -49,13 +49,13 @@ nonisolated extension DyeDef {
         "snow_cloak": DyeMaterial(hue: [180, 250], minSaturation: 0.1, minValue: 0.2, saturation: 0.53, value: 0.75, light: 0.97),
         "hide_hood": DyeMaterial(hue: [180, 260], minSaturation: 0.2, minValue: 0.2, saturation: 0.6, value: 0.55, light: 1.0),
         "outfit": DyeMaterial(hue: [85, 170], minSaturation: 0.3, minValue: 0.2, saturation: 0.78, value: 0.33, light: 0.82),
-        "armor_iron_plate_human": DyeMaterial(hue: [140, 260], minSaturation: 0.05, minValue: 0.2, saturation: 0.28, value: 0.39, light: 0.91),
-        "hat_iron_plate_human": DyeMaterial(hue: [140, 260], minSaturation: 0.05, minValue: 0.2, saturation: 0.28, value: 0.45, light: 0.91),
-        "armor_iron_plate_elf": DyeMaterial(hue: [140, 260], minSaturation: 0.05, minValue: 0.2, saturation: 0.36, value: 0.38, light: 0.93),
-        "hat_iron_plate_elf": DyeMaterial(hue: [140, 260], minSaturation: 0.05, minValue: 0.2, saturation: 0.21, value: 0.64, light: 0.93),
-        "armor_iron_plate_dwarf": DyeMaterial(hue: [140, 260], minSaturation: 0.05, minValue: 0.2, saturation: 0.28, value: 0.45, light: 0.9),
-        "hat_iron_plate_dwarf": DyeMaterial(hue: [140, 260], minSaturation: 0.05, minValue: 0.2, saturation: 0.28, value: 0.45, light: 0.9),
-        "armor_chain_mail_human": DyeMaterial(hue: [150, 260], minSaturation: 0.03, minValue: 0.2, saturation: 0.17, value: 0.6, light: 0.88),
+        "armor_iron_plate_human": DyeMaterial(hue: [140, 260], minSaturation: 0.05, minValue: 0.2, saturation: 0.25, value: 0.45, light: 1.0),
+        "hat_iron_plate_human": DyeMaterial(hue: [140, 260], minSaturation: 0.05, minValue: 0.2, saturation: 0.25, value: 0.62, light: 1.0),
+        "armor_iron_plate_elf": DyeMaterial(hue: [140, 260], minSaturation: 0.05, minValue: 0.2, saturation: 0.28, value: 0.45, light: 1.0),
+        "hat_iron_plate_elf": DyeMaterial(hue: [140, 260], minSaturation: 0.05, minValue: 0.2, saturation: 0.11, value: 0.81, light: 1.0),
+        "armor_iron_plate_dwarf": DyeMaterial(hue: [140, 260], minSaturation: 0.05, minValue: 0.2, saturation: 0.28, value: 0.45, light: 1.0),
+        "hat_iron_plate_dwarf": DyeMaterial(hue: [140, 260], minSaturation: 0.05, minValue: 0.2, saturation: 0.28, value: 0.45, light: 1.0),
+        "armor_chain_mail_human": DyeMaterial(hue: [150, 260], minSaturation: 0.03, minValue: 0.2, saturation: 0.17, value: 0.6, light: 1.0),
         "hat_chain_mail_human": DyeMaterial(hue: [150, 260], minSaturation: 0.03, minValue: 0.2, saturation: 0.17, value: 0.6, light: 0.88),
         "armor_chain_mail_elf": DyeMaterial(hue: [150, 260], minSaturation: 0.03, minValue: 0.2, saturation: 0.19, value: 0.33, light: 0.82),
         "hat_chain_mail_elf": DyeMaterial(hue: [150, 260], minSaturation: 0.03, minValue: 0.2, saturation: 0.22, value: 0.55, light: 0.82),
@@ -134,12 +134,22 @@ nonisolated extension DyeDef {
     /// in the middle and the ramp round it kept from dark to light, squeezed (to no less than 30%)
     /// where the lightest would pass white. tools/dye_art.py `rule_onto` is the same.
     func rule(onto material: DyeMaterial) -> RecolorRule {
-        let gain = Swift.max(0.3, Swift.min(value / material.value, (1 - value) / Swift.max(0.01, material.light - material.value)))
+        let top = lightest
+        let gain = Swift.max(0.3, Swift.min(value / material.value, (top - value) / Swift.max(0.01, material.light - material.value)))
         return RecolorRule(hue: material.hue, minSaturation: material.minSaturation, maxSaturation: material.maxSaturation,
                            minValue: material.minValue, maxValue: nil, to: hue, shift: nil, spread: 0.25,
                            saturation: 0.5 * saturation / material.saturation, value: gain,
                            saturationOffset: 0.5 * saturation,
-                           valueOffset: Swift.min(value - gain * material.value, 1 - gain * material.light))
+                           valueOffset: Swift.min(value - gain * material.value, top - gain * material.light))
+    }
+
+    /// The brightest a dye's shine goes: white for a light dye; for a dark one, down toward halfway
+    /// from its colour to white, the darker the further (from 0.7 down to 0.3). A Midnight plate's
+    /// shine at 0.8 read as white beside its 0.32 navy (playtesting 2026-10-31). tools/dye_art.py
+    /// `lightest` is the same.
+    var lightest: Double {
+        let darkness = Swift.min(1, Swift.max(0, (0.7 - value) / 0.4))
+        return 1 - 0.5 * (1 - value) * darkness
     }
 
     /// How it recolours an armour sheet, or the hat cut from one, of `kind` (the `armor_<kind>_<race>`

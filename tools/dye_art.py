@@ -184,11 +184,20 @@ def dyes():
 
 def rule_onto(dye, m):
     """DyeDef.rule(onto:): the material `m` taken to the dye's colour."""
-    gain = max(0.3, min(dye["value"] / m["value"], (1 - dye["value"]) / max(0.01, m["light"] - m["value"])))
+    top = lightest(dye)
+    gain = max(0.3, min(dye["value"] / m["value"], (top - dye["value"]) / max(0.01, m["light"] - m["value"])))
     return dict(hue=m.get("hue"), minSaturation=m.get("minSaturation", 0), maxSaturation=m.get("maxSaturation"),
                 minValue=m.get("minValue"), to=dye["hue"], spread=0.25,
                 saturation=0.5 * dye["saturation"] / m["saturation"], saturationOffset=0.5 * dye["saturation"],
-                value=gain, valueOffset=min(dye["value"] - gain * m["value"], 1 - gain * m["light"]))
+                value=gain, valueOffset=min(dye["value"] - gain * m["value"], top - gain * m["light"]))
+
+
+def lightest(dye):
+    """DyeDef.lightest: the brightest a dye's shine goes. White for a light dye; for a dark one, down
+    toward halfway from its colour to white, the darker the further (from 0.7 down to 0.3): a Midnight
+    plate's shine at 0.8 read as white beside its 0.32 navy (playtesting 2026-10-31)."""
+    darkness = min(1, max(0, (0.7 - dye["value"]) / 0.4))
+    return 1 - 0.5 * (1 - dye["value"]) * darkness
 
 
 def icon_rules(picture, main, trim, weapon, target=None):
