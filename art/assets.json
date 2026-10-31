@@ -17506,6 +17506,54 @@
       }
     },
     {
+      "id": "monster_poison_skeleton_crimson",
+      "kind": "monster",
+      "derive": {
+        "from": "monster_poison_skeleton",
+        "recolor": [
+          {
+            "hue": [
+              325,
+              15
+            ],
+            "minSaturation": 0.2,
+            "to": 2,
+            "saturation": 1.6,
+            "value": 2.4
+          },
+          {
+            "hue": [
+              80,
+              190
+            ],
+            "minSaturation": 0.2,
+            "to": 2,
+            "spread": 0.2,
+            "saturation": 1.6,
+            "value": 1.15
+          },
+          {
+            "hue": [
+              200,
+              320
+            ],
+            "minSaturation": 0.15,
+            "to": 352,
+            "saturation": 1.3,
+            "value": 0.25
+          },
+          {
+            "minSaturation": 0.0,
+            "maxSaturation": 0.2,
+            "minValue": 0.35,
+            "to": 350,
+            "saturation": 0.8,
+            "value": 0.6
+          }
+        ]
+      }
+    },
+    {
       "id": "monster_treefrog_snow",
       "kind": "monster",
       "derive": {

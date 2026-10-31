@@ -16,6 +16,14 @@ Run from the repo root. Needs Pillow (and numpy, for tools/pixel_style.py).
         Each sprite at 1x and 4x beside four sprites of its kind the game already ships (or the
         ones given), on the map's green and on a dark battle field: the review by eye every sprite
         needs (docs/pixel-style.md, *Review by eye*).
+  sprite_check.py swap OUT BASE RULES.json
+        Palette-swap candidates before any goes in art/assets.json: RULES.json maps a label to a
+        `recolor` list ({"a": [...], "b": [...]}); each is drawn beside BASE at 1x and 4x, on the
+        map's green and the dark battle field, recoloured as the game does it (`Recolor.apply`).
+
+A palette swap (`derive`) is scored and shown in its own colours, recoloured here as the game does
+(`recolor`, mirroring TalesOfDorlune/Art/Recolor.swift; a townsperson's layers each by its own rules).
+GearOverlay's dressing (a bot's gear) isn't mirrored: tools/gear_preview.py shows that.
 """
 import argparse
 import colorsys
@@ -67,22 +75,74 @@ def png(name):
     return Image.open(path).convert("RGBA") if os.path.exists(path) else None
 
 
-def root_png(art_id, depth=0):
-    """The picture an id shows, before recolouring: its own PNG, else its paper-doll layers stacked
-    (a townsperson), else its base's (a palette swap)."""
+def _rule_matches(r, h, s, v):
+    if not (r.get("minSaturation", 0.15) <= s <= r.get("maxSaturation", 1) and r.get("minValue", 0) <= v <= r.get("maxValue", 1)):
+        return False
+    hr = r.get("hue")
+    if not hr or len(hr) != 2:
+        return True
+    return hr[0] <= h <= hr[1] if hr[0] <= hr[1] else (h >= hr[0] or h <= hr[1])
+
+
+def _from_middle(r, h):
+    hr = r.get("hue")
+    if not hr or len(hr) != 2:
+        return 0
+    width = hr[1] - hr[0] if hr[0] <= hr[1] else hr[1] + 360 - hr[0]
+    d = (h - hr[0] - width / 2) % 360
+    return d - 360 if d > 180 else d
+
+
+def recolor(im, rules):
+    """`Recolor.apply`: the first matching rule recolours each opaque pixel in HSV (hue to `to` plus
+    `spread` times its distance from the window's middle, or rotated by `shift`; saturation and
+    value multiplied, then offset)."""
+    out = im.copy()
+    px = out.load()
+    cache = {}
+    for y in range(out.height):
+        for x in range(out.width):
+            c = px[x, y]
+            if c[3] == 0:
+                continue
+            if c[:3] not in cache:
+                h, s, v = colorsys.rgb_to_hsv(c[0] / 255, c[1] / 255, c[2] / 255)
+                h *= 360
+                r = next((r for r in rules if _rule_matches(r, h, s, v)), None)
+                if r is None:
+                    cache[c[:3]] = c[:3]
+                else:
+                    if r.get("to") is not None:
+                        h = r["to"] + r.get("spread", 0) * _from_middle(r, h)
+                    elif r.get("shift") is not None:
+                        h += r["shift"]
+                    h %= 360
+                    s = min(1, max(0, s * r.get("saturation", 1) + r.get("saturationOffset", 0)))
+                    v = min(1, max(0, v * r.get("value", 1) + r.get("valueOffset", 0)))
+                    cache[c[:3]] = tuple(round(k * 255) for k in colorsys.hsv_to_rgb(h / 360, s, v))
+            px[x, y] = cache[c[:3]] + (c[3],)
+    return out
+
+
+def art_png(art_id, depth=0):
+    """The picture an id shows in the game: its own PNG, else its paper-doll layers each recoloured
+    (by its own rules, else the derive's) and stacked, else its base recoloured by the derive."""
     im = png(art_id)
     if im is not None or depth > 4:
         return im
     derive = ASSETS.get(art_id, {}).get("derive") or {}
+    rules = derive.get("recolor") or []
     if derive.get("layers"):
         layers = [png(l["id"]) for l in derive["layers"]]
         if all(layers):
+            layers = [recolor(im, l.get("recolor") or rules) for im, l in zip(layers, derive["layers"])]
             out = layers[0]
             for layer in layers[1:]:
                 out = Image.alpha_composite(out, layer)
             return out
     base = derive.get("from")
-    return root_png(base, depth + 1) if base else None
+    im = art_png(base, depth + 1) if base else None
+    return recolor(im, rules) if im is not None else None
 
 
 def luma(p):
@@ -149,7 +209,7 @@ def check(ids, new):
         if not derive and a.get("request") and own is None:
             fail(i, "has a Retro Diffusion `request` but no PNG yet: dry-run, get the user's OK, generate, pick")
             continue
-        im = root_png(i)
+        im = art_png(i)
         if im is None:
             fail(i, f"its base `{a['derive']['from']}` has no PNG")
             continue
@@ -176,8 +236,17 @@ def check(ids, new):
                     bad.append(f"too few dark lines inside ({m['inside_dark_share']:.0%}; wants ≥20%)")
                 if m["saturation_median"] < 0.45:
                     bad.append(f"colour muted (median saturation {m['saturation_median']:.2f}; wants ≥0.45 unless it's a white, grey or black subject)")
+                # A swap can't redraw its base's outline or lines: a mark its base misses too is
+                # inherited, a warning to say plainly, not a failure (its colour is the swap's own).
+                b_im = png(derive["from"]) if derive and own is None and not derive.get("layers") else None
+                bm = pixel_heroes_marks(front_frame(derive["from"], b_im)) if b_im is not None else None
                 for b in bad:
-                    warn(i, "Pixel Heroes look: " + b)
+                    inherited = bm and ((b.startswith("outline") and (bm["outline_median"] > 0.25 or bm["outline_dark_share"] < 0.5))
+                                        or (b.startswith("too few") and bm["inside_dark_share"] < 0.2))
+                    if inherited:
+                        warnings.append(f"{i}: Pixel Heroes look: {b}, inherited from {derive['from']} (a swap can't fix it)")
+                    else:
+                        warn(i, "Pixel Heroes look: " + b)
         if kind == "monster" and not a.get("derive"):
             if i not in EYES.get("pictures", {}) and i not in EYES.get("skipped", {}):
                 fail(i, "no eyes in art/eyes.json and no `skipped` reason (the sprite-idle-animation skill)")
@@ -202,7 +271,7 @@ def check(ids, new):
 def neighbours(art_id, n=4):
     """Four RD sprites of the same kind, the same size if any are (else the nearest in size)."""
     kind = ASSETS[art_id]["kind"]
-    size = root_png(art_id).size
+    size = art_png(art_id).size
     pool = [(a["id"], png(a["id"]).size) for a in ASSETS.values()
             if a["kind"] == kind and a.get("request") and a["id"] != art_id and png(a["id"]) is not None]
     same = [i for i, sz in pool if sz == size]
@@ -213,15 +282,31 @@ def neighbours(art_id, n=4):
 
 
 def review(out, ids, given):
-    missing = [i for i in ids + (given or []) if i not in ASSETS or root_png(i) is None]
+    missing = [i for i in ids + (given or []) if i not in ASSETS or art_png(i) is None]
     if missing:
         sys.exit("no such sprite (or no PNG yet): " + ", ".join(missing))
     rows = [[i] + (given or neighbours(i)) for i in ids]
+    draw_sheet(out, [(row, [front_frame(a, art_png(a)) for a in row]) for row in rows])
+    print("wrote", out, "(first in each row is the one under review)")
+
+
+def swap(out, base, rules_path):
+    im = art_png(base)
+    if im is None:
+        sys.exit(f"no such sprite (or no PNG yet): {base}")
+    im = front_frame(base, im)
+    sets = json.load(open(rules_path))
+    labels = [base] + list(sets)
+    frames = [im] + [recolor(im, rules) for rules in sets.values()]
+    draw_sheet(out, [(labels[k:k + 6], frames[k:k + 6]) for k in range(0, len(labels), 6)])
+    print("wrote", out, f"({base}, then each candidate)")
+
+
+def draw_sheet(out, rows):
     z = 4
     # Each row is laid out for its own sprites, so a 40-pixel monster isn't lost in a row sized for a ship.
     layout = []
-    for row in rows:
-        frames = [front_frame(a, root_png(a)) for a in row]
+    for row, frames in rows:
         cw = max(f.width for f in frames)
         ch = max(f.height for f in frames)
         layout.append((row, frames, cw, ch))
@@ -241,7 +326,6 @@ def review(out, ids, given):
                 sheet.alpha_composite(f.resize((f.width * z, f.height * z), Image.NEAREST), (x0 + cw + 8, y0 + 16))
             y0 += ch * z + 30
     sheet.save(out)
-    print("wrote", out, "(first in each row is the one under review)")
 
 
 def main():
@@ -254,9 +338,15 @@ def main():
     p.add_argument("out")
     p.add_argument("ids", nargs="+")
     p.add_argument("--with", dest="given", help="comma-separated ids to show beside it instead of picked ones")
+    p = sub.add_parser("swap")
+    p.add_argument("out")
+    p.add_argument("base")
+    p.add_argument("rules", help='JSON: {"label": [recolor rules], ...}')
     a = ap.parse_args()
     if a.cmd == "check":
         sys.exit(check(a.ids, a.new))
+    if a.cmd == "swap":
+        return swap(a.out, a.base, a.rules)
     review(a.out, a.ids, a.given.split(",") if a.given else None)
 
 

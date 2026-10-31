@@ -4351,6 +4351,40 @@
       "variantOf": "poison_skeleton"
     },
     {
+      "id": "crimson_skeleton",
+      "name": "Crimson Skeleton",
+      "art": "monster_poison_skeleton_crimson",
+      "element": "dark",
+      "lore": "A Poison Skeleton with bones gone black as soot and a red glow where its eyes should be. Even the bravest bulls give it room.",
+      "base": {
+        "hp": 146,
+        "mp": 46,
+        "attack": 42,
+        "defense": 27,
+        "magic": 27,
+        "speed": 42
+      },
+      "growth": {
+        "hp": 13,
+        "mp": 4,
+        "attack": 4,
+        "defense": 2,
+        "magic": 2,
+        "speed": 2
+      },
+      "exp": 102,
+      "gold": 61,
+      "captureRate": 0.15,
+      "skills": [
+        "shadow_bite",
+        "poison_mist",
+        "curse"
+      ],
+      "motion": "hop",
+      "rare": true,
+      "variantOf": "poison_skeleton"
+    },
+    {
       "id": "snow_treefrog",
       "name": "Snow Treefrog",
       "art": "monster_treefrog_snow",

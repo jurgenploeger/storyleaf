@@ -45,8 +45,40 @@ user wants otherwise.
 - Add the asset with `derive: {from, recolor}`. Recolour a whole colour family with one `to` and
   `spread` rule, so the hue-shifted shading survives. A bare `shift` lands on a different colour for
   every base, and a hue window that cuts a ramp splits it in two (CLAUDE.md, `RecolorRule`).
-- To tune the rule, render the swap next to its base: `sprite_check.py review`, and
-  `tools/palette_preview.py` for map art.
+- Tune the rules before they go in: `sprite_check.py swap OUT <base> rules.json` draws each candidate
+  set beside its base, recoloured as the game does it. Once written, `check` scores the swap in its own
+  colours and `review` shows it beside its family (the colours, not the base's). Map art:
+  `tools/palette_preview.py`.
+- How a variant should look (the user's calls, 2026-10-31, on the Pegasus and skeleton colours):
+  - **Light body, deep accent ("the Rosy and Emerald way").** Split each colour family by value with
+    two rules on the same hue window: the lighter pixels (`minValue` about 0.6; about 0.42 for a
+    darker sprite such as the frog) get a pale tint of the colour (saturation about 0.25 to 0.45,
+    value 1.05 to 1.35), and the rest a deep, saturated shade of it (saturation 0.85 to 1.2, value 0.6
+    to 0.85). Never body and accent in the same hue at the same strength: that's a blob of one colour
+    ("doesn't look right").
+  - **Keep the body light.** A coloured variant darkens only its accents. The first Midnight Pegasus
+    darkened the whole coat ("the body pixels look too dark"); a pale periwinkle coat and a deep
+    midnight mane fixed it.
+  - **A dark variant (black with red) keeps its value steps.** Darken the light family by about half
+    and the shading under it to nearly black, so the inner lines (ribs, joints) still part from the
+    body. Darkening both by the same amount lost the skeleton's ribs in one dark blob.
+  - **The eyes stay visible.** Dark irises read against a light body and vanish against a dark one:
+    give them a rule of their own (the Crimson Skeleton's dark-red irises, hue 325 to 15, at value ×2.4
+    glow red). Look at the eyes at 4× on every candidate.
+  - **One rule per colour family.** Find the families first (print the base's pixels in HSV: the
+    skeleton has warm-white bone, lavender shading, purple sockets, red irises, green magic) and give
+    each its own rule; anything no rule matches keeps its old colour. The first matching rule wins, so
+    narrow rules (eyes) go first. The default `minSaturation` is 0.15, so greys and whites need
+    `"minSaturation": 0` and a `maxSaturation`.
+- A variant named for an element or a climate (Frost, Ember, Snow) lives in a land of that climate:
+  `check_content.py` rejects a Frost monster in a hot land.
+- A swap can't redraw its base: an outline or inner lines its base misses are inherited, and `check`
+  says so instead of failing. Its colour is its own, so a pale, white or black variant can miss the
+  saturation band: say so, it's the subject.
+- A rare variant's stats (monsters.json, `rare` and `variantOf`): the base's ×1.3, growth
+  max(v, round(v×1.2)), exp and gold ×1.6, capture rate ×0.6; its lore and name translated.
+- Edit art/assets.json as text (insert the entry), never by loading and dumping the whole file: its
+  layout isn't `json.dumps`', and a dump rewrites every line.
 - A swapped monster blinks with its base's eyes. Nothing to add to `art/eyes.json`.
 
 ### 2. Townsperson from layers
@@ -88,7 +120,7 @@ A sprite nobody uses isn't done.
 ## The gate
 
 A sprite ships when all of these hold. Run `python3 .claude/skills/sprite-creation/scripts/sprite_check.py
-check <ids> --new` for the first six; the rest need eyes.
+check <ids> --new` for the first six (a palette swap scored in its own colours); the rest need eyes.
 
 1. **Registered and made by its route.** In art/assets.json with the right kind, and made by its
    `request`, its `derive` or a tool that draws it. Nothing hand-edited that a rerun would undo.

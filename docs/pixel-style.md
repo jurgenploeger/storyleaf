@@ -778,6 +778,14 @@ in a loose arc, its end trailing off thin along the bottom; never coiled.
 
 ## Learned
 
+- **2026-10-31 (palette swaps):** The swap preview showed the base's colours, so the first Midnight
+  Pegasus went out a blob of one dark hue, and `check` passed it on the base's numbers. `sprite_check.py`
+  now recolours a swap as `Recolor.apply` does (check, review, and `swap` for candidates before any goes
+  in). What the user liked: a pale tint of the colour on the lighter pixels and a deep shade on the darker
+  ones, split by value (the Rosy and Emerald Pegasus); bodies kept light. For a black variant, keep the
+  steps between bone and line, and give the eyes a rule of their own: the first Crimson Skeleton lost its
+  ribs and its eyes in one dark blob. The rules are in the sprite-creation skill, route 1.
+
 - **2026-10-26 (joins):** A rule that judges each icon alone can't see a gap: a cord ending two pixels short
   of its bail is a fine cord and a fine pendant. Comparing with the design can (`detached`: pieces then and
   now). It found the cords, a leaf's tip and a wave's floating off their rings, and a string drawn as dots.
