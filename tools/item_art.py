@@ -3072,6 +3072,22 @@ def draw_ice_rose(c):
 JAR_GLASS = [hexc("788f94"), hexc("cbe0e3"), hexc("f2f9fa")]
 
 
+def jar_ramp(colour):
+    """A dye's dark, mid and light for its jar: `ramp`, but a dark, barely coloured dye (Midnight's
+    blackish blue) turns its hue, cooler in the shadow and warmer in the light, as pixel art shades a
+    near-black (a flat one failed pixel_style's hue_shift, playtesting 2026-10-31)."""
+    import colorsys
+    r, g, b, _ = hexc(colour)
+    h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+    if s >= 0.35 or v >= 0.5:
+        return ramp(colour)
+
+    def tone(dh, ds, vv):
+        rr, gg, bb = colorsys.hsv_to_rgb(((h * 360 + dh) % 360) / 360, min(1, max(0, s + ds)), min(1, vv))
+        return (int(rr * 255), int(gg * 255), int(bb * 255), 255)
+    return [tone(32, 0.14, v * 0.6), (r, g, b, 255), tone(-32, 0.0, v + (1 - v) * 0.38)]
+
+
 def dye_jar(c, dye):
     """A round glass jar of dye, full to the shoulders, a wooden stirring stick standing in its mouth and a
     drip run down its neck."""
@@ -3091,7 +3107,7 @@ def dye_jar(c, dye):
 
 for _item in json.loads((ROOT / "content" / "items.json").read_text())["items"]:
     if _item.get("dye"):
-        globals()["draw_" + _item["id"]] = (lambda colour: lambda c: dye_jar(c, ramp(colour)))(_item["dye"]["color"])
+        globals()["draw_" + _item["id"]] = (lambda colour: lambda c: dye_jar(c, jar_ramp(colour)))(_item["dye"]["color"])
 
 
 DRAWINGS = {name[5:]: fn for name, fn in globals().items() if name.startswith("draw_")}
