@@ -269,7 +269,7 @@ final class WorldScene: SKScene {
                                   shout: { [weak session] in session?.marketShout(for: $0) },
                                   level: session.data.hero.level)
         crowd = Crowd(def: def, map: map, world: world, heroLevel: session.data.hero.level,
-                      friends: session.friends.filter { !session.isInParty($0) }, market: market,
+                      friends: session.friendsIn(def.id), market: market,
                       locals: planner.plan.locals)
         crowd?.onChat = { [weak session] speaker, text, kind in
             session?.postChat(text, from: speaker, kind: kind)
