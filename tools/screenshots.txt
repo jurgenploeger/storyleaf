@@ -875,5 +875,5 @@ hide_hood_back  | newgame,race=elf,gender=female,level=20,equip=copper_hide+copp
 hide_hood_front | newgame,race=dwarf,level=20,equip=jade_hide+jade_hide_hood,facing=down,weather=clear,hour=12 | 8
 cape_front      | newgame,level=30,equip=leather_vest+sunny_meadow_cape,facing=down,weather=clear,hour=12 | 8
 # Who of your friends is online, and where (playtesting 2026-10-31: "You should be able to see if your
-# friends are online and where they are"), with every land visited so they roam all over.
-friends_list         | newgame,level=60,pals=10,visited=all,menu=friends,weather=clear,hour=12 | 8
+# friends are online and where they are"), in lands you've been to and those you haven't.
+friends_list         | newgame,level=60,pals=10,menu=friends,weather=clear,hour=12 | 8

@@ -2,8 +2,9 @@ import Foundation
 
 /// Where your friends are while they're not with you (playtesting 2026-10-31: "You should be able to
 /// see if your friends are online and where they are"). Each is online for spells of `friendSpell`,
-/// about one in two, and away for the rest; online, they're in a land that suits their level, among
-/// those you've been to, as a crowd takes them in. Worked out from the clock, the same each time it's
+/// about one in two, and away for the rest; online, they're in a land that suits their level,
+/// anywhere on the map (playtesting 2026-10-31: lands you haven't been to as well), as a crowd
+/// takes them in. Worked out from the clock, the same each time it's
 /// asked, so a land's crowd brings in the friends who are there (`friendsIn`) and the Friends list
 /// says where to find them.
 extension GameSession {
@@ -34,10 +35,10 @@ extension GameSession {
     }
 
     /// The lands a friend of `level` roams, as a crowd takes them in (`Crowd`): any town, or out in
-    /// the wild where the monsters suit them; only those you've been to with adventurers about.
+    /// the wild where the monsters suit them; any land with adventurers about, been to or not.
     private func friendLands(for level: Int) -> [String] {
         content.maps.filter { def in
-            guard (def.crowd?.adventurers ?? 0) > 0, hasVisited(def.id) else { return false }
+            guard (def.crowd?.adventurers ?? 0) > 0 else { return false }
             if def.fence == true { return true }
             guard let levels = def.encounters?.levels, let low = levels.first, let high = levels.last else { return false }
             return ((low - 10)...(high + 13)).contains(level)
