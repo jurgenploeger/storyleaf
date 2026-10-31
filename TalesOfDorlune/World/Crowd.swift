@@ -796,6 +796,16 @@ final class Crowd {
         })
     }
 
+    /// Everyone of it on the map, and their companions (`LandStage.seeThrough`).
+    var walkers: [Walker] {
+        var all: [Walker] = []
+        for member in members {
+            all.append(member.walker)
+            if let pet = member.pet { all.append(pet) }
+        }
+        return all
+    }
+
     /// Where the folk who live here stand (villagers and locals), for the minimap.
     var folkPositions: [CGPoint] {
         members.filter { $0.profile == nil }.map(\.walker.position)

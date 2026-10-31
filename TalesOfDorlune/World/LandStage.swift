@@ -44,6 +44,10 @@ final class LandStage {
     /// The walls along its borders that come down once you can cross (`placeBorders`): the border,
     /// and what's taken away (a gate's bar, or the whole fence).
     private var gates: [(neighbour: Continent.Neighbour, bar: [SKNode])] = []
+    /// Its scenery tall enough to hide someone, faded while anyone's behind it (`seeThrough`).
+    private let see = SeeThrough()
+    /// What of it the screen showed at the last frame (`update`), in its own points.
+    private var visible: CGRect = .null
     private static let chunkSize: CGFloat = 400
     /// How far past the screen's edges a chunk is kept (`WorldScene.chunkMargin`).
     private static let chunkMargin: CGFloat = 360
@@ -126,6 +130,7 @@ final class LandStage {
         await pause()
         placePlateaus()
         placeBorders()
+        bringIntoView()
         for npc in npcs { npc.node.settle() }
         await pause()
         // A town's market traders sell what they have today, around your level.
@@ -151,6 +156,7 @@ final class LandStage {
         let visible = CGRect(x: eye.x - screen.width / 2 * scale, y: eye.y - screen.height / 2 * scale,
                              width: screen.width * scale, height: screen.height * scale)
         critters?.update(dt: dt, player: you, visible: visible, flocks: isHere) { [map] in map.isWalkable(map.rawCell(at: $0)) }
+        self.visible = visible
         show(around: camera, scale: scale, screen: screen)
     }
 
@@ -221,6 +227,33 @@ final class LandStage {
         let spot = local(point)
         return npcs.first { !$0.node.isHidden && ($0.node.position + CGVector(dx: 0, dy: 24 + $0.node.lift)).distance(to: spot) < 34 }
             .map { ($0.def, $0.node) }
+    }
+
+    // MARK: Seeing through
+
+    /// Fades whatever stands in front of anyone on screen behind it (a house, a tree, a city's
+    /// wall) while they're there, and brings it back once they've gone (`SeeThrough`): `others`
+    /// (you, your companion, your party, in the continent's points), its own people and passers-by.
+    func seeThrough(_ others: [Walker]) {
+        guard !visible.isNull else { return }
+        let own = npcs.map { $0.node } + (crowd?.walkers ?? [])
+        let groups: [(walkers: [Walker], offset: CGVector)] = [(others, CGVector(dx: -shift.dx, dy: -shift.dy)), (own, .zero)]
+        see.fade(over: groups, visible: visible)
+    }
+
+    /// Moves anyone it set down where a building or tall scenery in front of them hides them (put by
+    /// hand behind a shop, or a tree planted before them) to the nearest cell nothing hides
+    /// (playtesting 2026-10-31: Spectacle-Maker Fennimore stood behind the shop on Emerald Road,
+    /// only his name showing).
+    private func bringIntoView() {
+        var taken = Set(npcs.map { map.cell(at: $0.node.position) })
+        for npc in npcs {
+            guard let spot = see.clearSpot(near: npc.node.position, size: npc.node.sprite.size, map: map, taken: taken) else { continue }
+            taken.remove(map.cell(at: npc.node.position))
+            taken.insert(spot)
+            npc.node.position = map.center(of: spot)
+            npc.node.zPosition = -npc.node.position.y
+        }
     }
 
     // MARK: Chunks
@@ -306,6 +339,7 @@ final class LandStage {
             node.run(.repeatForever(.sequence([left, right])))
         }
         chunk(at: node.position).addChild(node)
+        see.note(node)
         return node
     }
 
@@ -469,13 +503,19 @@ final class LandStage {
 
     private func placeFence() {
         guard !map.fenceCells.isEmpty else { return }
+        let before = Set(world.children.map { ObjectIdentifier($0) })
         TownFence.place(cells: map.fenceCells, map: map, world: world, art: art, stone: def.town?.walls == "stone")
+        // A city's stone walls and towers stand tall enough to hide someone too.
+        for case let node as SKSpriteNode in world.children where !before.contains(ObjectIdentifier(node)) { see.note(node) }
     }
 
     /// The picket fences and low walls along stretches of its roads (`LandPlanner.planRoadsides`),
     /// joined from cell to cell as a town's fence is, each piece in the chunk it stands in.
     private func placeRoadsides() {
-        TownFence.placeRoadsides(plan.roadsides, map: map, art: art) { node in self.chunk(at: node.position).addChild(node) }
+        TownFence.placeRoadsides(plan.roadsides, map: map, art: art) { node in
+            self.chunk(at: node.position).addChild(node)
+            if let sprite = node as? SKSpriteNode { self.see.note(sprite) }
+        }
     }
 
     /// Houses, the street's lamps (glowing) and decor, the terraces' railings, and the land's own

@@ -88,19 +88,44 @@ final class Ambience {
         for emitter in emitters { emitter.node.particleBirthRate = emitter.rate * strength }
     }
 
-    /// A few stars twinkling around a point (fairy rings, fountains).
+    /// A few glints of fairy dust twinkling around a point (fairy rings, fountains): each a soft
+    /// golden glow with a thin four-pointed flare, light rather than pixels, that swells in, drifts
+    /// up a little as it fades, and comes back somewhere new. (A hard white 5-pixel cross stretched
+    /// to 7 points stood still in the air and read as a stray mark.)
     static func twinkle(around point: CGPoint, radius: CGFloat, count: Int, in parent: SKNode) {
+        let gold = UIColor(red: 1, green: 0.93, blue: 0.68, alpha: 1)
         for index in 0..<count {
-            let star = SKSpriteNode(texture: SoftTextures.star, size: CGSize(width: 7, height: 7))
-            star.blendMode = .add
-            star.position = point + CGVector(dx: .random(in: -radius...radius), dy: .random(in: -radius * 0.6...radius * 0.6) + 10)
-            star.zPosition = 24_000
-            star.alpha = 0
+            let glint = SKNode()
+            glint.zPosition = 24_000
+            glint.alpha = 0
+            let halo = SKSpriteNode(texture: SoftTextures.glow, size: CGSize(width: 12, height: 12))
+            halo.color = gold
+            halo.colorBlendFactor = 1
+            halo.alpha = 0.5
+            halo.blendMode = .add
+            glint.addChild(halo)
+            let rays: [(angle: CGFloat, length: CGFloat)] = [(0, 11), (.pi / 2, 9)]
+            for (angle, length) in rays {
+                let ray = SKSpriteNode(texture: SoftTextures.ray, size: CGSize(width: length, height: 1.5))
+                ray.zRotation = angle
+                ray.color = gold
+                ray.colorBlendFactor = 0.5
+                ray.blendMode = .add
+                glint.addChild(ray)
+            }
+            let spot = SKAction.run { [weak glint] in
+                glint?.position = point + CGVector(dx: .random(in: -radius...radius), dy: .random(in: -radius * 0.6...radius * 0.6) + 10)
+                glint?.setScale(0.3)
+            }
+            let show = SKAction.group([.fadeIn(withDuration: 0.35), .scale(to: 1, duration: 0.35)])
+            let hide = SKAction.group([.fadeOut(withDuration: 0.7), .scale(to: 0.4, duration: 0.7)])
             let blink = SKAction.sequence([
-                .fadeIn(withDuration: 0.5), .wait(forDuration: 0.3), .fadeOut(withDuration: 0.6), .wait(forDuration: .random(in: 0.4...1.4)),
+                spot,
+                .group([.sequence([show, .wait(forDuration: 0.2), hide]), .moveBy(x: 0, y: 6, duration: 1.25)]),
+                .wait(forDuration: .random(in: 0.5...1.6)),
             ])
-            star.run(.sequence([.wait(forDuration: Double(index) * 0.35), .repeatForever(blink)]))
-            parent.addChild(star)
+            glint.run(.sequence([.wait(forDuration: Double(index) * 0.4), .repeatForever(blink)]))
+            parent.addChild(glint)
         }
     }
 
@@ -424,6 +449,20 @@ enum SoftTextures {
         c[3, 2] = .clear
         c.fill(0, 1, 4, 1, PixelColor(0xF57C00))
     }
+
+    /// A thin ray of light, bright in the middle and fading to nothing at both ends (a glint's flare).
+    static let ray: SKTexture = {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let size = CGSize(width: 32, height: 4)
+        let image = UIGraphicsImageRenderer(size: size, format: format).image { context in
+            let colors = [UIColor(white: 1, alpha: 0).cgColor, UIColor.white.cgColor, UIColor(white: 1, alpha: 0).cgColor] as CFArray
+            let locations: [CGFloat] = [0, 0.5, 1]
+            guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: locations) else { return }
+            context.cgContext.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: size.width, y: 0), options: [])
+        }
+        return SKTexture(image: image)
+    }()
 
     static let star: SKTexture = pixel(width: 5, height: 5) { c in
         c.fill(2, 0, 1, 5, .white)
