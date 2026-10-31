@@ -6,6 +6,10 @@ import SwiftUI
 struct MonsterBook: View {
     let session: GameSession
     @State private var element: Element?
+    /// What you typed to look one up, and the order they're in (playtesting 2026-10-31: "Add search
+    /// and sorting to the monster book, for example by name and rarity/how strong they are").
+    @State private var search = ""
+    @State private var sort = BookSort.standard
     @State private var selected: String? = DebugLaunch.bookPage
 
     private var all: [MonsterDef] { session.content.monsters }
@@ -32,18 +36,75 @@ struct MonsterBook: View {
                 .foregroundStyle(HUDStyle.dim)
             cards
             milestone
+            // Search and Sort as the Bag's are.
+            HStack(spacing: 8) {
+                ItemSearchField(text: $search)
+                SortMenu(sort: $sort, options: BookSort.allCases, title: { $0.title })
+            }
+            // The sort's panel over the chips.
+            .zIndex(1)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     chip(nil)
                     ForEach(Element.allCases.filter { $0 != .neutral }, id: \.self) { chip($0) }
                 }
             }
+            let shown = arranged
+            if shown.isEmpty {
+                Text(L("No monster you've met goes by that name."))
+                    .font(HUDStyle.font(11))
+                    .foregroundStyle(HUDStyle.dim)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+            }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 76), spacing: 8)], spacing: 8) {
-                ForEach(all.filter { element == nil || $0.element == element }) { monster in
+                ForEach(shown) { monster in
                     tile(monster)
                 }
             }
         }
+    }
+
+    /// The monsters on show: of the element chosen, those you've met whose name (or element) holds
+    /// what you typed, in the order chosen. Those still to meet keep their secret: a search never
+    /// finds them, and any order but the Book's puts them last, as they come.
+    private var arranged: [MonsterDef] {
+        let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        let ofElement = all.filter { element == nil || $0.element == element }
+        let met = ofElement.filter { session.sighting(of: $0.id) != nil }
+        let found = query.isEmpty ? met : met.filter {
+            $0.name.localizedStandardContains(query) || $0.element.displayName.localizedStandardContains(query)
+        }
+        let unmet = query.isEmpty ? ofElement.filter { session.sighting(of: $0.id) == nil } : []
+        switch sort {
+        case .standard:
+            let shown = Set((found + unmet).map(\.id))
+            return ofElement.filter { shown.contains($0.id) }
+        case .name:
+            return found.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending } + unmet
+        case .strongest:
+            return Self.ordered(found, by: Self.strength) + unmet
+        case .rarest:
+            return Self.ordered(found, by: Self.rarity) + unmet
+        }
+    }
+
+    /// Highest `value` first; ties keep the Book's order.
+    private static func ordered(_ monsters: [MonsterDef], by value: (MonsterDef) -> Double) -> [MonsterDef] {
+        monsters.enumerated()
+            .sorted { value($0.element) != value($1.element) ? value($0.element) > value($1.element) : $0.offset < $1.offset }
+            .map { $0.element }
+    }
+
+    /// How strong a kind is: all its stats at the start added up (its level scales them alike).
+    private static func strength(_ monster: MonsterDef) -> Double {
+        let base = monster.base
+        return Double(base.hp + base.mp + base.attack + base.defense + base.magic + base.speed)
+    }
+
+    /// How rare a kind is: bosses, then rare colours, then the harder it is to seal.
+    private static func rarity(_ monster: MonsterDef) -> Double {
+        (monster.boss == true ? 2 : 0) + (monster.rare == true ? 1 : 0) + (1 - monster.captureRate)
     }
 
     /// The cards collected so far, and what they add up to.
@@ -449,5 +510,25 @@ private struct MonsterPage: View {
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity)
         .background(RoundedRectangle(cornerRadius: 5).fill(HUDStyle.ink.opacity(0.4)))
+    }
+}
+
+/// The Monster Book's orders (`SortMenu`). Nonisolated like the other enums in a `ForEach(id: \.self)`.
+nonisolated enum BookSort: String, CaseIterable {
+    /// As the Book lists them (content/monsters.json): each kind with its colours.
+    case standard
+    case name
+    /// The strongest first: all their stats added up.
+    case strongest
+    /// Bosses, then rare colours, then the hardest to seal.
+    case rarest
+
+    var title: String {
+        switch self {
+        case .standard: L("Book order")
+        case .name: L("Name")
+        case .strongest: L("Strongest")
+        case .rarest: L("Rarest")
+        }
     }
 }
