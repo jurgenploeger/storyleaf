@@ -149,6 +149,22 @@ struct CloudCover: View {
         Bank(puffs: [(0.04, 0.6), (0.3, 0.46), (0.56, 0.56), (0.82, 0.44), (1.02, 0.6)], reach: -0.3, opacity: 1, delay: 0.3),
     ]
 
+    /// A bank's puffs along its bottom: one between each two of its top's, as big as the two between,
+    /// and one past the last.
+    private static func underside(of puffs: [(x: CGFloat, size: CGFloat)]) -> [(x: CGFloat, size: CGFloat)] {
+        var under: [(x: CGFloat, size: CGFloat)] = []
+        for (index, puff) in puffs.enumerated() {
+            if index + 1 < puffs.count {
+                let next = puffs[index + 1]
+                under.append((x: (puff.x + next.x) / 2, size: (puff.size + next.size) / 2))
+            } else {
+                under.append((x: puff.x + 0.12, size: puff.size))
+            }
+        }
+        if let first = puffs.first { under.insert((x: first.x - 0.12, size: first.size), at: 0) }
+        return under
+    }
+
     var body: some View {
         GeometryReader { proxy in
             let size = proxy.size
@@ -167,13 +183,20 @@ struct CloudCover: View {
                         Rectangle()
                             .frame(width: size.width, height: size.height * 1.5)
                             .position(x: size.width / 2, y: size.height * 0.75)
+                        // Puffs along its bottom too, half a puff along from the top's: rising on past
+                        // the top it showed a straight edge (playtesting 2026-10-31: "can the bottom of
+                        // the cloud animation also have the cloud shape instead of a rectangle?").
+                        let under = Self.underside(of: bank.puffs)
+                        ForEach(under.indices, id: \.self) { puffIndex in
+                            let puff = under[puffIndex]
+                            Circle()
+                                .frame(width: side * puff.size, height: side * puff.size)
+                                .position(x: size.width * puff.x, y: size.height * 1.5)
+                        }
                     }
                     .foregroundStyle(night ? Brand.moonCloud : .white)
                     // One sheet of cloud, not puffs see-through where they overlap.
                     .compositingGroup()
-                    // Softening as it rises past, so the banks melt into one another and the haze
-                    // instead of showing as sheets with hard edges.
-                    .blur(radius: through ? side * 0.08 : 0)
                     .opacity(through ? 0 : bank.opacity)
                     .scaleEffect(through ? 1.15 + 0.15 * CGFloat(index) : 1, anchor: .top)
                     // Down out of sight under the screen, then up to its reach; then on up past the top.
@@ -183,6 +206,11 @@ struct CloudCover: View {
                     .animation(.easeOut(duration: LoadingCurtain.clearingTime), value: through)
                 }
             }
+            // Softening as they rise past, so the banks melt into one another and the haze instead of
+            // showing as sheets with hard edges: one blur over them all, not one a bank (three
+            // screen-sized blurs a frame made the parting choppy on a phone).
+            .blur(radius: through ? side * 0.08 : 0)
+            .animation(.easeOut(duration: LoadingCurtain.clearingTime), value: through)
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
