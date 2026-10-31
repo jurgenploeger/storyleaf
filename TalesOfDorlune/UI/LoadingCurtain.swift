@@ -294,13 +294,18 @@ struct LoadingBar: View {
     /// How wide the bar grows at most.
     var width: CGFloat = 280
 
-    /// The brand's own loading bar, the same on every loading screen: the brand blue (the sky's),
+    /// The brand's own loading bar, the same on every loading screen: the brand's deep blue, darker
+    /// toward its foot (the sky's own pale blue was lost against the sky: playtesting 2026-10-31, "The
+    /// loading bar should also use the darker blue, so it's not the same color as the sky bg"),
     /// outlined in midnight, on cream.
     static func talesOfDorlune(progress: Double, label: String) -> LoadingBar {
         LoadingBar(progress: progress, label: label, textColor: Brand.skyText,
-                   fill: [Brand.skyLight, Brand.sky, Brand.skyDeep], track: Brand.cream, rim: Brand.midnight,
+                   fill: [Brand.skyDeep, Self.deepBlue], track: Brand.cream, rim: Brand.midnight,
                    width: 200)
     }
+
+    /// The foot of the brand bar's fill: its deep blue a shade darker, toward midnight (#2E61C7).
+    static let deepBlue = Color(red: 0.18, green: 0.38, blue: 0.78)
 
     private var percent: Int { Int((min(max(progress, 0), 1) * 100).rounded()) }
 
